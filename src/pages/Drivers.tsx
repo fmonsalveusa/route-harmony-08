@@ -1,17 +1,27 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { mockDispatchers } from '@/data/mockData';
-import { StatusBadge } from '@/components/StatusBadge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Plus, Search, Phone, Truck as TruckIcon, Pencil, Trash2, Eye } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useDrivers, DbDriver, DriverInput } from '@/hooks/useDrivers';
 import { useTrucks } from '@/hooks/useTrucks';
 import { DriverFormDialog } from '@/components/DriverFormDialog';
 import { DriverDetailDialog } from '@/components/DriverDetailDialog';
+
+const driverStatusColor = (status: string) => {
+  switch (status) {
+    case 'available': return 'bg-green-600';
+    case 'assigned': return 'bg-blue-600';
+    case 'resting': return 'bg-orange-500';
+    case 'inactive': return 'bg-red-600';
+    default: return 'bg-gray-500';
+  }
+};
 
 const Drivers = () => {
   const { user } = useAuth();
@@ -100,11 +110,19 @@ const Drivers = () => {
                       <AvatarFallback className="bg-primary/10 text-primary font-semibold">{initials}</AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-semibold truncate">{driver.name}</h3>
-                        <StatusBadge status={driver.status as any} />
-                      </div>
+                      <h3 className="font-semibold truncate">{driver.name}</h3>
                     </div>
+                    <Select value={driver.status} onValueChange={v => updateDriver(driver.id, { status: v })}>
+                      <SelectTrigger className={`w-auto h-7 text-xs font-semibold text-white border-0 rounded-full px-3 gap-1 ${driverStatusColor(driver.status)}`}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="available">Disponible</SelectItem>
+                        <SelectItem value="assigned">Asignado</SelectItem>
+                        <SelectItem value="resting">Descansando</SelectItem>
+                        <SelectItem value="inactive">Inactivo</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <div className="mt-4 space-y-2 text-sm">
