@@ -164,6 +164,9 @@ export type Database = {
       trucks: {
         Row: {
           cargo_area_photo_url: string | null
+          cargo_height_in: number | null
+          cargo_length_ft: number | null
+          cargo_width_in: number | null
           created_at: string
           driver_id: string | null
           id: string
@@ -174,11 +177,15 @@ export type Database = {
           license_plate: string | null
           make: string | null
           max_payload_lbs: number | null
+          mega_ramp: string | null
           model: string | null
+          rear_door_height_in: number | null
+          rear_door_width_in: number | null
           rear_truck_photo_url: string | null
           registration_expiry: string | null
           registration_photo_url: string | null
           status: string
+          trailer_length_ft: number | null
           truck_plate_photo_url: string | null
           truck_side_photo_url: string | null
           truck_type: string
@@ -189,6 +196,9 @@ export type Database = {
         }
         Insert: {
           cargo_area_photo_url?: string | null
+          cargo_height_in?: number | null
+          cargo_length_ft?: number | null
+          cargo_width_in?: number | null
           created_at?: string
           driver_id?: string | null
           id?: string
@@ -199,11 +209,15 @@ export type Database = {
           license_plate?: string | null
           make?: string | null
           max_payload_lbs?: number | null
+          mega_ramp?: string | null
           model?: string | null
+          rear_door_height_in?: number | null
+          rear_door_width_in?: number | null
           rear_truck_photo_url?: string | null
           registration_expiry?: string | null
           registration_photo_url?: string | null
           status?: string
+          trailer_length_ft?: number | null
           truck_plate_photo_url?: string | null
           truck_side_photo_url?: string | null
           truck_type?: string
@@ -214,6 +228,9 @@ export type Database = {
         }
         Update: {
           cargo_area_photo_url?: string | null
+          cargo_height_in?: number | null
+          cargo_length_ft?: number | null
+          cargo_width_in?: number | null
           created_at?: string
           driver_id?: string | null
           id?: string
@@ -224,11 +241,15 @@ export type Database = {
           license_plate?: string | null
           make?: string | null
           max_payload_lbs?: number | null
+          mega_ramp?: string | null
           model?: string | null
+          rear_door_height_in?: number | null
+          rear_door_width_in?: number | null
           rear_truck_photo_url?: string | null
           registration_expiry?: string | null
           registration_photo_url?: string | null
           status?: string
+          trailer_length_ft?: number | null
           truck_plate_photo_url?: string | null
           truck_side_photo_url?: string | null
           truck_type?: string

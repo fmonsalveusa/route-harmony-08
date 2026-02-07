@@ -36,6 +36,9 @@ export function TruckFormDialog({ open, onOpenChange, truck, onSave }: Props) {
     unit_number: '', truck_type: 'Dry Van', make: '', model: '', year: new Date().getFullYear(),
     max_payload_lbs: null, vin: '', license_plate: '', status: 'active',
     insurance_expiry: null, registration_expiry: null,
+    cargo_length_ft: null, cargo_width_in: null, cargo_height_in: null,
+    rear_door_width_in: null, rear_door_height_in: null,
+    trailer_length_ft: null, mega_ramp: null,
   });
   const [files, setFiles] = useState<Record<string, File>>({});
   const [saving, setSaving] = useState(false);
@@ -50,12 +53,19 @@ export function TruckFormDialog({ open, onOpenChange, truck, onSave }: Props) {
           max_payload_lbs: truck.max_payload_lbs, vin: truck.vin || '',
           license_plate: truck.license_plate || '', status: truck.status,
           insurance_expiry: truck.insurance_expiry, registration_expiry: truck.registration_expiry,
+          cargo_length_ft: truck.cargo_length_ft, cargo_width_in: truck.cargo_width_in,
+          cargo_height_in: truck.cargo_height_in, rear_door_width_in: truck.rear_door_width_in,
+          rear_door_height_in: truck.rear_door_height_in,
+          trailer_length_ft: truck.trailer_length_ft, mega_ramp: truck.mega_ramp,
         });
       } else {
         setForm({
           unit_number: '', truck_type: 'Dry Van', make: '', model: '', year: new Date().getFullYear(),
           max_payload_lbs: null, vin: '', license_plate: '', status: 'active',
           insurance_expiry: null, registration_expiry: null,
+          cargo_length_ft: null, cargo_width_in: null, cargo_height_in: null,
+          rear_door_width_in: null, rear_door_height_in: null,
+          trailer_length_ft: null, mega_ramp: null,
         });
       }
     }
@@ -142,7 +152,52 @@ export function TruckFormDialog({ open, onOpenChange, truck, onSave }: Props) {
                 {STATUSES.map(s => <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>)}
               </SelectContent>
             </Select>
-          </div>
+          {/* Box Truck specific fields */}
+          {form.truck_type === 'Box Truck' && (
+            <>
+              <div className="space-y-2">
+                <Label>Cargo Length (ft)</Label>
+                <Input type="number" value={form.cargo_length_ft ?? ''} onChange={e => set('cargo_length_ft', e.target.value ? parseFloat(e.target.value) : null)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Cargo Width (in)</Label>
+                <Input type="number" value={form.cargo_width_in ?? ''} onChange={e => set('cargo_width_in', e.target.value ? parseFloat(e.target.value) : null)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Cargo Height (in)</Label>
+                <Input type="number" value={form.cargo_height_in ?? ''} onChange={e => set('cargo_height_in', e.target.value ? parseFloat(e.target.value) : null)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Rear Door Width (in)</Label>
+                <Input type="number" value={form.rear_door_width_in ?? ''} onChange={e => set('rear_door_width_in', e.target.value ? parseFloat(e.target.value) : null)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Rear Door Height (in)</Label>
+                <Input type="number" value={form.rear_door_height_in ?? ''} onChange={e => set('rear_door_height_in', e.target.value ? parseFloat(e.target.value) : null)} />
+              </div>
+            </>
+          )}
+
+          {/* Hotshot specific fields */}
+          {form.truck_type === 'Hotshot' && (
+            <>
+              <div className="space-y-2">
+                <Label>Trailer Length (ft)</Label>
+                <Input type="number" value={form.trailer_length_ft ?? ''} onChange={e => set('trailer_length_ft', e.target.value ? parseFloat(e.target.value) : null)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Mega Ramp</Label>
+                <Select value={form.mega_ramp || ''} onValueChange={v => set('mega_ramp', v)}>
+                  <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+                  <SelectContent className="bg-popover z-50">
+                    <SelectItem value="SI">SI</SelectItem>
+                    <SelectItem value="NO">NO</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </>
+          )}
+        </div>
 
           {/* Insurance Expiry */}
           <DateField label="Insurance Expiry" value={form.insurance_expiry} onChange={v => set('insurance_expiry', v)} />
