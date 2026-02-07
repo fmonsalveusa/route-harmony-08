@@ -154,6 +154,7 @@ export type Database = {
           investor_pay_amount: number | null
           miles: number | null
           origin: string
+          pdf_url: string | null
           pickup_date: string | null
           reference_number: string
           status: string
@@ -178,6 +179,7 @@ export type Database = {
           investor_pay_amount?: number | null
           miles?: number | null
           origin: string
+          pdf_url?: string | null
           pickup_date?: string | null
           reference_number: string
           status?: string
@@ -202,6 +204,7 @@ export type Database = {
           investor_pay_amount?: number | null
           miles?: number | null
           origin?: string
+          pdf_url?: string | null
           pickup_date?: string | null
           reference_number?: string
           status?: string
