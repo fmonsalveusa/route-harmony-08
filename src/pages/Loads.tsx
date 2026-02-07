@@ -188,8 +188,12 @@ const Loads = () => {
                           <td colSpan={16} className="p-0">
                             <LoadDetailPanel
                               load={load}
-                              onMilesCalculated={async (loadId, miles) => {
-                                await updateLoad(loadId, { miles });
+                              onMilesCalculated={async (loadId, miles, routeGeometry) => {
+                                const updateData: any = { miles };
+                                if (routeGeometry) {
+                                  updateData.route_geometry = routeGeometry;
+                                }
+                                await updateLoad(loadId, updateData);
                               }}
                             />
                           </td>
