@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      dispatchers: {
+        Row: {
+          commission_percentage: number
+          created_at: string
+          email: string
+          id: string
+          name: string
+          pay_type: string
+          phone: string
+          start_date: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          commission_percentage?: number
+          created_at?: string
+          email: string
+          id?: string
+          name: string
+          pay_type?: string
+          phone: string
+          start_date?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          commission_percentage?: number
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          pay_type?: string
+          phone?: string
+          start_date?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       drivers: {
         Row: {
           created_at: string
