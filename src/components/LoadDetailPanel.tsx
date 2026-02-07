@@ -3,6 +3,7 @@ import { MapPin, Calendar, Weight, DollarSign, User, Truck, Route, Navigation, F
 import { Button } from '@/components/ui/button';
 import { mockDrivers, mockDispatchers } from '@/data/mockData';
 import type { DbLoad } from '@/hooks/useLoads';
+import { supabase } from '@/integrations/supabase/client';
 import 'leaflet/dist/leaflet.css';
 
 // Simple geocoding using Nominatim (free)
@@ -53,8 +54,8 @@ interface Stop {
 }
 
 interface LoadDetailPanelProps {
-  load: DbLoad;
-  onMilesCalculated?: (loadId: string, miles: number) => void;
+  load: DbLoad & { route_geometry?: [number, number][] | null };
+  onMilesCalculated?: (loadId: string, miles: number, routeGeometry?: [number, number][]) => void;
 }
 
 export const LoadDetailPanel = ({ load, onMilesCalculated }: LoadDetailPanelProps) => {
@@ -66,6 +67,10 @@ export const LoadDetailPanel = ({ load, onMilesCalculated }: LoadDetailPanelProp
   const driver = mockDrivers.find(d => d.id === load.driver_id);
   const dispatcher = mockDispatchers.find(d => d.id === load.dispatcher_id);
   const rpm = totalMiles > 0 ? Number(load.total_rate) / totalMiles : 0;
+
+  // Check if we have cached route data
+  const hasCachedRoute = load.route_geometry && Array.isArray(load.route_geometry) && load.route_geometry.length > 0;
+  const hasCachedMiles = load.miles && Number(load.miles) > 0;
 
   useEffect(() => {
     let cancelled = false;
@@ -94,7 +99,50 @@ export const LoadDetailPanel = ({ load, onMilesCalculated }: LoadDetailPanelProp
         attribution: '© OpenStreetMap',
       }).addTo(map);
 
-      // Build stops list — for now origin = pickup, destination = delivery
+      const pickupIcon = L.divIcon({
+        html: '<div style="background:hsl(152,60%,40%);color:white;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:12px;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,.3)">P</div>',
+        className: '', iconSize: [28, 28], iconAnchor: [14, 14],
+      });
+
+      const deliveryIcon = L.divIcon({
+        html: '<div style="background:hsl(0,72%,51%);color:white;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:12px;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,.3)">D</div>',
+        className: '', iconSize: [28, 28], iconAnchor: [14, 14],
+      });
+
+      // If we have cached miles and route, use them directly (no API calls)
+      if (hasCachedRoute && hasCachedMiles) {
+        const cachedRoute = load.route_geometry as [number, number][];
+        const cachedMiles = Number(load.miles);
+
+        // Geocode just for markers
+        const coords = await Promise.all([geocode(load.origin), geocode(load.destination)]);
+        if (cancelled) return;
+
+        const resolvedStops: Stop[] = [
+          { type: 'pickup', address: load.origin, coords: coords[0] },
+          { type: 'delivery', address: load.destination, coords: coords[1], distanceFromPrev: cachedMiles },
+        ];
+
+        setStops(resolvedStops);
+        setTotalMiles(cachedMiles);
+
+        const bounds: [number, number][] = [];
+        resolvedStops.forEach(stop => {
+          if (!stop.coords) return;
+          const icon = stop.type === 'pickup' ? pickupIcon : deliveryIcon;
+          const label = stop.type === 'pickup' ? 'Pick Up' : 'Delivery';
+          L.marker(stop.coords, { icon }).addTo(map).bindPopup(`<b>${label}</b><br/>${stop.address}`);
+          bounds.push(stop.coords);
+        });
+
+        L.polyline(cachedRoute, { color: 'hsl(215,70%,50%)', weight: 3 }).addTo(map);
+        if (bounds.length >= 2) {
+          map.fitBounds(bounds, { padding: [40, 40] });
+        }
+        return;
+      }
+
+      // No cache — calculate from scratch
       const stopAddresses: { type: 'pickup' | 'delivery'; address: string }[] = [
         { type: 'pickup', address: load.origin },
         { type: 'delivery', address: load.destination },
@@ -108,7 +156,7 @@ export const LoadDetailPanel = ({ load, onMilesCalculated }: LoadDetailPanelProp
         coords: coords[i],
       }));
 
-      // Calculate real driving distances between consecutive stops
+      // Calculate real driving distances
       let accumulatedMiles = 0;
       for (let i = 1; i < resolvedStops.length; i++) {
         const prev = resolvedStops[i - 1].coords;
@@ -122,29 +170,7 @@ export const LoadDetailPanel = ({ load, onMilesCalculated }: LoadDetailPanelProp
         }
       }
 
-      if (!cancelled) {
-        setStops(resolvedStops);
-        const rounded = Math.round(accumulatedMiles);
-        if (rounded > 0) {
-          setTotalMiles(rounded);
-          if (onMilesCalculated) {
-            onMilesCalculated(load.id, rounded);
-          }
-        }
-      }
-
-      const pickupIcon = L.divIcon({
-        html: '<div style="background:hsl(152,60%,40%);color:white;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:12px;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,.3)">P</div>',
-        className: '', iconSize: [28, 28], iconAnchor: [14, 14],
-      });
-
-      const deliveryIcon = L.divIcon({
-        html: '<div style="background:hsl(0,72%,51%);color:white;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:12px;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,.3)">D</div>',
-        className: '', iconSize: [28, 28], iconAnchor: [14, 14],
-      });
-
       const bounds: [number, number][] = [];
-
       resolvedStops.forEach(stop => {
         if (!stop.coords) return;
         const icon = stop.type === 'pickup' ? pickupIcon : deliveryIcon;
@@ -153,9 +179,9 @@ export const LoadDetailPanel = ({ load, onMilesCalculated }: LoadDetailPanelProp
         bounds.push(stop.coords);
       });
 
+      let routeCoords: [number, number][] | null = null;
       if (bounds.length >= 2) {
-        // Draw real driving route
-        const routeCoords = await drivingRoute(bounds);
+        routeCoords = await drivingRoute(bounds);
         if (routeCoords && !cancelled) {
           L.polyline(routeCoords, { color: 'hsl(215,70%,50%)', weight: 3 }).addTo(map);
         } else {
@@ -164,6 +190,17 @@ export const LoadDetailPanel = ({ load, onMilesCalculated }: LoadDetailPanelProp
         map.fitBounds(bounds, { padding: [40, 40] });
       } else if (bounds.length === 1) {
         map.setView(bounds[0], 10);
+      }
+
+      if (!cancelled) {
+        setStops(resolvedStops);
+        const rounded = Math.round(accumulatedMiles);
+        if (rounded > 0) {
+          setTotalMiles(rounded);
+          if (onMilesCalculated) {
+            onMilesCalculated(load.id, rounded, routeCoords || undefined);
+          }
+        }
       }
     };
 
@@ -176,7 +213,7 @@ export const LoadDetailPanel = ({ load, onMilesCalculated }: LoadDetailPanelProp
         mapInstanceRef.current = null;
       }
     };
-  }, [load.origin, load.destination, load.miles]);
+  }, [load.origin, load.destination]);
 
   return (
     <div className="p-4 bg-muted/30 border-t animate-in slide-in-from-top-2 duration-200">

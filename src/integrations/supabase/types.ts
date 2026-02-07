@@ -158,6 +158,7 @@ export type Database = {
           pdf_url: string | null
           pickup_date: string | null
           reference_number: string
+          route_geometry: Json | null
           status: string
           total_rate: number
           truck_id: string | null
@@ -184,6 +185,7 @@ export type Database = {
           pdf_url?: string | null
           pickup_date?: string | null
           reference_number: string
+          route_geometry?: Json | null
           status?: string
           total_rate?: number
           truck_id?: string | null
@@ -210,6 +212,7 @@ export type Database = {
           pdf_url?: string | null
           pickup_date?: string | null
           reference_number?: string
+          route_geometry?: Json | null
           status?: string
           total_rate?: number
           truck_id?: string | null
