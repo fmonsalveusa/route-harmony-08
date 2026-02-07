@@ -1,132 +1,27 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { mockDrivers, mockDispatchers } from '@/data/mockData';
 import { StatusBadge } from '@/components/StatusBadge';
 import { useLoads } from '@/hooks/useLoads';
+import { LoadFormDialog } from '@/components/LoadFormDialog';
+import { LoadDetailPanel } from '@/components/LoadDetailPanel';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Progress } from '@/components/ui/progress';
-import { Plus, Search, Upload, Filter, Package, FileText, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-
-interface ExtractedData {
-  origin: string;
-  destination: string;
-  pickupDate: string;
-  deliveryDate: string;
-  weight: number;
-  cargoType: string;
-  totalRate: number;
-  referenceNumber: string;
-  brokerClient: string;
-}
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Plus, Search, Filter, Package, Pencil, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import type { DbLoad } from '@/hooks/useLoads';
 
 const Loads = () => {
   const { user } = useAuth();
-  const { toast } = useToast();
-  const { loads: dbLoads, loading: loadsLoading, createLoad } = useLoads();
+  const { loads: dbLoads, loading: loadsLoading, createLoad, updateLoad, deleteLoad } = useLoads();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [showCreate, setShowCreate] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Form state
-  const [formData, setFormData] = useState<ExtractedData>({
-    origin: '', destination: '', pickupDate: '', deliveryDate: '',
-    weight: 0, cargoType: '', totalRate: 0, referenceNumber: '', brokerClient: '',
-  });
-  const [selectedDriver, setSelectedDriver] = useState('');
-  const [isExtracting, setIsExtracting] = useState(false);
-  const [extractionStatus, setExtractionStatus] = useState<'idle' | 'uploading' | 'processing' | 'done' | 'error'>('idle');
-  const [pdfFileName, setPdfFileName] = useState('');
-
-  const updateField = (field: keyof ExtractedData, value: string | number) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (file.type !== 'application/pdf') {
-      toast({ title: 'Error', description: 'Solo se permiten archivos PDF', variant: 'destructive' });
-      return;
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      toast({ title: 'Error', description: 'El archivo no puede superar 10MB', variant: 'destructive' });
-      return;
-    }
-
-    setPdfFileName(file.name);
-    setExtractionStatus('uploading');
-    setIsExtracting(true);
-
-    try {
-      // Convert to base64
-      const buffer = await file.arrayBuffer();
-      const bytes = new Uint8Array(buffer);
-      let binary = '';
-      for (let i = 0; i < bytes.byteLength; i++) {
-        binary += String.fromCharCode(bytes[i]);
-      }
-      const base64 = btoa(binary);
-
-      setExtractionStatus('processing');
-
-      const { data, error } = await supabase.functions.invoke('extract-pdf', {
-        body: { pdfBase64: base64 },
-      });
-
-      if (error) throw error;
-
-      if (data?.success && data?.data) {
-        const extracted = data.data as ExtractedData;
-        setFormData({
-          origin: extracted.origin || '',
-          destination: extracted.destination || '',
-          pickupDate: extracted.pickupDate || '',
-          deliveryDate: extracted.deliveryDate || '',
-          weight: extracted.weight || 0,
-          cargoType: extracted.cargoType || '',
-          totalRate: extracted.totalRate || 0,
-          referenceNumber: extracted.referenceNumber || '',
-          brokerClient: extracted.brokerClient || '',
-        });
-        setExtractionStatus('done');
-        toast({ title: 'Extracción exitosa', description: 'Los campos se han rellenado automáticamente. Revisa y edita si es necesario.' });
-      } else {
-        throw new Error(data?.error || 'No se pudo extraer información');
-      }
-    } catch (err: any) {
-      console.error('PDF extraction error:', err);
-      setExtractionStatus('error');
-      toast({
-        title: 'Error al extraer PDF',
-        description: err.message || 'Ocurrió un error procesando el archivo',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsExtracting(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
-  };
-
-  const resetForm = () => {
-    setFormData({ origin: '', destination: '', pickupDate: '', deliveryDate: '', weight: 0, cargoType: '', totalRate: 0, referenceNumber: '', brokerClient: '' });
-    setSelectedDriver('');
-    setExtractionStatus('idle');
-    setPdfFileName('');
-  };
-
-  const driverPay = formData.totalRate * 0.30;
-  const investorPay = formData.totalRate * 0.15;
-  const dispatcherPay = formData.totalRate * 0.08;
-  const companyProfit = formData.totalRate - driverPay - investorPay - dispatcherPay;
+  const [showForm, setShowForm] = useState(false);
+  const [editLoad, setEditLoad] = useState<DbLoad | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<DbLoad | null>(null);
 
   const isDispatcher = user?.role === 'dispatcher';
   let loads = isDispatcher
@@ -148,177 +43,9 @@ const Loads = () => {
           <h1 className="page-header">Gestión de Cargas</h1>
           <p className="page-description">Administra todas las cargas y asignaciones</p>
         </div>
-        <div className="flex gap-2">
-          <Dialog open={showCreate} onOpenChange={(open) => { setShowCreate(open); if (!open) resetForm(); }}>
-            <DialogTrigger asChild>
-              <Button size="sm" className="gap-2"><Plus className="h-4 w-4" /> Nueva Carga</Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader><DialogTitle>Crear Nueva Carga</DialogTitle></DialogHeader>
-
-              {/* PDF Upload Section */}
-              <div className="mt-2 p-4 rounded-lg border-2 border-dashed border-primary/30 bg-primary/5">
-                <div className="flex items-center gap-3 mb-3">
-                  <FileText className="h-5 w-5 text-primary" />
-                  <div>
-                    <h4 className="text-sm font-semibold">Extraer datos de PDF</h4>
-                    <p className="text-xs text-muted-foreground">Sube un rate confirmation o BOL y la IA completará los campos automáticamente</p>
-                  </div>
-                </div>
-
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".pdf"
-                  onChange={handlePdfUpload}
-                  className="hidden"
-                />
-
-                {extractionStatus === 'idle' && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full gap-2"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    <Upload className="h-4 w-4" /> Seleccionar PDF
-                  </Button>
-                )}
-
-                {(extractionStatus === 'uploading' || extractionStatus === 'processing') && (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                      <span>{extractionStatus === 'uploading' ? 'Subiendo archivo...' : 'Extrayendo información con IA...'}</span>
-                    </div>
-                    <Progress value={extractionStatus === 'uploading' ? 30 : 70} className="h-2" />
-                    {pdfFileName && <p className="text-xs text-muted-foreground">{pdfFileName}</p>}
-                  </div>
-                )}
-
-                {extractionStatus === 'done' && (
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-sm text-green-600">
-                      <CheckCircle className="h-4 w-4 text-primary" />
-                      <span>Datos extraídos de <strong>{pdfFileName}</strong></span>
-                    </div>
-                    <Button variant="ghost" size="sm" onClick={() => { setExtractionStatus('idle'); fileInputRef.current?.click(); }}>
-                      Cambiar PDF
-                    </Button>
-                  </div>
-                )}
-
-                {extractionStatus === 'error' && (
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-sm text-destructive">
-                      <AlertCircle className="h-4 w-4" />
-                      <span>Error al extraer. Completa los campos manualmente.</span>
-                    </div>
-                    <Button variant="ghost" size="sm" onClick={() => { setExtractionStatus('idle'); fileInputRef.current?.click(); }}>
-                      Reintentar
-                    </Button>
-                  </div>
-                )}
-              </div>
-
-              {/* Form Fields */}
-              <div className="grid grid-cols-2 gap-4 mt-4">
-                <div className="space-y-2">
-                  <Label>Origen</Label>
-                  <Input placeholder="Ciudad, Estado" value={formData.origin} onChange={e => updateField('origin', e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Destino</Label>
-                  <Input placeholder="Ciudad, Estado" value={formData.destination} onChange={e => updateField('destination', e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Fecha Recogida</Label>
-                  <Input type="date" value={formData.pickupDate} onChange={e => updateField('pickupDate', e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Fecha Entrega</Label>
-                  <Input type="date" value={formData.deliveryDate} onChange={e => updateField('deliveryDate', e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Peso (lbs)</Label>
-                  <Input type="number" placeholder="40000" value={formData.weight || ''} onChange={e => updateField('weight', Number(e.target.value))} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Tipo de Carga</Label>
-                  <Select value={formData.cargoType} onValueChange={v => updateField('cargoType', v)}>
-                    <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="dry_van">Dry Van</SelectItem>
-                      <SelectItem value="reefer">Reefer</SelectItem>
-                      <SelectItem value="flatbed">Flatbed</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Tarifa Total ($)</Label>
-                  <Input type="number" placeholder="2500" value={formData.totalRate || ''} onChange={e => updateField('totalRate', Number(e.target.value))} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Broker/Cliente</Label>
-                  <Input placeholder="Nombre del broker" value={formData.brokerClient} onChange={e => updateField('brokerClient', e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Conductor</Label>
-                  <Select value={selectedDriver} onValueChange={setSelectedDriver}>
-                    <SelectTrigger><SelectValue placeholder="Asignar driver" /></SelectTrigger>
-                    <SelectContent>
-                      {mockDrivers.filter(d => d.status === 'available').map(d => (
-                        <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Nro. Referencia</Label>
-                  <Input placeholder="RC-2024-XXX" value={formData.referenceNumber} onChange={e => updateField('referenceNumber', e.target.value)} />
-                </div>
-              </div>
-
-              {/* Payment Breakdown */}
-              {formData.totalRate > 0 && (
-                <div className="mt-4 p-4 rounded-lg bg-muted">
-                  <h4 className="text-sm font-semibold mb-3">Desglose de Pagos (estimado)</h4>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <span className="text-muted-foreground">Driver (30%):</span><span className="font-medium">${driverPay.toLocaleString()}</span>
-                    <span className="text-muted-foreground">Investor (15%):</span><span className="font-medium">${investorPay.toLocaleString()}</span>
-                    <span className="text-muted-foreground">Dispatcher (8%):</span><span className="font-medium">${dispatcherPay.toLocaleString()}</span>
-                    <span className="text-muted-foreground font-semibold">Utilidad Empresa:</span><span className="font-bold text-primary">${companyProfit.toLocaleString()}</span>
-                  </div>
-                </div>
-              )}
-
-              <div className="flex justify-end gap-2 mt-4">
-                <Button variant="outline" onClick={() => setShowCreate(false)}>Cancelar</Button>
-                <Button onClick={async () => {
-                  await createLoad({
-                    reference_number: formData.referenceNumber || `RC-${Date.now()}`,
-                    origin: formData.origin,
-                    destination: formData.destination,
-                    pickup_date: formData.pickupDate || undefined,
-                    delivery_date: formData.deliveryDate || undefined,
-                    weight: formData.weight,
-                    cargo_type: formData.cargoType,
-                    total_rate: formData.totalRate,
-                    driver_id: selectedDriver || undefined,
-                    dispatcher_id: user?.dispatcherId || 'd1',
-                    broker_client: formData.brokerClient,
-                    driver_pay_amount: driverPay,
-                    investor_pay_amount: investorPay,
-                    dispatcher_pay_amount: dispatcherPay,
-                    company_profit: companyProfit,
-                  });
-                  setShowCreate(false);
-                  resetForm();
-                }}>Crear Carga</Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-        </div>
+        <Button size="sm" className="gap-2" onClick={() => { setEditLoad(null); setShowForm(true); }}>
+          <Plus className="h-4 w-4" /> Nueva Carga
+        </Button>
       </div>
 
       {/* Filters */}
@@ -331,11 +58,12 @@ const Loads = () => {
           <SelectTrigger className="w-full sm:w-44"><Filter className="h-4 w-4 mr-2" /><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos los estados</SelectItem>
-            <SelectItem value="pending">Pendiente</SelectItem>
-            <SelectItem value="in_transit">En Tránsito</SelectItem>
-            <SelectItem value="delivered">Entregada</SelectItem>
-            <SelectItem value="paid">Pagada</SelectItem>
-            <SelectItem value="cancelled">Cancelada</SelectItem>
+            <SelectItem value="planned">Planned</SelectItem>
+            <SelectItem value="dispatched">Dispatched</SelectItem>
+            <SelectItem value="in_transit">In Transit</SelectItem>
+            <SelectItem value="delivered">Delivered</SelectItem>
+            <SelectItem value="tonu">TONU</SelectItem>
+            <SelectItem value="cancelled">Canceled</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -346,31 +74,57 @@ const Loads = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead><tr className="border-b bg-muted/50">
+                <th className="w-8 p-3"></th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Referencia</th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Origen → Destino</th>
                 <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Fecha</th>
                 <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Driver</th>
-                <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Dispatcher</th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Estado</th>
                 <th className="text-right p-3 font-medium text-muted-foreground">Tarifa</th>
+                <th className="text-right p-3 font-medium text-muted-foreground">Acciones</th>
               </tr></thead>
               <tbody>
                 {loads.map(load => {
                   const driver = mockDrivers.find(d => d.id === load.driver_id);
-                  const dispatcher = mockDispatchers.find(d => d.id === load.dispatcher_id);
+                  const isExpanded = expandedId === load.id;
                   return (
-                    <tr key={load.id} className="border-b last:border-0 hover:bg-muted/30 cursor-pointer">
-                      <td className="p-3 font-medium text-primary">{load.reference_number}</td>
-                      <td className="p-3">
-                        <div className="text-foreground">{load.origin}</div>
-                        <div className="text-muted-foreground text-xs">→ {load.destination}</div>
-                      </td>
-                      <td className="p-3 text-muted-foreground hidden md:table-cell">{load.pickup_date}</td>
-                      <td className="p-3 hidden lg:table-cell">{driver?.name || <span className="text-muted-foreground italic">Sin asignar</span>}</td>
-                      <td className="p-3 hidden lg:table-cell text-muted-foreground">{dispatcher?.name || '—'}</td>
-                      <td className="p-3"><StatusBadge status={load.status} /></td>
-                      <td className="p-3 text-right font-semibold">${Number(load.total_rate).toLocaleString()}</td>
-                    </tr>
+                    <>
+                      <tr
+                        key={load.id}
+                        className={`border-b last:border-0 hover:bg-muted/30 cursor-pointer transition-colors ${isExpanded ? 'bg-muted/20' : ''}`}
+                        onClick={() => setExpandedId(isExpanded ? null : load.id)}
+                      >
+                        <td className="p-3 text-muted-foreground">
+                          {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                        </td>
+                        <td className="p-3 font-medium text-primary">{load.reference_number}</td>
+                        <td className="p-3">
+                          <div className="text-foreground">{load.origin}</div>
+                          <div className="text-muted-foreground text-xs">→ {load.destination}</div>
+                        </td>
+                        <td className="p-3 text-muted-foreground hidden md:table-cell">{load.pickup_date || '—'}</td>
+                        <td className="p-3 hidden lg:table-cell">{driver?.name || <span className="text-muted-foreground italic">Sin asignar</span>}</td>
+                        <td className="p-3"><StatusBadge status={load.status} /></td>
+                        <td className="p-3 text-right font-semibold">${Number(load.total_rate).toLocaleString()}</td>
+                        <td className="p-3 text-right" onClick={e => e.stopPropagation()}>
+                          <div className="flex justify-end gap-1">
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditLoad(load); setShowForm(true); }}>
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setDeleteTarget(load)}>
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                      {isExpanded && (
+                        <tr key={`${load.id}-detail`}>
+                          <td colSpan={8} className="p-0">
+                            <LoadDetailPanel load={load} />
+                          </td>
+                        </tr>
+                      )}
+                    </>
                   );
                 })}
               </tbody>
@@ -384,6 +138,40 @@ const Loads = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Form Dialog */}
+      <LoadFormDialog
+        open={showForm}
+        onOpenChange={(open) => { setShowForm(open); if (!open) setEditLoad(null); }}
+        editLoad={editLoad}
+        dispatcherId={user?.dispatcherId || 'd1'}
+        onSubmit={async (input) => {
+          if (editLoad) {
+            await updateLoad(editLoad.id, input);
+          } else {
+            await createLoad(input);
+          }
+        }}
+      />
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar carga?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción eliminará la carga <strong>{deleteTarget?.reference_number}</strong> permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={async () => {
+              if (deleteTarget) await deleteLoad(deleteTarget.id);
+              setDeleteTarget(null);
+            }}>Eliminar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
