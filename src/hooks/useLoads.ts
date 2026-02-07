@@ -85,5 +85,39 @@ export function useLoads() {
     fetchLoads();
   }, [fetchLoads]);
 
-  return { loads, loading, fetchLoads, createLoad };
+  const updateLoad = useCallback(async (id: string, input: Partial<CreateLoadInput> & { status?: string }) => {
+    const { error } = await supabase
+      .from('loads')
+      .update(input as any)
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error updating load:', error);
+      toast({ title: 'Error', description: 'No se pudo actualizar la carga', variant: 'destructive' });
+      return false;
+    }
+
+    toast({ title: 'Carga actualizada' });
+    await fetchLoads();
+    return true;
+  }, [fetchLoads, toast]);
+
+  const deleteLoad = useCallback(async (id: string) => {
+    const { error } = await supabase
+      .from('loads')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error deleting load:', error);
+      toast({ title: 'Error', description: 'No se pudo eliminar la carga', variant: 'destructive' });
+      return false;
+    }
+
+    toast({ title: 'Carga eliminada' });
+    await fetchLoads();
+    return true;
+  }, [fetchLoads, toast]);
+
+  return { loads, loading, fetchLoads, createLoad, updateLoad, deleteLoad };
 }
