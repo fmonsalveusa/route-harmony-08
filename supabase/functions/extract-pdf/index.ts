@@ -29,15 +29,17 @@ serve(async (req) => {
       );
     }
 
-    console.log('Processing PDF for data extraction...');
+    console.log('Processing PDF for data extraction with multi-stop support...');
 
     const systemPrompt = `You are a data extraction assistant for a trucking/logistics company. 
 You will receive a PDF document (rate confirmation, BOL, or similar). 
-Extract the following fields and return them using the extract_load_data tool.
+Extract ALL stops from the document — there may be multiple pickup locations and multiple delivery locations.
+Each stop should include its full address (city, state or full address as shown), the date if available, and whether it is a pickup or delivery.
+Return them in route order (first pickup first, last delivery last).
 If a field cannot be found, leave it as an empty string or 0 for numbers.
 Dates should be in YYYY-MM-DD format.
-For cargoType, use one of: dry_van, reefer, flatbed.
-For weight, extract the numeric value in lbs.`;
+For weight, extract the numeric value in lbs.
+IMPORTANT: Look carefully for ALL stops — some documents have multiple pickup and/or delivery locations listed as "Stop 1", "Stop 2", etc. or as separate sections.`;
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -54,7 +56,7 @@ For weight, extract the numeric value in lbs.`;
             content: [
               {
                 type: 'text',
-                text: 'Extract all load/shipment information from this PDF document.'
+                text: 'Extract all load/shipment information from this PDF document, including ALL pickup and delivery stops.'
               },
               {
                 type: 'image_url',
@@ -70,21 +72,31 @@ For weight, extract the numeric value in lbs.`;
             type: 'function',
             function: {
               name: 'extract_load_data',
-              description: 'Extract structured load/shipment data from a document',
+              description: 'Extract structured load/shipment data from a document, including all stops',
               parameters: {
                 type: 'object',
                 properties: {
-                  origin: { type: 'string', description: 'Pickup city and state (e.g. "Houston, TX")' },
-                  destination: { type: 'string', description: 'Delivery city and state (e.g. "Dallas, TX")' },
-                  pickupDate: { type: 'string', description: 'Pickup date in YYYY-MM-DD format' },
-                  deliveryDate: { type: 'string', description: 'Delivery date in YYYY-MM-DD format' },
-                  weight: { type: 'number', description: 'Weight in lbs' },
-                  cargoType: { type: 'string', enum: ['dry_van', 'reefer', 'flatbed'], description: 'Type of trailer/cargo' },
-                  totalRate: { type: 'number', description: 'Total rate/payment amount in USD' },
                   referenceNumber: { type: 'string', description: 'Reference number, confirmation number, or load number' },
                   brokerClient: { type: 'string', description: 'Broker or client company name' },
+                  totalRate: { type: 'number', description: 'Total rate/payment amount in USD' },
+                  weight: { type: 'number', description: 'Weight in lbs' },
+                  miles: { type: 'number', description: 'Total miles if shown in document' },
+                  stops: {
+                    type: 'array',
+                    description: 'All pickup and delivery stops in route order',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        stopType: { type: 'string', enum: ['pickup', 'delivery'], description: 'Whether this is a pickup or delivery stop' },
+                        address: { type: 'string', description: 'Full address or city, state of the stop' },
+                        date: { type: 'string', description: 'Date for this stop in YYYY-MM-DD format, empty if not found' },
+                      },
+                      required: ['stopType', 'address'],
+                      additionalProperties: false,
+                    }
+                  },
                 },
-                required: ['origin', 'destination', 'pickupDate', 'deliveryDate', 'weight', 'cargoType', 'totalRate', 'referenceNumber', 'brokerClient'],
+                required: ['referenceNumber', 'brokerClient', 'totalRate', 'weight', 'stops'],
                 additionalProperties: false,
               }
             }
@@ -120,7 +132,6 @@ For weight, extract the numeric value in lbs.`;
     const data = await response.json();
     console.log('AI response received');
 
-    // Extract tool call arguments
     const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
     if (!toolCall) {
       console.error('No tool call in response:', JSON.stringify(data));
@@ -133,8 +144,30 @@ For weight, extract the numeric value in lbs.`;
     const extractedData = JSON.parse(toolCall.function.arguments);
     console.log('Extracted data:', JSON.stringify(extractedData));
 
+    // Derive origin/destination from stops for backward compatibility
+    const stops = extractedData.stops || [];
+    const pickups = stops.filter((s: any) => s.stopType === 'pickup');
+    const deliveries = stops.filter((s: any) => s.stopType === 'delivery');
+
+    const result = {
+      referenceNumber: extractedData.referenceNumber || '',
+      brokerClient: extractedData.brokerClient || '',
+      totalRate: extractedData.totalRate || 0,
+      weight: extractedData.weight || 0,
+      miles: extractedData.miles || 0,
+      origin: pickups[0]?.address || '',
+      destination: deliveries[deliveries.length - 1]?.address || '',
+      pickupDate: pickups[0]?.date || '',
+      deliveryDate: deliveries[deliveries.length - 1]?.date || '',
+      stops: stops.map((s: any) => ({
+        stop_type: s.stopType,
+        address: s.address,
+        date: s.date || '',
+      })),
+    };
+
     return new Response(
-      JSON.stringify({ success: true, data: extractedData }),
+      JSON.stringify({ success: true, data: result }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {

@@ -193,21 +193,18 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
           brokerClient: extracted.brokerClient || prev.brokerClient,
           miles: extracted.miles || prev.miles,
         }));
-        // Update stop entries from extracted data
-        if (extracted.origin || extracted.destination) {
-          setStopEntries(prev => {
-            const updated = [...prev];
-            if (extracted.origin && updated[0]) {
-              updated[0] = { ...updated[0], address: extracted.origin, date: extracted.pickupDate || '' };
-            }
-            if (extracted.destination) {
-              const lastDel = updated.findIndex((s, i) => i === updated.length - 1 && s.stop_type === 'delivery');
-              if (lastDel >= 0) {
-                updated[lastDel] = { ...updated[lastDel], address: extracted.destination, date: extracted.deliveryDate || '' };
-              }
-            }
-            return updated;
-          });
+        // Update stop entries from extracted multi-stop data
+        if (extracted.stops && Array.isArray(extracted.stops) && extracted.stops.length > 0) {
+          setStopEntries(extracted.stops.map((s: any) => ({
+            stop_type: s.stop_type || 'delivery',
+            address: s.address || '',
+            date: s.date || '',
+          })));
+        } else if (extracted.origin || extracted.destination) {
+          setStopEntries([
+            { stop_type: 'pickup', address: extracted.origin || '', date: extracted.pickupDate || '' },
+            { stop_type: 'delivery', address: extracted.destination || '', date: extracted.deliveryDate || '' },
+          ]);
         }
         setExtractionStatus('done');
         toast({ title: 'Extracción exitosa', description: 'Campos rellenados automáticamente.' });
