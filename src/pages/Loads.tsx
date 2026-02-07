@@ -1,7 +1,8 @@
 import { useState, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { mockLoads, mockDrivers, mockDispatchers } from '@/data/mockData';
+import { mockDrivers, mockDispatchers } from '@/data/mockData';
 import { StatusBadge } from '@/components/StatusBadge';
+import { useLoads } from '@/hooks/useLoads';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,6 +29,7 @@ interface ExtractedData {
 const Loads = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { loads: dbLoads, loading: loadsLoading, createLoad } = useLoads();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [showCreate, setShowCreate] = useState(false);
@@ -128,15 +130,15 @@ const Loads = () => {
 
   const isDispatcher = user?.role === 'dispatcher';
   let loads = isDispatcher
-    ? mockLoads.filter(l => l.dispatcherId === (user?.dispatcherId || 'd1'))
-    : mockLoads;
+    ? dbLoads.filter(l => l.dispatcher_id === (user?.dispatcherId || 'd1'))
+    : dbLoads;
 
   if (statusFilter !== 'all') loads = loads.filter(l => l.status === statusFilter);
   if (search) loads = loads.filter(l =>
-    l.referenceNumber.toLowerCase().includes(search.toLowerCase()) ||
+    l.reference_number.toLowerCase().includes(search.toLowerCase()) ||
     l.origin.toLowerCase().includes(search.toLowerCase()) ||
     l.destination.toLowerCase().includes(search.toLowerCase()) ||
-    l.brokerClient.toLowerCase().includes(search.toLowerCase())
+    (l.broker_client || '').toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -292,7 +294,27 @@ const Loads = () => {
 
               <div className="flex justify-end gap-2 mt-4">
                 <Button variant="outline" onClick={() => setShowCreate(false)}>Cancelar</Button>
-                <Button onClick={() => { setShowCreate(false); resetForm(); }}>Crear Carga</Button>
+                <Button onClick={async () => {
+                  await createLoad({
+                    reference_number: formData.referenceNumber || `RC-${Date.now()}`,
+                    origin: formData.origin,
+                    destination: formData.destination,
+                    pickup_date: formData.pickupDate || undefined,
+                    delivery_date: formData.deliveryDate || undefined,
+                    weight: formData.weight,
+                    cargo_type: formData.cargoType,
+                    total_rate: formData.totalRate,
+                    driver_id: selectedDriver || undefined,
+                    dispatcher_id: user?.dispatcherId || 'd1',
+                    broker_client: formData.brokerClient,
+                    driver_pay_amount: driverPay,
+                    investor_pay_amount: investorPay,
+                    dispatcher_pay_amount: dispatcherPay,
+                    company_profit: companyProfit,
+                  });
+                  setShowCreate(false);
+                  resetForm();
+                }}>Crear Carga</Button>
               </div>
             </DialogContent>
           </Dialog>
@@ -334,20 +356,20 @@ const Loads = () => {
               </tr></thead>
               <tbody>
                 {loads.map(load => {
-                  const driver = mockDrivers.find(d => d.id === load.driverId);
-                  const dispatcher = mockDispatchers.find(d => d.id === load.dispatcherId);
+                  const driver = mockDrivers.find(d => d.id === load.driver_id);
+                  const dispatcher = mockDispatchers.find(d => d.id === load.dispatcher_id);
                   return (
                     <tr key={load.id} className="border-b last:border-0 hover:bg-muted/30 cursor-pointer">
-                      <td className="p-3 font-medium text-primary">{load.referenceNumber}</td>
+                      <td className="p-3 font-medium text-primary">{load.reference_number}</td>
                       <td className="p-3">
                         <div className="text-foreground">{load.origin}</div>
                         <div className="text-muted-foreground text-xs">→ {load.destination}</div>
                       </td>
-                      <td className="p-3 text-muted-foreground hidden md:table-cell">{load.pickupDate}</td>
+                      <td className="p-3 text-muted-foreground hidden md:table-cell">{load.pickup_date}</td>
                       <td className="p-3 hidden lg:table-cell">{driver?.name || <span className="text-muted-foreground italic">Sin asignar</span>}</td>
                       <td className="p-3 hidden lg:table-cell text-muted-foreground">{dispatcher?.name || '—'}</td>
                       <td className="p-3"><StatusBadge status={load.status} /></td>
-                      <td className="p-3 text-right font-semibold">${load.totalRate.toLocaleString()}</td>
+                      <td className="p-3 text-right font-semibold">${Number(load.total_rate).toLocaleString()}</td>
                     </tr>
                   );
                 })}

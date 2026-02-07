@@ -14,7 +14,75 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      loads: {
+        Row: {
+          broker_client: string | null
+          cargo_type: string | null
+          company_profit: number | null
+          created_at: string
+          delivery_date: string | null
+          destination: string
+          dispatcher_id: string | null
+          dispatcher_pay_amount: number | null
+          driver_id: string | null
+          driver_pay_amount: number | null
+          id: string
+          investor_pay_amount: number | null
+          origin: string
+          pickup_date: string | null
+          reference_number: string
+          status: string
+          total_rate: number
+          truck_id: string | null
+          updated_at: string
+          weight: number | null
+        }
+        Insert: {
+          broker_client?: string | null
+          cargo_type?: string | null
+          company_profit?: number | null
+          created_at?: string
+          delivery_date?: string | null
+          destination: string
+          dispatcher_id?: string | null
+          dispatcher_pay_amount?: number | null
+          driver_id?: string | null
+          driver_pay_amount?: number | null
+          id?: string
+          investor_pay_amount?: number | null
+          origin: string
+          pickup_date?: string | null
+          reference_number: string
+          status?: string
+          total_rate?: number
+          truck_id?: string | null
+          updated_at?: string
+          weight?: number | null
+        }
+        Update: {
+          broker_client?: string | null
+          cargo_type?: string | null
+          company_profit?: number | null
+          created_at?: string
+          delivery_date?: string | null
+          destination?: string
+          dispatcher_id?: string | null
+          dispatcher_pay_amount?: number | null
+          driver_id?: string | null
+          driver_pay_amount?: number | null
+          id?: string
+          investor_pay_amount?: number | null
+          origin?: string
+          pickup_date?: string | null
+          reference_number?: string
+          status?: string
+          total_rate?: number
+          truck_id?: string | null
+          updated_at?: string
+          weight?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
