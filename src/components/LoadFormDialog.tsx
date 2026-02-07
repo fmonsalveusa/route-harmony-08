@@ -6,12 +6,19 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
-import { Upload, FileText, Loader2, CheckCircle, AlertCircle, Eye, Download, X } from 'lucide-react';
+import { Upload, FileText, Loader2, CheckCircle, AlertCircle, Eye, Download, X, Plus, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { mockDrivers } from '@/data/mockData';
 import { useTrucks } from '@/hooks/useTrucks';
+import { useLoadStops } from '@/hooks/useLoadStops';
 import type { DbLoad, CreateLoadInput } from '@/hooks/useLoads';
+
+interface StopEntry {
+  stop_type: 'pickup' | 'delivery';
+  address: string;
+  date: string;
+}
 
 interface LoadFormData {
   origin: string;
@@ -43,6 +50,7 @@ const emptyForm: LoadFormData = {
 export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatcherId }: LoadFormDialogProps) => {
   const { toast } = useToast();
   const { trucks } = useTrucks();
+  const { stops: existingStops, fetchStops, saveStops } = useLoadStops(editLoad?.id);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState<LoadFormData>(emptyForm);
   const [selectedDriver, setSelectedDriver] = useState('');
@@ -53,6 +61,10 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
   const [pdfFileName, setPdfFileName] = useState('');
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
+  const [stopEntries, setStopEntries] = useState<StopEntry[]>([
+    { stop_type: 'pickup', address: '', date: '' },
+    { stop_type: 'delivery', address: '', date: '' },
+  ]);
 
   useEffect(() => {
     if (editLoad) {
@@ -72,6 +84,20 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       setSelectedTruck(editLoad.truck_id || '');
       setSelectedStatus(editLoad.status);
       setPdfPreviewUrl(editLoad.pdf_url || null);
+
+      // Load existing stops
+      if (existingStops.length > 0) {
+        setStopEntries(existingStops.map(s => ({
+          stop_type: s.stop_type as 'pickup' | 'delivery',
+          address: s.address,
+          date: s.date || '',
+        })));
+      } else {
+        setStopEntries([
+          { stop_type: 'pickup', address: editLoad.origin, date: editLoad.pickup_date || '' },
+          { stop_type: 'delivery', address: editLoad.destination, date: editLoad.delivery_date || '' },
+        ]);
+      }
     } else {
       setFormData(emptyForm);
       setSelectedDriver('');
@@ -81,8 +107,12 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       setPdfFileName('');
       setPdfFile(null);
       setPdfPreviewUrl(null);
+      setStopEntries([
+        { stop_type: 'pickup', address: '', date: '' },
+        { stop_type: 'delivery', address: '', date: '' },
+      ]);
     }
-  }, [editLoad, open]);
+  }, [editLoad, open, existingStops]);
 
   useEffect(() => {
     return () => {
@@ -95,6 +125,34 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
   const updateField = (field: keyof LoadFormData, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
+
+  const updateStop = (index: number, field: keyof StopEntry, value: string) => {
+    setStopEntries(prev => prev.map((s, i) => i === index ? { ...s, [field]: value } : s));
+  };
+
+  const addStop = (type: 'pickup' | 'delivery') => {
+    setStopEntries(prev => [...prev, { stop_type: type, address: '', date: '' }]);
+  };
+
+  const removeStop = (index: number) => {
+    if (stopEntries.length <= 2) return; // Keep at least 1 pickup + 1 delivery
+    setStopEntries(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Sync origin/destination from stops
+  useEffect(() => {
+    const pickups = stopEntries.filter(s => s.stop_type === 'pickup');
+    const deliveries = stopEntries.filter(s => s.stop_type === 'delivery');
+    const firstPickup = pickups[0];
+    const lastDelivery = deliveries[deliveries.length - 1];
+
+    if (firstPickup?.address) {
+      setFormData(prev => ({ ...prev, origin: firstPickup.address, pickupDate: firstPickup.date || prev.pickupDate }));
+    }
+    if (lastDelivery?.address) {
+      setFormData(prev => ({ ...prev, destination: lastDelivery.address, deliveryDate: lastDelivery.date || prev.deliveryDate }));
+    }
+  }, [stopEntries]);
 
   const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -135,6 +193,22 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
           brokerClient: extracted.brokerClient || prev.brokerClient,
           miles: extracted.miles || prev.miles,
         }));
+        // Update stop entries from extracted data
+        if (extracted.origin || extracted.destination) {
+          setStopEntries(prev => {
+            const updated = [...prev];
+            if (extracted.origin && updated[0]) {
+              updated[0] = { ...updated[0], address: extracted.origin, date: extracted.pickupDate || '' };
+            }
+            if (extracted.destination) {
+              const lastDel = updated.findIndex((s, i) => i === updated.length - 1 && s.stop_type === 'delivery');
+              if (lastDel >= 0) {
+                updated[lastDel] = { ...updated[lastDel], address: extracted.destination, date: extracted.deliveryDate || '' };
+              }
+            }
+            return updated;
+          });
+        }
         setExtractionStatus('done');
         toast({ title: 'Extracción exitosa', description: 'Campos rellenados automáticamente.' });
       } else {
@@ -165,6 +239,14 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
   const companyProfit = formData.totalRate - driverPay - investorPay - dispatcherPay;
 
   const handleSubmit = async () => {
+    // Derive origin/destination from stops
+    const pickups = stopEntries.filter(s => s.stop_type === 'pickup');
+    const deliveries = stopEntries.filter(s => s.stop_type === 'delivery');
+    const origin = pickups[0]?.address || formData.origin;
+    const destination = deliveries[deliveries.length - 1]?.address || formData.destination;
+    const pickupDate = pickups[0]?.date || formData.pickupDate;
+    const deliveryDate = deliveries[deliveries.length - 1]?.date || formData.deliveryDate;
+
     let pdfUrl: string | undefined = editLoad?.pdf_url || undefined;
 
     if (pdfFile) {
@@ -180,10 +262,10 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
 
     const payload: CreateLoadInput & { status?: string } = {
       reference_number: formData.referenceNumber || `RC-${Date.now()}`,
-      origin: formData.origin,
-      destination: formData.destination,
-      pickup_date: formData.pickupDate || undefined,
-      delivery_date: formData.deliveryDate || undefined,
+      origin,
+      destination,
+      pickup_date: pickupDate || undefined,
+      delivery_date: deliveryDate || undefined,
       weight: formData.weight,
       total_rate: formData.totalRate,
       driver_id: selectedDriver || undefined,
@@ -199,11 +281,33 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       notes: formData.notes || undefined,
       status: selectedStatus,
     };
-    await onSubmit(payload);
+
+    const result = await onSubmit(payload);
+
+    // Save stops to load_stops table
+    const loadId = editLoad?.id || result?.id;
+    if (loadId && stopEntries.some(s => s.address)) {
+      const validStops = stopEntries.filter(s => s.address.trim());
+      await saveStops(loadId, validStops.map((s, i) => ({
+        stop_type: s.stop_type,
+        address: s.address,
+        stop_order: i,
+        date: s.date || undefined,
+      })));
+    }
+
+    // Clear cached route since stops changed
+    if (editLoad?.id) {
+      await supabase.from('loads').update({ route_geometry: null, miles: 0 } as any).eq('id', editLoad.id);
+    }
+
     onOpenChange(false);
   };
 
   const activeTrucks = trucks.filter(t => t.status === 'active');
+
+  const pickupStops = stopEntries.map((s, i) => ({ ...s, originalIndex: i })).filter(s => s.stop_type === 'pickup');
+  const deliveryStops = stopEntries.map((s, i) => ({ ...s, originalIndex: i })).filter(s => s.stop_type === 'delivery');
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -298,22 +402,67 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
             <Label>Broker/Cliente</Label>
             <Input placeholder="Nombre del broker" value={formData.brokerClient} onChange={e => updateField('brokerClient', e.target.value)} />
           </div>
-          <div className="space-y-2">
-            <Label>Origen</Label>
-            <Input placeholder="Ciudad, Estado" value={formData.origin} onChange={e => updateField('origin', e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label>Destino</Label>
-            <Input placeholder="Ciudad, Estado" value={formData.destination} onChange={e => updateField('destination', e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label>Fecha Recogida</Label>
-            <Input type="date" value={formData.pickupDate} onChange={e => updateField('pickupDate', e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label>Fecha Entrega</Label>
-            <Input type="date" value={formData.deliveryDate} onChange={e => updateField('deliveryDate', e.target.value)} />
-          </div>
+        </div>
+
+        {/* Multi-Stop Section */}
+        <div className="mt-4 space-y-3">
+          <h4 className="text-sm font-semibold">Paradas de Recogida (Pick Up)</h4>
+          {pickupStops.map((stop, idx) => (
+            <div key={stop.originalIndex} className="flex items-center gap-2">
+              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-[hsl(152,60%,40%)] flex items-center justify-center text-[10px] font-bold text-white">P{idx + 1}</div>
+              <Input
+                placeholder="Dirección de recogida"
+                value={stop.address}
+                onChange={e => updateStop(stop.originalIndex, 'address', e.target.value)}
+                className="flex-1"
+              />
+              <Input
+                type="date"
+                value={stop.date}
+                onChange={e => updateStop(stop.originalIndex, 'date', e.target.value)}
+                className="w-36"
+              />
+              {pickupStops.length > 1 && (
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => removeStop(stop.originalIndex)}>
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              )}
+            </div>
+          ))}
+          <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => addStop('pickup')}>
+            <Plus className="h-3.5 w-3.5" /> Agregar Pick Up
+          </Button>
+
+          <h4 className="text-sm font-semibold pt-2">Paradas de Entrega (Delivery)</h4>
+          {deliveryStops.map((stop, idx) => (
+            <div key={stop.originalIndex} className="flex items-center gap-2">
+              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-[hsl(0,72%,51%)] flex items-center justify-center text-[10px] font-bold text-white">D{idx + 1}</div>
+              <Input
+                placeholder="Dirección de entrega"
+                value={stop.address}
+                onChange={e => updateStop(stop.originalIndex, 'address', e.target.value)}
+                className="flex-1"
+              />
+              <Input
+                type="date"
+                value={stop.date}
+                onChange={e => updateStop(stop.originalIndex, 'date', e.target.value)}
+                className="w-36"
+              />
+              {deliveryStops.length > 1 && (
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => removeStop(stop.originalIndex)}>
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              )}
+            </div>
+          ))}
+          <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => addStop('delivery')}>
+            <Plus className="h-3.5 w-3.5" /> Agregar Delivery
+          </Button>
+        </div>
+
+        {/* Rest of fields */}
+        <div className="grid grid-cols-2 gap-4 mt-4">
           <div className="space-y-2">
             <Label>Peso (lbs)</Label>
             <Input type="number" placeholder="40000" value={formData.weight || ''} onChange={e => updateField('weight', Number(e.target.value))} />

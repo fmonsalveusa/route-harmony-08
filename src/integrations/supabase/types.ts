@@ -137,6 +137,44 @@ export type Database = {
         }
         Relationships: []
       }
+      load_stops: {
+        Row: {
+          address: string
+          created_at: string
+          date: string | null
+          id: string
+          load_id: string
+          stop_order: number
+          stop_type: string
+        }
+        Insert: {
+          address: string
+          created_at?: string
+          date?: string | null
+          id?: string
+          load_id: string
+          stop_order?: number
+          stop_type: string
+        }
+        Update: {
+          address?: string
+          created_at?: string
+          date?: string | null
+          id?: string
+          load_id?: string
+          stop_order?: number
+          stop_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "load_stops_load_id_fkey"
+            columns: ["load_id"]
+            isOneToOne: false
+            referencedRelation: "loads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       loads: {
         Row: {
           broker_client: string | null

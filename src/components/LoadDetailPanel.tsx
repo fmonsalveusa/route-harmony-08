@@ -3,6 +3,7 @@ import { MapPin, Calendar, Weight, DollarSign, User, Truck, Route, Navigation, F
 import { Button } from '@/components/ui/button';
 import { mockDrivers, mockDispatchers } from '@/data/mockData';
 import type { DbLoad } from '@/hooks/useLoads';
+import { useLoadStops } from '@/hooks/useLoadStops';
 import { supabase } from '@/integrations/supabase/client';
 import 'leaflet/dist/leaflet.css';
 
@@ -24,7 +25,7 @@ async function drivingDistance(lat1: number, lon1: number, lat2: number, lon2: n
     );
     const data = await res.json();
     if (data.code === 'Ok' && data.routes?.[0]) {
-      return data.routes[0].distance * 0.000621371; // meters to miles
+      return data.routes[0].distance * 0.000621371;
     }
   } catch {}
   return null;
@@ -46,7 +47,7 @@ async function drivingRoute(coords: [number, number][]): Promise<[number, number
   return null;
 }
 
-interface Stop {
+interface ResolvedStop {
   type: 'pickup' | 'delivery';
   address: string;
   coords: [number, number] | null;
@@ -61,19 +62,34 @@ interface LoadDetailPanelProps {
 export const LoadDetailPanel = ({ load, onMilesCalculated }: LoadDetailPanelProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
-  const [stops, setStops] = useState<Stop[]>([]);
+  const [resolvedStops, setResolvedStops] = useState<ResolvedStop[]>([]);
   const [totalMiles, setTotalMiles] = useState<number>(Number(load.miles) || 0);
+  const { stops: dbStops, loading: stopsLoading } = useLoadStops(load.id);
 
   const driver = mockDrivers.find(d => d.id === load.driver_id);
   const dispatcher = mockDispatchers.find(d => d.id === load.dispatcher_id);
   const rpm = totalMiles > 0 ? Number(load.total_rate) / totalMiles : 0;
 
-  // Check if we have cached route data
   const hasCachedRoute = load.route_geometry && Array.isArray(load.route_geometry) && load.route_geometry.length > 0;
   const hasCachedMiles = load.miles && Number(load.miles) > 0;
 
+  // Build stop addresses from load_stops table or fallback to origin/destination
+  const getStopAddresses = (): { type: 'pickup' | 'delivery'; address: string }[] => {
+    if (dbStops.length > 0) {
+      return dbStops.map(s => ({ type: s.stop_type as 'pickup' | 'delivery', address: s.address }));
+    }
+    // Fallback to legacy origin/destination
+    return [
+      { type: 'pickup', address: load.origin },
+      { type: 'delivery', address: load.destination },
+    ];
+  };
+
   useEffect(() => {
+    if (stopsLoading) return;
+
     let cancelled = false;
+    const stopAddresses = getStopAddresses();
 
     const initMap = async () => {
       const L = (await import('leaflet')).default;
@@ -109,25 +125,39 @@ export const LoadDetailPanel = ({ load, onMilesCalculated }: LoadDetailPanelProp
         className: '', iconSize: [28, 28], iconAnchor: [14, 14],
       });
 
-      // If we have cached miles and route, use them directly (no API calls)
+      // If we have cached miles and route, use them directly
       if (hasCachedRoute && hasCachedMiles) {
         const cachedRoute = load.route_geometry as [number, number][];
         const cachedMiles = Number(load.miles);
 
-        // Geocode just for markers
-        const coords = await Promise.all([geocode(load.origin), geocode(load.destination)]);
+        const coords = await Promise.all(stopAddresses.map(s => geocode(s.address)));
         if (cancelled) return;
 
-        const resolvedStops: Stop[] = [
-          { type: 'pickup', address: load.origin, coords: coords[0] },
-          { type: 'delivery', address: load.destination, coords: coords[1], distanceFromPrev: cachedMiles },
-        ];
+        const cached: ResolvedStop[] = stopAddresses.map((s, i) => ({
+          type: s.type,
+          address: s.address,
+          coords: coords[i],
+        }));
 
-        setStops(resolvedStops);
+        // Calculate distances between consecutive stops for display
+        let totalCalc = 0;
+        for (let i = 1; i < cached.length; i++) {
+          const prev = cached[i - 1].coords;
+          const curr = cached[i].coords;
+          if (prev && curr) {
+            const dist = await drivingDistance(prev[0], prev[1], curr[0], curr[1]);
+            if (dist !== null) {
+              cached[i].distanceFromPrev = Math.round(dist);
+              totalCalc += dist;
+            }
+          }
+        }
+
+        setResolvedStops(cached);
         setTotalMiles(cachedMiles);
 
         const bounds: [number, number][] = [];
-        resolvedStops.forEach(stop => {
+        cached.forEach(stop => {
           if (!stop.coords) return;
           const icon = stop.type === 'pickup' ? pickupIcon : deliveryIcon;
           const label = stop.type === 'pickup' ? 'Pick Up' : 'Delivery';
@@ -143,35 +173,30 @@ export const LoadDetailPanel = ({ load, onMilesCalculated }: LoadDetailPanelProp
       }
 
       // No cache — calculate from scratch
-      const stopAddresses: { type: 'pickup' | 'delivery'; address: string }[] = [
-        { type: 'pickup', address: load.origin },
-        { type: 'delivery', address: load.destination },
-      ];
-
       const coords = await Promise.all(stopAddresses.map(s => geocode(s.address)));
       if (cancelled) return;
 
-      const resolvedStops: Stop[] = stopAddresses.map((s, i) => ({
-        ...s,
+      const resolved: ResolvedStop[] = stopAddresses.map((s, i) => ({
+        type: s.type,
+        address: s.address,
         coords: coords[i],
       }));
 
-      // Calculate real driving distances
       let accumulatedMiles = 0;
-      for (let i = 1; i < resolvedStops.length; i++) {
-        const prev = resolvedStops[i - 1].coords;
-        const curr = resolvedStops[i].coords;
+      for (let i = 1; i < resolved.length; i++) {
+        const prev = resolved[i - 1].coords;
+        const curr = resolved[i].coords;
         if (prev && curr) {
           const dist = await drivingDistance(prev[0], prev[1], curr[0], curr[1]);
           if (dist !== null) {
-            resolvedStops[i].distanceFromPrev = Math.round(dist);
+            resolved[i].distanceFromPrev = Math.round(dist);
             accumulatedMiles += dist;
           }
         }
       }
 
       const bounds: [number, number][] = [];
-      resolvedStops.forEach(stop => {
+      resolved.forEach(stop => {
         if (!stop.coords) return;
         const icon = stop.type === 'pickup' ? pickupIcon : deliveryIcon;
         const label = stop.type === 'pickup' ? 'Pick Up' : 'Delivery';
@@ -193,7 +218,7 @@ export const LoadDetailPanel = ({ load, onMilesCalculated }: LoadDetailPanelProp
       }
 
       if (!cancelled) {
-        setStops(resolvedStops);
+        setResolvedStops(resolved);
         const rounded = Math.round(accumulatedMiles);
         if (rounded > 0) {
           setTotalMiles(rounded);
@@ -213,7 +238,7 @@ export const LoadDetailPanel = ({ load, onMilesCalculated }: LoadDetailPanelProp
         mapInstanceRef.current = null;
       }
     };
-  }, [load.origin, load.destination]);
+  }, [load.origin, load.destination, stopsLoading, dbStops]);
 
   return (
     <div className="p-4 bg-muted/30 border-t animate-in slide-in-from-top-2 duration-200">
@@ -277,9 +302,9 @@ export const LoadDetailPanel = ({ load, onMilesCalculated }: LoadDetailPanelProp
             <h5 className="font-semibold mb-2 flex items-center gap-1.5">
               <Navigation className="h-3.5 w-3.5 text-primary" /> Ruta y Paradas
             </h5>
-            {stops.length > 0 ? (
+            {resolvedStops.length > 0 ? (
               <div className="space-y-2">
-                {stops.map((stop, i) => (
+                {resolvedStops.map((stop, i) => (
                   <div key={i} className="flex items-start gap-2">
                     <div className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white ${stop.type === 'pickup' ? 'bg-[hsl(152,60%,40%)]' : 'bg-[hsl(0,72%,51%)]'}`}>
                       {stop.type === 'pickup' ? 'P' : 'D'}
