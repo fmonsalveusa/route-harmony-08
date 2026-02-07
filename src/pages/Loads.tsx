@@ -186,7 +186,12 @@ const Loads = () => {
                       {isExpanded && (
                         <tr key={`${load.id}-detail`}>
                           <td colSpan={16} className="p-0">
-                            <LoadDetailPanel load={load} />
+                            <LoadDetailPanel
+                              load={load}
+                              onMilesCalculated={async (loadId, miles) => {
+                                await updateLoad(loadId, { miles });
+                              }}
+                            />
                           </td>
                         </tr>
                       )}
