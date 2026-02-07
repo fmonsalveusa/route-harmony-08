@@ -22,6 +22,7 @@ const emptyForm: DispatcherInput = {
   name: '', email: '', phone: '',
   status: 'active',
   commission_percentage: 8,
+  dispatch_service_percentage: 0,
   pay_type: 'per_rate',
   start_date: new Date().toISOString().split('T')[0],
 };
@@ -35,6 +36,7 @@ export function DispatcherFormDialog({ open, onOpenChange, dispatcher, onSubmit 
       setForm({
         name: dispatcher.name, email: dispatcher.email, phone: dispatcher.phone,
         status: dispatcher.status, commission_percentage: dispatcher.commission_percentage,
+        dispatch_service_percentage: dispatcher.dispatch_service_percentage,
         pay_type: dispatcher.pay_type, start_date: dispatcher.start_date,
       });
     } else {
@@ -86,6 +88,10 @@ export function DispatcherFormDialog({ open, onOpenChange, dispatcher, onSubmit 
           <div className="space-y-2">
             <Label>% Comisión</Label>
             <Input type="number" value={form.commission_percentage} onChange={e => set('commission_percentage', Number(e.target.value))} />
+          </div>
+          <div className="space-y-2">
+            <Label>% Dispatch Service</Label>
+            <Input type="number" value={form.dispatch_service_percentage} onChange={e => set('dispatch_service_percentage', Number(e.target.value))} />
           </div>
           <div className="space-y-2">
             <Label>Tipo de Pago</Label>
