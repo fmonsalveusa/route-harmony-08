@@ -21,6 +21,8 @@ interface LoadFormData {
   totalRate: number;
   referenceNumber: string;
   brokerClient: string;
+  miles: number;
+  factoring: string;
 }
 
 interface LoadFormDialogProps {
@@ -34,6 +36,7 @@ interface LoadFormDialogProps {
 const emptyForm: LoadFormData = {
   origin: '', destination: '', pickupDate: '', deliveryDate: '',
   weight: 0, cargoType: '', totalRate: 0, referenceNumber: '', brokerClient: '',
+  miles: 0, factoring: '',
 };
 
 export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatcherId }: LoadFormDialogProps) => {
@@ -58,6 +61,8 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
         totalRate: editLoad.total_rate,
         referenceNumber: editLoad.reference_number,
         brokerClient: editLoad.broker_client || '',
+        miles: editLoad.miles || 0,
+        factoring: editLoad.factoring || '',
       });
       setSelectedDriver(editLoad.driver_id || '');
       setSelectedStatus(editLoad.status);
@@ -109,6 +114,8 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
           totalRate: extracted.totalRate || 0,
           referenceNumber: extracted.referenceNumber || '',
           brokerClient: extracted.brokerClient || '',
+          miles: extracted.miles || 0,
+          factoring: extracted.factoring || '',
         });
         setExtractionStatus('done');
         toast({ title: 'Extracción exitosa', description: 'Campos rellenados automáticamente.' });
@@ -146,6 +153,8 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       investor_pay_amount: investorPay,
       dispatcher_pay_amount: dispatcherPay,
       company_profit: companyProfit,
+      miles: formData.miles || undefined,
+      factoring: formData.factoring || undefined,
       status: selectedStatus,
     };
     await onSubmit(payload);
@@ -258,6 +267,14 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
           <div className="space-y-2">
             <Label>Nro. Referencia</Label>
             <Input placeholder="RC-2024-XXX" value={formData.referenceNumber} onChange={e => updateField('referenceNumber', e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label>Miles</Label>
+            <Input type="number" placeholder="500" value={formData.miles || ''} onChange={e => updateField('miles', Number(e.target.value))} />
+          </div>
+          <div className="space-y-2">
+            <Label>Factoring</Label>
+            <Input placeholder="Factoring company" value={formData.factoring} onChange={e => updateField('factoring', e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label>Estado</Label>
