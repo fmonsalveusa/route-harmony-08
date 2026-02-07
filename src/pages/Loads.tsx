@@ -237,8 +237,9 @@ const Loads = () => {
         onSubmit={async (input) => {
           if (editLoad) {
             await updateLoad(editLoad.id, input);
+            return editLoad;
           } else {
-            await createLoad(input);
+            return await createLoad(input);
           }
         }}
       />
