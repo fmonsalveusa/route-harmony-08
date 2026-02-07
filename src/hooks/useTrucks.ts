@@ -24,6 +24,13 @@ export interface DbTruck {
   cargo_area_photo_url: string | null;
   driver_id: string | null;
   investor_id: string | null;
+  cargo_length_ft: number | null;
+  cargo_width_in: number | null;
+  cargo_height_in: number | null;
+  rear_door_width_in: number | null;
+  rear_door_height_in: number | null;
+  trailer_length_ft: number | null;
+  mega_ramp: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -42,6 +49,13 @@ export interface TruckInput {
   registration_expiry?: string | null;
   driver_id?: string | null;
   investor_id?: string | null;
+  cargo_length_ft?: number | null;
+  cargo_width_in?: number | null;
+  cargo_height_in?: number | null;
+  rear_door_width_in?: number | null;
+  rear_door_height_in?: number | null;
+  trailer_length_ft?: number | null;
+  mega_ramp?: string | null;
 }
 
 export function useTrucks() {
