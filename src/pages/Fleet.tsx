@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useTrucks, DbTruck, TruckInput } from '@/hooks/useTrucks';
 import { TruckFormDialog } from '@/components/TruckFormDialog';
+import { TruckDetailDialog } from '@/components/TruckDetailDialog';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Truck as TruckIcon, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Truck as TruckIcon, Pencil, Trash2, Eye } from 'lucide-react';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -15,6 +16,7 @@ const Fleet = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editTruck, setEditTruck] = useState<DbTruck | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<DbTruck | null>(null);
+  const [detailTruck, setDetailTruck] = useState<DbTruck | null>(null);
 
   const openNew = () => { setEditTruck(null); setDialogOpen(true); };
   const openEdit = (t: DbTruck) => { setEditTruck(t); setDialogOpen(true); };
@@ -87,6 +89,9 @@ const Fleet = () => {
                 </div>
 
                 <div className="flex gap-2 mt-4 pt-3 border-t">
+                  <Button variant="outline" size="sm" className="flex-1 gap-1.5" onClick={() => setDetailTruck(truck)}>
+                    <Eye className="h-3.5 w-3.5" /> Detalle
+                  </Button>
                   <Button variant="outline" size="sm" className="flex-1 gap-1.5" onClick={() => openEdit(truck)}>
                     <Pencil className="h-3.5 w-3.5" /> Editar
                   </Button>
@@ -101,6 +106,7 @@ const Fleet = () => {
       )}
 
       <TruckFormDialog open={dialogOpen} onOpenChange={setDialogOpen} truck={editTruck} onSave={handleSave} />
+      <TruckDetailDialog open={!!detailTruck} onOpenChange={v => !v && setDetailTruck(null)} truck={detailTruck} />
 
       <AlertDialog open={!!deleteTarget} onOpenChange={v => !v && setDeleteTarget(null)}>
         <AlertDialogContent>
