@@ -220,6 +220,7 @@ function DatePickerField({ label, value, onChange }: { label: string; value: str
             selected={date}
             onSelect={d => onChange(d ? format(d, 'yyyy-MM-dd') : null)}
             initialFocus
+            className={cn("p-3 pointer-events-auto")}
           />
         </PopoverContent>
       </Popover>
