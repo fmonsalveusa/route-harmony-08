@@ -34,8 +34,10 @@ serve(async (req) => {
     const systemPrompt = `You are a data extraction assistant for a trucking/logistics company. 
 You will receive a PDF document (rate confirmation, BOL, or similar). 
 Extract ALL stops from the document — there may be multiple pickup locations and multiple delivery locations.
-Each stop should include its full address (city, state or full address as shown), the date if available, and whether it is a pickup or delivery.
-Return them in route order (first pickup first, last delivery last).
+For each stop address, extract ONLY the physical address (street, city, state, zip). Do NOT include the company name, facility name, or stop label in the address field.
+Example: Instead of "ABC Warehouse - 123 Main St, Houston, TX 77001", just return "123 Main St, Houston, TX 77001".
+If only city and state are available, return "City, ST" format.
+Return stops in route order (first pickup first, last delivery last).
 If a field cannot be found, leave it as an empty string or 0 for numbers.
 Dates should be in YYYY-MM-DD format.
 For weight, extract the numeric value in lbs.
