@@ -2,13 +2,15 @@ import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
-import { Upload, FileText, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { Upload, FileText, Loader2, CheckCircle, AlertCircle, Eye, Download, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { mockDrivers } from '@/data/mockData';
+import { useTrucks } from '@/hooks/useTrucks';
 import type { DbLoad, CreateLoadInput } from '@/hooks/useLoads';
 
 interface LoadFormData {
@@ -17,12 +19,11 @@ interface LoadFormData {
   pickupDate: string;
   deliveryDate: string;
   weight: number;
-  cargoType: string;
   totalRate: number;
   referenceNumber: string;
   brokerClient: string;
   miles: number;
-  factoring: string;
+  notes: string;
 }
 
 interface LoadFormDialogProps {
@@ -35,20 +36,24 @@ interface LoadFormDialogProps {
 
 const emptyForm: LoadFormData = {
   origin: '', destination: '', pickupDate: '', deliveryDate: '',
-  weight: 0, cargoType: '', totalRate: 0, referenceNumber: '', brokerClient: '',
-  miles: 0, factoring: '',
+  weight: 0, totalRate: 0, referenceNumber: '', brokerClient: '',
+  miles: 0, notes: '',
 };
 
 export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatcherId }: LoadFormDialogProps) => {
   const { toast } = useToast();
+  const { trucks } = useTrucks();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState<LoadFormData>(emptyForm);
   const [selectedDriver, setSelectedDriver] = useState('');
+  const [selectedTruck, setSelectedTruck] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('planned');
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractionStatus, setExtractionStatus] = useState<'idle' | 'uploading' | 'processing' | 'done' | 'error'>('idle');
   const [pdfFileName, setPdfFileName] = useState('');
   const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
+
   useEffect(() => {
     if (editLoad) {
       setFormData({
@@ -57,23 +62,35 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
         pickupDate: editLoad.pickup_date || '',
         deliveryDate: editLoad.delivery_date || '',
         weight: editLoad.weight || 0,
-        cargoType: editLoad.cargo_type || '',
         totalRate: editLoad.total_rate,
         referenceNumber: editLoad.reference_number,
         brokerClient: editLoad.broker_client || '',
         miles: editLoad.miles || 0,
-        factoring: editLoad.factoring || '',
+        notes: editLoad.notes || '',
       });
       setSelectedDriver(editLoad.driver_id || '');
+      setSelectedTruck(editLoad.truck_id || '');
       setSelectedStatus(editLoad.status);
+      setPdfPreviewUrl(editLoad.pdf_url || null);
     } else {
       setFormData(emptyForm);
       setSelectedDriver('');
+      setSelectedTruck('');
       setSelectedStatus('planned');
       setExtractionStatus('idle');
       setPdfFileName('');
+      setPdfFile(null);
+      setPdfPreviewUrl(null);
     }
   }, [editLoad, open]);
+
+  useEffect(() => {
+    return () => {
+      if (pdfPreviewUrl && pdfPreviewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(pdfPreviewUrl);
+      }
+    };
+  }, [pdfPreviewUrl]);
 
   const updateField = (field: keyof LoadFormData, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -92,6 +109,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
     }
     setPdfFileName(file.name);
     setPdfFile(file);
+    setPdfPreviewUrl(URL.createObjectURL(file));
     setExtractionStatus('uploading');
     setIsExtracting(true);
     try {
@@ -105,19 +123,18 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       if (error) throw error;
       if (data?.success && data?.data) {
         const extracted = data.data;
-        setFormData({
-          origin: extracted.origin || '',
-          destination: extracted.destination || '',
-          pickupDate: extracted.pickupDate || '',
-          deliveryDate: extracted.deliveryDate || '',
-          weight: extracted.weight || 0,
-          cargoType: extracted.cargoType || '',
-          totalRate: extracted.totalRate || 0,
-          referenceNumber: extracted.referenceNumber || '',
-          brokerClient: extracted.brokerClient || '',
-          miles: extracted.miles || 0,
-          factoring: extracted.factoring || '',
-        });
+        setFormData(prev => ({
+          ...prev,
+          origin: extracted.origin || prev.origin,
+          destination: extracted.destination || prev.destination,
+          pickupDate: extracted.pickupDate || prev.pickupDate,
+          deliveryDate: extracted.deliveryDate || prev.deliveryDate,
+          weight: extracted.weight || prev.weight,
+          totalRate: extracted.totalRate || prev.totalRate,
+          referenceNumber: extracted.referenceNumber || prev.referenceNumber,
+          brokerClient: extracted.brokerClient || prev.brokerClient,
+          miles: extracted.miles || prev.miles,
+        }));
         setExtractionStatus('done');
         toast({ title: 'Extracción exitosa', description: 'Campos rellenados automáticamente.' });
       } else {
@@ -132,6 +149,16 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
     }
   };
 
+  const removePdf = () => {
+    if (pdfPreviewUrl && pdfPreviewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(pdfPreviewUrl);
+    }
+    setPdfFile(null);
+    setPdfFileName('');
+    setPdfPreviewUrl(null);
+    setExtractionStatus('idle');
+  };
+
   const driverPay = formData.totalRate * 0.30;
   const investorPay = formData.totalRate * 0.15;
   const dispatcherPay = formData.totalRate * 0.08;
@@ -140,7 +167,6 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
   const handleSubmit = async () => {
     let pdfUrl: string | undefined = editLoad?.pdf_url || undefined;
 
-    // Upload PDF to storage if a new file was selected
     if (pdfFile) {
       const fileName = `loads/${Date.now()}_${pdfFile.name}`;
       const { error: uploadError } = await supabase.storage.from('driver-documents').upload(fileName, pdfFile, { contentType: 'application/pdf' });
@@ -159,9 +185,9 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       pickup_date: formData.pickupDate || undefined,
       delivery_date: formData.deliveryDate || undefined,
       weight: formData.weight,
-      cargo_type: formData.cargoType,
       total_rate: formData.totalRate,
       driver_id: selectedDriver || undefined,
+      truck_id: selectedTruck || undefined,
       dispatcher_id: dispatcherId || 'd1',
       broker_client: formData.brokerClient,
       driver_pay_amount: driverPay,
@@ -169,13 +195,15 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       dispatcher_pay_amount: dispatcherPay,
       company_profit: companyProfit,
       miles: formData.miles || undefined,
-      factoring: formData.factoring || undefined,
       pdf_url: pdfUrl,
+      notes: formData.notes || undefined,
       status: selectedStatus,
     };
     await onSubmit(payload);
     onOpenChange(false);
   };
+
+  const activeTrucks = trucks.filter(t => t.status === 'active');
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -228,8 +256,48 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
           </div>
         )}
 
+        {/* PDF Preview */}
+        {pdfPreviewUrl && (
+          <div className="mt-2 p-3 rounded-lg border bg-muted/50">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <FileText className="h-4 w-4 text-primary" />
+                <span>{pdfFileName || 'PDF Original'}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" asChild>
+                  <a href={pdfPreviewUrl} target="_blank" rel="noopener noreferrer">
+                    <Eye className="h-3.5 w-3.5" /> Ver
+                  </a>
+                </Button>
+                <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" asChild>
+                  <a href={pdfPreviewUrl} download={pdfFileName || 'document.pdf'}>
+                    <Download className="h-3.5 w-3.5" /> Descargar
+                  </a>
+                </Button>
+                {!editLoad && (
+                  <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive" onClick={removePdf}>
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+              </div>
+            </div>
+            <div className="rounded border bg-background h-40 overflow-hidden">
+              <iframe src={pdfPreviewUrl} className="w-full h-full" title="PDF Preview" />
+            </div>
+          </div>
+        )}
+
         {/* Form Fields */}
         <div className="grid grid-cols-2 gap-4 mt-4">
+          <div className="space-y-2">
+            <Label>Load #</Label>
+            <Input placeholder="RC-2024-XXX" value={formData.referenceNumber} onChange={e => updateField('referenceNumber', e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label>Broker/Cliente</Label>
+            <Input placeholder="Nombre del broker" value={formData.brokerClient} onChange={e => updateField('brokerClient', e.target.value)} />
+          </div>
           <div className="space-y-2">
             <Label>Origen</Label>
             <Input placeholder="Ciudad, Estado" value={formData.origin} onChange={e => updateField('origin', e.target.value)} />
@@ -251,23 +319,8 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
             <Input type="number" placeholder="40000" value={formData.weight || ''} onChange={e => updateField('weight', Number(e.target.value))} />
           </div>
           <div className="space-y-2">
-            <Label>Tipo de Carga</Label>
-            <Select value={formData.cargoType} onValueChange={v => updateField('cargoType', v)}>
-              <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="dry_van">Dry Van</SelectItem>
-                <SelectItem value="reefer">Reefer</SelectItem>
-                <SelectItem value="flatbed">Flatbed</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
             <Label>Tarifa Total ($)</Label>
             <Input type="number" placeholder="2500" value={formData.totalRate || ''} onChange={e => updateField('totalRate', Number(e.target.value))} />
-          </div>
-          <div className="space-y-2">
-            <Label>Broker/Cliente</Label>
-            <Input placeholder="Nombre del broker" value={formData.brokerClient} onChange={e => updateField('brokerClient', e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label>Conductor</Label>
@@ -281,16 +334,19 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>Nro. Referencia</Label>
-            <Input placeholder="RC-2024-XXX" value={formData.referenceNumber} onChange={e => updateField('referenceNumber', e.target.value)} />
+            <Label>Truck #</Label>
+            <Select value={selectedTruck} onValueChange={setSelectedTruck}>
+              <SelectTrigger><SelectValue placeholder="Asignar truck" /></SelectTrigger>
+              <SelectContent>
+                {activeTrucks.map(t => (
+                  <SelectItem key={t.id} value={t.id}>{t.unit_number} - {t.truck_type}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-2">
             <Label>Miles</Label>
             <Input type="number" placeholder="500" value={formData.miles || ''} onChange={e => updateField('miles', Number(e.target.value))} />
-          </div>
-          <div className="space-y-2">
-            <Label>Factoring</Label>
-            <Input placeholder="Factoring company" value={formData.factoring} onChange={e => updateField('factoring', e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label>Estado</Label>
@@ -306,20 +362,11 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
               </SelectContent>
             </Select>
           </div>
-        </div>
-
-        {/* Payment Breakdown */}
-        {formData.totalRate > 0 && (
-          <div className="mt-4 p-4 rounded-lg bg-muted">
-            <h4 className="text-sm font-semibold mb-3">Desglose de Pagos (estimado)</h4>
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <span className="text-muted-foreground">Driver (30%):</span><span className="font-medium">${driverPay.toLocaleString()}</span>
-              <span className="text-muted-foreground">Investor (15%):</span><span className="font-medium">${investorPay.toLocaleString()}</span>
-              <span className="text-muted-foreground">Dispatcher (8%):</span><span className="font-medium">${dispatcherPay.toLocaleString()}</span>
-              <span className="text-muted-foreground font-semibold">Utilidad Empresa:</span><span className="font-bold text-primary">${companyProfit.toLocaleString()}</span>
-            </div>
+          <div className="col-span-2 space-y-2">
+            <Label>Notes</Label>
+            <Textarea placeholder="Notas adicionales sobre la carga..." value={formData.notes} onChange={e => updateField('notes', e.target.value)} rows={3} />
           </div>
-        )}
+        </div>
 
         <div className="flex justify-end gap-2 mt-4">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
