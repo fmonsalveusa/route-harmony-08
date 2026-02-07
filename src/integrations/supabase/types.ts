@@ -161,6 +161,84 @@ export type Database = {
         }
         Relationships: []
       }
+      trucks: {
+        Row: {
+          cargo_area_photo_url: string | null
+          created_at: string
+          driver_id: string | null
+          id: string
+          insurance_expiry: string | null
+          insurance_photo_url: string | null
+          investor_id: string | null
+          license_photo_url: string | null
+          license_plate: string | null
+          make: string | null
+          max_payload_lbs: number | null
+          model: string | null
+          rear_truck_photo_url: string | null
+          registration_expiry: string | null
+          registration_photo_url: string | null
+          status: string
+          truck_plate_photo_url: string | null
+          truck_side_photo_url: string | null
+          truck_type: string
+          unit_number: string
+          updated_at: string
+          vin: string | null
+          year: number | null
+        }
+        Insert: {
+          cargo_area_photo_url?: string | null
+          created_at?: string
+          driver_id?: string | null
+          id?: string
+          insurance_expiry?: string | null
+          insurance_photo_url?: string | null
+          investor_id?: string | null
+          license_photo_url?: string | null
+          license_plate?: string | null
+          make?: string | null
+          max_payload_lbs?: number | null
+          model?: string | null
+          rear_truck_photo_url?: string | null
+          registration_expiry?: string | null
+          registration_photo_url?: string | null
+          status?: string
+          truck_plate_photo_url?: string | null
+          truck_side_photo_url?: string | null
+          truck_type?: string
+          unit_number: string
+          updated_at?: string
+          vin?: string | null
+          year?: number | null
+        }
+        Update: {
+          cargo_area_photo_url?: string | null
+          created_at?: string
+          driver_id?: string | null
+          id?: string
+          insurance_expiry?: string | null
+          insurance_photo_url?: string | null
+          investor_id?: string | null
+          license_photo_url?: string | null
+          license_plate?: string | null
+          make?: string | null
+          max_payload_lbs?: number | null
+          model?: string | null
+          rear_truck_photo_url?: string | null
+          registration_expiry?: string | null
+          registration_photo_url?: string | null
+          status?: string
+          truck_plate_photo_url?: string | null
+          truck_side_photo_url?: string | null
+          truck_type?: string
+          unit_number?: string
+          updated_at?: string
+          vin?: string | null
+          year?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
