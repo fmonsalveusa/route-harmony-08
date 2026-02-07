@@ -12,10 +12,13 @@ import {
 } from '@/components/ui/alert-dialog';
 
 const STATUS_OPTIONS = [
-  { value: 'active', label: 'Active', className: 'status-active' },
-  { value: 'inactive', label: 'Inactive', className: 'status-cancelled' },
-  { value: 'maintenance', label: 'Maintenance', className: 'status-pending' },
+  { value: 'active', label: 'Active', bg: 'bg-green-600 text-white' },
+  { value: 'inactive', label: 'Inactive', bg: 'bg-red-600 text-white' },
+  { value: 'maintenance', label: 'Maintenance', bg: 'bg-orange-500 text-white' },
 ];
+
+const getStatusStyle = (status: string) =>
+  STATUS_OPTIONS.find(s => s.value === status)?.bg || '';
 
 const Fleet = () => {
   const { trucks, loading, createTruck, updateTruck, deleteTruck, uploadDocument } = useTrucks();
@@ -84,7 +87,7 @@ const Fleet = () => {
                     </div>
                   </div>
                   <Select value={truck.status} onValueChange={v => updateTruck(truck.id, { status: v })}>
-                    <SelectTrigger className="w-auto h-7 text-xs gap-1 px-2">
+                    <SelectTrigger className={`w-auto h-7 text-xs gap-1 px-2 border-0 rounded-full ${getStatusStyle(truck.status)}`}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-popover z-50">
