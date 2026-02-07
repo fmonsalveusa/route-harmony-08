@@ -78,6 +78,7 @@ export type Database = {
           pay_percentage: number
           phone: string
           service_agreement_url: string | null
+          service_type: string
           status: string
           truck_id: string | null
           updated_at: string
@@ -103,6 +104,7 @@ export type Database = {
           pay_percentage?: number
           phone: string
           service_agreement_url?: string | null
+          service_type?: string
           status?: string
           truck_id?: string | null
           updated_at?: string
@@ -128,6 +130,7 @@ export type Database = {
           pay_percentage?: number
           phone?: string
           service_agreement_url?: string | null
+          service_type?: string
           status?: string
           truck_id?: string | null
           updated_at?: string

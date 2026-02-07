@@ -24,7 +24,8 @@ interface DriverFormDialogProps {
 const emptyForm: DriverInput = {
   name: '', email: '', phone: '', license: '',
   license_expiry: null, medical_card_expiry: null,
-  status: 'available', dispatcher_id: null, truck_id: null,
+  status: 'available', service_type: 'owner_operator',
+  dispatcher_id: null, truck_id: null,
   investor_name: null, pay_percentage: 30, investor_pay_percentage: 15,
   hire_date: new Date().toISOString().split('T')[0],
 };
@@ -51,6 +52,7 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks 
         name: driver.name, email: driver.email, phone: driver.phone,
         license: driver.license, license_expiry: driver.license_expiry,
         medical_card_expiry: driver.medical_card_expiry, status: driver.status,
+        service_type: driver.service_type,
         dispatcher_id: driver.dispatcher_id, truck_id: driver.truck_id,
         investor_name: driver.investor_name, pay_percentage: driver.pay_percentage,
         investor_pay_percentage: driver.investor_pay_percentage, hire_date: driver.hire_date,
@@ -110,6 +112,18 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks 
                 <SelectItem value="assigned">Asignado</SelectItem>
                 <SelectItem value="resting">Descansando</SelectItem>
                 <SelectItem value="inactive">Inactivo</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Service Type</Label>
+            <Select value={form.service_type} onValueChange={v => set('service_type', v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="owner_operator">Owner Operator</SelectItem>
+                <SelectItem value="company_driver">Company Driver</SelectItem>
+                <SelectItem value="dispatch_service">Dispatch Service</SelectItem>
               </SelectContent>
             </Select>
           </div>
