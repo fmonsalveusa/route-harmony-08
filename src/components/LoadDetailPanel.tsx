@@ -15,13 +15,34 @@ async function geocode(place: string): Promise<[number, number] | null> {
   return null;
 }
 
-// Haversine distance in miles
-function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 3958.8;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+// Get driving distance in miles between two points using OSRM
+async function drivingDistance(lat1: number, lon1: number, lat2: number, lon2: number): Promise<number | null> {
+  try {
+    const res = await fetch(
+      `https://router.project-osrm.org/route/v1/driving/${lon1},${lat1};${lon2},${lat2}?overview=false`
+    );
+    const data = await res.json();
+    if (data.code === 'Ok' && data.routes?.[0]) {
+      return data.routes[0].distance * 0.000621371; // meters to miles
+    }
+  } catch {}
+  return null;
+}
+
+// Get full route geometry for polyline
+async function drivingRoute(coords: [number, number][]): Promise<[number, number][] | null> {
+  if (coords.length < 2) return null;
+  try {
+    const waypoints = coords.map(c => `${c[1]},${c[0]}`).join(';');
+    const res = await fetch(
+      `https://router.project-osrm.org/route/v1/driving/${waypoints}?overview=full&geometries=geojson`
+    );
+    const data = await res.json();
+    if (data.code === 'Ok' && data.routes?.[0]?.geometry?.coordinates) {
+      return data.routes[0].geometry.coordinates.map((c: number[]) => [c[1], c[0]] as [number, number]);
+    }
+  } catch {}
+  return null;
 }
 
 interface Stop {
@@ -87,15 +108,17 @@ export const LoadDetailPanel = ({ load, onMilesCalculated }: LoadDetailPanelProp
         coords: coords[i],
       }));
 
-      // Calculate distances between consecutive stops
+      // Calculate real driving distances between consecutive stops
       let accumulatedMiles = 0;
       for (let i = 1; i < resolvedStops.length; i++) {
         const prev = resolvedStops[i - 1].coords;
         const curr = resolvedStops[i].coords;
         if (prev && curr) {
-          const dist = haversineDistance(prev[0], prev[1], curr[0], curr[1]);
-          resolvedStops[i].distanceFromPrev = Math.round(dist);
-          accumulatedMiles += dist;
+          const dist = await drivingDistance(prev[0], prev[1], curr[0], curr[1]);
+          if (dist !== null) {
+            resolvedStops[i].distanceFromPrev = Math.round(dist);
+            accumulatedMiles += dist;
+          }
         }
       }
 
@@ -131,7 +154,13 @@ export const LoadDetailPanel = ({ load, onMilesCalculated }: LoadDetailPanelProp
       });
 
       if (bounds.length >= 2) {
-        L.polyline(bounds, { color: 'hsl(215,70%,50%)', weight: 3, dashArray: '8 4' }).addTo(map);
+        // Draw real driving route
+        const routeCoords = await drivingRoute(bounds);
+        if (routeCoords && !cancelled) {
+          L.polyline(routeCoords, { color: 'hsl(215,70%,50%)', weight: 3 }).addTo(map);
+        } else {
+          L.polyline(bounds, { color: 'hsl(215,70%,50%)', weight: 3, dashArray: '8 4' }).addTo(map);
+        }
         map.fitBounds(bounds, { padding: [40, 40] });
       } else if (bounds.length === 1) {
         map.setView(bounds[0], 10);
