@@ -6,8 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Phone, Mail, Truck as TruckIcon, Headphones, Pencil, Trash2, Eye } from 'lucide-react';
+import { Plus, Search, Phone, Truck as TruckIcon, Pencil, Trash2, Eye } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useDrivers, DbDriver, DriverInput } from '@/hooks/useDrivers';
 import { useTrucks } from '@/hooks/useTrucks';
@@ -27,7 +26,7 @@ const Drivers = () => {
   const getTruckLabel = (id: string | null) => {
     if (!id) return null;
     const t = trucks.find(t => t.id === id);
-    return t ? `${t.license_plate || t.unit_number} · ${t.model || t.truck_type}` : null;
+    return t ? `Unit #${t.unit_number} · ${t.truck_type}` : null;
   };
 
   const isDispatcher = user?.role === 'dispatcher';
@@ -105,7 +104,6 @@ const Drivers = () => {
                         <h3 className="font-semibold truncate">{driver.name}</h3>
                         <StatusBadge status={driver.status as any} />
                       </div>
-                      <p className="text-xs text-muted-foreground mt-0.5">CDL: {driver.license}</p>
                     </div>
                   </div>
 
@@ -113,35 +111,9 @@ const Drivers = () => {
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Phone className="h-3.5 w-3.5" />{driver.phone}
                     </div>
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Mail className="h-3.5 w-3.5" />{driver.email}
-                    </div>
-                    {dispatcher && (
-                      <div className="flex items-center gap-2">
-                        <Headphones className="h-3.5 w-3.5 text-info" />
-                        <Badge variant="secondary" className="text-xs">{dispatcher.name}</Badge>
-                      </div>
-                    )}
-                    {truckLabel && (
-                      <div className="flex items-center gap-2">
-                        <TruckIcon className="h-3.5 w-3.5 text-primary" />
-                        <span>{truckLabel}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="mt-4 pt-3 border-t grid grid-cols-3 gap-2 text-center">
-                    <div>
-                      <p className="text-lg font-bold">{driver.loads_this_month}</p>
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Cargas</p>
-                    </div>
-                    <div>
-                      <p className="text-lg font-bold">${(driver.earnings_this_month / 1000).toFixed(1)}k</p>
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Ganado</p>
-                    </div>
-                    <div>
-                      <p className="text-lg font-bold">{driver.pay_percentage}%</p>
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Pago</p>
+                    <div className="flex items-center gap-2">
+                      <TruckIcon className="h-3.5 w-3.5 text-primary" />
+                      <span>{truckLabel || <span className="text-muted-foreground italic">Sin asignar</span>}</span>
                     </div>
                   </div>
 
