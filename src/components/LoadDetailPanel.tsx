@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react';
-import { MapPin, Calendar, Weight, DollarSign, User, Truck } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { MapPin, Calendar, Weight, DollarSign, User, Truck, Route, Navigation } from 'lucide-react';
 import { mockDrivers, mockDispatchers } from '@/data/mockData';
 import type { DbLoad } from '@/hooks/useLoads';
 import 'leaflet/dist/leaflet.css';
@@ -14,6 +14,22 @@ async function geocode(place: string): Promise<[number, number] | null> {
   return null;
 }
 
+// Haversine distance in miles
+function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 3958.8;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+interface Stop {
+  type: 'pickup' | 'delivery';
+  address: string;
+  coords: [number, number] | null;
+  distanceFromPrev?: number;
+}
+
 interface LoadDetailPanelProps {
   load: DbLoad;
 }
@@ -21,9 +37,12 @@ interface LoadDetailPanelProps {
 export const LoadDetailPanel = ({ load }: LoadDetailPanelProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
+  const [stops, setStops] = useState<Stop[]>([]);
+  const [totalMiles, setTotalMiles] = useState<number>(Number(load.miles) || 0);
 
   const driver = mockDrivers.find(d => d.id === load.driver_id);
   const dispatcher = mockDispatchers.find(d => d.id === load.dispatcher_id);
+  const rpm = totalMiles > 0 ? Number(load.total_rate) / totalMiles : 0;
 
   useEffect(() => {
     let cancelled = false;
@@ -31,7 +50,6 @@ export const LoadDetailPanel = ({ load }: LoadDetailPanelProps) => {
     const initMap = async () => {
       const L = (await import('leaflet')).default;
 
-      // Fix default icon
       delete (L.Icon.Default.prototype as any)._getIconUrl;
       L.Icon.Default.mergeOptions({
         iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
@@ -41,7 +59,6 @@ export const LoadDetailPanel = ({ load }: LoadDetailPanelProps) => {
 
       if (cancelled || !mapRef.current) return;
 
-      // Clean previous
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
@@ -54,39 +71,61 @@ export const LoadDetailPanel = ({ load }: LoadDetailPanelProps) => {
         attribution: '© OpenStreetMap',
       }).addTo(map);
 
-      const [originCoords, destCoords] = await Promise.all([
-        geocode(load.origin),
-        geocode(load.destination),
-      ]);
+      // Build stops list — for now origin = pickup, destination = delivery
+      const stopAddresses: { type: 'pickup' | 'delivery'; address: string }[] = [
+        { type: 'pickup', address: load.origin },
+        { type: 'delivery', address: load.destination },
+      ];
 
+      const coords = await Promise.all(stopAddresses.map(s => geocode(s.address)));
       if (cancelled) return;
+
+      const resolvedStops: Stop[] = stopAddresses.map((s, i) => ({
+        ...s,
+        coords: coords[i],
+      }));
+
+      // Calculate distances between consecutive stops
+      let accumulatedMiles = 0;
+      for (let i = 1; i < resolvedStops.length; i++) {
+        const prev = resolvedStops[i - 1].coords;
+        const curr = resolvedStops[i].coords;
+        if (prev && curr) {
+          const dist = haversineDistance(prev[0], prev[1], curr[0], curr[1]);
+          resolvedStops[i].distanceFromPrev = Math.round(dist);
+          accumulatedMiles += dist;
+        }
+      }
+
+      if (!cancelled) {
+        setStops(resolvedStops);
+        // Use DB miles if available, otherwise use calculated
+        if (!load.miles || Number(load.miles) === 0) {
+          setTotalMiles(Math.round(accumulatedMiles));
+        }
+      }
 
       const pickupIcon = L.divIcon({
         html: '<div style="background:hsl(152,60%,40%);color:white;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:12px;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,.3)">P</div>',
-        className: '',
-        iconSize: [28, 28],
-        iconAnchor: [14, 14],
+        className: '', iconSize: [28, 28], iconAnchor: [14, 14],
       });
 
       const deliveryIcon = L.divIcon({
         html: '<div style="background:hsl(0,72%,51%);color:white;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:12px;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,.3)">D</div>',
-        className: '',
-        iconSize: [28, 28],
-        iconAnchor: [14, 14],
+        className: '', iconSize: [28, 28], iconAnchor: [14, 14],
       });
 
       const bounds: [number, number][] = [];
 
-      if (originCoords) {
-        L.marker(originCoords, { icon: pickupIcon }).addTo(map).bindPopup(`<b>Pick Up</b><br/>${load.origin}`);
-        bounds.push(originCoords);
-      }
-      if (destCoords) {
-        L.marker(destCoords, { icon: deliveryIcon }).addTo(map).bindPopup(`<b>Delivery</b><br/>${load.destination}`);
-        bounds.push(destCoords);
-      }
+      resolvedStops.forEach(stop => {
+        if (!stop.coords) return;
+        const icon = stop.type === 'pickup' ? pickupIcon : deliveryIcon;
+        const label = stop.type === 'pickup' ? 'Pick Up' : 'Delivery';
+        L.marker(stop.coords, { icon }).addTo(map).bindPopup(`<b>${label}</b><br/>${stop.address}`);
+        bounds.push(stop.coords);
+      });
 
-      if (bounds.length === 2) {
+      if (bounds.length >= 2) {
         L.polyline(bounds, { color: 'hsl(215,70%,50%)', weight: 3, dashArray: '8 4' }).addTo(map);
         map.fitBounds(bounds, { padding: [40, 40] });
       } else if (bounds.length === 1) {
@@ -103,7 +142,7 @@ export const LoadDetailPanel = ({ load }: LoadDetailPanelProps) => {
         mapInstanceRef.current = null;
       }
     };
-  }, [load.origin, load.destination]);
+  }, [load.origin, load.destination, load.miles]);
 
   return (
     <div className="p-4 bg-muted/30 border-t animate-in slide-in-from-top-2 duration-200">
@@ -137,6 +176,14 @@ export const LoadDetailPanel = ({ load }: LoadDetailPanelProps) => {
               <div><span className="text-muted-foreground">Tipo:</span> <span className="font-medium">{load.cargo_type || '—'}</span></div>
             </div>
             <div className="flex items-center gap-2">
+              <Route className="h-3.5 w-3.5 text-primary" />
+              <div><span className="text-muted-foreground">Miles:</span> <span className="font-bold text-primary">{totalMiles > 0 ? totalMiles.toLocaleString() : '—'}</span></div>
+            </div>
+            <div className="flex items-center gap-2">
+              <DollarSign className="h-3.5 w-3.5 text-primary" />
+              <div><span className="text-muted-foreground">RPM:</span> <span className="font-bold text-primary">{rpm > 0 ? `$${rpm.toFixed(2)}` : '—'}</span></div>
+            </div>
+            <div className="flex items-center gap-2">
               <User className="h-3.5 w-3.5 text-muted-foreground" />
               <div><span className="text-muted-foreground">Driver:</span> <span className="font-medium">{driver?.name || 'Sin asignar'}</span></div>
             </div>
@@ -154,18 +201,40 @@ export const LoadDetailPanel = ({ load }: LoadDetailPanelProps) => {
             </div>
           </div>
 
-          {/* Payment breakdown */}
-          {load.total_rate > 0 && (
-            <div className="p-3 rounded-lg bg-card border text-sm">
-              <h5 className="font-semibold mb-2">Desglose de Pagos</h5>
-              <div className="grid grid-cols-2 gap-1">
-                <span className="text-muted-foreground">Driver:</span><span className="font-medium">${Number(load.driver_pay_amount).toLocaleString()}</span>
-                <span className="text-muted-foreground">Investor:</span><span className="font-medium">${Number(load.investor_pay_amount).toLocaleString()}</span>
-                <span className="text-muted-foreground">Dispatcher:</span><span className="font-medium">${Number(load.dispatcher_pay_amount).toLocaleString()}</span>
-                <span className="text-muted-foreground font-semibold">Utilidad:</span><span className="font-bold text-primary">${Number(load.company_profit).toLocaleString()}</span>
+          {/* Stops / Route breakdown */}
+          <div className="p-3 rounded-lg bg-card border text-sm">
+            <h5 className="font-semibold mb-2 flex items-center gap-1.5">
+              <Navigation className="h-3.5 w-3.5 text-primary" /> Ruta y Paradas
+            </h5>
+            {stops.length > 0 ? (
+              <div className="space-y-2">
+                {stops.map((stop, i) => (
+                  <div key={i} className="flex items-start gap-2">
+                    <div className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white ${stop.type === 'pickup' ? 'bg-[hsl(152,60%,40%)]' : 'bg-[hsl(0,72%,51%)]'}`}>
+                      {stop.type === 'pickup' ? 'P' : 'D'}
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-medium">{stop.address}</div>
+                      <div className="text-muted-foreground text-xs">
+                        {stop.type === 'pickup' ? 'Pick Up' : 'Delivery'}
+                        {stop.distanceFromPrev != null && (
+                          <span className="ml-2 text-primary font-semibold">↳ {stop.distanceFromPrev.toLocaleString()} mi desde parada anterior</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {totalMiles > 0 && (
+                  <div className="pt-2 border-t flex justify-between text-xs font-semibold">
+                    <span className="text-muted-foreground">Distancia Total</span>
+                    <span className="text-primary">{totalMiles.toLocaleString()} miles</span>
+                  </div>
+                )}
               </div>
-            </div>
-          )}
+            ) : (
+              <p className="text-muted-foreground text-xs">Calculando ruta...</p>
+            )}
+          </div>
         </div>
 
         {/* Map */}
