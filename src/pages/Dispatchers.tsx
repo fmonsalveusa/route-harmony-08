@@ -65,10 +65,6 @@ const Dispatchers = () => {
                     </Avatar>
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold truncate">{d.name}</h3>
-                      <div className="flex items-center gap-1 mt-1">
-                        <Percent className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-xs text-muted-foreground">{d.commission_percentage}% · {d.pay_type === 'per_rate' ? 'por tarifa' : 'por carga'}</span>
-                      </div>
                     </div>
                     <Select value={d.status} onValueChange={v => updateDispatcher(d.id, { status: v })}>
                       <SelectTrigger className={`w-auto h-7 text-xs font-semibold text-white border-0 rounded-full px-3 gap-1 ${dispatcherStatusColor(d.status)}`}>
@@ -82,8 +78,12 @@ const Dispatchers = () => {
                   </div>
 
                   <div className="mt-4 space-y-2 text-sm">
-                    <div className="flex items-center gap-2 text-muted-foreground"><Phone className="h-3.5 w-3.5" />{d.phone}</div>
                     <div className="flex items-center gap-2 text-muted-foreground"><Mail className="h-3.5 w-3.5" />{d.email}</div>
+                    <div className="flex items-center gap-2 text-muted-foreground"><Phone className="h-3.5 w-3.5" />{d.phone}</div>
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Percent className="h-3.5 w-3.5" />
+                      <span>Comisión: {d.commission_percentage}% · Dispatch Service: {d.dispatch_service_percentage}%</span>
+                    </div>
                   </div>
 
                   <div className="mt-3 pt-3 border-t flex justify-end gap-2">
