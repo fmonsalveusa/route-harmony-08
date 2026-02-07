@@ -24,6 +24,7 @@ export interface DbDriver {
   form_w9_url: string | null;
   leasing_agreement_url: string | null;
   service_agreement_url: string | null;
+  service_type: string;
   created_at: string;
   updated_at: string;
 }
@@ -36,6 +37,7 @@ export interface DriverInput {
   license_expiry?: string | null;
   medical_card_expiry?: string | null;
   status: string;
+  service_type: string;
   dispatcher_id?: string | null;
   truck_id?: string | null;
   investor_name?: string | null;
