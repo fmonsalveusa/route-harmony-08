@@ -247,14 +247,26 @@ export const LoadDetailPanel = ({ load, onMilesCalculated }: LoadDetailPanelProp
         <div className="space-y-3">
           <h4 className="font-semibold text-sm text-foreground">Detalle de la Carga</h4>
           <div className="grid grid-cols-2 gap-3 text-sm">
-            <div className="flex items-center gap-2">
-              <MapPin className="h-3.5 w-3.5 text-green-600" />
-              <div><span className="text-muted-foreground">Pick Up:</span> <span className="font-medium">{load.origin}</span></div>
-            </div>
-            <div className="flex items-center gap-2">
-              <MapPin className="h-3.5 w-3.5 text-red-600" />
-              <div><span className="text-muted-foreground">Delivery:</span> <span className="font-medium">{load.destination}</span></div>
-            </div>
+            {/* Dynamic stops display */}
+            {resolvedStops.length > 0 ? (
+              resolvedStops.map((stop, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <MapPin className={`h-3.5 w-3.5 ${stop.type === 'pickup' ? 'text-green-600' : 'text-red-600'}`} />
+                  <div><span className="text-muted-foreground">{stop.type === 'pickup' ? 'Pick Up' : 'Delivery'}:</span> <span className="font-medium">{stop.address}</span></div>
+                </div>
+              ))
+            ) : (
+              <>
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-3.5 w-3.5 text-green-600" />
+                  <div><span className="text-muted-foreground">Pick Up:</span> <span className="font-medium">{load.origin}</span></div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-3.5 w-3.5 text-red-600" />
+                  <div><span className="text-muted-foreground">Delivery:</span> <span className="font-medium">{load.destination}</span></div>
+                </div>
+              </>
+            )}
             <div className="flex items-center gap-2">
               <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
               <div><span className="text-muted-foreground">Recogida:</span> <span className="font-medium">{load.pickup_date || '—'}</span></div>
