@@ -53,6 +53,31 @@ export function TruckDetailDialog({ open, onOpenChange, truck }: Props) {
             <Info label="Registration Expiry">{truck.registration_expiry || '—'}</Info>
           </section>
 
+          {/* Box Truck dimensions */}
+          {truck.truck_type === 'Box Truck' && (truck.cargo_length_ft || truck.cargo_width_in || truck.cargo_height_in || truck.rear_door_width_in || truck.rear_door_height_in) && (
+            <section className="border-t pt-4 space-y-2">
+              <h3 className="font-semibold text-sm">Dimensiones Box Truck</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3 text-sm">
+                <Info label="Cargo Length (ft)">{truck.cargo_length_ft ?? '—'}</Info>
+                <Info label="Cargo Width (in)">{truck.cargo_width_in ?? '—'}</Info>
+                <Info label="Cargo Height (in)">{truck.cargo_height_in ?? '—'}</Info>
+                <Info label="Rear Door Width (in)">{truck.rear_door_width_in ?? '—'}</Info>
+                <Info label="Rear Door Height (in)">{truck.rear_door_height_in ?? '—'}</Info>
+              </div>
+            </section>
+          )}
+
+          {/* Hotshot dimensions */}
+          {truck.truck_type === 'Hotshot' && (truck.trailer_length_ft || truck.mega_ramp) && (
+            <section className="border-t pt-4 space-y-2">
+              <h3 className="font-semibold text-sm">Dimensiones Hotshot</h3>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                <Info label="Trailer Length (ft)">{truck.trailer_length_ft ?? '—'}</Info>
+                <Info label="Mega Ramp">{truck.mega_ramp || '—'}</Info>
+              </div>
+            </section>
+          )}
+
           {/* Documents */}
           <section className="border-t pt-4 space-y-3">
             <h3 className="font-semibold text-sm">Documentos y Fotos</h3>
