@@ -23,6 +23,7 @@ export interface DbLoad {
   company_profit: number;
   miles: number;
   factoring: string | null;
+  pdf_url: string | null;
   created_at: string;
 }
 
@@ -44,6 +45,7 @@ export interface CreateLoadInput {
   company_profit?: number;
   miles?: number;
   factoring?: string;
+  pdf_url?: string;
 }
 
 export function useLoads() {

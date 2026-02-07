@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { MapPin, Calendar, Weight, DollarSign, User, Truck, Route, Navigation } from 'lucide-react';
+import { MapPin, Calendar, Weight, DollarSign, User, Truck, Route, Navigation, FileText, Download, ExternalLink } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { mockDrivers, mockDispatchers } from '@/data/mockData';
 import type { DbLoad } from '@/hooks/useLoads';
 import 'leaflet/dist/leaflet.css';
@@ -239,6 +240,27 @@ export const LoadDetailPanel = ({ load, onMilesCalculated }: LoadDetailPanelProp
               <p className="text-muted-foreground text-xs">Calculando ruta...</p>
             )}
           </div>
+
+          {/* PDF Document */}
+          {load.pdf_url && (
+            <div className="p-3 rounded-lg bg-card border text-sm">
+              <h5 className="font-semibold mb-2 flex items-center gap-1.5">
+                <FileText className="h-3.5 w-3.5 text-primary" /> Documento Original (PDF)
+              </h5>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" className="gap-1.5 text-xs" asChild>
+                  <a href={load.pdf_url} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="h-3.5 w-3.5" /> Ver PDF
+                  </a>
+                </Button>
+                <Button variant="outline" size="sm" className="gap-1.5 text-xs" asChild>
+                  <a href={load.pdf_url} download>
+                    <Download className="h-3.5 w-3.5" /> Descargar
+                  </a>
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Map */}

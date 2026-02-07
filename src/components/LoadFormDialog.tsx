@@ -48,7 +48,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractionStatus, setExtractionStatus] = useState<'idle' | 'uploading' | 'processing' | 'done' | 'error'>('idle');
   const [pdfFileName, setPdfFileName] = useState('');
-
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
   useEffect(() => {
     if (editLoad) {
       setFormData({
@@ -91,6 +91,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       return;
     }
     setPdfFileName(file.name);
+    setPdfFile(file);
     setExtractionStatus('uploading');
     setIsExtracting(true);
     try {
@@ -137,6 +138,20 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
   const companyProfit = formData.totalRate - driverPay - investorPay - dispatcherPay;
 
   const handleSubmit = async () => {
+    let pdfUrl: string | undefined = editLoad?.pdf_url || undefined;
+
+    // Upload PDF to storage if a new file was selected
+    if (pdfFile) {
+      const fileName = `loads/${Date.now()}_${pdfFile.name}`;
+      const { error: uploadError } = await supabase.storage.from('driver-documents').upload(fileName, pdfFile, { contentType: 'application/pdf' });
+      if (uploadError) {
+        toast({ title: 'Error', description: 'No se pudo subir el PDF', variant: 'destructive' });
+      } else {
+        const { data: urlData } = supabase.storage.from('driver-documents').getPublicUrl(fileName);
+        pdfUrl = urlData.publicUrl;
+      }
+    }
+
     const payload: CreateLoadInput & { status?: string } = {
       reference_number: formData.referenceNumber || `RC-${Date.now()}`,
       origin: formData.origin,
@@ -155,6 +170,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       company_profit: companyProfit,
       miles: formData.miles || undefined,
       factoring: formData.factoring || undefined,
+      pdf_url: pdfUrl,
       status: selectedStatus,
     };
     await onSubmit(payload);
