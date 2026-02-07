@@ -2,14 +2,20 @@ import { useState } from 'react';
 import { useTrucks, DbTruck, TruckInput } from '@/hooks/useTrucks';
 import { TruckFormDialog } from '@/components/TruckFormDialog';
 import { TruckDetailDialog } from '@/components/TruckDetailDialog';
-import { StatusBadge } from '@/components/StatusBadge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus, Truck as TruckIcon, Pencil, Trash2, Eye } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+
+const STATUS_OPTIONS = [
+  { value: 'active', label: 'Active', className: 'status-active' },
+  { value: 'inactive', label: 'Inactive', className: 'status-cancelled' },
+  { value: 'maintenance', label: 'Maintenance', className: 'status-pending' },
+];
 
 const Fleet = () => {
   const { trucks, loading, createTruck, updateTruck, deleteTruck, uploadDocument } = useTrucks();
@@ -77,7 +83,16 @@ const Fleet = () => {
                       <p className="text-xs text-muted-foreground">{truck.license_plate || '—'}</p>
                     </div>
                   </div>
-                  <StatusBadge status={truck.status} />
+                  <Select value={truck.status} onValueChange={v => updateTruck(truck.id, { status: v })}>
+                    <SelectTrigger className="w-auto h-7 text-xs gap-1 px-2">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover z-50">
+                      {STATUS_OPTIONS.map(s => (
+                        <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="space-y-2 text-sm">
