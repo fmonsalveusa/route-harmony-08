@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useTrucks, DbTruck, TruckInput } from '@/hooks/useTrucks';
+import { useDrivers } from '@/hooks/useDrivers';
 import { TruckFormDialog } from '@/components/TruckFormDialog';
 import { TruckDetailDialog } from '@/components/TruckDetailDialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Truck as TruckIcon, Pencil, Trash2, Eye } from 'lucide-react';
+import { Plus, Truck as TruckIcon, Pencil, Trash2, Eye, User } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -22,6 +23,11 @@ const getStatusStyle = (status: string) =>
 
 const Fleet = () => {
   const { trucks, loading, createTruck, updateTruck, deleteTruck, uploadDocument } = useTrucks();
+  const { drivers } = useDrivers();
+  const getDriverName = (id: string | null) => {
+    if (!id) return null;
+    return drivers.find(d => d.id === id)?.name || null;
+  };
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editTruck, setEditTruck] = useState<DbTruck | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<DbTruck | null>(null);
@@ -83,7 +89,6 @@ const Fleet = () => {
                     </div>
                     <div>
                       <h3 className="font-bold text-lg">Unit #{truck.unit_number}</h3>
-                      <p className="text-xs text-muted-foreground">{truck.license_plate || '—'}</p>
                     </div>
                   </div>
                   <Select value={truck.status} onValueChange={v => updateTruck(truck.id, { status: v })}>
@@ -100,10 +105,16 @@ const Fleet = () => {
 
                 <div className="space-y-2 text-sm">
                   <Row label="Tipo" value={truck.truck_type} />
-                  <Row label="Make / Model" value={[truck.make, truck.model].filter(Boolean).join(' ') || '—'} />
-                  <Row label="Año" value={truck.year?.toString() || '—'} />
-                  <Row label="Max Payload" value={truck.max_payload_lbs ? `${truck.max_payload_lbs.toLocaleString()} lbs` : '—'} />
-                  <Row label="VIN" value={truck.vin || '—'} />
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Driver</span>
+                    <span className="font-medium flex items-center gap-1">
+                      {getDriverName(truck.driver_id) ? (
+                        <><User className="h-3.5 w-3.5 text-primary" />{getDriverName(truck.driver_id)}</>
+                      ) : (
+                        <span className="text-muted-foreground italic">Sin asignar</span>
+                      )}
+                    </span>
+                  </div>
                 </div>
 
                 <div className="flex gap-2 mt-4 pt-3 border-t">
