@@ -90,103 +90,92 @@ export function TruckFormDialog({ open, onOpenChange, truck, onSave }: Props) {
         </DialogHeader>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
-          {/* Unit # */}
           <div className="space-y-2">
             <Label>Unit #</Label>
             <Input value={form.unit_number} onChange={e => set('unit_number', e.target.value)} placeholder="Ej: 101" />
           </div>
-
-          {/* Truck Type */}
           <div className="space-y-2">
             <Label>Truck Type</Label>
             <Select value={form.truck_type} onValueChange={v => set('truck_type', v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {TRUCK_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-              </SelectContent>
+              <SelectContent>{TRUCK_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
             </Select>
           </div>
-
-          {/* Make */}
           <div className="space-y-2">
             <Label>Make</Label>
             <Input value={form.make || ''} onChange={e => set('make', e.target.value)} placeholder="Ej: Freightliner" />
           </div>
-
-          {/* Model */}
           <div className="space-y-2">
             <Label>Model</Label>
             <Input value={form.model || ''} onChange={e => set('model', e.target.value)} placeholder="Ej: Cascadia" />
           </div>
-
-          {/* Year */}
           <div className="space-y-2">
             <Label>Year</Label>
             <Input type="number" value={form.year || ''} onChange={e => set('year', e.target.value ? parseInt(e.target.value) : null)} />
           </div>
-
-          {/* Max Payload */}
           <div className="space-y-2">
             <Label>Max Payload (lbs)</Label>
             <Input type="number" value={form.max_payload_lbs ?? ''} onChange={e => set('max_payload_lbs', e.target.value ? parseFloat(e.target.value) : null)} />
           </div>
-
-          {/* VIN */}
           <div className="space-y-2">
             <Label>VIN</Label>
             <Input value={form.vin || ''} onChange={e => set('vin', e.target.value)} placeholder="Vehicle Identification Number" />
           </div>
-
-          {/* License Plate */}
           <div className="space-y-2">
             <Label>License Plate</Label>
             <Input value={form.license_plate || ''} onChange={e => set('license_plate', e.target.value)} placeholder="Ej: TX-4521" />
           </div>
-
-          {/* Status */}
           <div className="space-y-2">
             <Label>Status</Label>
             <Select value={form.status} onValueChange={v => set('status', v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {STATUSES.map(s => <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>)}
-              </SelectContent>
+              <SelectContent>{STATUSES.map(s => <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>)}</SelectContent>
             </Select>
-          {/* Box Truck specific fields */}
-          {form.truck_type === 'Box Truck' && (
-            <>
-              <div className="space-y-2">
-                <Label>Cargo Length (ft)</Label>
+          </div>
+          <DateField label="Insurance Expiry" value={form.insurance_expiry} onChange={v => set('insurance_expiry', v)} />
+          <DateField label="Registration Expiry" value={form.registration_expiry} onChange={v => set('registration_expiry', v)} />
+        </div>
+
+        {/* Box Truck dimensions */}
+        {form.truck_type === 'Box Truck' && (
+          <div className="border-t pt-4 space-y-2">
+            <Label className="text-base font-semibold">Dimensiones Box Truck</Label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Cargo Length (ft)</Label>
                 <Input type="number" value={form.cargo_length_ft ?? ''} onChange={e => set('cargo_length_ft', e.target.value ? parseFloat(e.target.value) : null)} />
               </div>
-              <div className="space-y-2">
-                <Label>Cargo Width (in)</Label>
+              <div className="space-y-1">
+                <Label className="text-xs">Cargo Width (in)</Label>
                 <Input type="number" value={form.cargo_width_in ?? ''} onChange={e => set('cargo_width_in', e.target.value ? parseFloat(e.target.value) : null)} />
               </div>
-              <div className="space-y-2">
-                <Label>Cargo Height (in)</Label>
+              <div className="space-y-1">
+                <Label className="text-xs">Cargo Height (in)</Label>
                 <Input type="number" value={form.cargo_height_in ?? ''} onChange={e => set('cargo_height_in', e.target.value ? parseFloat(e.target.value) : null)} />
               </div>
-              <div className="space-y-2">
-                <Label>Rear Door Width (in)</Label>
+              <div className="space-y-1">
+                <Label className="text-xs">Rear Door Width (in)</Label>
                 <Input type="number" value={form.rear_door_width_in ?? ''} onChange={e => set('rear_door_width_in', e.target.value ? parseFloat(e.target.value) : null)} />
               </div>
-              <div className="space-y-2">
-                <Label>Rear Door Height (in)</Label>
+              <div className="space-y-1">
+                <Label className="text-xs">Rear Door Height (in)</Label>
                 <Input type="number" value={form.rear_door_height_in ?? ''} onChange={e => set('rear_door_height_in', e.target.value ? parseFloat(e.target.value) : null)} />
               </div>
-            </>
-          )}
+            </div>
+          </div>
+        )}
 
-          {/* Hotshot specific fields */}
-          {form.truck_type === 'Hotshot' && (
-            <>
-              <div className="space-y-2">
-                <Label>Trailer Length (ft)</Label>
+        {/* Hotshot dimensions */}
+        {form.truck_type === 'Hotshot' && (
+          <div className="border-t pt-4 space-y-2">
+            <Label className="text-base font-semibold">Dimensiones Hotshot</Label>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Trailer Length (ft)</Label>
                 <Input type="number" value={form.trailer_length_ft ?? ''} onChange={e => set('trailer_length_ft', e.target.value ? parseFloat(e.target.value) : null)} />
               </div>
-              <div className="space-y-2">
-                <Label>Mega Ramp</Label>
+              <div className="space-y-1">
+                <Label className="text-xs">Mega Ramp</Label>
                 <Select value={form.mega_ramp || ''} onValueChange={v => set('mega_ramp', v)}>
                   <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                   <SelectContent className="bg-popover z-50">
@@ -195,16 +184,9 @@ export function TruckFormDialog({ open, onOpenChange, truck, onSave }: Props) {
                   </SelectContent>
                 </Select>
               </div>
-            </>
-          )}
-        </div>
-
-          {/* Insurance Expiry */}
-          <DateField label="Insurance Expiry" value={form.insurance_expiry} onChange={v => set('insurance_expiry', v)} />
-
-          {/* Registration Expiry */}
-          <DateField label="Registration Expiry" value={form.registration_expiry} onChange={v => set('registration_expiry', v)} />
-        </div>
+            </div>
+          </div>
+        )}
 
         {/* Document uploads */}
         <div className="space-y-3 border-t pt-4">
