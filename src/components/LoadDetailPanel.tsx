@@ -124,10 +124,10 @@ export const LoadDetailPanel = ({ load, onMilesCalculated }: LoadDetailPanelProp
 
       if (!cancelled) {
         setStops(resolvedStops);
-        if (!load.miles || Number(load.miles) === 0) {
-          const rounded = Math.round(accumulatedMiles);
+        const rounded = Math.round(accumulatedMiles);
+        if (rounded > 0) {
           setTotalMiles(rounded);
-          if (rounded > 0 && onMilesCalculated) {
+          if (onMilesCalculated) {
             onMilesCalculated(load.id, rounded);
           }
         }
