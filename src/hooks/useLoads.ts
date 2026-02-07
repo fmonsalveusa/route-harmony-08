@@ -24,6 +24,7 @@ export interface DbLoad {
   miles: number;
   factoring: string | null;
   pdf_url: string | null;
+  notes: string | null;
   created_at: string;
 }
 
@@ -37,6 +38,7 @@ export interface CreateLoadInput {
   cargo_type?: string;
   total_rate: number;
   driver_id?: string;
+  truck_id?: string;
   dispatcher_id?: string;
   broker_client?: string;
   driver_pay_amount?: number;
@@ -46,6 +48,7 @@ export interface CreateLoadInput {
   miles?: number;
   factoring?: string;
   pdf_url?: string;
+  notes?: string;
 }
 
 export function useLoads() {
