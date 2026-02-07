@@ -7,6 +7,10 @@ const statusConfig: Record<string, { label: string; className: string }> = {
   delivered: { label: 'Delivered', className: 'bg-[hsl(152,60%,40%)] text-white' },
   tonu: { label: 'TONU', className: 'bg-[hsl(30,90%,50%)] text-white' },
   cancelled: { label: 'Canceled', className: 'bg-[hsl(0,72%,51%)] text-white' },
+  // Factoring statuses
+  pending_factoring: { label: 'Pending', className: 'bg-[hsl(38,92%,50%)] text-white' },
+  in_progress_factoring: { label: 'In Progress', className: 'bg-[hsl(205,85%,50%)] text-white' },
+  ready_factoring: { label: 'Ready', className: 'bg-[hsl(152,60%,40%)] text-white' },
   // Other statuses for drivers/trucks
   available: { label: 'Disponible', className: 'bg-[hsl(152,60%,40%)] text-white' },
   assigned: { label: 'Asignado', className: 'bg-[hsl(205,85%,50%)] text-white' },

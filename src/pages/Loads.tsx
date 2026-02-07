@@ -122,11 +122,56 @@ const Loads = () => {
                           {load.miles && load.miles > 0 ? `$${(Number(load.total_rate) / Number(load.miles)).toFixed(2)}` : '—'}
                         </td>
                         <td className="p-3 hidden lg:table-cell">{dispatcher?.name || '—'}</td>
-                        <td className="p-3"><StatusBadge status={load.status} /></td>
+                        <td className="p-3" onClick={e => e.stopPropagation()}>
+                          <Select value={load.status} onValueChange={async (val) => {
+                            const updates: any = { status: val };
+                            if (val === 'delivered' && !load.delivery_date) {
+                              updates.delivery_date = new Date().toISOString().split('T')[0];
+                            }
+                            await updateLoad(load.id, updates);
+                          }}>
+                            <SelectTrigger className="h-7 w-[130px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:ml-1">
+                              <StatusBadge status={load.status} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {[
+                                { value: 'planned', label: 'Planned' },
+                                { value: 'dispatched', label: 'Dispatched' },
+                                { value: 'in_transit', label: 'In Transit' },
+                                { value: 'delivered', label: 'Delivered' },
+                                { value: 'tonu', label: 'TONU' },
+                                { value: 'cancelled', label: 'Canceled' },
+                              ].map(s => (
+                                <SelectItem key={s.value} value={s.value}>
+                                  <StatusBadge status={s.value} />
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </td>
                         <td className="p-3 hidden lg:table-cell text-muted-foreground">
                           {load.status === 'delivered' ? (load.delivery_date || '—') : '—'}
                         </td>
-                        <td className="p-3 hidden lg:table-cell text-muted-foreground">{load.factoring || '—'}</td>
+                        <td className="p-3 hidden lg:table-cell" onClick={e => e.stopPropagation()}>
+                          <Select value={load.factoring || ''} onValueChange={async (val) => {
+                            await updateLoad(load.id, { factoring: val });
+                          }}>
+                            <SelectTrigger className="h-7 w-[120px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:ml-1">
+                              {load.factoring ? <StatusBadge status={`${load.factoring}_factoring`} /> : <span className="text-muted-foreground">—</span>}
+                            </SelectTrigger>
+                            <SelectContent>
+                              {[
+                                { value: 'pending', label: 'Pending' },
+                                { value: 'in_progress', label: 'In Progress' },
+                                { value: 'ready', label: 'Ready' },
+                              ].map(s => (
+                                <SelectItem key={s.value} value={s.value}>
+                                  <StatusBadge status={`${s.value}_factoring`} />
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </td>
                         <td className="p-3 text-right" onClick={e => e.stopPropagation()}>
                           <div className="flex justify-end gap-1">
                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditLoad(load); setShowForm(true); }}>
