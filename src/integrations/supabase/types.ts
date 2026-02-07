@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           commission_percentage: number
           created_at: string
+          dispatch_service_percentage: number
           email: string
           id: string
           name: string
@@ -30,6 +31,7 @@ export type Database = {
         Insert: {
           commission_percentage?: number
           created_at?: string
+          dispatch_service_percentage?: number
           email: string
           id?: string
           name: string
@@ -42,6 +44,7 @@ export type Database = {
         Update: {
           commission_percentage?: number
           created_at?: string
+          dispatch_service_percentage?: number
           email?: string
           id?: string
           name?: string

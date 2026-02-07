@@ -9,6 +9,7 @@ export interface DbDispatcher {
   phone: string;
   status: string;
   commission_percentage: number;
+  dispatch_service_percentage: number;
   pay_type: string;
   start_date: string;
   created_at: string;
@@ -21,6 +22,7 @@ export interface DispatcherInput {
   phone: string;
   status: string;
   commission_percentage: number;
+  dispatch_service_percentage: number;
   pay_type: string;
   start_date: string;
 }
