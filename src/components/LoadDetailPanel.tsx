@@ -32,9 +32,10 @@ interface Stop {
 
 interface LoadDetailPanelProps {
   load: DbLoad;
+  onMilesCalculated?: (loadId: string, miles: number) => void;
 }
 
-export const LoadDetailPanel = ({ load }: LoadDetailPanelProps) => {
+export const LoadDetailPanel = ({ load, onMilesCalculated }: LoadDetailPanelProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const [stops, setStops] = useState<Stop[]>([]);
@@ -99,9 +100,12 @@ export const LoadDetailPanel = ({ load }: LoadDetailPanelProps) => {
 
       if (!cancelled) {
         setStops(resolvedStops);
-        // Use DB miles if available, otherwise use calculated
         if (!load.miles || Number(load.miles) === 0) {
-          setTotalMiles(Math.round(accumulatedMiles));
+          const rounded = Math.round(accumulatedMiles);
+          setTotalMiles(rounded);
+          if (rounded > 0 && onMilesCalculated) {
+            onMilesCalculated(load.id, rounded);
+          }
         }
       }
 
