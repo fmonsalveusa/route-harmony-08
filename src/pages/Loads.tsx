@@ -75,17 +75,26 @@ const Loads = () => {
             <table className="w-full text-sm">
               <thead><tr className="border-b bg-muted/50">
                 <th className="w-8 p-3"></th>
-                <th className="text-left p-3 font-medium text-muted-foreground">Referencia</th>
-                <th className="text-left p-3 font-medium text-muted-foreground">Origen → Destino</th>
-                <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Fecha</th>
-                <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Driver</th>
-                <th className="text-left p-3 font-medium text-muted-foreground">Estado</th>
-                <th className="text-right p-3 font-medium text-muted-foreground">Tarifa</th>
+                <th className="text-left p-3 font-medium text-muted-foreground">Load #</th>
+                <th className="text-left p-3 font-medium text-muted-foreground">Broker</th>
+                <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Driver/Truck</th>
+                <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Origin</th>
+                <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Destination</th>
+                <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Pickup</th>
+                <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Delivery</th>
+                <th className="text-right p-3 font-medium text-muted-foreground">Rate</th>
+                <th className="text-right p-3 font-medium text-muted-foreground hidden md:table-cell">Miles</th>
+                <th className="text-right p-3 font-medium text-muted-foreground hidden md:table-cell">RPM</th>
+                <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Dispatcher</th>
+                <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
+                <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Delivered</th>
+                <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Factoring</th>
                 <th className="text-right p-3 font-medium text-muted-foreground">Acciones</th>
               </tr></thead>
               <tbody>
                 {loads.map(load => {
                   const driver = mockDrivers.find(d => d.id === load.driver_id);
+                  const dispatcher = mockDispatchers.find(d => d.id === load.dispatcher_id);
                   const isExpanded = expandedId === load.id;
                   return (
                     <>
@@ -98,14 +107,26 @@ const Loads = () => {
                           {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                         </td>
                         <td className="p-3 font-medium text-primary">{load.reference_number}</td>
-                        <td className="p-3">
-                          <div className="text-foreground">{load.origin}</div>
-                          <div className="text-muted-foreground text-xs">→ {load.destination}</div>
+                        <td className="p-3 text-foreground">{load.broker_client || '—'}</td>
+                        <td className="p-3 hidden md:table-cell">
+                          <div className="text-foreground">{driver?.name || <span className="text-muted-foreground italic">Sin asignar</span>}</div>
+                          <div className="text-muted-foreground text-xs">{load.truck_id || '—'}</div>
                         </td>
-                        <td className="p-3 text-muted-foreground hidden md:table-cell">{load.pickup_date || '—'}</td>
-                        <td className="p-3 hidden lg:table-cell">{driver?.name || <span className="text-muted-foreground italic">Sin asignar</span>}</td>
-                        <td className="p-3"><StatusBadge status={load.status} /></td>
+                        <td className="p-3 hidden md:table-cell text-foreground">{load.origin}</td>
+                        <td className="p-3 hidden md:table-cell text-foreground">{load.destination}</td>
+                        <td className="p-3 hidden lg:table-cell text-muted-foreground">{load.pickup_date || '—'}</td>
+                        <td className="p-3 hidden lg:table-cell text-muted-foreground">{load.delivery_date || '—'}</td>
                         <td className="p-3 text-right font-semibold">${Number(load.total_rate).toLocaleString()}</td>
+                        <td className="p-3 text-right hidden md:table-cell text-muted-foreground">{Number(load.miles || 0).toLocaleString()}</td>
+                        <td className="p-3 text-right hidden md:table-cell text-muted-foreground">
+                          {load.miles && load.miles > 0 ? `$${(Number(load.total_rate) / Number(load.miles)).toFixed(2)}` : '—'}
+                        </td>
+                        <td className="p-3 hidden lg:table-cell">{dispatcher?.name || '—'}</td>
+                        <td className="p-3"><StatusBadge status={load.status} /></td>
+                        <td className="p-3 hidden lg:table-cell text-muted-foreground">
+                          {load.status === 'delivered' ? (load.delivery_date || '—') : '—'}
+                        </td>
+                        <td className="p-3 hidden lg:table-cell text-muted-foreground">{load.factoring || '—'}</td>
                         <td className="p-3 text-right" onClick={e => e.stopPropagation()}>
                           <div className="flex justify-end gap-1">
                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditLoad(load); setShowForm(true); }}>
@@ -119,7 +140,7 @@ const Loads = () => {
                       </tr>
                       {isExpanded && (
                         <tr key={`${load.id}-detail`}>
-                          <td colSpan={8} className="p-0">
+                          <td colSpan={16} className="p-0">
                             <LoadDetailPanel load={load} />
                           </td>
                         </tr>

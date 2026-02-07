@@ -1,0 +1,3 @@
+
+ALTER TABLE public.loads ADD COLUMN IF NOT EXISTS miles numeric DEFAULT 0;
+ALTER TABLE public.loads ADD COLUMN IF NOT EXISTS factoring text DEFAULT NULL;

@@ -21,6 +21,8 @@ export interface DbLoad {
   investor_pay_amount: number;
   dispatcher_pay_amount: number;
   company_profit: number;
+  miles: number;
+  factoring: string | null;
   created_at: string;
 }
 
@@ -40,6 +42,8 @@ export interface CreateLoadInput {
   investor_pay_amount?: number;
   dispatcher_pay_amount?: number;
   company_profit?: number;
+  miles?: number;
+  factoring?: string;
 }
 
 export function useLoads() {
