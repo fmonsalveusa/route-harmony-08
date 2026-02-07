@@ -14,6 +14,84 @@ export type Database = {
   }
   public: {
     Tables: {
+      drivers: {
+        Row: {
+          created_at: string
+          dispatcher_id: string | null
+          earnings_this_month: number | null
+          email: string
+          form_w9_url: string | null
+          hire_date: string
+          id: string
+          investor_name: string | null
+          investor_pay_percentage: number | null
+          leasing_agreement_url: string | null
+          license: string
+          license_expiry: string | null
+          license_photo_url: string | null
+          loads_this_month: number | null
+          medical_card_expiry: string | null
+          medical_card_photo_url: string | null
+          name: string
+          pay_percentage: number
+          phone: string
+          service_agreement_url: string | null
+          status: string
+          truck_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          dispatcher_id?: string | null
+          earnings_this_month?: number | null
+          email: string
+          form_w9_url?: string | null
+          hire_date?: string
+          id?: string
+          investor_name?: string | null
+          investor_pay_percentage?: number | null
+          leasing_agreement_url?: string | null
+          license: string
+          license_expiry?: string | null
+          license_photo_url?: string | null
+          loads_this_month?: number | null
+          medical_card_expiry?: string | null
+          medical_card_photo_url?: string | null
+          name: string
+          pay_percentage?: number
+          phone: string
+          service_agreement_url?: string | null
+          status?: string
+          truck_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          dispatcher_id?: string | null
+          earnings_this_month?: number | null
+          email?: string
+          form_w9_url?: string | null
+          hire_date?: string
+          id?: string
+          investor_name?: string | null
+          investor_pay_percentage?: number | null
+          leasing_agreement_url?: string | null
+          license?: string
+          license_expiry?: string | null
+          license_photo_url?: string | null
+          loads_this_month?: number | null
+          medical_card_expiry?: string | null
+          medical_card_photo_url?: string | null
+          name?: string
+          pay_percentage?: number
+          phone?: string
+          service_agreement_url?: string | null
+          status?: string
+          truck_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       loads: {
         Row: {
           broker_client: string | null
