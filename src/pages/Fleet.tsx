@@ -1,60 +1,129 @@
-import { mockTrucks, mockDrivers, mockInvestors } from '@/data/mockData';
+import { useState } from 'react';
+import { useTrucks, DbTruck, TruckInput } from '@/hooks/useTrucks';
+import { TruckFormDialog } from '@/components/TruckFormDialog';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Truck as TruckIcon, User, Building } from 'lucide-react';
+import { Plus, Truck as TruckIcon, Pencil, Trash2 } from 'lucide-react';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
-const Fleet = () => (
-  <div className="space-y-6">
-    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-      <div>
-        <h1 className="page-header">Flota de Camiones</h1>
-        <p className="page-description">Gestión y disponibilidad de vehículos</p>
+const Fleet = () => {
+  const { trucks, loading, createTruck, updateTruck, deleteTruck, uploadDocument } = useTrucks();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editTruck, setEditTruck] = useState<DbTruck | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<DbTruck | null>(null);
+
+  const openNew = () => { setEditTruck(null); setDialogOpen(true); };
+  const openEdit = (t: DbTruck) => { setEditTruck(t); setDialogOpen(true); };
+
+  const handleSave = async (input: TruckInput, files: Record<string, File>) => {
+    let ok: boolean;
+    const truckId = editTruck?.id || crypto.randomUUID();
+
+    // Upload files first
+    const docUpdates: Record<string, string> = {};
+    for (const [key, file] of Object.entries(files)) {
+      const url = await uploadDocument(file, truckId, key);
+      if (url) docUpdates[`${key}_url`] = url;
+    }
+
+    if (editTruck) {
+      ok = await updateTruck(editTruck.id, { ...input, ...docUpdates });
+    } else {
+      ok = await createTruck({ ...input, ...docUpdates } as any);
+    }
+    return ok;
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    await deleteTruck(deleteTarget.id);
+    setDeleteTarget(null);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="page-header">Flota de Camiones</h1>
+          <p className="page-description">Gestión y disponibilidad de vehículos</p>
+        </div>
+        <Button size="sm" className="gap-2" onClick={openNew}>
+          <Plus className="h-4 w-4" /> Nuevo Camión
+        </Button>
       </div>
-      <Button size="sm" className="gap-2"><Plus className="h-4 w-4" /> Nuevo Camión</Button>
-    </div>
 
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-      {mockTrucks.map(truck => {
-        const driver = mockDrivers.find(d => d.id === truck.driverId);
-        const investor = mockInvestors.find(i => i.id === truck.investorId);
-        return (
-          <Card key={truck.id} className="hover:shadow-md transition-shadow animate-fade-in">
-            <CardContent className="p-5">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <TruckIcon className="h-5 w-5 text-primary" />
+      {loading ? (
+        <p className="text-muted-foreground text-center py-12">Cargando camiones...</p>
+      ) : trucks.length === 0 ? (
+        <p className="text-muted-foreground text-center py-12">No hay camiones registrados. Crea el primero.</p>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {trucks.map(truck => (
+            <Card key={truck.id} className="hover:shadow-md transition-shadow animate-fade-in">
+              <CardContent className="p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <TruckIcon className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-lg">Unit #{truck.unit_number}</h3>
+                      <p className="text-xs text-muted-foreground">{truck.license_plate || '—'}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-bold text-lg">{truck.plateNumber}</h3>
-                    <p className="text-xs text-muted-foreground">{truck.model}</p>
-                  </div>
+                  <StatusBadge status={truck.status} />
                 </div>
-                <StatusBadge status={truck.status} />
-              </div>
 
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Año</span>
-                  <span className="font-medium">{truck.year}</span>
+                <div className="space-y-2 text-sm">
+                  <Row label="Tipo" value={truck.truck_type} />
+                  <Row label="Make / Model" value={[truck.make, truck.model].filter(Boolean).join(' ') || '—'} />
+                  <Row label="Año" value={truck.year?.toString() || '—'} />
+                  <Row label="Max Payload" value={truck.max_payload_lbs ? `${truck.max_payload_lbs.toLocaleString()} lbs` : '—'} />
+                  <Row label="VIN" value={truck.vin || '—'} />
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground flex items-center gap-1.5"><User className="h-3.5 w-3.5" /> Driver</span>
-                  <span className="font-medium">{driver?.name || '—'}</span>
+
+                <div className="flex gap-2 mt-4 pt-3 border-t">
+                  <Button variant="outline" size="sm" className="flex-1 gap-1.5" onClick={() => openEdit(truck)}>
+                    <Pencil className="h-3.5 w-3.5" /> Editar
+                  </Button>
+                  <Button variant="outline" size="sm" className="flex-1 gap-1.5 text-destructive hover:text-destructive" onClick={() => setDeleteTarget(truck)}>
+                    <Trash2 className="h-3.5 w-3.5" /> Eliminar
+                  </Button>
                 </div>
-                {investor && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground flex items-center gap-1.5"><Building className="h-3.5 w-3.5" /> Investor</span>
-                    <span className="font-medium text-xs">{investor.name}</span>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        );
-      })}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      <TruckFormDialog open={dialogOpen} onOpenChange={setDialogOpen} truck={editTruck} onSave={handleSave} />
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={v => !v && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar camión?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción eliminará el camión Unit #{deleteTarget?.unit_number} permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Eliminar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
+  );
+};
+
+const Row = ({ label, value }: { label: string; value: string }) => (
+  <div className="flex justify-between">
+    <span className="text-muted-foreground">{label}</span>
+    <span className="font-medium">{value}</span>
   </div>
 );
 
