@@ -1,20 +1,130 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { mockLoads, mockDrivers, mockDispatchers } from '@/data/mockData';
 import { StatusBadge } from '@/components/StatusBadge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Plus, Search, Upload, Filter, Package } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { Plus, Search, Upload, Filter, Package, FileText, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+
+interface ExtractedData {
+  origin: string;
+  destination: string;
+  pickupDate: string;
+  deliveryDate: string;
+  weight: number;
+  cargoType: string;
+  totalRate: number;
+  referenceNumber: string;
+  brokerClient: string;
+}
 
 const Loads = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [showCreate, setShowCreate] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Form state
+  const [formData, setFormData] = useState<ExtractedData>({
+    origin: '', destination: '', pickupDate: '', deliveryDate: '',
+    weight: 0, cargoType: '', totalRate: 0, referenceNumber: '', brokerClient: '',
+  });
+  const [selectedDriver, setSelectedDriver] = useState('');
+  const [isExtracting, setIsExtracting] = useState(false);
+  const [extractionStatus, setExtractionStatus] = useState<'idle' | 'uploading' | 'processing' | 'done' | 'error'>('idle');
+  const [pdfFileName, setPdfFileName] = useState('');
+
+  const updateField = (field: keyof ExtractedData, value: string | number) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.type !== 'application/pdf') {
+      toast({ title: 'Error', description: 'Solo se permiten archivos PDF', variant: 'destructive' });
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast({ title: 'Error', description: 'El archivo no puede superar 10MB', variant: 'destructive' });
+      return;
+    }
+
+    setPdfFileName(file.name);
+    setExtractionStatus('uploading');
+    setIsExtracting(true);
+
+    try {
+      // Convert to base64
+      const buffer = await file.arrayBuffer();
+      const bytes = new Uint8Array(buffer);
+      let binary = '';
+      for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      const base64 = btoa(binary);
+
+      setExtractionStatus('processing');
+
+      const { data, error } = await supabase.functions.invoke('extract-pdf', {
+        body: { pdfBase64: base64 },
+      });
+
+      if (error) throw error;
+
+      if (data?.success && data?.data) {
+        const extracted = data.data as ExtractedData;
+        setFormData({
+          origin: extracted.origin || '',
+          destination: extracted.destination || '',
+          pickupDate: extracted.pickupDate || '',
+          deliveryDate: extracted.deliveryDate || '',
+          weight: extracted.weight || 0,
+          cargoType: extracted.cargoType || '',
+          totalRate: extracted.totalRate || 0,
+          referenceNumber: extracted.referenceNumber || '',
+          brokerClient: extracted.brokerClient || '',
+        });
+        setExtractionStatus('done');
+        toast({ title: 'Extracción exitosa', description: 'Los campos se han rellenado automáticamente. Revisa y edita si es necesario.' });
+      } else {
+        throw new Error(data?.error || 'No se pudo extraer información');
+      }
+    } catch (err: any) {
+      console.error('PDF extraction error:', err);
+      setExtractionStatus('error');
+      toast({
+        title: 'Error al extraer PDF',
+        description: err.message || 'Ocurrió un error procesando el archivo',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsExtracting(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({ origin: '', destination: '', pickupDate: '', deliveryDate: '', weight: 0, cargoType: '', totalRate: 0, referenceNumber: '', brokerClient: '' });
+    setSelectedDriver('');
+    setExtractionStatus('idle');
+    setPdfFileName('');
+  };
+
+  const driverPay = formData.totalRate * 0.30;
+  const investorPay = formData.totalRate * 0.15;
+  const dispatcherPay = formData.totalRate * 0.08;
+  const companyProfit = formData.totalRate - driverPay - investorPay - dispatcherPay;
 
   const isDispatcher = user?.role === 'dispatcher';
   let loads = isDispatcher
@@ -37,23 +147,104 @@ const Loads = () => {
           <p className="page-description">Administra todas las cargas y asignaciones</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="gap-2">
-            <Upload className="h-4 w-4" /> Subir PDF
-          </Button>
-          <Dialog open={showCreate} onOpenChange={setShowCreate}>
+          <Dialog open={showCreate} onOpenChange={(open) => { setShowCreate(open); if (!open) resetForm(); }}>
             <DialogTrigger asChild>
               <Button size="sm" className="gap-2"><Plus className="h-4 w-4" /> Nueva Carga</Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader><DialogTitle>Crear Nueva Carga</DialogTitle></DialogHeader>
+
+              {/* PDF Upload Section */}
+              <div className="mt-2 p-4 rounded-lg border-2 border-dashed border-primary/30 bg-primary/5">
+                <div className="flex items-center gap-3 mb-3">
+                  <FileText className="h-5 w-5 text-primary" />
+                  <div>
+                    <h4 className="text-sm font-semibold">Extraer datos de PDF</h4>
+                    <p className="text-xs text-muted-foreground">Sube un rate confirmation o BOL y la IA completará los campos automáticamente</p>
+                  </div>
+                </div>
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf"
+                  onChange={handlePdfUpload}
+                  className="hidden"
+                />
+
+                {extractionStatus === 'idle' && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full gap-2"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload className="h-4 w-4" /> Seleccionar PDF
+                  </Button>
+                )}
+
+                {(extractionStatus === 'uploading' || extractionStatus === 'processing') && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm">
+                      <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                      <span>{extractionStatus === 'uploading' ? 'Subiendo archivo...' : 'Extrayendo información con IA...'}</span>
+                    </div>
+                    <Progress value={extractionStatus === 'uploading' ? 30 : 70} className="h-2" />
+                    {pdfFileName && <p className="text-xs text-muted-foreground">{pdfFileName}</p>}
+                  </div>
+                )}
+
+                {extractionStatus === 'done' && (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-sm text-green-600">
+                      <CheckCircle className="h-4 w-4 text-primary" />
+                      <span>Datos extraídos de <strong>{pdfFileName}</strong></span>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={() => { setExtractionStatus('idle'); fileInputRef.current?.click(); }}>
+                      Cambiar PDF
+                    </Button>
+                  </div>
+                )}
+
+                {extractionStatus === 'error' && (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-sm text-destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <span>Error al extraer. Completa los campos manualmente.</span>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={() => { setExtractionStatus('idle'); fileInputRef.current?.click(); }}>
+                      Reintentar
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {/* Form Fields */}
               <div className="grid grid-cols-2 gap-4 mt-4">
-                <div className="space-y-2"><Label>Origen</Label><Input placeholder="Ciudad, Estado" /></div>
-                <div className="space-y-2"><Label>Destino</Label><Input placeholder="Ciudad, Estado" /></div>
-                <div className="space-y-2"><Label>Fecha Recogida</Label><Input type="date" /></div>
-                <div className="space-y-2"><Label>Fecha Entrega</Label><Input type="date" /></div>
-                <div className="space-y-2"><Label>Peso (lbs)</Label><Input type="number" placeholder="40000" /></div>
-                <div className="space-y-2"><Label>Tipo de Carga</Label>
-                  <Select><SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+                <div className="space-y-2">
+                  <Label>Origen</Label>
+                  <Input placeholder="Ciudad, Estado" value={formData.origin} onChange={e => updateField('origin', e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Destino</Label>
+                  <Input placeholder="Ciudad, Estado" value={formData.destination} onChange={e => updateField('destination', e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Fecha Recogida</Label>
+                  <Input type="date" value={formData.pickupDate} onChange={e => updateField('pickupDate', e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Fecha Entrega</Label>
+                  <Input type="date" value={formData.deliveryDate} onChange={e => updateField('deliveryDate', e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Peso (lbs)</Label>
+                  <Input type="number" placeholder="40000" value={formData.weight || ''} onChange={e => updateField('weight', Number(e.target.value))} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Tipo de Carga</Label>
+                  <Select value={formData.cargoType} onValueChange={v => updateField('cargoType', v)}>
+                    <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="dry_van">Dry Van</SelectItem>
                       <SelectItem value="reefer">Reefer</SelectItem>
@@ -61,10 +252,18 @@ const Loads = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2"><Label>Tarifa Total ($)</Label><Input type="number" placeholder="2500" /></div>
-                <div className="space-y-2"><Label>Broker/Cliente</Label><Input placeholder="Nombre del broker" /></div>
-                <div className="space-y-2"><Label>Conductor</Label>
-                  <Select><SelectTrigger><SelectValue placeholder="Asignar driver" /></SelectTrigger>
+                <div className="space-y-2">
+                  <Label>Tarifa Total ($)</Label>
+                  <Input type="number" placeholder="2500" value={formData.totalRate || ''} onChange={e => updateField('totalRate', Number(e.target.value))} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Broker/Cliente</Label>
+                  <Input placeholder="Nombre del broker" value={formData.brokerClient} onChange={e => updateField('brokerClient', e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Conductor</Label>
+                  <Select value={selectedDriver} onValueChange={setSelectedDriver}>
+                    <SelectTrigger><SelectValue placeholder="Asignar driver" /></SelectTrigger>
                     <SelectContent>
                       {mockDrivers.filter(d => d.status === 'available').map(d => (
                         <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
@@ -72,20 +271,28 @@ const Loads = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2"><Label>Nro. Referencia</Label><Input placeholder="RC-2024-XXX" /></div>
-              </div>
-              <div className="mt-4 p-4 rounded-lg bg-muted">
-                <h4 className="text-sm font-semibold mb-3">Desglose de Pagos (estimado)</h4>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <span className="text-muted-foreground">Driver (30%):</span><span className="font-medium">$750</span>
-                  <span className="text-muted-foreground">Investor (15%):</span><span className="font-medium">$375</span>
-                  <span className="text-muted-foreground">Dispatcher (8%):</span><span className="font-medium">$200</span>
-                  <span className="text-muted-foreground font-semibold">Utilidad Empresa:</span><span className="font-bold text-success">$1,175</span>
+                <div className="space-y-2">
+                  <Label>Nro. Referencia</Label>
+                  <Input placeholder="RC-2024-XXX" value={formData.referenceNumber} onChange={e => updateField('referenceNumber', e.target.value)} />
                 </div>
               </div>
+
+              {/* Payment Breakdown */}
+              {formData.totalRate > 0 && (
+                <div className="mt-4 p-4 rounded-lg bg-muted">
+                  <h4 className="text-sm font-semibold mb-3">Desglose de Pagos (estimado)</h4>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <span className="text-muted-foreground">Driver (30%):</span><span className="font-medium">${driverPay.toLocaleString()}</span>
+                    <span className="text-muted-foreground">Investor (15%):</span><span className="font-medium">${investorPay.toLocaleString()}</span>
+                    <span className="text-muted-foreground">Dispatcher (8%):</span><span className="font-medium">${dispatcherPay.toLocaleString()}</span>
+                    <span className="text-muted-foreground font-semibold">Utilidad Empresa:</span><span className="font-bold text-primary">${companyProfit.toLocaleString()}</span>
+                  </div>
+                </div>
+              )}
+
               <div className="flex justify-end gap-2 mt-4">
                 <Button variant="outline" onClick={() => setShowCreate(false)}>Cancelar</Button>
-                <Button onClick={() => setShowCreate(false)}>Crear Carga</Button>
+                <Button onClick={() => { setShowCreate(false); resetForm(); }}>Crear Carga</Button>
               </div>
             </DialogContent>
           </Dialog>
