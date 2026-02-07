@@ -131,7 +131,7 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks 
               <SelectTrigger><SelectValue placeholder="Sin asignar" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">Sin asignar</SelectItem>
-                {trucks.map(t => <SelectItem key={t.id} value={t.id}>{t.license_plate || t.unit_number} · {t.model || t.truck_type}</SelectItem>)}
+                {trucks.map(t => <SelectItem key={t.id} value={t.id}>Unit #{t.unit_number} · {t.model || t.truck_type}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
