@@ -1,24 +1,34 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { mockDispatchers, mockTrucks } from '@/data/mockData';
+import { mockDispatchers } from '@/data/mockData';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Phone, Mail, Truck as TruckIcon, Headphones, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Search, Phone, Mail, Truck as TruckIcon, Headphones, Pencil, Trash2, Eye } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useDrivers, DbDriver, DriverInput } from '@/hooks/useDrivers';
+import { useTrucks } from '@/hooks/useTrucks';
 import { DriverFormDialog } from '@/components/DriverFormDialog';
+import { DriverDetailDialog } from '@/components/DriverDetailDialog';
 
 const Drivers = () => {
   const { user } = useAuth();
   const { drivers, loading, createDriver, updateDriver, deleteDriver, uploadDocument } = useDrivers();
+  const { trucks } = useTrucks();
   const [search, setSearch] = useState('');
   const [formOpen, setFormOpen] = useState(false);
   const [editingDriver, setEditingDriver] = useState<DbDriver | null>(null);
   const [deletingDriver, setDeletingDriver] = useState<DbDriver | null>(null);
+  const [detailDriver, setDetailDriver] = useState<DbDriver | null>(null);
+
+  const getTruckLabel = (id: string | null) => {
+    if (!id) return null;
+    const t = trucks.find(t => t.id === id);
+    return t ? `${t.license_plate || t.unit_number} · ${t.model || t.truck_type}` : null;
+  };
 
   const isDispatcher = user?.role === 'dispatcher';
   let filtered = isDispatcher
@@ -81,7 +91,7 @@ const Drivers = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map(driver => {
             const dispatcher = mockDispatchers.find(d => d.id === driver.dispatcher_id);
-            const truck = mockTrucks.find(t => t.id === driver.truck_id);
+            const truckLabel = getTruckLabel(driver.truck_id);
             const initials = driver.name.split(' ').map(n => n[0]).join('');
             return (
               <Card key={driver.id} className="hover:shadow-md transition-shadow animate-fade-in">
@@ -112,10 +122,10 @@ const Drivers = () => {
                         <Badge variant="secondary" className="text-xs">{dispatcher.name}</Badge>
                       </div>
                     )}
-                    {truck && (
+                    {truckLabel && (
                       <div className="flex items-center gap-2">
                         <TruckIcon className="h-3.5 w-3.5 text-primary" />
-                        <span>{truck.plateNumber} · {truck.model}</span>
+                        <span>{truckLabel}</span>
                       </div>
                     )}
                   </div>
@@ -135,16 +145,21 @@ const Drivers = () => {
                     </div>
                   </div>
 
-                  {!isDispatcher && (
-                    <div className="mt-3 pt-3 border-t flex justify-end gap-2">
-                      <Button size="sm" variant="outline" onClick={() => { setEditingDriver(driver); setFormOpen(true); }}>
-                        <Pencil className="h-3.5 w-3.5 mr-1" /> Editar
-                      </Button>
-                      <Button size="sm" variant="destructive" onClick={() => setDeletingDriver(driver)}>
-                        <Trash2 className="h-3.5 w-3.5 mr-1" /> Borrar
-                      </Button>
-                    </div>
-                  )}
+                  <div className="mt-3 pt-3 border-t flex justify-end gap-2">
+                    <Button size="sm" variant="outline" onClick={() => setDetailDriver(driver)}>
+                      <Eye className="h-3.5 w-3.5 mr-1" /> Detalle
+                    </Button>
+                    {!isDispatcher && (
+                      <>
+                        <Button size="sm" variant="outline" onClick={() => { setEditingDriver(driver); setFormOpen(true); }}>
+                          <Pencil className="h-3.5 w-3.5 mr-1" /> Editar
+                        </Button>
+                        <Button size="sm" variant="destructive" onClick={() => setDeletingDriver(driver)}>
+                          <Trash2 className="h-3.5 w-3.5 mr-1" /> Borrar
+                        </Button>
+                      </>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             );
@@ -157,6 +172,15 @@ const Drivers = () => {
         onOpenChange={setFormOpen}
         driver={editingDriver}
         onSubmit={handleSubmit}
+        trucks={trucks}
+      />
+
+      <DriverDetailDialog
+        open={!!detailDriver}
+        onOpenChange={open => !open && setDetailDriver(null)}
+        driver={detailDriver}
+        truckLabel={detailDriver ? getTruckLabel(detailDriver.truck_id) : null}
+        dispatcherName={detailDriver ? mockDispatchers.find(d => d.id === detailDriver.dispatcher_id)?.name || null : null}
       />
 
       <AlertDialog open={!!deletingDriver} onOpenChange={open => !open && setDeletingDriver(null)}>

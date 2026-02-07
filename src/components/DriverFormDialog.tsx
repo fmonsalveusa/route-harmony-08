@@ -10,13 +10,15 @@ import { CalendarIcon, Upload, FileText, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { DbDriver, DriverInput } from '@/hooks/useDrivers';
-import { mockDispatchers, mockTrucks } from '@/data/mockData';
+import { DbTruck } from '@/hooks/useTrucks';
+import { mockDispatchers } from '@/data/mockData';
 
 interface DriverFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   driver?: DbDriver | null;
   onSubmit: (data: DriverInput, files: Record<string, File | null>) => Promise<void>;
+  trucks: DbTruck[];
 }
 
 const emptyForm: DriverInput = {
@@ -37,7 +39,7 @@ const docFields: { key: DocKey; label: string; urlKey: string }[] = [
   { key: 'service_agreement', label: 'Service Agreement', urlKey: 'service_agreement_url' },
 ];
 
-export function DriverFormDialog({ open, onOpenChange, driver, onSubmit }: DriverFormDialogProps) {
+export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks }: DriverFormDialogProps) {
   const [form, setForm] = useState<DriverInput>(emptyForm);
   const [files, setFiles] = useState<Record<string, File | null>>({});
   const [saving, setSaving] = useState(false);
@@ -129,7 +131,7 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit }: Drive
               <SelectTrigger><SelectValue placeholder="Sin asignar" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">Sin asignar</SelectItem>
-                {mockTrucks.map(t => <SelectItem key={t.id} value={t.id}>{t.plateNumber} · {t.model}</SelectItem>)}
+                {trucks.map(t => <SelectItem key={t.id} value={t.id}>{t.license_plate || t.unit_number} · {t.model || t.truck_type}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
