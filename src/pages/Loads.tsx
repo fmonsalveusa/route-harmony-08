@@ -14,6 +14,20 @@ import { Plus, Search, Filter, Package, Pencil, Trash2, ChevronDown, ChevronUp }
 import type { DbLoad } from '@/hooks/useLoads';
 
 const Loads = () => {
+  // Extract "City, ST" from a full address string
+  const extractCityState = (address: string): string => {
+    if (!address) return '—';
+    // Try to match "City, ST" or "City, State" pattern at the end or as the whole string
+    // Handle formats like "123 Main St, Houston, TX 77001" or "Houston, TX"
+    const parts = address.split(',').map(p => p.trim());
+    if (parts.length >= 2) {
+      // Get the last part that contains a state abbreviation or state name
+      const lastPart = parts[parts.length - 1].replace(/\d{5}(-\d{4})?/, '').trim();
+      const city = parts[parts.length - 2];
+      if (lastPart) return `${city}, ${lastPart}`;
+    }
+    return address;
+  };
   const { user } = useAuth();
   const { loads: dbLoads, loading: loadsLoading, createLoad, updateLoad, deleteLoad } = useLoads();
   const [search, setSearch] = useState('');
@@ -112,8 +126,8 @@ const Loads = () => {
                           <div className="text-foreground">{driver?.name || <span className="text-muted-foreground italic">Sin asignar</span>}</div>
                           <div className="text-muted-foreground text-xs">{load.truck_id || '—'}</div>
                         </td>
-                        <td className="p-3 hidden md:table-cell text-foreground">{load.origin}</td>
-                        <td className="p-3 hidden md:table-cell text-foreground">{load.destination}</td>
+                        <td className="p-3 hidden md:table-cell text-foreground">{extractCityState(load.origin)}</td>
+                        <td className="p-3 hidden md:table-cell text-foreground">{extractCityState(load.destination)}</td>
                         <td className="p-3 hidden lg:table-cell text-muted-foreground">{load.pickup_date || '—'}</td>
                         <td className="p-3 hidden lg:table-cell text-muted-foreground">{load.delivery_date || '—'}</td>
                         <td className="p-3 text-right font-semibold">${Number(load.total_rate).toLocaleString()}</td>
