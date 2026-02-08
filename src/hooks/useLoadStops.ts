@@ -21,7 +21,7 @@ export interface CreateStopInput {
 
 export function useLoadStops(loadId?: string) {
   const [stops, setStops] = useState<LoadStop[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(!!loadId);
 
   const fetchStops = useCallback(async (id?: string) => {
     const targetId = id || loadId;

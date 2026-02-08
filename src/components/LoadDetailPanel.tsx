@@ -88,10 +88,14 @@ export const LoadDetailPanel = ({ load, onMilesCalculated }: LoadDetailPanelProp
 
   useEffect(() => {
     persistedRef.current = false;
-    if (stopsLoading) return;
+    if (stopsLoading) {
+      console.log('[MAP] Stops still loading, skipping init');
+      return;
+    }
 
     let cancelled = false;
     const stopAddresses = getStopAddresses();
+    console.log('[MAP] initMap called, dbStops:', dbStops.length, 'stopAddresses:', stopAddresses.length, stopAddresses);
 
     const initMap = async () => {
       const L = (await import('leaflet')).default;
@@ -103,7 +107,10 @@ export const LoadDetailPanel = ({ load, onMilesCalculated }: LoadDetailPanelProp
         shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
       });
 
-      if (cancelled || !mapRef.current) return;
+      if (cancelled || !mapRef.current) {
+        console.log('[MAP] cancelled or no mapRef', { cancelled, hasMapRef: !!mapRef.current });
+        return;
+      }
 
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
@@ -175,8 +182,10 @@ export const LoadDetailPanel = ({ load, onMilesCalculated }: LoadDetailPanelProp
       }
 
       // No cache — calculate from scratch
+      console.log('[MAP] Calculating from scratch, addresses:', stopAddresses.map(s => s.address));
       const coords = await Promise.all(stopAddresses.map(s => geocode(s.address)));
-      if (cancelled) return;
+      if (cancelled) { console.log('[MAP] cancelled after geocode'); return; }
+      console.log('[MAP] Geocode results:', coords);
 
       const resolved: ResolvedStop[] = stopAddresses.map((s, i) => ({
         type: s.type,
@@ -190,12 +199,14 @@ export const LoadDetailPanel = ({ load, onMilesCalculated }: LoadDetailPanelProp
         const curr = resolved[i].coords;
         if (prev && curr) {
           const dist = await drivingDistance(prev[0], prev[1], curr[0], curr[1]);
+          if (cancelled) { console.log('[MAP] cancelled during distance calc'); return; }
           if (dist !== null) {
             resolved[i].distanceFromPrev = Math.round(dist);
             accumulatedMiles += dist;
           }
         }
       }
+      console.log('[MAP] Distance calc done, cancelled:', cancelled, 'accumulatedMiles:', accumulatedMiles);
 
       const bounds: [number, number][] = [];
       resolved.forEach(stop => {
@@ -205,6 +216,7 @@ export const LoadDetailPanel = ({ load, onMilesCalculated }: LoadDetailPanelProp
         L.marker(stop.coords, { icon }).addTo(map).bindPopup(`<b>${label}</b><br/>${stop.address}`);
         bounds.push(stop.coords);
       });
+      console.log('[MAP] Markers added, bounds:', bounds.length);
 
       let routeCoords: [number, number][] | null = null;
       if (bounds.length >= 2) {
@@ -236,13 +248,15 @@ export const LoadDetailPanel = ({ load, onMilesCalculated }: LoadDetailPanelProp
     initMap();
 
     return () => {
+      console.log('[MAP] Cleanup: cancelling and removing map');
       cancelled = true;
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
       }
     };
-  }, [load.id, load.origin, load.destination, load.miles, stopsLoading, dbStops.length]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [load.id, stopsLoading, dbStops.length]);
 
   return (
     <div className="p-4 bg-muted/30 border-t animate-in slide-in-from-top-2 duration-200">
