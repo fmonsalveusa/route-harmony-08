@@ -286,8 +286,8 @@ const Loads = () => {
               </tr></thead>
               <tbody>
                 {loads.map(load => {
-                  const driver = mockDrivers.find(d => d.id === load.driver_id);
-                  const dispatcher = mockDispatchers.find(d => d.id === load.dispatcher_id);
+                  const driver = drivers.find(d => d.id === load.driver_id);
+                  const dispatcher = dispatchers.find(d => d.id === load.dispatcher_id);
                   const isExpanded = expandedId === load.id;
                   return (
                     <>
