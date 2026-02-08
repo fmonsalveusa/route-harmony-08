@@ -200,22 +200,29 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
             <Menu className="h-5 w-5" />
           </button>
 
-          <div className="hidden lg:flex items-center gap-2">
+          <div className="hidden lg:flex items-center gap-3">
             {!isMasterAdmin && tenant && (
               <span className="text-sm text-muted-foreground">{tenant.name}</span>
             )}
             {isMasterAdmin && isMasterRoute && (
               <span className="text-sm font-medium text-purple-600">Panel de Administración Global</span>
             )}
-          </div>
-
-          <div className="flex items-center gap-3">
             {hasPermission('loads') && (
               <Button size="sm" onClick={() => setLoadDialogOpen(true)} className="gap-1">
                 <Plus className="h-4 w-4" />
-                <span className="hidden sm:inline">Nueva Carga</span>
+                Nueva Carga
               </Button>
             )}
+          </div>
+
+          {/* Mobile: nueva carga button next to hamburger */}
+          {hasPermission('loads') && (
+            <Button size="sm" onClick={() => setLoadDialogOpen(true)} className="lg:hidden gap-1 ml-2">
+              <Plus className="h-4 w-4" />
+            </Button>
+          )}
+
+          <div className="flex items-center gap-3">
             <Badge className={`text-xs ${roleBadgeStyles[role || 'admin']}`}>
               {roleLabels[role || 'admin']}
             </Badge>
