@@ -22,25 +22,24 @@ import { PodUploadSection } from '@/components/PodUploadSection';
 import { Plus, Search, Package, Pencil, Trash2, ChevronDown, ChevronUp, MapPin, Upload, ExternalLink, Filter } from 'lucide-react';
 import type { DbLoad } from '@/hooks/useLoads';
 
-// Small inline component for uploading PODs from the table row
-const InlineUploadPod = ({ loadId }: { loadId: string }) => {
-  const { uploadPod, uploading } = usePodDocuments(loadId);
-  const inputRef = useRef<HTMLInputElement | null>(null);
-
+// Hidden file input for POD uploads from action buttons
+const InlinePodInput = ({ loadId, inputRefMap }: { loadId: string; inputRefMap: React.MutableRefObject<Record<string, HTMLInputElement | null>> }) => {
+  const { uploadPod } = usePodDocuments(loadId);
   const handleFiles = async (files: FileList | null) => {
     if (!files) return;
     for (let i = 0; i < files.length; i++) {
       await uploadPod(files[i]);
     }
   };
-
   return (
-    <>
-      <Button variant="ghost" size="icon" className="h-7 w-7" disabled={uploading} onClick={() => inputRef.current?.click()} title="Subir POD">
-        <Upload className="h-3.5 w-3.5" />
-      </Button>
-      <input ref={inputRef} type="file" accept="image/*,.pdf" multiple className="hidden" onChange={e => handleFiles(e.target.files)} />
-    </>
+    <input
+      ref={el => { inputRefMap.current[loadId] = el; }}
+      type="file"
+      accept="image/*,.pdf"
+      multiple
+      className="hidden"
+      onChange={e => handleFiles(e.target.files)}
+    />
   );
 };
 
@@ -65,6 +64,7 @@ const Loads = () => {
   const { drivers } = useDrivers();
   const { trucks } = useTrucks();
   const { dispatchers } = useDispatchers();
+  const inputRefMap = useRef<Record<string, HTMLInputElement | null>>({});
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<'all' | 'active' | 'delivered' | 'cancelled'>('active');
   const [filterDriver, setFilterDriver] = useState<string>('all');
@@ -390,22 +390,25 @@ const Loads = () => {
                           </Select>
                         </td>
                         <td className="p-3 text-right" onClick={e => e.stopPropagation()}>
-                          <div className="flex justify-end gap-1">
-                            <InlineUploadPod loadId={load.id} />
+                          <div className="flex justify-end gap-1.5">
+                            <Button variant="outline" size="icon" className="h-8 w-8 border-purple-300 bg-purple-50 text-purple-600 hover:bg-purple-100 hover:text-purple-700" onClick={() => { inputRefMap.current[load.id]?.click(); }} title="Subir POD">
+                              <Upload className="h-4 w-4" />
+                            </Button>
                             {load.pdf_url && (
-                              <Button variant="ghost" size="icon" className="h-7 w-7" asChild title="Ver PDF">
+                              <Button variant="outline" size="icon" className="h-8 w-8 border-sky-300 bg-sky-50 text-sky-600 hover:bg-sky-100 hover:text-sky-700" asChild title="Ver PDF">
                                 <a href={load.pdf_url} target="_blank" rel="noopener noreferrer">
-                                  <ExternalLink className="h-3.5 w-3.5" />
+                                  <ExternalLink className="h-4 w-4" />
                                 </a>
                               </Button>
                             )}
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditLoad(load); setShowForm(true); }} title="Editar">
-                              <Pencil className="h-3.5 w-3.5" />
+                            <Button variant="outline" size="icon" className="h-8 w-8 border-amber-300 bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700" onClick={() => { setEditLoad(load); setShowForm(true); }} title="Editar">
+                              <Pencil className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setDeleteTarget(load)} title="Eliminar">
-                              <Trash2 className="h-3.5 w-3.5" />
+                            <Button variant="outline" size="icon" className="h-8 w-8 border-red-300 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700" onClick={() => setDeleteTarget(load)} title="Eliminar">
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
+                          <InlinePodInput loadId={load.id} inputRefMap={inputRefMap} />
                         </td>
                       </tr>
                       {isExpanded && (
