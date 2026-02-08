@@ -1,0 +1,58 @@
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+
+export interface Company {
+  id: string;
+  name: string;
+  legal_name: string | null;
+  mc_number: string | null;
+  dot_number: string | null;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  zip: string | null;
+  phone: string | null;
+  email: string | null;
+  website: string | null;
+  logo_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export function useCompanies() {
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchCompanies = useCallback(async () => {
+    const { data, error } = await supabase.from('companies').select('*').order('name');
+    if (error) { toast.error('Error loading companies'); return; }
+    setCompanies(data || []);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { fetchCompanies(); }, [fetchCompanies]);
+
+  const createCompany = async (company: Omit<Company, 'id' | 'created_at' | 'updated_at'>) => {
+    const { error } = await supabase.from('companies').insert(company);
+    if (error) { toast.error('Error creating company'); return; }
+    toast.success('Empresa creada');
+    fetchCompanies();
+  };
+
+  const updateCompany = async (id: string, updates: Partial<Company>) => {
+    const { error } = await supabase.from('companies').update(updates).eq('id', id);
+    if (error) { toast.error('Error updating company'); return; }
+    toast.success('Empresa actualizada');
+    fetchCompanies();
+  };
+
+  const deleteCompany = async (id: string) => {
+    const { error } = await supabase.from('companies').delete().eq('id', id);
+    if (error) { toast.error('Error deleting company'); return; }
+    toast.success('Empresa eliminada');
+    fetchCompanies();
+  };
+
+  return { companies, loading, createCompany, updateCompany, deleteCompany, refetch: fetchCompanies };
+}

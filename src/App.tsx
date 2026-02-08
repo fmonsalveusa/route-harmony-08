@@ -13,6 +13,7 @@ import Drivers from "./pages/Drivers";
 import Dispatchers from "./pages/Dispatchers";
 import Payments from "./pages/Payments";
 import Invoices from "./pages/Invoices";
+import Companies from "./pages/Companies";
 import Tracking from "./pages/Tracking";
 import Reports from "./pages/Reports";
 import UsersPage from "./pages/UsersPage";
@@ -38,6 +39,7 @@ const AppRoutes = () => {
       <Route path="/dispatchers" element={<ProtectedRoute><Dispatchers /></ProtectedRoute>} />
       <Route path="/payments" element={<ProtectedRoute><Payments /></ProtectedRoute>} />
       <Route path="/invoices" element={<ProtectedRoute><Invoices /></ProtectedRoute>} />
+      <Route path="/companies" element={<ProtectedRoute><Companies /></ProtectedRoute>} />
       <Route path="/tracking" element={<ProtectedRoute><Tracking /></ProtectedRoute>} />
       <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
       <Route path="/users" element={<ProtectedRoute><UsersPage /></ProtectedRoute>} />

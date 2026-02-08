@@ -8,7 +8,10 @@ import { usePodDocuments } from '@/hooks/usePodDocuments';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useTrucks } from '@/hooks/useTrucks';
 import { useDispatchers } from '@/hooks/useDispatchers';
+import { useCompanies } from '@/hooks/useCompanies';
+import { useInvoices } from '@/hooks/useInvoices';
 import { generatePaymentsForLoad, deletePaymentsForLoad } from '@/hooks/usePayments';
+import { generateInvoicePdf } from '@/lib/invoicePdf';
 import { supabase } from '@/integrations/supabase/client';
 import { LoadFormDialog } from '@/components/LoadFormDialog';
 import { LoadDetailPanel } from '@/components/LoadDetailPanel';
@@ -19,7 +22,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { PodUploadSection } from '@/components/PodUploadSection';
-import { Plus, Search, Package, Pencil, Trash2, ChevronDown, ChevronUp, MapPin, Upload, ExternalLink, Filter } from 'lucide-react';
+import { Plus, Search, Package, Pencil, Trash2, ChevronDown, ChevronUp, MapPin, Upload, ExternalLink, Filter, FileText } from 'lucide-react';
+import { toast } from 'sonner';
 import type { DbLoad } from '@/hooks/useLoads';
 
 // Hidden file input for POD uploads from action buttons
@@ -64,6 +68,8 @@ const Loads = () => {
   const { drivers } = useDrivers();
   const { trucks } = useTrucks();
   const { dispatchers } = useDispatchers();
+  const { companies } = useCompanies();
+  const { createInvoice } = useInvoices();
   const inputRefMap = useRef<Record<string, HTMLInputElement | null>>({});
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<'all' | 'active' | 'delivered' | 'cancelled'>('active');
@@ -79,6 +85,36 @@ const Loads = () => {
   const [deleteTarget, setDeleteTarget] = useState<DbLoad | null>(null);
   const [detailKey, setDetailKey] = useState(0);
   const [podUploadLoadId, setPodUploadLoadId] = useState<string | null>(null);
+
+  const handleGenerateInvoice = async (load: DbLoad) => {
+    if (!load.broker_client) { toast.error('Esta carga no tiene broker asignado'); return; }
+    const company = companies.length > 0 ? companies[0] : null;
+    const invoiceNumber = `INV-${load.reference_number}`;
+    await createInvoice({
+      load_id: load.id,
+      invoice_number: invoiceNumber,
+      broker_name: load.broker_client,
+      company_id: company?.id || null,
+      company_name: company?.name || null,
+      amount: Number(load.total_rate),
+      status: 'pending',
+      pdf_url: null,
+      notes: null,
+    });
+    generateInvoicePdf({
+      invoiceNumber,
+      brokerName: load.broker_client,
+      loadRef: load.reference_number,
+      origin: load.origin,
+      destination: load.destination,
+      pickupDate: load.pickup_date,
+      deliveryDate: load.delivery_date,
+      miles: load.miles ? Number(load.miles) : null,
+      totalRate: Number(load.total_rate),
+      company,
+      createdAt: new Date().toISOString(),
+    });
+  };
 
   const isDispatcher = user?.role === 'dispatcher';
   let baseLoads = isDispatcher
@@ -401,6 +437,9 @@ const Loads = () => {
                                 </a>
                               </Button>
                             )}
+                            <Button variant="outline" size="icon" className="h-8 w-10 border-emerald-300 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700" onClick={() => handleGenerateInvoice(load)} title="Generar Invoice">
+                              <FileText className="h-4 w-4" />
+                            </Button>
                             <Button variant="outline" size="icon" className="h-8 w-10 border-amber-300 bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700" onClick={() => { setEditLoad(load); setShowForm(true); }} title="Editar">
                               <Pencil className="h-4 w-4" />
                             </Button>
