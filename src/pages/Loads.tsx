@@ -68,6 +68,7 @@ const Loads = () => {
   const [filterTruck, setFilterTruck] = useState<string>('all');
   const [filterDispatcher, setFilterDispatcher] = useState<string>('all');
   const [filterPeriod, setFilterPeriod] = useState<string>('all');
+  const [filterBroker, setFilterBroker] = useState<string>('all');
   const [showForm, setShowForm] = useState(false);
   const [editLoad, setEditLoad] = useState<DbLoad | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -90,6 +91,7 @@ const Loads = () => {
   if (filterDriver !== 'all') baseLoads = baseLoads.filter(l => l.driver_id === filterDriver);
   if (filterTruck !== 'all') baseLoads = baseLoads.filter(l => l.truck_id === filterTruck);
   if (filterDispatcher !== 'all') baseLoads = baseLoads.filter(l => l.dispatcher_id === filterDispatcher);
+  if (filterBroker !== 'all') baseLoads = baseLoads.filter(l => l.broker_client === filterBroker);
   if (filterPeriod !== 'all') {
     const now = new Date();
     if (filterPeriod === 'this_month') {
@@ -205,8 +207,19 @@ const Loads = () => {
               })}
             </SelectContent>
           </Select>
-          {(filterDriver !== 'all' || filterTruck !== 'all' || filterDispatcher !== 'all' || filterPeriod !== 'all') && (
-            <Button variant="ghost" size="sm" className="h-8 text-xs text-muted-foreground" onClick={() => { setFilterDriver('all'); setFilterTruck('all'); setFilterDispatcher('all'); setFilterPeriod('all'); }}>
+          <Select value={filterBroker} onValueChange={setFilterBroker}>
+            <SelectTrigger className="w-[160px] h-8 text-xs">
+              <SelectValue placeholder="Broker" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos los Brokers</SelectItem>
+              {[...new Set(dbLoads.map(l => l.broker_client).filter(Boolean))].sort().map(b => (
+                <SelectItem key={b!} value={b!}>{b}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {(filterDriver !== 'all' || filterTruck !== 'all' || filterDispatcher !== 'all' || filterPeriod !== 'all' || filterBroker !== 'all') && (
+            <Button variant="ghost" size="sm" className="h-8 text-xs text-muted-foreground" onClick={() => { setFilterDriver('all'); setFilterTruck('all'); setFilterDispatcher('all'); setFilterPeriod('all'); setFilterBroker('all'); }}>
               Limpiar filtros
             </Button>
           )}
@@ -215,10 +228,10 @@ const Loads = () => {
 
       <div className="flex gap-2 border-b">
         {([
-          { key: 'all' as const, label: 'All Loads', count: baseLoads.length },
           { key: 'active' as const, label: 'Active Loads', count: activeLoads.length },
           { key: 'delivered' as const, label: 'Delivered', count: deliveredLoads.length },
           { key: 'cancelled' as const, label: 'Cancelled', count: cancelledLoads.length },
+          { key: 'all' as const, label: 'All Loads', count: baseLoads.length },
         ]).map(tab => (
           <button
             key={tab.key}
