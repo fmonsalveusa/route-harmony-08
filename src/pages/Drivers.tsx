@@ -139,7 +139,7 @@ const Drivers = () => {
                       <AvatarFallback className="bg-primary/10 text-primary font-semibold">{initials}</AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold truncate">{driver.name}</h3>
+                      <h3 className="font-semibold truncate text-lg">{driver.name}</h3>
                     </div>
                     <Select value={driver.status} onValueChange={v => updateDriver(driver.id, { status: v })}>
                       <SelectTrigger className={`w-auto h-7 text-xs font-semibold text-white border-0 rounded-full px-3 gap-1 ${driverStatusColor(driver.status)}`}>
