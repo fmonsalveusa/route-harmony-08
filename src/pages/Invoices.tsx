@@ -13,7 +13,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { FileText, DollarSign, AlertTriangle, CheckCircle, Search, Trash2, Pencil, Download, Send } from 'lucide-react';
+import { FileText, DollarSign, AlertTriangle, CheckCircle, Search, Trash2, Pencil, Download, Send, Image, ExternalLink } from 'lucide-react';
+import type { PodDocument } from '@/hooks/usePodDocuments';
 
 const Invoices = () => {
   const { invoices, loading, updateInvoice, deleteInvoice } = useInvoices();
@@ -24,6 +25,17 @@ const Invoices = () => {
   const [editInvoice, setEditInvoice] = useState<Invoice | null>(null);
   const [editForm, setEditForm] = useState({ invoice_number: '', broker_name: '', amount: '', notes: '' });
   const [loadDataMap, setLoadDataMap] = useState<Record<string, any>>({});
+  const [podViewLoadId, setPodViewLoadId] = useState<string | null>(null);
+  const [podDocs, setPodDocs] = useState<PodDocument[]>([]);
+  const [podLoading, setPodLoading] = useState(false);
+
+  const openPodViewer = async (loadId: string) => {
+    setPodViewLoadId(loadId);
+    setPodLoading(true);
+    const { data } = await supabase.from('pod_documents').select('*').eq('load_id', loadId).order('created_at');
+    setPodDocs((data as PodDocument[]) || []);
+    setPodLoading(false);
+  };
 
   // Fetch load data for PDF generation
   useEffect(() => {
@@ -163,8 +175,11 @@ const Invoices = () => {
                     <td className="p-3 hidden lg:table-cell text-muted-foreground">{formatDate(inv.created_at)}</td>
                     <td className="p-3 text-right">
                       <div className="flex justify-end gap-1.5">
-                        <Button variant="outline" size="icon" className="h-8 w-10 border-emerald-300 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700" onClick={() => handleDownloadPdf(inv)} title="Generar PDF">
+                        <Button variant="outline" size="icon" className="h-8 w-10 border-emerald-300 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700" onClick={() => handleDownloadPdf(inv)} title="Descargar PDF">
                           <Download className="h-4 w-4" />
+                        </Button>
+                        <Button variant="outline" size="icon" className="h-8 w-10 border-purple-300 bg-purple-50 text-purple-600 hover:bg-purple-100 hover:text-purple-700" onClick={() => openPodViewer(inv.load_id)} title="Ver PODs">
+                          <Image className="h-4 w-4" />
                         </Button>
                         <Button variant="outline" size="icon" className="h-8 w-10 border-amber-300 bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700" onClick={() => openEdit(inv)} title="Editar">
                           <Pencil className="h-4 w-4" />
@@ -181,6 +196,52 @@ const Invoices = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* POD Viewer Dialog */}
+      <Dialog open={!!podViewLoadId} onOpenChange={() => setPodViewLoadId(null)}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Image className="h-5 w-5" /> Proof of Delivery (POD)
+            </DialogTitle>
+          </DialogHeader>
+          {podLoading ? (
+            <p className="text-center text-muted-foreground py-8">Cargando documentos...</p>
+          ) : podDocs.length === 0 ? (
+            <p className="text-center text-muted-foreground py-8">No hay PODs cargados para esta carga.</p>
+          ) : (
+            <div className="grid gap-4">
+              {podDocs.map(pod => (
+                <div key={pod.id} className="flex items-center gap-4 p-3 rounded-lg border bg-muted/30">
+                  {pod.file_type === 'image' ? (
+                    <img src={pod.file_url} alt={pod.file_name} className="w-20 h-20 object-cover rounded-md border" />
+                  ) : (
+                    <div className="w-20 h-20 flex items-center justify-center rounded-md border bg-muted">
+                      <FileText className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate">{pod.file_name}</p>
+                    <p className="text-xs text-muted-foreground">{formatDate(pod.created_at)}</p>
+                  </div>
+                  <div className="flex gap-1.5">
+                    <Button variant="outline" size="icon" className="h-8 w-10 border-sky-300 bg-sky-50 text-sky-600 hover:bg-sky-100 hover:text-sky-700" asChild title="Ver">
+                      <a href={pod.file_url} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="h-4 w-4" />
+                      </a>
+                    </Button>
+                    <Button variant="outline" size="icon" className="h-8 w-10 border-emerald-300 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700" asChild title="Descargar">
+                      <a href={pod.file_url} download={pod.file_name}>
+                        <Download className="h-4 w-4" />
+                      </a>
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Dialog */}
       <Dialog open={!!editInvoice} onOpenChange={() => setEditInvoice(null)}>
