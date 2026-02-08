@@ -5,12 +5,15 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Truck, Users, Package, MapPin, FileText,
   BarChart3, LogOut, DollarSign, UserCog, ChevronLeft,
-  ChevronRight, Headphones, Menu, Building2, Crown, CreditCard, Settings
+  ChevronRight, Headphones, Menu, Building2, Crown, CreditCard, Settings, Plus
 } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Button } from '@/components/ui/button';
+import { LoadFormDialog } from '@/components/LoadFormDialog';
+import { useLoads } from '@/hooks/useLoads';
 
 interface NavItem {
   label: string;
@@ -62,8 +65,15 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [loadDialogOpen, setLoadDialogOpen] = useState(false);
+  const { createLoad, fetchLoads } = useLoads();
 
   if (!profile) return null;
+
+  const handleCreateLoad = async (input: any) => {
+    const result = await createLoad(input);
+    return result;
+  };
 
   const navItems = isMasterAdmin && location.pathname.startsWith('/master') ? masterNavItems : tenantNavItems;
   const visibleItems = navItems.filter(item => hasPermission(item.permission));
@@ -200,6 +210,12 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
           </div>
 
           <div className="flex items-center gap-3">
+            {hasPermission('loads') && (
+              <Button size="sm" onClick={() => setLoadDialogOpen(true)} className="gap-1">
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">Nueva Carga</span>
+              </Button>
+            )}
             <Badge className={`text-xs ${roleBadgeStyles[role || 'admin']}`}>
               {roleLabels[role || 'admin']}
             </Badge>
@@ -227,6 +243,12 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
           {children}
         </main>
       </div>
+
+      <LoadFormDialog
+        open={loadDialogOpen}
+        onOpenChange={setLoadDialogOpen}
+        onSubmit={handleCreateLoad}
+      />
     </div>
   );
 };
