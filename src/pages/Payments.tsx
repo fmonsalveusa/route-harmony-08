@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { formatDate } from '@/lib/dateUtils';
-import { mockPayments } from '@/data/mockData';
+import { usePayments } from '@/hooks/usePayments';
 import { StatusBadge } from '@/components/StatusBadge';
 import { StatCard } from '@/components/StatCard';
 import { Card, CardContent } from '@/components/ui/card';
@@ -14,19 +14,21 @@ interface PaymentsSectionProps {
 }
 
 const PaymentsSection = ({ type }: PaymentsSectionProps) => {
+  const { payments: allPayments, loading, updatePaymentStatus } = usePayments();
   const [statusFilter, setStatusFilter] = useState('all');
-  let payments = mockPayments.filter(p => p.recipientType === type);
+
+  let payments = allPayments.filter(p => p.recipient_type === type);
   if (statusFilter !== 'all') payments = payments.filter(p => p.status === statusFilter);
 
-  const totalPending = payments.filter(p => p.status === 'pending').reduce((s, p) => s + p.amount, 0);
-  const totalPaid = payments.filter(p => p.status === 'paid').reduce((s, p) => s + p.amount, 0);
+  const totalPending = payments.filter(p => p.status === 'pending').reduce((s, p) => s + Number(p.amount), 0);
+  const totalPaid = payments.filter(p => p.status === 'paid').reduce((s, p) => s + Number(p.amount), 0);
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard title="Total Pendiente" value={`$${totalPending.toLocaleString()}`} icon={Clock} iconClassName="bg-warning/10 text-warning" />
-        <StatCard title="Total Pagado" value={`$${totalPaid.toLocaleString()}`} icon={CheckCircle} iconClassName="bg-success/10 text-success" />
-        <StatCard title="Total General" value={`$${(totalPending + totalPaid).toLocaleString()}`} icon={DollarSign} />
+        <StatCard title="Total Pendiente" value={`$${totalPending.toLocaleString('en-US', { minimumFractionDigits: 2 })}`} icon={Clock} iconClassName="bg-warning/10 text-warning" />
+        <StatCard title="Total Pagado" value={`$${totalPaid.toLocaleString('en-US', { minimumFractionDigits: 2 })}`} icon={CheckCircle} iconClassName="bg-success/10 text-success" />
+        <StatCard title="Total General" value={`$${(totalPending + totalPaid).toLocaleString('en-US', { minimumFractionDigits: 2 })}`} icon={DollarSign} />
       </div>
 
       <div className="flex gap-3">
@@ -36,7 +38,6 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
             <SelectItem value="all">Todos</SelectItem>
             <SelectItem value="pending">Pendiente</SelectItem>
             <SelectItem value="paid">Pagado</SelectItem>
-            <SelectItem value="processing">Procesando</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -48,22 +49,31 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
               <thead><tr className="border-b bg-muted/50">
                 <th className="text-left p-3 font-medium text-muted-foreground">Referencia</th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Beneficiario</th>
+                <th className="text-right p-3 font-medium text-muted-foreground">Rate</th>
+                <th className="text-right p-3 font-medium text-muted-foreground">%</th>
                 <th className="text-right p-3 font-medium text-muted-foreground">Monto</th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Estado</th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Fecha</th>
                 <th className="text-right p-3 font-medium text-muted-foreground">Acción</th>
               </tr></thead>
               <tbody>
+                {payments.length === 0 && !loading && (
+                  <tr><td colSpan={8} className="p-6 text-center text-muted-foreground">Sin pagos registrados</td></tr>
+                )}
                 {payments.map(p => (
                   <tr key={p.id} className="border-b last:border-0 hover:bg-muted/30">
-                    <td className="p-3 font-medium text-primary">{p.loadReference}</td>
-                    <td className="p-3">{p.recipientName}</td>
-                    <td className="p-3 text-right font-semibold">${p.amount.toLocaleString()}</td>
+                    <td className="p-3 font-medium text-primary">{p.load_reference}</td>
+                    <td className="p-3">{p.recipient_name}</td>
+                    <td className="p-3 text-right text-muted-foreground">${Number(p.total_rate).toLocaleString()}</td>
+                    <td className="p-3 text-right text-muted-foreground">{p.percentage_applied}%</td>
+                    <td className="p-3 text-right font-semibold">${Number(p.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
                     <td className="p-3"><StatusBadge status={p.status} /></td>
-                    <td className="p-3 text-muted-foreground">{formatDate(p.date)}</td>
+                    <td className="p-3 text-muted-foreground">{p.payment_date ? formatDate(p.payment_date) : formatDate(p.created_at)}</td>
                     <td className="p-3 text-right">
                       {p.status === 'pending' && (
-                        <Button size="sm" variant="outline" className="text-xs h-7">Marcar Pagado</Button>
+                        <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => updatePaymentStatus(p.id, 'paid')}>
+                          Marcar Pagado
+                        </Button>
                       )}
                     </td>
                   </tr>
