@@ -63,7 +63,7 @@ const Loads = () => {
   const { trucks } = useTrucks();
   const { dispatchers } = useDispatchers();
   const [search, setSearch] = useState('');
-  const [activeTab, setActiveTab] = useState<'active' | 'delivered' | 'cancelled'>('active');
+  const [activeTab, setActiveTab] = useState<'all' | 'active' | 'delivered' | 'cancelled'>('active');
   const [filterDriver, setFilterDriver] = useState<string>('all');
   const [filterTruck, setFilterTruck] = useState<string>('all');
   const [filterDispatcher, setFilterDispatcher] = useState<string>('all');
@@ -92,16 +92,7 @@ const Loads = () => {
   if (filterDispatcher !== 'all') baseLoads = baseLoads.filter(l => l.dispatcher_id === filterDispatcher);
   if (filterPeriod !== 'all') {
     const now = new Date();
-    if (filterPeriod === 'this_week') {
-      const dayOfWeek = now.getDay();
-      const startOfWeek = new Date(now);
-      startOfWeek.setDate(now.getDate() - dayOfWeek);
-      startOfWeek.setHours(0, 0, 0, 0);
-      baseLoads = baseLoads.filter(l => {
-        const d = l.pickup_date ? new Date(l.pickup_date) : null;
-        return d && d >= startOfWeek;
-      });
-    } else if (filterPeriod === 'this_month') {
+    if (filterPeriod === 'this_month') {
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
       baseLoads = baseLoads.filter(l => {
         const d = l.pickup_date ? new Date(l.pickup_date) : null;
@@ -114,6 +105,19 @@ const Loads = () => {
         const d = l.pickup_date ? new Date(l.pickup_date) : null;
         return d && d >= startOfLastMonth && d < startOfThisMonth;
       });
+    } else if (filterPeriod.startsWith('week_')) {
+      const weekNum = parseInt(filterPeriod.replace('week_', ''));
+      const year = now.getFullYear();
+      // Week 1 starts on Jan 1
+      const jan1 = new Date(year, 0, 1);
+      const dayOfWeek = jan1.getDay();
+      const startOfWeek = new Date(year, 0, 1 + (weekNum - 1) * 7 - dayOfWeek);
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 7);
+      baseLoads = baseLoads.filter(l => {
+        const d = l.pickup_date ? new Date(l.pickup_date) : null;
+        return d && d >= startOfWeek && d < endOfWeek;
+      });
     }
   }
 
@@ -121,7 +125,7 @@ const Loads = () => {
   const deliveredLoads = baseLoads.filter(l => ['delivered', 'tonu'].includes(l.status));
   const cancelledLoads = baseLoads.filter(l => l.status === 'cancelled');
 
-  const loads = activeTab === 'active' ? activeLoads : activeTab === 'delivered' ? deliveredLoads : cancelledLoads;
+  const loads = activeTab === 'all' ? baseLoads : activeTab === 'active' ? activeLoads : activeTab === 'delivered' ? deliveredLoads : cancelledLoads;
 
   return (
     <div className="space-y-6">
@@ -177,14 +181,28 @@ const Loads = () => {
             </SelectContent>
           </Select>
           <Select value={filterPeriod} onValueChange={setFilterPeriod}>
-            <SelectTrigger className="w-[150px] h-8 text-xs">
+            <SelectTrigger className="w-[180px] h-8 text-xs">
               <SelectValue placeholder="Período" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="max-h-[300px]">
               <SelectItem value="all">Todo el tiempo</SelectItem>
-              <SelectItem value="this_week">Esta semana</SelectItem>
               <SelectItem value="this_month">Este mes</SelectItem>
               <SelectItem value="last_month">Mes anterior</SelectItem>
+              {Array.from({ length: 52 }, (_, i) => {
+                const weekNum = i + 1;
+                const year = new Date().getFullYear();
+                const jan1 = new Date(year, 0, 1);
+                const dayOfWeek = jan1.getDay();
+                const start = new Date(year, 0, 1 + (weekNum - 1) * 7 - dayOfWeek);
+                const end = new Date(start);
+                end.setDate(start.getDate() + 6);
+                const fmt = (d: Date) => `${d.getMonth() + 1}/${d.getDate()}`;
+                return (
+                  <SelectItem key={weekNum} value={`week_${weekNum}`}>
+                    Week {weekNum} ({fmt(start)} - {fmt(end)})
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
           {(filterDriver !== 'all' || filterTruck !== 'all' || filterDispatcher !== 'all' || filterPeriod !== 'all') && (
@@ -197,6 +215,7 @@ const Loads = () => {
 
       <div className="flex gap-2 border-b">
         {([
+          { key: 'all' as const, label: 'All Loads', count: baseLoads.length },
           { key: 'active' as const, label: 'Active Loads', count: activeLoads.length },
           { key: 'delivered' as const, label: 'Delivered', count: deliveredLoads.length },
           { key: 'cancelled' as const, label: 'Cancelled', count: cancelledLoads.length },
