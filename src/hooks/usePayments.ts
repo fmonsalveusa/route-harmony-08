@@ -137,3 +137,20 @@ export async function generatePaymentsForLoad(load: {
     toast({ title: `${paymentsToInsert.length} pago(s) generado(s) automáticamente` });
   }
 }
+
+/** Delete all payments for a load (when status reverts from delivered) */
+export async function deletePaymentsForLoad(loadId: string) {
+  const { data: existing } = await supabase
+    .from('payments')
+    .select('id')
+    .eq('load_id', loadId);
+
+  if (!existing || existing.length === 0) return;
+
+  const { error } = await supabase.from('payments').delete().eq('load_id', loadId);
+  if (error) {
+    toast({ title: 'Error eliminando pagos', description: error.message, variant: 'destructive' });
+  } else {
+    toast({ title: `${existing.length} pago(s) eliminado(s) automáticamente` });
+  }
+}
