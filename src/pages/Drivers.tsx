@@ -164,10 +164,11 @@ const Drivers = () => {
                     </div>
                   </div>
 
-                  <div className="mt-3 pt-3 border-t flex justify-end gap-1.5">
+                  <div className="mt-3 pt-3 border-t flex items-center gap-1.5">
                     <Button variant="outline" size="icon" className="h-8 w-10 border-sky-300 bg-sky-50 text-sky-600 hover:bg-sky-100 hover:text-sky-700" onClick={() => copyDriverInfo(driver)} title="Copiar">
                       <Copy className="h-4 w-4" />
                     </Button>
+                    <div className="flex-1" />
                     <Button variant="outline" size="icon" className="h-8 w-10 border-emerald-300 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700" onClick={() => setDetailDriver(driver)} title="Detalle">
                       <Eye className="h-4 w-4" />
                     </Button>
