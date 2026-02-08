@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { formatDate } from '@/lib/dateUtils';
 import { mockPayments } from '@/data/mockData';
 import { StatusBadge } from '@/components/StatusBadge';
 import { StatCard } from '@/components/StatCard';
@@ -68,7 +69,7 @@ const PaymentsPage = ({ type, title, description }: PaymentsPageProps) => {
                     <td className="p-3">{p.recipientName}</td>
                     <td className="p-3 text-right font-semibold">${p.amount.toLocaleString()}</td>
                     <td className="p-3"><StatusBadge status={p.status} /></td>
-                    <td className="p-3 text-muted-foreground">{p.date || '—'}</td>
+                    <td className="p-3 text-muted-foreground">{formatDate(p.date)}</td>
                     <td className="p-3 text-right">
                       {p.status === 'pending' && (
                         <Button size="sm" variant="outline" className="text-xs h-7">Marcar Pagado</Button>

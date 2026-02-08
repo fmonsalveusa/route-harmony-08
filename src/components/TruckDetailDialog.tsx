@@ -4,6 +4,7 @@ import { StatusBadge } from '@/components/StatusBadge';
 import { Button } from '@/components/ui/button';
 import { ExternalLink, Truck as TruckIcon } from 'lucide-react';
 import type { DbTruck } from '@/hooks/useTrucks';
+import { formatDate } from '@/lib/dateUtils';
 
 const DOC_LABELS: { key: keyof DbTruck; label: string }[] = [
   { key: 'registration_photo_url', label: 'Registration Photo' },
@@ -49,8 +50,8 @@ export function TruckDetailDialog({ open, onOpenChange, truck }: Props) {
             <Info label="Max Payload">{truck.max_payload_lbs ? `${truck.max_payload_lbs.toLocaleString()} lbs` : '—'}</Info>
             <Info label="VIN">{truck.vin || '—'}</Info>
             <Info label="License Plate">{truck.license_plate || '—'}</Info>
-            <Info label="Insurance Expiry">{truck.insurance_expiry || '—'}</Info>
-            <Info label="Registration Expiry">{truck.registration_expiry || '—'}</Info>
+            <Info label="Insurance Expiry">{formatDate(truck.insurance_expiry)}</Info>
+            <Info label="Registration Expiry">{formatDate(truck.registration_expiry)}</Info>
           </section>
 
           {/* Box Truck dimensions */}

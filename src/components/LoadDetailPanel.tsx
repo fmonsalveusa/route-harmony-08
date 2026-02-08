@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { formatDate } from '@/lib/dateUtils';
 import { MapPin, Calendar, Weight, DollarSign, User, Truck, Route, Navigation, FileText, Download, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { mockDrivers, mockDispatchers } from '@/data/mockData';
@@ -273,11 +274,11 @@ export const LoadDetailPanel = ({ load, onMilesCalculated }: LoadDetailPanelProp
             )}
             <div className="flex items-center gap-2">
               <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-              <div><span className="text-muted-foreground">Recogida:</span> <span className="font-medium">{load.pickup_date || '—'}</span></div>
+              <div><span className="text-muted-foreground">Recogida:</span> <span className="font-medium">{formatDate(load.pickup_date)}</span></div>
             </div>
             <div className="flex items-center gap-2">
               <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-              <div><span className="text-muted-foreground">Entrega:</span> <span className="font-medium">{load.delivery_date || '—'}</span></div>
+              <div><span className="text-muted-foreground">Entrega:</span> <span className="font-medium">{formatDate(load.delivery_date)}</span></div>
             </div>
             <div className="flex items-center gap-2">
               <Weight className="h-3.5 w-3.5 text-muted-foreground" />

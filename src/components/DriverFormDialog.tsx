@@ -8,6 +8,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon, Upload, FileText, X } from 'lucide-react';
 import { format } from 'date-fns';
+import { formatDate, todayET } from '@/lib/dateUtils';
 import { cn } from '@/lib/utils';
 import { DbDriver, DriverInput } from '@/hooks/useDrivers';
 import { DbTruck } from '@/hooks/useTrucks';
@@ -27,7 +28,7 @@ const emptyForm: DriverInput = {
   status: 'available', service_type: 'owner_operator',
   dispatcher_id: null, truck_id: null,
   investor_name: null, pay_percentage: 30, investor_pay_percentage: 15,
-  hire_date: new Date().toISOString().split('T')[0],
+  hire_date: todayET(),
 };
 
 type DocKey = 'license_photo' | 'medical_card_photo' | 'form_w9' | 'leasing_agreement' | 'service_agreement';
@@ -164,7 +165,7 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks 
             <Input type="number" value={form.investor_pay_percentage ?? ''} onChange={e => set('investor_pay_percentage', Number(e.target.value))} />
           </div>
 
-          <DatePickerField label="Fecha de Contratación" value={form.hire_date} onChange={v => set('hire_date', v || new Date().toISOString().split('T')[0])} />
+          <DatePickerField label="Fecha de Contratación" value={form.hire_date} onChange={v => set('hire_date', v || todayET())} />
         </div>
 
         {/* Document uploads */}
@@ -227,7 +228,7 @@ function DatePickerField({ label, value, onChange }: { label: string; value: str
         <PopoverTrigger asChild>
           <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}>
             <CalendarIcon className="mr-2 h-4 w-4" />
-            {date ? format(date, 'yyyy-MM-dd') : 'Seleccionar fecha'}
+            {date ? formatDate(format(date, 'yyyy-MM-dd')) : 'Seleccionar fecha'}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
