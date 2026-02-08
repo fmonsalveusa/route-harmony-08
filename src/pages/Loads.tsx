@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Plus, Search, Filter, Package, Pencil, Trash2, ChevronDown, ChevronUp, MapPin, Upload, ExternalLink } from 'lucide-react';
+import { Plus, Search, Package, Pencil, Trash2, ChevronDown, ChevronUp, MapPin, Upload, ExternalLink } from 'lucide-react';
 import type { DbLoad } from '@/hooks/useLoads';
 
 // Small inline component for uploading PODs from the table row
@@ -57,7 +57,7 @@ const Loads = () => {
   const { user } = useAuth();
   const { loads: dbLoads, loading: loadsLoading, createLoad, updateLoad, deleteLoad } = useLoads();
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [activeTab, setActiveTab] = useState<'active' | 'delivered' | 'cancelled'>('active');
   const [showForm, setShowForm] = useState(false);
   const [editLoad, setEditLoad] = useState<DbLoad | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -65,17 +65,22 @@ const Loads = () => {
   const [detailKey, setDetailKey] = useState(0);
 
   const isDispatcher = user?.role === 'dispatcher';
-  let loads = isDispatcher
+  let baseLoads = isDispatcher
     ? dbLoads.filter(l => l.dispatcher_id === (user?.dispatcherId || 'd1'))
     : dbLoads;
 
-  if (statusFilter !== 'all') loads = loads.filter(l => l.status === statusFilter);
-  if (search) loads = loads.filter(l =>
+  if (search) baseLoads = baseLoads.filter(l =>
     l.reference_number.toLowerCase().includes(search.toLowerCase()) ||
     l.origin.toLowerCase().includes(search.toLowerCase()) ||
     l.destination.toLowerCase().includes(search.toLowerCase()) ||
     (l.broker_client || '').toLowerCase().includes(search.toLowerCase())
   );
+
+  const activeLoads = baseLoads.filter(l => ['planned', 'dispatched', 'in_transit'].includes(l.status));
+  const deliveredLoads = baseLoads.filter(l => ['delivered', 'tonu'].includes(l.status));
+  const cancelledLoads = baseLoads.filter(l => l.status === 'cancelled');
+
+  const loads = activeTab === 'active' ? activeLoads : activeTab === 'delivered' ? deliveredLoads : cancelledLoads;
 
   return (
     <div className="space-y-6">
@@ -89,24 +94,33 @@ const Loads = () => {
         </Button>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Buscar por referencia, ruta o cliente..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
-        </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-full sm:w-44"><Filter className="h-4 w-4 mr-2" /><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos los estados</SelectItem>
-            <SelectItem value="planned">Planned</SelectItem>
-            <SelectItem value="dispatched">Dispatched</SelectItem>
-            <SelectItem value="in_transit">In Transit</SelectItem>
-            <SelectItem value="delivered">Delivered</SelectItem>
-            <SelectItem value="tonu">TONU</SelectItem>
-            <SelectItem value="cancelled">Canceled</SelectItem>
-          </SelectContent>
-        </Select>
+      {/* Search + Tabs */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input placeholder="Buscar por referencia, ruta o cliente..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+      </div>
+
+      <div className="flex gap-2 border-b">
+        {([
+          { key: 'active' as const, label: 'Active Loads', count: activeLoads.length },
+          { key: 'delivered' as const, label: 'Delivered', count: deliveredLoads.length },
+          { key: 'cancelled' as const, label: 'Cancelled', count: cancelledLoads.length },
+        ]).map(tab => (
+          <button
+            key={tab.key}
+            onClick={() => { setActiveTab(tab.key); setExpandedId(null); }}
+            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
+              activeTab === tab.key
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {tab.label}
+            <span className={`text-xs rounded-full px-2 py-0.5 font-semibold ${
+              activeTab === tab.key ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+            }`}>{tab.count}</span>
+          </button>
+        ))}
       </div>
 
       {/* Table */}
