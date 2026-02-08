@@ -154,7 +154,7 @@ const Drivers = () => {
                     </Select>
                   </div>
 
-                  <div className="mt-4 space-y-2 text-sm">
+                  <div className="mt-4 space-y-2 text-[15px]">
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Phone className="h-3.5 w-3.5" />{driver.phone}
                     </div>
