@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, isWithinInterval, parseISO } from 'date-fns';
 import { formatDate } from '@/lib/dateUtils';
 import { usePayments, type DbPayment } from '@/hooks/usePayments';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -6,15 +7,18 @@ import { StatCard } from '@/components/StatCard';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { PaymentEditDialog } from '@/components/PaymentEditDialog';
-import { DollarSign, CheckCircle, Clock, Download, Pencil, Trash2, FileText, CheckCheck } from 'lucide-react';
+import { DollarSign, CheckCircle, Clock, Download, Pencil, Trash2, FileText, CheckCheck, CalendarIcon, X } from 'lucide-react';
 import { generatePaymentReceipt } from '@/lib/paymentReceipt';
 import { generateBatchPaymentReceipt } from '@/lib/batchPaymentReceipt';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 const handleGenerateReceipt = async (p: DbPayment) => {
   const { data } = await supabase.from('payment_adjustments').select('*').eq('payment_id', p.id).order('created_at', { ascending: true });
@@ -36,6 +40,13 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [batchProcessing, setBatchProcessing] = useState(false);
   const [loadDateMap, setLoadDateMap] = useState<Record<string, string>>({});
+  // Filters
+  const [beneficiaryFilter, setBeneficiaryFilter] = useState('all');
+  const [weekFilter, setWeekFilter] = useState('all');
+  const [monthFilter, setMonthFilter] = useState('all');
+  const [yearFilter, setYearFilter] = useState('all');
+  const [dateFrom, setDateFrom] = useState<Date | undefined>();
+  const [dateTo, setDateTo] = useState<Date | undefined>();
 
   // Fetch all adjustments for payments of this type
   const fetchAdjustments = useCallback(async () => {
@@ -69,17 +80,105 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
   useEffect(() => { fetchLoadDates(); }, [fetchLoadDates]);
 
   // Clear selection when filter changes
-  useEffect(() => { setSelectedIds(new Set()); }, [statusFilter]);
+  useEffect(() => { setSelectedIds(new Set()); }, [statusFilter, beneficiaryFilter, weekFilter, monthFilter, yearFilter, dateFrom, dateTo]);
 
   const allTypePayments = allPayments.filter(p => p.recipient_type === type);
+
+  // Unique beneficiaries for filter
+  const uniqueBeneficiaries = useMemo(() => {
+    const names = [...new Set(allTypePayments.map(p => p.recipient_name))];
+    return names.sort();
+  }, [allTypePayments]);
+
+  // Get ISO week number (Mon-Sun)
+  const getISOWeek = (d: Date) => {
+    const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay() || 7));
+    const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+    return Math.ceil(((date.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+  };
+
+  // Available weeks/months/years from load dates
+  const dateOptions = useMemo(() => {
+    const dates = allTypePayments
+      .map(p => loadDateMap[p.load_id])
+      .filter(Boolean)
+      .map(d => parseISO(d));
+    
+    const weeks = new Set<string>();
+    const months = new Set<string>();
+    const years = new Set<string>();
+
+    dates.forEach(d => {
+      weeks.add(`${d.getFullYear()}-W${String(getISOWeek(d)).padStart(2, '0')}`);
+      months.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+      years.add(String(d.getFullYear()));
+    });
+
+    return {
+      weeks: [...weeks].sort().reverse(),
+      months: [...months].sort().reverse(),
+      years: [...years].sort().reverse(),
+    };
+  }, [allTypePayments, loadDateMap]);
+
+  const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+
+  // Apply all filters
+  const filteredPayments = useMemo(() => {
+    let result = statusFilter === 'all' ? allTypePayments : allTypePayments.filter(p => p.status === statusFilter);
+
+    if (beneficiaryFilter !== 'all') {
+      result = result.filter(p => p.recipient_name === beneficiaryFilter);
+    }
+
+    if (weekFilter !== 'all' || monthFilter !== 'all' || yearFilter !== 'all' || dateFrom || dateTo) {
+      result = result.filter(p => {
+        const dateStr = loadDateMap[p.load_id];
+        if (!dateStr) return false;
+        const d = parseISO(dateStr);
+
+        if (yearFilter !== 'all' && String(d.getFullYear()) !== yearFilter) return false;
+        if (monthFilter !== 'all') {
+          const m = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+          if (m !== monthFilter) return false;
+        }
+        if (weekFilter !== 'all') {
+          const w = `${d.getFullYear()}-W${String(getISOWeek(d)).padStart(2, '0')}`;
+          if (w !== weekFilter) return false;
+        }
+        if (dateFrom && d < dateFrom) return false;
+        if (dateTo) {
+          const endOfDay = new Date(dateTo);
+          endOfDay.setHours(23, 59, 59, 999);
+          if (d > endOfDay) return false;
+        }
+        return true;
+      });
+    }
+
+    return result;
+  }, [allTypePayments, statusFilter, beneficiaryFilter, weekFilter, monthFilter, yearFilter, dateFrom, dateTo, loadDateMap]);
+
+  const payments = filteredPayments;
+
   const pendingCount = allTypePayments.filter(p => p.status === 'pending').length;
   const inProcessCount = allTypePayments.filter(p => p.status === 'in_process').length;
   const paidCount = allTypePayments.filter(p => p.status === 'paid').length;
 
-  const payments = statusFilter === 'all' ? allTypePayments : allTypePayments.filter(p => p.status === statusFilter);
-
   const totalPending = allTypePayments.filter(p => p.status === 'pending' || p.status === 'in_process').reduce((s, p) => s + Number(p.amount) + (adjMap[p.id] || 0), 0);
   const totalPaid = allTypePayments.filter(p => p.status === 'paid').reduce((s, p) => s + Number(p.amount) + (adjMap[p.id] || 0), 0);
+
+  const hasActiveFilters = beneficiaryFilter !== 'all' || weekFilter !== 'all' || monthFilter !== 'all' || yearFilter !== 'all' || dateFrom || dateTo;
+
+  const clearFilters = () => {
+    setBeneficiaryFilter('all');
+    setWeekFilter('all');
+    setMonthFilter('all');
+    setYearFilter('all');
+    setDateFrom(undefined);
+    setDateTo(undefined);
+  };
 
   const toggleSelect = (id: string) => {
     setSelectedIds(prev => {
@@ -179,7 +278,106 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
         </TabsList>
       </Tabs>
 
-      {/* Batch action bar */}
+      {/* Filters */}
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground">Beneficiario</label>
+          <Select value={beneficiaryFilter} onValueChange={setBeneficiaryFilter}>
+            <SelectTrigger className="h-8 w-[180px] text-xs">
+              <SelectValue placeholder="Todos" />
+            </SelectTrigger>
+            <SelectContent className="bg-popover z-50">
+              <SelectItem value="all">Todos</SelectItem>
+              {uniqueBeneficiaries.map(name => (
+                <SelectItem key={name} value={name}>{name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground">Semana</label>
+          <Select value={weekFilter} onValueChange={setWeekFilter}>
+            <SelectTrigger className="h-8 w-[140px] text-xs">
+              <SelectValue placeholder="Todas" />
+            </SelectTrigger>
+            <SelectContent className="bg-popover z-50">
+              <SelectItem value="all">Todas</SelectItem>
+              {dateOptions.weeks.map(w => (
+                <SelectItem key={w} value={w}>{w}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground">Mes</label>
+          <Select value={monthFilter} onValueChange={setMonthFilter}>
+            <SelectTrigger className="h-8 w-[140px] text-xs">
+              <SelectValue placeholder="Todos" />
+            </SelectTrigger>
+            <SelectContent className="bg-popover z-50">
+              <SelectItem value="all">Todos</SelectItem>
+              {dateOptions.months.map(m => {
+                const [y, mo] = m.split('-');
+                return <SelectItem key={m} value={m}>{monthNames[parseInt(mo) - 1]} {y}</SelectItem>;
+              })}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground">Año</label>
+          <Select value={yearFilter} onValueChange={setYearFilter}>
+            <SelectTrigger className="h-8 w-[100px] text-xs">
+              <SelectValue placeholder="Todos" />
+            </SelectTrigger>
+            <SelectContent className="bg-popover z-50">
+              <SelectItem value="all">Todos</SelectItem>
+              {dateOptions.years.map(y => (
+                <SelectItem key={y} value={y}>{y}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground">Desde</label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className={cn("h-8 w-[130px] justify-start text-xs font-normal", !dateFrom && "text-muted-foreground")}>
+                <CalendarIcon className="mr-1.5 h-3.5 w-3.5" />
+                {dateFrom ? format(dateFrom, 'MM/dd/yyyy') : 'Desde'}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0 z-50" align="start">
+              <Calendar mode="single" selected={dateFrom} onSelect={setDateFrom} initialFocus className={cn("p-3 pointer-events-auto")} />
+            </PopoverContent>
+          </Popover>
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground">Hasta</label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className={cn("h-8 w-[130px] justify-start text-xs font-normal", !dateTo && "text-muted-foreground")}>
+                <CalendarIcon className="mr-1.5 h-3.5 w-3.5" />
+                {dateTo ? format(dateTo, 'MM/dd/yyyy') : 'Hasta'}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0 z-50" align="start">
+              <Calendar mode="single" selected={dateTo} onSelect={setDateTo} initialFocus className={cn("p-3 pointer-events-auto")} />
+            </PopoverContent>
+          </Popover>
+        </div>
+
+        {hasActiveFilters && (
+          <Button variant="ghost" size="sm" className="h-8 gap-1 text-xs" onClick={clearFilters}>
+            <X className="h-3.5 w-3.5" /> Limpiar
+          </Button>
+        )}
+      </div>
+
       {selectedIds.size > 0 && (
         <div className="flex items-center gap-3 p-3 rounded-lg border bg-primary/5 border-primary/20">
           <span className="text-sm font-medium">{selectedIds.size} seleccionado(s)</span>
