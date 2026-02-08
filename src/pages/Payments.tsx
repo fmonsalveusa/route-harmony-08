@@ -111,6 +111,7 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
                     <td className="p-3 font-medium text-primary">{p.load_reference}</td>
                     <td className="p-3">{p.recipient_name}</td>
                     <td className="p-3 text-right text-muted-foreground">${Number(p.total_rate).toLocaleString()}</td>
+                    <td className="p-3 text-right text-muted-foreground">{p.percentage_applied}%</td>
                     <td className="p-3 text-right text-muted-foreground">${Number(p.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
                     <td className="p-3 text-right">
                       {(adjMap[p.id] || 0) !== 0 ? (
