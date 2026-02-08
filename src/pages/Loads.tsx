@@ -113,7 +113,7 @@ const Loads = () => {
       <Card>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-[15px]">
               <thead><tr className="border-b bg-muted/50">
                 <th className="w-8 p-3"></th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Load #</th>
