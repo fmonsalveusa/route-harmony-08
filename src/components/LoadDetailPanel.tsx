@@ -81,7 +81,7 @@ export const LoadDetailPanel = ({ load, onMilesCalculated }: LoadDetailPanelProp
   const persistedRef = useRef(false);
   const [resolvedStops, setResolvedStops] = useState<ResolvedStop[]>([]);
   const [totalMiles, setTotalMiles] = useState<number>(Number(load.miles) || 0);
-  const { stops: dbStops, loading: stopsLoading } = useLoadStops(load.id);
+  const { stops: dbStops, loading: stopsLoading, updateStopGeodata } = useLoadStops(load.id);
 
   const driver = mockDrivers.find(d => d.id === load.driver_id);
   const dispatcher = mockDispatchers.find(d => d.id === load.dispatcher_id);
@@ -90,32 +90,25 @@ export const LoadDetailPanel = ({ load, onMilesCalculated }: LoadDetailPanelProp
   const hasCachedRoute = load.route_geometry && Array.isArray(load.route_geometry) && load.route_geometry.length > 0;
   const hasCachedMiles = load.miles && Number(load.miles) > 0;
 
-  // Build stop addresses from load_stops table or fallback to origin/destination
-  const getStopAddresses = (): { type: 'pickup' | 'delivery'; address: string }[] => {
-    if (dbStops.length > 0) {
-      return dbStops.map(s => ({ type: s.stop_type as 'pickup' | 'delivery', address: s.address }));
-    }
-    // Fallback to legacy origin/destination
-    return [
-      { type: 'pickup', address: load.origin },
-      { type: 'delivery', address: load.destination },
-    ];
-  };
+  // Check if all stops have cached geodata
+  const allStopsCached = dbStops.length > 0 && dbStops.every(s => s.lat != null && s.lng != null);
 
   useEffect(() => {
     persistedRef.current = false;
-    if (stopsLoading) {
-      console.log('[MAP] Stops still loading, skipping init');
-      return;
-    }
+    if (stopsLoading) return;
 
     let cancelled = false;
-    const stopAddresses = getStopAddresses();
-    console.log('[MAP] initMap called, dbStops:', dbStops.length, 'stopAddresses:', stopAddresses.length, stopAddresses);
+
+    // Build stop info from db or fallback
+    const stopSources = dbStops.length > 0
+      ? dbStops.map(s => ({ id: s.id, type: s.stop_type as 'pickup' | 'delivery', address: s.address, cachedLat: s.lat, cachedLng: s.lng, cachedDist: s.distance_from_prev }))
+      : [
+          { id: '', type: 'pickup' as const, address: load.origin, cachedLat: null, cachedLng: null, cachedDist: null },
+          { id: '', type: 'delivery' as const, address: load.destination, cachedLat: null, cachedLng: null, cachedDist: null },
+        ];
 
     const initMap = async () => {
       const L = (await import('leaflet')).default;
-
       delete (L.Icon.Default.prototype as any)._getIconUrl;
       L.Icon.Default.mergeOptions({
         iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
@@ -123,90 +116,60 @@ export const LoadDetailPanel = ({ load, onMilesCalculated }: LoadDetailPanelProp
         shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
       });
 
-      if (cancelled || !mapRef.current) {
-        console.log('[MAP] cancelled or no mapRef', { cancelled, hasMapRef: !!mapRef.current });
-        return;
-      }
-
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
-        mapInstanceRef.current = null;
-      }
+      if (cancelled || !mapRef.current) return;
+      if (mapInstanceRef.current) { mapInstanceRef.current.remove(); mapInstanceRef.current = null; }
 
       const map = L.map(mapRef.current).setView([39.8283, -98.5795], 4);
       mapInstanceRef.current = map;
-
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap',
-      }).addTo(map);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
 
       const pickupIcon = L.divIcon({
         html: '<div style="background:hsl(152,60%,40%);color:white;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:12px;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,.3)">P</div>',
         className: '', iconSize: [28, 28], iconAnchor: [14, 14],
       });
-
       const deliveryIcon = L.divIcon({
         html: '<div style="background:hsl(0,72%,51%);color:white;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:12px;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,.3)">D</div>',
         className: '', iconSize: [28, 28], iconAnchor: [14, 14],
       });
 
-      // If we have cached miles and route, use them directly
-      if (hasCachedRoute && hasCachedMiles) {
+      // FAST PATH: All geodata cached — no API calls needed
+      if (allStopsCached && hasCachedRoute && hasCachedMiles) {
+        console.log('[MAP] Using fully cached data');
         const cachedRoute = load.route_geometry as [number, number][];
-        const cachedMiles = Number(load.miles);
-
-        const coords = await Promise.all(stopAddresses.map(s => geocode(s.address)));
-        if (cancelled) return;
-
-        const cached: ResolvedStop[] = stopAddresses.map((s, i) => ({
-          type: s.type,
-          address: s.address,
-          coords: coords[i],
+        const resolved: ResolvedStop[] = stopSources.map(s => ({
+          type: s.type, address: s.address,
+          coords: [s.cachedLat!, s.cachedLng!] as [number, number],
+          distanceFromPrev: s.cachedDist != null ? Math.round(Number(s.cachedDist)) : undefined,
         }));
 
-        // Calculate distances between consecutive stops for display
-        let totalCalc = 0;
-        for (let i = 1; i < cached.length; i++) {
-          const prev = cached[i - 1].coords;
-          const curr = cached[i].coords;
-          if (prev && curr) {
-            const dist = await drivingDistance(prev[0], prev[1], curr[0], curr[1]);
-            if (dist !== null) {
-              cached[i].distanceFromPrev = Math.round(dist);
-              totalCalc += dist;
-            }
-          }
-        }
-
-        setResolvedStops(cached);
-        setTotalMiles(cachedMiles);
+        setResolvedStops(resolved);
+        setTotalMiles(Number(load.miles));
 
         const bounds: [number, number][] = [];
-        cached.forEach(stop => {
+        resolved.forEach(stop => {
           if (!stop.coords) return;
           const icon = stop.type === 'pickup' ? pickupIcon : deliveryIcon;
-          const label = stop.type === 'pickup' ? 'Pick Up' : 'Delivery';
-          L.marker(stop.coords, { icon }).addTo(map).bindPopup(`<b>${label}</b><br/>${stop.address}`);
+          L.marker(stop.coords, { icon }).addTo(map).bindPopup(`<b>${stop.type === 'pickup' ? 'Pick Up' : 'Delivery'}</b><br/>${stop.address}`);
           bounds.push(stop.coords);
         });
-
         L.polyline(cachedRoute, { color: 'hsl(215,70%,50%)', weight: 3 }).addTo(map);
-        if (bounds.length >= 2) {
-          map.fitBounds(bounds, { padding: [40, 40] });
-        }
+        if (bounds.length >= 2) map.fitBounds(bounds, { padding: [40, 40] });
         return;
       }
 
-      // No cache — calculate from scratch
-      console.log('[MAP] Calculating from scratch, addresses:', stopAddresses.map(s => s.address));
-      const coords = await Promise.all(stopAddresses.map(s => geocode(s.address)));
-      if (cancelled) { console.log('[MAP] cancelled after geocode'); return; }
-      console.log('[MAP] Geocode results:', coords);
+      // SLOW PATH: Calculate from scratch
+      console.log('[MAP] Calculating from scratch');
+      const coords = await Promise.all(
+        stopSources.map(s =>
+          s.cachedLat != null && s.cachedLng != null
+            ? Promise.resolve([s.cachedLat, s.cachedLng] as [number, number])
+            : geocode(s.address)
+        )
+      );
+      if (cancelled) return;
 
-      const resolved: ResolvedStop[] = stopAddresses.map((s, i) => ({
-        type: s.type,
-        address: s.address,
-        coords: coords[i],
+      const resolved: ResolvedStop[] = stopSources.map((s, i) => ({
+        type: s.type, address: s.address, coords: coords[i],
       }));
 
       let accumulatedMiles = 0;
@@ -214,29 +177,34 @@ export const LoadDetailPanel = ({ load, onMilesCalculated }: LoadDetailPanelProp
         const prev = resolved[i - 1].coords;
         const curr = resolved[i].coords;
         if (prev && curr) {
-          const dist = await drivingDistance(prev[0], prev[1], curr[0], curr[1]);
-          if (cancelled) { console.log('[MAP] cancelled during distance calc'); return; }
-          if (dist !== null) {
-            resolved[i].distanceFromPrev = Math.round(dist);
-            accumulatedMiles += dist;
+          // Use cached distance if available
+          if (stopSources[i].cachedDist != null) {
+            resolved[i].distanceFromPrev = Math.round(Number(stopSources[i].cachedDist));
+            accumulatedMiles += Number(stopSources[i].cachedDist);
+          } else {
+            const dist = await drivingDistance(prev[0], prev[1], curr[0], curr[1]);
+            if (cancelled) return;
+            if (dist !== null) {
+              resolved[i].distanceFromPrev = Math.round(dist);
+              accumulatedMiles += dist;
+            }
           }
         }
       }
-      console.log('[MAP] Distance calc done, cancelled:', cancelled, 'accumulatedMiles:', accumulatedMiles);
 
       const bounds: [number, number][] = [];
       resolved.forEach(stop => {
         if (!stop.coords) return;
         const icon = stop.type === 'pickup' ? pickupIcon : deliveryIcon;
-        const label = stop.type === 'pickup' ? 'Pick Up' : 'Delivery';
-        L.marker(stop.coords, { icon }).addTo(map).bindPopup(`<b>${label}</b><br/>${stop.address}`);
+        L.marker(stop.coords, { icon }).addTo(map).bindPopup(`<b>${stop.type === 'pickup' ? 'Pick Up' : 'Delivery'}</b><br/>${stop.address}`);
         bounds.push(stop.coords);
       });
-      console.log('[MAP] Markers added, bounds:', bounds.length);
 
       let routeCoords: [number, number][] | null = null;
       if (bounds.length >= 2) {
-        routeCoords = await drivingRoute(bounds);
+        routeCoords = hasCachedRoute
+          ? (load.route_geometry as [number, number][])
+          : await drivingRoute(bounds);
         if (routeCoords && !cancelled) {
           L.polyline(routeCoords, { color: 'hsl(215,70%,50%)', weight: 3 }).addTo(map);
         } else {
@@ -250,26 +218,28 @@ export const LoadDetailPanel = ({ load, onMilesCalculated }: LoadDetailPanelProp
       if (!cancelled) {
         setResolvedStops(resolved);
         const rounded = Math.round(accumulatedMiles);
-        if (rounded > 0) {
-          setTotalMiles(rounded);
-          // Persist only once per mount to avoid re-render loop
-          if (onMilesCalculated && !persistedRef.current) {
-            persistedRef.current = true;
-            onMilesCalculated(load.id, rounded, routeCoords || undefined);
+        if (rounded > 0) setTotalMiles(rounded);
+
+        // Persist geodata to load_stops for future fast loads
+        for (let i = 0; i < resolved.length; i++) {
+          const s = stopSources[i];
+          const r = resolved[i];
+          if (s.id && r.coords && s.cachedLat == null) {
+            updateStopGeodata(s.id, r.coords[0], r.coords[1], r.distanceFromPrev);
           }
+        }
+
+        if (rounded > 0 && onMilesCalculated && !persistedRef.current) {
+          persistedRef.current = true;
+          onMilesCalculated(load.id, rounded, routeCoords || undefined);
         }
       }
     };
 
     initMap();
-
     return () => {
-      console.log('[MAP] Cleanup: cancelling and removing map');
       cancelled = true;
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
-        mapInstanceRef.current = null;
-      }
+      if (mapInstanceRef.current) { mapInstanceRef.current.remove(); mapInstanceRef.current = null; }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [load.id, stopsLoading, dbStops.length]);
