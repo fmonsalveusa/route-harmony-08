@@ -222,7 +222,10 @@ export const LoadDetailPanel = ({ load, onMilesCalculated }: LoadDetailPanelProp
         const rounded = Math.round(accumulatedMiles);
         if (rounded > 0) {
           setTotalMiles(rounded);
-          if (onMilesCalculated) {
+          // Only persist if miles or route changed to avoid re-render loop
+          const currentMiles = Number(load.miles) || 0;
+          const hasRouteAlready = load.route_geometry && Array.isArray(load.route_geometry) && (load.route_geometry as any[]).length > 0;
+          if (onMilesCalculated && (Math.abs(currentMiles - rounded) > 1 || !hasRouteAlready)) {
             onMilesCalculated(load.id, rounded, routeCoords || undefined);
           }
         }
@@ -238,7 +241,7 @@ export const LoadDetailPanel = ({ load, onMilesCalculated }: LoadDetailPanelProp
         mapInstanceRef.current = null;
       }
     };
-  }, [load.origin, load.destination, stopsLoading, dbStops]);
+  }, [load.id, load.origin, load.destination, load.miles, stopsLoading, dbStops.length]);
 
   return (
     <div className="p-4 bg-muted/30 border-t animate-in slide-in-from-top-2 duration-200">
