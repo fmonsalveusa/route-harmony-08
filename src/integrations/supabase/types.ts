@@ -14,6 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
+      companies: {
+        Row: {
+          address: string | null
+          city: string | null
+          created_at: string
+          dot_number: string | null
+          email: string | null
+          id: string
+          legal_name: string | null
+          logo_url: string | null
+          mc_number: string | null
+          name: string
+          phone: string | null
+          state: string | null
+          updated_at: string
+          website: string | null
+          zip: string | null
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          created_at?: string
+          dot_number?: string | null
+          email?: string | null
+          id?: string
+          legal_name?: string | null
+          logo_url?: string | null
+          mc_number?: string | null
+          name: string
+          phone?: string | null
+          state?: string | null
+          updated_at?: string
+          website?: string | null
+          zip?: string | null
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          created_at?: string
+          dot_number?: string | null
+          email?: string | null
+          id?: string
+          legal_name?: string | null
+          logo_url?: string | null
+          mc_number?: string | null
+          name?: string
+          phone?: string | null
+          state?: string | null
+          updated_at?: string
+          website?: string | null
+          zip?: string | null
+        }
+        Relationships: []
+      }
       dispatchers: {
         Row: {
           commission_percentage: number
@@ -136,6 +190,66 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      invoices: {
+        Row: {
+          amount: number
+          broker_name: string
+          company_id: string | null
+          company_name: string | null
+          created_at: string
+          id: string
+          invoice_number: string
+          load_id: string
+          notes: string | null
+          pdf_url: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          broker_name: string
+          company_id?: string | null
+          company_name?: string | null
+          created_at?: string
+          id?: string
+          invoice_number: string
+          load_id: string
+          notes?: string | null
+          pdf_url?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          broker_name?: string
+          company_id?: string | null
+          company_name?: string | null
+          created_at?: string
+          id?: string
+          invoice_number?: string
+          load_id?: string
+          notes?: string | null
+          pdf_url?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_load_id_fkey"
+            columns: ["load_id"]
+            isOneToOne: false
+            referencedRelation: "loads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       load_stops: {
         Row: {
