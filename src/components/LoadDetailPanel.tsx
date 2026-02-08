@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { formatDate } from '@/lib/dateUtils';
 import { MapPin, Calendar, Weight, DollarSign, User, Truck, Route, Navigation, FileText, Download, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { mockDrivers, mockDispatchers } from '@/data/mockData';
+import { useDrivers } from '@/hooks/useDrivers';
+import { useDispatchers } from '@/hooks/useDispatchers';
 import type { DbLoad } from '@/hooks/useLoads';
 import { useLoadStops } from '@/hooks/useLoadStops';
 import { supabase } from '@/integrations/supabase/client';
@@ -85,8 +86,10 @@ export const LoadDetailPanel = ({ load, onMilesCalculated }: LoadDetailPanelProp
   const [totalMiles, setTotalMiles] = useState<number>(Number(load.miles) || 0);
   const { stops: dbStops, loading: stopsLoading, updateStopGeodata } = useLoadStops(load.id);
 
-  const driver = mockDrivers.find(d => d.id === load.driver_id);
-  const dispatcher = mockDispatchers.find(d => d.id === load.dispatcher_id);
+  const { drivers } = useDrivers();
+  const { dispatchers } = useDispatchers();
+  const driver = drivers.find(d => d.id === load.driver_id);
+  const dispatcher = dispatchers.find(d => d.id === load.dispatcher_id);
   const rpm = totalMiles > 0 ? Number(load.total_rate) / totalMiles : 0;
 
   const hasCachedRoute = load.route_geometry && Array.isArray(load.route_geometry) && load.route_geometry.length > 0;
