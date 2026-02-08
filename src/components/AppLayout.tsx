@@ -64,7 +64,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
 
   if (!profile) return null;
 
-  const navItems = isMasterAdmin ? masterNavItems : tenantNavItems;
+  const navItems = isMasterAdmin && location.pathname.startsWith('/master') ? masterNavItems : tenantNavItems;
   const visibleItems = navItems.filter(item => hasPermission(item.permission));
   const initials = profile.full_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
 
@@ -125,6 +125,20 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
               </Link>
             );
           })}
+
+          {/* Switch between master and app views */}
+          {isMasterAdmin && (
+            <div className={`mt-4 pt-3 border-t ${sidebarBorder}`}>
+              <Link
+                to={isMasterRoute ? '/' : '/master'}
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+              >
+                {isMasterRoute ? <Truck className="h-4.5 w-4.5 flex-shrink-0" /> : <Crown className="h-4.5 w-4.5 flex-shrink-0" />}
+                {!collapsed && <span>{isMasterRoute ? 'Ir a la App' : 'Panel Master'}</span>}
+              </Link>
+            </div>
+          )}
         </nav>
 
         {/* Plan widget for tenant admins */}
