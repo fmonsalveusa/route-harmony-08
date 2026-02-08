@@ -3,94 +3,48 @@ import { usePodDocuments } from '@/hooks/usePodDocuments';
 import { Button } from '@/components/ui/button';
 import { Upload, FileText, Image, Download, Trash2, Loader2 } from 'lucide-react';
 
-interface Stop {
-  id: string;
-  type: string;
-  address: string;
-}
-
 interface PodUploadSectionProps {
   loadId: string;
-  stops: Stop[];
 }
 
-export const PodUploadSection = ({ loadId, stops }: PodUploadSectionProps) => {
+export const PodUploadSection = ({ loadId }: PodUploadSectionProps) => {
   const { pods, loading, uploading, uploadPod, deletePod } = usePodDocuments(loadId);
-  const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
-  const generalInputRef = useRef<HTMLInputElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const handleFileChange = async (files: FileList | null, stopId?: string) => {
+  const handleFileChange = async (files: FileList | null) => {
     if (!files) return;
     for (let i = 0; i < files.length; i++) {
-      await uploadPod(files[i], stopId);
+      await uploadPod(files[i]);
     }
   };
 
-  const podsForStop = (stopId: string) => pods.filter(p => p.stop_id === stopId);
-  const generalPods = pods.filter(p => !p.stop_id);
-
   return (
     <div className="p-3 rounded-lg bg-card border text-sm space-y-3">
-      <h5 className="font-semibold flex items-center gap-1.5">
-        <FileText className="h-3.5 w-3.5 text-primary" /> POD — Proof of Delivery
-      </h5>
-
-      {/* Per-stop PODs */}
-      {stops.length > 0 && stops.map(stop => (
-        <div key={stop.id} className="space-y-1.5">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground">
-              {stop.type === 'pickup' ? '📦 Pick Up' : '📍 Delivery'}: <span className="text-foreground">{stop.address}</span>
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1.5 text-xs h-7"
-              disabled={uploading}
-              onClick={() => fileInputRefs.current[stop.id]?.click()}
-            >
-              {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
-              Subir
-            </Button>
-            <input
-              ref={el => { fileInputRefs.current[stop.id] = el; }}
-              type="file"
-              accept="image/*,.pdf"
-              multiple
-              className="hidden"
-              onChange={e => handleFileChange(e.target.files, stop.id)}
-            />
-          </div>
-          <PodFileList pods={podsForStop(stop.id)} onDelete={deletePod} />
-        </div>
-      ))}
-
-      {/* General PODs (no specific stop) */}
-      <div className="space-y-1.5 pt-1 border-t">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-muted-foreground">📎 POD General (sin parada específica)</span>
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-1.5 text-xs h-7"
-            disabled={uploading}
-            onClick={() => generalInputRef.current?.click()}
-          >
-            {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
-            Subir
-          </Button>
-          <input
-            ref={generalInputRef}
-            type="file"
-            accept="image/*,.pdf"
-            multiple
-            className="hidden"
-            onChange={e => handleFileChange(e.target.files)}
-          />
-        </div>
-        <PodFileList pods={generalPods} onDelete={deletePod} />
+      <div className="flex items-center justify-between">
+        <h5 className="font-semibold flex items-center gap-1.5">
+          <FileText className="h-3.5 w-3.5 text-primary" /> POD — Proof of Delivery
+        </h5>
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1.5 text-xs h-7"
+          disabled={uploading}
+          onClick={() => fileInputRef.current?.click()}
+        >
+          {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
+          Subir POD
+        </Button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*,.pdf"
+          multiple
+          className="hidden"
+          onChange={e => handleFileChange(e.target.files)}
+        />
       </div>
 
+      <PodFileList pods={pods} onDelete={deletePod} />
       {loading && <p className="text-xs text-muted-foreground">Cargando PODs...</p>}
     </div>
   );
