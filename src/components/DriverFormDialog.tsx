@@ -12,7 +12,7 @@ import { formatDate, todayET } from '@/lib/dateUtils';
 import { cn } from '@/lib/utils';
 import { DbDriver, DriverInput } from '@/hooks/useDrivers';
 import { DbTruck } from '@/hooks/useTrucks';
-import { mockDispatchers } from '@/data/mockData';
+import { DbDispatcher } from '@/hooks/useDispatchers';
 
 interface DriverFormDialogProps {
   open: boolean;
@@ -20,6 +20,7 @@ interface DriverFormDialogProps {
   driver?: DbDriver | null;
   onSubmit: (data: DriverInput, files: Record<string, File | null>) => Promise<void>;
   trucks: DbTruck[];
+  dispatchers: DbDispatcher[];
 }
 
 const emptyForm: DriverInput = {
@@ -41,7 +42,7 @@ const docFields: { key: DocKey; label: string; urlKey: string }[] = [
   { key: 'service_agreement', label: 'Service Agreement', urlKey: 'service_agreement_url' },
 ];
 
-export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks }: DriverFormDialogProps) {
+export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks, dispatchers }: DriverFormDialogProps) {
   const [form, setForm] = useState<DriverInput>(emptyForm);
   const [files, setFiles] = useState<Record<string, File | null>>({});
   const [saving, setSaving] = useState(false);
@@ -135,7 +136,7 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks 
               <SelectTrigger><SelectValue placeholder="Sin asignar" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">Sin asignar</SelectItem>
-                {mockDispatchers.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+                {dispatchers.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>

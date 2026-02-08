@@ -195,6 +195,7 @@ const Drivers = () => {
         driver={editingDriver}
         onSubmit={handleSubmit}
         trucks={trucks}
+        dispatchers={dispatchers}
       />
 
       <DriverDetailDialog
