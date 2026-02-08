@@ -5,12 +5,14 @@ import { StatusBadge } from '@/components/StatusBadge';
 import { StatCard } from '@/components/StatCard';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { PaymentEditDialog } from '@/components/PaymentEditDialog';
-import { DollarSign, CheckCircle, Clock, Download, Pencil, Trash2, FileText } from 'lucide-react';
+import { DollarSign, CheckCircle, Clock, Download, Pencil, Trash2, FileText, CheckCheck } from 'lucide-react';
 import { generatePaymentReceipt } from '@/lib/paymentReceipt';
+import { generateBatchPaymentReceipt } from '@/lib/batchPaymentReceipt';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
@@ -31,6 +33,8 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
   const [editPayment, setEditPayment] = useState<DbPayment | null>(null);
   const [deletePaymentId, setDeletePaymentId] = useState<string | null>(null);
   const [adjMap, setAdjMap] = useState<Record<string, number>>({});
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [batchProcessing, setBatchProcessing] = useState(false);
 
   // Fetch all adjustments for payments of this type
   const fetchAdjustments = useCallback(async () => {
@@ -49,6 +53,9 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
 
   useEffect(() => { fetchAdjustments(); }, [fetchAdjustments]);
 
+  // Clear selection when filter changes
+  useEffect(() => { setSelectedIds(new Set()); }, [statusFilter]);
+
   const allTypePayments = allPayments.filter(p => p.recipient_type === type);
   const pendingCount = allTypePayments.filter(p => p.status === 'pending').length;
   const inProcessCount = allTypePayments.filter(p => p.status === 'in_process').length;
@@ -58,6 +65,75 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
 
   const totalPending = allTypePayments.filter(p => p.status === 'pending' || p.status === 'in_process').reduce((s, p) => s + Number(p.amount) + (adjMap[p.id] || 0), 0);
   const totalPaid = allTypePayments.filter(p => p.status === 'paid').reduce((s, p) => s + Number(p.amount) + (adjMap[p.id] || 0), 0);
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === payments.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(payments.map(p => p.id)));
+    }
+  };
+
+  const selectedPayments = payments.filter(p => selectedIds.has(p.id));
+
+  // Validate selection: all must be same recipient
+  const canBatchPay = selectedPayments.length > 0 &&
+    new Set(selectedPayments.map(p => p.recipient_id)).size === 1;
+
+  const selectedTotal = selectedPayments.reduce((s, p) => s + Number(p.amount) + (adjMap[p.id] || 0), 0);
+
+  const handleBatchPayAndReceipt = async () => {
+    if (!canBatchPay) {
+      toast({ title: 'Error', description: 'Selecciona pagos del mismo beneficiario.', variant: 'destructive' });
+      return;
+    }
+    setBatchProcessing(true);
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      // Update all selected to paid
+      for (const p of selectedPayments) {
+        await supabase.from('payments').update({ status: 'paid', payment_date: today }).eq('id', p.id);
+      }
+
+      // Generate batch receipt
+      const items = selectedPayments.map(p => ({
+        payment: p,
+        adjustment: adjMap[p.id] || 0,
+        finalAmount: Number(p.amount) + (adjMap[p.id] || 0),
+      }));
+      generateBatchPaymentReceipt(selectedPayments[0].recipient_name, selectedPayments[0].recipient_type, items);
+
+      toast({ title: `${selectedPayments.length} pago(s) marcados como pagados`, description: 'Recibo grupal generado.' });
+      setSelectedIds(new Set());
+      refetch();
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    } finally {
+      setBatchProcessing(false);
+    }
+  };
+
+  const handleBatchReceiptOnly = () => {
+    if (!canBatchPay) {
+      toast({ title: 'Error', description: 'Selecciona pagos del mismo beneficiario.', variant: 'destructive' });
+      return;
+    }
+    const items = selectedPayments.map(p => ({
+      payment: p,
+      adjustment: adjMap[p.id] || 0,
+      finalAmount: Number(p.amount) + (adjMap[p.id] || 0),
+    }));
+    generateBatchPaymentReceipt(selectedPayments[0].recipient_name, selectedPayments[0].recipient_type, items);
+    toast({ title: 'Recibo grupal generado' });
+  };
 
   const handleDelete = async () => {
     if (!deletePaymentId) return;
@@ -88,11 +164,38 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
         </TabsList>
       </Tabs>
 
+      {/* Batch action bar */}
+      {selectedIds.size > 0 && (
+        <div className="flex items-center gap-3 p-3 rounded-lg border bg-primary/5 border-primary/20">
+          <span className="text-sm font-medium">{selectedIds.size} seleccionado(s)</span>
+          <span className="text-sm text-muted-foreground">•</span>
+          <span className="text-sm font-semibold">${selectedTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+          {!canBatchPay && selectedPayments.length > 0 && (
+            <span className="text-xs text-destructive ml-2">⚠ Selecciona pagos del mismo beneficiario</span>
+          )}
+          <div className="ml-auto flex items-center gap-2">
+            <Button size="sm" variant="outline" className="gap-1.5" onClick={handleBatchReceiptOnly} disabled={!canBatchPay}>
+              <FileText className="h-3.5 w-3.5" /> Recibo
+            </Button>
+            <Button size="sm" className="gap-1.5" onClick={handleBatchPayAndReceipt} disabled={!canBatchPay || batchProcessing}>
+              <CheckCheck className="h-3.5 w-3.5" /> Pagar y Generar Recibo
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>Cancelar</Button>
+          </div>
+        </div>
+      )}
+
       <Card>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-[15px]">
               <thead><tr className="border-b bg-muted/50">
+                <th className="p-3 w-10">
+                  <Checkbox
+                    checked={payments.length > 0 && selectedIds.size === payments.length}
+                    onCheckedChange={toggleSelectAll}
+                  />
+                </th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Referencia</th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Beneficiario</th>
                 <th className="text-right p-3 font-medium text-muted-foreground">Rate</th>
@@ -106,10 +209,16 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
               </tr></thead>
               <tbody>
                 {payments.length === 0 && !loading && (
-                  <tr><td colSpan={10} className="p-6 text-center text-muted-foreground">Sin pagos registrados</td></tr>
+                  <tr><td colSpan={11} className="p-6 text-center text-muted-foreground">Sin pagos registrados</td></tr>
                 )}
                 {payments.map(p => (
-                  <tr key={p.id} className="border-b last:border-0 hover:bg-muted/30">
+                  <tr key={p.id} className={`border-b last:border-0 hover:bg-muted/30 ${selectedIds.has(p.id) ? 'bg-primary/5' : ''}`}>
+                    <td className="p-3">
+                      <Checkbox
+                        checked={selectedIds.has(p.id)}
+                        onCheckedChange={() => toggleSelect(p.id)}
+                      />
+                    </td>
                     <td className="p-3 font-medium text-primary">{p.load_reference}</td>
                     <td className="p-3">{p.recipient_name}</td>
                     <td className="p-3 text-right text-muted-foreground">${Number(p.total_rate).toLocaleString()}</td>
