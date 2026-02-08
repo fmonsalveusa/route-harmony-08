@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { getTenantId } from '@/hooks/useTenantId';
@@ -56,6 +56,8 @@ export function useLoads() {
   const [loads, setLoads] = useState<DbLoad[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const toastRef = useRef(toast);
+  toastRef.current = toast;
 
   const fetchLoads = useCallback(async () => {
     setLoading(true);
@@ -66,12 +68,12 @@ export function useLoads() {
 
     if (error) {
       console.error('Error fetching loads:', error);
-      toast({ title: 'Error', description: 'No se pudieron cargar las cargas', variant: 'destructive' });
+      toastRef.current({ title: 'Error', description: 'No se pudieron cargar las cargas', variant: 'destructive' });
     } else {
       setLoads((data as DbLoad[]) || []);
     }
     setLoading(false);
-  }, [toast]);
+  }, []);
 
   const createLoad = useCallback(async (input: CreateLoadInput) => {
     const tenant_id = await getTenantId();
@@ -83,14 +85,14 @@ export function useLoads() {
 
     if (error) {
       console.error('Error creating load:', error);
-      toast({ title: 'Error', description: 'No se pudo crear la carga', variant: 'destructive' });
+      toastRef.current({ title: 'Error', description: 'No se pudo crear la carga', variant: 'destructive' });
       return null;
     }
 
-    toast({ title: 'Carga creada', description: `Referencia: ${input.reference_number}` });
+    toastRef.current({ title: 'Carga creada', description: `Referencia: ${input.reference_number}` });
     await fetchLoads();
     return data as DbLoad;
-  }, [fetchLoads, toast]);
+  }, [fetchLoads]);
 
   useEffect(() => {
     fetchLoads();
@@ -104,14 +106,14 @@ export function useLoads() {
 
     if (error) {
       console.error('Error updating load:', error);
-      toast({ title: 'Error', description: 'No se pudo actualizar la carga', variant: 'destructive' });
+      toastRef.current({ title: 'Error', description: 'No se pudo actualizar la carga', variant: 'destructive' });
       return false;
     }
 
-    toast({ title: 'Carga actualizada' });
+    toastRef.current({ title: 'Carga actualizada' });
     await fetchLoads();
     return true;
-  }, [fetchLoads, toast]);
+  }, [fetchLoads]);
 
   const deleteLoad = useCallback(async (id: string) => {
     const { error } = await supabase
@@ -121,14 +123,14 @@ export function useLoads() {
 
     if (error) {
       console.error('Error deleting load:', error);
-      toast({ title: 'Error', description: 'No se pudo eliminar la carga', variant: 'destructive' });
+      toastRef.current({ title: 'Error', description: 'No se pudo eliminar la carga', variant: 'destructive' });
       return false;
     }
 
-    toast({ title: 'Carga eliminada' });
+    toastRef.current({ title: 'Carga eliminada' });
     await fetchLoads();
     return true;
-  }, [fetchLoads, toast]);
+  }, [fetchLoads]);
 
   return { loads, loading, fetchLoads, createLoad, updateLoad, deleteLoad };
 }
