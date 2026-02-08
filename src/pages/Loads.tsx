@@ -303,7 +303,7 @@ const Loads = () => {
                         <td className="p-3 text-foreground">{load.broker_client || '—'}</td>
                         <td className="p-3 hidden md:table-cell">
                           <div className="text-foreground">{driver?.name || <span className="text-muted-foreground italic">Sin asignar</span>}</div>
-                          <div className="text-muted-foreground text-xs">{load.truck_id || '—'}</div>
+                          <div className="text-muted-foreground text-xs">{trucks.find(t => t.id === load.truck_id)?.unit_number ? `Unit #${trucks.find(t => t.id === load.truck_id)!.unit_number}` : '—'}</div>
                         </td>
                         <td className="p-3 hidden md:table-cell">
                           {(() => { const { city, state } = extractCityState(load.origin); return (
