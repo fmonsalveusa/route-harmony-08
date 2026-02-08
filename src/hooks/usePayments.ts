@@ -47,7 +47,7 @@ export function usePayments() {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
       return false;
     }
-    toast({ title: 'Pago actualizado' });
+    toast({ title: 'Payment updated' });
     fetchPayments();
     return true;
   };
@@ -109,7 +109,6 @@ export async function generatePaymentsForLoad(load: {
   }
 
   // Dispatcher payment is now generated manually from the Payments > Dispatchers tab
-  // No automatic dispatcher payment generation on delivery
 
   if (paymentsToInsert.length === 0) return;
 
@@ -125,9 +124,9 @@ export async function generatePaymentsForLoad(load: {
   const withTenant = paymentsToInsert.map(p => ({ ...p, tenant_id }));
   const { error } = await supabase.from('payments').insert(withTenant as any);
   if (error) {
-    toast({ title: 'Error generando pagos', description: error.message, variant: 'destructive' });
+    toast({ title: 'Error generating payments', description: error.message, variant: 'destructive' });
   } else {
-    toast({ title: `${paymentsToInsert.length} pago(s) generado(s) automáticamente` });
+    toast({ title: `${paymentsToInsert.length} payment(s) generated automatically` });
   }
 }
 
@@ -142,8 +141,8 @@ export async function deletePaymentsForLoad(loadId: string) {
 
   const { error } = await supabase.from('payments').delete().eq('load_id', loadId);
   if (error) {
-    toast({ title: 'Error eliminando pagos', description: error.message, variant: 'destructive' });
+    toast({ title: 'Error deleting payments', description: error.message, variant: 'destructive' });
   } else {
-    toast({ title: `${existing.length} pago(s) eliminado(s) automáticamente` });
+    toast({ title: `${existing.length} payment(s) deleted automatically` });
   }
 }

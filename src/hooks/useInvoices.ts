@@ -35,7 +35,7 @@ export function useInvoices() {
     const tenant_id = await getTenantId();
     const { data, error } = await supabase.from('invoices').insert({ ...invoice, tenant_id } as any).select().maybeSingle();
     if (error) { toast.error('Error creating invoice'); return null; }
-    toast.success('Invoice generado');
+    toast.success('Invoice created');
     fetchInvoices();
     return data;
   };
@@ -49,7 +49,7 @@ export function useInvoices() {
   const deleteInvoice = async (id: string) => {
     const { error } = await supabase.from('invoices').delete().eq('id', id);
     if (error) { toast.error('Error deleting invoice'); return; }
-    toast.success('Invoice eliminado');
+    toast.success('Invoice deleted');
     fetchInvoices();
   };
 

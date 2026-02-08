@@ -38,21 +38,21 @@ export function useCompanies() {
     const tenant_id = await getTenantId();
     const { error } = await supabase.from('companies').insert({ ...company, tenant_id } as any);
     if (error) { toast.error('Error creating company'); return; }
-    toast.success('Empresa creada');
+    toast.success('Company created');
     fetchCompanies();
   };
 
   const updateCompany = async (id: string, updates: Partial<Company>) => {
     const { error } = await supabase.from('companies').update(updates).eq('id', id);
     if (error) { toast.error('Error updating company'); return; }
-    toast.success('Empresa actualizada');
+    toast.success('Company updated');
     fetchCompanies();
   };
 
   const deleteCompany = async (id: string) => {
     const { error } = await supabase.from('companies').delete().eq('id', id);
     if (error) { toast.error('Error deleting company'); return; }
-    toast.success('Empresa eliminada');
+    toast.success('Company deleted');
     fetchCompanies();
   };
 

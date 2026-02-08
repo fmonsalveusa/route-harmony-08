@@ -37,9 +37,9 @@ const Auth = () => {
     const { error } = await signIn(email, password);
     if (error) {
       if (error.message.includes('Invalid login')) {
-        setError('Credenciales inválidas. Verifica tu email y contraseña.');
+        setError('Invalid credentials. Please check your email and password.');
       } else if (error.message.includes('Email not confirmed')) {
-        setError('Debes confirmar tu email antes de iniciar sesión.');
+        setError('Please confirm your email before signing in.');
       } else {
         setError(error.message);
       }
@@ -51,14 +51,14 @@ const Auth = () => {
     e.preventDefault();
     setError('');
     if (password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres.');
+      setError('Password must be at least 6 characters.');
       return;
     }
     setIsLoading(true);
     const { error } = await signUp(email, password, fullName);
     if (error) {
       if (error.message.includes('already registered')) {
-        setError('Este email ya está registrado. Intenta iniciar sesión.');
+        setError('This email is already registered. Try signing in.');
       } else {
         setError(error.message);
       }
@@ -77,7 +77,7 @@ const Auth = () => {
           <img src={logoImg} alt="Load Up TMS" className="h-20 w-20 mb-6 mx-auto rounded-xl object-cover" />
           <h1 className="text-4xl font-bold text-primary-foreground mb-4">Load Up TMS</h1>
           <p className="text-primary-foreground/80 text-lg max-w-md">
-            Plataforma integral de gestión de transporte multi-empresa. Controla tu flota, cargas, pagos y equipo.
+            Comprehensive multi-company transportation management platform. Manage your fleet, loads, payments, and team.
           </p>
         </div>
         <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-primary/50 to-transparent" />
@@ -94,28 +94,28 @@ const Auth = () => {
           {signUpSuccess ? (
             <Card className="border-0 shadow-lg">
               <CardHeader className="pb-4 text-center">
-                <CardTitle className="text-xl text-success">¡Registro exitoso!</CardTitle>
+                <CardTitle className="text-xl text-success">Registration successful!</CardTitle>
                 <CardDescription>
-                  Hemos enviado un email de confirmación a <strong>{email}</strong>. Por favor, confirma tu email para iniciar sesión.
+                  We have sent a confirmation email to <strong>{email}</strong>. Please confirm your email to sign in.
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <Button className="w-full" onClick={() => { setSignUpSuccess(false); setError(''); }}>
-                  Volver a Iniciar Sesión
+                  Back to Sign In
                 </Button>
               </CardContent>
             </Card>
           ) : (
             <Card className="border-0 shadow-lg">
               <CardHeader className="pb-4">
-                <CardTitle className="text-xl">Bienvenido</CardTitle>
-                <CardDescription>Accede a tu cuenta o regístrate</CardDescription>
+                <CardTitle className="text-xl">Welcome</CardTitle>
+                <CardDescription>Sign in to your account or register</CardDescription>
               </CardHeader>
               <CardContent>
                 <Tabs defaultValue="login">
                   <TabsList className="grid w-full grid-cols-2 mb-4">
-                    <TabsTrigger value="login">Iniciar Sesión</TabsTrigger>
-                    <TabsTrigger value="register">Registrarse</TabsTrigger>
+                    <TabsTrigger value="login">Sign In</TabsTrigger>
+                    <TabsTrigger value="register">Register</TabsTrigger>
                   </TabsList>
 
                   <TabsContent value="login">
@@ -130,18 +130,18 @@ const Auth = () => {
                         <Label htmlFor="login-email">Email</Label>
                         <div className="relative">
                           <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                          <Input id="login-email" type="email" placeholder="tu@email.com" value={email} onChange={e => setEmail(e.target.value)} className="pl-10" required />
+                          <Input id="login-email" type="email" placeholder="you@email.com" value={email} onChange={e => setEmail(e.target.value)} className="pl-10" required />
                         </div>
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="login-password">Contraseña</Label>
+                        <Label htmlFor="login-password">Password</Label>
                         <div className="relative">
                           <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                           <Input id="login-password" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} className="pl-10" required />
                         </div>
                       </div>
                       <Button type="submit" className="w-full" disabled={isLoading}>
-                        {isLoading ? 'Ingresando...' : 'Ingresar'}
+                        {isLoading ? 'Signing in...' : 'Sign In'}
                       </Button>
                     </form>
                   </TabsContent>
@@ -155,28 +155,28 @@ const Auth = () => {
                         </div>
                       )}
                       <div className="space-y-2">
-                        <Label htmlFor="reg-name">Nombre completo</Label>
+                        <Label htmlFor="reg-name">Full Name</Label>
                         <div className="relative">
                           <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                          <Input id="reg-name" placeholder="Tu nombre" value={fullName} onChange={e => setFullName(e.target.value)} className="pl-10" required />
+                          <Input id="reg-name" placeholder="Your name" value={fullName} onChange={e => setFullName(e.target.value)} className="pl-10" required />
                         </div>
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="reg-email">Email</Label>
                         <div className="relative">
                           <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                          <Input id="reg-email" type="email" placeholder="tu@email.com" value={email} onChange={e => setEmail(e.target.value)} className="pl-10" required />
+                          <Input id="reg-email" type="email" placeholder="you@email.com" value={email} onChange={e => setEmail(e.target.value)} className="pl-10" required />
                         </div>
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="reg-password">Contraseña</Label>
+                        <Label htmlFor="reg-password">Password</Label>
                         <div className="relative">
                           <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                          <Input id="reg-password" type="password" placeholder="Mínimo 6 caracteres" value={password} onChange={e => setPassword(e.target.value)} className="pl-10" required minLength={6} />
+                          <Input id="reg-password" type="password" placeholder="At least 6 characters" value={password} onChange={e => setPassword(e.target.value)} className="pl-10" required minLength={6} />
                         </div>
                       </div>
                       <Button type="submit" className="w-full" disabled={isLoading}>
-                        {isLoading ? 'Registrando...' : 'Crear cuenta'}
+                        {isLoading ? 'Registering...' : 'Create Account'}
                       </Button>
                     </form>
                   </TabsContent>

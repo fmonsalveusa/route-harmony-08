@@ -70,10 +70,10 @@ export function useDrivers() {
     const tenant_id = await getTenantId();
     const { error } = await supabase.from('drivers' as any).insert({ ...input, tenant_id } as any);
     if (error) {
-      toast({ title: 'Error al crear driver', description: error.message, variant: 'destructive' });
+      toast({ title: 'Error creating driver', description: error.message, variant: 'destructive' });
       return false;
     }
-    toast({ title: 'Driver creado exitosamente' });
+    toast({ title: 'Driver created successfully' });
     fetchDrivers();
     return true;
   };
@@ -81,10 +81,10 @@ export function useDrivers() {
   const updateDriver = async (id: string, input: Partial<DriverInput> & Record<string, any>) => {
     const { error } = await supabase.from('drivers' as any).update(input as any).eq('id', id);
     if (error) {
-      toast({ title: 'Error al actualizar driver', description: error.message, variant: 'destructive' });
+      toast({ title: 'Error updating driver', description: error.message, variant: 'destructive' });
       return false;
     }
-    toast({ title: 'Driver actualizado exitosamente' });
+    toast({ title: 'Driver updated successfully' });
     fetchDrivers();
     return true;
   };
@@ -92,10 +92,10 @@ export function useDrivers() {
   const deleteDriver = async (id: string) => {
     const { error } = await supabase.from('drivers' as any).delete().eq('id', id);
     if (error) {
-      toast({ title: 'Error al eliminar driver', description: error.message, variant: 'destructive' });
+      toast({ title: 'Error deleting driver', description: error.message, variant: 'destructive' });
       return false;
     }
-    toast({ title: 'Driver eliminado exitosamente' });
+    toast({ title: 'Driver deleted successfully' });
     fetchDrivers();
     return true;
   };
@@ -105,7 +105,7 @@ export function useDrivers() {
     const path = `${driverId}/${docType}_${Date.now()}.${ext}`;
     const { error } = await supabase.storage.from('driver-documents').upload(path, file);
     if (error) {
-      toast({ title: 'Error al subir documento', description: error.message, variant: 'destructive' });
+      toast({ title: 'Error uploading document', description: error.message, variant: 'destructive' });
       return null;
     }
     const { data: urlData } = supabase.storage.from('driver-documents').getPublicUrl(path);

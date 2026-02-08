@@ -50,11 +50,11 @@ export function DispatcherFormDialog({ open, onOpenChange, dispatcher, onSubmit 
 
   const handleSubmit = async () => {
     const missing: string[] = [];
-    if (!form.name.trim()) missing.push('Nombre');
+    if (!form.name.trim()) missing.push('Name');
     if (!form.email.trim()) missing.push('Email');
-    if (!form.phone.trim()) missing.push('Teléfono');
+    if (!form.phone.trim()) missing.push('Phone');
     if (missing.length > 0) {
-      toast.error(`Campos requeridos: ${missing.join(', ')}`);
+      toast.error(`Required fields: ${missing.join(', ')}`);
       return;
     }
     setSaving(true);
@@ -69,33 +69,33 @@ export function DispatcherFormDialog({ open, onOpenChange, dispatcher, onSubmit 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>{dispatcher ? 'Editar Dispatcher' : 'Nuevo Dispatcher'}</DialogTitle>
+          <DialogTitle>{dispatcher ? 'Edit Dispatcher' : 'New Dispatcher'}</DialogTitle>
         </DialogHeader>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
           <div className="space-y-2">
-            <Label>Nombre *</Label>
-            <Input value={form.name} onChange={e => set('name', e.target.value)} placeholder="Nombre completo" />
+            <Label>Name *</Label>
+            <Input value={form.name} onChange={e => set('name', e.target.value)} placeholder="Full name" />
           </div>
           <div className="space-y-2">
             <Label>Email *</Label>
-            <Input type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="email@ejemplo.com" />
+            <Input type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="email@example.com" />
           </div>
           <div className="space-y-2">
-            <Label>Teléfono *</Label>
+            <Label>Phone *</Label>
             <Input value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="555-0000" />
           </div>
           <div className="space-y-2">
-            <Label>Estado</Label>
+            <Label>Status</Label>
             <Select value={form.status} onValueChange={v => set('status', v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="active">Activo</SelectItem>
-                <SelectItem value="inactive">Inactivo</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>% Comisión</Label>
+            <Label>% Commission</Label>
             <Input type="number" value={form.commission_percentage} onChange={e => set('commission_percentage', Number(e.target.value))} />
           </div>
           <div className="space-y-2">
@@ -103,40 +103,34 @@ export function DispatcherFormDialog({ open, onOpenChange, dispatcher, onSubmit 
             <Input type="number" value={form.dispatch_service_percentage} onChange={e => set('dispatch_service_percentage', Number(e.target.value))} />
           </div>
           <div className="space-y-2">
-            <Label>Tipo de Pago</Label>
+            <Label>Pay Type</Label>
             <Select value={form.pay_type} onValueChange={v => set('pay_type', v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="per_rate">Por Tarifa</SelectItem>
-                <SelectItem value="per_load">Por Carga</SelectItem>
+                <SelectItem value="per_rate">Per Rate</SelectItem>
+                <SelectItem value="per_load">Per Load</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>Fecha de Inicio</Label>
+            <Label>Start Date</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !startDate && "text-muted-foreground")}>
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {startDate ? format(startDate, 'MM/dd/yyyy') : 'Seleccionar fecha'}
+                  {startDate ? format(startDate, 'MM/dd/yyyy') : 'Select date'}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={startDate}
-                  onSelect={d => set('start_date', d ? format(d, 'yyyy-MM-dd') : form.start_date)}
-                  initialFocus
-                  className="p-3 pointer-events-auto"
-                />
+                <Calendar mode="single" selected={startDate} onSelect={d => set('start_date', d ? format(d, 'yyyy-MM-dd') : form.start_date)} initialFocus className="p-3 pointer-events-auto" />
               </PopoverContent>
             </Popover>
           </div>
         </div>
         <div className="flex justify-end gap-2 mt-6">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button onClick={handleSubmit} disabled={saving}>
-            {saving ? 'Guardando...' : dispatcher ? 'Guardar Cambios' : 'Crear Dispatcher'}
+            {saving ? 'Saving...' : dispatcher ? 'Save Changes' : 'Create Dispatcher'}
           </Button>
         </div>
       </DialogContent>

@@ -49,10 +49,10 @@ export function useDispatchers() {
     const tenant_id = await getTenantId();
     const { error } = await supabase.from('dispatchers' as any).insert({ ...input, tenant_id } as any);
     if (error) {
-      toast({ title: 'Error al crear dispatcher', description: error.message, variant: 'destructive' });
+      toast({ title: 'Error creating dispatcher', description: error.message, variant: 'destructive' });
       return false;
     }
-    toast({ title: 'Dispatcher creado exitosamente' });
+    toast({ title: 'Dispatcher created successfully' });
     fetchDispatchers();
     return true;
   };
@@ -60,10 +60,10 @@ export function useDispatchers() {
   const updateDispatcher = async (id: string, input: Partial<DispatcherInput>) => {
     const { error } = await supabase.from('dispatchers' as any).update(input as any).eq('id', id);
     if (error) {
-      toast({ title: 'Error al actualizar dispatcher', description: error.message, variant: 'destructive' });
+      toast({ title: 'Error updating dispatcher', description: error.message, variant: 'destructive' });
       return false;
     }
-    toast({ title: 'Dispatcher actualizado exitosamente' });
+    toast({ title: 'Dispatcher updated successfully' });
     fetchDispatchers();
     return true;
   };
@@ -71,10 +71,10 @@ export function useDispatchers() {
   const deleteDispatcher = async (id: string) => {
     const { error } = await supabase.from('dispatchers' as any).delete().eq('id', id);
     if (error) {
-      toast({ title: 'Error al eliminar dispatcher', description: error.message, variant: 'destructive' });
+      toast({ title: 'Error deleting dispatcher', description: error.message, variant: 'destructive' });
       return false;
     }
-    toast({ title: 'Dispatcher eliminado exitosamente' });
+    toast({ title: 'Dispatcher deleted successfully' });
     fetchDispatchers();
     return true;
   };

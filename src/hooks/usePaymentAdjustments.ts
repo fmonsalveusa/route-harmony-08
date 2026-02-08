@@ -56,7 +56,7 @@ export function usePaymentAdjustments(paymentId: string) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
       return false;
     }
-    toast({ title: 'Ajuste agregado' });
+    toast({ title: 'Adjustment added' });
     fetchAdjustments();
     return true;
   };
@@ -67,7 +67,7 @@ export function usePaymentAdjustments(paymentId: string) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
       return false;
     }
-    toast({ title: 'Ajuste eliminado' });
+    toast({ title: 'Adjustment deleted' });
     fetchAdjustments();
     return true;
   };
