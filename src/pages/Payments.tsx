@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { formatDate } from '@/lib/dateUtils';
 import { usePayments, type DbPayment } from '@/hooks/usePayments';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -30,12 +30,30 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [editPayment, setEditPayment] = useState<DbPayment | null>(null);
   const [deletePaymentId, setDeletePaymentId] = useState<string | null>(null);
+  const [adjMap, setAdjMap] = useState<Record<string, number>>({});
+
+  // Fetch all adjustments for payments of this type
+  const fetchAdjustments = useCallback(async () => {
+    const ids = allPayments.filter(p => p.recipient_type === type).map(p => p.id);
+    if (ids.length === 0) return;
+    const { data } = await supabase.from('payment_adjustments').select('payment_id, adjustment_type, amount').in('payment_id', ids);
+    if (data) {
+      const map: Record<string, number> = {};
+      (data as any[]).forEach(a => {
+        const val = a.adjustment_type === 'addition' ? Number(a.amount) : -Number(a.amount);
+        map[a.payment_id] = (map[a.payment_id] || 0) + val;
+      });
+      setAdjMap(map);
+    }
+  }, [allPayments, type]);
+
+  useEffect(() => { fetchAdjustments(); }, [fetchAdjustments]);
 
   let payments = allPayments.filter(p => p.recipient_type === type);
   if (statusFilter !== 'all') payments = payments.filter(p => p.status === statusFilter);
 
-  const totalPending = payments.filter(p => p.status === 'pending').reduce((s, p) => s + Number(p.amount), 0);
-  const totalPaid = payments.filter(p => p.status === 'paid').reduce((s, p) => s + Number(p.amount), 0);
+  const totalPending = payments.filter(p => p.status === 'pending').reduce((s, p) => s + Number(p.amount) + (adjMap[p.id] || 0), 0);
+  const totalPaid = payments.filter(p => p.status === 'paid').reduce((s, p) => s + Number(p.amount) + (adjMap[p.id] || 0), 0);
 
   const handleDelete = async () => {
     if (!deletePaymentId) return;
@@ -77,22 +95,31 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
                 <th className="text-left p-3 font-medium text-muted-foreground">Beneficiario</th>
                 <th className="text-right p-3 font-medium text-muted-foreground">Rate</th>
                 <th className="text-right p-3 font-medium text-muted-foreground">%</th>
-                <th className="text-right p-3 font-medium text-muted-foreground">Monto</th>
+                <th className="text-right p-3 font-medium text-muted-foreground">Monto Base</th>
+                <th className="text-right p-3 font-medium text-muted-foreground">Ajuste</th>
+                <th className="text-right p-3 font-medium text-muted-foreground">Monto Total</th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Estado</th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Fecha</th>
                 <th className="text-right p-3 font-medium text-muted-foreground">Acciones</th>
               </tr></thead>
               <tbody>
                 {payments.length === 0 && !loading && (
-                  <tr><td colSpan={8} className="p-6 text-center text-muted-foreground">Sin pagos registrados</td></tr>
+                  <tr><td colSpan={9} className="p-6 text-center text-muted-foreground">Sin pagos registrados</td></tr>
                 )}
                 {payments.map(p => (
                   <tr key={p.id} className="border-b last:border-0 hover:bg-muted/30">
                     <td className="p-3 font-medium text-primary">{p.load_reference}</td>
                     <td className="p-3">{p.recipient_name}</td>
                     <td className="p-3 text-right text-muted-foreground">${Number(p.total_rate).toLocaleString()}</td>
-                    <td className="p-3 text-right text-muted-foreground">{p.percentage_applied}%</td>
-                    <td className="p-3 text-right font-semibold">${Number(p.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                    <td className="p-3 text-right text-muted-foreground">${Number(p.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                    <td className="p-3 text-right">
+                      {(adjMap[p.id] || 0) !== 0 ? (
+                        <span className={`font-semibold ${(adjMap[p.id] || 0) > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {(adjMap[p.id] || 0) > 0 ? '+' : ''}${(adjMap[p.id] || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                        </span>
+                      ) : <span className="text-muted-foreground">—</span>}
+                    </td>
+                    <td className="p-3 text-right font-semibold">${(Number(p.amount) + (adjMap[p.id] || 0)).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
                     <td className="p-3"><StatusBadge status={p.status} /></td>
                     <td className="p-3 text-muted-foreground">{p.payment_date ? formatDate(p.payment_date) : formatDate(p.created_at)}</td>
                     <td className="p-3 text-right">
@@ -122,7 +149,7 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
       </Card>
 
       {editPayment && (
-        <PaymentEditDialog payment={editPayment} open={!!editPayment} onOpenChange={(o) => { if (!o) setEditPayment(null); }} />
+        <PaymentEditDialog payment={editPayment} open={!!editPayment} onOpenChange={(o) => { if (!o) { setEditPayment(null); fetchAdjustments(); } }} />
       )}
 
       <AlertDialog open={!!deletePaymentId} onOpenChange={(o) => { if (!o) setDeletePaymentId(null); }}>
