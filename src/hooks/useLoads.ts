@@ -60,16 +60,17 @@ export function useLoads() {
   toastRef.current = toast;
 
   const fetchLoads = useCallback(async () => {
-    setLoading(true);
+    console.log('[useLoads] fetchLoads called');
     const { data, error } = await supabase
       .from('loads')
       .select('*')
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching loads:', error);
+      console.error('[useLoads] Error fetching loads:', error);
       toastRef.current({ title: 'Error', description: 'No se pudieron cargar las cargas', variant: 'destructive' });
     } else {
+      console.log('[useLoads] fetchLoads got', data?.length, 'loads');
       setLoads((data as DbLoad[]) || []);
     }
     setLoading(false);
@@ -77,6 +78,7 @@ export function useLoads() {
 
   const createLoad = useCallback(async (input: CreateLoadInput) => {
     const tenant_id = await getTenantId();
+    console.log('[useLoads] createLoad called, tenant_id:', tenant_id);
     const { data, error } = await supabase
       .from('loads')
       .insert([{ ...input, tenant_id } as any])
@@ -84,14 +86,18 @@ export function useLoads() {
       .single();
 
     if (error) {
-      console.error('Error creating load:', error);
+      console.error('[useLoads] Error creating load:', error);
       toastRef.current({ title: 'Error', description: 'No se pudo crear la carga', variant: 'destructive' });
       return null;
     }
 
+    console.log('[useLoads] Load created successfully:', data?.id);
     // Optimistic: add the new load to state immediately
     if (data) {
-      setLoads(prev => [data as DbLoad, ...prev]);
+      setLoads(prev => {
+        console.log('[useLoads] Optimistic update, prev count:', prev.length);
+        return [data as DbLoad, ...prev];
+      });
     }
 
     toastRef.current({ title: 'Carga creada', description: `Referencia: ${input.reference_number}` });
