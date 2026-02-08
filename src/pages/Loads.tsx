@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { mockDrivers, mockDispatchers } from '@/data/mockData';
 import { StatusBadge } from '@/components/StatusBadge';
 import { useLoads } from '@/hooks/useLoads';
+import { supabase } from '@/integrations/supabase/client';
 import { LoadFormDialog } from '@/components/LoadFormDialog';
 import { LoadDetailPanel } from '@/components/LoadDetailPanel';
 import { Card, CardContent } from '@/components/ui/card';
@@ -203,11 +204,12 @@ const Loads = () => {
                             <LoadDetailPanel
                               load={load}
                               onMilesCalculated={async (loadId, miles, routeGeometry) => {
+                                // Silent update — don't refetch loads to avoid remounting the detail panel
                                 const updateData: any = { miles };
                                 if (routeGeometry) {
                                   updateData.route_geometry = routeGeometry;
                                 }
-                                await updateLoad(loadId, updateData);
+                                await supabase.from('loads').update(updateData).eq('id', loadId);
                               }}
                             />
                           </td>
