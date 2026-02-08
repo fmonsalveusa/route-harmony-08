@@ -82,7 +82,11 @@ const Dispatchers = () => {
                     <div className="flex items-center gap-2 text-muted-foreground"><Phone className="h-3.5 w-3.5" />{d.phone}</div>
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Percent className="h-3.5 w-3.5" />
-                      <span>Comisión: {d.commission_percentage}% · Dispatch Service: {d.dispatch_service_percentage}%</span>
+                      <span>Comisión: {d.commission_percentage}%</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Percent className="h-3.5 w-3.5" />
+                      <span>Dispatch Service: {d.dispatch_service_percentage}%</span>
                     </div>
                   </div>
 
