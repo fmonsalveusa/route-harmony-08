@@ -24,9 +24,9 @@ const getStatusStyle = (status: string) =>
 const Fleet = () => {
   const { trucks, loading, createTruck, updateTruck, deleteTruck, uploadDocument } = useTrucks();
   const { drivers } = useDrivers();
-  const getDriverName = (id: string | null) => {
-    if (!id) return null;
-    return drivers.find(d => d.id === id)?.name || null;
+  const getDriverName = (truckId: string) => {
+    const d = drivers.find(d => d.truck_id === truckId);
+    return d?.name || null;
   };
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editTruck, setEditTruck] = useState<DbTruck | null>(null);
@@ -108,8 +108,8 @@ const Fleet = () => {
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">Driver</span>
                     <span className="font-medium flex items-center gap-1">
-                      {getDriverName(truck.driver_id) ? (
-                        <><User className="h-3.5 w-3.5 text-primary" />{getDriverName(truck.driver_id)}</>
+                      {getDriverName(truck.id) ? (
+                        <><User className="h-3.5 w-3.5 text-primary" />{getDriverName(truck.id)}</>
                       ) : (
                         <span className="text-muted-foreground italic">Sin asignar</span>
                       )}
