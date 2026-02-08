@@ -80,9 +80,9 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
 
       <Tabs value={statusFilter} onValueChange={setStatusFilter}>
         <TabsList>
-          <TabsTrigger value="all">Todos ({allTypePayments.length})</TabsTrigger>
           <TabsTrigger value="pending">Pending ({pendingCount})</TabsTrigger>
           <TabsTrigger value="paid">Paid ({paidCount})</TabsTrigger>
+          <TabsTrigger value="all">Todos ({allTypePayments.length})</TabsTrigger>
         </TabsList>
       </Tabs>
 
