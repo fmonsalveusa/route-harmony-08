@@ -8,7 +8,7 @@ import { usePodDocuments } from '@/hooks/usePodDocuments';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useTrucks } from '@/hooks/useTrucks';
 import { useDispatchers } from '@/hooks/useDispatchers';
-import { generatePaymentsForLoad } from '@/hooks/usePayments';
+import { generatePaymentsForLoad, deletePaymentsForLoad } from '@/hooks/usePayments';
 import { supabase } from '@/integrations/supabase/client';
 import { LoadFormDialog } from '@/components/LoadFormDialog';
 import { LoadDetailPanel } from '@/components/LoadDetailPanel';
@@ -331,6 +331,7 @@ const Loads = () => {
                         <td className="p-3 hidden lg:table-cell">{dispatcher?.name || '—'}</td>
                         <td className="p-3" onClick={e => e.stopPropagation()}>
                           <Select value={load.status} onValueChange={async (val) => {
+                            const prevStatus = load.status;
                             const updates: any = { status: val };
                             if (val === 'delivered') {
                               if (!load.delivery_date) updates.delivery_date = todayET();
@@ -339,10 +340,11 @@ const Loads = () => {
                             await updateLoad(load.id, updates);
                             if (val === 'delivered') {
                               setPodUploadLoadId(load.id);
-                              // Generate payments automatically
                               const driverData = drivers.find(d => d.id === load.driver_id) || null;
                               const dispatcherData = dispatchers.find(d => d.id === load.dispatcher_id) || null;
                               await generatePaymentsForLoad(load, driverData, dispatcherData);
+                            } else if (prevStatus === 'delivered' && val !== 'tonu') {
+                              await deletePaymentsForLoad(load.id);
                             }
                           }}>
                             <SelectTrigger className="h-8 w-[140px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:ml-1">
