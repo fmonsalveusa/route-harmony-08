@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { getTenantId } from '@/hooks/useTenantId';
 
 export interface Company {
   id: string;
@@ -34,7 +35,8 @@ export function useCompanies() {
   useEffect(() => { fetchCompanies(); }, [fetchCompanies]);
 
   const createCompany = async (company: Omit<Company, 'id' | 'created_at' | 'updated_at'>) => {
-    const { error } = await supabase.from('companies').insert(company);
+    const tenant_id = await getTenantId();
+    const { error } = await supabase.from('companies').insert({ ...company, tenant_id } as any);
     if (error) { toast.error('Error creating company'); return; }
     toast.success('Empresa creada');
     fetchCompanies();

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { getTenantId } from '@/hooks/useTenantId';
 
 export interface PodDocument {
   id: string;
@@ -54,6 +55,7 @@ export function usePodDocuments(loadId: string) {
         .getPublicUrl(path);
 
       const fileType = file.type.startsWith('image/') ? 'image' : 'pdf';
+      const tenant_id = await getTenantId();
 
       const { error: insertError } = await supabase
         .from('pod_documents')
@@ -63,6 +65,7 @@ export function usePodDocuments(loadId: string) {
           file_url: urlData.publicUrl,
           file_name: file.name,
           file_type: fileType,
+          tenant_id,
         } as any);
 
       if (insertError) throw insertError;

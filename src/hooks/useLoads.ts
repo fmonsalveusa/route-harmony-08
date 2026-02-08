@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { getTenantId } from '@/hooks/useTenantId';
 
 export interface DbLoad {
   id: string;
@@ -73,9 +74,10 @@ export function useLoads() {
   }, [toast]);
 
   const createLoad = useCallback(async (input: CreateLoadInput) => {
+    const tenant_id = await getTenantId();
     const { data, error } = await supabase
       .from('loads')
-      .insert([input as any])
+      .insert([{ ...input, tenant_id } as any])
       .select()
       .single();
 

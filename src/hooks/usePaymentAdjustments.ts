@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { getTenantId } from '@/hooks/useTenantId';
 
 export interface DbPaymentAdjustment {
   id: string;
@@ -45,9 +46,11 @@ export function usePaymentAdjustments(paymentId: string) {
     description?: string;
     amount: number;
   }) => {
+    const tenant_id = await getTenantId();
     const { error } = await supabase.from('payment_adjustments').insert({
       payment_id: paymentId,
       ...adj,
+      tenant_id,
     } as any);
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { getTenantId } from '@/hooks/useTenantId';
 
 export interface DbPayment {
   id: string;
@@ -120,7 +121,9 @@ export async function generatePaymentsForLoad(load: {
 
   if (existing && existing.length > 0) return; // already generated
 
-  const { error } = await supabase.from('payments').insert(paymentsToInsert);
+  const tenant_id = await getTenantId();
+  const withTenant = paymentsToInsert.map(p => ({ ...p, tenant_id }));
+  const { error } = await supabase.from('payments').insert(withTenant as any);
   if (error) {
     toast({ title: 'Error generando pagos', description: error.message, variant: 'destructive' });
   } else {
