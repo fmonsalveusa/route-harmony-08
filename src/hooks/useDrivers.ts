@@ -17,6 +17,7 @@ export interface DbDriver {
   investor_name: string | null;
   pay_percentage: number;
   investor_pay_percentage: number | null;
+  factoring_percentage: number;
   hire_date: string;
   loads_this_month: number;
   earnings_this_month: number;
@@ -44,6 +45,7 @@ export interface DriverInput {
   investor_name?: string | null;
   pay_percentage: number;
   investor_pay_percentage?: number | null;
+  factoring_percentage?: number;
   hire_date: string;
 }
 
