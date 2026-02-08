@@ -89,7 +89,7 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
       <Card>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-[15px]">
               <thead><tr className="border-b bg-muted/50">
                 <th className="text-left p-3 font-medium text-muted-foreground">Referencia</th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Beneficiario</th>
@@ -104,7 +104,7 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
               </tr></thead>
               <tbody>
                 {payments.length === 0 && !loading && (
-                  <tr><td colSpan={9} className="p-6 text-center text-muted-foreground">Sin pagos registrados</td></tr>
+                  <tr><td colSpan={10} className="p-6 text-center text-muted-foreground">Sin pagos registrados</td></tr>
                 )}
                 {payments.map(p => (
                   <tr key={p.id} className="border-b last:border-0 hover:bg-muted/30">
@@ -121,15 +121,20 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
                       ) : <span className="text-muted-foreground">—</span>}
                     </td>
                     <td className="p-3 text-right font-semibold">${(Number(p.amount) + (adjMap[p.id] || 0)).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
-                    <td className="p-3"><StatusBadge status={p.status} /></td>
+                    <td className="p-3" onClick={e => e.stopPropagation()}>
+                      <Select value={p.status} onValueChange={(val) => updatePaymentStatus(p.id, val)}>
+                        <SelectTrigger className="h-8 w-[130px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:ml-1">
+                          <StatusBadge status={p.status} className="text-sm px-3 py-1" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-popover z-50">
+                          <SelectItem value="pending"><StatusBadge status="pending" /></SelectItem>
+                          <SelectItem value="paid"><StatusBadge status="paid" /></SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </td>
                     <td className="p-3 text-muted-foreground">{p.payment_date ? formatDate(p.payment_date) : formatDate(p.created_at)}</td>
                     <td className="p-3 text-right">
                       <div className="flex items-center justify-end gap-1">
-                        {p.status === 'pending' && (
-                          <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => updatePaymentStatus(p.id, 'paid')}>
-                            Pagado
-                          </Button>
-                        )}
                         <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setEditPayment(p)}>
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
