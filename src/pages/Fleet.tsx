@@ -103,7 +103,7 @@ const Fleet = () => {
                   </Select>
                 </div>
 
-                <div className="space-y-2 text-sm">
+                <div className="space-y-2 text-[15px]">
                   <Row label="Tipo" value={truck.truck_type} />
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">Driver</span>
