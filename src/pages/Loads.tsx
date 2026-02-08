@@ -11,23 +11,20 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Plus, Search, Filter, Package, Pencil, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Search, Filter, Package, Pencil, Trash2, ChevronDown, ChevronUp, MapPin } from 'lucide-react';
 import type { DbLoad } from '@/hooks/useLoads';
 
 const Loads = () => {
-  // Extract "City, ST" from a full address string
-  const extractCityState = (address: string): string => {
-    if (!address) return '—';
-    // Try to match "City, ST" or "City, State" pattern at the end or as the whole string
-    // Handle formats like "123 Main St, Houston, TX 77001" or "Houston, TX"
+  // Extract city and state separately from a full address string
+  const extractCityState = (address: string): { city: string; state: string } => {
+    if (!address) return { city: '—', state: '' };
     const parts = address.split(',').map(p => p.trim());
     if (parts.length >= 2) {
-      // Get the last part that contains a state abbreviation or state name
       const lastPart = parts[parts.length - 1].replace(/\d{5}(-\d{4})?/, '').trim();
       const city = parts[parts.length - 2];
-      if (lastPart) return `${city}, ${lastPart}`;
+      if (lastPart) return { city, state: lastPart };
     }
-    return address;
+    return { city: address, state: '' };
   };
   const { user } = useAuth();
   const { loads: dbLoads, loading: loadsLoading, createLoad, updateLoad, deleteLoad } = useLoads();
@@ -128,8 +125,22 @@ const Loads = () => {
                           <div className="text-foreground">{driver?.name || <span className="text-muted-foreground italic">Sin asignar</span>}</div>
                           <div className="text-muted-foreground text-xs">{load.truck_id || '—'}</div>
                         </td>
-                        <td className="p-3 hidden md:table-cell text-foreground">{extractCityState(load.origin)}</td>
-                        <td className="p-3 hidden md:table-cell text-foreground">{extractCityState(load.destination)}</td>
+                        <td className="p-3 hidden md:table-cell">
+                          {(() => { const { city, state } = extractCityState(load.origin); return (
+                            <div className="flex items-center gap-1.5">
+                              <MapPin className="h-3.5 w-3.5 text-green-600 flex-shrink-0" />
+                              <div><div className="font-medium text-foreground uppercase text-xs">{city}</div>{state && <div className="text-muted-foreground text-[11px]">{state}</div>}</div>
+                            </div>
+                          ); })()}
+                        </td>
+                        <td className="p-3 hidden md:table-cell">
+                          {(() => { const { city, state } = extractCityState(load.destination); return (
+                            <div className="flex items-center gap-1.5">
+                              <MapPin className="h-3.5 w-3.5 text-red-500 flex-shrink-0" />
+                              <div><div className="font-medium text-foreground uppercase text-xs">{city}</div>{state && <div className="text-muted-foreground text-[11px]">{state}</div>}</div>
+                            </div>
+                          ); })()}
+                        </td>
                         <td className="p-3 hidden lg:table-cell text-muted-foreground">{load.pickup_date || '—'}</td>
                         <td className="p-3 hidden lg:table-cell text-muted-foreground">{load.delivery_date || '—'}</td>
                         <td className="p-3 text-right font-semibold">${Number(load.total_rate).toLocaleString()}</td>
