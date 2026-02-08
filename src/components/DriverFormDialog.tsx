@@ -30,6 +30,7 @@ const emptyForm: DriverInput = {
   status: 'available', service_type: 'owner_operator',
   dispatcher_id: null, truck_id: null,
   investor_name: null, pay_percentage: 30, investor_pay_percentage: 15,
+  factoring_percentage: 2,
   hire_date: todayET(),
 };
 
@@ -58,7 +59,9 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
         service_type: driver.service_type,
         dispatcher_id: driver.dispatcher_id, truck_id: driver.truck_id,
         investor_name: driver.investor_name, pay_percentage: driver.pay_percentage,
-        investor_pay_percentage: driver.investor_pay_percentage, hire_date: driver.hire_date,
+        investor_pay_percentage: driver.investor_pay_percentage,
+        factoring_percentage: driver.factoring_percentage ?? 2,
+        hire_date: driver.hire_date,
       });
     } else {
       setForm(emptyForm);
@@ -178,6 +181,10 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
           <div className="space-y-2">
             <Label>% Pago Investor</Label>
             <Input type="number" value={form.investor_pay_percentage ?? ''} onChange={e => set('investor_pay_percentage', Number(e.target.value))} />
+          </div>
+          <div className="space-y-2">
+            <Label>% Factoring</Label>
+            <Input type="number" step="0.5" value={form.factoring_percentage ?? 2} onChange={e => set('factoring_percentage', Number(e.target.value))} />
           </div>
 
           <DatePickerField label="Fecha de Contratación" value={form.hire_date} onChange={v => set('hire_date', v || todayET())} />

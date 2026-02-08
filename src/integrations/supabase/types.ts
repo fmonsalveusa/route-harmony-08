@@ -138,6 +138,7 @@ export type Database = {
           dispatcher_id: string | null
           earnings_this_month: number | null
           email: string
+          factoring_percentage: number
           form_w9_url: string | null
           hire_date: string
           id: string
@@ -165,6 +166,7 @@ export type Database = {
           dispatcher_id?: string | null
           earnings_this_month?: number | null
           email: string
+          factoring_percentage?: number
           form_w9_url?: string | null
           hire_date?: string
           id?: string
@@ -192,6 +194,7 @@ export type Database = {
           dispatcher_id?: string | null
           earnings_this_month?: number | null
           email?: string
+          factoring_percentage?: number
           form_w9_url?: string | null
           hire_date?: string
           id?: string
