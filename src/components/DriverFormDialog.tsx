@@ -68,11 +68,19 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
   const set = (key: string, value: any) => setForm(prev => ({ ...prev, [key]: value }));
 
   const handleSubmit = async () => {
-    if (!form.name || !form.email || !form.phone || !form.license) return;
+    if (!form.name || !form.email || !form.phone || !form.license) {
+      console.log('Validation failed:', { name: form.name, email: form.email, phone: form.phone, license: form.license });
+      return;
+    }
     setSaving(true);
-    await onSubmit(form, files);
-    setSaving(false);
-    onOpenChange(false);
+    try {
+      await onSubmit(form, files);
+    } catch (err) {
+      console.error('Error submitting driver:', err);
+    } finally {
+      setSaving(false);
+      onOpenChange(false);
+    }
   };
 
   return (
