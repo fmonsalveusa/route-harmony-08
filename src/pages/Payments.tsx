@@ -27,7 +27,7 @@ interface PaymentsSectionProps {
 
 const PaymentsSection = ({ type }: PaymentsSectionProps) => {
   const { payments: allPayments, loading, updatePaymentStatus, refetch } = usePayments();
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('pending');
   const [editPayment, setEditPayment] = useState<DbPayment | null>(null);
   const [deletePaymentId, setDeletePaymentId] = useState<string | null>(null);
   const [adjMap, setAdjMap] = useState<Record<string, number>>({});
