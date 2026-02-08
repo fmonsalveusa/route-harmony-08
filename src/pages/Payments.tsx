@@ -49,11 +49,14 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
 
   useEffect(() => { fetchAdjustments(); }, [fetchAdjustments]);
 
-  let payments = allPayments.filter(p => p.recipient_type === type);
-  if (statusFilter !== 'all') payments = payments.filter(p => p.status === statusFilter);
+  const allTypePayments = allPayments.filter(p => p.recipient_type === type);
+  const pendingCount = allTypePayments.filter(p => p.status === 'pending').length;
+  const paidCount = allTypePayments.filter(p => p.status === 'paid').length;
 
-  const totalPending = payments.filter(p => p.status === 'pending').reduce((s, p) => s + Number(p.amount) + (adjMap[p.id] || 0), 0);
-  const totalPaid = payments.filter(p => p.status === 'paid').reduce((s, p) => s + Number(p.amount) + (adjMap[p.id] || 0), 0);
+  const payments = statusFilter === 'all' ? allTypePayments : allTypePayments.filter(p => p.status === statusFilter);
+
+  const totalPending = allTypePayments.filter(p => p.status === 'pending').reduce((s, p) => s + Number(p.amount) + (adjMap[p.id] || 0), 0);
+  const totalPaid = allTypePayments.filter(p => p.status === 'paid').reduce((s, p) => s + Number(p.amount) + (adjMap[p.id] || 0), 0);
 
   const handleDelete = async () => {
     if (!deletePaymentId) return;
@@ -75,16 +78,13 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
         <StatCard title="Total General" value={`$${(totalPending + totalPaid).toLocaleString('en-US', { minimumFractionDigits: 2 })}`} icon={DollarSign} />
       </div>
 
-      <div className="flex gap-3">
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos</SelectItem>
-            <SelectItem value="pending">Pendiente</SelectItem>
-            <SelectItem value="paid">Pagado</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      <Tabs value={statusFilter} onValueChange={setStatusFilter}>
+        <TabsList>
+          <TabsTrigger value="all">Todos ({allTypePayments.length})</TabsTrigger>
+          <TabsTrigger value="pending">Pending ({pendingCount})</TabsTrigger>
+          <TabsTrigger value="paid">Paid ({paidCount})</TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       <Card>
         <CardContent className="p-0">
