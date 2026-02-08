@@ -156,7 +156,7 @@ const Fleet = () => {
 };
 
 const Row = ({ label, value }: { label: string; value: string }) => (
-  <div className="flex justify-between">
+  <div className="flex justify-between text-[15px]">
     <span className="text-muted-foreground">{label}</span>
     <span className="font-medium">{value}</span>
   </div>
