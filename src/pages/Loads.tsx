@@ -493,10 +493,7 @@ const Loads = () => {
             await updateLoad(editLoad.id, input);
             return editLoad;
           } else {
-            const result = await createLoad(input);
-            // Immediately refetch after creation to ensure list is updated
-            await fetchLoads();
-            return result;
+            return await createLoad(input);
           }
         }}
       />
