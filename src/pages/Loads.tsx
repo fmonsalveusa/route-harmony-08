@@ -8,6 +8,7 @@ import { usePodDocuments } from '@/hooks/usePodDocuments';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useTrucks } from '@/hooks/useTrucks';
 import { useDispatchers } from '@/hooks/useDispatchers';
+import { generatePaymentsForLoad } from '@/hooks/usePayments';
 import { supabase } from '@/integrations/supabase/client';
 import { LoadFormDialog } from '@/components/LoadFormDialog';
 import { LoadDetailPanel } from '@/components/LoadDetailPanel';
@@ -338,6 +339,10 @@ const Loads = () => {
                             await updateLoad(load.id, updates);
                             if (val === 'delivered') {
                               setPodUploadLoadId(load.id);
+                              // Generate payments automatically
+                              const driverData = drivers.find(d => d.id === load.driver_id) || null;
+                              const dispatcherData = dispatchers.find(d => d.id === load.dispatcher_id) || null;
+                              await generatePaymentsForLoad(load, driverData, dispatcherData);
                             }
                           }}>
                             <SelectTrigger className="h-8 w-[140px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:ml-1">

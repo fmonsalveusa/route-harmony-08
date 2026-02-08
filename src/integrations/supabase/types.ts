@@ -268,6 +268,62 @@ export type Database = {
         }
         Relationships: []
       }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          load_id: string
+          load_reference: string
+          payment_date: string | null
+          percentage_applied: number
+          recipient_id: string
+          recipient_name: string
+          recipient_type: string
+          status: string
+          total_rate: number
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          id?: string
+          load_id: string
+          load_reference: string
+          payment_date?: string | null
+          percentage_applied?: number
+          recipient_id: string
+          recipient_name: string
+          recipient_type: string
+          status?: string
+          total_rate?: number
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          load_id?: string
+          load_reference?: string
+          payment_date?: string | null
+          percentage_applied?: number
+          recipient_id?: string
+          recipient_name?: string
+          recipient_type?: string
+          status?: string
+          total_rate?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_load_id_fkey"
+            columns: ["load_id"]
+            isOneToOne: false
+            referencedRelation: "loads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pod_documents: {
         Row: {
           created_at: string
