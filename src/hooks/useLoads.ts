@@ -89,8 +89,14 @@ export function useLoads() {
       return null;
     }
 
+    // Optimistic: add the new load to state immediately
+    if (data) {
+      setLoads(prev => [data as DbLoad, ...prev]);
+    }
+
     toastRef.current({ title: 'Carga creada', description: `Referencia: ${input.reference_number}` });
-    await fetchLoads();
+    // Also refetch in background to ensure consistency
+    fetchLoads();
     return data as DbLoad;
   }, [fetchLoads]);
 
