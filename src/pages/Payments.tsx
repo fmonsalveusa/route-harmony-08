@@ -462,15 +462,15 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
                     </td>
                     <td className="p-3 text-muted-foreground">{p.payment_date ? formatDate(p.payment_date) : formatDate(p.created_at)}</td>
                     <td className="p-3 text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setEditPayment(p)}>
-                          <Pencil className="h-3.5 w-3.5" />
+                      <div className="flex items-center justify-end gap-1.5">
+                        <Button variant="outline" size="icon" className="h-8 w-10 border-amber-300 bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700" onClick={() => setEditPayment(p)} title="Editar">
+                          <Pencil className="h-4 w-4" />
                         </Button>
-                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => setDeletePaymentId(p.id)}>
-                          <Trash2 className="h-3.5 w-3.5" />
+                        <Button variant="outline" size="icon" className="h-8 w-10 border-emerald-300 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700" onClick={() => handleGenerateReceipt(p)} title="Generar Recibo PDF">
+                          <FileText className="h-4 w-4" />
                         </Button>
-                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0" title="Generar Recibo PDF" onClick={() => handleGenerateReceipt(p)}>
-                          <FileText className="h-3.5 w-3.5" />
+                        <Button variant="outline" size="icon" className="h-8 w-10 border-red-300 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700" onClick={() => setDeletePaymentId(p.id)} title="Eliminar">
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </td>

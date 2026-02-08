@@ -164,20 +164,20 @@ const Drivers = () => {
                     </div>
                   </div>
 
-                  <div className="mt-3 pt-3 border-t flex justify-end gap-2">
-                    <Button size="sm" variant="outline" onClick={() => copyDriverInfo(driver)}>
-                      <Copy className="h-3.5 w-3.5 mr-1" /> Copiar
+                  <div className="mt-3 pt-3 border-t flex justify-end gap-1.5">
+                    <Button variant="outline" size="icon" className="h-8 w-10 border-sky-300 bg-sky-50 text-sky-600 hover:bg-sky-100 hover:text-sky-700" onClick={() => copyDriverInfo(driver)} title="Copiar">
+                      <Copy className="h-4 w-4" />
                     </Button>
-                    <Button size="sm" variant="outline" onClick={() => setDetailDriver(driver)}>
-                      <Eye className="h-3.5 w-3.5 mr-1" /> Detalle
+                    <Button variant="outline" size="icon" className="h-8 w-10 border-emerald-300 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700" onClick={() => setDetailDriver(driver)} title="Detalle">
+                      <Eye className="h-4 w-4" />
                     </Button>
                     {!isDispatcher && (
                       <>
-                        <Button size="sm" variant="outline" onClick={() => { setEditingDriver(driver); setFormOpen(true); }}>
-                          <Pencil className="h-3.5 w-3.5 mr-1" /> Editar
+                        <Button variant="outline" size="icon" className="h-8 w-10 border-amber-300 bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700" onClick={() => { setEditingDriver(driver); setFormOpen(true); }} title="Editar">
+                          <Pencil className="h-4 w-4" />
                         </Button>
-                        <Button size="sm" variant="destructive" onClick={() => setDeletingDriver(driver)}>
-                          <Trash2 className="h-3.5 w-3.5 mr-1" /> Borrar
+                        <Button variant="outline" size="icon" className="h-8 w-10 border-red-300 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700" onClick={() => setDeletingDriver(driver)} title="Eliminar">
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </>
                     )}
