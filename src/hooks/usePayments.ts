@@ -67,10 +67,12 @@ export async function generatePaymentsForLoad(load: {
   pay_percentage: number;
   investor_pay_percentage?: number | null;
   investor_name?: string | null;
+  service_type?: string;
 } | null, dispatcher: {
   id: string;
   name: string;
   commission_percentage: number;
+  dispatch_service_percentage?: number;
 } | null) {
   const paymentsToInsert: any[] = [];
   const totalRate = Number(load.total_rate);
@@ -96,7 +98,7 @@ export async function generatePaymentsForLoad(load: {
     paymentsToInsert.push({
       load_id: load.id,
       recipient_type: 'investor',
-      recipient_id: driver.id, // linked via driver
+      recipient_id: driver.id,
       recipient_name: driver.investor_name,
       load_reference: load.reference_number,
       amount: Math.round(investorAmount * 100) / 100,
@@ -105,19 +107,26 @@ export async function generatePaymentsForLoad(load: {
     });
   }
 
-  // Dispatcher payment
-  if (dispatcher && dispatcher.commission_percentage > 0) {
-    const dispatcherAmount = totalRate * (dispatcher.commission_percentage / 100);
-    paymentsToInsert.push({
-      load_id: load.id,
-      recipient_type: 'dispatcher',
-      recipient_id: dispatcher.id,
-      recipient_name: dispatcher.name,
-      load_reference: load.reference_number,
-      amount: Math.round(dispatcherAmount * 100) / 100,
-      percentage_applied: dispatcher.commission_percentage,
-      total_rate: totalRate,
-    });
+  // Dispatcher payment — percentage depends on driver's service_type
+  if (dispatcher) {
+    const driverServiceType = driver?.service_type || 'owner_operator';
+    const dispatcherPct = driverServiceType === 'dispatch_service'
+      ? (dispatcher.dispatch_service_percentage ?? 0)
+      : dispatcher.commission_percentage;
+
+    if (dispatcherPct > 0) {
+      const dispatcherAmount = totalRate * (dispatcherPct / 100);
+      paymentsToInsert.push({
+        load_id: load.id,
+        recipient_type: 'dispatcher',
+        recipient_id: dispatcher.id,
+        recipient_name: dispatcher.name,
+        load_reference: load.reference_number,
+        amount: Math.round(dispatcherAmount * 100) / 100,
+        percentage_applied: dispatcherPct,
+        total_rate: totalRate,
+      });
+    }
   }
 
   if (paymentsToInsert.length === 0) return;
