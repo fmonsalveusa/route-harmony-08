@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { getTenantId } from '@/hooks/useTenantId';
 
 export interface DbTruck {
   id: string;
@@ -76,7 +77,8 @@ export function useTrucks() {
   useEffect(() => { fetchTrucks(); }, [fetchTrucks]);
 
   const createTruck = async (input: TruckInput) => {
-    const { error } = await supabase.from('trucks' as any).insert(input as any);
+    const tenant_id = await getTenantId();
+    const { error } = await supabase.from('trucks' as any).insert({ ...input, tenant_id } as any);
     if (error) {
       toast({ title: 'Error al crear camión', description: error.message, variant: 'destructive' });
       return false;

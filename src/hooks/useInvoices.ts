@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { getTenantId } from '@/hooks/useTenantId';
 
 export interface Invoice {
   id: string;
@@ -31,7 +32,8 @@ export function useInvoices() {
   useEffect(() => { fetchInvoices(); }, [fetchInvoices]);
 
   const createInvoice = async (invoice: Omit<Invoice, 'id' | 'created_at' | 'updated_at'>) => {
-    const { data, error } = await supabase.from('invoices').insert(invoice).select().maybeSingle();
+    const tenant_id = await getTenantId();
+    const { data, error } = await supabase.from('invoices').insert({ ...invoice, tenant_id } as any).select().maybeSingle();
     if (error) { toast.error('Error creating invoice'); return null; }
     toast.success('Invoice generado');
     fetchInvoices();

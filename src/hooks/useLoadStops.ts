@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { getTenantId } from '@/hooks/useTenantId';
 
 export interface LoadStop {
   id: string;
@@ -51,12 +52,14 @@ export function useLoadStops(loadId?: string) {
     await supabase.from('load_stops').delete().eq('load_id', loadId);
     if (newStops.length === 0) return;
 
+    const tenant_id = await getTenantId();
     const inserts = newStops.map((s, i) => ({
       load_id: loadId,
       stop_type: s.stop_type,
       address: s.address,
       stop_order: s.stop_order ?? i,
       date: s.date || null,
+      tenant_id,
     }));
 
     const { error } = await supabase.from('load_stops').insert(inserts);

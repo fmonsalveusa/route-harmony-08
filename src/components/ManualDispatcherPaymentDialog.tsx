@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
+import { getTenantId } from '@/hooks/useTenantId';
 import { toast } from '@/hooks/use-toast';
 import { formatDate } from '@/lib/dateUtils';
 import { Loader2 } from 'lucide-react';
@@ -132,6 +133,7 @@ export const ManualDispatcherPaymentDialog = ({ open, onOpenChange, onComplete }
     if (!dispatcher || selectedLoadIds.size === 0) return;
     setSubmitting(true);
 
+    const tenant_id = await getTenantId();
     const paymentsToInsert = loads
       .filter(l => selectedLoadIds.has(l.id))
       .map(l => {
@@ -149,6 +151,7 @@ export const ManualDispatcherPaymentDialog = ({ open, onOpenChange, onComplete }
           amount,
           percentage_applied: pct,
           total_rate: Number(l.total_rate),
+          tenant_id,
         };
       });
 
