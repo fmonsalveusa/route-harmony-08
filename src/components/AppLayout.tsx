@@ -90,7 +90,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
           {isMasterAdmin && isMasterRoute ? (
             <>
               <Crown className="h-7 w-7 text-purple-400 flex-shrink-0" />
-              {!collapsed && <span className="ml-3 text-lg font-bold text-purple-200 tracking-tight">TruckFlow</span>}
+              {!collapsed && <span className="ml-3 text-lg font-bold text-purple-200 tracking-tight">Load Up TMS</span>}
             </>
           ) : (
             <>
@@ -99,7 +99,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
               ) : (
                 <Truck className="h-7 w-7 text-sidebar-primary flex-shrink-0" />
               )}
-              {!collapsed && <span className="ml-3 text-lg font-bold text-sidebar-accent-foreground tracking-tight truncate">{tenant?.name || 'TruckFlow'}</span>}
+              {!collapsed && <span className="ml-3 text-lg font-bold text-sidebar-accent-foreground tracking-tight truncate">{tenant?.name || 'Load Up TMS'}</span>}
             </>
           )}
         </div>
