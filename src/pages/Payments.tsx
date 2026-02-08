@@ -13,12 +13,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { PaymentEditDialog } from '@/components/PaymentEditDialog';
-import { DollarSign, CheckCircle, Clock, Download, Pencil, Trash2, FileText, CheckCheck, CalendarIcon, X } from 'lucide-react';
+import { DollarSign, CheckCircle, Clock, Download, Pencil, Trash2, FileText, CheckCheck, CalendarIcon, X, PlusCircle } from 'lucide-react';
 import { generatePaymentReceipt } from '@/lib/paymentReceipt';
 import { generateBatchPaymentReceipt } from '@/lib/batchPaymentReceipt';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { ManualDispatcherPaymentDialog } from '@/components/ManualDispatcherPaymentDialog';
 
 const handleGenerateReceipt = async (p: DbPayment) => {
   const { data } = await supabase.from('payment_adjustments').select('*').eq('payment_id', p.id).order('created_at', { ascending: true });
@@ -502,10 +503,11 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
 };
 
 const Payments = () => {
-  const { payments: allP } = usePayments();
+  const { payments: allP, refetch } = usePayments();
   const pendingDrivers = allP.filter(p => p.recipient_type === 'driver' && (p.status === 'pending' || p.status === 'in_process')).length;
   const pendingInvestors = allP.filter(p => p.recipient_type === 'investor' && (p.status === 'pending' || p.status === 'in_process')).length;
   const pendingDispatchers = allP.filter(p => p.recipient_type === 'dispatcher' && (p.status === 'pending' || p.status === 'in_process')).length;
+  const [manualDialogOpen, setManualDialogOpen] = useState(false);
 
   return (
     <div className="space-y-6">
@@ -525,8 +527,21 @@ const Payments = () => {
         </TabsList>
         <TabsContent value="drivers"><PaymentsSection type="driver" /></TabsContent>
         <TabsContent value="investors"><PaymentsSection type="investor" /></TabsContent>
-        <TabsContent value="dispatchers"><PaymentsSection type="dispatcher" /></TabsContent>
+        <TabsContent value="dispatchers">
+          <div className="mb-4">
+            <Button size="sm" className="gap-1.5" onClick={() => setManualDialogOpen(true)}>
+              <PlusCircle className="h-4 w-4" /> Generar Pago Manual
+            </Button>
+          </div>
+          <PaymentsSection type="dispatcher" />
+        </TabsContent>
       </Tabs>
+
+      <ManualDispatcherPaymentDialog
+        open={manualDialogOpen}
+        onOpenChange={setManualDialogOpen}
+        onComplete={refetch}
+      />
     </div>
   );
 };
