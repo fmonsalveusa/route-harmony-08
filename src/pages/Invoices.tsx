@@ -1,20 +1,76 @@
-import { useState, useMemo } from 'react';
-import { useInvoices } from '@/hooks/useInvoices';
+import { useState, useMemo, useEffect } from 'react';
+import { useInvoices, Invoice } from '@/hooks/useInvoices';
+import { useCompanies } from '@/hooks/useCompanies';
 import { formatDate } from '@/lib/dateUtils';
+import { generateInvoicePdf } from '@/lib/invoicePdf';
+import { supabase } from '@/integrations/supabase/client';
 import { StatusBadge } from '@/components/StatusBadge';
 import { StatCard } from '@/components/StatCard';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { FileText, DollarSign, AlertTriangle, CheckCircle, Search, Trash2, ExternalLink, Send } from 'lucide-react';
+import { FileText, DollarSign, AlertTriangle, CheckCircle, Search, Trash2, Pencil, Download, Send } from 'lucide-react';
 
 const Invoices = () => {
   const { invoices, loading, updateInvoice, deleteInvoice } = useInvoices();
+  const { companies } = useCompanies();
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [search, setSearch] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [editInvoice, setEditInvoice] = useState<Invoice | null>(null);
+  const [editForm, setEditForm] = useState({ invoice_number: '', broker_name: '', amount: '', notes: '' });
+  const [loadDataMap, setLoadDataMap] = useState<Record<string, any>>({});
+
+  // Fetch load data for PDF generation
+  useEffect(() => {
+    const loadIds = [...new Set(invoices.map(i => i.load_id))];
+    if (loadIds.length === 0) return;
+    supabase.from('loads').select('id, reference_number, origin, destination, pickup_date, delivery_date, miles, total_rate, broker_client').in('id', loadIds).then(({ data }) => {
+      if (data) {
+        const map: Record<string, any> = {};
+        data.forEach(l => { map[l.id] = l; });
+        setLoadDataMap(map);
+      }
+    });
+  }, [invoices]);
+
+  const openEdit = (inv: Invoice) => {
+    setEditInvoice(inv);
+    setEditForm({ invoice_number: inv.invoice_number, broker_name: inv.broker_name, amount: String(inv.amount), notes: inv.notes || '' });
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editInvoice) return;
+    await updateInvoice(editInvoice.id, {
+      invoice_number: editForm.invoice_number,
+      broker_name: editForm.broker_name,
+      amount: Number(editForm.amount),
+      notes: editForm.notes || null,
+    });
+    setEditInvoice(null);
+  };
+
+  const handleDownloadPdf = (inv: Invoice) => {
+    const load = loadDataMap[inv.load_id];
+    const company = companies.length > 0 ? (inv.company_id ? companies.find(c => c.id === inv.company_id) || companies[0] : companies[0]) : null;
+    generateInvoicePdf({
+      invoiceNumber: inv.invoice_number,
+      brokerName: inv.broker_name,
+      loadRef: load?.reference_number || inv.invoice_number,
+      origin: load?.origin || '',
+      destination: load?.destination || '',
+      pickupDate: load?.pickup_date || null,
+      deliveryDate: load?.delivery_date || null,
+      miles: load?.miles ? Number(load.miles) : null,
+      totalRate: Number(inv.amount),
+      company: company || null,
+      createdAt: inv.created_at,
+    });
+  };
 
   const filtered = useMemo(() => {
     let result = invoices;
@@ -107,6 +163,12 @@ const Invoices = () => {
                     <td className="p-3 hidden lg:table-cell text-muted-foreground">{formatDate(inv.created_at)}</td>
                     <td className="p-3 text-right">
                       <div className="flex justify-end gap-1.5">
+                        <Button variant="outline" size="icon" className="h-8 w-10 border-emerald-300 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700" onClick={() => handleDownloadPdf(inv)} title="Generar PDF">
+                          <Download className="h-4 w-4" />
+                        </Button>
+                        <Button variant="outline" size="icon" className="h-8 w-10 border-amber-300 bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700" onClick={() => openEdit(inv)} title="Editar">
+                          <Pencil className="h-4 w-4" />
+                        </Button>
                         <Button variant="outline" size="icon" className="h-8 w-10 border-red-300 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700" onClick={() => setDeleteTarget(inv.id)} title="Eliminar">
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -119,6 +181,25 @@ const Invoices = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editInvoice} onOpenChange={() => setEditInvoice(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar Invoice</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div><Label>Invoice #</Label><Input value={editForm.invoice_number} onChange={e => setEditForm(f => ({ ...f, invoice_number: e.target.value }))} /></div>
+            <div><Label>Broker</Label><Input value={editForm.broker_name} onChange={e => setEditForm(f => ({ ...f, broker_name: e.target.value }))} /></div>
+            <div><Label>Monto</Label><Input type="number" value={editForm.amount} onChange={e => setEditForm(f => ({ ...f, amount: e.target.value }))} /></div>
+            <div><Label>Notas</Label><Input value={editForm.notes} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))} /></div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditInvoice(null)}>Cancelar</Button>
+            <Button onClick={handleSaveEdit}>Guardar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
         <AlertDialogContent>
