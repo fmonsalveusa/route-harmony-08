@@ -135,8 +135,8 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
             </Select>
           </div>
 
-          <div className="space-y-2 p-3 rounded-lg border-2 border-primary/30 bg-primary/5">
-            <Label className="font-semibold text-primary">Service Type ⭐</Label>
+          <div className="space-y-2 p-3 rounded-lg border-2 border-amber-400/50 bg-amber-50">
+            <Label className="font-semibold text-amber-700">Service Type ⭐</Label>
             <Select value={form.service_type} onValueChange={v => set('service_type', v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -147,8 +147,8 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
             </Select>
           </div>
 
-          <div className="space-y-2 p-3 rounded-lg border-2 border-primary/30 bg-primary/5">
-            <Label className="font-semibold text-primary">Dispatcher Asignado ⭐</Label>
+          <div className="space-y-2 p-3 rounded-lg border-2 border-emerald-400/50 bg-emerald-50">
+            <Label className="font-semibold text-emerald-700">Dispatcher Asignado ⭐</Label>
             <Select value={form.dispatcher_id || 'none'} onValueChange={v => set('dispatcher_id', v === 'none' ? null : v)}>
               <SelectTrigger><SelectValue placeholder="Sin asignar" /></SelectTrigger>
               <SelectContent>
@@ -158,8 +158,8 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
             </Select>
           </div>
 
-          <div className="space-y-2 p-3 rounded-lg border-2 border-primary/30 bg-primary/5">
-            <Label className="font-semibold text-primary">Camión Asignado ⭐</Label>
+          <div className="space-y-2 p-3 rounded-lg border-2 border-sky-400/50 bg-sky-50">
+            <Label className="font-semibold text-sky-700">Camión Asignado ⭐</Label>
             <Select value={form.truck_id || 'none'} onValueChange={v => set('truck_id', v === 'none' ? null : v)}>
               <SelectTrigger><SelectValue placeholder="Sin asignar" /></SelectTrigger>
               <SelectContent>
