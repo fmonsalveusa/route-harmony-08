@@ -62,6 +62,7 @@ interface LoadDetailPanelProps {
 export const LoadDetailPanel = ({ load, onMilesCalculated }: LoadDetailPanelProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
+  const persistedRef = useRef(false);
   const [resolvedStops, setResolvedStops] = useState<ResolvedStop[]>([]);
   const [totalMiles, setTotalMiles] = useState<number>(Number(load.miles) || 0);
   const { stops: dbStops, loading: stopsLoading } = useLoadStops(load.id);
@@ -86,6 +87,7 @@ export const LoadDetailPanel = ({ load, onMilesCalculated }: LoadDetailPanelProp
   };
 
   useEffect(() => {
+    persistedRef.current = false;
     if (stopsLoading) return;
 
     let cancelled = false;
@@ -222,10 +224,9 @@ export const LoadDetailPanel = ({ load, onMilesCalculated }: LoadDetailPanelProp
         const rounded = Math.round(accumulatedMiles);
         if (rounded > 0) {
           setTotalMiles(rounded);
-          // Only persist if miles or route changed to avoid re-render loop
-          const currentMiles = Number(load.miles) || 0;
-          const hasRouteAlready = load.route_geometry && Array.isArray(load.route_geometry) && (load.route_geometry as any[]).length > 0;
-          if (onMilesCalculated && (Math.abs(currentMiles - rounded) > 1 || !hasRouteAlready)) {
+          // Persist only once per mount to avoid re-render loop
+          if (onMilesCalculated && !persistedRef.current) {
+            persistedRef.current = true;
             onMilesCalculated(load.id, rounded, routeCoords || undefined);
           }
         }
