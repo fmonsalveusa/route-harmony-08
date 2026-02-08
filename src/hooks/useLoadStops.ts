@@ -8,6 +8,9 @@ export interface LoadStop {
   address: string;
   stop_order: number;
   date: string | null;
+  lat: number | null;
+  lng: number | null;
+  distance_from_prev: number | null;
   created_at: string;
 }
 
@@ -45,9 +48,7 @@ export function useLoadStops(loadId?: string) {
   }, [loadId]);
 
   const saveStops = useCallback(async (loadId: string, newStops: Omit<CreateStopInput, 'load_id'>[]) => {
-    // Delete existing stops for this load
     await supabase.from('load_stops').delete().eq('load_id', loadId);
-
     if (newStops.length === 0) return;
 
     const inserts = newStops.map((s, i) => ({
@@ -59,14 +60,18 @@ export function useLoadStops(loadId?: string) {
     }));
 
     const { error } = await supabase.from('load_stops').insert(inserts);
-    if (error) {
-      console.error('Error saving load stops:', error);
-    }
+    if (error) console.error('Error saving load stops:', error);
+  }, []);
+
+  const updateStopGeodata = useCallback(async (stopId: string, lat: number, lng: number, distanceFromPrev?: number) => {
+    const updateData: any = { lat, lng };
+    if (distanceFromPrev !== undefined) updateData.distance_from_prev = distanceFromPrev;
+    await supabase.from('load_stops').update(updateData).eq('id', stopId);
   }, []);
 
   useEffect(() => {
     if (loadId) fetchStops();
   }, [loadId, fetchStops]);
 
-  return { stops, loading, fetchStops, saveStops };
+  return { stops, loading, fetchStops, saveStops, updateStopGeodata };
 }

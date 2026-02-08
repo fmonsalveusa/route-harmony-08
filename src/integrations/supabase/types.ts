@@ -142,7 +142,10 @@ export type Database = {
           address: string
           created_at: string
           date: string | null
+          distance_from_prev: number | null
           id: string
+          lat: number | null
+          lng: number | null
           load_id: string
           stop_order: number
           stop_type: string
@@ -151,7 +154,10 @@ export type Database = {
           address: string
           created_at?: string
           date?: string | null
+          distance_from_prev?: number | null
           id?: string
+          lat?: number | null
+          lng?: number | null
           load_id: string
           stop_order?: number
           stop_type: string
@@ -160,7 +166,10 @@ export type Database = {
           address?: string
           created_at?: string
           date?: string | null
+          distance_from_prev?: number | null
           id?: string
+          lat?: number | null
+          lng?: number | null
           load_id?: string
           stop_order?: number
           stop_type?: string
