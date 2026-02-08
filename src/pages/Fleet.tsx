@@ -78,21 +78,19 @@ const Fleet = () => {
       ) : trucks.length === 0 ? (
         <p className="text-muted-foreground text-center py-12">No hay camiones registrados. Crea el primero.</p>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
           {trucks.map(truck => (
             <Card key={truck.id} className="hover:shadow-md transition-shadow animate-fade-in">
-              <CardContent className="p-5">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <TruckIcon className="h-5 w-5 text-primary" />
+              <CardContent className="p-3">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <TruckIcon className="h-4 w-4 text-primary" />
                     </div>
-                    <div>
-                      <h3 className="font-bold text-lg">Unit #{truck.unit_number}</h3>
-                    </div>
+                    <h3 className="font-bold text-sm">Unit #{truck.unit_number}</h3>
                   </div>
                   <Select value={truck.status} onValueChange={v => updateTruck(truck.id, { status: v })}>
-                    <SelectTrigger className={`w-auto h-7 text-xs gap-1 px-2 border-0 rounded-full ${getStatusStyle(truck.status)}`}>
+                    <SelectTrigger className={`w-auto h-6 text-[10px] gap-0.5 px-1.5 border-0 rounded-full ${getStatusStyle(truck.status)}`}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-popover z-50">
@@ -103,13 +101,13 @@ const Fleet = () => {
                   </Select>
                 </div>
 
-                <div className="space-y-2 text-[15px]">
+                <div className="space-y-1.5 text-xs">
                   <Row label="Tipo" value={truck.truck_type} />
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">Driver</span>
                     <span className="font-medium flex items-center gap-1">
                       {getDriverName(truck.id) ? (
-                        <><User className="h-3.5 w-3.5 text-primary" />{getDriverName(truck.id)}</>
+                        <><User className="h-3 w-3 text-primary" />{getDriverName(truck.id)}</>
                       ) : (
                         <span className="text-muted-foreground italic">Sin asignar</span>
                       )}
@@ -117,15 +115,15 @@ const Fleet = () => {
                   </div>
                 </div>
 
-                <div className="flex gap-2 mt-4 pt-3 border-t">
-                  <Button variant="outline" size="sm" className="flex-1 gap-1.5" onClick={() => setDetailTruck(truck)}>
-                    <Eye className="h-3.5 w-3.5" /> Detalle
+                <div className="flex gap-1.5 mt-3 pt-2 border-t">
+                  <Button variant="outline" size="sm" className="flex-1 gap-1 h-7 text-xs px-1" onClick={() => setDetailTruck(truck)}>
+                    <Eye className="h-3 w-3" /> Detalle
                   </Button>
-                  <Button variant="outline" size="sm" className="flex-1 gap-1.5" onClick={() => openEdit(truck)}>
-                    <Pencil className="h-3.5 w-3.5" /> Editar
+                  <Button variant="outline" size="sm" className="flex-1 gap-1 h-7 text-xs px-1" onClick={() => openEdit(truck)}>
+                    <Pencil className="h-3 w-3" /> Editar
                   </Button>
-                  <Button variant="outline" size="sm" className="flex-1 gap-1.5 text-destructive hover:text-destructive" onClick={() => setDeleteTarget(truck)}>
-                    <Trash2 className="h-3.5 w-3.5" /> Eliminar
+                  <Button variant="outline" size="sm" className="flex-1 gap-1 h-7 text-xs px-1 text-destructive hover:text-destructive" onClick={() => setDeleteTarget(truck)}>
+                    <Trash2 className="h-3 w-3" />
                   </Button>
                 </div>
               </CardContent>
@@ -156,7 +154,7 @@ const Fleet = () => {
 };
 
 const Row = ({ label, value }: { label: string; value: string }) => (
-  <div className="flex justify-between text-[15px]">
+  <div className="flex justify-between text-xs">
     <span className="text-muted-foreground">{label}</span>
     <span className="font-medium">{value}</span>
   </div>
