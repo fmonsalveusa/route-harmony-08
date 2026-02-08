@@ -60,18 +60,21 @@ export function useLoads() {
   toastRef.current = toast;
 
   const fetchLoads = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('loads')
-      .select('*')
-      .order('created_at', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from('loads')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Error fetching loads:', error);
-      toastRef.current({ title: 'Error', description: 'No se pudieron cargar las cargas', variant: 'destructive' });
-    } else {
-      setLoads((data as DbLoad[]) || []);
+      if (error) {
+        console.error('Error fetching loads:', error);
+        toastRef.current({ title: 'Error', description: 'No se pudieron cargar las cargas', variant: 'destructive' });
+      } else {
+        setLoads(data as DbLoad[] ?? []);
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   const createLoad = useCallback(async (input: CreateLoadInput) => {
@@ -88,8 +91,12 @@ export function useLoads() {
       return null;
     }
 
+    // Optimistic update: add the new load to the top of the list immediately
+    const newLoad = data as DbLoad;
+    setLoads(prev => [newLoad, ...prev]);
+
     toastRef.current({ title: 'Carga creada', description: `Referencia: ${input.reference_number}` });
-    return data as DbLoad;
+    return newLoad;
   }, []);
 
   useEffect(() => {
@@ -125,10 +132,11 @@ export function useLoads() {
       return false;
     }
 
+    // Optimistic: remove from local state immediately
+    setLoads(prev => prev.filter(l => l.id !== id));
     toastRef.current({ title: 'Carga eliminada' });
-    await fetchLoads();
     return true;
-  }, [fetchLoads]);
+  }, []);
 
   return { loads, loading, fetchLoads, createLoad, updateLoad, deleteLoad };
 }
