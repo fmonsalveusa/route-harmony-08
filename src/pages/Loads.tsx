@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { formatDate, todayET } from '@/lib/dateUtils';
 import { useAuth } from '@/contexts/AuthContext';
 import { mockDrivers, mockDispatchers } from '@/data/mockData';
 import { StatusBadge } from '@/components/StatusBadge';
 import { useLoads } from '@/hooks/useLoads';
+import { usePodDocuments } from '@/hooks/usePodDocuments';
 import { supabase } from '@/integrations/supabase/client';
 import { LoadFormDialog } from '@/components/LoadFormDialog';
 import { LoadDetailPanel } from '@/components/LoadDetailPanel';
@@ -12,8 +13,30 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Plus, Search, Filter, Package, Pencil, Trash2, ChevronDown, ChevronUp, MapPin } from 'lucide-react';
+import { Plus, Search, Filter, Package, Pencil, Trash2, ChevronDown, ChevronUp, MapPin, Upload, ExternalLink } from 'lucide-react';
 import type { DbLoad } from '@/hooks/useLoads';
+
+// Small inline component for uploading PODs from the table row
+const InlineUploadPod = ({ loadId }: { loadId: string }) => {
+  const { uploadPod, uploading } = usePodDocuments(loadId);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleFiles = async (files: FileList | null) => {
+    if (!files) return;
+    for (let i = 0; i < files.length; i++) {
+      await uploadPod(files[i]);
+    }
+  };
+
+  return (
+    <>
+      <Button variant="ghost" size="icon" className="h-7 w-7" disabled={uploading} onClick={() => inputRef.current?.click()} title="Subir POD">
+        <Upload className="h-3.5 w-3.5" />
+      </Button>
+      <input ref={inputRef} type="file" accept="image/*,.pdf" multiple className="hidden" onChange={e => handleFiles(e.target.files)} />
+    </>
+  );
+};
 
 const Loads = () => {
   // Extract city and state from a full address string
@@ -206,10 +229,18 @@ const Loads = () => {
                         </td>
                         <td className="p-3 text-right" onClick={e => e.stopPropagation()}>
                           <div className="flex justify-end gap-1">
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditLoad(load); setShowForm(true); }}>
+                            <InlineUploadPod loadId={load.id} />
+                            {load.pdf_url && (
+                              <Button variant="ghost" size="icon" className="h-7 w-7" asChild title="Ver PDF">
+                                <a href={load.pdf_url} target="_blank" rel="noopener noreferrer">
+                                  <ExternalLink className="h-3.5 w-3.5" />
+                                </a>
+                              </Button>
+                            )}
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditLoad(load); setShowForm(true); }} title="Editar">
                               <Pencil className="h-3.5 w-3.5" />
                             </Button>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setDeleteTarget(load)}>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setDeleteTarget(load)} title="Eliminar">
                               <Trash2 className="h-3.5 w-3.5" />
                             </Button>
                           </div>
