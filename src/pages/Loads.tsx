@@ -15,14 +15,18 @@ import { Plus, Search, Filter, Package, Pencil, Trash2, ChevronDown, ChevronUp, 
 import type { DbLoad } from '@/hooks/useLoads';
 
 const Loads = () => {
-  // Extract city and state separately from a full address string
+  // Extract city and state from a full address string
   const extractCityState = (address: string): { city: string; state: string } => {
     if (!address) return { city: '—', state: '' };
-    const parts = address.split(',').map(p => p.trim());
+    // Normalize: remove zip codes and extra whitespace
+    const cleaned = address.replace(/\b\d{5}(-\d{4})?\b/g, '').replace(/,\s*,/g, ',').replace(/,\s*$/, '').trim();
+    const parts = cleaned.split(',').map(p => p.trim()).filter(Boolean);
     if (parts.length >= 2) {
-      const lastPart = parts[parts.length - 1].replace(/\d{5}(-\d{4})?/, '').trim();
+      // State is typically the last part (2-letter abbrev or name), city is second to last
+      const state = parts[parts.length - 1];
       const city = parts[parts.length - 2];
-      if (lastPart) return { city, state: lastPart };
+      // Skip if "state" looks like a street address (has numbers at start)
+      if (state && !/^\d/.test(state)) return { city, state };
     }
     return { city: address, state: '' };
   };
