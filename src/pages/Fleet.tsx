@@ -90,7 +90,7 @@ const Fleet = () => {
                     <h3 className="font-bold text-lg">Unit #{truck.unit_number}</h3>
                   </div>
                   <Select value={truck.status} onValueChange={v => updateTruck(truck.id, { status: v })}>
-                    <SelectTrigger className={`w-auto h-6 text-[10px] gap-0.5 px-1.5 border-0 rounded-full ${getStatusStyle(truck.status)}`}>
+                    <SelectTrigger className={`w-auto h-7 text-xs gap-1 px-2.5 border-0 rounded-full ${getStatusStyle(truck.status)}`}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-popover z-50">
