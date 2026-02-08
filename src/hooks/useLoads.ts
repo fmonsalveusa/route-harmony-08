@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useCallback, useRef } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { getTenantId } from '@/hooks/useTenantId';
@@ -52,30 +53,35 @@ export interface CreateLoadInput {
   notes?: string;
 }
 
+const LOADS_QUERY_KEY = ['loads'];
+
+async function fetchLoadsFromDb(): Promise<DbLoad[]> {
+  const { data, error } = await supabase
+    .from('loads')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching loads:', error);
+    throw error;
+  }
+  return (data as DbLoad[]) ?? [];
+}
+
 export function useLoads() {
-  const [loads, setLoads] = useState<DbLoad[]>([]);
-  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const toastRef = useRef(toast);
   toastRef.current = toast;
+  const queryClient = useQueryClient();
+
+  const { data: loads = [], isLoading: loading } = useQuery({
+    queryKey: LOADS_QUERY_KEY,
+    queryFn: fetchLoadsFromDb,
+  });
 
   const fetchLoads = useCallback(async () => {
-    try {
-      const { data, error } = await supabase
-        .from('loads')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching loads:', error);
-        toastRef.current({ title: 'Error', description: 'No se pudieron cargar las cargas', variant: 'destructive' });
-      } else {
-        setLoads(data as DbLoad[] ?? []);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    await queryClient.invalidateQueries({ queryKey: LOADS_QUERY_KEY });
+  }, [queryClient]);
 
   const createLoad = useCallback(async (input: CreateLoadInput) => {
     const tenant_id = await getTenantId();
@@ -91,17 +97,13 @@ export function useLoads() {
       return null;
     }
 
-    // Optimistic update: add the new load to the top of the list immediately
     const newLoad = data as DbLoad;
-    setLoads(prev => [newLoad, ...prev]);
+    // Update cache immediately with the new load
+    queryClient.setQueryData<DbLoad[]>(LOADS_QUERY_KEY, (old) => [newLoad, ...(old ?? [])]);
 
     toastRef.current({ title: 'Carga creada', description: `Referencia: ${input.reference_number}` });
     return newLoad;
-  }, []);
-
-  useEffect(() => {
-    fetchLoads();
-  }, [fetchLoads]);
+  }, [queryClient]);
 
   const updateLoad = useCallback(async (id: string, input: Partial<CreateLoadInput> & { status?: string }) => {
     const { error } = await supabase
@@ -116,9 +118,9 @@ export function useLoads() {
     }
 
     toastRef.current({ title: 'Carga actualizada' });
-    await fetchLoads();
+    await queryClient.invalidateQueries({ queryKey: LOADS_QUERY_KEY });
     return true;
-  }, [fetchLoads]);
+  }, [queryClient]);
 
   const deleteLoad = useCallback(async (id: string) => {
     const { error } = await supabase
@@ -132,11 +134,11 @@ export function useLoads() {
       return false;
     }
 
-    // Optimistic: remove from local state immediately
-    setLoads(prev => prev.filter(l => l.id !== id));
+    // Remove from cache immediately
+    queryClient.setQueryData<DbLoad[]>(LOADS_QUERY_KEY, (old) => (old ?? []).filter(l => l.id !== id));
     toastRef.current({ title: 'Carga eliminada' });
     return true;
-  }, []);
+  }, [queryClient]);
 
   return { loads, loading, fetchLoads, createLoad, updateLoad, deleteLoad };
 }
