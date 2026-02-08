@@ -175,6 +175,11 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
 };
 
 const Payments = () => {
+  const { payments: allP } = usePayments();
+  const pendingDrivers = allP.filter(p => p.recipient_type === 'driver' && p.status === 'pending').length;
+  const pendingInvestors = allP.filter(p => p.recipient_type === 'investor' && p.status === 'pending').length;
+  const pendingDispatchers = allP.filter(p => p.recipient_type === 'dispatcher' && p.status === 'pending').length;
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -187,9 +192,9 @@ const Payments = () => {
 
       <Tabs defaultValue="drivers">
         <TabsList>
-          <TabsTrigger value="drivers">Drivers</TabsTrigger>
-          <TabsTrigger value="investors">Investors</TabsTrigger>
-          <TabsTrigger value="dispatchers">Dispatchers</TabsTrigger>
+          <TabsTrigger value="drivers">Drivers {pendingDrivers > 0 && <span className="ml-1.5 inline-flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[11px] font-semibold min-w-[20px] h-5 px-1.5">{pendingDrivers}</span>}</TabsTrigger>
+          <TabsTrigger value="investors">Investors {pendingInvestors > 0 && <span className="ml-1.5 inline-flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[11px] font-semibold min-w-[20px] h-5 px-1.5">{pendingInvestors}</span>}</TabsTrigger>
+          <TabsTrigger value="dispatchers">Dispatchers {pendingDispatchers > 0 && <span className="ml-1.5 inline-flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[11px] font-semibold min-w-[20px] h-5 px-1.5">{pendingDispatchers}</span>}</TabsTrigger>
         </TabsList>
         <TabsContent value="drivers"><PaymentsSection type="driver" /></TabsContent>
         <TabsContent value="investors"><PaymentsSection type="investor" /></TabsContent>
