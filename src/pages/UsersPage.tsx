@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Plus, Shield, Calculator, Headphones, Truck as TruckIcon, Loader2 } from 'lucide-react';
+import { Plus, Shield, Calculator, Headphones, Truck as TruckIcon, Loader2, Pencil } from 'lucide-react';
 
 const roleIcons: Record<string, any> = {
   admin: Shield,
@@ -141,8 +141,8 @@ const UsersPage = () => {
                         </td>
                         <td className="p-3"><StatusBadge status={u.is_active ? 'active' : 'inactive'} /></td>
                         <td className="p-3 text-right">
-                          <Button size="sm" variant="ghost" className="text-xs" onClick={() => handleEdit(u)}>
-                            Editar
+                          <Button variant="outline" size="icon" className="h-8 w-10 border-amber-300 bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700" onClick={() => handleEdit(u)} title="Editar">
+                            <Pencil className="h-4 w-4" />
                           </Button>
                         </td>
                       </tr>

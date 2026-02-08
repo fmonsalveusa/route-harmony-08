@@ -86,12 +86,12 @@ const Dispatchers = () => {
                     </div>
                   </div>
 
-                  <div className="mt-3 pt-3 border-t flex justify-end gap-2">
-                    <Button size="sm" variant="outline" onClick={() => { setEditingDispatcher(d); setFormOpen(true); }}>
-                      <Pencil className="h-3.5 w-3.5 mr-1" /> Editar
+                  <div className="mt-3 pt-3 border-t flex justify-end gap-1.5">
+                    <Button variant="outline" size="icon" className="h-8 w-10 border-amber-300 bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700" onClick={() => { setEditingDispatcher(d); setFormOpen(true); }} title="Editar">
+                      <Pencil className="h-4 w-4" />
                     </Button>
-                    <Button size="sm" variant="destructive" onClick={() => setDeletingDispatcher(d)}>
-                      <Trash2 className="h-3.5 w-3.5 mr-1" /> Borrar
+                    <Button variant="outline" size="icon" className="h-8 w-10 border-red-300 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700" onClick={() => setDeletingDispatcher(d)} title="Eliminar">
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 </CardContent>

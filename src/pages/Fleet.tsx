@@ -115,15 +115,15 @@ const Fleet = () => {
                   </div>
                 </div>
 
-                <div className="flex gap-1.5 mt-3 pt-2 border-t">
-                  <Button variant="outline" size="sm" className="flex-1 gap-1 h-7 text-xs px-1" onClick={() => setDetailTruck(truck)}>
-                    <Eye className="h-3 w-3" /> Detalle
+                <div className="flex justify-end gap-1.5 mt-3 pt-2 border-t">
+                  <Button variant="outline" size="icon" className="h-8 w-10 border-emerald-300 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700" onClick={() => setDetailTruck(truck)} title="Detalle">
+                    <Eye className="h-4 w-4" />
                   </Button>
-                  <Button variant="outline" size="sm" className="flex-1 gap-1 h-7 text-xs px-1" onClick={() => openEdit(truck)}>
-                    <Pencil className="h-3 w-3" /> Editar
+                  <Button variant="outline" size="icon" className="h-8 w-10 border-amber-300 bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700" onClick={() => openEdit(truck)} title="Editar">
+                    <Pencil className="h-4 w-4" />
                   </Button>
-                  <Button variant="outline" size="sm" className="flex-1 gap-1 h-7 text-xs px-1 text-destructive hover:text-destructive" onClick={() => setDeleteTarget(truck)}>
-                    <Trash2 className="h-3 w-3" />
+                  <Button variant="outline" size="icon" className="h-8 w-10 border-red-300 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700" onClick={() => setDeleteTarget(truck)} title="Eliminar">
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               </CardContent>
