@@ -64,7 +64,7 @@ const Loads = () => {
     return { city: address, state: '' };
   };
   const { user, role, profile } = useAuth();
-  const { loads: dbLoads, loading: loadsLoading, createLoad, updateLoad, deleteLoad } = useLoads();
+  const { loads: dbLoads, loading: loadsLoading, createLoad, updateLoad, deleteLoad, fetchLoads } = useLoads();
   const { drivers } = useDrivers();
   const { trucks } = useTrucks();
   const { dispatchers } = useDispatchers();
@@ -485,7 +485,7 @@ const Loads = () => {
       {/* Form Dialog */}
       <LoadFormDialog
         open={showForm}
-        onOpenChange={(open) => { setShowForm(open); if (!open) { setEditLoad(null); setDetailKey(k => k + 1); } }}
+        onOpenChange={(open) => { setShowForm(open); if (!open) { setEditLoad(null); setDetailKey(k => k + 1); fetchLoads(); } }}
         editLoad={editLoad}
         dispatcherId={(user as any)?.dispatcher_id || 'd1'}
         onSubmit={async (input) => {
