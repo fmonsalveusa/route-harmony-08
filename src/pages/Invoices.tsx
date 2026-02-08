@@ -41,7 +41,7 @@ const Invoices = () => {
   useEffect(() => {
     const loadIds = [...new Set(invoices.map(i => i.load_id))];
     if (loadIds.length === 0) return;
-    supabase.from('loads').select('id, reference_number, origin, destination, pickup_date, delivery_date, miles, total_rate, broker_client').in('id', loadIds).then(({ data }) => {
+    supabase.from('loads').select('id, reference_number, origin, destination, pickup_date, delivery_date, miles, total_rate, broker_client, pdf_url').in('id', loadIds).then(({ data }) => {
       if (data) {
         const map: Record<string, any> = {};
         data.forEach(l => { map[l.id] = l; });
@@ -178,6 +178,13 @@ const Invoices = () => {
                         <Button variant="outline" size="icon" className="h-8 w-10 border-emerald-300 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700" onClick={() => handleDownloadPdf(inv)} title="Descargar PDF">
                           <Download className="h-4 w-4" />
                         </Button>
+                        {loadDataMap[inv.load_id]?.pdf_url && (
+                          <Button variant="outline" size="icon" className="h-8 w-10 border-sky-300 bg-sky-50 text-sky-600 hover:bg-sky-100 hover:text-sky-700" asChild title="Rate Confirmation">
+                            <a href={loadDataMap[inv.load_id].pdf_url} target="_blank" rel="noopener noreferrer">
+                              <FileText className="h-4 w-4" />
+                            </a>
+                          </Button>
+                        )}
                         <Button variant="outline" size="icon" className="h-8 w-10 border-purple-300 bg-purple-50 text-purple-600 hover:bg-purple-100 hover:text-purple-700" onClick={() => openPodViewer(inv.load_id)} title="Ver PODs">
                           <Image className="h-4 w-4" />
                         </Button>
