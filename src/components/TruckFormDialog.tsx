@@ -10,6 +10,7 @@ import { CalendarIcon, Upload, FileCheck } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import type { DbTruck, TruckInput } from '@/hooks/useTrucks';
+import { toast } from 'sonner';
 
 const TRUCK_TYPES = ['Box Truck', 'Hotshot', 'Flatbed', 'Dry Van'];
 const STATUSES = ['active', 'inactive', 'maintenance'];
@@ -74,7 +75,10 @@ export function TruckFormDialog({ open, onOpenChange, truck, onSave }: Props) {
   const set = (key: keyof TruckInput, val: any) => setForm(p => ({ ...p, [key]: val }));
 
   const handleSubmit = async () => {
-    if (!form.unit_number.trim()) return;
+    if (!form.unit_number.trim()) {
+      toast.error('Campo requerido: Unit #');
+      return;
+    }
     setSaving(true);
     const ok = await onSave(form, files);
     setSaving(false);

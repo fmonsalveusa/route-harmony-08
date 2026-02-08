@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 import { DbDriver, DriverInput } from '@/hooks/useDrivers';
 import { DbTruck } from '@/hooks/useTrucks';
 import { DbDispatcher } from '@/hooks/useDispatchers';
+import { toast } from 'sonner';
 
 interface DriverFormDialogProps {
   open: boolean;
@@ -68,8 +69,13 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
   const set = (key: string, value: any) => setForm(prev => ({ ...prev, [key]: value }));
 
   const handleSubmit = async () => {
-    if (!form.name || !form.email || !form.phone || !form.license) {
-      console.log('Validation failed:', { name: form.name, email: form.email, phone: form.phone, license: form.license });
+    const missing: string[] = [];
+    if (!form.name.trim()) missing.push('Nombre');
+    if (!form.email.trim()) missing.push('Email');
+    if (!form.phone.trim()) missing.push('Teléfono');
+    if (!form.license.trim()) missing.push('Driver License #');
+    if (missing.length > 0) {
+      toast.error(`Campos requeridos: ${missing.join(', ')}`);
       return;
     }
     setSaving(true);
