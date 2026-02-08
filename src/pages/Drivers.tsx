@@ -25,7 +25,7 @@ const driverStatusColor = (status: string) => {
 };
 
 const Drivers = () => {
-  const { user } = useAuth();
+  const { role, profile } = useAuth();
   const { drivers, loading, createDriver, updateDriver, deleteDriver, uploadDocument } = useDrivers();
   const { trucks } = useTrucks();
   const { dispatchers } = useDispatchers();
@@ -68,9 +68,9 @@ const Drivers = () => {
     toast({ title: 'Copiado al portapapeles' });
   };
 
-  const isDispatcher = user?.role === 'dispatcher';
+  const isDispatcher = role === 'dispatcher';
   let filtered = isDispatcher
-    ? drivers.filter(d => d.dispatcher_id === (user?.dispatcherId || 'd1'))
+    ? drivers.filter(d => d.dispatcher_id === ((profile as any)?.dispatcher_id || 'd1'))
     : drivers;
 
   if (search) filtered = filtered.filter(d =>

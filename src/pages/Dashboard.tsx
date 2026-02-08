@@ -6,6 +6,9 @@ import { Package, Truck, DollarSign, Users, AlertTriangle, TrendingUp, Headphone
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
+// Helper to get dispatcherId from profile metadata (will be refined later)
+const getDispatcherId = (profile: any) => profile?.dispatcher_id || 'd1';
+
 const revenueData = [
   { month: 'Sep', revenue: 18500 },
   { month: 'Oct', revenue: 22000 },
@@ -136,10 +139,11 @@ const AdminDashboard = () => {
 };
 
 const DispatcherDashboard = () => {
-  const { user } = useAuth();
-  const myLoads = mockLoads.filter(l => l.dispatcherId === (user?.dispatcherId || 'd1'));
-  const myDrivers = mockDrivers.filter(d => d.dispatcherId === (user?.dispatcherId || 'd1'));
-  const myDispatcher = mockDispatchers.find(d => d.id === (user?.dispatcherId || 'd1'));
+  const { profile } = useAuth();
+  const dispatcherId = getDispatcherId(profile);
+  const myLoads = mockLoads.filter(l => l.dispatcherId === dispatcherId);
+  const myDrivers = mockDrivers.filter(d => d.dispatcherId === dispatcherId);
+  const myDispatcher = mockDispatchers.find(d => d.id === dispatcherId);
 
   return (
     <div className="space-y-6">
@@ -190,8 +194,8 @@ const DispatcherDashboard = () => {
 };
 
 const Dashboard = () => {
-  const { user } = useAuth();
-  if (user?.role === 'dispatcher') return <DispatcherDashboard />;
+  const { role } = useAuth();
+  if (role === 'dispatcher') return <DispatcherDashboard />;
   return <AdminDashboard />;
 };
 
