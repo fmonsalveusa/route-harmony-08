@@ -391,20 +391,20 @@ const Loads = () => {
                         </td>
                         <td className="p-3 text-right" onClick={e => e.stopPropagation()}>
                           <div className="flex justify-end gap-1.5">
-                            <Button variant="outline" size="icon" className="h-8 w-8 border-purple-300 bg-purple-50 text-purple-600 hover:bg-purple-100 hover:text-purple-700" onClick={() => { inputRefMap.current[load.id]?.click(); }} title="Subir POD">
+                            <Button variant="outline" size="icon" className="h-8 w-10 border-purple-300 bg-purple-50 text-purple-600 hover:bg-purple-100 hover:text-purple-700" onClick={() => { inputRefMap.current[load.id]?.click(); }} title="Subir POD">
                               <Upload className="h-4 w-4" />
                             </Button>
                             {load.pdf_url && (
-                              <Button variant="outline" size="icon" className="h-8 w-8 border-sky-300 bg-sky-50 text-sky-600 hover:bg-sky-100 hover:text-sky-700" asChild title="Ver PDF">
+                              <Button variant="outline" size="icon" className="h-8 w-10 border-sky-300 bg-sky-50 text-sky-600 hover:bg-sky-100 hover:text-sky-700" asChild title="Ver PDF">
                                 <a href={load.pdf_url} target="_blank" rel="noopener noreferrer">
                                   <ExternalLink className="h-4 w-4" />
                                 </a>
                               </Button>
                             )}
-                            <Button variant="outline" size="icon" className="h-8 w-8 border-amber-300 bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700" onClick={() => { setEditLoad(load); setShowForm(true); }} title="Editar">
+                            <Button variant="outline" size="icon" className="h-8 w-10 border-amber-300 bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700" onClick={() => { setEditLoad(load); setShowForm(true); }} title="Editar">
                               <Pencil className="h-4 w-4" />
                             </Button>
-                            <Button variant="outline" size="icon" className="h-8 w-8 border-red-300 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700" onClick={() => setDeleteTarget(load)} title="Eliminar">
+                            <Button variant="outline" size="icon" className="h-8 w-10 border-red-300 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700" onClick={() => setDeleteTarget(load)} title="Eliminar">
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
