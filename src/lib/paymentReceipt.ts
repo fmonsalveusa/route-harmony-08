@@ -1,3 +1,4 @@
+import jsPDF from 'jspdf';
 import type { DbPayment } from '@/hooks/usePayments';
 import type { DbPaymentAdjustment } from '@/hooks/usePaymentAdjustments';
 import { ADJUSTMENT_REASONS } from '@/hooks/usePaymentAdjustments';
@@ -10,86 +11,153 @@ export function generatePaymentReceipt(
   totalAdjustment: number,
   finalAmount: number,
 ) {
+  const doc = new jsPDF();
   const date = payment.payment_date || new Date().toISOString().split('T')[0];
   const baseAmount = Number(payment.amount);
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const margin = 20;
+  let y = 20;
 
-  let adjRows = '';
-  adjustments.forEach(a => {
-    const sign = a.adjustment_type === 'addition' ? '+' : '-';
-    adjRows += `
-      <tr>
-        <td style="padding:6px 12px;border-bottom:1px solid #eee;">${reasonLabel(a.reason)}</td>
-        <td style="padding:6px 12px;border-bottom:1px solid #eee;">${a.description || '—'}</td>
-        <td style="padding:6px 12px;border-bottom:1px solid #eee;text-align:right;color:${a.adjustment_type === 'addition' ? '#16a34a' : '#dc2626'}">${sign}$${Number(a.amount).toFixed(2)}</td>
-      </tr>`;
+  // Header bar
+  doc.setFillColor(37, 99, 235); // blue
+  doc.rect(0, 0, pageWidth, 36, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(20);
+  doc.setFont('helvetica', 'bold');
+  doc.text('RECIBO DE PAGO', margin, 24);
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Fecha: ${date}`, pageWidth - margin, 16, { align: 'right' });
+  doc.text(`Ref: ${payment.load_reference}`, pageWidth - margin, 24, { align: 'right' });
+  doc.text(`Tipo: ${payment.recipient_type.charAt(0).toUpperCase() + payment.recipient_type.slice(1)}`, pageWidth - margin, 32, { align: 'right' });
+
+  y = 50;
+  doc.setTextColor(55, 65, 81);
+
+  // Section: Payment Info
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Información del Pago', margin, y);
+  y += 3;
+  doc.setDrawColor(37, 99, 235);
+  doc.setLineWidth(0.5);
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 10;
+
+  doc.setFontSize(10);
+  const infoRows = [
+    ['Beneficiario', payment.recipient_name],
+    ['Referencia de Carga', payment.load_reference],
+    ['Tarifa Total (Rate)', `$${Number(payment.total_rate).toLocaleString('en-US', { minimumFractionDigits: 2 })}`],
+    ['Porcentaje Aplicado', `${payment.percentage_applied}%`],
+    ['Monto Base', `$${baseAmount.toFixed(2)}`],
+  ];
+
+  infoRows.forEach(([label, value]) => {
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(107, 114, 128);
+    doc.text(label, margin, y);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(55, 65, 81);
+    doc.text(value, margin + 60, y);
+    y += 7;
   });
 
-  const html = `
-<!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>Recibo de Pago - ${payment.load_reference}</title>
-<style>
-  body { font-family: Arial, sans-serif; margin: 0; padding: 40px; color: #1a1a1a; }
-  .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; border-bottom: 3px solid #2563eb; padding-bottom: 20px; }
-  .title { font-size: 24px; font-weight: bold; color: #2563eb; }
-  .subtitle { font-size: 12px; color: #666; margin-top: 4px; }
-  .section { margin-bottom: 20px; }
-  .section-title { font-size: 14px; font-weight: bold; color: #374151; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th { background: #f3f4f6; text-align: left; padding: 8px 12px; font-weight: 600; color: #374151; }
-  .summary { background: #eff6ff; padding: 16px; border-radius: 8px; margin-top: 20px; }
-  .total-row { font-size: 18px; font-weight: bold; color: #2563eb; }
-  .footer { margin-top: 40px; text-align: center; font-size: 11px; color: #999; border-top: 1px solid #eee; padding-top: 16px; }
-  @media print { body { padding: 20px; } }
-</style>
-</head><body>
-  <div class="header">
-    <div>
-      <div class="title">RECIBO DE PAGO</div>
-      <div class="subtitle">Ref: ${payment.load_reference} | Fecha: ${date}</div>
-    </div>
-    <div style="text-align:right">
-      <div style="font-size:13px;color:#666;">Tipo: ${payment.recipient_type.charAt(0).toUpperCase() + payment.recipient_type.slice(1)}</div>
-    </div>
-  </div>
+  // Section: Adjustments
+  if (adjustments.length > 0) {
+    y += 6;
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(55, 65, 81);
+    doc.text('Ajustes', margin, y);
+    y += 3;
+    doc.setDrawColor(37, 99, 235);
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 8;
 
-  <div class="section">
-    <div class="section-title">Información del Pago</div>
-    <table>
-      <tr><th style="width:40%">Beneficiario</th><td style="padding:8px 12px;">${payment.recipient_name}</td></tr>
-      <tr><th>Referencia de Carga</th><td style="padding:8px 12px;">${payment.load_reference}</td></tr>
-      <tr><th>Tarifa Total (Rate)</th><td style="padding:8px 12px;">$${Number(payment.total_rate).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td></tr>
-      <tr><th>Porcentaje Aplicado</th><td style="padding:8px 12px;">${payment.percentage_applied}%</td></tr>
-      <tr><th>Monto Base</th><td style="padding:8px 12px;font-weight:600;">$${baseAmount.toFixed(2)}</td></tr>
-    </table>
-  </div>
+    // Table header
+    doc.setFontSize(9);
+    doc.setFillColor(243, 244, 246);
+    doc.rect(margin, y - 4, pageWidth - margin * 2, 8, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(55, 65, 81);
+    doc.text('Tipo', margin + 2, y);
+    doc.text('Motivo', margin + 30, y);
+    doc.text('Descripción', margin + 70, y);
+    doc.text('Monto', pageWidth - margin - 2, y, { align: 'right' });
+    y += 8;
 
-  ${adjustments.length > 0 ? `
-  <div class="section">
-    <div class="section-title">Ajustes</div>
-    <table>
-      <thead><tr><th>Motivo</th><th>Descripción</th><th style="text-align:right">Monto</th></tr></thead>
-      <tbody>${adjRows}</tbody>
-    </table>
-  </div>` : ''}
+    doc.setFont('helvetica', 'normal');
+    adjustments.forEach(adj => {
+      const sign = adj.adjustment_type === 'addition' ? '+' : '-';
+      const typeLabel = adj.adjustment_type === 'addition' ? 'Adición' : 'Deducción';
 
-  <div class="summary">
-    <table>
-      <tr><td style="padding:4px 0;">Monto Base</td><td style="text-align:right;padding:4px 0;">$${baseAmount.toFixed(2)}</td></tr>
-      ${totalAdjustment !== 0 ? `<tr><td style="padding:4px 0;">Ajustes</td><td style="text-align:right;padding:4px 0;color:${totalAdjustment >= 0 ? '#16a34a' : '#dc2626'}">${totalAdjustment >= 0 ? '+' : ''}$${totalAdjustment.toFixed(2)}</td></tr>` : ''}
-      <tr><td colspan="2" style="border-top:2px solid #2563eb;padding-top:8px;"></td></tr>
-      <tr class="total-row"><td style="padding:4px 0;">TOTAL A PAGAR</td><td style="text-align:right;padding:4px 0;">$${finalAmount.toFixed(2)}</td></tr>
-    </table>
-  </div>
+      doc.setTextColor(107, 114, 128);
+      doc.text(typeLabel, margin + 2, y);
+      doc.text(reasonLabel(adj.reason), margin + 30, y);
+      doc.text(adj.description || '—', margin + 70, y, { maxWidth: 60 });
 
-  <div class="footer">Este documento es un recibo de pago generado automáticamente.</div>
-</body></html>`;
+      if (adj.adjustment_type === 'addition') {
+        doc.setTextColor(22, 163, 74); // green
+      } else {
+        doc.setTextColor(220, 38, 38); // red
+      }
+      doc.setFont('helvetica', 'bold');
+      doc.text(`${sign}$${Number(adj.amount).toFixed(2)}`, pageWidth - margin - 2, y, { align: 'right' });
+      doc.setFont('helvetica', 'normal');
 
-  const blob = new Blob([html], { type: 'text/html' });
-  const url = URL.createObjectURL(blob);
-  const w = window.open(url, '_blank');
-  if (w) {
-    w.onload = () => {
-      setTimeout(() => w.print(), 500);
-    };
+      // Light separator
+      y += 2;
+      doc.setDrawColor(229, 231, 235);
+      doc.setLineWidth(0.2);
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 6;
+    });
   }
+
+  // Summary box
+  y += 8;
+  doc.setFillColor(239, 246, 255); // light blue bg
+  doc.roundedRect(margin, y - 4, pageWidth - margin * 2, totalAdjustment !== 0 ? 34 : 22, 3, 3, 'F');
+
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(55, 65, 81);
+  doc.text('Monto Base', margin + 6, y + 4);
+  doc.text(`$${baseAmount.toFixed(2)}`, pageWidth - margin - 6, y + 4, { align: 'right' });
+
+  if (totalAdjustment !== 0) {
+    y += 8;
+    doc.text('Ajustes', margin + 6, y + 4);
+    if (totalAdjustment >= 0) {
+      doc.setTextColor(22, 163, 74);
+    } else {
+      doc.setTextColor(220, 38, 38);
+    }
+    doc.text(`${totalAdjustment >= 0 ? '+' : ''}$${totalAdjustment.toFixed(2)}`, pageWidth - margin - 6, y + 4, { align: 'right' });
+    y += 4;
+  }
+
+  // Divider
+  y += 6;
+  doc.setDrawColor(37, 99, 235);
+  doc.setLineWidth(0.8);
+  doc.line(margin + 4, y, pageWidth - margin - 4, y);
+  y += 8;
+
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(37, 99, 235);
+  doc.text('TOTAL A PAGAR', margin + 6, y);
+  doc.text(`$${finalAmount.toFixed(2)}`, pageWidth - margin - 6, y, { align: 'right' });
+
+  // Footer
+  const footerY = doc.internal.pageSize.getHeight() - 15;
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(156, 163, 175);
+  doc.text('Este documento es un recibo de pago generado automáticamente.', pageWidth / 2, footerY, { align: 'center' });
+
+  // Download
+  doc.save(`Recibo_${payment.load_reference}_${payment.recipient_name.replace(/\s+/g, '_')}.pdf`);
 }
