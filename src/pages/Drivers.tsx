@@ -1,17 +1,18 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { mockDispatchers } from '@/data/mockData';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Plus, Search, Phone, Truck as TruckIcon, Pencil, Trash2, Eye } from 'lucide-react';
+import { Plus, Search, Phone, Truck as TruckIcon, Pencil, Trash2, Eye, Copy } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useDrivers, DbDriver, DriverInput } from '@/hooks/useDrivers';
 import { useTrucks } from '@/hooks/useTrucks';
+import { useDispatchers } from '@/hooks/useDispatchers';
 import { DriverFormDialog } from '@/components/DriverFormDialog';
 import { DriverDetailDialog } from '@/components/DriverDetailDialog';
+import { toast } from '@/hooks/use-toast';
 
 const driverStatusColor = (status: string) => {
   switch (status) {
@@ -27,6 +28,7 @@ const Drivers = () => {
   const { user } = useAuth();
   const { drivers, loading, createDriver, updateDriver, deleteDriver, uploadDocument } = useDrivers();
   const { trucks } = useTrucks();
+  const { dispatchers } = useDispatchers();
   const [search, setSearch] = useState('');
   const [formOpen, setFormOpen] = useState(false);
   const [editingDriver, setEditingDriver] = useState<DbDriver | null>(null);
@@ -37,6 +39,33 @@ const Drivers = () => {
     if (!id) return null;
     const t = trucks.find(t => t.id === id);
     return t ? `Unit #${t.unit_number} · ${t.truck_type}` : null;
+  };
+
+  const getTruck = (id: string | null) => {
+    if (!id) return null;
+    return trucks.find(t => t.id === id) || null;
+  };
+
+  const getDispatcher = (id: string | null) => {
+    if (!id) return null;
+    return dispatchers.find(d => d.id === id) || null;
+  };
+
+  const copyDriverInfo = (driver: DbDriver) => {
+    const truck = getTruck(driver.truck_id);
+    const dispatcher = getDispatcher(driver.dispatcher_id);
+    const truckType = truck?.truck_type || '';
+    const isHotshot = truckType.toLowerCase().includes('hotshot');
+
+    let text = '';
+    if (isHotshot) {
+      text = `Driver Name: ${driver.name}\nPhone Number: ${driver.phone}\nTruck #: ${truck?.unit_number || ''}\nTruck Type: Hotshot\nTrailer (ft): ${truck?.trailer_length_ft || ''}\nDispatcher Name: ${dispatcher?.name || ''}\nDispatcher Phone Number: ${dispatcher?.phone || ''}\nETA to Pick up: `;
+    } else {
+      text = `Driver Name: ${driver.name}\nPhone Number: ${driver.phone}\nTruck #: ${truck?.unit_number || ''}\nTruck Type: Box Truck\nBack Door: ${truck?.rear_door_width_in && truck?.rear_door_height_in ? `${truck.rear_door_width_in}" x ${truck.rear_door_height_in}"` : ''}\nDispatcher Name: ${dispatcher?.name || ''}\nDispatcher Phone Number: ${dispatcher?.phone || ''}\nETA to Pick up: `;
+    }
+
+    navigator.clipboard.writeText(text);
+    toast({ title: 'Copiado al portapapeles' });
   };
 
   const isDispatcher = user?.role === 'dispatcher';
@@ -99,7 +128,7 @@ const Drivers = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map(driver => {
-            const dispatcher = mockDispatchers.find(d => d.id === driver.dispatcher_id);
+            const dispatcher = dispatchers.find(d => d.id === driver.dispatcher_id);
             const truckLabel = getTruckLabel(driver.truck_id);
             const initials = driver.name.split(' ').map(n => n[0]).join('');
             return (
@@ -136,6 +165,9 @@ const Drivers = () => {
                   </div>
 
                   <div className="mt-3 pt-3 border-t flex justify-end gap-2">
+                    <Button size="sm" variant="outline" onClick={() => copyDriverInfo(driver)}>
+                      <Copy className="h-3.5 w-3.5 mr-1" /> Copiar
+                    </Button>
                     <Button size="sm" variant="outline" onClick={() => setDetailDriver(driver)}>
                       <Eye className="h-3.5 w-3.5 mr-1" /> Detalle
                     </Button>
@@ -170,7 +202,7 @@ const Drivers = () => {
         onOpenChange={open => !open && setDetailDriver(null)}
         driver={detailDriver}
         truckLabel={detailDriver ? getTruckLabel(detailDriver.truck_id) : null}
-        dispatcherName={detailDriver ? mockDispatchers.find(d => d.id === detailDriver.dispatcher_id)?.name || null : null}
+        dispatcherName={detailDriver ? dispatchers.find(d => d.id === detailDriver.dispatcher_id)?.name || null : null}
       />
 
       <AlertDialog open={!!deletingDriver} onOpenChange={open => !open && setDeletingDriver(null)}>
