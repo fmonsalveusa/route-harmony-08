@@ -9,9 +9,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { PaymentEditDialog } from '@/components/PaymentEditDialog';
-import { DollarSign, CheckCircle, Clock, Download, Pencil, Trash2 } from 'lucide-react';
+import { DollarSign, CheckCircle, Clock, Download, Pencil, Trash2, FileText } from 'lucide-react';
+import { generatePaymentReceipt } from '@/lib/paymentReceipt';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+
+const handleGenerateReceipt = async (p: DbPayment) => {
+  const { data } = await supabase.from('payment_adjustments').select('*').eq('payment_id', p.id).order('created_at', { ascending: true });
+  const adjustments = (data as any[]) || [];
+  const totalAdj = adjustments.reduce((sum: number, a: any) => sum + (a.adjustment_type === 'addition' ? Number(a.amount) : -Number(a.amount)), 0);
+  generatePaymentReceipt(p, adjustments, totalAdj, Number(p.amount) + totalAdj);
+};
 
 interface PaymentsSectionProps {
   type: 'driver' | 'investor' | 'dispatcher';
@@ -99,6 +107,9 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
                         </Button>
                         <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => setDeletePaymentId(p.id)}>
                           <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0" title="Generar Recibo PDF" onClick={() => handleGenerateReceipt(p)}>
+                          <FileText className="h-3.5 w-3.5" />
                         </Button>
                       </div>
                     </td>
