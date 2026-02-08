@@ -148,7 +148,7 @@ const Loads = () => {
                         <td className="p-3 hidden lg:table-cell text-muted-foreground">{load.pickup_date || '—'}</td>
                         <td className="p-3 hidden lg:table-cell text-muted-foreground">{load.delivery_date || '—'}</td>
                         <td className="p-3 text-right font-semibold">${Number(load.total_rate).toLocaleString()}</td>
-                        <td className="p-3 text-right hidden md:table-cell text-muted-foreground">{Number(load.miles || 0).toLocaleString()}</td>
+                        <td className="p-3 text-right hidden md:table-cell text-muted-foreground">{load.miles && Number(load.miles) > 0 ? Number(load.miles).toLocaleString() : '—'}</td>
                         <td className="p-3 text-right hidden md:table-cell text-muted-foreground">
                           {load.miles && load.miles > 0 ? `$${(Number(load.total_rate) / Number(load.miles)).toFixed(2)}` : '—'}
                         </td>
