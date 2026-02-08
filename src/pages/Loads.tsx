@@ -185,8 +185,8 @@ const Loads = () => {
                             }
                             await updateLoad(load.id, updates);
                           }}>
-                            <SelectTrigger className="h-7 w-[130px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:ml-1">
-                              <StatusBadge status={load.status} />
+                            <SelectTrigger className="h-8 w-[140px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:ml-1">
+                              <StatusBadge status={load.status} className="text-sm px-3 py-1" />
                             </SelectTrigger>
                             <SelectContent>
                               {[
@@ -211,8 +211,8 @@ const Loads = () => {
                           <Select value={load.factoring || ''} onValueChange={async (val) => {
                             await updateLoad(load.id, { factoring: val });
                           }}>
-                            <SelectTrigger className="h-7 w-[120px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:ml-1">
-                              {load.factoring ? <StatusBadge status={`${load.factoring}_factoring`} /> : <span className="text-muted-foreground">—</span>}
+                            <SelectTrigger className="h-8 w-[130px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:ml-1">
+                              {load.factoring ? <StatusBadge status={`${load.factoring}_factoring`} className="text-sm px-3 py-1" /> : <span className="text-muted-foreground">—</span>}
                             </SelectTrigger>
                             <SelectContent>
                               {[
