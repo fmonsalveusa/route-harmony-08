@@ -1,10 +1,13 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { formatDate, todayET } from '@/lib/dateUtils';
 import { useAuth } from '@/contexts/AuthContext';
 import { mockDrivers, mockDispatchers } from '@/data/mockData';
 import { StatusBadge } from '@/components/StatusBadge';
 import { useLoads } from '@/hooks/useLoads';
 import { usePodDocuments } from '@/hooks/usePodDocuments';
+import { useDrivers } from '@/hooks/useDrivers';
+import { useTrucks } from '@/hooks/useTrucks';
+import { useDispatchers } from '@/hooks/useDispatchers';
 import { supabase } from '@/integrations/supabase/client';
 import { LoadFormDialog } from '@/components/LoadFormDialog';
 import { LoadDetailPanel } from '@/components/LoadDetailPanel';
@@ -13,7 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Plus, Search, Package, Pencil, Trash2, ChevronDown, ChevronUp, MapPin, Upload, ExternalLink } from 'lucide-react';
+import { Plus, Search, Package, Pencil, Trash2, ChevronDown, ChevronUp, MapPin, Upload, ExternalLink, Filter } from 'lucide-react';
 import type { DbLoad } from '@/hooks/useLoads';
 
 // Small inline component for uploading PODs from the table row
@@ -56,8 +59,15 @@ const Loads = () => {
   };
   const { user } = useAuth();
   const { loads: dbLoads, loading: loadsLoading, createLoad, updateLoad, deleteLoad } = useLoads();
+  const { drivers } = useDrivers();
+  const { trucks } = useTrucks();
+  const { dispatchers } = useDispatchers();
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<'active' | 'delivered' | 'cancelled'>('active');
+  const [filterDriver, setFilterDriver] = useState<string>('all');
+  const [filterTruck, setFilterTruck] = useState<string>('all');
+  const [filterDispatcher, setFilterDispatcher] = useState<string>('all');
+  const [filterPeriod, setFilterPeriod] = useState<string>('all');
   const [showForm, setShowForm] = useState(false);
   const [editLoad, setEditLoad] = useState<DbLoad | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -75,6 +85,37 @@ const Loads = () => {
     l.destination.toLowerCase().includes(search.toLowerCase()) ||
     (l.broker_client || '').toLowerCase().includes(search.toLowerCase())
   );
+
+  // Apply filters
+  if (filterDriver !== 'all') baseLoads = baseLoads.filter(l => l.driver_id === filterDriver);
+  if (filterTruck !== 'all') baseLoads = baseLoads.filter(l => l.truck_id === filterTruck);
+  if (filterDispatcher !== 'all') baseLoads = baseLoads.filter(l => l.dispatcher_id === filterDispatcher);
+  if (filterPeriod !== 'all') {
+    const now = new Date();
+    if (filterPeriod === 'this_week') {
+      const dayOfWeek = now.getDay();
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(now.getDate() - dayOfWeek);
+      startOfWeek.setHours(0, 0, 0, 0);
+      baseLoads = baseLoads.filter(l => {
+        const d = l.pickup_date ? new Date(l.pickup_date) : null;
+        return d && d >= startOfWeek;
+      });
+    } else if (filterPeriod === 'this_month') {
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      baseLoads = baseLoads.filter(l => {
+        const d = l.pickup_date ? new Date(l.pickup_date) : null;
+        return d && d >= startOfMonth;
+      });
+    } else if (filterPeriod === 'last_month') {
+      const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      baseLoads = baseLoads.filter(l => {
+        const d = l.pickup_date ? new Date(l.pickup_date) : null;
+        return d && d >= startOfLastMonth && d < startOfThisMonth;
+      });
+    }
+  }
 
   const activeLoads = baseLoads.filter(l => ['planned', 'dispatched', 'in_transit'].includes(l.status));
   const deliveredLoads = baseLoads.filter(l => ['delivered', 'tonu'].includes(l.status));
@@ -94,10 +135,64 @@ const Loads = () => {
         </Button>
       </div>
 
-      {/* Search + Tabs */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input placeholder="Buscar por referencia, ruta o cliente..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+      {/* Search + Filters */}
+      <div className="flex flex-col gap-3">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input placeholder="Buscar por referencia, ruta o cliente..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+        </div>
+        <div className="flex flex-wrap gap-2 items-center">
+          <Filter className="h-4 w-4 text-muted-foreground" />
+          <Select value={filterDriver} onValueChange={setFilterDriver}>
+            <SelectTrigger className="w-[160px] h-8 text-xs">
+              <SelectValue placeholder="Driver" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos los Drivers</SelectItem>
+              {drivers.map(d => (
+                <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={filterTruck} onValueChange={setFilterTruck}>
+            <SelectTrigger className="w-[160px] h-8 text-xs">
+              <SelectValue placeholder="Truck" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos los Trucks</SelectItem>
+              {trucks.map(t => (
+                <SelectItem key={t.id} value={t.id}>Unit #{t.unit_number}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={filterDispatcher} onValueChange={setFilterDispatcher}>
+            <SelectTrigger className="w-[160px] h-8 text-xs">
+              <SelectValue placeholder="Dispatcher" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos los Dispatchers</SelectItem>
+              {dispatchers.map(d => (
+                <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={filterPeriod} onValueChange={setFilterPeriod}>
+            <SelectTrigger className="w-[150px] h-8 text-xs">
+              <SelectValue placeholder="Período" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todo el tiempo</SelectItem>
+              <SelectItem value="this_week">Esta semana</SelectItem>
+              <SelectItem value="this_month">Este mes</SelectItem>
+              <SelectItem value="last_month">Mes anterior</SelectItem>
+            </SelectContent>
+          </Select>
+          {(filterDriver !== 'all' || filterTruck !== 'all' || filterDispatcher !== 'all' || filterPeriod !== 'all') && (
+            <Button variant="ghost" size="sm" className="h-8 text-xs text-muted-foreground" onClick={() => { setFilterDriver('all'); setFilterTruck('all'); setFilterDispatcher('all'); setFilterPeriod('all'); }}>
+              Limpiar filtros
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="flex gap-2 border-b">
