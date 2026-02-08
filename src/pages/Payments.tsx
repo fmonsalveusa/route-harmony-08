@@ -35,6 +35,7 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
   const [adjMap, setAdjMap] = useState<Record<string, number>>({});
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [batchProcessing, setBatchProcessing] = useState(false);
+  const [loadDateMap, setLoadDateMap] = useState<Record<string, string>>({});
 
   // Fetch all adjustments for payments of this type
   const fetchAdjustments = useCallback(async () => {
@@ -52,6 +53,20 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
   }, [allPayments, type]);
 
   useEffect(() => { fetchAdjustments(); }, [fetchAdjustments]);
+
+  // Fetch load created_at dates
+  const fetchLoadDates = useCallback(async () => {
+    const loadIds = [...new Set(allPayments.filter(p => p.recipient_type === type).map(p => p.load_id))];
+    if (loadIds.length === 0) return;
+    const { data } = await supabase.from('loads').select('id, created_at').in('id', loadIds);
+    if (data) {
+      const map: Record<string, string> = {};
+      (data as any[]).forEach(l => { map[l.id] = l.created_at; });
+      setLoadDateMap(map);
+    }
+  }, [allPayments, type]);
+
+  useEffect(() => { fetchLoadDates(); }, [fetchLoadDates]);
 
   // Clear selection when filter changes
   useEffect(() => { setSelectedIds(new Set()); }, [statusFilter]);
@@ -198,18 +213,19 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
                 </th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Referencia</th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Beneficiario</th>
+                <th className="text-left p-3 font-medium text-muted-foreground">Fecha</th>
                 <th className="text-right p-3 font-medium text-muted-foreground">Rate</th>
                 <th className="text-right p-3 font-medium text-muted-foreground">%</th>
                 <th className="text-right p-3 font-medium text-muted-foreground">Monto Base</th>
                 <th className="text-right p-3 font-medium text-muted-foreground">Ajuste</th>
                 <th className="text-right p-3 font-medium text-muted-foreground">Monto Total</th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Estado</th>
-                <th className="text-left p-3 font-medium text-muted-foreground">Fecha</th>
+                <th className="text-left p-3 font-medium text-muted-foreground">Fecha Pago</th>
                 <th className="text-right p-3 font-medium text-muted-foreground">Acciones</th>
               </tr></thead>
               <tbody>
                 {payments.length === 0 && !loading && (
-                  <tr><td colSpan={11} className="p-6 text-center text-muted-foreground">Sin pagos registrados</td></tr>
+                  <tr><td colSpan={12} className="p-6 text-center text-muted-foreground">Sin pagos registrados</td></tr>
                 )}
                 {payments.map(p => (
                   <tr key={p.id} className={`border-b last:border-0 hover:bg-muted/30 ${selectedIds.has(p.id) ? 'bg-primary/5' : ''}`}>
@@ -221,6 +237,7 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
                     </td>
                     <td className="p-3 font-medium text-primary">{p.load_reference}</td>
                     <td className="p-3">{p.recipient_name}</td>
+                    <td className="p-3 text-muted-foreground">{loadDateMap[p.load_id] ? formatDate(loadDateMap[p.load_id]) : '—'}</td>
                     <td className="p-3 text-right text-muted-foreground">${Number(p.total_rate).toLocaleString()}</td>
                     <td className="p-3 text-right text-muted-foreground">{p.percentage_applied}%</td>
                     <td className="p-3 text-right text-muted-foreground">${Number(p.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
