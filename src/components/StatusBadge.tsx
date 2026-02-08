@@ -25,7 +25,7 @@ const statusConfig: Record<string, { label: string; className: string }> = {
   overdue: { label: 'Vencida', className: 'bg-[hsl(0,72%,51%)] text-white' },
 };
 
-export const StatusBadge = ({ status }: { status: string }) => {
+export const StatusBadge = ({ status, className: extraClass }: { status: string; className?: string }) => {
   const config = statusConfig[status] || { label: status, className: 'bg-muted text-muted-foreground' };
-  return <span className={`status-badge ${config.className}`}>{config.label}</span>;
+  return <span className={`status-badge ${config.className} ${extraClass || ''}`}>{config.label}</span>;
 };
