@@ -1,4 +1,5 @@
 import { mockInvoices } from '@/data/mockData';
+import { formatDate } from '@/lib/dateUtils';
 import { StatusBadge } from '@/components/StatusBadge';
 import { StatCard } from '@/components/StatCard';
 import { Card, CardContent } from '@/components/ui/card';
@@ -41,8 +42,8 @@ const Invoices = () => {
                     <td className="p-3">{inv.clientName}</td>
                     <td className="p-3 text-right font-semibold">${inv.amount.toLocaleString()}</td>
                     <td className="p-3"><StatusBadge status={inv.status} /></td>
-                    <td className="p-3 text-muted-foreground">{inv.issueDate}</td>
-                    <td className="p-3 text-muted-foreground">{inv.dueDate}</td>
+                    <td className="p-3 text-muted-foreground">{formatDate(inv.issueDate)}</td>
+                    <td className="p-3 text-muted-foreground">{formatDate(inv.dueDate)}</td>
                   </tr>
                 ))}
               </tbody>

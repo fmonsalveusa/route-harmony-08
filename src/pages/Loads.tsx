@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { formatDate, todayET } from '@/lib/dateUtils';
 import { useAuth } from '@/contexts/AuthContext';
 import { mockDrivers, mockDispatchers } from '@/data/mockData';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -145,8 +146,8 @@ const Loads = () => {
                             </div>
                           ); })()}
                         </td>
-                        <td className="p-3 hidden lg:table-cell text-muted-foreground">{load.pickup_date || '—'}</td>
-                        <td className="p-3 hidden lg:table-cell text-muted-foreground">{load.delivery_date || '—'}</td>
+                        <td className="p-3 hidden lg:table-cell text-muted-foreground">{formatDate(load.pickup_date)}</td>
+                        <td className="p-3 hidden lg:table-cell text-muted-foreground">{formatDate(load.delivery_date)}</td>
                         <td className="p-3 text-right font-semibold">${Number(load.total_rate).toLocaleString()}</td>
                         <td className="p-3 text-right hidden md:table-cell text-muted-foreground">{load.miles && Number(load.miles) > 0 ? Number(load.miles).toLocaleString() : '—'}</td>
                         <td className="p-3 text-right hidden md:table-cell text-muted-foreground">
@@ -157,7 +158,7 @@ const Loads = () => {
                           <Select value={load.status} onValueChange={async (val) => {
                             const updates: any = { status: val };
                             if (val === 'delivered' && !load.delivery_date) {
-                              updates.delivery_date = new Date().toISOString().split('T')[0];
+                              updates.delivery_date = todayET();
                             }
                             await updateLoad(load.id, updates);
                           }}>
@@ -181,7 +182,7 @@ const Loads = () => {
                           </Select>
                         </td>
                         <td className="p-3 hidden lg:table-cell text-muted-foreground">
-                          {load.status === 'delivered' ? (load.delivery_date || '—') : '—'}
+                          {load.status === 'delivered' ? formatDate(load.delivery_date) : '—'}
                         </td>
                         <td className="p-3 hidden lg:table-cell" onClick={e => e.stopPropagation()}>
                           <Select value={load.factoring || ''} onValueChange={async (val) => {

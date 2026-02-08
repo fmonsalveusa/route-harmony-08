@@ -224,7 +224,7 @@ function DateField({ label, value, onChange }: { label: string; value: string | 
         <PopoverTrigger asChild>
           <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}>
             <CalendarIcon className="mr-2 h-4 w-4" />
-            {date ? format(date, 'PPP') : 'Seleccionar fecha'}
+            {date ? format(date, 'MM/dd/yyyy') : 'Seleccionar fecha'}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">

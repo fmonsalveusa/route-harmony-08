@@ -8,6 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
+import { todayET } from '@/lib/dateUtils';
 import { cn } from '@/lib/utils';
 import { DbDispatcher, DispatcherInput } from '@/hooks/useDispatchers';
 
@@ -24,7 +25,7 @@ const emptyForm: DispatcherInput = {
   commission_percentage: 8,
   dispatch_service_percentage: 0,
   pay_type: 'per_rate',
-  start_date: new Date().toISOString().split('T')[0],
+  start_date: todayET(),
 };
 
 export function DispatcherFormDialog({ open, onOpenChange, dispatcher, onSubmit }: Props) {
@@ -109,7 +110,7 @@ export function DispatcherFormDialog({ open, onOpenChange, dispatcher, onSubmit 
               <PopoverTrigger asChild>
                 <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !startDate && "text-muted-foreground")}>
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {startDate ? format(startDate, 'yyyy-MM-dd') : 'Seleccionar fecha'}
+                  {startDate ? format(startDate, 'MM/dd/yyyy') : 'Seleccionar fecha'}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">

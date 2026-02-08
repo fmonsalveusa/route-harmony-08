@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/StatusBadge';
 import { DbDriver } from '@/hooks/useDrivers';
 import { FileText, ExternalLink } from 'lucide-react';
+import { formatDate } from '@/lib/dateUtils';
 
 interface DriverDetailDialogProps {
   open: boolean;
@@ -49,7 +50,7 @@ export function DriverDetailDialog({ open, onOpenChange, driver, truckLabel, dis
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3">
               <Info label="Email">{driver.email}</Info>
               <Info label="Teléfono">{driver.phone}</Info>
-              <Info label="Fecha de Contratación">{driver.hire_date}</Info>
+              <Info label="Fecha de Contratación">{formatDate(driver.hire_date)}</Info>
             </div>
           </section>
 
@@ -58,8 +59,8 @@ export function DriverDetailDialog({ open, onOpenChange, driver, truckLabel, dis
             <h3 className="font-semibold text-sm border-b pb-1">Licencia & Medical Card</h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3">
               <Info label="Driver License #">{driver.license}</Info>
-              <Info label="License Expiry">{driver.license_expiry ?? '—'}</Info>
-              <Info label="Medical Card Expiry">{driver.medical_card_expiry ?? '—'}</Info>
+              <Info label="License Expiry">{formatDate(driver.license_expiry)}</Info>
+              <Info label="Medical Card Expiry">{formatDate(driver.medical_card_expiry)}</Info>
             </div>
           </section>
 
