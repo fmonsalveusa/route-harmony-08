@@ -11,7 +11,7 @@ import Loads from "./pages/Loads";
 import Fleet from "./pages/Fleet";
 import Drivers from "./pages/Drivers";
 import Dispatchers from "./pages/Dispatchers";
-import { PaymentsDrivers, PaymentsInvestors, PaymentsDispatchers } from "./pages/Payments";
+import Payments from "./pages/Payments";
 import Invoices from "./pages/Invoices";
 import Tracking from "./pages/Tracking";
 import Reports from "./pages/Reports";
@@ -36,9 +36,7 @@ const AppRoutes = () => {
       <Route path="/fleet" element={<ProtectedRoute><Fleet /></ProtectedRoute>} />
       <Route path="/drivers" element={<ProtectedRoute><Drivers /></ProtectedRoute>} />
       <Route path="/dispatchers" element={<ProtectedRoute><Dispatchers /></ProtectedRoute>} />
-      <Route path="/payments/drivers" element={<ProtectedRoute><PaymentsDrivers /></ProtectedRoute>} />
-      <Route path="/payments/investors" element={<ProtectedRoute><PaymentsInvestors /></ProtectedRoute>} />
-      <Route path="/payments/dispatchers" element={<ProtectedRoute><PaymentsDispatchers /></ProtectedRoute>} />
+      <Route path="/payments" element={<ProtectedRoute><Payments /></ProtectedRoute>} />
       <Route path="/invoices" element={<ProtectedRoute><Invoices /></ProtectedRoute>} />
       <Route path="/tracking" element={<ProtectedRoute><Tracking /></ProtectedRoute>} />
       <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />

@@ -3,18 +3,17 @@ import { formatDate } from '@/lib/dateUtils';
 import { mockPayments } from '@/data/mockData';
 import { StatusBadge } from '@/components/StatusBadge';
 import { StatCard } from '@/components/StatCard';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { DollarSign, CheckCircle, Clock, Download } from 'lucide-react';
 
-interface PaymentsPageProps {
+interface PaymentsSectionProps {
   type: 'driver' | 'investor' | 'dispatcher';
-  title: string;
-  description: string;
 }
 
-const PaymentsPage = ({ type, title, description }: PaymentsPageProps) => {
+const PaymentsSection = ({ type }: PaymentsSectionProps) => {
   const [statusFilter, setStatusFilter] = useState('all');
   let payments = mockPayments.filter(p => p.recipientType === type);
   if (statusFilter !== 'all') payments = payments.filter(p => p.status === statusFilter);
@@ -24,14 +23,6 @@ const PaymentsPage = ({ type, title, description }: PaymentsPageProps) => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="page-header">{title}</h1>
-          <p className="page-description">{description}</p>
-        </div>
-        <Button variant="outline" size="sm" className="gap-2"><Download className="h-4 w-4" /> Exportar</Button>
-      </div>
-
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard title="Total Pendiente" value={`$${totalPending.toLocaleString()}`} icon={Clock} iconClassName="bg-warning/10 text-warning" />
         <StatCard title="Total Pagado" value={`$${totalPaid.toLocaleString()}`} icon={CheckCircle} iconClassName="bg-success/10 text-success" />
@@ -86,6 +77,29 @@ const PaymentsPage = ({ type, title, description }: PaymentsPageProps) => {
   );
 };
 
-export const PaymentsDrivers = () => <PaymentsPage type="driver" title="Pagos a Conductores" description="Gestión de pagos pendientes y realizados a drivers" />;
-export const PaymentsInvestors = () => <PaymentsPage type="investor" title="Pagos a Investors" description="Gestión de pagos a inversionistas por camión" />;
-export const PaymentsDispatchers = () => <PaymentsPage type="dispatcher" title="Pagos a Dispatchers" description="Gestión de comisiones y pagos a dispatchers" />;
+const Payments = () => {
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="page-header">Pagos</h1>
+          <p className="page-description">Gestión de pagos a drivers, investors y dispatchers</p>
+        </div>
+        <Button variant="outline" size="sm" className="gap-2"><Download className="h-4 w-4" /> Exportar</Button>
+      </div>
+
+      <Tabs defaultValue="drivers">
+        <TabsList>
+          <TabsTrigger value="drivers">Drivers</TabsTrigger>
+          <TabsTrigger value="investors">Investors</TabsTrigger>
+          <TabsTrigger value="dispatchers">Dispatchers</TabsTrigger>
+        </TabsList>
+        <TabsContent value="drivers"><PaymentsSection type="driver" /></TabsContent>
+        <TabsContent value="investors"><PaymentsSection type="investor" /></TabsContent>
+        <TabsContent value="dispatchers"><PaymentsSection type="dispatcher" /></TabsContent>
+      </Tabs>
+    </div>
+  );
+};
+
+export default Payments;
