@@ -87,7 +87,7 @@ const Fleet = () => {
                     <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
                       <TruckIcon className="h-4 w-4 text-primary" />
                     </div>
-                    <h3 className="font-bold text-base">Unit #{truck.unit_number}</h3>
+                    <h3 className="font-bold text-lg">Unit #{truck.unit_number}</h3>
                   </div>
                   <Select value={truck.status} onValueChange={v => updateTruck(truck.id, { status: v })}>
                     <SelectTrigger className={`w-auto h-6 text-[10px] gap-0.5 px-1.5 border-0 rounded-full ${getStatusStyle(truck.status)}`}>
@@ -101,7 +101,7 @@ const Fleet = () => {
                   </Select>
                 </div>
 
-                <div className="space-y-1.5 text-sm">
+                <div className="space-y-1.5 text-[15px]">
                   <Row label="Tipo" value={truck.truck_type} />
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">Driver</span>
@@ -154,7 +154,7 @@ const Fleet = () => {
 };
 
 const Row = ({ label, value }: { label: string; value: string }) => (
-  <div className="flex justify-between text-sm">
+  <div className="flex justify-between text-[15px]">
     <span className="text-muted-foreground">{label}</span>
     <span className="font-medium">{value}</span>
   </div>
