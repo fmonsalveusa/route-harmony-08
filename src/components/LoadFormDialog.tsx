@@ -9,8 +9,8 @@ import { Progress } from '@/components/ui/progress';
 import { Upload, FileText, Loader2, CheckCircle, AlertCircle, Eye, Download, X, Plus, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { mockDrivers } from '@/data/mockData';
 import { useTrucks } from '@/hooks/useTrucks';
+import { useDrivers } from '@/hooks/useDrivers';
 import { useLoadStops } from '@/hooks/useLoadStops';
 import type { DbLoad, CreateLoadInput } from '@/hooks/useLoads';
 
@@ -50,6 +50,7 @@ const emptyForm: LoadFormData = {
 export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatcherId }: LoadFormDialogProps) => {
   const { toast } = useToast();
   const { trucks } = useTrucks();
+  const { drivers } = useDrivers();
   const { stops: existingStops, fetchStops, saveStops } = useLoadStops(editLoad?.id);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState<LoadFormData>(emptyForm);
@@ -236,6 +237,10 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
   const companyProfit = formData.totalRate - driverPay - investorPay - dispatcherPay;
 
   const handleSubmit = async () => {
+    if (!selectedDriver) {
+      toast({ title: 'Campo requerido', description: 'Debes seleccionar un conductor.', variant: 'destructive' });
+      return;
+    }
     // Derive origin/destination from stops
     const pickups = stopEntries.filter(s => s.stop_type === 'pickup');
     const deliveries = stopEntries.filter(s => s.stop_type === 'delivery');
@@ -469,11 +474,19 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
             <Input type="number" placeholder="2500" value={formData.totalRate || ''} onChange={e => updateField('totalRate', Number(e.target.value))} />
           </div>
           <div className="space-y-2">
-            <Label>Conductor</Label>
-            <Select value={selectedDriver} onValueChange={setSelectedDriver}>
-              <SelectTrigger><SelectValue placeholder="Asignar driver" /></SelectTrigger>
+            <Label>Conductor <span className="text-destructive">*</span></Label>
+            <Select value={selectedDriver} onValueChange={(val) => {
+              setSelectedDriver(val);
+              const driver = drivers.find(d => d.id === val);
+              if (driver?.truck_id) {
+                setSelectedTruck(driver.truck_id);
+              } else {
+                setSelectedTruck('');
+              }
+            }}>
+              <SelectTrigger><SelectValue placeholder="Seleccionar driver" /></SelectTrigger>
               <SelectContent>
-                {mockDrivers.filter(d => d.status === 'available').map(d => (
+                {drivers.filter(d => d.status !== 'inactive').map(d => (
                   <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                 ))}
               </SelectContent>
