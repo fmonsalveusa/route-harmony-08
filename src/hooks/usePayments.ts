@@ -107,27 +107,8 @@ export async function generatePaymentsForLoad(load: {
     });
   }
 
-  // Dispatcher payment — percentage depends on driver's service_type
-  if (dispatcher) {
-    const driverServiceType = driver?.service_type || 'owner_operator';
-    const dispatcherPct = driverServiceType === 'dispatch_service'
-      ? (dispatcher.dispatch_service_percentage ?? 0)
-      : dispatcher.commission_percentage;
-
-    if (dispatcherPct > 0) {
-      const dispatcherAmount = totalRate * (dispatcherPct / 100);
-      paymentsToInsert.push({
-        load_id: load.id,
-        recipient_type: 'dispatcher',
-        recipient_id: dispatcher.id,
-        recipient_name: dispatcher.name,
-        load_reference: load.reference_number,
-        amount: Math.round(dispatcherAmount * 100) / 100,
-        percentage_applied: dispatcherPct,
-        total_rate: totalRate,
-      });
-    }
-  }
+  // Dispatcher payment is now generated manually from the Payments > Dispatchers tab
+  // No automatic dispatcher payment generation on delivery
 
   if (paymentsToInsert.length === 0) return;
 
