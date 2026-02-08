@@ -6,6 +6,7 @@ import { mockDrivers, mockDispatchers } from '@/data/mockData';
 import type { DbLoad } from '@/hooks/useLoads';
 import { useLoadStops } from '@/hooks/useLoadStops';
 import { supabase } from '@/integrations/supabase/client';
+import { PodUploadSection } from '@/components/PodUploadSection';
 import 'leaflet/dist/leaflet.css';
 
 // Geocoding with progressive fallback: full address → without suite → city+state+zip
@@ -369,6 +370,12 @@ export const LoadDetailPanel = ({ load, onMilesCalculated }: LoadDetailPanelProp
               </div>
             </div>
           )}
+
+          {/* POD Upload Section */}
+          <PodUploadSection
+            loadId={load.id}
+            stops={dbStops.map(s => ({ id: s.id, type: s.stop_type, address: s.address }))}
+          />
         </div>
 
         {/* Map */}

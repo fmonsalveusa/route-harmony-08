@@ -268,6 +268,51 @@ export type Database = {
         }
         Relationships: []
       }
+      pod_documents: {
+        Row: {
+          created_at: string
+          file_name: string
+          file_type: string
+          file_url: string
+          id: string
+          load_id: string
+          stop_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          file_type?: string
+          file_url: string
+          id?: string
+          load_id: string
+          stop_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          file_type?: string
+          file_url?: string
+          id?: string
+          load_id?: string
+          stop_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pod_documents_load_id_fkey"
+            columns: ["load_id"]
+            isOneToOne: false
+            referencedRelation: "loads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pod_documents_stop_id_fkey"
+            columns: ["stop_id"]
+            isOneToOne: false
+            referencedRelation: "load_stops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trucks: {
         Row: {
           cargo_area_photo_url: string | null
