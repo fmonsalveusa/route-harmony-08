@@ -67,7 +67,8 @@ const Loads = () => {
   const [filterDriver, setFilterDriver] = useState<string>('all');
   const [filterTruck, setFilterTruck] = useState<string>('all');
   const [filterDispatcher, setFilterDispatcher] = useState<string>('all');
-  const [filterPeriod, setFilterPeriod] = useState<string>('all');
+  const [filterWeek, setFilterWeek] = useState<string>('all');
+  const [filterMonth, setFilterMonth] = useState<string>('all');
   const [filterBroker, setFilterBroker] = useState<string>('all');
   const [showForm, setShowForm] = useState(false);
   const [editLoad, setEditLoad] = useState<DbLoad | null>(null);
@@ -92,37 +93,30 @@ const Loads = () => {
   if (filterTruck !== 'all') baseLoads = baseLoads.filter(l => l.truck_id === filterTruck);
   if (filterDispatcher !== 'all') baseLoads = baseLoads.filter(l => l.dispatcher_id === filterDispatcher);
   if (filterBroker !== 'all') baseLoads = baseLoads.filter(l => l.broker_client === filterBroker);
-  if (filterPeriod !== 'all') {
-    const now = new Date();
-    if (filterPeriod === 'this_month') {
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      baseLoads = baseLoads.filter(l => {
-        const d = l.pickup_date ? new Date(l.pickup_date) : null;
-        return d && d >= startOfMonth;
-      });
-    } else if (filterPeriod === 'last_month') {
-      const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      baseLoads = baseLoads.filter(l => {
-        const d = l.pickup_date ? new Date(l.pickup_date) : null;
-        return d && d >= startOfLastMonth && d < startOfThisMonth;
-      });
-    } else if (filterPeriod.startsWith('week_')) {
-      const weekNum = parseInt(filterPeriod.replace('week_', ''));
-      const year = now.getFullYear();
-      // ISO week: Week 1 starts on first Monday of the year
-      const jan4 = new Date(year, 0, 4); // Jan 4 is always in ISO week 1
-      const mondayOfWeek1 = new Date(jan4);
-      mondayOfWeek1.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7));
-      const startOfWeek = new Date(mondayOfWeek1);
-      startOfWeek.setDate(mondayOfWeek1.getDate() + (weekNum - 1) * 7);
-      const endOfWeek = new Date(startOfWeek);
-      endOfWeek.setDate(startOfWeek.getDate() + 7);
-      baseLoads = baseLoads.filter(l => {
-        const d = l.pickup_date ? new Date(l.pickup_date) : null;
-        return d && d >= startOfWeek && d < endOfWeek;
-      });
-    }
+  if (filterMonth !== 'all') {
+    const monthIdx = parseInt(filterMonth);
+    const year = new Date().getFullYear();
+    const startOfMonth = new Date(year, monthIdx, 1);
+    const endOfMonth = new Date(year, monthIdx + 1, 1);
+    baseLoads = baseLoads.filter(l => {
+      const d = l.pickup_date ? new Date(l.pickup_date) : null;
+      return d && d >= startOfMonth && d < endOfMonth;
+    });
+  }
+  if (filterWeek !== 'all') {
+    const weekNum = parseInt(filterWeek);
+    const year = new Date().getFullYear();
+    const jan4 = new Date(year, 0, 4);
+    const mondayOfWeek1 = new Date(jan4);
+    mondayOfWeek1.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7));
+    const startOfWeek = new Date(mondayOfWeek1);
+    startOfWeek.setDate(mondayOfWeek1.getDate() + (weekNum - 1) * 7);
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 7);
+    baseLoads = baseLoads.filter(l => {
+      const d = l.pickup_date ? new Date(l.pickup_date) : null;
+      return d && d >= startOfWeek && d < endOfWeek;
+    });
   }
 
   const activeLoads = baseLoads.filter(l => ['planned', 'dispatched', 'in_transit'].includes(l.status));
@@ -184,14 +178,23 @@ const Loads = () => {
               ))}
             </SelectContent>
           </Select>
-          <Select value={filterPeriod} onValueChange={setFilterPeriod}>
-            <SelectTrigger className="w-[180px] h-8 text-xs">
-              <SelectValue placeholder="Período" />
+          <Select value={filterMonth} onValueChange={setFilterMonth}>
+            <SelectTrigger className="w-[150px] h-8 text-xs">
+              <SelectValue placeholder="Month" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Months</SelectItem>
+              {['January','February','March','April','May','June','July','August','September','October','November','December'].map((m, i) => (
+                <SelectItem key={i} value={String(i)}>{m}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={filterWeek} onValueChange={setFilterWeek}>
+            <SelectTrigger className="w-[220px] h-8 text-xs">
+              <SelectValue placeholder="Week" />
             </SelectTrigger>
             <SelectContent className="max-h-[300px]">
-              <SelectItem value="all">Todo el tiempo</SelectItem>
-              <SelectItem value="this_month">Este mes</SelectItem>
-              <SelectItem value="last_month">Mes anterior</SelectItem>
+              <SelectItem value="all">All Weeks</SelectItem>
               {Array.from({ length: 52 }, (_, i) => {
                 const weekNum = i + 1;
                 const year = new Date().getFullYear();
@@ -204,7 +207,7 @@ const Loads = () => {
                 end.setDate(start.getDate() + 6);
                 const fmt = (d: Date) => `${d.getMonth() + 1}/${d.getDate()}`;
                 return (
-                  <SelectItem key={weekNum} value={`week_${weekNum}`}>
+                  <SelectItem key={weekNum} value={String(weekNum)}>
                     Week {weekNum} (Mon {fmt(start)} - Sun {fmt(end)})
                   </SelectItem>
                 );
@@ -222,8 +225,8 @@ const Loads = () => {
               ))}
             </SelectContent>
           </Select>
-          {(filterDriver !== 'all' || filterTruck !== 'all' || filterDispatcher !== 'all' || filterPeriod !== 'all' || filterBroker !== 'all') && (
-            <Button variant="ghost" size="sm" className="h-8 text-xs text-muted-foreground" onClick={() => { setFilterDriver('all'); setFilterTruck('all'); setFilterDispatcher('all'); setFilterPeriod('all'); setFilterBroker('all'); }}>
+          {(filterDriver !== 'all' || filterTruck !== 'all' || filterDispatcher !== 'all' || filterWeek !== 'all' || filterMonth !== 'all' || filterBroker !== 'all') && (
+            <Button variant="ghost" size="sm" className="h-8 text-xs text-muted-foreground" onClick={() => { setFilterDriver('all'); setFilterTruck('all'); setFilterDispatcher('all'); setFilterWeek('all'); setFilterMonth('all'); setFilterBroker('all'); }}>
               Limpiar filtros
             </Button>
           )}
