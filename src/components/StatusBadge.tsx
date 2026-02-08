@@ -20,6 +20,7 @@ const statusConfig: Record<string, { label: string; className: string }> = {
   maintenance: { label: 'Mantenimiento', className: 'bg-[hsl(38,92%,50%)] text-white' },
   active: { label: 'Activo', className: 'bg-[hsl(152,60%,40%)] text-white' },
   pending: { label: 'Pendiente', className: 'bg-[hsl(38,92%,50%)] text-white' },
+  in_process: { label: 'In Process', className: 'bg-[hsl(205,85%,50%)] text-white' },
   paid: { label: 'Pagada', className: 'bg-[hsl(152,60%,40%)] text-white' },
   processing: { label: 'Procesando', className: 'bg-[hsl(205,85%,50%)] text-white' },
   overdue: { label: 'Vencida', className: 'bg-[hsl(0,72%,51%)] text-white' },

@@ -51,11 +51,12 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
 
   const allTypePayments = allPayments.filter(p => p.recipient_type === type);
   const pendingCount = allTypePayments.filter(p => p.status === 'pending').length;
+  const inProcessCount = allTypePayments.filter(p => p.status === 'in_process').length;
   const paidCount = allTypePayments.filter(p => p.status === 'paid').length;
 
   const payments = statusFilter === 'all' ? allTypePayments : allTypePayments.filter(p => p.status === statusFilter);
 
-  const totalPending = allTypePayments.filter(p => p.status === 'pending').reduce((s, p) => s + Number(p.amount) + (adjMap[p.id] || 0), 0);
+  const totalPending = allTypePayments.filter(p => p.status === 'pending' || p.status === 'in_process').reduce((s, p) => s + Number(p.amount) + (adjMap[p.id] || 0), 0);
   const totalPaid = allTypePayments.filter(p => p.status === 'paid').reduce((s, p) => s + Number(p.amount) + (adjMap[p.id] || 0), 0);
 
   const handleDelete = async () => {
@@ -81,6 +82,7 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
       <Tabs value={statusFilter} onValueChange={setStatusFilter}>
         <TabsList>
           <TabsTrigger value="pending">Pending ({pendingCount})</TabsTrigger>
+          <TabsTrigger value="in_process">In Process ({inProcessCount})</TabsTrigger>
           <TabsTrigger value="paid">Paid ({paidCount})</TabsTrigger>
           <TabsTrigger value="all">Todos ({allTypePayments.length})</TabsTrigger>
         </TabsList>
@@ -128,6 +130,7 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
                         </SelectTrigger>
                         <SelectContent className="bg-popover z-50">
                           <SelectItem value="pending"><StatusBadge status="pending" /></SelectItem>
+                          <SelectItem value="in_process"><StatusBadge status="in_process" /></SelectItem>
                           <SelectItem value="paid"><StatusBadge status="paid" /></SelectItem>
                         </SelectContent>
                       </Select>
@@ -176,9 +179,9 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
 
 const Payments = () => {
   const { payments: allP } = usePayments();
-  const pendingDrivers = allP.filter(p => p.recipient_type === 'driver' && p.status === 'pending').length;
-  const pendingInvestors = allP.filter(p => p.recipient_type === 'investor' && p.status === 'pending').length;
-  const pendingDispatchers = allP.filter(p => p.recipient_type === 'dispatcher' && p.status === 'pending').length;
+  const pendingDrivers = allP.filter(p => p.recipient_type === 'driver' && (p.status === 'pending' || p.status === 'in_process')).length;
+  const pendingInvestors = allP.filter(p => p.recipient_type === 'investor' && (p.status === 'pending' || p.status === 'in_process')).length;
+  const pendingDispatchers = allP.filter(p => p.recipient_type === 'dispatcher' && (p.status === 'pending' || p.status === 'in_process')).length;
 
   return (
     <div className="space-y-6">
