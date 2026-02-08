@@ -1,27 +1,45 @@
 import { useState } from 'react';
 import { formatDate } from '@/lib/dateUtils';
-import { usePayments } from '@/hooks/usePayments';
+import { usePayments, type DbPayment } from '@/hooks/usePayments';
 import { StatusBadge } from '@/components/StatusBadge';
 import { StatCard } from '@/components/StatCard';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { DollarSign, CheckCircle, Clock, Download } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { PaymentEditDialog } from '@/components/PaymentEditDialog';
+import { DollarSign, CheckCircle, Clock, Download, Pencil, Trash2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
 interface PaymentsSectionProps {
   type: 'driver' | 'investor' | 'dispatcher';
 }
 
 const PaymentsSection = ({ type }: PaymentsSectionProps) => {
-  const { payments: allPayments, loading, updatePaymentStatus } = usePayments();
+  const { payments: allPayments, loading, updatePaymentStatus, refetch } = usePayments();
   const [statusFilter, setStatusFilter] = useState('all');
+  const [editPayment, setEditPayment] = useState<DbPayment | null>(null);
+  const [deletePaymentId, setDeletePaymentId] = useState<string | null>(null);
 
   let payments = allPayments.filter(p => p.recipient_type === type);
   if (statusFilter !== 'all') payments = payments.filter(p => p.status === statusFilter);
 
   const totalPending = payments.filter(p => p.status === 'pending').reduce((s, p) => s + Number(p.amount), 0);
   const totalPaid = payments.filter(p => p.status === 'paid').reduce((s, p) => s + Number(p.amount), 0);
+
+  const handleDelete = async () => {
+    if (!deletePaymentId) return;
+    const { error } = await supabase.from('payments').delete().eq('id', deletePaymentId);
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Pago eliminado' });
+      refetch();
+    }
+    setDeletePaymentId(null);
+  };
 
   return (
     <div className="space-y-6">
@@ -54,7 +72,7 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
                 <th className="text-right p-3 font-medium text-muted-foreground">Monto</th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Estado</th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Fecha</th>
-                <th className="text-right p-3 font-medium text-muted-foreground">Acción</th>
+                <th className="text-right p-3 font-medium text-muted-foreground">Acciones</th>
               </tr></thead>
               <tbody>
                 {payments.length === 0 && !loading && (
@@ -70,11 +88,19 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
                     <td className="p-3"><StatusBadge status={p.status} /></td>
                     <td className="p-3 text-muted-foreground">{p.payment_date ? formatDate(p.payment_date) : formatDate(p.created_at)}</td>
                     <td className="p-3 text-right">
-                      {p.status === 'pending' && (
-                        <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => updatePaymentStatus(p.id, 'paid')}>
-                          Marcar Pagado
+                      <div className="flex items-center justify-end gap-1">
+                        {p.status === 'pending' && (
+                          <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => updatePaymentStatus(p.id, 'paid')}>
+                            Pagado
+                          </Button>
+                        )}
+                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setEditPayment(p)}>
+                          <Pencil className="h-3.5 w-3.5" />
                         </Button>
-                      )}
+                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => setDeletePaymentId(p.id)}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -83,6 +109,23 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
           </div>
         </CardContent>
       </Card>
+
+      {editPayment && (
+        <PaymentEditDialog payment={editPayment} open={!!editPayment} onOpenChange={(o) => { if (!o) setEditPayment(null); }} />
+      )}
+
+      <AlertDialog open={!!deletePaymentId} onOpenChange={(o) => { if (!o) setDeletePaymentId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar este pago?</AlertDialogTitle>
+            <AlertDialogDescription>Esta acción no se puede deshacer.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>Eliminar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

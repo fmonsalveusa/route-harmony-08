@@ -268,6 +268,44 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_adjustments: {
+        Row: {
+          adjustment_type: string
+          amount: number
+          created_at: string
+          description: string | null
+          id: string
+          payment_id: string
+          reason: string
+        }
+        Insert: {
+          adjustment_type?: string
+          amount?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          payment_id: string
+          reason?: string
+        }
+        Update: {
+          adjustment_type?: string
+          amount?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          payment_id?: string
+          reason?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_adjustments_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payments: {
         Row: {
           amount: number
