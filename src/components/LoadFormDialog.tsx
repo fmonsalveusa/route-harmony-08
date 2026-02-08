@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useTrucks } from '@/hooks/useTrucks';
 import { useDrivers } from '@/hooks/useDrivers';
+import { useDispatchers } from '@/hooks/useDispatchers';
 import { useLoadStops } from '@/hooks/useLoadStops';
 import type { DbLoad, CreateLoadInput } from '@/hooks/useLoads';
 
@@ -51,11 +52,13 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
   const { toast } = useToast();
   const { trucks } = useTrucks();
   const { drivers } = useDrivers();
+  const { dispatchers } = useDispatchers();
   const { stops: existingStops, fetchStops, saveStops } = useLoadStops(editLoad?.id);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState<LoadFormData>(emptyForm);
   const [selectedDriver, setSelectedDriver] = useState('');
   const [selectedTruck, setSelectedTruck] = useState('');
+  const [selectedDispatcher, setSelectedDispatcher] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('planned');
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractionStatus, setExtractionStatus] = useState<'idle' | 'uploading' | 'processing' | 'done' | 'error'>('idle');
@@ -83,6 +86,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       });
       setSelectedDriver(editLoad.driver_id || '');
       setSelectedTruck(editLoad.truck_id || '');
+      setSelectedDispatcher(editLoad.dispatcher_id || '');
       setSelectedStatus(editLoad.status);
       setPdfPreviewUrl(editLoad.pdf_url || null);
 
@@ -103,6 +107,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       setFormData(emptyForm);
       setSelectedDriver('');
       setSelectedTruck('');
+      setSelectedDispatcher('');
       setSelectedStatus('planned');
       setExtractionStatus('idle');
       setPdfFileName('');
@@ -272,7 +277,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       total_rate: formData.totalRate,
       driver_id: selectedDriver || undefined,
       truck_id: selectedTruck || undefined,
-      dispatcher_id: dispatcherId || 'd1',
+      dispatcher_id: selectedDispatcher || dispatcherId || undefined,
       broker_client: formData.brokerClient,
       driver_pay_amount: driverPay,
       investor_pay_amount: investorPay,
@@ -483,6 +488,11 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
               } else {
                 setSelectedTruck('');
               }
+              if (driver?.dispatcher_id) {
+                setSelectedDispatcher(driver.dispatcher_id);
+              } else {
+                setSelectedDispatcher('');
+              }
             }}>
               <SelectTrigger><SelectValue placeholder="Seleccionar driver" /></SelectTrigger>
               <SelectContent>
@@ -499,6 +509,17 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
               <SelectContent>
                 {activeTrucks.map(t => (
                   <SelectItem key={t.id} value={t.id}>{t.unit_number} - {t.truck_type}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Dispatcher</Label>
+            <Select value={selectedDispatcher} onValueChange={setSelectedDispatcher}>
+              <SelectTrigger><SelectValue placeholder="Seleccionar dispatcher" /></SelectTrigger>
+              <SelectContent>
+                {dispatchers.filter(d => d.status === 'active').map(d => (
+                  <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
