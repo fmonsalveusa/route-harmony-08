@@ -16,6 +16,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { PodUploadSection } from '@/components/PodUploadSection';
 import { Plus, Search, Package, Pencil, Trash2, ChevronDown, ChevronUp, MapPin, Upload, ExternalLink, Filter } from 'lucide-react';
 import type { DbLoad } from '@/hooks/useLoads';
 
@@ -75,6 +77,7 @@ const Loads = () => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<DbLoad | null>(null);
   const [detailKey, setDetailKey] = useState(0);
+  const [podUploadLoadId, setPodUploadLoadId] = useState<string | null>(null);
 
   const isDispatcher = user?.role === 'dispatcher';
   let baseLoads = isDispatcher
@@ -328,10 +331,14 @@ const Loads = () => {
                         <td className="p-3" onClick={e => e.stopPropagation()}>
                           <Select value={load.status} onValueChange={async (val) => {
                             const updates: any = { status: val };
-                            if (val === 'delivered' && !load.delivery_date) {
-                              updates.delivery_date = todayET();
+                            if (val === 'delivered') {
+                              if (!load.delivery_date) updates.delivery_date = todayET();
+                              if (!load.factoring) updates.factoring = 'pending';
                             }
                             await updateLoad(load.id, updates);
+                            if (val === 'delivered') {
+                              setPodUploadLoadId(load.id);
+                            }
                           }}>
                             <SelectTrigger className="h-8 w-[140px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:ml-1">
                               <StatusBadge status={load.status} className="text-sm px-3 py-1" />
@@ -460,6 +467,19 @@ const Loads = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* POD Upload Dialog on Delivered */}
+      <Dialog open={!!podUploadLoadId} onOpenChange={(open) => { if (!open) setPodUploadLoadId(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Subir POD — Proof of Delivery</DialogTitle>
+          </DialogHeader>
+          {podUploadLoadId && <PodUploadSection loadId={podUploadLoadId} />}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPodUploadLoadId(null)}>Cerrar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
