@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import logoImg from '@/assets/logo.png';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { Truck, Mail, Lock, AlertCircle, User } from 'lucide-react';
@@ -73,7 +74,7 @@ const Auth = () => {
       <div className="hidden lg:flex lg:w-1/2 bg-primary flex-col justify-center items-center p-12 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary to-accent opacity-90" />
         <div className="relative z-10 text-center">
-          <Truck className="h-20 w-20 text-primary-foreground mb-6 mx-auto" />
+          <img src={logoImg} alt="Load Up TMS" className="h-20 w-20 mb-6 mx-auto rounded-xl" />
           <h1 className="text-4xl font-bold text-primary-foreground mb-4">Load Up TMS</h1>
           <p className="text-primary-foreground/80 text-lg max-w-md">
             Plataforma integral de gestión de transporte multi-empresa. Controla tu flota, cargas, pagos y equipo.
@@ -86,7 +87,7 @@ const Auth = () => {
       <div className="flex-1 flex items-center justify-center p-6">
         <div className="w-full max-w-md">
           <div className="lg:hidden flex items-center justify-center mb-8">
-            <Truck className="h-10 w-10 text-primary mr-3" />
+            <img src={logoImg} alt="Load Up TMS" className="h-10 w-10 rounded-lg mr-3" />
             <h1 className="text-2xl font-bold text-foreground">Load Up TMS</h1>
           </div>
 

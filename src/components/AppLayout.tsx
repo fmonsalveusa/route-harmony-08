@@ -1,4 +1,5 @@
 import { ReactNode, useState } from 'react';
+import logoImg from '@/assets/logo.png';
 import { useAuth } from '@/contexts/AuthContext';
 import { Link, useLocation } from 'react-router-dom';
 import {
@@ -89,7 +90,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
         <div className={`flex items-center h-16 px-4 border-b ${sidebarBorder}`}>
           {isMasterAdmin && isMasterRoute ? (
             <>
-              <Crown className="h-7 w-7 text-purple-400 flex-shrink-0" />
+              <img src={logoImg} alt="Load Up TMS" className="h-7 w-7 rounded flex-shrink-0 object-cover" />
               {!collapsed && <span className="ml-3 text-lg font-bold text-purple-200 tracking-tight">Load Up TMS</span>}
             </>
           ) : (
@@ -97,7 +98,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
               {tenant?.logo_url ? (
                 <img src={tenant.logo_url} alt="" className="h-7 w-7 rounded flex-shrink-0 object-cover" />
               ) : (
-                <Truck className="h-7 w-7 text-sidebar-primary flex-shrink-0" />
+                <img src={logoImg} alt="Load Up TMS" className="h-7 w-7 rounded flex-shrink-0 object-cover" />
               )}
               {!collapsed && <span className="ml-3 text-lg font-bold text-sidebar-accent-foreground tracking-tight truncate">{tenant?.name || 'Load Up TMS'}</span>}
             </>
