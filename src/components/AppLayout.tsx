@@ -90,7 +90,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
         <div className={`flex items-center h-16 px-4 border-b ${sidebarBorder}`}>
           {isMasterAdmin && isMasterRoute ? (
             <>
-              <img src={logoImg} alt="Load Up TMS" className="h-7 w-7 rounded flex-shrink-0 object-cover" />
+              <div className="h-7 w-7 rounded flex-shrink-0 overflow-hidden"><img src={logoImg} alt="Load Up TMS" className="h-full w-full scale-125 object-cover" /></div>
               {!collapsed && <span className="ml-3 text-lg font-bold text-purple-200 tracking-tight">Load Up TMS</span>}
             </>
           ) : (
@@ -98,7 +98,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
               {tenant?.logo_url ? (
                 <img src={tenant.logo_url} alt="" className="h-7 w-7 rounded flex-shrink-0 object-cover" />
               ) : (
-                <img src={logoImg} alt="Load Up TMS" className="h-7 w-7 rounded flex-shrink-0 object-cover" />
+                <div className="h-7 w-7 rounded flex-shrink-0 overflow-hidden"><img src={logoImg} alt="Load Up TMS" className="h-full w-full scale-125 object-cover" /></div>
               )}
               {!collapsed && <span className="ml-3 text-lg font-bold text-sidebar-accent-foreground tracking-tight truncate">{tenant?.name || 'Load Up TMS'}</span>}
             </>
