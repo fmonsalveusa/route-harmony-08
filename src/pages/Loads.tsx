@@ -63,7 +63,7 @@ const Loads = () => {
     }
     return { city: address, state: '' };
   };
-  const { user } = useAuth();
+  const { user, role, profile } = useAuth();
   const { loads: dbLoads, loading: loadsLoading, createLoad, updateLoad, deleteLoad } = useLoads();
   const { drivers } = useDrivers();
   const { trucks } = useTrucks();
@@ -116,9 +116,9 @@ const Loads = () => {
     });
   };
 
-  const isDispatcher = user?.role === 'dispatcher';
+  const isDispatcher = role === 'dispatcher';
   let baseLoads = isDispatcher
-    ? dbLoads.filter(l => l.dispatcher_id === (user?.dispatcherId || 'd1'))
+    ? dbLoads.filter(l => l.dispatcher_id === ((profile as any)?.dispatcher_id || 'd1'))
     : dbLoads;
 
   if (search) baseLoads = baseLoads.filter(l =>
@@ -487,7 +487,7 @@ const Loads = () => {
         open={showForm}
         onOpenChange={(open) => { setShowForm(open); if (!open) { setEditLoad(null); setDetailKey(k => k + 1); } }}
         editLoad={editLoad}
-        dispatcherId={user?.dispatcherId || 'd1'}
+        dispatcherId={(user as any)?.dispatcher_id || 'd1'}
         onSubmit={async (input) => {
           if (editLoad) {
             await updateLoad(editLoad.id, input);
