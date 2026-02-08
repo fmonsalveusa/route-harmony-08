@@ -7,13 +7,29 @@ import { useLoadStops } from '@/hooks/useLoadStops';
 import { supabase } from '@/integrations/supabase/client';
 import 'leaflet/dist/leaflet.css';
 
-// Simple geocoding using Nominatim (free)
+// Geocoding with progressive fallback: full address → without suite → city+state+zip
 async function geocode(place: string): Promise<[number, number] | null> {
-  try {
-    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(place)}&limit=1`);
-    const data = await res.json();
-    if (data.length > 0) return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
-  } catch {}
+  const attempts = [place];
+  // Remove suite/unit/apt info
+  const noSuite = place.replace(/,?\s*(Suite|Ste|Unit|Apt|#)\s*\S*/gi, '').replace(/\s{2,}/g, ' ').trim();
+  if (noSuite !== place) attempts.push(noSuite);
+  // Try just city, state, zip (last part after last comma group)
+  const parts = place.split(',').map(p => p.trim());
+  if (parts.length >= 2) {
+    attempts.push(parts.slice(-2).join(', ')); // e.g. "Middletown, PA 17057"
+  }
+
+  for (const query of attempts) {
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1&countrycodes=us`);
+      const data = await res.json();
+      if (data.length > 0) {
+        console.log(`[MAP] Geocoded "${query}" (from "${place}")`);
+        return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+      }
+    } catch {}
+  }
+  console.warn(`[MAP] Failed to geocode: "${place}"`);
   return null;
 }
 
