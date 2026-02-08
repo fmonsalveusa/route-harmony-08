@@ -29,7 +29,7 @@ const emptyForm: DriverInput = {
   license_expiry: null, medical_card_expiry: null,
   status: 'available', service_type: 'owner_operator',
   dispatcher_id: null, truck_id: null,
-  investor_name: null, pay_percentage: 30, investor_pay_percentage: 15,
+  investor_name: null, pay_percentage: 0, investor_pay_percentage: 0,
   factoring_percentage: 2,
   hire_date: todayET(),
 };
@@ -135,8 +135,8 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
             </Select>
           </div>
 
-          <div className="space-y-2">
-            <Label>Service Type</Label>
+          <div className="space-y-2 p-3 rounded-lg border-2 border-primary/30 bg-primary/5">
+            <Label className="font-semibold text-primary">Service Type ⭐</Label>
             <Select value={form.service_type} onValueChange={v => set('service_type', v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -147,8 +147,8 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
             </Select>
           </div>
 
-          <div className="space-y-2">
-            <Label>Dispatcher Asignado</Label>
+          <div className="space-y-2 p-3 rounded-lg border-2 border-primary/30 bg-primary/5">
+            <Label className="font-semibold text-primary">Dispatcher Asignado ⭐</Label>
             <Select value={form.dispatcher_id || 'none'} onValueChange={v => set('dispatcher_id', v === 'none' ? null : v)}>
               <SelectTrigger><SelectValue placeholder="Sin asignar" /></SelectTrigger>
               <SelectContent>
@@ -158,8 +158,8 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
             </Select>
           </div>
 
-          <div className="space-y-2">
-            <Label>Camión Asignado</Label>
+          <div className="space-y-2 p-3 rounded-lg border-2 border-primary/30 bg-primary/5">
+            <Label className="font-semibold text-primary">Camión Asignado ⭐</Label>
             <Select value={form.truck_id || 'none'} onValueChange={v => set('truck_id', v === 'none' ? null : v)}>
               <SelectTrigger><SelectValue placeholder="Sin asignar" /></SelectTrigger>
               <SelectContent>
