@@ -37,6 +37,7 @@ const Loads = () => {
   const [editLoad, setEditLoad] = useState<DbLoad | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<DbLoad | null>(null);
+  const [detailKey, setDetailKey] = useState(0);
 
   const isDispatcher = user?.role === 'dispatcher';
   let loads = isDispatcher
@@ -199,12 +200,12 @@ const Loads = () => {
                         </td>
                       </tr>
                       {isExpanded && (
-                        <tr key={`${load.id}-detail`}>
+                        <tr key={`${load.id}-detail-${detailKey}`}>
                           <td colSpan={16} className="p-0">
                             <LoadDetailPanel
+                              key={`detail-${load.id}-${detailKey}`}
                               load={load}
                               onMilesCalculated={async (loadId, miles, routeGeometry) => {
-                                // Silent update — don't refetch loads to avoid remounting the detail panel
                                 const updateData: any = { miles };
                                 if (routeGeometry) {
                                   updateData.route_geometry = routeGeometry;
@@ -233,7 +234,7 @@ const Loads = () => {
       {/* Form Dialog */}
       <LoadFormDialog
         open={showForm}
-        onOpenChange={(open) => { setShowForm(open); if (!open) setEditLoad(null); }}
+        onOpenChange={(open) => { setShowForm(open); if (!open) { setEditLoad(null); setDetailKey(k => k + 1); } }}
         editLoad={editLoad}
         dispatcherId={user?.dispatcherId || 'd1'}
         onSubmit={async (input) => {
