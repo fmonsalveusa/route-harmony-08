@@ -41,7 +41,6 @@ export function usePodDocuments(loadId: string) {
   const uploadPod = useCallback(async (file: File, stopId?: string) => {
     setUploading(true);
     try {
-      const ext = file.name.split('.').pop();
       const path = `pods/${loadId}/${Date.now()}_${file.name}`;
 
       const { error: uploadError } = await supabase.storage
@@ -70,11 +69,11 @@ export function usePodDocuments(loadId: string) {
 
       if (insertError) throw insertError;
 
-      toast({ title: 'POD subido', description: file.name });
+      toast({ title: 'POD uploaded', description: file.name });
       await fetchPods();
     } catch (err: any) {
       console.error('Error uploading POD:', err);
-      toast({ title: 'Error', description: 'No se pudo subir el archivo', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Failed to upload file', variant: 'destructive' });
     } finally {
       setUploading(false);
     }
@@ -87,9 +86,9 @@ export function usePodDocuments(loadId: string) {
       .eq('id', podId);
 
     if (error) {
-      toast({ title: 'Error', description: 'No se pudo eliminar', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Failed to delete', variant: 'destructive' });
     } else {
-      toast({ title: 'POD eliminado' });
+      toast({ title: 'POD deleted' });
       await fetchPods();
     }
   }, [fetchPods, toast]);

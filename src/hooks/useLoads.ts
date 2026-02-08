@@ -93,15 +93,14 @@ export function useLoads() {
 
     if (error) {
       console.error('Error creating load:', error);
-      toastRef.current({ title: 'Error', description: 'No se pudo crear la carga', variant: 'destructive' });
+      toastRef.current({ title: 'Error', description: 'Failed to create load', variant: 'destructive' });
       return null;
     }
 
     const newLoad = data as DbLoad;
-    // Update cache immediately with the new load
     queryClient.setQueryData<DbLoad[]>(LOADS_QUERY_KEY, (old) => [newLoad, ...(old ?? [])]);
 
-    toastRef.current({ title: 'Carga creada', description: `Referencia: ${input.reference_number}` });
+    toastRef.current({ title: 'Load created', description: `Reference: ${input.reference_number}` });
     return newLoad;
   }, [queryClient]);
 
@@ -113,11 +112,11 @@ export function useLoads() {
 
     if (error) {
       console.error('Error updating load:', error);
-      toastRef.current({ title: 'Error', description: 'No se pudo actualizar la carga', variant: 'destructive' });
+      toastRef.current({ title: 'Error', description: 'Failed to update load', variant: 'destructive' });
       return false;
     }
 
-    toastRef.current({ title: 'Carga actualizada' });
+    toastRef.current({ title: 'Load updated' });
     await queryClient.invalidateQueries({ queryKey: LOADS_QUERY_KEY });
     return true;
   }, [queryClient]);
@@ -130,13 +129,12 @@ export function useLoads() {
 
     if (error) {
       console.error('Error deleting load:', error);
-      toastRef.current({ title: 'Error', description: 'No se pudo eliminar la carga', variant: 'destructive' });
+      toastRef.current({ title: 'Error', description: 'Failed to delete load', variant: 'destructive' });
       return false;
     }
 
-    // Remove from cache immediately
     queryClient.setQueryData<DbLoad[]>(LOADS_QUERY_KEY, (old) => (old ?? []).filter(l => l.id !== id));
-    toastRef.current({ title: 'Carga eliminada' });
+    toastRef.current({ title: 'Load deleted' });
     return true;
   }, [queryClient]);
 

@@ -73,12 +73,12 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
 
   const handleSubmit = async () => {
     const missing: string[] = [];
-    if (!form.name.trim()) missing.push('Nombre');
+    if (!form.name.trim()) missing.push('Name');
     if (!form.email.trim()) missing.push('Email');
-    if (!form.phone.trim()) missing.push('Teléfono');
+    if (!form.phone.trim()) missing.push('Phone');
     if (!form.license.trim()) missing.push('Driver License #');
     if (missing.length > 0) {
-      toast.error(`Campos requeridos: ${missing.join(', ')}`);
+      toast.error(`Required fields: ${missing.join(', ')}`);
       return;
     }
     setSaving(true);
@@ -96,20 +96,19 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{driver ? 'Editar Driver' : 'Nuevo Driver'}</DialogTitle>
+          <DialogTitle>{driver ? 'Edit Driver' : 'New Driver'}</DialogTitle>
         </DialogHeader>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-          {/* Basic info */}
           <div className="space-y-2">
-            <Label>Nombre *</Label>
-            <Input value={form.name} onChange={e => set('name', e.target.value)} placeholder="Nombre completo" />
+            <Label>Name *</Label>
+            <Input value={form.name} onChange={e => set('name', e.target.value)} placeholder="Full name" />
           </div>
           <div className="space-y-2">
             <Label>Email *</Label>
-            <Input type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="email@ejemplo.com" />
+            <Input type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="email@example.com" />
           </div>
           <div className="space-y-2">
-            <Label>Teléfono *</Label>
+            <Label>Phone *</Label>
             <Input value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="555-0000" />
           </div>
           <div className="space-y-2">
@@ -117,20 +116,18 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
             <Input value={form.license} onChange={e => set('license', e.target.value)} placeholder="CDL-A-XXXXX" />
           </div>
 
-          {/* Date pickers */}
           <DatePickerField label="License Expiry" value={form.license_expiry} onChange={v => set('license_expiry', v)} />
           <DatePickerField label="Medical Card Expiry" value={form.medical_card_expiry} onChange={v => set('medical_card_expiry', v)} />
 
-          {/* Selects */}
           <div className="space-y-2">
-            <Label>Estado</Label>
+            <Label>Status</Label>
             <Select value={form.status} onValueChange={v => set('status', v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="available">Disponible</SelectItem>
-                <SelectItem value="assigned">Asignado</SelectItem>
-                <SelectItem value="resting">Descansando</SelectItem>
-                <SelectItem value="inactive">Inactivo</SelectItem>
+                <SelectItem value="available">Available</SelectItem>
+                <SelectItem value="assigned">Assigned</SelectItem>
+                <SelectItem value="resting">Off Duty</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -148,38 +145,38 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
           </div>
 
           <div className="space-y-2 p-3 rounded-lg border-2 border-emerald-400/50 bg-emerald-50">
-            <Label className="font-semibold text-emerald-700">Dispatcher Asignado ⭐</Label>
+            <Label className="font-semibold text-emerald-700">Assigned Dispatcher ⭐</Label>
             <Select value={form.dispatcher_id || 'none'} onValueChange={v => set('dispatcher_id', v === 'none' ? null : v)}>
-              <SelectTrigger><SelectValue placeholder="Sin asignar" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="Unassigned" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">Sin asignar</SelectItem>
+                <SelectItem value="none">Unassigned</SelectItem>
                 {dispatchers.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
 
           <div className="space-y-2 p-3 rounded-lg border-2 border-sky-400/50 bg-sky-50">
-            <Label className="font-semibold text-sky-700">Camión Asignado ⭐</Label>
+            <Label className="font-semibold text-sky-700">Assigned Truck ⭐</Label>
             <Select value={form.truck_id || 'none'} onValueChange={v => set('truck_id', v === 'none' ? null : v)}>
-              <SelectTrigger><SelectValue placeholder="Sin asignar" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="Unassigned" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">Sin asignar</SelectItem>
+                <SelectItem value="none">Unassigned</SelectItem>
                 {trucks.map(t => <SelectItem key={t.id} value={t.id}>Unit #{t.unit_number} · {t.truck_type}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
 
           <div className="space-y-2">
-            <Label>Nombre Investor</Label>
-            <Input value={form.investor_name || ''} onChange={e => set('investor_name', e.target.value)} placeholder="Nombre del investor" />
+            <Label>Investor Name</Label>
+            <Input value={form.investor_name || ''} onChange={e => set('investor_name', e.target.value)} placeholder="Investor name" />
           </div>
 
           <div className="space-y-2">
-            <Label>% Pago Investor</Label>
+            <Label>% Investor Pay</Label>
             <Input type="number" value={form.investor_pay_percentage ?? ''} onChange={e => set('investor_pay_percentage', Number(e.target.value))} />
           </div>
           <div className="space-y-2">
-            <Label>% Pago Driver</Label>
+            <Label>% Driver Pay</Label>
             <Input type="number" value={form.pay_percentage} onChange={e => set('pay_percentage', Number(e.target.value))} />
           </div>
           <div className="space-y-2">
@@ -187,12 +184,12 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
             <Input type="number" step="0.5" value={form.factoring_percentage ?? 2} onChange={e => set('factoring_percentage', Number(e.target.value))} />
           </div>
 
-          <DatePickerField label="Fecha de Contratación" value={form.hire_date} onChange={v => set('hire_date', v || todayET())} />
+          <DatePickerField label="Hire Date" value={form.hire_date} onChange={v => set('hire_date', v || todayET())} />
         </div>
 
         {/* Document uploads */}
         <div className="mt-6 space-y-3">
-          <h3 className="font-semibold text-sm">Documentos</h3>
+          <h3 className="font-semibold text-sm">Documents</h3>
           {docFields.map(doc => {
             const existingUrl = driver ? (driver as any)[doc.urlKey] : null;
             const selectedFile = files[doc.key];
@@ -207,9 +204,9 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
                       <button onClick={() => setFiles(prev => ({ ...prev, [doc.key]: null }))}><X className="h-3 w-3" /></button>
                     </div>
                   ) : existingUrl ? (
-                    <a href={existingUrl} target="_blank" rel="noopener" className="text-xs text-primary underline truncate max-w-[150px]">Ver archivo</a>
+                    <a href={existingUrl} target="_blank" rel="noopener" className="text-xs text-primary underline truncate max-w-[150px]">View file</a>
                   ) : (
-                    <span className="text-xs text-muted-foreground">Sin archivo</span>
+                    <span className="text-xs text-muted-foreground">No file</span>
                   )}
                 </div>
                 <input
@@ -223,7 +220,7 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
                   }}
                 />
                 <Button size="sm" variant="outline" onClick={() => fileRefs.current[doc.key]?.click()}>
-                  <Upload className="h-3.5 w-3.5 mr-1" /> Subir
+                  <Upload className="h-3.5 w-3.5 mr-1" /> Upload
                 </Button>
               </div>
             );
@@ -231,9 +228,9 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
         </div>
 
         <div className="flex justify-end gap-2 mt-6">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button onClick={handleSubmit} disabled={saving}>
-            {saving ? 'Guardando...' : driver ? 'Guardar Cambios' : 'Crear Driver'}
+            {saving ? 'Saving...' : driver ? 'Save Changes' : 'Create Driver'}
           </Button>
         </div>
       </DialogContent>
@@ -250,7 +247,7 @@ function DatePickerField({ label, value, onChange }: { label: string; value: str
         <PopoverTrigger asChild>
           <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}>
             <CalendarIcon className="mr-2 h-4 w-4" />
-            {date ? formatDate(format(date, 'yyyy-MM-dd')) : 'Seleccionar fecha'}
+            {date ? formatDate(format(date, 'yyyy-MM-dd')) : 'Select date'}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">

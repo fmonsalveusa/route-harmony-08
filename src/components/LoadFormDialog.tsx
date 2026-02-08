@@ -164,11 +164,11 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.type !== 'application/pdf') {
-      toast({ title: 'Error', description: 'Solo se permiten archivos PDF', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Only PDF files are allowed', variant: 'destructive' });
       return;
     }
     if (file.size > 10 * 1024 * 1024) {
-      toast({ title: 'Error', description: 'El archivo no puede superar 10MB', variant: 'destructive' });
+      toast({ title: 'Error', description: 'File cannot exceed 10MB', variant: 'destructive' });
       return;
     }
     setPdfFileName(file.name);
@@ -213,13 +213,13 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
           ]);
         }
         setExtractionStatus('done');
-        toast({ title: 'Extracción exitosa', description: 'Campos rellenados automáticamente.' });
+        toast({ title: 'Extraction successful', description: 'Fields auto-filled.' });
       } else {
-        throw new Error(data?.error || 'No se pudo extraer información');
+        throw new Error(data?.error || 'Failed to extract information');
       }
     } catch (err: any) {
       setExtractionStatus('error');
-      toast({ title: 'Error al extraer PDF', description: err.message, variant: 'destructive' });
+      toast({ title: 'PDF extraction error', description: err.message, variant: 'destructive' });
     } finally {
       setIsExtracting(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -245,12 +245,12 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
     const missing: string[] = [];
     const pickups = stopEntries.filter(s => s.stop_type === 'pickup');
     const deliveries = stopEntries.filter(s => s.stop_type === 'delivery');
-    if (!pickups[0]?.address && !formData.origin) missing.push('Origen');
-    if (!deliveries[deliveries.length - 1]?.address && !formData.destination) missing.push('Destino');
-    if (!selectedDriver) missing.push('Conductor');
-    if (!formData.totalRate) missing.push('Tarifa Total');
+    if (!pickups[0]?.address && !formData.origin) missing.push('Origin');
+    if (!deliveries[deliveries.length - 1]?.address && !formData.destination) missing.push('Destination');
+    if (!selectedDriver) missing.push('Driver');
+    if (!formData.totalRate) missing.push('Total Rate');
     if (missing.length > 0) {
-      toast({ title: 'Campos requeridos', description: missing.join(', '), variant: 'destructive' });
+      toast({ title: 'Required fields', description: missing.join(', '), variant: 'destructive' });
       return;
     }
     // Derive origin/destination from stops
@@ -265,7 +265,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       const fileName = `loads/${Date.now()}_${pdfFile.name}`;
       const { error: uploadError } = await supabase.storage.from('driver-documents').upload(fileName, pdfFile, { contentType: 'application/pdf' });
       if (uploadError) {
-        toast({ title: 'Error', description: 'No se pudo subir el PDF', variant: 'destructive' });
+        toast({ title: 'Error', description: 'Failed to upload PDF', variant: 'destructive' });
       } else {
         const { data: urlData } = supabase.storage.from('driver-documents').getPublicUrl(fileName);
         pdfUrl = urlData.publicUrl;
@@ -325,7 +325,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{editLoad ? 'Editar Carga' : 'Crear Nueva Carga'}</DialogTitle>
+          <DialogTitle>{editLoad ? 'Edit Load' : 'Create New Load'}</DialogTitle>
         </DialogHeader>
 
         {/* PDF Upload */}
@@ -334,21 +334,21 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
             <div className="flex items-center gap-3 mb-3">
               <FileText className="h-5 w-5 text-primary" />
               <div>
-                <h4 className="text-sm font-semibold">Extraer datos de PDF</h4>
-                <p className="text-xs text-muted-foreground">Sube un rate confirmation o BOL</p>
+                <h4 className="text-sm font-semibold">Extract data from PDF</h4>
+                <p className="text-xs text-muted-foreground">Upload a rate confirmation or BOL</p>
               </div>
             </div>
             <input ref={fileInputRef} type="file" accept=".pdf" onChange={handlePdfUpload} className="hidden" />
             {extractionStatus === 'idle' && (
               <Button variant="outline" size="sm" className="w-full gap-2" onClick={() => fileInputRef.current?.click()}>
-                <Upload className="h-4 w-4" /> Seleccionar PDF
+                <Upload className="h-4 w-4" /> Select PDF
               </Button>
             )}
             {(extractionStatus === 'uploading' || extractionStatus === 'processing') && (
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm">
                   <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                  <span>{extractionStatus === 'uploading' ? 'Subiendo...' : 'Extrayendo con IA...'}</span>
+                  <span>{extractionStatus === 'uploading' ? 'Uploading...' : 'Extracting with AI...'}</span>
                 </div>
                 <Progress value={extractionStatus === 'uploading' ? 30 : 70} className="h-2" />
               </div>
@@ -356,17 +356,17 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
             {extractionStatus === 'done' && (
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm text-green-600">
-                  <CheckCircle className="h-4 w-4" /><span>Datos extraídos de <strong>{pdfFileName}</strong></span>
+                  <CheckCircle className="h-4 w-4" /><span>Data extracted from <strong>{pdfFileName}</strong></span>
                 </div>
-                <Button variant="ghost" size="sm" onClick={() => { setExtractionStatus('idle'); fileInputRef.current?.click(); }}>Cambiar PDF</Button>
+                <Button variant="ghost" size="sm" onClick={() => { setExtractionStatus('idle'); fileInputRef.current?.click(); }}>Change PDF</Button>
               </div>
             )}
             {extractionStatus === 'error' && (
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm text-destructive">
-                  <AlertCircle className="h-4 w-4" /><span>Error. Completa manualmente.</span>
+                  <AlertCircle className="h-4 w-4" /><span>Error. Fill in manually.</span>
                 </div>
-                <Button variant="ghost" size="sm" onClick={() => { setExtractionStatus('idle'); fileInputRef.current?.click(); }}>Reintentar</Button>
+                <Button variant="ghost" size="sm" onClick={() => { setExtractionStatus('idle'); fileInputRef.current?.click(); }}>Retry</Button>
               </div>
             )}
           </div>
@@ -388,7 +388,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
                 </Button>
                 <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" asChild>
                   <a href={pdfPreviewUrl} download={pdfFileName || 'document.pdf'}>
-                    <Download className="h-3.5 w-3.5" /> Descargar
+                    <Download className="h-3.5 w-3.5" /> Download
                   </a>
                 </Button>
                 {!editLoad && (
@@ -442,7 +442,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
             </div>
           ))}
           <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => addStop('pickup')}>
-            <Plus className="h-3.5 w-3.5" /> Agregar Pick Up
+            <Plus className="h-3.5 w-3.5" /> Add Pick Up
           </Button>
 
           <h4 className="text-sm font-semibold pt-2">Paradas de Entrega (Delivery)</h4>
@@ -469,7 +469,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
             </div>
           ))}
           <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => addStop('delivery')}>
-            <Plus className="h-3.5 w-3.5" /> Agregar Delivery
+            <Plus className="h-3.5 w-3.5" /> Add Delivery
           </Button>
         </div>
 
@@ -484,7 +484,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
             <Input type="number" placeholder="2500" value={formData.totalRate || ''} onChange={e => updateField('totalRate', Number(e.target.value))} />
           </div>
           <div className="space-y-2">
-            <Label>Conductor <span className="text-destructive">*</span></Label>
+            <Label>Driver <span className="text-destructive">*</span></Label>
             <Select value={selectedDriver} onValueChange={(val) => {
               setSelectedDriver(val);
               const driver = drivers.find(d => d.id === val);
@@ -549,7 +549,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
           </div>
           <div className="col-span-2 space-y-2">
             <Label>Notes</Label>
-            <Textarea placeholder="Notas adicionales sobre la carga..." value={formData.notes} onChange={e => updateField('notes', e.target.value)} rows={3} />
+            <Textarea placeholder="Additional notes about the load..." value={formData.notes} onChange={e => updateField('notes', e.target.value)} rows={3} />
           </div>
         </div>
 

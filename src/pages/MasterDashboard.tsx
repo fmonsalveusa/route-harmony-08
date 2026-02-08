@@ -44,7 +44,6 @@ const MasterDashboard = () => {
         pendingPayments: subs.filter(s => s.status === 'pending_payment').length,
       });
 
-      // Merge tenant with subscription info
       const subsMap = Object.fromEntries(subs.map(s => [s.tenant_id, s]));
       setTenants(allTenants.map(t => ({ ...t, subscription: subsMap[t.id] })));
       setLoading(false);
@@ -70,7 +69,7 @@ const MasterDashboard = () => {
       cancelled: 'bg-muted text-muted-foreground',
     };
     const labels: Record<string, string> = {
-      active: 'Activa', pending_payment: 'Pendiente', suspended: 'Suspendida', cancelled: 'Cancelada',
+      active: 'Active', pending_payment: 'Pending', suspended: 'Suspended', cancelled: 'Cancelled',
     };
     return <Badge className={styles[status] || 'bg-muted text-muted-foreground'}>{labels[status] || status}</Badge>;
   };
@@ -86,42 +85,41 @@ const MasterDashboard = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="page-header">Panel Master Admin</h1>
-        <p className="page-description">Vista global de la plataforma Load Up TMS</p>
+        <h1 className="page-header">Master Admin Dashboard</h1>
+        <p className="page-description">Global overview of the Load Up TMS platform</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Empresas Activas" value={`${stats.activeTenants}/${stats.totalTenants}`} icon={Building2} iconClassName="bg-purple-100 text-purple-600" />
-        <StatCard title="Usuarios Totales" value={stats.totalUsers} icon={Users} iconClassName="bg-info/10 text-info" />
-        <StatCard title="Ingresos MRR" value={`$${stats.mrrTotal.toLocaleString()}`} icon={DollarSign} iconClassName="bg-success/10 text-success" />
-        <StatCard title="Cargas Totales" value={stats.totalLoads} icon={Package} iconClassName="bg-warning/10 text-warning" />
+        <StatCard title="Active Companies" value={`${stats.activeTenants}/${stats.totalTenants}`} icon={Building2} iconClassName="bg-purple-100 text-purple-600" />
+        <StatCard title="Total Users" value={stats.totalUsers} icon={Users} iconClassName="bg-info/10 text-info" />
+        <StatCard title="MRR Revenue" value={`$${stats.mrrTotal.toLocaleString()}`} icon={DollarSign} iconClassName="bg-success/10 text-success" />
+        <StatCard title="Total Loads" value={stats.totalLoads} icon={Package} iconClassName="bg-warning/10 text-warning" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <StatCard title="Camiones Globales" value={stats.totalTrucks} icon={Truck} iconClassName="bg-info/10 text-info" />
-        <StatCard title="Ingresos Cargas" value={`$${stats.totalRevenue.toLocaleString()}`} icon={TrendingUp} iconClassName="bg-success/10 text-success" />
+        <StatCard title="Global Trucks" value={stats.totalTrucks} icon={Truck} iconClassName="bg-info/10 text-info" />
+        <StatCard title="Load Revenue" value={`$${stats.totalRevenue.toLocaleString()}`} icon={TrendingUp} iconClassName="bg-success/10 text-success" />
       </div>
 
-      {/* Tenant list */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Empresas Registradas</CardTitle>
+          <CardTitle className="text-base">Registered Companies</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-muted/50">
-                  <th className="text-left p-3 font-medium text-muted-foreground">Empresa</th>
+                  <th className="text-left p-3 font-medium text-muted-foreground">Company</th>
                   <th className="text-left p-3 font-medium text-muted-foreground">Plan</th>
-                  <th className="text-left p-3 font-medium text-muted-foreground">Estado</th>
-                  <th className="text-right p-3 font-medium text-muted-foreground">$/mes</th>
-                  <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Creada</th>
+                  <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
+                  <th className="text-right p-3 font-medium text-muted-foreground">$/mo</th>
+                  <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Created</th>
                 </tr>
               </thead>
               <tbody>
                 {tenants.length === 0 && (
-                  <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">No hay empresas registradas aún.</td></tr>
+                  <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">No companies registered yet.</td></tr>
                 )}
                 {tenants.map(t => (
                   <tr key={t.id} className="border-b last:border-0 hover:bg-muted/30">

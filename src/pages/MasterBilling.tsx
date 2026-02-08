@@ -32,7 +32,7 @@ const MasterBilling = () => {
 
   const markPaid = async (subId: string) => {
     await supabase.from('subscriptions').update({ status: 'active', next_payment_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] }).eq('id', subId);
-    toast.success('Pago registrado');
+    toast.success('Payment recorded');
     const { data } = await supabase.from('subscriptions').select('*, tenants(name)');
     setSubs(data || []);
   };
@@ -42,52 +42,52 @@ const MasterBilling = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="page-header">Facturación de Suscripciones</h1>
-        <p className="page-description">Gestión de pagos y suscripciones de empresas</p>
+        <h1 className="page-header">Subscription Billing</h1>
+        <p className="page-description">Manage company payments and subscriptions</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <StatCard title="MRR Total" value={`$${totalMRR.toLocaleString()}`} icon={DollarSign} iconClassName="bg-success/10 text-success" />
-        <StatCard title="Suscripciones Activas" value={activeSubs.length} icon={CheckCircle} iconClassName="bg-green-100 text-green-600" />
-        <StatCard title="Pagos Pendientes" value={pendingSubs.length} icon={AlertTriangle} iconClassName="bg-warning/10 text-warning" />
-        <StatCard title="Total Empresas" value={subs.length} icon={Clock} iconClassName="bg-info/10 text-info" />
+        <StatCard title="Total MRR" value={`$${totalMRR.toLocaleString()}`} icon={DollarSign} iconClassName="bg-success/10 text-success" />
+        <StatCard title="Active Subscriptions" value={activeSubs.length} icon={CheckCircle} iconClassName="bg-green-100 text-green-600" />
+        <StatCard title="Pending Payments" value={pendingSubs.length} icon={AlertTriangle} iconClassName="bg-warning/10 text-warning" />
+        <StatCard title="Total Companies" value={subs.length} icon={Clock} iconClassName="bg-info/10 text-info" />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Plan Básico</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Basic Plan</CardTitle></CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">{planBreakdown.basic}</p>
-            <p className="text-xs text-muted-foreground">{planBreakdown.basic} × $199 = ${(planBreakdown.basic * 199).toLocaleString()}/mes</p>
+            <p className="text-xs text-muted-foreground">{planBreakdown.basic} × $199 = ${(planBreakdown.basic * 199).toLocaleString()}/mo</p>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Plan Intermedio</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Intermediate Plan</CardTitle></CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">{planBreakdown.intermediate}</p>
-            <p className="text-xs text-muted-foreground">{planBreakdown.intermediate} × $399 = ${(planBreakdown.intermediate * 399).toLocaleString()}/mes</p>
+            <p className="text-xs text-muted-foreground">{planBreakdown.intermediate} × $399 = ${(planBreakdown.intermediate * 399).toLocaleString()}/mo</p>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Plan Pro</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Pro Plan</CardTitle></CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">{planBreakdown.pro}</p>
-            <p className="text-xs text-muted-foreground">{planBreakdown.pro} × $799 = ${(planBreakdown.pro * 799).toLocaleString()}/mes</p>
+            <p className="text-xs text-muted-foreground">{planBreakdown.pro} × $799 = ${(planBreakdown.pro * 799).toLocaleString()}/mo</p>
           </CardContent>
         </Card>
       </div>
 
       <Card>
-        <CardHeader><CardTitle className="text-base">Estado de Suscripciones</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">Subscription Status</CardTitle></CardHeader>
         <CardContent className="p-0">
           <table className="w-full text-sm">
             <thead><tr className="border-b bg-muted/50">
-              <th className="text-left p-3 font-medium text-muted-foreground">Empresa</th>
+              <th className="text-left p-3 font-medium text-muted-foreground">Company</th>
               <th className="text-left p-3 font-medium text-muted-foreground">Plan</th>
-              <th className="text-right p-3 font-medium text-muted-foreground">$/mes</th>
-              <th className="text-left p-3 font-medium text-muted-foreground">Próximo Pago</th>
-              <th className="text-left p-3 font-medium text-muted-foreground">Estado</th>
-              <th className="text-right p-3 font-medium text-muted-foreground">Acción</th>
+              <th className="text-right p-3 font-medium text-muted-foreground">$/mo</th>
+              <th className="text-left p-3 font-medium text-muted-foreground">Next Payment</th>
+              <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
+              <th className="text-right p-3 font-medium text-muted-foreground">Action</th>
             </tr></thead>
             <tbody>
               {subs.map(s => (
@@ -98,12 +98,12 @@ const MasterBilling = () => {
                   <td className="p-3 text-muted-foreground">{s.next_payment_date ? new Date(s.next_payment_date).toLocaleDateString() : '—'}</td>
                   <td className="p-3">
                     <Badge className={s.status === 'active' ? 'bg-green-100 text-green-700' : s.status === 'pending_payment' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}>
-                      {s.status === 'active' ? 'Al día' : s.status === 'pending_payment' ? 'Pendiente' : s.status}
+                      {s.status === 'active' ? 'Current' : s.status === 'pending_payment' ? 'Pending' : s.status}
                     </Badge>
                   </td>
                   <td className="p-3 text-right">
                     {s.status === 'pending_payment' && (
-                      <Button size="sm" variant="outline" onClick={() => markPaid(s.id)}>Marcar Pagado</Button>
+                      <Button size="sm" variant="outline" onClick={() => markPaid(s.id)}>Mark as Paid</Button>
                     )}
                   </td>
                 </tr>
