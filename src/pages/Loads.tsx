@@ -110,10 +110,12 @@ const Loads = () => {
     } else if (filterPeriod.startsWith('week_')) {
       const weekNum = parseInt(filterPeriod.replace('week_', ''));
       const year = now.getFullYear();
-      // Week 1 starts on Jan 1
-      const jan1 = new Date(year, 0, 1);
-      const dayOfWeek = jan1.getDay();
-      const startOfWeek = new Date(year, 0, 1 + (weekNum - 1) * 7 - dayOfWeek);
+      // ISO week: Week 1 starts on first Monday of the year
+      const jan4 = new Date(year, 0, 4); // Jan 4 is always in ISO week 1
+      const mondayOfWeek1 = new Date(jan4);
+      mondayOfWeek1.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7));
+      const startOfWeek = new Date(mondayOfWeek1);
+      startOfWeek.setDate(mondayOfWeek1.getDate() + (weekNum - 1) * 7);
       const endOfWeek = new Date(startOfWeek);
       endOfWeek.setDate(startOfWeek.getDate() + 7);
       baseLoads = baseLoads.filter(l => {
@@ -193,15 +195,17 @@ const Loads = () => {
               {Array.from({ length: 52 }, (_, i) => {
                 const weekNum = i + 1;
                 const year = new Date().getFullYear();
-                const jan1 = new Date(year, 0, 1);
-                const dayOfWeek = jan1.getDay();
-                const start = new Date(year, 0, 1 + (weekNum - 1) * 7 - dayOfWeek);
+                const jan4 = new Date(year, 0, 4);
+                const mondayOfWeek1 = new Date(jan4);
+                mondayOfWeek1.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7));
+                const start = new Date(mondayOfWeek1);
+                start.setDate(mondayOfWeek1.getDate() + (weekNum - 1) * 7);
                 const end = new Date(start);
                 end.setDate(start.getDate() + 6);
                 const fmt = (d: Date) => `${d.getMonth() + 1}/${d.getDate()}`;
                 return (
                   <SelectItem key={weekNum} value={`week_${weekNum}`}>
-                    Week {weekNum} ({fmt(start)} - {fmt(end)})
+                    Week {weekNum} (Mon {fmt(start)} - Sun {fmt(end)})
                   </SelectItem>
                 );
               })}
