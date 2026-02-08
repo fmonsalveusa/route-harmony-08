@@ -74,7 +74,7 @@ const Auth = () => {
         <div className="absolute inset-0 bg-gradient-to-br from-primary to-accent opacity-90" />
         <div className="relative z-10 text-center">
           <Truck className="h-20 w-20 text-primary-foreground mb-6 mx-auto" />
-          <h1 className="text-4xl font-bold text-primary-foreground mb-4">TruckFlow TMS</h1>
+          <h1 className="text-4xl font-bold text-primary-foreground mb-4">Load Up TMS</h1>
           <p className="text-primary-foreground/80 text-lg max-w-md">
             Plataforma integral de gestión de transporte multi-empresa. Controla tu flota, cargas, pagos y equipo.
           </p>
@@ -87,7 +87,7 @@ const Auth = () => {
         <div className="w-full max-w-md">
           <div className="lg:hidden flex items-center justify-center mb-8">
             <Truck className="h-10 w-10 text-primary mr-3" />
-            <h1 className="text-2xl font-bold text-foreground">TruckFlow</h1>
+            <h1 className="text-2xl font-bold text-foreground">Load Up TMS</h1>
           </div>
 
           {signUpSuccess ? (
