@@ -372,10 +372,7 @@ export const LoadDetailPanel = ({ load, onMilesCalculated }: LoadDetailPanelProp
           )}
 
           {/* POD Upload Section */}
-          <PodUploadSection
-            loadId={load.id}
-            stops={dbStops.map(s => ({ id: s.id, type: s.stop_type, address: s.address }))}
-          />
+          <PodUploadSection loadId={load.id} />
         </div>
 
         {/* Map */}
