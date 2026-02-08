@@ -242,13 +242,18 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
   const companyProfit = formData.totalRate - driverPay - investorPay - dispatcherPay;
 
   const handleSubmit = async () => {
-    if (!selectedDriver) {
-      toast({ title: 'Campo requerido', description: 'Debes seleccionar un conductor.', variant: 'destructive' });
+    const missing: string[] = [];
+    const pickups = stopEntries.filter(s => s.stop_type === 'pickup');
+    const deliveries = stopEntries.filter(s => s.stop_type === 'delivery');
+    if (!pickups[0]?.address && !formData.origin) missing.push('Origen');
+    if (!deliveries[deliveries.length - 1]?.address && !formData.destination) missing.push('Destino');
+    if (!selectedDriver) missing.push('Conductor');
+    if (!formData.totalRate) missing.push('Tarifa Total');
+    if (missing.length > 0) {
+      toast({ title: 'Campos requeridos', description: missing.join(', '), variant: 'destructive' });
       return;
     }
     // Derive origin/destination from stops
-    const pickups = stopEntries.filter(s => s.stop_type === 'pickup');
-    const deliveries = stopEntries.filter(s => s.stop_type === 'delivery');
     const origin = pickups[0]?.address || formData.origin;
     const destination = deliveries[deliveries.length - 1]?.address || formData.destination;
     const pickupDate = pickups[0]?.date || formData.pickupDate;

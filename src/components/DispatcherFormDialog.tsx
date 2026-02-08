@@ -11,6 +11,7 @@ import { format } from 'date-fns';
 import { todayET } from '@/lib/dateUtils';
 import { cn } from '@/lib/utils';
 import { DbDispatcher, DispatcherInput } from '@/hooks/useDispatchers';
+import { toast } from 'sonner';
 
 interface Props {
   open: boolean;
@@ -48,7 +49,14 @@ export function DispatcherFormDialog({ open, onOpenChange, dispatcher, onSubmit 
   const set = (key: string, value: any) => setForm(prev => ({ ...prev, [key]: value }));
 
   const handleSubmit = async () => {
-    if (!form.name || !form.email || !form.phone) return;
+    const missing: string[] = [];
+    if (!form.name.trim()) missing.push('Nombre');
+    if (!form.email.trim()) missing.push('Email');
+    if (!form.phone.trim()) missing.push('Teléfono');
+    if (missing.length > 0) {
+      toast.error(`Campos requeridos: ${missing.join(', ')}`);
+      return;
+    }
     setSaving(true);
     await onSubmit(form);
     setSaving(false);
