@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Plus, Phone, Mail, Percent, Pencil, Trash2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 
 const dispatcherStatusColor = (status: string) => {
   switch (status) {
@@ -112,22 +112,20 @@ const Dispatchers = () => {
         onSubmit={handleSubmit}
       />
 
-      <AlertDialog open={!!deletingDispatcher} onOpenChange={open => !open && setDeletingDispatcher(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>¿Eliminar dispatcher?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta acción eliminará permanentemente a <strong>{deletingDispatcher?.name}</strong>. No se puede deshacer.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Eliminar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <Dialog open={!!deletingDispatcher} onOpenChange={open => !open && setDeletingDispatcher(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>¿Eliminar dispatcher?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Esta acción eliminará permanentemente a <strong>{deletingDispatcher?.name}</strong>. No se puede deshacer.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeletingDispatcher(null)}>Cancelar</Button>
+            <Button variant="destructive" onClick={handleDelete}>Eliminar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

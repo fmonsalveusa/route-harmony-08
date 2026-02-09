@@ -19,7 +19,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { PodUploadSection } from '@/components/PodUploadSection';
 import { Plus, Search, Package, Pencil, Trash2, ChevronDown, ChevronUp, MapPin, Upload, ExternalLink, Filter, FileText } from 'lucide-react';
@@ -499,23 +499,25 @@ const Loads = () => {
       />
 
       {/* Delete Confirmation */}
-      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>¿Eliminar carga?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta acción eliminará la carga <strong>{deleteTarget?.reference_number}</strong> permanentemente.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={async () => {
-              if (deleteTarget) await deleteLoad(deleteTarget.id);
+      <Dialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>¿Eliminar carga?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Esta acción eliminará la carga <strong>{deleteTarget?.reference_number}</strong> permanentemente.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancelar</Button>
+            <Button variant="destructive" onClick={async () => {
+              if (deleteTarget) {
+                await deleteLoad(deleteTarget.id);
+              }
               setDeleteTarget(null);
-            }}>Eliminar</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            }}>Eliminar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* POD Upload Dialog on Delivered */}
       <Dialog open={!!podUploadLoadId} onOpenChange={(open) => { if (!open) setPodUploadLoadId(null); }}>
