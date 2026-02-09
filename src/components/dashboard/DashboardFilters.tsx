@@ -1,6 +1,5 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { X } from 'lucide-react';
+import { Filter } from 'lucide-react';
 
 interface DashboardFiltersProps {
   year: string;
@@ -14,48 +13,57 @@ interface DashboardFiltersProps {
 const currentYear = new Date().getFullYear();
 const years = Array.from({ length: 5 }, (_, i) => String(currentYear - i));
 
-const months = [
-  { value: '01', label: 'Enero' }, { value: '02', label: 'Febrero' },
-  { value: '03', label: 'Marzo' }, { value: '04', label: 'Abril' },
-  { value: '05', label: 'Mayo' }, { value: '06', label: 'Junio' },
-  { value: '07', label: 'Julio' }, { value: '08', label: 'Agosto' },
-  { value: '09', label: 'Septiembre' }, { value: '10', label: 'Octubre' },
-  { value: '11', label: 'Noviembre' }, { value: '12', label: 'Diciembre' },
-];
-
-const weeks = Array.from({ length: 53 }, (_, i) => ({ value: String(i + 1), label: `Semana ${i + 1}` }));
+const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
 export function DashboardFilters({ year, month, week, onYearChange, onMonthChange, onWeekChange }: DashboardFiltersProps) {
-  const hasFilters = year !== 'all' || month !== 'all' || week !== 'all';
-
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-wrap gap-2 items-center">
+      <Filter className="h-4 w-4 text-muted-foreground" />
       <Select value={year} onValueChange={onYearChange}>
-        <SelectTrigger className="w-[110px] h-8 text-xs"><SelectValue placeholder="Año" /></SelectTrigger>
+        <SelectTrigger className="w-[120px] h-8 text-xs">
+          <SelectValue placeholder="Year" />
+        </SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">Todos</SelectItem>
+          <SelectItem value="all">All Years</SelectItem>
           {years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
         </SelectContent>
       </Select>
       <Select value={month} onValueChange={onMonthChange}>
-        <SelectTrigger className="w-[130px] h-8 text-xs"><SelectValue placeholder="Mes" /></SelectTrigger>
+        <SelectTrigger className="w-[150px] h-8 text-xs">
+          <SelectValue placeholder="Month" />
+        </SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">Todos</SelectItem>
-          {months.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
+          <SelectItem value="all">All Months</SelectItem>
+          {monthNames.map((m, i) => (
+            <SelectItem key={i} value={String(i + 1).padStart(2, '0')}>{m}</SelectItem>
+          ))}
         </SelectContent>
       </Select>
       <Select value={week} onValueChange={onWeekChange}>
-        <SelectTrigger className="w-[130px] h-8 text-xs"><SelectValue placeholder="Semana" /></SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">Todas</SelectItem>
-          {weeks.map(w => <SelectItem key={w.value} value={w.value}>{w.label}</SelectItem>)}
+        <SelectTrigger className="w-[220px] h-8 text-xs">
+          <SelectValue placeholder="Week" />
+        </SelectTrigger>
+        <SelectContent className="max-h-[300px]">
+          <SelectItem value="all">All Weeks</SelectItem>
+          {Array.from({ length: 52 }, (_, i) => {
+            const weekNum = i + 1;
+            const yr = Number(year !== 'all' ? year : currentYear);
+            const jan4 = new Date(yr, 0, 4);
+            const mondayOfWeek1 = new Date(jan4);
+            mondayOfWeek1.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7));
+            const start = new Date(mondayOfWeek1);
+            start.setDate(mondayOfWeek1.getDate() + (weekNum - 1) * 7);
+            const end = new Date(start);
+            end.setDate(start.getDate() + 6);
+            const fmt = (d: Date) => `${d.getMonth() + 1}/${d.getDate()}`;
+            return (
+              <SelectItem key={weekNum} value={String(weekNum)}>
+                Week {weekNum} (Mon {fmt(start)} - Sun {fmt(end)})
+              </SelectItem>
+            );
+          })}
         </SelectContent>
       </Select>
-      {hasFilters && (
-        <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { onYearChange('all'); onMonthChange('all'); onWeekChange('all'); }}>
-          <X className="h-3 w-3 mr-1" /> Limpiar
-        </Button>
-      )}
     </div>
   );
 }
