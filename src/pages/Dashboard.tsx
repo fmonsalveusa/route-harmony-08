@@ -32,10 +32,19 @@ const AdminDashboard = () => {
   const [year, setYear] = useState('all');
   const [month, setMonth] = useState('all');
   const [week, setWeek] = useState('all');
+  const [dispatcherFilter, setDispatcherFilter] = useState('all');
+  const [driverFilter, setDriverFilter] = useState('all');
 
-  const totalRevenue = loads.filter(l => l.status !== 'cancelled').reduce((s, l) => s + l.total_rate, 0);
+  // Apply dispatcher & driver filters to loads
+  const filteredLoads = loads.filter(l => {
+    if (dispatcherFilter !== 'all' && l.dispatcher_id !== dispatcherFilter) return false;
+    if (driverFilter !== 'all' && l.driver_id !== driverFilter) return false;
+    return true;
+  });
+
+  const totalRevenue = filteredLoads.filter(l => l.status !== 'cancelled').reduce((s, l) => s + l.total_rate, 0);
   const pendingPayments = payments.filter(p => p.status === 'pending').reduce((s, p) => s + p.amount, 0);
-  const activeLoads = loads.filter(l => ['in_transit', 'pending'].includes(l.status)).length;
+  const activeLoads = filteredLoads.filter(l => ['in_transit', 'pending'].includes(l.status)).length;
   const availableTrucks = trucks.filter(t => t.status === 'available').length;
 
   // Expense data for widgets
@@ -50,15 +59,22 @@ const AdminDashboard = () => {
   // High expense alerts (> $400 single expense)
   const highExpenses = thisMonthExpenses.filter(e => e.total_amount > 400).slice(0, 3);
 
+  const dispatcherOptions = dispatchers.map(d => ({ id: d.id, name: d.name }));
+  const driverOptions = drivers.map(d => ({ id: d.id, name: d.name }));
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="page-header">Dashboard</h1>
-          <p className="page-description">Resumen general del sistema de transporte</p>
-        </div>
-        <DashboardFilters year={year} month={month} week={week} onYearChange={setYear} onMonthChange={setMonth} onWeekChange={setWeek} />
+      <div>
+        <h1 className="page-header">Dashboard</h1>
+        <p className="page-description">Resumen general del sistema de transporte</p>
       </div>
+      <DashboardFilters
+        year={year} month={month} week={week}
+        dispatcher={dispatcherFilter} driver={driverFilter}
+        onYearChange={setYear} onMonthChange={setMonth} onWeekChange={setWeek}
+        onDispatcherChange={setDispatcherFilter} onDriverChange={setDriverFilter}
+        dispatchers={dispatcherOptions} drivers={driverOptions}
+      />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard title="Cargas Activas" value={activeLoads} icon={Package} trend={{ value: '+12%', positive: true }} />
@@ -69,14 +85,14 @@ const AdminDashboard = () => {
 
       {/* Charts Row 1: Rates by Driver + Weekly Rates */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <RatesByDriverChart loads={loads} drivers={drivers} year={year} month={month} week={week} />
-        <WeeklyRatesChart loads={loads} />
+        <RatesByDriverChart loads={filteredLoads} drivers={drivers} year={year} month={month} week={week} />
+        <WeeklyRatesChart loads={filteredLoads} />
       </div>
 
       {/* Charts Row 2: Dispatcher Commissions + Market Analysis */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <DispatcherCommissionsChart loads={loads} dispatchers={dispatchers} drivers={drivers} year={year} month={month} week={week} />
-        <MarketAnalysisCard loads={loads} trucks={trucks} />
+        <DispatcherCommissionsChart loads={filteredLoads} dispatchers={dispatchers} drivers={drivers} year={year} month={month} week={week} />
+        <MarketAnalysisCard loads={filteredLoads} trucks={trucks} />
       </div>
 
       {/* Recent loads table */}
