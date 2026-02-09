@@ -5,7 +5,11 @@ import { Switch } from '@/components/ui/switch';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Badge } from '@/components/ui/badge';
 import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
   DollarSign, Fuel, Wrench, Receipt, ChevronDown, ChevronUp, TrendingUp, TrendingDown,
+  Download, FileSpreadsheet, FileText, FileDown, BarChart3,
 } from 'lucide-react';
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip as ReTooltip,
@@ -41,22 +45,30 @@ const DONUT_COLORS = ['#22c55e', '#3b82f6', '#f97316', '#8b5cf6', '#6b7280', '#e
 
 export function ExpenseSummaryDashboard({ expenses, trucks, drivers }: Props) {
   const [open, setOpen] = useState(true);
-  const [companyDriverOnly, setCompanyDriverOnly] = useState(false);
+  const [companyDriverOnly, setCompanyDriverOnly] = useState(true);
   const [truckPage, setTruckPage] = useState(1);
   const [truckSort, setTruckSort] = useState<'total' | 'fuel' | 'maintenance'>('total');
   const [truckSortDir, setTruckSortDir] = useState<'asc' | 'desc'>('desc');
 
+  // Company driver truck IDs
+  const companyDriverTruckIds = useMemo(() => new Set(
+    trucks.filter(t => {
+      const d = drivers.find(dr => dr.id === t.driver_id);
+      return d && d.service_type === 'company_driver';
+    }).map(t => t.id)
+  ), [trucks, drivers]);
+
   // Filter expenses for company drivers if toggle is ON
   const filteredExpenses = useMemo(() => {
     if (!companyDriverOnly) return expenses;
-    const companyDriverTruckIds = new Set(
-      trucks.filter(t => {
-        const d = drivers.find(dr => dr.id === t.driver_id);
-        return d && d.service_type === 'company_driver';
-      }).map(t => t.id)
-    );
     return expenses.filter(e => e.truck_id && companyDriverTruckIds.has(e.truck_id));
-  }, [expenses, companyDriverOnly, trucks, drivers]);
+  }, [expenses, companyDriverOnly, companyDriverTruckIds]);
+
+  // Count unique trucks in filtered data
+  const filteredTruckCount = useMemo(() => {
+    const ids = new Set(filteredExpenses.filter(e => e.truck_id).map(e => e.truck_id));
+    return ids.size;
+  }, [filteredExpenses]);
 
   const totalExpenses = filteredExpenses.reduce((s, e) => s + e.total_amount, 0);
   const fuelExpenses = filteredExpenses.filter(e => e.expense_type === 'fuel');
@@ -203,21 +215,128 @@ export function ExpenseSummaryDashboard({ expenses, trucks, drivers }: Props) {
     else { setTruckSort(col); setTruckSortDir('desc'); }
   };
 
+  // --- Export helpers ---
+  const exportToCSV = () => {
+    const headers = ['Date', 'Truck', 'Driver', 'Type', 'Description', 'Amount', 'Tax', 'Total', 'Vendor', 'Payment Method', 'Source'];
+    const rows = filteredExpenses.map(e => {
+      const t = trucks.find(tr => tr.id === e.truck_id);
+      return [
+        e.expense_date, t ? `#${t.unit_number}` : '', e.driver_name || '',
+        EXPENSE_TYPE_LABELS[e.expense_type] || e.expense_type, e.description,
+        e.amount.toFixed(2), (e.tax_amount || 0).toFixed(2), e.total_amount.toFixed(2),
+        e.vendor || '', e.payment_method, e.source,
+      ];
+    });
+    const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+    downloadFile(csv, 'text/csv', `Expenses_Export_${new Date().toISOString().split('T')[0]}.csv`);
+  };
+
+  const exportToExcel = () => {
+    // Export as TSV (opens in Excel)
+    const headers = ['Date', 'Truck', 'Driver', 'Type', 'Description', 'Amount', 'Tax', 'Total', 'Vendor', 'Payment Method'];
+    const rows = filteredExpenses.map(e => {
+      const t = trucks.find(tr => tr.id === e.truck_id);
+      return [
+        e.expense_date, t ? `#${t.unit_number}` : '', e.driver_name || '',
+        EXPENSE_TYPE_LABELS[e.expense_type] || e.expense_type, e.description,
+        e.amount.toFixed(2), (e.tax_amount || 0).toFixed(2), e.total_amount.toFixed(2),
+        e.vendor || '', e.payment_method,
+      ];
+    });
+    const tsv = [headers, ...rows].map(r => r.join('\t')).join('\n');
+    downloadFile(tsv, 'application/vnd.ms-excel', `Expenses_${new Date().toISOString().split('T')[0]}.xls`);
+  };
+
+  const exportFuelReport = () => {
+    const fuelOnly = filteredExpenses.filter(e => e.expense_type === 'fuel');
+    const headers = ['Date', 'Truck', 'Driver', 'Amount', 'Total', 'Vendor', 'Location', 'Odometer'];
+    const rows = fuelOnly.map(e => {
+      const t = trucks.find(tr => tr.id === e.truck_id);
+      return [
+        e.expense_date, t ? `#${t.unit_number}` : '', e.driver_name || '',
+        e.amount.toFixed(2), e.total_amount.toFixed(2),
+        e.vendor || '', e.location || '', e.odometer_reading || '',
+      ];
+    });
+    const tsv = [headers, ...rows].map(r => r.join('\t')).join('\n');
+    downloadFile(tsv, 'application/vnd.ms-excel', `FuelReport_${new Date().toISOString().split('T')[0]}.xls`);
+  };
+
+  const exportTruckBreakdown = () => {
+    const headers = ['Truck', 'Driver', 'Total', 'Fuel', 'Maintenance', 'Repairs', 'Tires', 'Other', 'Avg/Expense', 'Last Date'];
+    const rows = truckTableData.map(r => [
+      r.truck, r.driverName, r.total.toFixed(2), r.fuel.toFixed(2),
+      r.maintenance.toFixed(2), r.repairs.toFixed(2), r.tires.toFixed(2),
+      r.other.toFixed(2), r.avg.toFixed(2), r.lastDate,
+    ]);
+    const tsv = [headers, ...rows].map(r => r.join('\t')).join('\n');
+    downloadFile(tsv, 'application/vnd.ms-excel', `TruckExpenseBreakdown_${new Date().toISOString().split('T')[0]}.xls`);
+  };
+
+  const downloadFile = (content: string, type: string, filename: string) => {
+    const blob = new Blob([content], { type: `${type};charset=utf-8;` });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
       <Card>
         <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CollapsibleTrigger asChild>
-              <Button variant="ghost" className="flex items-center gap-2 p-0 h-auto hover:bg-transparent">
-                <CardTitle className="text-base">Expense Summary</CardTitle>
-                {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-              </Button>
-            </CollapsibleTrigger>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">Company Drivers Only</span>
-              <Switch checked={companyDriverOnly} onCheckedChange={setCompanyDriverOnly} />
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" className="flex items-center gap-2 p-0 h-auto hover:bg-transparent">
+                  <CardTitle className="text-base">Expense Summary</CardTitle>
+                  {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </Button>
+              </CollapsibleTrigger>
+              <div className="flex items-center gap-3">
+                {/* Export Dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs">
+                      <Download className="h-3.5 w-3.5" /> Export
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuItem onClick={exportToExcel} className="gap-2">
+                      <FileSpreadsheet className="h-4 w-4 text-green-600" />
+                      Export Current View to Excel
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={exportToCSV} className="gap-2">
+                      <FileDown className="h-4 w-4 text-blue-600" />
+                      Export All Data to CSV
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={exportTruckBreakdown} className="gap-2">
+                      <BarChart3 className="h-4 w-4 text-purple-600" />
+                      Truck Breakdown Report
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={exportFuelReport} className="gap-2">
+                      <Fuel className="h-4 w-4 text-amber-600" />
+                      Fuel Consumption Report
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                {/* Company Driver Toggle */}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">Company Drivers Only</span>
+                  <Switch checked={companyDriverOnly} onCheckedChange={setCompanyDriverOnly} />
+                </div>
+              </div>
             </div>
+            {/* Filter state badge */}
+            <Badge variant="outline" className={`self-start text-xs ${companyDriverOnly ? 'border-amber-300 bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400' : 'border-blue-300 bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400'}`}>
+              {companyDriverOnly
+                ? `Filtered: Company Drivers Only (${filteredTruckCount} trucks)`
+                : `Showing: All Trucks (${filteredTruckCount} trucks)`
+              }
+            </Badge>
           </div>
         </CardHeader>
 
