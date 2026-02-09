@@ -117,9 +117,8 @@ const Loads = () => {
   };
 
   const isDispatcher = role === 'dispatcher';
-  let baseLoads = isDispatcher
-    ? dbLoads.filter(l => l.dispatcher_id === ((profile as any)?.dispatcher_id || 'd1'))
-    : dbLoads;
+  // RLS already filters loads for dispatchers at the database level
+  let baseLoads = dbLoads;
 
   if (search) baseLoads = baseLoads.filter(l =>
     l.reference_number.toLowerCase().includes(search.toLowerCase()) ||
