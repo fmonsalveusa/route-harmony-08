@@ -1,31 +1,12 @@
 import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { DbLoad } from '@/hooks/useLoads';
 import { getISOWeek } from '@/lib/dateUtils';
 
 interface Props {
   loads: DbLoad[];
 }
-
-const renderVerticalLabel = (props: any) => {
-  const { x, y, width, height, value } = props;
-  if (height < 40) return null;
-  return (
-    <text
-      x={x + width / 2}
-      y={y + 30}
-      fill="#fff"
-      textAnchor="middle"
-      dominantBaseline="central"
-      fontSize={14}
-      fontWeight={700}
-      transform={`rotate(-90, ${x + width / 2}, ${y + 30})`}
-    >
-      ${Number(value).toLocaleString()}
-    </text>
-  );
-};
 
 export function WeeklyRatesChart({ loads }: Props) {
   const data = useMemo(() => {
@@ -43,7 +24,10 @@ export function WeeklyRatesChart({ loads }: Props) {
 
     return Object.entries(byWeek)
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([week, total]) => ({ week, total }));
+      .map(([week, total]) => ({
+        week: week.replace(/^\d{4}-/, ''),
+        total,
+      }));
   }, [loads]);
 
   return (
@@ -59,15 +43,46 @@ export function WeeklyRatesChart({ loads }: Props) {
           <p className="text-sm text-muted-foreground text-center py-10">Sin datos</p>
         ) : (
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={data}>
+            <AreaChart data={data}>
+              <defs>
+                <linearGradient id="weeklyRateGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.4} />
+                  <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.05} />
+                </linearGradient>
+              </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="week" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} />
-              <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} tickFormatter={v => `$${(v / 1000).toFixed(0)}k`} domain={[0, (max: number) => Math.ceil(max * 1.1)]} />
-              <Tooltip formatter={(v: number) => [`$${v.toLocaleString()}`, 'Total Rate']} />
-              <Bar dataKey="total" fill="hsl(var(--chart-2, 152 60% 40%))" radius={[4, 4, 0, 0]}>
-                <LabelList dataKey="total" content={renderVerticalLabel} />
-              </Bar>
-            </BarChart>
+              <XAxis
+                dataKey="week"
+                tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
+                interval={data.length > 20 ? Math.floor(data.length / 10) : 0}
+                angle={-45}
+                textAnchor="end"
+                height={50}
+              />
+              <YAxis
+                tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                tickFormatter={v => `$${(v / 1000).toFixed(0)}k`}
+                domain={[0, (max: number) => Math.ceil(max * 1.1)]}
+              />
+              <Tooltip
+                formatter={(v: number) => [`$${v.toLocaleString()}`, 'Total Rate']}
+                contentStyle={{
+                  backgroundColor: 'hsl(var(--card))',
+                  borderColor: 'hsl(var(--border))',
+                  borderRadius: 8,
+                  fontSize: 12,
+                }}
+              />
+              <Area
+                type="monotone"
+                dataKey="total"
+                stroke="hsl(var(--primary))"
+                strokeWidth={2}
+                fill="url(#weeklyRateGradient)"
+                dot={{ r: data.length <= 20 ? 3 : 0, fill: 'hsl(var(--primary))' }}
+                activeDot={{ r: 5, strokeWidth: 2 }}
+              />
+            </AreaChart>
           </ResponsiveContainer>
         )}
       </CardContent>
