@@ -28,6 +28,7 @@ export interface DbLoad {
   pdf_url: string | null;
   notes: string | null;
   created_at: string;
+  route_geometry: any;
 }
 
 export interface CreateLoadInput {
