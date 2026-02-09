@@ -26,7 +26,7 @@ const renderHorizontalLabel = (props: any) => {
   return (
     <text
       x={x + width / 2}
-      y={y + height / 2}
+      y={y + 18}
       fill="#fff"
       textAnchor="middle"
       dominantBaseline="central"
