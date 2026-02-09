@@ -2,8 +2,88 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const VALID_ROLES = ["admin", "accounting", "dispatcher", "driver"];
+
+function validateCreateInput(payload: Record<string, unknown>) {
+  const errors: string[] = [];
+  const { email, password, full_name, phone, role } = payload;
+
+  if (!email || typeof email !== "string") {
+    errors.push("Email is required");
+  } else if (!EMAIL_REGEX.test(email)) {
+    errors.push("Invalid email format");
+  } else if (email.length > 255) {
+    errors.push("Email too long (max 255 characters)");
+  }
+
+  if (!password || typeof password !== "string") {
+    errors.push("Password is required");
+  } else if ((password as string).length < 8) {
+    errors.push("Password must be at least 8 characters");
+  } else if ((password as string).length > 72) {
+    errors.push("Password too long (max 72 characters)");
+  }
+
+  if (!full_name || typeof full_name !== "string") {
+    errors.push("Full name is required");
+  } else if ((full_name as string).length < 2) {
+    errors.push("Full name too short (min 2 characters)");
+  } else if ((full_name as string).length > 100) {
+    errors.push("Full name too long (max 100 characters)");
+  }
+
+  if (phone !== undefined && phone !== null) {
+    if (typeof phone !== "string" || (phone as string).length > 20) {
+      errors.push("Phone must be a string (max 20 characters)");
+    }
+  }
+
+  if (!role || typeof role !== "string" || !VALID_ROLES.includes(role as string)) {
+    errors.push(`Role must be one of: ${VALID_ROLES.join(", ")}`);
+  }
+
+  if (errors.length > 0) throw new Error(errors.join("; "));
+}
+
+function validateUpdateInput(payload: Record<string, unknown>) {
+  const errors: string[] = [];
+  const { user_id, full_name, phone, role, password } = payload;
+
+  if (!user_id || typeof user_id !== "string" || !UUID_REGEX.test(user_id as string)) {
+    errors.push("Valid user_id is required");
+  }
+
+  if (full_name !== undefined) {
+    if (typeof full_name !== "string" || (full_name as string).length < 2 || (full_name as string).length > 100) {
+      errors.push("Full name must be 2-100 characters");
+    }
+  }
+
+  if (phone !== undefined && phone !== null) {
+    if (typeof phone !== "string" || (phone as string).length > 20) {
+      errors.push("Phone must be a string (max 20 characters)");
+    }
+  }
+
+  if (role !== undefined) {
+    if (typeof role !== "string" || !VALID_ROLES.includes(role as string)) {
+      errors.push(`Role must be one of: ${VALID_ROLES.join(", ")}`);
+    }
+  }
+
+  if (password !== undefined) {
+    if (typeof password !== "string" || (password as string).length < 8 || (password as string).length > 72) {
+      errors.push("Password must be 8-72 characters");
+    }
+  }
+
+  if (errors.length > 0) throw new Error(errors.join("; "));
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -19,7 +99,7 @@ Deno.serve(async (req) => {
     const authHeader = req.headers.get("Authorization")!;
     const token = authHeader.replace("Bearer ", "");
     const { data: { user: caller } } = await supabaseAdmin.auth.getUser(token);
-    if (!caller) throw new Error("No autenticado");
+    if (!caller) throw new Error("Not authenticated");
 
     // Check caller role
     const { data: callerRole } = await supabaseAdmin
@@ -35,17 +115,14 @@ Deno.serve(async (req) => {
       .single();
 
     const isAdmin = callerProfile?.is_master_admin || callerRole?.role === "admin";
-    if (!isAdmin) throw new Error("Sin permisos de administrador");
+    if (!isAdmin) throw new Error("Admin permissions required");
 
     const { action, ...payload } = await req.json();
 
     if (action === "create") {
+      validateCreateInput(payload);
       const { email, password, full_name, phone, role } = payload;
-      if (!email || !password || !full_name || !role) {
-        throw new Error("Campos requeridos: email, password, full_name, role");
-      }
 
-      // Create auth user
       const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email,
         password,
@@ -57,13 +134,11 @@ Deno.serve(async (req) => {
       const userId = newUser.user.id;
       const tenantId = callerProfile!.tenant_id;
 
-      // Update profile with tenant_id and phone
       await supabaseAdmin
         .from("profiles")
         .update({ tenant_id: tenantId, phone: phone || null })
         .eq("id", userId);
 
-      // Set role
       await supabaseAdmin
         .from("user_roles")
         .insert({ user_id: userId, role, tenant_id: tenantId });
@@ -74,10 +149,9 @@ Deno.serve(async (req) => {
     }
 
     if (action === "update") {
+      validateUpdateInput(payload);
       const { user_id, full_name, phone, role, is_active, password } = payload;
-      if (!user_id) throw new Error("user_id requerido");
 
-      // Verify target user belongs to same tenant
       const { data: targetProfile } = await supabaseAdmin
         .from("profiles")
         .select("tenant_id")
@@ -85,10 +159,9 @@ Deno.serve(async (req) => {
         .single();
 
       if (!callerProfile?.is_master_admin && targetProfile?.tenant_id !== callerProfile?.tenant_id) {
-        throw new Error("No puedes editar usuarios de otro tenant");
+        throw new Error("Cannot edit users from another tenant");
       }
 
-      // Update profile
       const profileUpdates: Record<string, unknown> = {};
       if (full_name !== undefined) profileUpdates.full_name = full_name;
       if (phone !== undefined) profileUpdates.phone = phone;
@@ -98,7 +171,6 @@ Deno.serve(async (req) => {
         await supabaseAdmin.from("profiles").update(profileUpdates).eq("id", user_id);
       }
 
-      // Update role
       if (role) {
         await supabaseAdmin
           .from("user_roles")
@@ -106,12 +178,10 @@ Deno.serve(async (req) => {
           .eq("user_id", user_id);
       }
 
-      // Update password if provided
       if (password) {
         await supabaseAdmin.auth.admin.updateUserById(user_id, { password });
       }
 
-      // Update email in auth if full_name changed (metadata)
       if (full_name) {
         await supabaseAdmin.auth.admin.updateUserById(user_id, {
           user_metadata: { full_name },
@@ -123,7 +193,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    throw new Error("Acción no válida");
+    throw new Error("Invalid action");
   } catch (error) {
     return new Response(JSON.stringify({ error: error.message }), {
       status: 400,
