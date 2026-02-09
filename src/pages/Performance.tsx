@@ -508,7 +508,7 @@ export default function Performance() {
                     {profitLossChartData.map((entry, i) => (
                       <Cell key={i} fill={entry.fill} />
                     ))}
-                    <LabelList dataKey="profit" position="right" formatter={(v: number) => fmt(v)} style={{ fontSize: 11, fontWeight: 600 }} />
+                    <LabelList dataKey="profit" position="insideRight" formatter={(v: number) => fmt(v)} style={{ fontSize: 14, fontWeight: 700, fill: '#ffffff' }} />
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
