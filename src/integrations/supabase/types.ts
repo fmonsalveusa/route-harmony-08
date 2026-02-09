@@ -227,6 +227,138 @@ export type Database = {
           },
         ]
       }
+      expense_receipts: {
+        Row: {
+          created_at: string
+          expense_id: string
+          file_name: string
+          file_type: string
+          file_url: string
+          id: string
+          tenant_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          expense_id: string
+          file_name: string
+          file_type?: string
+          file_url: string
+          id?: string
+          tenant_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          expense_id?: string
+          file_name?: string
+          file_type?: string
+          file_url?: string
+          id?: string
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expense_receipts_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expense_receipts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      expenses: {
+        Row: {
+          amount: number
+          category: string | null
+          created_at: string
+          description: string
+          driver_name: string | null
+          driver_service_type: string | null
+          expense_date: string
+          expense_type: string
+          id: string
+          invoice_number: string | null
+          location: string | null
+          notes: string | null
+          odometer_reading: number | null
+          payment_method: string
+          source: string
+          tax_amount: number | null
+          tenant_id: string | null
+          total_amount: number | null
+          truck_id: string | null
+          updated_at: string
+          vendor: string | null
+        }
+        Insert: {
+          amount?: number
+          category?: string | null
+          created_at?: string
+          description?: string
+          driver_name?: string | null
+          driver_service_type?: string | null
+          expense_date?: string
+          expense_type?: string
+          id?: string
+          invoice_number?: string | null
+          location?: string | null
+          notes?: string | null
+          odometer_reading?: number | null
+          payment_method?: string
+          source?: string
+          tax_amount?: number | null
+          tenant_id?: string | null
+          total_amount?: number | null
+          truck_id?: string | null
+          updated_at?: string
+          vendor?: string | null
+        }
+        Update: {
+          amount?: number
+          category?: string | null
+          created_at?: string
+          description?: string
+          driver_name?: string | null
+          driver_service_type?: string | null
+          expense_date?: string
+          expense_type?: string
+          id?: string
+          invoice_number?: string | null
+          location?: string | null
+          notes?: string | null
+          odometer_reading?: number | null
+          payment_method?: string
+          source?: string
+          tax_amount?: number | null
+          tenant_id?: string | null
+          total_amount?: number | null
+          truck_id?: string | null
+          updated_at?: string
+          vendor?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expenses_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_truck_id_fkey"
+            columns: ["truck_id"]
+            isOneToOne: false
+            referencedRelation: "trucks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoices: {
         Row: {
           amount: number
