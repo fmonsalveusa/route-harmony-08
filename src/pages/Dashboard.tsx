@@ -56,7 +56,7 @@ const AdminDashboard = () => {
 
       {/* Charts Row 2: Dispatcher Commissions + Market Analysis */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <DispatcherCommissionsChart loads={loads} dispatchers={dispatchers} year={year} month={month} week={week} />
+        <DispatcherCommissionsChart loads={loads} dispatchers={dispatchers} drivers={drivers} year={year} month={month} week={week} />
         <MarketAnalysisCard loads={loads} trucks={trucks} />
       </div>
 
