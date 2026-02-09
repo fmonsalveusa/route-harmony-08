@@ -54,12 +54,12 @@ const rolePermissions: Record<AppRole, string[]> = {
   admin: [
     'dashboard.full', 'loads.*', 'fleet.*', 'drivers.*', 'dispatchers.*',
     'payments.drivers', 'payments.investors', 'payments.dispatchers',
-    'invoices.*', 'reports.full', 'users.*', 'tracking.*', 'settings.*', 'companies.*', 'expenses.*',
+    'invoices.*', 'reports.full', 'users.*', 'tracking.*', 'settings.*', 'companies.*', 'expenses.*', 'performance.*',
   ],
   accounting: [
     'dashboard.full', 'loads.view', 'loads.edit',
     'payments.drivers', 'payments.investors', 'payments.dispatchers',
-    'invoices.*', 'reports.full', 'dispatchers.view', 'drivers.view', 'fleet.view', 'tracking.*', 'companies.*', 'expenses.*',
+    'invoices.*', 'reports.full', 'dispatchers.view', 'drivers.view', 'fleet.view', 'tracking.*', 'companies.*', 'expenses.*', 'performance.*',
   ],
   dispatcher: [
     'dashboard.own', 'loads.create', 'loads.edit.own', 'loads.view.own',
