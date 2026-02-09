@@ -1,13 +1,24 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Filter } from 'lucide-react';
 
+interface FilterOption {
+  id: string;
+  name: string;
+}
+
 interface DashboardFiltersProps {
   year: string;
   month: string;
   week: string;
+  dispatcher: string;
+  driver: string;
   onYearChange: (v: string) => void;
   onMonthChange: (v: string) => void;
   onWeekChange: (v: string) => void;
+  onDispatcherChange: (v: string) => void;
+  onDriverChange: (v: string) => void;
+  dispatchers: FilterOption[];
+  drivers: FilterOption[];
 }
 
 const currentYear = new Date().getFullYear();
@@ -15,7 +26,11 @@ const years = Array.from({ length: 5 }, (_, i) => String(currentYear - i));
 
 const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
-export function DashboardFilters({ year, month, week, onYearChange, onMonthChange, onWeekChange }: DashboardFiltersProps) {
+export function DashboardFilters({
+  year, month, week, dispatcher, driver,
+  onYearChange, onMonthChange, onWeekChange, onDispatcherChange, onDriverChange,
+  dispatchers, drivers,
+}: DashboardFiltersProps) {
   return (
     <div className="flex flex-wrap gap-2 items-center">
       <Filter className="h-4 w-4 text-muted-foreground" />
@@ -29,7 +44,7 @@ export function DashboardFilters({ year, month, week, onYearChange, onMonthChang
         </SelectContent>
       </Select>
       <Select value={month} onValueChange={onMonthChange}>
-        <SelectTrigger className="w-[150px] h-8 text-xs">
+        <SelectTrigger className="w-[130px] h-8 text-xs">
           <SelectValue placeholder="Month" />
         </SelectTrigger>
         <SelectContent>
@@ -62,6 +77,24 @@ export function DashboardFilters({ year, month, week, onYearChange, onMonthChang
               </SelectItem>
             );
           })}
+        </SelectContent>
+      </Select>
+      <Select value={dispatcher} onValueChange={onDispatcherChange}>
+        <SelectTrigger className="w-[160px] h-8 text-xs">
+          <SelectValue placeholder="Dispatcher" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Dispatchers</SelectItem>
+          {dispatchers.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+        </SelectContent>
+      </Select>
+      <Select value={driver} onValueChange={onDriverChange}>
+        <SelectTrigger className="w-[160px] h-8 text-xs">
+          <SelectValue placeholder="Driver" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Drivers</SelectItem>
+          {drivers.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
         </SelectContent>
       </Select>
     </div>
