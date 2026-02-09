@@ -202,9 +202,6 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
           </button>
 
           <div className="hidden lg:flex items-center gap-3">
-            {!isMasterAdmin && tenant && (
-              <span className="text-sm text-muted-foreground">{tenant.name}</span>
-            )}
             {isMasterAdmin && isMasterRoute && (
               <span className="text-sm font-medium text-purple-600">Global Administration Panel</span>
             )}
