@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
@@ -17,8 +17,25 @@ interface TruckTypeRPM {
   loadCount: number;
 }
 
+const STORAGE_KEY = 'market_analysis_rpm_targets';
+
+function loadSavedTargets(): Record<string, number> {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    return saved ? JSON.parse(saved) : {};
+  } catch { return {}; }
+}
+
 export function MarketAnalysisCard({ loads, trucks }: Props) {
-  const [targets, setTargets] = useState<Record<string, number>>({});
+  const [targets, setTargets] = useState<Record<string, number>>(loadSavedTargets);
+
+  const updateTarget = useCallback((type: string, value: number) => {
+    setTargets(prev => {
+      const next = { ...prev, [type]: value };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
 
   const rpmByType = useMemo(() => {
     // Map truck_id -> truck_type
@@ -96,7 +113,7 @@ export function MarketAnalysisCard({ loads, trucks }: Props) {
                     placeholder="0.00"
                     className="h-7 text-xs w-24"
                     value={targets[item.type] || ''}
-                    onChange={e => setTargets(prev => ({ ...prev, [item.type]: Number(e.target.value) }))}
+                    onChange={e => updateTarget(item.type, Number(e.target.value))}
                   />
                 </div>
               </div>
