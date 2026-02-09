@@ -3,11 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList } from 'recharts';
 import { DbLoad } from '@/hooks/useLoads';
 import { DbDispatcher } from '@/hooks/useDispatchers';
+import { DbDriver } from '@/hooks/useDrivers';
 import { getISOWeek } from '@/lib/dateUtils';
 
 interface Props {
   loads: DbLoad[];
   dispatchers: DbDispatcher[];
+  drivers: DbDriver[];
   year: string;
   month: string;
   week: string;
@@ -37,13 +39,15 @@ const renderVerticalLabel = (props: any) => {
   );
 };
 
-export function DispatcherCommissionsChart({ loads, dispatchers, year, month, week }: Props) {
+export function DispatcherCommissionsChart({ loads, dispatchers, drivers, year, month, week }: Props) {
   const data = useMemo(() => {
-    // Build dispatcher map: id -> { name, commission_percentage }
-    const dispatcherMap: Record<string, { name: string; pct: number }> = {};
+    const dispatcherMap: Record<string, { name: string; commPct: number; dispSvcPct: number }> = {};
     dispatchers.forEach(d => {
-      dispatcherMap[d.id] = { name: d.name, pct: d.commission_percentage };
+      dispatcherMap[d.id] = { name: d.name, commPct: d.commission_percentage, dispSvcPct: d.dispatch_service_percentage };
     });
+
+    const driverMap: Record<string, string> = {};
+    drivers.forEach(d => { driverMap[d.id] = d.service_type; });
 
     const filtered = loads.filter(l => {
       if (l.status === 'cancelled' || !l.dispatcher_id) return false;
@@ -60,7 +64,9 @@ export function DispatcherCommissionsChart({ loads, dispatchers, year, month, we
     filtered.forEach(l => {
       const disp = dispatcherMap[l.dispatcher_id!];
       if (!disp) return;
-      const commission = l.total_rate * (disp.pct / 100);
+      const serviceType = l.driver_id ? (driverMap[l.driver_id] || 'owner_operator') : 'owner_operator';
+      const pct = serviceType === 'dispatch_service' ? disp.dispSvcPct : disp.commPct;
+      const commission = l.total_rate * (pct / 100);
       byDispatcher[l.dispatcher_id!] = (byDispatcher[l.dispatcher_id!] || 0) + commission;
     });
 
@@ -70,7 +76,7 @@ export function DispatcherCommissionsChart({ loads, dispatchers, year, month, we
         total: Math.round(total * 100) / 100,
       }))
       .sort((a, b) => b.total - a.total);
-  }, [loads, dispatchers, year, month, week]);
+  }, [loads, dispatchers, drivers, year, month, week]);
 
   return (
     <Card>
