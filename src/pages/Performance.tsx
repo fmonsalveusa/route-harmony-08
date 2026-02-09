@@ -532,7 +532,9 @@ export default function Performance() {
                   <YAxis tickFormatter={v => `$${(v / 1000).toFixed(0)}k`} />
                   <Tooltip formatter={(v: number) => fmt(v)} />
                   <Legend />
-                  <Bar dataKey="Revenue" fill="hsl(217, 78%, 42%)" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="Revenue" fill="hsl(217, 78%, 42%)" radius={[4, 4, 0, 0]}>
+                    <LabelList dataKey="Revenue" position="insideTop" formatter={(v: number) => v ? fmt(v) : ''} style={{ fontSize: 14, fontWeight: 700, fill: '#ffffff' }} />
+                  </Bar>
                   <Bar dataKey="Fuel" stackId="expenses" fill="hsl(28, 92%, 52%)" />
                   <Bar dataKey="Maintenance" stackId="expenses" fill="hsl(38, 92%, 50%)" />
                   <Bar dataKey="Repairs" stackId="expenses" fill="hsl(0, 72%, 51%)" />
