@@ -266,7 +266,7 @@ const DispatcherDashboard = () => {
 
   const [year, setYear] = useState(String(new Date().getFullYear()));
   const [month, setMonth] = useState('all');
-  const [week, setWeek] = useState(getCurrentWeek());
+  const [week, setWeek] = useState('all');
   const [driverFilter, setDriverFilter] = useState('all');
 
   if (loadsLoading || driversLoading) {
