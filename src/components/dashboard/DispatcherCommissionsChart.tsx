@@ -30,7 +30,7 @@ const renderHorizontalLabel = (props: any) => {
       fill="#fff"
       textAnchor="middle"
       dominantBaseline="central"
-      fontSize={12}
+      fontSize={14}
       fontWeight={700}
     >
       ${Number(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
