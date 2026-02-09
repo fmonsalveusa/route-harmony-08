@@ -246,8 +246,16 @@ const AdminDashboard = () => {
 
 const DispatcherDashboard = () => {
   const { profile } = useAuth();
-  const { loads } = useLoads();
-  const { drivers } = useDrivers();
+  const { loads, loading: loadsLoading } = useLoads();
+  const { drivers, loading: driversLoading } = useDrivers();
+
+  if (loadsLoading || driversLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -259,8 +267,8 @@ const DispatcherDashboard = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard title="My Active Loads" value={loads.filter(l => ['in_transit', 'pending'].includes(l.status)).length} icon={Package} />
         <StatCard title="My Drivers" value={drivers.length} icon={Users} iconClassName="bg-info/10 text-info" />
-        <StatCard title="Monthly Commissions" value="$0" icon={DollarSign} iconClassName="bg-success/10 text-success" />
-        <StatCard title="Pending Commissions" value="$0" icon={TrendingUp} iconClassName="bg-warning/10 text-warning" />
+        <StatCard title="Total Loads" value={loads.length} icon={Headphones} iconClassName="bg-success/10 text-success" />
+        <StatCard title="Delivered" value={loads.filter(l => l.status === 'delivered').length} icon={TrendingUp} iconClassName="bg-warning/10 text-warning" />
       </div>
 
       <Card>
@@ -298,7 +306,14 @@ const DispatcherDashboard = () => {
 };
 
 const Dashboard = () => {
-  const { role } = useAuth();
+  const { role, loading } = useAuth();
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    );
+  }
   if (role === 'dispatcher') return <DispatcherDashboard />;
   return <AdminDashboard />;
 };
