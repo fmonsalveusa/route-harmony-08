@@ -45,13 +45,13 @@ export function RatesByDriverChart({ loads, drivers, year, month, week }: Props)
     return (
       <text
         x={x + width / 2}
-        y={y + height / 2}
+        y={y + 16}
         fill="#fff"
         textAnchor="middle"
         dominantBaseline="central"
         fontSize={14}
         fontWeight={700}
-        transform={`rotate(-90, ${x + width / 2}, ${y + height / 2})`}
+        transform={`rotate(-90, ${x + width / 2}, ${y + 16})`}
       >
         ${Number(value).toLocaleString()}
       </text>
