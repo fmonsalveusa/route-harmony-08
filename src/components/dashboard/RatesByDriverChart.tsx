@@ -20,16 +20,7 @@ interface Props {
 
 export function RatesByDriverChart({ loads, drivers, year, month, week }: Props) {
   const data = useMemo(() => {
-    const filtered = loads.filter(l => {
-      if (l.status === 'cancelled' || !l.driver_id) return false;
-      const d = l.pickup_date || l.created_at;
-      if (!d) return false;
-      const date = new Date(d);
-      if (year !== 'all' && date.getFullYear() !== Number(year)) return false;
-      if (month !== 'all' && (date.getMonth() + 1) !== Number(month)) return false;
-      if (week !== 'all' && getISOWeek(date) !== Number(week)) return false;
-      return true;
-    });
+    const filtered = loads.filter(l => l.status !== 'cancelled' && l.driver_id);
 
     const byDriver: Record<string, number> = {};
     filtered.forEach(l => {
