@@ -1,58 +1,51 @@
 
 
-# Plan: Driver Onboarding via Link Publico
+# Importacion Masiva de 200 Cargas (Uso Unico)
 
 ## Resumen
 
-Crear un flujo de onboarding donde un admin genera un link unico para cada nuevo driver. El driver abre ese link (sin necesidad de login) y completa un formulario multi-paso con su informacion personal y la de su camion. Al enviar, los datos se guardan automaticamente en las tablas `drivers` y `trucks` existentes.
+Crear un wizard simple de importacion CSV para cargar las 200 cargas de una sola vez. Seguira el mismo patron del FuelImportWizard existente pero adaptado para cargas.
 
-## Como Funciona
+## Flujo
 
-1. **El admin** va a la pagina de Drivers y hace clic en "Generar Link de Onboarding"
-2. Se crea un token unico en una nueva tabla `onboarding_tokens` con el `tenant_id` y opcionalmente un dispatcher pre-asignado
-3. El admin copia el link (ej: `https://tu-app.lovable.app/onboarding/abc123`) y lo envia al driver
-4. **El driver** abre el link, ve un formulario publico (sin login) con 3 pasos:
-   - **Paso 1**: Informacion personal (nombre, email, telefono, licencia, fechas de expiracion, documentos del driver)
-   - **Paso 2**: Informacion del camion (unit number, tipo, make, model, year, VIN, dimensiones, documentos del camion)
-   - **Paso 3**: Revision y envio
-5. Al enviar, una Edge Function valida el token, crea el driver y el truck en la base de datos con el `tenant_id` correcto, y marca el token como usado
+1. El admin hace clic en "Import CSV" en la pagina de Loads
+2. Sube el archivo CSV
+3. Mapea las columnas del CSV a los campos de la tabla loads
+4. Revisa y valida los datos (duplicados, fechas invalidas, drivers/trucks no encontrados)
+5. Confirma la importacion - se insertan en lotes de 50
 
-## Cambios Tecnicos
+## Archivos a crear
 
-### 1. Nueva tabla: `onboarding_tokens`
-- `id` (uuid, PK)
-- `tenant_id` (uuid, requerido)
-- `token` (text, unico, generado con crypto)
-- `dispatcher_id` (text, opcional - pre-asignar dispatcher)
-- `status` (text: 'pending' | 'completed' | 'expired')
-- `driver_name` (text, opcional - nombre provisional)
-- `created_at`, `expires_at` (timestamps)
-- `completed_at` (timestamp, nullable)
-- RLS: lectura publica para tokens validos, escritura solo para tenant users
+### `src/components/loads/LoadImportWizard.tsx`
+- Wizard de 4 pasos: Upload, Mapeo de columnas, Validacion, Confirmacion
+- Reutiliza el patron visual del FuelImportWizard (mismos componentes UI, misma estructura de pasos)
+- Campos mapeables:
+  - **Obligatorios**: Reference Number, Origin, Destination, Total Rate
+  - **Opcionales**: Pickup Date, Delivery Date, Miles, Weight, Broker/Client, Driver (nombre), Truck (unit number), Status, Cargo Type, Notes, Driver Pay, Dispatcher Pay, Investor Pay
+- Validacion: detecta duplicados por reference_number, fechas invalidas, drivers/trucks que no existen
+- Codificacion por colores: verde (valido), amarillo (advertencia), rojo (error)
+- Checkboxes para saltar filas problematicas
+- Barra de progreso durante la importacion
+- Boton para descargar plantilla CSV de ejemplo
 
-### 2. Nueva Edge Function: `driver-onboarding`
-- Recibe: token + datos del driver + datos del truck + archivos
-- Valida que el token exista, no este expirado ni usado
-- Inserta el driver en `drivers` con el `tenant_id` del token
-- Inserta el truck en `trucks` con el `tenant_id` del token
-- Vincula driver con truck
-- Sube documentos al bucket `driver-documents`
-- Marca el token como `completed`
-- Usa `service_role` key para bypasear RLS
+## Archivos a modificar
 
-### 3. Nueva pagina: `/onboarding/:token`
-- Ruta publica (sin ProtectedRoute)
-- Formulario multi-paso reutilizando los mismos campos de `DriverFormDialog` y `TruckFormDialog`
-- Solo muestra los campos que el driver debe llenar (sin status, dispatcher, porcentajes de pago)
-- Incluye upload de documentos (licencia, medical card, W9, fotos del camion)
-- UI limpia con branding de la empresa
+### `src/hooks/useLoads.ts`
+- Agregar funcion `createLoadsBulk(inputs: CreateLoadInput[]): Promise<{success: number, errors: number}>`
+- Inserta en lotes de 50 con el tenant_id del usuario
+- Invalida la cache al finalizar
 
-### 4. Dialogo para generar tokens (en pagina Drivers)
-- Boton "Generate Onboarding Link" junto al boton "New Driver"
-- Formulario simple: nombre del driver (opcional), dispatcher pre-asignado (opcional)
-- Genera el token via Supabase insert
-- Muestra el link copiable
+### `src/pages/Loads.tsx`
+- Agregar boton "Import CSV" con icono Upload junto al boton "New Load"
+- Integrar el LoadImportWizard como dialogo modal
+- Pasar drivers, trucks y loads existentes como props para validacion
 
-### 5. Actualizacion de rutas en App.tsx
-- Agregar ruta publica `/onboarding/:token` fuera de ProtectedRoute
+## Detalles tecnicos
+
+- Parseo de CSV con deteccion automatica de delimitador (coma, punto y coma, tab)
+- Matching de drivers por nombre (case-insensitive, trim)
+- Matching de trucks por unit_number o plate_number
+- Insercion en lotes de 50 registros usando `supabase.from('loads').insert(batch)`
+- Cada registro incluye el tenant_id del usuario autenticado
+- Al finalizar, `queryClient.invalidateQueries` para refrescar la lista
 
