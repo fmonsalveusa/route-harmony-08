@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, isWithinInterval, parseISO } from 'date-fns';
 import { formatDate } from '@/lib/dateUtils';
 import { usePayments, type DbPayment } from '@/hooks/usePayments';
@@ -11,7 +11,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { PaymentEditDialog } from '@/components/PaymentEditDialog';
 import { DollarSign, CheckCircle, Clock, Download, Pencil, Trash2, FileText, CheckCheck, CalendarIcon, X, PlusCircle } from 'lucide-react';
 import { generatePaymentReceipt } from '@/lib/paymentReceipt';
@@ -37,7 +37,7 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
   const [statusFilter, setStatusFilter] = useState('pending');
   const [editPayment, setEditPayment] = useState<DbPayment | null>(null);
   const [deletePaymentId, setDeletePaymentId] = useState<string | null>(null);
-  const deleteIdRef = useRef<string | null>(null);
+  
   const [adjMap, setAdjMap] = useState<Record<string, number>>({});
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [batchProcessing, setBatchProcessing] = useState(false);
@@ -252,11 +252,10 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
   };
 
   const confirmDelete = async () => {
-    const id = deleteIdRef.current;
+    const id = deletePaymentId;
     if (!id) return;
-    setDeletePaymentId(null);
-    deleteIdRef.current = null;
     const { error } = await supabase.from('payments').delete().eq('id', id);
+    setDeletePaymentId(null);
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } else {
@@ -472,7 +471,7 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
                         <Button variant="outline" size="icon" className="h-8 w-10 border-emerald-300 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700" onClick={(e) => { e.stopPropagation(); handleGenerateReceipt(p); }} title="Generate Receipt">
                           <FileText className="h-4 w-4" />
                         </Button>
-                        <Button variant="outline" size="icon" className="h-8 w-10 border-red-300 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700" onClick={(e) => { e.stopPropagation(); deleteIdRef.current = p.id; setDeletePaymentId(p.id); }} title="Delete">
+                        <Button variant="outline" size="icon" className="h-8 w-10 border-red-300 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700" onClick={(e) => { e.stopPropagation(); setDeletePaymentId(p.id); }} title="Delete">
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -489,18 +488,18 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
         <PaymentEditDialog payment={editPayment} open={!!editPayment} onOpenChange={(o) => { if (!o) { setEditPayment(null); fetchAdjustments(); } }} />
       )}
 
-      <AlertDialog open={!!deletePaymentId} onOpenChange={(o) => { if (!o) setDeletePaymentId(null); }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete this payment?</AlertDialogTitle>
-            <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+      <Dialog open={!!deletePaymentId} onOpenChange={(o) => { if (!o) setDeletePaymentId(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete this payment?</DialogTitle>
+            <DialogDescription>This action cannot be undone.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeletePaymentId(null)}>Cancel</Button>
             <Button variant="destructive" onClick={confirmDelete}>Delete</Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
