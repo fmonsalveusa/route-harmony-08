@@ -25,15 +25,15 @@ interface NavItem {
 const tenantNavItems: NavItem[] = [
   { label: 'Dashboard', icon: LayoutDashboard, path: '/', permission: 'dashboard' },
   { label: 'Loads', icon: Package, path: '/loads', permission: 'loads' },
+  { label: 'Tracking', icon: MapPin, path: '/tracking', permission: 'tracking' },
+  { label: 'Payments', icon: DollarSign, path: '/payments', permission: 'payments.drivers' },
   { label: 'Fleet', icon: Truck, path: '/fleet', permission: 'fleet' },
   { label: 'Drivers', icon: Users, path: '/drivers', permission: 'drivers' },
   { label: 'Dispatchers', icon: Headphones, path: '/dispatchers', permission: 'dispatchers' },
-  { label: 'Payments', icon: DollarSign, path: '/payments', permission: 'payments.drivers' },
-  { label: 'Invoices', icon: FileText, path: '/invoices', permission: 'invoices' },
-  { label: 'Companies', icon: Building2, path: '/companies', permission: 'companies' },
-  { label: 'Tracking', icon: MapPin, path: '/tracking', permission: 'tracking' },
   { label: 'Expenses', icon: Receipt, path: '/expenses', permission: 'expenses' },
   { label: 'Performance', icon: Trophy, path: '/performance', permission: 'performance' },
+  { label: 'Invoices', icon: FileText, path: '/invoices', permission: 'invoices' },
+  { label: 'Companies', icon: Building2, path: '/companies', permission: 'companies' },
   { label: 'Users', icon: UserCog, path: '/users', permission: 'users' },
 ];
 
