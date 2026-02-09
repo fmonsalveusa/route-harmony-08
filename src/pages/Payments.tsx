@@ -250,14 +250,11 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
     toast({ title: 'Recibo grupal generado' });
   };
 
-  const deleteIdRef = { current: deletePaymentId };
-  deleteIdRef.current = deletePaymentId;
-  
   const confirmDelete = async () => {
-    const id = deleteIdRef.current;
-    if (!id) return;
-    setDeletePaymentId(null);
+    if (!deletePaymentId) return;
+    const id = deletePaymentId;
     const { error } = await supabase.from('payments').delete().eq('id', id);
+    setDeletePaymentId(null);
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } else {
@@ -498,7 +495,7 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete}>Delete</AlertDialogAction>
+            <Button variant="destructive" onClick={confirmDelete}>Delete</Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
