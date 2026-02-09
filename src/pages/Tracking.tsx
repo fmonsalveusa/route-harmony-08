@@ -363,7 +363,7 @@ const Tracking = () => {
         </Card>
 
         {/* Side Panel - Active Loads */}
-        <Card className="flex flex-col lg:row-span-2 max-h-[900px]">
+        <Card className="flex flex-col overflow-hidden h-[520px]">
           <CardHeader className="pb-2 px-3 pt-3">
             <CardTitle className="text-sm font-semibold">Active Loads ({filteredLoads.length})</CardTitle>
             <div className="flex gap-2 mt-2">
@@ -435,7 +435,7 @@ const Tracking = () => {
           </CardContent>
         </Card>
 
-        <Card className="lg:col-span-2">
+        <Card className="lg:col-span-3">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base flex items-center gap-2">
