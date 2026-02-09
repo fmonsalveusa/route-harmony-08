@@ -139,5 +139,31 @@ export function useLoads() {
     return true;
   }, [queryClient]);
 
-  return { loads, loading, fetchLoads, createLoad, updateLoad, deleteLoad };
+  const createLoadsBulk = useCallback(async (inputs: CreateLoadInput[]): Promise<{ success: number; errors: number }> => {
+    const tenant_id = await getTenantId();
+    const BATCH_SIZE = 50;
+    let success = 0;
+    let errors = 0;
+
+    for (let i = 0; i < inputs.length; i += BATCH_SIZE) {
+      const batch = inputs.slice(i, i + BATCH_SIZE).map(input => ({ ...input, tenant_id } as any));
+      const { data, error } = await supabase.from('loads').insert(batch).select();
+      if (error) {
+        console.error('Batch insert error:', error);
+        errors += batch.length;
+      } else {
+        success += data?.length ?? 0;
+      }
+    }
+
+    await queryClient.invalidateQueries({ queryKey: LOADS_QUERY_KEY });
+
+    if (success > 0) {
+      toastRef.current({ title: 'Bulk import complete', description: `${success} loads imported${errors > 0 ? `, ${errors} failed` : ''}` });
+    }
+
+    return { success, errors };
+  }, [queryClient]);
+
+  return { loads, loading, fetchLoads, createLoad, updateLoad, deleteLoad, createLoadsBulk };
 }
