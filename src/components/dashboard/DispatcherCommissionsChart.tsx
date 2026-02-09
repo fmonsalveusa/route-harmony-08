@@ -48,16 +48,7 @@ export function DispatcherCommissionsChart({ loads, dispatchers, drivers, year, 
     const driverMap: Record<string, string> = {};
     drivers.forEach(d => { driverMap[d.id] = d.service_type; });
 
-    const filtered = loads.filter(l => {
-      if (l.status === 'cancelled' || !l.dispatcher_id) return false;
-      const d = l.pickup_date || l.created_at;
-      if (!d) return false;
-      const date = new Date(d);
-      if (year !== 'all' && date.getFullYear() !== Number(year)) return false;
-      if (month !== 'all' && (date.getMonth() + 1) !== Number(month)) return false;
-      if (week !== 'all' && getISOWeek(date) !== Number(week)) return false;
-      return true;
-    });
+    const filtered = loads.filter(l => l.status !== 'cancelled' && l.dispatcher_id);
 
     const byDispatcher: Record<string, number> = {};
     filtered.forEach(l => {
