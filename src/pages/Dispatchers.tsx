@@ -94,7 +94,7 @@ const Dispatchers = () => {
                     <Button variant="outline" size="icon" className="h-8 w-10 border-amber-300 bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700" onClick={() => { setEditingDispatcher(d); setFormOpen(true); }} title="Editar">
                       <Pencil className="h-4 w-4" />
                     </Button>
-                    <Button variant="outline" size="icon" className="h-8 w-10 border-red-300 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700" onClick={() => setDeletingDispatcher(d)} title="Eliminar">
+                    <Button variant="outline" size="icon" className="h-8 w-10 border-red-300 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700" onClick={async () => { if (window.confirm(`¿Eliminar dispatcher ${d.name}? Esta acción es permanente.`)) { await deleteDispatcher(d.id); } }} title="Eliminar">
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
@@ -112,20 +112,7 @@ const Dispatchers = () => {
         onSubmit={handleSubmit}
       />
 
-      <Dialog open={!!deletingDispatcher} onOpenChange={open => !open && setDeletingDispatcher(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>¿Eliminar dispatcher?</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            Esta acción eliminará permanentemente a <strong>{deletingDispatcher?.name}</strong>. No se puede deshacer.
-          </p>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeletingDispatcher(null)}>Cancelar</Button>
-            <Button variant="destructive" onClick={handleDelete}>Eliminar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Delete now uses window.confirm */}
     </div>
   );
 };

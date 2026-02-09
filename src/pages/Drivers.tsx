@@ -177,7 +177,7 @@ const Drivers = () => {
                         <Button variant="outline" size="icon" className="h-8 w-10 border-amber-300 bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700" onClick={() => { setEditingDriver(driver); setFormOpen(true); }} title="Editar">
                           <Pencil className="h-4 w-4" />
                         </Button>
-                        <Button variant="outline" size="icon" className="h-8 w-10 border-red-300 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700" onClick={() => setDeletingDriver(driver)} title="Eliminar">
+                        <Button variant="outline" size="icon" className="h-8 w-10 border-red-300 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700" onClick={async () => { if (window.confirm(`¿Eliminar driver ${driver.name}? Esta acción es permanente.`)) { await deleteDriver(driver.id); } }} title="Eliminar">
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </>
@@ -207,20 +207,7 @@ const Drivers = () => {
         dispatcherName={detailDriver ? dispatchers.find(d => d.id === detailDriver.dispatcher_id)?.name || null : null}
       />
 
-      <Dialog open={!!deletingDriver} onOpenChange={open => !open && setDeletingDriver(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>¿Eliminar driver?</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            Esta acción eliminará permanentemente a <strong>{deletingDriver?.name}</strong>. No se puede deshacer.
-          </p>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeletingDriver(null)}>Cancelar</Button>
-            <Button variant="destructive" onClick={handleDelete}>Eliminar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Delete now uses window.confirm */}
     </div>
   );
 };
