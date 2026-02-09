@@ -1203,6 +1203,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_user_dispatcher_id: { Args: { _user_id: string }; Returns: string }
       get_user_tenant_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
