@@ -4,6 +4,7 @@ import { useTrucks } from '@/hooks/useTrucks';
 import { useDrivers } from '@/hooks/useDrivers';
 import { ExpenseFormDialog } from '@/components/expenses/ExpenseFormDialog';
 import { FuelImportWizard } from '@/components/expenses/FuelImportWizard';
+import { ExpenseSummaryDashboard } from '@/components/expenses/ExpenseSummaryDashboard';
 import {
   EXPENSE_TYPE_LABELS, EXPENSE_TYPE_COLORS, PAYMENT_METHOD_LABELS,
 } from '@/components/expenses/expenseConstants';
@@ -258,6 +259,13 @@ const Expenses = () => {
           )}
         </div>
       </div>
+
+      {/* Expense Summary Dashboard */}
+      <ExpenseSummaryDashboard
+        expenses={filtered}
+        trucks={trucks}
+        drivers={driverList}
+      />
 
       {/* Bulk actions */}
       {selectedIds.size > 0 && (
