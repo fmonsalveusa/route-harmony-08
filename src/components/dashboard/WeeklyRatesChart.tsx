@@ -60,6 +60,7 @@ export function WeeklyRatesChart({ loads }: Props) {
                 angle={-45}
                 textAnchor="end"
                 height={50}
+                padding={{ left: 30 }}
               />
               <YAxis
                 tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
