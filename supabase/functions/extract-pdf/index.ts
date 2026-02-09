@@ -51,9 +51,34 @@ serve(async (req) => {
 
     const { pdfBase64 } = await req.json();
 
-    if (!pdfBase64) {
+    if (!pdfBase64 || typeof pdfBase64 !== 'string') {
       return new Response(
         JSON.stringify({ error: 'PDF data is required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate size: ~13MB base64 ≈ 10MB PDF
+    const MAX_BASE64_SIZE = 13 * 1024 * 1024;
+    if (pdfBase64.length > MAX_BASE64_SIZE) {
+      return new Response(
+        JSON.stringify({ error: 'PDF too large (max 10MB)' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate base64 format and PDF magic number
+    try {
+      const decoded = atob(pdfBase64.slice(0, 20));
+      if (!decoded.startsWith('%PDF-')) {
+        return new Response(
+          JSON.stringify({ error: 'File is not a valid PDF' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    } catch {
+      return new Response(
+        JSON.stringify({ error: 'Invalid base64 encoding' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }

@@ -57,8 +57,64 @@ Deno.serve(async (req) => {
     }
 
     const tenantId = tokenRecord.tenant_id;
-    const driverData = JSON.parse(driverDataStr);
-    const truckData = JSON.parse(truckDataStr);
+
+    // Parse and validate JSON data
+    let driverData: Record<string, unknown>;
+    let truckData: Record<string, unknown>;
+    try {
+      driverData = JSON.parse(driverDataStr);
+      truckData = JSON.parse(truckDataStr);
+    } catch {
+      return new Response(
+        JSON.stringify({ error: "Invalid JSON in driver_data or truck_data" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate required driver fields
+    if (!driverData.name || !driverData.email || !driverData.phone || !driverData.license) {
+      return new Response(
+        JSON.stringify({ error: "Driver requires: name, email, phone, license" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate required truck fields
+    if (!truckData.unit_number) {
+      return new Response(
+        JSON.stringify({ error: "Truck requires: unit_number" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate file uploads
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+    const ALLOWED_EXTENSIONS = ["jpg", "jpeg", "png", "pdf", "webp"];
+    const allFileKeys = [
+      "driver_license_photo", "driver_medical_card_photo", "driver_form_w9",
+      "driver_leasing_agreement", "driver_service_agreement",
+      "truck_registration_photo", "truck_insurance_photo", "truck_license_photo",
+      "truck_rear_truck_photo", "truck_truck_side_photo", "truck_truck_plate_photo",
+      "truck_cargo_area_photo",
+    ];
+    for (const key of allFileKeys) {
+      const file = formData.get(key) as File | null;
+      if (file && file instanceof File) {
+        if (file.size > MAX_FILE_SIZE) {
+          return new Response(
+            JSON.stringify({ error: `File too large: ${file.name} (max 10MB)` }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        const ext = file.name.split(".").pop()?.toLowerCase();
+        if (!ext || !ALLOWED_EXTENSIONS.includes(ext)) {
+          return new Response(
+            JSON.stringify({ error: `Invalid file type: ${file.name} (allowed: ${ALLOWED_EXTENSIONS.join(", ")})` }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      }
+    }
 
     // Upload files helper
     const uploadFile = async (file: File, folder: string, name: string): Promise<string | null> => {
