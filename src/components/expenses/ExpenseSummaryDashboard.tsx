@@ -140,7 +140,7 @@ export function ExpenseSummaryDashboard({ expenses, trucks, drivers }: Props) {
 
     let arr = Object.values(map).map(row => {
       const t = trucks.find(tr => tr.id === row.truckId);
-      const d = t ? drivers.find(dr => dr.id === t.driver_id) : null;
+      const d = t ? (drivers.find(dr => dr.id === t.driver_id) || drivers.find(dr => dr.truck_id === t.id)) : null;
       return {
         ...row,
         truck: t ? `#${t.unit_number}` : 'Unknown',
