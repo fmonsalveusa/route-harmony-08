@@ -20,7 +20,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { PodUploadSection } from '@/components/PodUploadSection';
 import { Plus, Search, Package, Pencil, Trash2, ChevronDown, ChevronUp, MapPin, Upload, ExternalLink, Filter, FileText } from 'lucide-react';
 import { toast } from 'sonner';
@@ -503,19 +503,23 @@ const Loads = () => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>¿Eliminar carga?</DialogTitle>
+            <DialogDescription>
+              Esta acción eliminará la carga <strong>{deleteTarget?.reference_number}</strong> y todos sus registros relacionados permanentemente.
+            </DialogDescription>
           </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            Esta acción eliminará la carga <strong>{deleteTarget?.reference_number}</strong> permanentemente.
-          </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancelar</Button>
             <Button variant="destructive" onClick={async () => {
-              if (deleteTarget) {
-                console.log('Deleting load:', deleteTarget.id, deleteTarget.reference_number);
-                const result = await deleteLoad(deleteTarget.id);
-                console.log('Delete result:', result);
-              }
+              const target = deleteTarget;
+              if (!target) return;
               setDeleteTarget(null);
+              console.log('Attempting delete for load:', target.id, target.reference_number);
+              try {
+                const result = await deleteLoad(target.id);
+                console.log('Delete result:', result);
+              } catch (err) {
+                console.error('Delete error:', err);
+              }
             }}>Eliminar</Button>
           </DialogFooter>
         </DialogContent>
