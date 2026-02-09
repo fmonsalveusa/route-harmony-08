@@ -111,66 +111,88 @@ const Drivers = () => {
     }
   };
 
-  const renderDriverCard = (driver: DbDriver) => {
-    const truckLabel = getTruckLabel(driver.truck_id);
-    const initials = driver.name.split(' ').map(n => n[0]).join('');
-    return (
-      <Card key={driver.id} className={cn("hover:shadow-md transition-shadow animate-fade-in", driver.status === 'pending' && "ring-2 ring-yellow-400 bg-yellow-50/50")}>
-        <CardContent className="p-5">
-          <div className="flex items-start gap-4">
-            <Avatar className="h-12 w-12">
-              <AvatarFallback className="bg-primary/10 text-primary font-semibold">{initials}</AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <h3 className="font-semibold truncate text-xl">{driver.name}</h3>
-            </div>
-            <Select value={driver.status} onValueChange={v => updateDriver(driver.id, { status: v })}>
-              <SelectTrigger className={`w-auto h-7 text-xs font-semibold text-white border-0 rounded-full px-3 gap-1 ${driverStatusColor(driver.status)}`}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="available">Available</SelectItem>
-                <SelectItem value="assigned">Assigned</SelectItem>
-                <SelectItem value="resting">Resting</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="mt-4 space-y-2 text-[15px]">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Phone className="h-3.5 w-3.5" />{driver.phone}
-            </div>
-            <div className="flex items-center gap-2">
-              <TruckIcon className="h-3.5 w-3.5 text-primary" />
-              <span>{truckLabel || <span className="text-muted-foreground italic">Unassigned</span>}</span>
-            </div>
-          </div>
-
-          <div className="mt-3 pt-3 border-t flex items-center gap-1.5">
-            <Button variant="outline" size="icon" className="h-8 w-10 border-sky-300 bg-sky-50 text-sky-600 hover:bg-sky-100 hover:text-sky-700" onClick={() => copyDriverInfo(driver)} title="Copy">
-              <Copy className="h-4 w-4" />
-            </Button>
-            <div className="flex-1" />
-            <Button variant="outline" size="icon" className="h-8 w-10 border-emerald-300 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700" onClick={() => setDetailDriver(driver)} title="Detail">
-              <Eye className="h-4 w-4" />
-            </Button>
-            {!isDispatcher && (
-              <>
-                <Button variant="outline" size="icon" className="h-8 w-10 border-amber-300 bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700" onClick={() => { setEditingDriver(driver); setFormOpen(true); }} title="Edit">
-                  <Pencil className="h-4 w-4" />
-                </Button>
-                <Button variant="outline" size="icon" className="h-8 w-10 border-red-300 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700" onClick={async () => { if (window.confirm(`Delete driver ${driver.name}? This action is permanent.`)) { await deleteDriver(driver.id); } }} title="Delete">
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    );
-  };
+  const renderDriversTable = (driversList: DbDriver[]) => (
+    <Card>
+      <CardContent className="p-0">
+        <div className="overflow-x-auto">
+          <table className="w-full text-[15px]">
+            <thead>
+              <tr className="border-b bg-muted/50">
+                <th className="text-left p-3 font-medium text-muted-foreground">Driver</th>
+                <th className="text-left p-3 font-medium text-muted-foreground">Phone</th>
+                <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Truck</th>
+                <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
+                <th className="text-right p-3 font-medium text-muted-foreground">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {driversList.map(driver => {
+                const truckLabel = getTruckLabel(driver.truck_id);
+                const initials = driver.name.split(' ').map(n => n[0]).join('');
+                return (
+                  <tr key={driver.id} className={cn("border-b hover:bg-muted/30 transition-colors", driver.status === 'pending' && "bg-yellow-50/50")}>
+                    <td className="p-3">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-9 w-9">
+                          <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm">{initials}</AvatarFallback>
+                        </Avatar>
+                        <span className="font-semibold">{driver.name}</span>
+                      </div>
+                    </td>
+                    <td className="p-3 text-muted-foreground">
+                      <div className="flex items-center gap-1.5">
+                        <Phone className="h-3.5 w-3.5" />{driver.phone}
+                      </div>
+                    </td>
+                    <td className="p-3 hidden md:table-cell">
+                      <div className="flex items-center gap-1.5">
+                        <TruckIcon className="h-3.5 w-3.5 text-primary" />
+                        <span>{truckLabel || <span className="text-muted-foreground italic">Unassigned</span>}</span>
+                      </div>
+                    </td>
+                    <td className="p-3">
+                      <Select value={driver.status} onValueChange={v => updateDriver(driver.id, { status: v })}>
+                        <SelectTrigger className={`w-auto h-7 text-xs font-semibold text-white border-0 rounded-full px-3 gap-1 ${driverStatusColor(driver.status)}`}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pending">Pending</SelectItem>
+                          <SelectItem value="available">Available</SelectItem>
+                          <SelectItem value="assigned">Assigned</SelectItem>
+                          <SelectItem value="resting">Resting</SelectItem>
+                          <SelectItem value="inactive">Inactive</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </td>
+                    <td className="p-3">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <Button variant="outline" size="icon" className="h-8 w-10 border-sky-300 bg-sky-50 text-sky-600 hover:bg-sky-100 hover:text-sky-700" onClick={() => copyDriverInfo(driver)} title="Copy">
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                        <Button variant="outline" size="icon" className="h-8 w-10 border-emerald-300 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700" onClick={() => setDetailDriver(driver)} title="Detail">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        {!isDispatcher && (
+                          <>
+                            <Button variant="outline" size="icon" className="h-8 w-10 border-amber-300 bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700" onClick={() => { setEditingDriver(driver); setFormOpen(true); }} title="Edit">
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button variant="outline" size="icon" className="h-8 w-10 border-red-300 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700" onClick={async () => { if (window.confirm(`Delete driver ${driver.name}? This action is permanent.`)) { await deleteDriver(driver.id); } }} title="Delete">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </CardContent>
+    </Card>
+  );
 
   return (
     <div className="space-y-6">
@@ -218,11 +240,10 @@ const Drivers = () => {
           </TabsList>
           {['active', 'inactive', 'all'].map(tab => (
             <TabsContent key={tab} value={tab}>
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                {getFilteredByTab(tab).map(renderDriverCard)}
-              </div>
-              {getFilteredByTab(tab).length === 0 && (
+              {getFilteredByTab(tab).length === 0 ? (
                 <p className="text-muted-foreground text-center py-8">No drivers found.</p>
+              ) : (
+                renderDriversTable(getFilteredByTab(tab))
               )}
             </TabsContent>
           ))}
