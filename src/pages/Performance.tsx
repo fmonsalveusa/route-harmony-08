@@ -310,7 +310,7 @@ export default function Performance() {
       </Tabs>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* Revenue */}
         <Card className="border-l-4 border-l-[hsl(152,60%,40%)]">
           <CardContent className="p-5">
@@ -376,26 +376,6 @@ export default function Performance() {
           </CardContent>
         </Card>
 
-        {/* Average Per Truck */}
-        <Card className="border-l-4 border-l-primary">
-          <CardContent className="p-5">
-            <div className="flex items-start justify-between">
-              <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Average Per Truck</p>
-                <p className="text-2xl font-bold tracking-tight text-primary">{fmt(avgPerTruck)}</p>
-                <div className="text-[10px] text-muted-foreground">
-                  <span className="text-[hsl(152,60%,40%)]">Best {fmt(bestTruck)}</span>
-                  <span className="mx-1">|</span>
-                  <span className="text-destructive">Worst {fmt(worstTruck)}</span>
-                </div>
-                <p className="text-xs text-muted-foreground">{companyTrucks.length} trucks</p>
-              </div>
-              <div className="p-2.5 rounded-lg bg-primary/10">
-                <Truck className="h-5 w-5 text-primary" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Performance Table */}
