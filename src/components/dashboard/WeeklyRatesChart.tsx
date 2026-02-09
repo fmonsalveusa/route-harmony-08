@@ -1,12 +1,31 @@
 import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
 import { DbLoad } from '@/hooks/useLoads';
 import { getISOWeek } from '@/lib/dateUtils';
 
 interface Props {
   loads: DbLoad[];
 }
+
+const renderVerticalLabel = (props: any) => {
+  const { x, y, width, height, value } = props;
+  if (height < 40) return null;
+  return (
+    <text
+      x={x + width / 2}
+      y={y + 30}
+      fill="#fff"
+      textAnchor="middle"
+      dominantBaseline="central"
+      fontSize={14}
+      fontWeight={700}
+      transform={`rotate(-90, ${x + width / 2}, ${y + 30})`}
+    >
+      ${Number(value).toLocaleString()}
+    </text>
+  );
+};
 
 export function WeeklyRatesChart({ loads }: Props) {
   const data = useMemo(() => {
@@ -43,9 +62,11 @@ export function WeeklyRatesChart({ loads }: Props) {
             <BarChart data={data}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis dataKey="week" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} />
-              <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} tickFormatter={v => `$${(v / 1000).toFixed(0)}k`} />
+              <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} tickFormatter={v => `$${(v / 1000).toFixed(0)}k`} domain={[0, (max: number) => Math.ceil(max * 1.1)]} />
               <Tooltip formatter={(v: number) => [`$${v.toLocaleString()}`, 'Total Rate']} />
-              <Bar dataKey="total" fill="hsl(var(--chart-2, 152 60% 40%))" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="total" fill="hsl(var(--chart-2, 152 60% 40%))" radius={[4, 4, 0, 0]}>
+                <LabelList dataKey="total" content={renderVerticalLabel} />
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         )}
