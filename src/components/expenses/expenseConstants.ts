@@ -22,14 +22,14 @@ export const EXPENSE_TYPE_LABELS: Record<string, string> = {
 };
 
 export const EXPENSE_TYPE_COLORS: Record<string, string> = {
-  fuel: 'bg-amber-100 text-amber-800',
+  fuel: 'bg-emerald-100 text-emerald-800',
   maintenance: 'bg-blue-100 text-blue-800',
-  repairs: 'bg-red-100 text-red-800',
-  tires: 'bg-slate-100 text-slate-800',
-  insurance: 'bg-green-100 text-green-800',
+  repairs: 'bg-amber-100 text-amber-800',
+  tires: 'bg-violet-100 text-violet-800',
+  insurance: 'bg-indigo-100 text-indigo-800',
   permits_licenses: 'bg-purple-100 text-purple-800',
   tolls: 'bg-cyan-100 text-cyan-800',
-  parking: 'bg-indigo-100 text-indigo-800',
+  parking: 'bg-sky-100 text-sky-800',
   cleaning: 'bg-teal-100 text-teal-800',
   parts: 'bg-orange-100 text-orange-800',
   labor: 'bg-pink-100 text-pink-800',
