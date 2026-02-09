@@ -15,7 +15,9 @@ export function WeeklyRatesChart({ loads }: Props) {
       if (l.status === 'cancelled') return;
       const d = l.pickup_date || l.created_at;
       if (!d) return;
-      const date = new Date(d);
+      const raw = d.split('T')[0];
+      const [y, m, day] = raw.split('-').map(Number);
+      const date = new Date(y, m - 1, day);
       const yr = date.getFullYear();
       const wk = getISOWeek(date);
       const key = `${yr}-W${String(wk).padStart(2, '0')}`;
