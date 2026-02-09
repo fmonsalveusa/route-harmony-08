@@ -36,14 +36,11 @@ const Fleet = () => {
   const handleSave = async (input: TruckInput, files: Record<string, File>) => {
     let ok: boolean;
     const truckId = editTruck?.id || crypto.randomUUID();
-
-    // Upload files first
     const docUpdates: Record<string, string> = {};
     for (const [key, file] of Object.entries(files)) {
       const url = await uploadDocument(file, truckId, key);
       if (url) docUpdates[`${key}_url`] = url;
     }
-
     if (editTruck) {
       ok = await updateTruck(editTruck.id, { ...input, ...docUpdates });
     } else {
@@ -62,18 +59,18 @@ const Fleet = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="page-header">Flota de Camiones</h1>
-          <p className="page-description">Gestión y disponibilidad de vehículos</p>
+          <h1 className="page-header">Truck Fleet</h1>
+          <p className="page-description">Vehicle management and availability</p>
         </div>
         <Button size="sm" className="gap-2" onClick={openNew}>
-          <Plus className="h-4 w-4" /> Nuevo Camión
+          <Plus className="h-4 w-4" /> New Truck
         </Button>
       </div>
 
       {loading ? (
-        <p className="text-muted-foreground text-center py-12">Cargando camiones...</p>
+        <p className="text-muted-foreground text-center py-12">Loading trucks...</p>
       ) : trucks.length === 0 ? (
-        <p className="text-muted-foreground text-center py-12">No hay camiones registrados. Crea el primero.</p>
+        <p className="text-muted-foreground text-center py-12">No trucks registered. Create the first one.</p>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
           {trucks.map(truck => (
@@ -99,27 +96,27 @@ const Fleet = () => {
                 </div>
 
                 <div className="space-y-1.5 text-[15px]">
-                  <Row label="Tipo" value={truck.truck_type} />
+                  <Row label="Type" value={truck.truck_type} />
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">Driver</span>
                     <span className="font-medium flex items-center gap-1">
                       {getDriverName(truck.id) ? (
                         <><User className="h-3 w-3 text-primary" />{getDriverName(truck.id)}</>
                       ) : (
-                        <span className="text-muted-foreground italic">Sin asignar</span>
+                        <span className="text-muted-foreground italic">Unassigned</span>
                       )}
                     </span>
                   </div>
                 </div>
 
                 <div className="flex justify-end gap-1.5 mt-3 pt-2 border-t">
-                  <Button variant="outline" size="icon" className="h-8 w-10 border-emerald-300 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700" onClick={() => setDetailTruck(truck)} title="Detalle">
+                  <Button variant="outline" size="icon" className="h-8 w-10 border-emerald-300 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700" onClick={() => setDetailTruck(truck)} title="Detail">
                     <Eye className="h-4 w-4" />
                   </Button>
-                  <Button variant="outline" size="icon" className="h-8 w-10 border-amber-300 bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700" onClick={() => openEdit(truck)} title="Editar">
+                  <Button variant="outline" size="icon" className="h-8 w-10 border-amber-300 bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700" onClick={() => openEdit(truck)} title="Edit">
                     <Pencil className="h-4 w-4" />
                   </Button>
-                  <Button variant="outline" size="icon" className="h-8 w-10 border-red-300 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700" onClick={async () => { if (window.confirm(`¿Eliminar camión Unit #${truck.unit_number}? Esta acción es permanente.`)) { await deleteTruck(truck.id); } }} title="Eliminar">
+                  <Button variant="outline" size="icon" className="h-8 w-10 border-red-300 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700" onClick={async () => { if (window.confirm(`Delete truck Unit #${truck.unit_number}? This action is permanent.`)) { await deleteTruck(truck.id); } }} title="Delete">
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
@@ -131,8 +128,6 @@ const Fleet = () => {
 
       <TruckFormDialog open={dialogOpen} onOpenChange={setDialogOpen} truck={editTruck} onSave={handleSave} />
       <TruckDetailDialog open={!!detailTruck} onOpenChange={v => !v && setDetailTruck(null)} truck={detailTruck} />
-
-      {/* Delete now uses window.confirm */}
     </div>
   );
 };

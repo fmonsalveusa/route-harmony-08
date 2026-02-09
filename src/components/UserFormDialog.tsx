@@ -26,10 +26,10 @@ interface UserFormDialogProps {
 }
 
 const roles = [
-  { value: 'admin', label: 'Administrador' },
-  { value: 'accounting', label: 'Contabilidad' },
+  { value: 'admin', label: 'Admin' },
+  { value: 'accounting', label: 'Accounting' },
   { value: 'dispatcher', label: 'Dispatcher' },
-  { value: 'driver', label: 'Conductor' },
+  { value: 'driver', label: 'Driver' },
 ];
 
 export const UserFormDialog = ({ open, onOpenChange, user, onSuccess }: UserFormDialogProps) => {
@@ -51,41 +51,28 @@ export const UserFormDialog = ({ open, onOpenChange, user, onSuccess }: UserForm
       setIsActive(user.is_active);
       setPassword('');
     } else {
-      setFullName('');
-      setEmail('');
-      setPhone('');
-      setRole('dispatcher');
-      setPassword('');
-      setIsActive(true);
+      setFullName(''); setEmail(''); setPhone(''); setRole('dispatcher'); setPassword(''); setIsActive(true);
     }
   }, [user, open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('No autenticado');
-
+      if (!session) throw new Error('Not authenticated');
       const body: Record<string, unknown> = isEdit
         ? { action: 'update', user_id: user!.id, full_name: fullName, phone: phone || null, role, is_active: isActive }
         : { action: 'create', email, password, full_name: fullName, phone: phone || null, role };
-
-      if (isEdit && password) {
-        body.password = password;
-      }
-
+      if (isEdit && password) body.password = password;
       const { data, error } = await supabase.functions.invoke('manage-user', { body });
-
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-
-      toast.success(isEdit ? 'Usuario actualizado' : 'Usuario creado exitosamente');
+      toast.success(isEdit ? 'User updated' : 'User created successfully');
       onSuccess();
       onOpenChange(false);
     } catch (err: any) {
-      toast.error(err.message || 'Error al guardar usuario');
+      toast.error(err.message || 'Error saving user');
     } finally {
       setLoading(false);
     }
@@ -95,14 +82,14 @@ export const UserFormDialog = ({ open, onOpenChange, user, onSuccess }: UserForm
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{isEdit ? 'Editar Usuario' : 'Nuevo Usuario'}</DialogTitle>
+          <DialogTitle>{isEdit ? 'Edit User' : 'New User'}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="fullName">Nombre completo</Label>
+            <Label htmlFor="fullName">Full Name</Label>
             <div className="relative">
               <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input id="fullName" value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Nombre completo" className="pl-10" required />
+              <Input id="fullName" value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Full name" className="pl-10" required />
             </div>
           </div>
 
@@ -110,12 +97,12 @@ export const UserFormDialog = ({ open, onOpenChange, user, onSuccess }: UserForm
             <Label htmlFor="email">Email</Label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="correo@ejemplo.com" className="pl-10" required disabled={isEdit} />
+              <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="email@example.com" className="pl-10" required disabled={isEdit} />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="phone">Teléfono</Label>
+            <Label htmlFor="phone">Phone</Label>
             <div className="relative">
               <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input id="phone" value={phone} onChange={e => setPhone(e.target.value)} placeholder="(555) 123-4567" className="pl-10" />
@@ -123,7 +110,7 @@ export const UserFormDialog = ({ open, onOpenChange, user, onSuccess }: UserForm
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="role">Rol</Label>
+            <Label htmlFor="role">Role</Label>
             <Select value={role} onValueChange={setRole}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -135,24 +122,24 @@ export const UserFormDialog = ({ open, onOpenChange, user, onSuccess }: UserForm
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">{isEdit ? 'Nueva contraseña (dejar vacío para no cambiar)' : 'Contraseña'}</Label>
+            <Label htmlFor="password">{isEdit ? 'New password (leave empty to keep current)' : 'Password'}</Label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder={isEdit ? '••••••••' : 'Mínimo 6 caracteres'} className="pl-10" required={!isEdit} minLength={6} />
+              <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder={isEdit ? '••••••••' : 'Minimum 6 characters'} className="pl-10" required={!isEdit} minLength={6} />
             </div>
           </div>
 
           {isEdit && (
             <div className="flex items-center justify-between rounded-md border p-3">
-              <Label htmlFor="is-active" className="cursor-pointer">Usuario activo</Label>
+              <Label htmlFor="is-active" className="cursor-pointer">Active user</Label>
               <Switch id="is-active" checked={isActive} onCheckedChange={setIsActive} />
             </div>
           )}
 
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
             <Button type="submit" disabled={loading}>
-              {loading ? 'Guardando...' : isEdit ? 'Actualizar' : 'Crear Usuario'}
+              {loading ? 'Saving...' : isEdit ? 'Update' : 'Create User'}
             </Button>
           </div>
         </form>

@@ -44,19 +44,19 @@ export function DriverDetailDialog({ open, onOpenChange, driver, truckLabel, dis
         </DialogHeader>
 
         <div className="space-y-5 mt-2">
-          {/* Información Personal */}
+          {/* Personal Information */}
           <section className="space-y-2">
-            <h3 className="font-semibold text-sm border-b pb-1">Información Personal</h3>
+            <h3 className="font-semibold text-sm border-b pb-1">Personal Information</h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3">
               <Info label="Email">{driver.email}</Info>
-              <Info label="Teléfono">{driver.phone}</Info>
-              <Info label="Fecha de Contratación">{formatDate(driver.hire_date)}</Info>
+              <Info label="Phone">{driver.phone}</Info>
+              <Info label="Hire Date">{formatDate(driver.hire_date)}</Info>
             </div>
           </section>
 
-          {/* Licencia & Medical */}
+          {/* License & Medical */}
           <section className="space-y-2 border-t pt-4">
-            <h3 className="font-semibold text-sm border-b pb-1">Licencia & Medical Card</h3>
+            <h3 className="font-semibold text-sm border-b pb-1">License & Medical Card</h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3">
               <Info label="Driver License #">{driver.license}</Info>
               <Info label="License Expiry">{formatDate(driver.license_expiry)}</Info>
@@ -64,30 +64,30 @@ export function DriverDetailDialog({ open, onOpenChange, driver, truckLabel, dis
             </div>
           </section>
 
-          {/* Asignaciones */}
+          {/* Assignments */}
           <section className="space-y-2 border-t pt-4">
-            <h3 className="font-semibold text-sm border-b pb-1">Asignaciones</h3>
+            <h3 className="font-semibold text-sm border-b pb-1">Assignments</h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3">
-              <Info label="Dispatcher">{dispatcherName || 'Sin asignar'}</Info>
-              <Info label="Camión">{truckLabel || 'Sin asignar'}</Info>
+              <Info label="Dispatcher">{dispatcherName || 'Unassigned'}</Info>
+              <Info label="Truck">{truckLabel || 'Unassigned'}</Info>
               <Info label="Investor">{driver.investor_name || '—'}</Info>
             </div>
           </section>
 
-          {/* Pagos & Rendimiento */}
+          {/* Payments & Performance */}
           <section className="space-y-2 border-t pt-4">
-            <h3 className="font-semibold text-sm border-b pb-1">Pagos & Rendimiento</h3>
+            <h3 className="font-semibold text-sm border-b pb-1">Payments & Performance</h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3">
-              <Info label="% Pago Driver">{driver.pay_percentage}%</Info>
-              <Info label="% Pago Investor">{driver.investor_pay_percentage ?? '—'}%</Info>
-              <Info label="Cargas este mes">{driver.loads_this_month}</Info>
-              <Info label="Ganado este mes">${Number(driver.earnings_this_month).toLocaleString()}</Info>
+              <Info label="% Driver Pay">{driver.pay_percentage}%</Info>
+              <Info label="% Investor Pay">{driver.investor_pay_percentage ?? '—'}%</Info>
+              <Info label="Loads This Month">{driver.loads_this_month}</Info>
+              <Info label="Earned This Month">${Number(driver.earnings_this_month).toLocaleString()}</Info>
             </div>
           </section>
 
-          {/* Documentos */}
+          {/* Documents */}
           <section className="space-y-2 border-t pt-4">
-            <h3 className="font-semibold text-sm border-b pb-1">Documentos</h3>
+            <h3 className="font-semibold text-sm border-b pb-1">Documents</h3>
             <div className="space-y-2">
               {docFields.map(doc => {
                 const url = (driver as any)[doc.key];
@@ -97,10 +97,10 @@ export function DriverDetailDialog({ open, onOpenChange, driver, truckLabel, dis
                     <span className="font-medium flex-1">{doc.label}</span>
                     {url ? (
                       <a href={url} target="_blank" rel="noopener" className="text-primary underline flex items-center gap-1 text-xs">
-                        Ver <ExternalLink className="h-3 w-3" />
+                        View <ExternalLink className="h-3 w-3" />
                       </a>
                     ) : (
-                      <span className="text-xs text-muted-foreground">Sin archivo</span>
+                      <span className="text-xs text-muted-foreground">No file</span>
                     )}
                   </div>
                 );
