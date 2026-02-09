@@ -185,6 +185,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (p === permission) return true;
       if (p.endsWith('.*') && permission.startsWith(p.replace('.*', ''))) return true;
       if (p.endsWith('*') && permission.startsWith(p.replace('*', ''))) return true;
+      // Also match if a role permission starts with the requested permission (e.g. 'dashboard.full' matches 'dashboard')
+      if (p.startsWith(permission + '.') || p.startsWith(permission + '*')) return true;
       return false;
     });
   };
