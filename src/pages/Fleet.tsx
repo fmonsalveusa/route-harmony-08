@@ -6,7 +6,7 @@ import { TruckFormDialog } from '@/components/TruckFormDialog';
 import { TruckDetailDialog } from '@/components/TruckDetailDialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Truck as TruckIcon, Pencil, Trash2, Eye, User } from 'lucide-react';
+import { Plus, Truck as TruckIcon, Pencil, Trash2, Eye, User, CheckCircle2, XCircle } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const STATUS_OPTIONS = [
@@ -123,9 +123,9 @@ const Fleet = () => {
       ) : (
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
-            <TabsTrigger value="active">Active</TabsTrigger>
-            <TabsTrigger value="inactive">Inactive</TabsTrigger>
-            <TabsTrigger value="all">All</TabsTrigger>
+            <TabsTrigger value="active"><CheckCircle2 className="h-4 w-4" /> Activos ({trucks.filter(t => t.status !== 'inactive').length})</TabsTrigger>
+            <TabsTrigger value="inactive"><XCircle className="h-4 w-4" /> Inactive ({trucks.filter(t => t.status === 'inactive').length})</TabsTrigger>
+            <TabsTrigger value="all">All ({trucks.length})</TabsTrigger>
           </TabsList>
           {['active', 'inactive', 'all'].map(tab => (
             <TabsContent key={tab} value={tab}>
