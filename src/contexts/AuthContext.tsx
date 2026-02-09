@@ -124,7 +124,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
+    let initialSessionHandled = false;
+
+    // First, get the initial session synchronously
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      initialSessionHandled = true;
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        fetchUserData(session.user.id).finally(() => setLoading(false));
+      } else {
+        setLoading(false);
+      }
+    });
+
+    // Then listen for future auth changes (sign in, sign out, token refresh)
     const { data: { subscription: authSub } } = supabase.auth.onAuthStateChange((event, session) => {
+      // Skip the initial INITIAL_SESSION event since we handle it above
+      if (!initialSessionHandled && event === 'INITIAL_SESSION') {
+        return;
+      }
+
       setSession(session);
       setUser(session?.user ?? null);
 
@@ -137,16 +157,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setRole(null);
         setTenant(null);
         setSubscription(null);
-        setLoading(false);
-      }
-    });
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchUserData(session.user.id).finally(() => setLoading(false));
-      } else {
         setLoading(false);
       }
     });
