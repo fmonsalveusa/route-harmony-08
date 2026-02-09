@@ -5,7 +5,7 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Truck, Users, Package, MapPin, FileText,
   BarChart3, LogOut, DollarSign, UserCog, ChevronLeft,
-  ChevronRight, Headphones, Menu, Building2, Crown, CreditCard, Settings, Plus
+  ChevronRight, Headphones, Menu, Building2, Crown, CreditCard, Settings, Plus, Receipt
 } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -32,6 +32,7 @@ const tenantNavItems: NavItem[] = [
   { label: 'Invoices', icon: FileText, path: '/invoices', permission: 'invoices' },
   { label: 'Companies', icon: Building2, path: '/companies', permission: 'companies' },
   { label: 'Tracking', icon: MapPin, path: '/tracking', permission: 'tracking' },
+  { label: 'Expenses', icon: Receipt, path: '/expenses', permission: 'expenses' },
   { label: 'Reports', icon: BarChart3, path: '/reports', permission: 'reports' },
   { label: 'Users', icon: UserCog, path: '/users', permission: 'users' },
 ];
