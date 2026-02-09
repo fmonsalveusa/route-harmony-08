@@ -251,15 +251,16 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
   };
 
   const handleDelete = async () => {
-    if (!deletePaymentId) return;
-    const { error } = await supabase.from('payments').delete().eq('id', deletePaymentId);
+    const idToDelete = deletePaymentId;
+    if (!idToDelete) return;
+    setDeletePaymentId(null);
+    const { error } = await supabase.from('payments').delete().eq('id', idToDelete);
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } else {
-      toast({ title: 'Pago eliminado' });
+      toast({ title: 'Payment deleted' });
       refetch();
     }
-    setDeletePaymentId(null);
   };
 
   return (
