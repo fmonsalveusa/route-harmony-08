@@ -49,6 +49,26 @@ const AdminDashboard = () => {
   const filteredLoads = loads.filter(l => {
     if (dispatcherFilter !== 'all' && l.dispatcher_id !== dispatcherFilter) return false;
     if (driverFilter !== 'all' && l.driver_id !== driverFilter) return false;
+
+    // Date filtering based on pickup_date
+    const dateStr = l.pickup_date || l.created_at;
+    if (!dateStr) return true;
+    const d = new Date(dateStr.includes('T') ? dateStr : dateStr + 'T00:00:00');
+
+    if (year !== 'all' && d.getFullYear() !== Number(year)) return false;
+    if (month !== 'all' && (d.getMonth() + 1) !== Number(month)) return false;
+    if (week !== 'all') {
+      const yr = year !== 'all' ? Number(year) : new Date().getFullYear();
+      const jan4 = new Date(yr, 0, 4);
+      const mondayOfWeek1 = new Date(jan4);
+      mondayOfWeek1.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7));
+      const weekStart = new Date(mondayOfWeek1);
+      weekStart.setDate(mondayOfWeek1.getDate() + (Number(week) - 1) * 7);
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 7);
+      if (d < weekStart || d >= weekEnd) return false;
+    }
+
     return true;
   });
 
