@@ -110,7 +110,18 @@ const Drivers = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="page-header">Drivers</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="page-header">Drivers</h1>
+            {(() => {
+              const pendingCount = drivers.filter(d => d.status === 'pending').length;
+              return pendingCount > 0 ? (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-yellow-100 text-yellow-800 text-sm font-semibold border border-yellow-300 animate-fade-in">
+                  <span className="h-2 w-2 rounded-full bg-yellow-500 animate-pulse" />
+                  {pendingCount} pending
+                </span>
+              ) : null;
+            })()}
+          </div>
           <p className="page-description">{isDispatcher ? 'Drivers under your management' : 'Complete driver management'}</p>
         </div>
         {!isDispatcher && (

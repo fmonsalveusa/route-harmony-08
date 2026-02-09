@@ -66,6 +66,17 @@ export function useDrivers() {
 
   useEffect(() => { fetchDrivers(); }, [fetchDrivers]);
 
+  // Realtime: auto-refresh when drivers table changes
+  useEffect(() => {
+    const channel = supabase
+      .channel('drivers-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'drivers' }, () => {
+        fetchDrivers();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [fetchDrivers]);
+
   const createDriver = async (input: DriverInput) => {
     const tenant_id = await getTenantId();
     const { error } = await supabase.from('drivers' as any).insert({ ...input, tenant_id } as any);
