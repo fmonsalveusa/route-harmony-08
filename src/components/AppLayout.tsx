@@ -34,7 +34,6 @@ const tenantNavItems: NavItem[] = [
   { label: 'Tracking', icon: MapPin, path: '/tracking', permission: 'tracking' },
   { label: 'Expenses', icon: Receipt, path: '/expenses', permission: 'expenses' },
   { label: 'Performance', icon: Trophy, path: '/performance', permission: 'performance' },
-  { label: 'Reports', icon: BarChart3, path: '/reports', permission: 'reports' },
   { label: 'Users', icon: UserCog, path: '/users', permission: 'users' },
 ];
 
