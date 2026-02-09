@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Plus, Search, Phone, Truck as TruckIcon, Pencil, Trash2, Eye, Copy } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useDrivers, DbDriver, DriverInput } from '@/hooks/useDrivers';
 import { useTrucks } from '@/hooks/useTrucks';
 import { useDispatchers } from '@/hooks/useDispatchers';
@@ -207,22 +207,20 @@ const Drivers = () => {
         dispatcherName={detailDriver ? dispatchers.find(d => d.id === detailDriver.dispatcher_id)?.name || null : null}
       />
 
-      <AlertDialog open={!!deletingDriver} onOpenChange={open => !open && setDeletingDriver(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>¿Eliminar driver?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta acción eliminará permanentemente a <strong>{deletingDriver?.name}</strong>. No se puede deshacer.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Eliminar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <Dialog open={!!deletingDriver} onOpenChange={open => !open && setDeletingDriver(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>¿Eliminar driver?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Esta acción eliminará permanentemente a <strong>{deletingDriver?.name}</strong>. No se puede deshacer.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeletingDriver(null)}>Cancelar</Button>
+            <Button variant="destructive" onClick={handleDelete}>Eliminar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

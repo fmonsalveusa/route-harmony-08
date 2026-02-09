@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+
 import { Plus, Pencil, Trash2, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { StatCard } from '@/components/StatCard';
@@ -143,18 +143,18 @@ const Companies = () => {
       </Dialog>
 
       {/* Delete Confirm */}
-      <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>¿Eliminar empresa?</AlertDialogTitle>
-            <AlertDialogDescription>Esta acción no se puede deshacer. Se eliminará "{deleteTarget?.name}".</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => { if (deleteTarget) deleteCompany(deleteTarget.id); setDeleteTarget(null); }}>Eliminar</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <Dialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>¿Eliminar empresa?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">Esta acción no se puede deshacer. Se eliminará "{deleteTarget?.name}".</p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancelar</Button>
+            <Button variant="destructive" onClick={() => { if (deleteTarget) deleteCompany(deleteTarget.id); setDeleteTarget(null); }}>Eliminar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
