@@ -45,7 +45,7 @@ const DONUT_COLORS = ['#22c55e', '#3b82f6', '#f97316', '#8b5cf6', '#6b7280', '#e
 
 export function ExpenseSummaryDashboard({ expenses, trucks, drivers }: Props) {
   const [open, setOpen] = useState(true);
-  const [companyDriverOnly, setCompanyDriverOnly] = useState(true);
+  const [companyDriverOnly, setCompanyDriverOnly] = useState(false);
   const [truckPage, setTruckPage] = useState(1);
   const [truckSort, setTruckSort] = useState<'total' | 'fuel' | 'maintenance'>('total');
   const [truckSortDir, setTruckSortDir] = useState<'asc' | 'desc'>('desc');
