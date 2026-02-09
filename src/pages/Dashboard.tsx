@@ -6,6 +6,7 @@ import { useLoads } from '@/hooks/useLoads';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useTrucks } from '@/hooks/useTrucks';
 import { usePayments } from '@/hooks/usePayments';
+import { useDispatchers } from '@/hooks/useDispatchers';
 import { Package, Truck, DollarSign, AlertTriangle, TrendingUp, Users, Headphones } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DashboardFilters } from '@/components/dashboard/DashboardFilters';
@@ -19,6 +20,7 @@ const AdminDashboard = () => {
   const { drivers } = useDrivers();
   const { trucks } = useTrucks();
   const { payments } = usePayments();
+  const { dispatchers } = useDispatchers();
 
   const [year, setYear] = useState('all');
   const [month, setMonth] = useState('all');
@@ -54,7 +56,7 @@ const AdminDashboard = () => {
 
       {/* Charts Row 2: Dispatcher Commissions + Market Analysis */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <DispatcherCommissionsChart payments={payments} year={year} month={month} week={week} />
+        <DispatcherCommissionsChart loads={loads} dispatchers={dispatchers} year={year} month={month} week={week} />
         <MarketAnalysisCard loads={loads} trucks={trucks} />
       </div>
 

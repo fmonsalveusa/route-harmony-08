@@ -1,21 +1,53 @@
 import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { DbPayment } from '@/hooks/usePayments';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList } from 'recharts';
+import { DbLoad } from '@/hooks/useLoads';
+import { DbDispatcher } from '@/hooks/useDispatchers';
 import { getISOWeek } from '@/lib/dateUtils';
 
 interface Props {
-  payments: DbPayment[];
+  loads: DbLoad[];
+  dispatchers: DbDispatcher[];
   year: string;
   month: string;
   week: string;
 }
 
-export function DispatcherCommissionsChart({ payments, year, month, week }: Props) {
+const BAR_COLORS = [
+  '#9333ea', '#e85d04', '#2563eb', '#16a34a', '#dc2626',
+  '#0891b2', '#ca8a04', '#6366f1', '#059669', '#d946ef',
+];
+
+const renderVerticalLabel = (props: any) => {
+  const { x, y, width, height, value } = props;
+  if (height < 40) return null;
+  return (
+    <text
+      x={x + width / 2}
+      y={y + 30}
+      fill="#fff"
+      textAnchor="middle"
+      dominantBaseline="central"
+      fontSize={14}
+      fontWeight={700}
+      transform={`rotate(-90, ${x + width / 2}, ${y + 30})`}
+    >
+      ${Number(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+    </text>
+  );
+};
+
+export function DispatcherCommissionsChart({ loads, dispatchers, year, month, week }: Props) {
   const data = useMemo(() => {
-    const filtered = payments.filter(p => {
-      if (p.recipient_type !== 'dispatcher') return false;
-      const d = p.created_at;
+    // Build dispatcher map: id -> { name, commission_percentage }
+    const dispatcherMap: Record<string, { name: string; pct: number }> = {};
+    dispatchers.forEach(d => {
+      dispatcherMap[d.id] = { name: d.name, pct: d.commission_percentage };
+    });
+
+    const filtered = loads.filter(l => {
+      if (l.status === 'cancelled' || !l.dispatcher_id) return false;
+      const d = l.pickup_date || l.created_at;
       if (!d) return false;
       const date = new Date(d);
       if (year !== 'all' && date.getFullYear() !== Number(year)) return false;
@@ -25,14 +57,20 @@ export function DispatcherCommissionsChart({ payments, year, month, week }: Prop
     });
 
     const byDispatcher: Record<string, number> = {};
-    filtered.forEach(p => {
-      byDispatcher[p.recipient_name] = (byDispatcher[p.recipient_name] || 0) + p.amount;
+    filtered.forEach(l => {
+      const disp = dispatcherMap[l.dispatcher_id!];
+      if (!disp) return;
+      const commission = l.total_rate * (disp.pct / 100);
+      byDispatcher[l.dispatcher_id!] = (byDispatcher[l.dispatcher_id!] || 0) + commission;
     });
 
     return Object.entries(byDispatcher)
-      .map(([name, total]) => ({ name, total }))
+      .map(([id, total]) => ({
+        name: dispatcherMap[id]?.name || 'Unknown',
+        total: Math.round(total * 100) / 100,
+      }))
       .sort((a, b) => b.total - a.total);
-  }, [payments, year, month, week]);
+  }, [loads, dispatchers, year, month, week]);
 
   return (
     <Card>
@@ -44,12 +82,15 @@ export function DispatcherCommissionsChart({ payments, year, month, week }: Prop
           <p className="text-sm text-muted-foreground text-center py-10">Sin datos para los filtros seleccionados</p>
         ) : (
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={data} layout="vertical" margin={{ left: 20 }}>
+            <BarChart data={data}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis type="number" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} tickFormatter={v => `$${(v / 1000).toFixed(1)}k`} />
-              <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} width={100} />
+              <XAxis dataKey="name" tick={{ fontSize: 13, fill: 'hsl(var(--muted-foreground))', fontWeight: 600 }} interval={0} angle={-25} textAnchor="end" height={70} />
+              <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} tickFormatter={v => `$${(v / 1000).toFixed(1)}k`} domain={[0, (max: number) => Math.ceil(max * 1.1)]} />
               <Tooltip formatter={(v: number) => [`$${v.toLocaleString()}`, 'Comisión']} />
-              <Bar dataKey="total" fill="hsl(var(--chart-4, 38 92% 50%))" radius={[0, 4, 4, 0]} />
+              <Bar dataKey="total" radius={[4, 4, 0, 0]}>
+                {data.map((_, i) => <Cell key={i} fill={BAR_COLORS[i % BAR_COLORS.length]} />)}
+                <LabelList dataKey="total" content={renderVerticalLabel} />
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         )}
