@@ -4,9 +4,10 @@ import { useDrivers } from '@/hooks/useDrivers';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { TruckFormDialog } from '@/components/TruckFormDialog';
 import { TruckDetailDialog } from '@/components/TruckDetailDialog';
+import { TruckDetailPanel } from '@/components/TruckDetailPanel';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Truck as TruckIcon, Pencil, Trash2, Eye, User } from 'lucide-react';
+import { Plus, Truck as TruckIcon, Pencil, Trash2, Eye, User, ChevronDown, ChevronUp } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const STATUS_OPTIONS = [
@@ -29,6 +30,7 @@ const Fleet = () => {
   const [editTruck, setEditTruck] = useState<DbTruck | null>(null);
   const [detailTruck, setDetailTruck] = useState<DbTruck | null>(null);
   const [activeTab, setActiveTab] = useState('active');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const openNew = () => { setEditTruck(null); setDialogOpen(true); };
   const openEdit = (t: DbTruck) => { setEditTruck(t); setDialogOpen(true); };
@@ -62,6 +64,7 @@ const Fleet = () => {
           <table className="w-full text-[15px]">
             <thead>
               <tr className="border-b bg-muted/50">
+                <th className="w-8 p-3"></th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Unit #</th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Type</th>
                 <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Driver</th>
@@ -70,53 +73,69 @@ const Fleet = () => {
               </tr>
             </thead>
             <tbody>
-              {trucksList.map(truck => (
-                <tr key={truck.id} className="border-b hover:bg-muted/30 transition-colors">
-                  <td className="p-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                        <TruckIcon className="h-4 w-4 text-primary" />
-                      </div>
-                      <span className="font-bold">Unit #{truck.unit_number}</span>
-                    </div>
-                  </td>
-                  <td className="p-3">{truck.truck_type}</td>
-                  <td className="p-3 hidden md:table-cell">
-                    <span className="flex items-center gap-1">
-                      {getDriverName(truck.id) ? (
-                        <><User className="h-3 w-3 text-primary" />{getDriverName(truck.id)}</>
-                      ) : (
-                        <span className="text-muted-foreground italic">Unassigned</span>
-                      )}
-                    </span>
-                  </td>
-                  <td className="p-3">
-                    <Select value={truck.status} onValueChange={v => updateTruck(truck.id, { status: v })}>
-                      <SelectTrigger className={`w-auto h-7 text-xs gap-1 px-2.5 border-0 rounded-full ${getStatusStyle(truck.status)}`}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-popover z-50">
-                        {STATUS_OPTIONS.map(s => (
-                          <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </td>
-                  <td className="p-3">
-                    <div className="flex items-center justify-end gap-1.5">
-                      <Button variant="outline" size="icon" className="h-8 w-10 border-emerald-300 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700" onClick={() => setDetailTruck(truck)} title="Detail">
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="icon" className="h-8 w-10 border-amber-300 bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700" onClick={() => openEdit(truck)} title="Edit">
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="icon" className="h-8 w-10 border-red-300 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700" onClick={async () => { if (window.confirm(`Delete truck Unit #${truck.unit_number}? This action is permanent.`)) { await deleteTruck(truck.id); } }} title="Delete">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {trucksList.map(truck => {
+                const isExpanded = expandedId === truck.id;
+                const driverName = getDriverName(truck.id);
+                return (
+                  <>
+                    <tr key={truck.id} className={`border-b hover:bg-muted/30 cursor-pointer transition-colors ${isExpanded ? 'bg-muted/20' : ''}`} onClick={() => setExpandedId(isExpanded ? null : truck.id)}>
+                      <td className="p-3 text-muted-foreground">
+                        {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      </td>
+                      <td className="p-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                            <TruckIcon className="h-4 w-4 text-primary" />
+                          </div>
+                          <span className="font-bold">Unit #{truck.unit_number}</span>
+                        </div>
+                      </td>
+                      <td className="p-3">{truck.truck_type}</td>
+                      <td className="p-3 hidden md:table-cell">
+                        <span className="flex items-center gap-1">
+                          {driverName ? (
+                            <><User className="h-3 w-3 text-primary" />{driverName}</>
+                          ) : (
+                            <span className="text-muted-foreground italic">Unassigned</span>
+                          )}
+                        </span>
+                      </td>
+                      <td className="p-3" onClick={e => e.stopPropagation()}>
+                        <Select value={truck.status} onValueChange={v => updateTruck(truck.id, { status: v })}>
+                          <SelectTrigger className={`w-auto h-7 text-xs gap-1 px-2.5 border-0 rounded-full ${getStatusStyle(truck.status)}`}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="bg-popover z-50">
+                            {STATUS_OPTIONS.map(s => (
+                              <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </td>
+                      <td className="p-3" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-end gap-1.5">
+                          <Button variant="outline" size="icon" className="h-8 w-10 border-emerald-300 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700" onClick={() => setDetailTruck(truck)} title="Detail">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button variant="outline" size="icon" className="h-8 w-10 border-amber-300 bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700" onClick={() => openEdit(truck)} title="Edit">
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button variant="outline" size="icon" className="h-8 w-10 border-red-300 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700" onClick={async () => { if (window.confirm(`Delete truck Unit #${truck.unit_number}? This action is permanent.`)) { await deleteTruck(truck.id); } }} title="Delete">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                    {isExpanded && (
+                      <tr key={`${truck.id}-detail`}>
+                        <td colSpan={6} className="p-0">
+                          <TruckDetailPanel truck={truck} driverName={driverName} />
+                        </td>
+                      </tr>
+                    )}
+                  </>
+                );
+              })}
             </tbody>
           </table>
         </div>
