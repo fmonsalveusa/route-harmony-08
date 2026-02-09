@@ -81,8 +81,13 @@ export function WeeklyRatesChart({ loads }: Props) {
                 stroke="hsl(var(--primary))"
                 strokeWidth={2}
                 fill="url(#weeklyRateGradient)"
-                dot={{ r: data.length <= 20 ? 3 : 0, fill: 'hsl(var(--primary))' }}
-                activeDot={{ r: 5, strokeWidth: 2 }}
+                dot={{ r: data.length <= 20 ? 4 : 0, fill: 'hsl(var(--primary))' }}
+                activeDot={{ r: 6, strokeWidth: 2 }}
+                label={data.length <= 20 ? ({ x, y, value }: any) => (
+                  <text x={x} y={y - 12} textAnchor="middle" fill="hsl(var(--foreground))" fontSize={11} fontWeight={700}>
+                    ${Number(value).toLocaleString()}
+                  </text>
+                ) : undefined}
               />
             </AreaChart>
           </ResponsiveContainer>
