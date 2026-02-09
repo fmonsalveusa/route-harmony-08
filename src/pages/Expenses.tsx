@@ -49,6 +49,14 @@ const Expenses = () => {
     id: d.id, name: d.name, service_type: d.service_type, truck_id: d.truck_id,
   })), [drivers]);
 
+  // Only trucks with company drivers assigned (for the expense form)
+  const companyDriverTrucks = useMemo(() => {
+    return trucks.filter(t => {
+      const driver = drivers.find(d => d.id === t.driver_id);
+      return driver && driver.service_type === 'company_driver';
+    });
+  }, [trucks, drivers]);
+
   const filtered = useMemo(() => {
     let result = [...expenses];
 
@@ -165,7 +173,7 @@ const Expenses = () => {
             </div>
           </CardContent>
         </Card>
-        <ExpenseFormDialog open={formOpen} onOpenChange={setFormOpen} onSubmit={createExpense} trucks={trucks} drivers={driverList} />
+        <ExpenseFormDialog open={formOpen} onOpenChange={setFormOpen} onSubmit={createExpense} trucks={companyDriverTrucks} drivers={driverList} />
         <FuelImportWizard open={importOpen} onOpenChange={setImportOpen} onImport={createExpensesBatch} trucks={trucks} drivers={driverList} existingExpenses={expenses} />
       </div>
     );
@@ -386,7 +394,7 @@ const Expenses = () => {
         open={formOpen}
         onOpenChange={(o) => { setFormOpen(o); if (!o) setEditExpense(null); }}
         onSubmit={editExpense ? (input) => updateExpense(editExpense.id, input).then(() => null) : createExpense}
-        trucks={trucks}
+        trucks={companyDriverTrucks}
         drivers={driverList}
         editExpense={editExpense}
       />

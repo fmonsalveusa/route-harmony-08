@@ -136,11 +136,14 @@ export function ExpenseFormDialog({ open, onOpenChange, onSubmit, trucks, driver
                 <Select value={form.truck_id} onValueChange={v => setForm({ ...form, truck_id: v })}>
                   <SelectTrigger><SelectValue placeholder="Select truck" /></SelectTrigger>
                   <SelectContent>
-                    {trucks.map(t => (
-                      <SelectItem key={t.id} value={t.id}>
-                        {t.license_plate || t.unit_number} - {t.model || t.make || t.truck_type} {t.year || ''}
-                      </SelectItem>
-                    ))}
+                    {trucks.map(t => {
+                      const driver = drivers.find(d => d.id === t.driver_id);
+                      return (
+                        <SelectItem key={t.id} value={t.id}>
+                          {t.unit_number} - {driver?.name || 'No Driver'}
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
               </div>
@@ -169,7 +172,7 @@ export function ExpenseFormDialog({ open, onOpenChange, onSubmit, trucks, driver
                 <Select value={form.expense_type} onValueChange={v => setForm({ ...form, expense_type: v, category: '' })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {EXPENSE_TYPES.map(t => (
+                    {[...EXPENSE_TYPES].sort((a, b) => EXPENSE_TYPE_LABELS[a].localeCompare(EXPENSE_TYPE_LABELS[b])).map(t => (
                       <SelectItem key={t} value={t}>{EXPENSE_TYPE_LABELS[t]}</SelectItem>
                     ))}
                   </SelectContent>
@@ -181,7 +184,7 @@ export function ExpenseFormDialog({ open, onOpenChange, onSubmit, trucks, driver
                   <Select value={form.category} onValueChange={v => setForm({ ...form, category: v })}>
                     <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
                     <SelectContent>
-                      {categories.map(c => (
+                      {[...categories].sort((a, b) => a.label.localeCompare(b.label)).map(c => (
                         <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
                       ))}
                     </SelectContent>
