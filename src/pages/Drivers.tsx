@@ -6,13 +6,14 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Plus, Search, Phone, Truck as TruckIcon, Pencil, Trash2, Eye, Copy, Link2 } from 'lucide-react';
+import { Plus, Search, Phone, Truck as TruckIcon, Pencil, Trash2, Eye, Copy, Link2, ChevronDown, ChevronUp } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useDrivers, DbDriver, DriverInput } from '@/hooks/useDrivers';
 import { useTrucks } from '@/hooks/useTrucks';
 import { useDispatchers } from '@/hooks/useDispatchers';
 import { DriverFormDialog } from '@/components/DriverFormDialog';
 import { DriverDetailDialog } from '@/components/DriverDetailDialog';
+import { DriverDetailPanel } from '@/components/DriverDetailPanel';
 import { GenerateOnboardingLinkDialog } from '@/components/GenerateOnboardingLinkDialog';
 import { toast } from '@/hooks/use-toast';
 
@@ -39,6 +40,7 @@ const Drivers = () => {
   const [detailDriver, setDetailDriver] = useState<DbDriver | null>(null);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('active');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const getTruckLabel = (id: string | null) => {
     if (!id) return null;
@@ -118,6 +120,7 @@ const Drivers = () => {
           <table className="w-full text-[15px]">
             <thead>
               <tr className="border-b bg-muted/50">
+                <th className="w-8 p-3"></th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Driver</th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Phone</th>
                 <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Truck</th>
@@ -129,62 +132,76 @@ const Drivers = () => {
               {driversList.map(driver => {
                 const truckLabel = getTruckLabel(driver.truck_id);
                 const initials = driver.name.split(' ').map(n => n[0]).join('');
+                const isExpanded = expandedId === driver.id;
+                const dispatcher = dispatchers.find(d => d.id === driver.dispatcher_id);
                 return (
-                  <tr key={driver.id} className={cn("border-b hover:bg-muted/30 transition-colors", driver.status === 'pending' && "bg-yellow-50/50")}>
-                    <td className="p-3">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-9 w-9">
-                          <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm">{initials}</AvatarFallback>
-                        </Avatar>
-                        <span className="font-semibold">{driver.name}</span>
-                      </div>
-                    </td>
-                    <td className="p-3 text-muted-foreground">
-                      <div className="flex items-center gap-1.5">
-                        <Phone className="h-3.5 w-3.5" />{driver.phone}
-                      </div>
-                    </td>
-                    <td className="p-3 hidden md:table-cell">
-                      <div className="flex items-center gap-1.5">
-                        <TruckIcon className="h-3.5 w-3.5 text-primary" />
-                        <span>{truckLabel || <span className="text-muted-foreground italic">Unassigned</span>}</span>
-                      </div>
-                    </td>
-                    <td className="p-3">
-                      <Select value={driver.status} onValueChange={v => updateDriver(driver.id, { status: v })}>
-                        <SelectTrigger className={`w-auto h-7 text-xs font-semibold text-white border-0 rounded-full px-3 gap-1 ${driverStatusColor(driver.status)}`}>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="pending">Pending</SelectItem>
-                          <SelectItem value="available">Available</SelectItem>
-                          <SelectItem value="assigned">Assigned</SelectItem>
-                          <SelectItem value="resting">Resting</SelectItem>
-                          <SelectItem value="inactive">Inactive</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </td>
-                    <td className="p-3">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <Button variant="outline" size="icon" className="h-8 w-10 border-sky-300 bg-sky-50 text-sky-600 hover:bg-sky-100 hover:text-sky-700" onClick={() => copyDriverInfo(driver)} title="Copy">
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                        <Button variant="outline" size="icon" className="h-8 w-10 border-emerald-300 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700" onClick={() => setDetailDriver(driver)} title="Detail">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        {!isDispatcher && (
-                          <>
-                            <Button variant="outline" size="icon" className="h-8 w-10 border-amber-300 bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700" onClick={() => { setEditingDriver(driver); setFormOpen(true); }} title="Edit">
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button variant="outline" size="icon" className="h-8 w-10 border-red-300 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700" onClick={async () => { if (window.confirm(`Delete driver ${driver.name}? This action is permanent.`)) { await deleteDriver(driver.id); } }} title="Delete">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
+                  <>{/* Fragment needed for expand row */}
+                    <tr key={driver.id} className={cn("border-b hover:bg-muted/30 cursor-pointer transition-colors", driver.status === 'pending' && "bg-yellow-50/50", isExpanded && "bg-muted/20")} onClick={() => setExpandedId(isExpanded ? null : driver.id)}>
+                      <td className="p-3 text-muted-foreground">
+                        {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      </td>
+                      <td className="p-3">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-9 w-9">
+                            <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm">{initials}</AvatarFallback>
+                          </Avatar>
+                          <span className="font-semibold">{driver.name}</span>
+                        </div>
+                      </td>
+                      <td className="p-3 text-muted-foreground">
+                        <div className="flex items-center gap-1.5">
+                          <Phone className="h-3.5 w-3.5" />{driver.phone}
+                        </div>
+                      </td>
+                      <td className="p-3 hidden md:table-cell">
+                        <div className="flex items-center gap-1.5">
+                          <TruckIcon className="h-3.5 w-3.5 text-primary" />
+                          <span>{truckLabel || <span className="text-muted-foreground italic">Unassigned</span>}</span>
+                        </div>
+                      </td>
+                      <td className="p-3" onClick={e => e.stopPropagation()}>
+                        <Select value={driver.status} onValueChange={v => updateDriver(driver.id, { status: v })}>
+                          <SelectTrigger className={`w-auto h-7 text-xs font-semibold text-white border-0 rounded-full px-3 gap-1 ${driverStatusColor(driver.status)}`}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pending">Pending</SelectItem>
+                            <SelectItem value="available">Available</SelectItem>
+                            <SelectItem value="assigned">Assigned</SelectItem>
+                            <SelectItem value="resting">Resting</SelectItem>
+                            <SelectItem value="inactive">Inactive</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </td>
+                      <td className="p-3" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-end gap-1.5">
+                          <Button variant="outline" size="icon" className="h-8 w-10 border-sky-300 bg-sky-50 text-sky-600 hover:bg-sky-100 hover:text-sky-700" onClick={() => copyDriverInfo(driver)} title="Copy">
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                          <Button variant="outline" size="icon" className="h-8 w-10 border-emerald-300 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700" onClick={() => setDetailDriver(driver)} title="Detail">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          {!isDispatcher && (
+                            <>
+                              <Button variant="outline" size="icon" className="h-8 w-10 border-amber-300 bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700" onClick={() => { setEditingDriver(driver); setFormOpen(true); }} title="Edit">
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button variant="outline" size="icon" className="h-8 w-10 border-red-300 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700" onClick={async () => { if (window.confirm(`Delete driver ${driver.name}? This action is permanent.`)) { await deleteDriver(driver.id); } }} title="Delete">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                    {isExpanded && (
+                      <tr key={`${driver.id}-detail`}>
+                        <td colSpan={6} className="p-0">
+                          <DriverDetailPanel driver={driver} truckLabel={truckLabel} dispatcherName={dispatcher?.name || null} />
+                        </td>
+                      </tr>
+                    )}
+                  </>
                 );
               })}
             </tbody>
