@@ -73,9 +73,8 @@ const Drivers = () => {
   };
 
   const isDispatcher = role === 'dispatcher';
-  let filtered = isDispatcher
-    ? drivers.filter(d => d.dispatcher_id === ((profile as any)?.dispatcher_id || 'd1'))
-    : drivers;
+  // RLS already filters drivers for dispatchers at the database level
+  let filtered = drivers;
 
   if (search) filtered = filtered.filter(d =>
     d.name.toLowerCase().includes(search.toLowerCase()) ||
