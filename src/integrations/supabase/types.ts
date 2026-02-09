@@ -967,6 +967,54 @@ export type Database = {
         }
         Relationships: []
       }
+      truck_fixed_costs: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string
+          frequency: string
+          id: string
+          tenant_id: string | null
+          truck_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          description: string
+          frequency?: string
+          id?: string
+          tenant_id?: string | null
+          truck_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string
+          frequency?: string
+          id?: string
+          tenant_id?: string | null
+          truck_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "truck_fixed_costs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "truck_fixed_costs_truck_id_fkey"
+            columns: ["truck_id"]
+            isOneToOne: false
+            referencedRelation: "trucks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trucks: {
         Row: {
           cargo_area_photo_url: string | null
