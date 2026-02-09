@@ -64,7 +64,7 @@ export function WeeklyRatesChart({ loads }: Props) {
               <YAxis
                 tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
                 tickFormatter={v => `$${(v / 1000).toFixed(0)}k`}
-                domain={[0, (max: number) => Math.ceil(max * 1.1)]}
+                domain={[0, (max: number) => Math.ceil(max * 1.1 / 1000) * 1000]}
               />
               <Tooltip
                 formatter={(v: number) => [`$${v.toLocaleString()}`, 'Total Rate']}
