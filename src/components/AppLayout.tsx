@@ -24,24 +24,24 @@ interface NavItem {
 
 const tenantNavItems: NavItem[] = [
   { label: 'Dashboard', icon: LayoutDashboard, path: '/', permission: 'dashboard' },
-  { label: 'Cargas', icon: Package, path: '/loads', permission: 'loads' },
-  { label: 'Flota', icon: Truck, path: '/fleet', permission: 'fleet' },
-  { label: 'Conductores', icon: Users, path: '/drivers', permission: 'drivers' },
+  { label: 'Loads', icon: Package, path: '/loads', permission: 'loads' },
+  { label: 'Fleet', icon: Truck, path: '/fleet', permission: 'fleet' },
+  { label: 'Drivers', icon: Users, path: '/drivers', permission: 'drivers' },
   { label: 'Dispatchers', icon: Headphones, path: '/dispatchers', permission: 'dispatchers' },
-  { label: 'Pagos', icon: DollarSign, path: '/payments', permission: 'payments.drivers' },
-  { label: 'Facturación', icon: FileText, path: '/invoices', permission: 'invoices' },
-  { label: 'Empresas', icon: Building2, path: '/companies', permission: 'companies' },
-  { label: 'Seguimiento', icon: MapPin, path: '/tracking', permission: 'tracking' },
-  { label: 'Reportes', icon: BarChart3, path: '/reports', permission: 'reports' },
-  { label: 'Usuarios', icon: UserCog, path: '/users', permission: 'users' },
+  { label: 'Payments', icon: DollarSign, path: '/payments', permission: 'payments.drivers' },
+  { label: 'Invoices', icon: FileText, path: '/invoices', permission: 'invoices' },
+  { label: 'Companies', icon: Building2, path: '/companies', permission: 'companies' },
+  { label: 'Tracking', icon: MapPin, path: '/tracking', permission: 'tracking' },
+  { label: 'Reports', icon: BarChart3, path: '/reports', permission: 'reports' },
+  { label: 'Users', icon: UserCog, path: '/users', permission: 'users' },
 ];
 
 const masterNavItems: NavItem[] = [
   { label: 'Dashboard', icon: LayoutDashboard, path: '/master', permission: 'master' },
-  { label: 'Empresas', icon: Building2, path: '/master/tenants', permission: 'master' },
-  { label: 'Estadísticas', icon: BarChart3, path: '/master/stats', permission: 'master' },
-  { label: 'Facturación', icon: CreditCard, path: '/master/billing', permission: 'master' },
-  { label: 'Configuración', icon: Settings, path: '/master/settings', permission: 'master' },
+  { label: 'Companies', icon: Building2, path: '/master/tenants', permission: 'master' },
+  { label: 'Statistics', icon: BarChart3, path: '/master/stats', permission: 'master' },
+  { label: 'Billing', icon: CreditCard, path: '/master/billing', permission: 'master' },
+  { label: 'Settings', icon: Settings, path: '/master/settings', permission: 'master' },
 ];
 
 const roleBadgeStyles: Record<string, string> = {
@@ -146,7 +146,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
                 className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
               >
                 {isMasterRoute ? <Truck className="h-4.5 w-4.5 flex-shrink-0" /> : <Crown className="h-4.5 w-4.5 flex-shrink-0" />}
-                {!collapsed && <span>{isMasterRoute ? 'Ir a la App' : 'Panel Master'}</span>}
+                {!collapsed && <span>{isMasterRoute ? 'Go to App' : 'Master Panel'}</span>}
               </Link>
             </div>
           )}
@@ -168,14 +168,14 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
             <div className="space-y-1.5">
               <div>
                 <div className="flex justify-between text-[10px] text-sidebar-muted mb-0.5">
-                  <span>Usuarios</span>
-                  <span>{subscription.max_users} máx</span>
+                   <span>Users</span>
+                   <span>{subscription.max_users} max</span>
                 </div>
                 <Progress value={50} className="h-1.5" />
               </div>
               <div>
                 <div className="flex justify-between text-[10px] text-sidebar-muted mb-0.5">
-                  <span>Camiones</span>
+                   <span>Trucks</span>
                   <span>{subscription.max_trucks} máx</span>
                 </div>
                 <Progress value={30} className="h-1.5" />
@@ -205,12 +205,12 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
               <span className="text-sm text-muted-foreground">{tenant.name}</span>
             )}
             {isMasterAdmin && isMasterRoute && (
-              <span className="text-sm font-medium text-purple-600">Panel de Administración Global</span>
+              <span className="text-sm font-medium text-purple-600">Global Administration Panel</span>
             )}
             {hasPermission('loads') && (
               <Button size="sm" onClick={() => setLoadDialogOpen(true)} className="gap-1">
                 <Plus className="h-4 w-4" />
-                Nueva Carga
+                New Load
               </Button>
             )}
           </div>
@@ -241,7 +241,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
                   <LogOut className="h-4 w-4" />
                 </button>
               </TooltipTrigger>
-              <TooltipContent>Cerrar sesión</TooltipContent>
+              <TooltipContent>Sign Out</TooltipContent>
             </Tooltip>
           </div>
         </header>
