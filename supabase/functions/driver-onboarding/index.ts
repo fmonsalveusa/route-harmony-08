@@ -123,7 +123,7 @@ Deno.serve(async (req) => {
         license: driverData.license,
         license_expiry: driverData.license_expiry || null,
         medical_card_expiry: driverData.medical_card_expiry || null,
-        status: "available",
+        status: "pending",
         service_type: "owner_operator",
         dispatcher_id: tokenRecord.dispatcher_id || null,
         truck_id: truckId,

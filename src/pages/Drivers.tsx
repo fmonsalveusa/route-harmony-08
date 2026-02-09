@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,6 +22,7 @@ const driverStatusColor = (status: string) => {
     case 'assigned': return 'bg-blue-600';
     case 'resting': return 'bg-orange-500';
     case 'inactive': return 'bg-red-600';
+    case 'pending': return 'bg-yellow-500';
     default: return 'bg-gray-500';
   }
 };
@@ -139,7 +141,7 @@ const Drivers = () => {
             const truckLabel = getTruckLabel(driver.truck_id);
             const initials = driver.name.split(' ').map(n => n[0]).join('');
             return (
-              <Card key={driver.id} className="hover:shadow-md transition-shadow animate-fade-in">
+              <Card key={driver.id} className={cn("hover:shadow-md transition-shadow animate-fade-in", driver.status === 'pending' && "ring-2 ring-yellow-400 bg-yellow-50/50")}>
                 <CardContent className="p-5">
                   <div className="flex items-start gap-4">
                     <Avatar className="h-12 w-12">
@@ -153,6 +155,7 @@ const Drivers = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="pending">Pending</SelectItem>
                         <SelectItem value="available">Disponible</SelectItem>
                         <SelectItem value="assigned">Asignado</SelectItem>
                         <SelectItem value="resting">Descansando</SelectItem>
