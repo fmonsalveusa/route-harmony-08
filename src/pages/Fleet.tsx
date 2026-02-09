@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { useTrucks, DbTruck, TruckInput } from '@/hooks/useTrucks';
 import { useDrivers } from '@/hooks/useDrivers';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { TruckFormDialog } from '@/components/TruckFormDialog';
 import { TruckDetailDialog } from '@/components/TruckDetailDialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus, Truck as TruckIcon, Pencil, Trash2, Eye, User } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 
 const STATUS_OPTIONS = [
   { value: 'active', label: 'Active', bg: 'bg-green-600 text-white' },
@@ -27,8 +27,8 @@ const Fleet = () => {
   };
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editTruck, setEditTruck] = useState<DbTruck | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<DbTruck | null>(null);
   const [detailTruck, setDetailTruck] = useState<DbTruck | null>(null);
+  const [activeTab, setActiveTab] = useState('active');
 
   const openNew = () => { setEditTruck(null); setDialogOpen(true); };
   const openEdit = (t: DbTruck) => { setEditTruck(t); setDialogOpen(true); };
@@ -49,11 +49,62 @@ const Fleet = () => {
     return ok;
   };
 
-  const confirmDelete = async () => {
-    if (!deleteTarget) return;
-    await deleteTruck(deleteTarget.id);
-    setDeleteTarget(null);
+  const getFilteredByTab = (tab: string) => {
+    if (tab === 'active') return trucks.filter(t => t.status !== 'inactive');
+    if (tab === 'inactive') return trucks.filter(t => t.status === 'inactive');
+    return trucks;
   };
+
+  const renderTruckCard = (truck: DbTruck) => (
+    <Card key={truck.id} className="hover:shadow-md transition-shadow animate-fade-in">
+      <CardContent className="p-3">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <TruckIcon className="h-4 w-4 text-primary" />
+            </div>
+            <h3 className="font-bold text-lg">Unit #{truck.unit_number}</h3>
+          </div>
+          <Select value={truck.status} onValueChange={v => updateTruck(truck.id, { status: v })}>
+            <SelectTrigger className={`w-auto h-7 text-xs gap-1 px-2.5 border-0 rounded-full ${getStatusStyle(truck.status)}`}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="bg-popover z-50">
+              {STATUS_OPTIONS.map(s => (
+                <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-1.5 text-[15px]">
+          <Row label="Type" value={truck.truck_type} />
+          <div className="flex justify-between items-center">
+            <span className="text-muted-foreground">Driver</span>
+            <span className="font-medium flex items-center gap-1">
+              {getDriverName(truck.id) ? (
+                <><User className="h-3 w-3 text-primary" />{getDriverName(truck.id)}</>
+              ) : (
+                <span className="text-muted-foreground italic">Unassigned</span>
+              )}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-1.5 mt-3 pt-2 border-t">
+          <Button variant="outline" size="icon" className="h-8 w-10 border-emerald-300 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700" onClick={() => setDetailTruck(truck)} title="Detail">
+            <Eye className="h-4 w-4" />
+          </Button>
+          <Button variant="outline" size="icon" className="h-8 w-10 border-amber-300 bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700" onClick={() => openEdit(truck)} title="Edit">
+            <Pencil className="h-4 w-4" />
+          </Button>
+          <Button variant="outline" size="icon" className="h-8 w-10 border-red-300 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700" onClick={async () => { if (window.confirm(`Delete truck Unit #${truck.unit_number}? This action is permanent.`)) { await deleteTruck(truck.id); } }} title="Delete">
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
 
   return (
     <div className="space-y-6">
@@ -69,61 +120,25 @@ const Fleet = () => {
 
       {loading ? (
         <p className="text-muted-foreground text-center py-12">Loading trucks...</p>
-      ) : trucks.length === 0 ? (
-        <p className="text-muted-foreground text-center py-12">No trucks registered. Create the first one.</p>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-          {trucks.map(truck => (
-            <Card key={truck.id} className="hover:shadow-md transition-shadow animate-fade-in">
-              <CardContent className="p-3">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <TruckIcon className="h-4 w-4 text-primary" />
-                    </div>
-                    <h3 className="font-bold text-lg">Unit #{truck.unit_number}</h3>
-                  </div>
-                  <Select value={truck.status} onValueChange={v => updateTruck(truck.id, { status: v })}>
-                    <SelectTrigger className={`w-auto h-7 text-xs gap-1 px-2.5 border-0 rounded-full ${getStatusStyle(truck.status)}`}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-popover z-50">
-                      {STATUS_OPTIONS.map(s => (
-                        <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList>
+            <TabsTrigger value="active">Active</TabsTrigger>
+            <TabsTrigger value="inactive">Inactive</TabsTrigger>
+            <TabsTrigger value="all">All</TabsTrigger>
+          </TabsList>
+          {['active', 'inactive', 'all'].map(tab => (
+            <TabsContent key={tab} value={tab}>
+              {getFilteredByTab(tab).length === 0 ? (
+                <p className="text-muted-foreground text-center py-12">No trucks found.</p>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                  {getFilteredByTab(tab).map(renderTruckCard)}
                 </div>
-
-                <div className="space-y-1.5 text-[15px]">
-                  <Row label="Type" value={truck.truck_type} />
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Driver</span>
-                    <span className="font-medium flex items-center gap-1">
-                      {getDriverName(truck.id) ? (
-                        <><User className="h-3 w-3 text-primary" />{getDriverName(truck.id)}</>
-                      ) : (
-                        <span className="text-muted-foreground italic">Unassigned</span>
-                      )}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex justify-end gap-1.5 mt-3 pt-2 border-t">
-                  <Button variant="outline" size="icon" className="h-8 w-10 border-emerald-300 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700" onClick={() => setDetailTruck(truck)} title="Detail">
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                  <Button variant="outline" size="icon" className="h-8 w-10 border-amber-300 bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700" onClick={() => openEdit(truck)} title="Edit">
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button variant="outline" size="icon" className="h-8 w-10 border-red-300 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700" onClick={async () => { if (window.confirm(`Delete truck Unit #${truck.unit_number}? This action is permanent.`)) { await deleteTruck(truck.id); } }} title="Delete">
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+              )}
+            </TabsContent>
           ))}
-        </div>
+        </Tabs>
       )}
 
       <TruckFormDialog open={dialogOpen} onOpenChange={setDialogOpen} truck={editTruck} onSave={handleSave} />
