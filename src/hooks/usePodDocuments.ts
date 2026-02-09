@@ -49,9 +49,9 @@ export function usePodDocuments(loadId: string) {
 
       if (uploadError) throw uploadError;
 
-      const { data: urlData } = supabase.storage
+      const { data: urlData } = await supabase.storage
         .from('driver-documents')
-        .getPublicUrl(path);
+        .createSignedUrl(path, 31536000);
 
       const fileType = file.type.startsWith('image/') ? 'image' : 'pdf';
       const tenant_id = await getTenantId();
@@ -61,7 +61,7 @@ export function usePodDocuments(loadId: string) {
         .insert({
           load_id: loadId,
           stop_id: stopId || null,
-          file_url: urlData.publicUrl,
+          file_url: urlData?.signedUrl || '',
           file_name: file.name,
           file_type: fileType,
           tenant_id,

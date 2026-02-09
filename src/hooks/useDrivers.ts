@@ -108,8 +108,8 @@ export function useDrivers() {
       toast({ title: 'Error uploading document', description: error.message, variant: 'destructive' });
       return null;
     }
-    const { data: urlData } = supabase.storage.from('driver-documents').getPublicUrl(path);
-    return urlData.publicUrl;
+    const { data: urlData } = await supabase.storage.from('driver-documents').createSignedUrl(path, 31536000);
+    return urlData?.signedUrl || null;
   };
 
   return { drivers, loading, createDriver, updateDriver, deleteDriver, uploadDocument, refetch: fetchDrivers };
