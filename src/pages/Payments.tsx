@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, isWithinInterval, parseISO } from 'date-fns';
 import { formatDate } from '@/lib/dateUtils';
 import { usePayments, type DbPayment } from '@/hooks/usePayments';
@@ -37,6 +37,7 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
   const [statusFilter, setStatusFilter] = useState('pending');
   const [editPayment, setEditPayment] = useState<DbPayment | null>(null);
   const [deletePaymentId, setDeletePaymentId] = useState<string | null>(null);
+  const deleteIdRef = useRef<string | null>(null);
   const [adjMap, setAdjMap] = useState<Record<string, number>>({});
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [batchProcessing, setBatchProcessing] = useState(false);
@@ -251,10 +252,11 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
   };
 
   const confirmDelete = async () => {
-    if (!deletePaymentId) return;
-    const id = deletePaymentId;
-    const { error } = await supabase.from('payments').delete().eq('id', id);
+    const id = deleteIdRef.current;
+    if (!id) return;
     setDeletePaymentId(null);
+    deleteIdRef.current = null;
+    const { error } = await supabase.from('payments').delete().eq('id', id);
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } else {
@@ -470,7 +472,7 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
                         <Button variant="outline" size="icon" className="h-8 w-10 border-emerald-300 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700" onClick={(e) => { e.stopPropagation(); handleGenerateReceipt(p); }} title="Generate Receipt">
                           <FileText className="h-4 w-4" />
                         </Button>
-                        <Button variant="outline" size="icon" className="h-8 w-10 border-red-300 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700" onClick={(e) => { e.stopPropagation(); setDeletePaymentId(p.id); }} title="Delete">
+                        <Button variant="outline" size="icon" className="h-8 w-10 border-red-300 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700" onClick={(e) => { e.stopPropagation(); deleteIdRef.current = p.id; setDeletePaymentId(p.id); }} title="Delete">
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
