@@ -133,7 +133,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
                 `}
               >
                 <item.icon className="h-4.5 w-4.5 flex-shrink-0" />
-                {!collapsed && <span>{item.label}</span>}
+                {!collapsed && <span className="text-[15px]">{item.label}</span>}
               </Link>
             );
           })}
