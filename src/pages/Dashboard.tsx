@@ -112,7 +112,7 @@ const AdminDashboard = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <RatesByDriverChart loads={filteredLoads} drivers={drivers} year={year} month={month} week={week} />
-        <WeeklyRatesChart loads={filteredLoads} />
+        <WeeklyRatesChart loads={loads} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
