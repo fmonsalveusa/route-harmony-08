@@ -98,9 +98,51 @@ const Tracking = () => {
           }
         } catch { /* ignore */ }
       }
+      // Fallback: draw straight line between stops with coordinates
+      if (routeCoords.length === 0) {
+        const geoStops = stops.filter(s => s.lat && s.lng).sort((a, b) => a.stop_order - b.stop_order);
+        if (geoStops.length >= 2) {
+          routeCoords = geoStops.map(s => [s.lat!, s.lng!] as [number, number]);
+        }
+      }
       return { ...load, stops, routeCoords } as LoadWithStops;
     });
   }, [activeLoads, allStops]);
+
+  // Geocode stops that don't have coordinates
+  useEffect(() => {
+    const stopsToGeocode = allStops.filter(s => !s.lat || !s.lng);
+    if (stopsToGeocode.length === 0) return;
+
+    let cancelled = false;
+    const geocodeStops = async () => {
+      const updated: LoadStop[] = [];
+      for (const stop of stopsToGeocode) {
+        if (cancelled) break;
+        try {
+          const addr = encodeURIComponent(stop.address);
+          const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${addr}&countrycodes=us&limit=1`);
+          const results = await res.json();
+          if (results.length > 0) {
+            const lat = parseFloat(results[0].lat);
+            const lng = parseFloat(results[0].lon);
+            await supabase.from('load_stops').update({ lat, lng }).eq('id', stop.id);
+            updated.push({ ...stop, lat, lng });
+          }
+          // Small delay to respect Nominatim rate limits
+          await new Promise(r => setTimeout(r, 1100));
+        } catch { /* ignore */ }
+      }
+      if (!cancelled && updated.length > 0) {
+        setAllStops(prev => prev.map(s => {
+          const u = updated.find(x => x.id === s.id);
+          return u || s;
+        }));
+      }
+    };
+    geocodeStops();
+    return () => { cancelled = true; };
+  }, [allStops]);
 
   // Filter loads
   const filteredLoads = useMemo(() => {
