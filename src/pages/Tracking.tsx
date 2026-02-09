@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatusBadge } from '@/components/StatusBadge';
 import { MapPin, Truck, Package, Navigation, Clock, Search, ChevronRight, AlertTriangle, Eye } from 'lucide-react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, Tooltip as LeafletTooltip, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { LoadStop } from '@/hooks/useLoadStops';
@@ -222,6 +222,11 @@ const Tracking = () => {
                         position={[stop.lat!, stop.lng!]}
                         icon={stop.stop_type === 'pickup' ? pickupIcon : deliveryIcon}
                       >
+                        {driver && (
+                          <LeafletTooltip direction="top" offset={[0, -10]} permanent className="driver-name-tooltip">
+                            <span style={{ fontSize: '11px', fontWeight: 600 }}>{driver.name}</span>
+                          </LeafletTooltip>
+                        )}
                         <Popup>
                           <div className="text-xs">
                             <strong>{load.reference_number}</strong>
