@@ -535,11 +535,21 @@ export default function Performance() {
                   <Bar dataKey="Revenue" fill="hsl(217, 78%, 42%)" radius={[4, 4, 0, 0]}>
                     <LabelList dataKey="Revenue" position="insideTop" formatter={(v: number) => v ? fmt(v) : ''} style={{ fontSize: 14, fontWeight: 700, fill: '#ffffff' }} />
                   </Bar>
-                  <Bar dataKey="Fuel" stackId="expenses" fill="hsl(28, 92%, 52%)" />
-                  <Bar dataKey="Maintenance" stackId="expenses" fill="hsl(38, 92%, 50%)" />
-                  <Bar dataKey="Repairs" stackId="expenses" fill="hsl(0, 72%, 51%)" />
-                  <Bar dataKey="Dispatcher Pay" stackId="expenses" fill="hsl(270, 50%, 50%)" />
-                  <Bar dataKey="Driver Pay" stackId="expenses" fill="hsl(152, 60%, 40%)" />
+                  <Bar dataKey="Fuel" stackId="expenses" fill="hsl(28, 92%, 52%)">
+                    <LabelList dataKey="Fuel" position="center" formatter={(v: number) => v ? fmt(v) : ''} style={{ fontSize: 11, fontWeight: 700, fill: '#ffffff' }} />
+                  </Bar>
+                  <Bar dataKey="Maintenance" stackId="expenses" fill="hsl(38, 92%, 50%)">
+                    <LabelList dataKey="Maintenance" position="center" formatter={(v: number) => v ? fmt(v) : ''} style={{ fontSize: 11, fontWeight: 700, fill: '#ffffff' }} />
+                  </Bar>
+                  <Bar dataKey="Repairs" stackId="expenses" fill="hsl(0, 72%, 51%)">
+                    <LabelList dataKey="Repairs" position="center" formatter={(v: number) => v ? fmt(v) : ''} style={{ fontSize: 11, fontWeight: 700, fill: '#ffffff' }} />
+                  </Bar>
+                  <Bar dataKey="Dispatcher Pay" stackId="expenses" fill="hsl(270, 50%, 50%)">
+                    <LabelList dataKey="Dispatcher Pay" position="center" formatter={(v: number) => v ? fmt(v) : ''} style={{ fontSize: 11, fontWeight: 700, fill: '#ffffff' }} />
+                  </Bar>
+                  <Bar dataKey="Driver Pay" stackId="expenses" fill="hsl(152, 60%, 40%)">
+                    <LabelList dataKey="Driver Pay" position="center" formatter={(v: number) => v ? fmt(v) : ''} style={{ fontSize: 11, fontWeight: 700, fill: '#ffffff' }} />
+                  </Bar>
                   <Bar dataKey="Other" stackId="expenses" fill="hsl(218, 15%, 48%)" />
                 </BarChart>
               </ResponsiveContainer>
