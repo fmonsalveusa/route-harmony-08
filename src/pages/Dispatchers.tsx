@@ -5,7 +5,7 @@ import { DispatcherFormDialog } from '@/components/DispatcherFormDialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Plus, Phone, Mail, Percent, Pencil, Trash2, CheckCircle2, XCircle } from 'lucide-react';
+import { Plus, Phone, Mail, Percent, Pencil, Trash2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const dispatcherStatusColor = (status: string) => {
@@ -103,9 +103,9 @@ const Dispatchers = () => {
       ) : (
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
-            <TabsTrigger value="active"><CheckCircle2 className="h-4 w-4" /> Activos ({dispatchers.filter(d => d.status !== 'inactive').length})</TabsTrigger>
-            <TabsTrigger value="inactive"><XCircle className="h-4 w-4" /> Inactive ({dispatchers.filter(d => d.status === 'inactive').length})</TabsTrigger>
-            <TabsTrigger value="all">All ({dispatchers.length})</TabsTrigger>
+            <TabsTrigger value="active">Active <span className={`text-xs rounded-full px-2 py-0.5 font-semibold ${activeTab === 'active' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{dispatchers.filter(d => d.status !== 'inactive').length}</span></TabsTrigger>
+            <TabsTrigger value="inactive">Inactive <span className={`text-xs rounded-full px-2 py-0.5 font-semibold ${activeTab === 'inactive' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{dispatchers.filter(d => d.status === 'inactive').length}</span></TabsTrigger>
+            <TabsTrigger value="all">All <span className={`text-xs rounded-full px-2 py-0.5 font-semibold ${activeTab === 'all' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{dispatchers.length}</span></TabsTrigger>
           </TabsList>
           {['active', 'inactive', 'all'].map(tab => (
             <TabsContent key={tab} value={tab}>
