@@ -111,7 +111,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
               ) : (
                 <img src={logoImg} alt="Load Up TMS" className="h-7 w-7 rounded flex-shrink-0 object-cover" />
               )}
-              {!collapsed && <span className="ml-3 text-lg font-bold text-sidebar-accent-foreground tracking-tight truncate">{tenant?.name || 'Load Up TMS'}</span>}
+              {!collapsed && <span className="ml-3 text-sm font-semibold text-sidebar-foreground tracking-tight truncate">{tenant?.name || 'Load Up TMS'}</span>}
             </>
           )}
         </div>
