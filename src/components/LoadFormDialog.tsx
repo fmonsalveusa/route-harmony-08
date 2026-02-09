@@ -267,8 +267,8 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       if (uploadError) {
         toast({ title: 'Error', description: 'Failed to upload PDF', variant: 'destructive' });
       } else {
-        const { data: urlData } = supabase.storage.from('driver-documents').getPublicUrl(fileName);
-        pdfUrl = urlData.publicUrl;
+        const { data: urlData } = await supabase.storage.from('driver-documents').createSignedUrl(fileName, 31536000);
+        pdfUrl = urlData?.signedUrl || undefined;
       }
     }
 
