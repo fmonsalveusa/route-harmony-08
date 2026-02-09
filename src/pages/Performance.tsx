@@ -4,6 +4,8 @@ import { useExpenses } from '@/hooks/useExpenses';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useTrucks } from '@/hooks/useTrucks';
 import { useDispatchers } from '@/hooks/useDispatchers';
+import { useTruckFixedCosts } from '@/hooks/useTruckFixedCosts';
+import { FixedCostsDialog } from '@/components/FixedCostsDialog';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -11,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, LabelList, Cell, LineChart, Line, PieChart, Pie, Tooltip, Legend } from 'recharts';
-import { DollarSign, Receipt, Trophy, Truck, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Eye, Download } from 'lucide-react';
+import { DollarSign, Receipt, Trophy, Truck, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Eye, Download, Settings } from 'lucide-react';
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, isWithinInterval, parseISO, format, subMonths, subWeeks, subYears } from 'date-fns';
 
 type PeriodKey = 'week' | 'month' | 'year';
@@ -50,7 +52,9 @@ export default function Performance() {
   const { drivers } = useDrivers();
   const { trucks } = useTrucks();
   const { dispatchers } = useDispatchers();
+  const { getPeriodFixedCosts, fixedCosts } = useTruckFixedCosts();
   const [period, setPeriod] = useState<PeriodKey>('month');
+  const [fixedCostsDialogOpen, setFixedCostsDialogOpen] = useState(false);
 
   const { start, end } = getDateRange(period);
   const prev = getPrevDateRange(period);
@@ -113,7 +117,15 @@ export default function Performance() {
       const totalExpenses = truckExpenses.reduce((s, e) => s + (e.total_amount || e.amount || 0), 0);
       const dispatcherPay = truckLoads.reduce((s, l) => s + (l.dispatcher_pay_amount || 0), 0);
       const driverPay = truckLoads.reduce((s, l) => s + (l.driver_pay_amount || 0), 0);
-      const allCosts = totalExpenses + dispatcherPay + driverPay;
+
+      // Fixed costs (period-adjusted)
+      const fixedCostsAmount = getPeriodFixedCosts(truck.id, period);
+
+      // Factoring % from driver
+      const factoringPct = driver?.factoring_percentage || 0;
+      const factoringAmount = revenue * (factoringPct / 100);
+
+      const allCosts = totalExpenses + dispatcherPay + driverPay + fixedCostsAmount + factoringAmount;
       const netProfit = revenue - allCosts;
       const margin = revenue > 0 ? (netProfit / revenue) * 100 : 0;
       const loadsCompleted = truckLoads.length;
@@ -135,6 +147,9 @@ export default function Performance() {
         driverName: driver?.name || 'Unassigned',
         driverId: driver?.id,
         revenue,
+        fixedCosts: fixedCostsAmount,
+        factoringPct,
+        factoringAmount,
         totalExpenses: allCosts,
         rawExpenses: totalExpenses,
         dispatcherPay,
@@ -149,7 +164,7 @@ export default function Performance() {
         otherExp,
       };
     }).sort((a, b) => b.netProfit - a.netProfit);
-  }, [companyTrucks, companyDrivers, periodLoads, periodExpenses]);
+  }, [companyTrucks, companyDrivers, periodLoads, periodExpenses, getPeriodFixedCosts, period]);
 
   // Summary totals
   const totalRevenue = truckPerformance.reduce((s, t) => s + t.revenue, 0);
@@ -391,6 +406,10 @@ export default function Performance() {
               <CardTitle className="text-lg">Truck Performance Summary</CardTitle>
               <CardDescription>Company Drivers Only — {periodLabels[period]}</CardDescription>
             </div>
+            <Button variant="outline" size="sm" className="gap-2" onClick={() => setFixedCostsDialogOpen(true)}>
+              <Settings className="h-4 w-4" />
+              Fixed Costs
+            </Button>
           </div>
         </CardHeader>
         <CardContent className="p-0">
@@ -402,6 +421,8 @@ export default function Performance() {
                   <TableHead>Truck</TableHead>
                   <TableHead>Driver</TableHead>
                   <TableHead className="text-right">Revenue</TableHead>
+                  <TableHead className="text-right">Fixed Costs</TableHead>
+                  <TableHead className="text-right">% Factoring</TableHead>
                   <TableHead className="text-right">Expenses</TableHead>
                   <TableHead className="text-right font-bold">Net Profit</TableHead>
                   <TableHead className="text-right">Margin</TableHead>
@@ -413,7 +434,7 @@ export default function Performance() {
               <TableBody>
                 {truckPerformance.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={10} className="text-center py-12 text-muted-foreground">
+                    <TableCell colSpan={12} className="text-center py-12 text-muted-foreground">
                       No company driver trucks found for this period
                     </TableCell>
                   </TableRow>
@@ -428,6 +449,11 @@ export default function Performance() {
                         </TableCell>
                         <TableCell className="font-medium">{t.driverName}</TableCell>
                         <TableCell className="text-right font-medium">{fmt(t.revenue)}</TableCell>
+                        <TableCell className="text-right text-muted-foreground">{fmt(t.fixedCosts)}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="text-xs">{fmtPct(t.factoringPct)}</div>
+                          <div className="text-[10px] text-muted-foreground">{fmt(t.factoringAmount)}</div>
+                        </TableCell>
                         <TableCell className="text-right text-destructive">{fmt(t.totalExpenses)}</TableCell>
                         <TableCell className={`text-right font-bold text-base ${t.netProfit >= 0 ? 'text-[hsl(152,60%,40%)]' : 'text-destructive'}`}>
                           {fmt(t.netProfit)}
@@ -444,6 +470,8 @@ export default function Performance() {
                       <TableCell>TOTAL ({companyTrucks.length} trucks)</TableCell>
                       <TableCell>—</TableCell>
                       <TableCell className="text-right">{fmt(totalRevenue)}</TableCell>
+                      <TableCell className="text-right text-muted-foreground">{fmt(truckPerformance.reduce((s, t) => s + t.fixedCosts, 0))}</TableCell>
+                      <TableCell className="text-right text-muted-foreground">{fmt(truckPerformance.reduce((s, t) => s + t.factoringAmount, 0))}</TableCell>
                       <TableCell className="text-right text-destructive">{fmt(totalExpensesSum)}</TableCell>
                       <TableCell className={`text-right text-base ${totalProfit >= 0 ? 'text-[hsl(152,60%,40%)]' : 'text-destructive'}`}>
                         {fmt(totalProfit)}
@@ -617,6 +645,11 @@ export default function Performance() {
           </CardContent>
         </Card>
       )}
+      <FixedCostsDialog
+        open={fixedCostsDialogOpen}
+        onOpenChange={setFixedCostsDialogOpen}
+        trucks={companyTrucks}
+      />
     </div>
   );
 }
