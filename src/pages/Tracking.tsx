@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useLoads, DbLoad } from '@/hooks/useLoads';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useTrucks } from '@/hooks/useTrucks';
+import { useDispatchers } from '@/hooks/useDispatchers';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatusBadge } from '@/components/StatusBadge';
-import { MapPin, Truck, Package, Navigation, Clock, Search, ChevronRight, AlertTriangle, Eye } from 'lucide-react';
+import { MapPin, Truck, Package, Navigation, Clock, Search, ChevronRight, AlertTriangle, Eye, User, Users } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, Tooltip as LeafletTooltip, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -60,13 +61,16 @@ const Tracking = () => {
   const { loads } = useLoads();
   const { drivers } = useDrivers();
   const { trucks } = useTrucks();
+  const { dispatchers } = useDispatchers();
 
   const [allStops, setAllStops] = useState<LoadStop[]>([]);
   const [selectedLoadId, setSelectedLoadId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [dispatcherFilter, setDispatcherFilter] = useState<string>('all');
   const [mapCenter, setMapCenter] = useState<[number, number]>([39.8283, -98.5795]);
   const [mapZoom, setMapZoom] = useState(4);
+  const [lastDeliveryStops, setLastDeliveryStops] = useState<Record<string, { address: string; lat: number; lng: number; date: string }>>({});
 
   // Fetch all stops for active loads
   const activeStatuses = ['dispatched', 'in_transit'];
@@ -143,6 +147,76 @@ const Tracking = () => {
     geocodeStops();
     return () => { cancelled = true; };
   }, [allStops]);
+
+  // Available drivers: those with no active load (dispatched/in_transit)
+  const driversWithActiveLoad = useMemo(() => {
+    const activeDriverIds = new Set<string>();
+    loads.forEach(l => {
+      if (['dispatched', 'in_transit'].includes(l.status) && l.driver_id) {
+        activeDriverIds.add(l.driver_id);
+      }
+    });
+    return activeDriverIds;
+  }, [loads]);
+
+  const availableDrivers = useMemo(() => {
+    return drivers
+      .filter(d => d.status !== 'inactive' && !driversWithActiveLoad.has(d.id))
+      .filter(d => dispatcherFilter === 'all' || d.dispatcher_id === dispatcherFilter);
+  }, [drivers, driversWithActiveLoad, dispatcherFilter]);
+
+  // Fetch last delivery location for available drivers
+  useEffect(() => {
+    if (availableDrivers.length === 0) return;
+    const driverIds = availableDrivers.map(d => d.id);
+
+    // Get last delivered load per driver
+    supabase
+      .from('loads')
+      .select('id, driver_id, delivery_date, destination')
+      .in('driver_id', driverIds)
+      .eq('status', 'delivered')
+      .order('delivery_date', { ascending: false })
+      .then(async ({ data: deliveredLoads }) => {
+        if (!deliveredLoads || deliveredLoads.length === 0) return;
+
+        // Get unique last load per driver
+        const lastLoadByDriver: Record<string, typeof deliveredLoads[0]> = {};
+        deliveredLoads.forEach(l => {
+          if (l.driver_id && !lastLoadByDriver[l.driver_id]) {
+            lastLoadByDriver[l.driver_id] = l;
+          }
+        });
+
+        const loadIds = Object.values(lastLoadByDriver).map(l => l.id);
+        const { data: stops } = await supabase
+          .from('load_stops')
+          .select('*')
+          .in('load_id', loadIds)
+          .eq('stop_type', 'delivery')
+          .order('stop_order', { ascending: false });
+
+        const result: Record<string, { address: string; lat: number; lng: number; date: string }> = {};
+        for (const [driverId, load] of Object.entries(lastLoadByDriver)) {
+          const deliveryStop = (stops || []).find(s => s.load_id === load.id && s.lat && s.lng);
+          if (deliveryStop) {
+            result[driverId] = {
+              address: deliveryStop.address,
+              lat: deliveryStop.lat!,
+              lng: deliveryStop.lng!,
+              date: load.delivery_date || '',
+            };
+          } else {
+            // No geocoded stop, still show address
+            const anyStop = (stops || []).find(s => s.load_id === load.id);
+            if (anyStop) {
+              result[driverId] = { address: anyStop.address, lat: 0, lng: 0, date: load.delivery_date || '' };
+            }
+          }
+        }
+        setLastDeliveryStops(result);
+      });
+  }, [availableDrivers.length]);
 
   // Filter loads
   const filteredLoads = useMemo(() => {
@@ -361,6 +435,86 @@ const Tracking = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Drivers Available */}
+      <Card>
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Drivers Available ({availableDrivers.length})
+            </CardTitle>
+            <Select value={dispatcherFilter} onValueChange={setDispatcherFilter}>
+              <SelectTrigger className="w-[180px] h-8 text-xs">
+                <SelectValue placeholder="All Dispatchers" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Dispatchers</SelectItem>
+                {dispatchers.filter(d => d.status === 'active').map(d => (
+                  <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {availableDrivers.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+              <User className="h-8 w-8 mb-2 opacity-40" />
+              <p className="text-sm">No available drivers</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+              {availableDrivers.map(driver => {
+                const truck = trucks.find(t => t.id === driver.truck_id);
+                const dispatcher = dispatchers.find(d => d.id === driver.dispatcher_id);
+                const lastDel = lastDeliveryStops[driver.id];
+                return (
+                  <div key={driver.id} className="p-3 rounded-lg border border-border hover:border-primary/30 transition-all">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="p-1.5 rounded-full bg-[hsl(152,60%,40%)]/10">
+                        <User className="h-3.5 w-3.5 text-[hsl(152,60%,40%)]" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold truncate">{driver.name}</p>
+                        <p className="text-[10px] text-muted-foreground">{driver.phone}</p>
+                      </div>
+                    </div>
+                    <div className="space-y-1 text-xs text-muted-foreground">
+                      {truck && (
+                        <div className="flex items-center gap-1">
+                          <Truck className="h-3 w-3" />
+                          <span>Unit {truck.unit_number}</span>
+                        </div>
+                      )}
+                      {dispatcher && (
+                        <div className="flex items-center gap-1">
+                          <Users className="h-3 w-3" />
+                          <span>{dispatcher.name}</span>
+                        </div>
+                      )}
+                      {lastDel ? (
+                        <div className="mt-1.5 pt-1.5 border-t">
+                          <p className="text-[10px] font-medium text-foreground">Last Delivery</p>
+                          <div className="flex items-start gap-1 mt-0.5">
+                            <MapPin className="h-3 w-3 shrink-0 mt-0.5 text-destructive" />
+                            <span className="text-[10px] leading-tight">{lastDel.address}</span>
+                          </div>
+                          {lastDel.date && (
+                            <p className="text-[10px] mt-0.5 opacity-70">{format(parseISO(lastDel.date), 'MMM dd, yyyy')}</p>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-[10px] italic mt-1">No delivery history</p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Selected Load Detail */}
       {selectedLoad && (
