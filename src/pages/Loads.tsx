@@ -288,7 +288,7 @@ const Loads = () => {
           <button
             key={tab.key}
             onClick={() => { setActiveTab(tab.key); setExpandedId(null); }}
-            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
+            className={`px-4 py-2.5 text-sm font-medium uppercase border-b-2 transition-colors flex items-center gap-2 ${
               activeTab === tab.key
                 ? 'border-primary text-primary'
                 : 'border-transparent text-muted-foreground hover:text-foreground'
