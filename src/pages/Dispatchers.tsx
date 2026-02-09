@@ -43,15 +43,15 @@ const Dispatchers = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="page-header">Dispatchers</h1>
-          <p className="page-description">Gestión de dispatchers y comisiones</p>
+          <p className="page-description">Dispatcher and commission management</p>
         </div>
         <Button size="sm" className="gap-2" onClick={() => { setEditingDispatcher(null); setFormOpen(true); }}>
-          <Plus className="h-4 w-4" /> Nuevo Dispatcher
+          <Plus className="h-4 w-4" /> New Dispatcher
         </Button>
       </div>
 
       {loading ? (
-        <p className="text-muted-foreground text-sm">Cargando dispatchers...</p>
+        <p className="text-muted-foreground text-sm">Loading dispatchers...</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {dispatchers.map(d => {
@@ -71,8 +71,8 @@ const Dispatchers = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="active">Activo</SelectItem>
-                        <SelectItem value="inactive">Inactivo</SelectItem>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="inactive">Inactive</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -82,7 +82,7 @@ const Dispatchers = () => {
                     <div className="flex items-center gap-2 text-muted-foreground"><Phone className="h-3.5 w-3.5" />{d.phone}</div>
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Percent className="h-3.5 w-3.5" />
-                      <span>Comisión: {d.commission_percentage}%</span>
+                      <span>Commission: {d.commission_percentage}%</span>
                     </div>
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Percent className="h-3.5 w-3.5" />
@@ -91,10 +91,10 @@ const Dispatchers = () => {
                   </div>
 
                   <div className="mt-3 pt-3 border-t flex justify-end gap-1.5">
-                    <Button variant="outline" size="icon" className="h-8 w-10 border-amber-300 bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700" onClick={() => { setEditingDispatcher(d); setFormOpen(true); }} title="Editar">
+                    <Button variant="outline" size="icon" className="h-8 w-10 border-amber-300 bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700" onClick={() => { setEditingDispatcher(d); setFormOpen(true); }} title="Edit">
                       <Pencil className="h-4 w-4" />
                     </Button>
-                    <Button variant="outline" size="icon" className="h-8 w-10 border-red-300 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700" onClick={async () => { if (window.confirm(`¿Eliminar dispatcher ${d.name}? Esta acción es permanente.`)) { await deleteDispatcher(d.id); } }} title="Eliminar">
+                    <Button variant="outline" size="icon" className="h-8 w-10 border-red-300 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700" onClick={async () => { if (window.confirm(`Delete dispatcher ${d.name}? This action is permanent.`)) { await deleteDispatcher(d.id); } }} title="Delete">
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
@@ -105,14 +105,7 @@ const Dispatchers = () => {
         </div>
       )}
 
-      <DispatcherFormDialog
-        open={formOpen}
-        onOpenChange={setFormOpen}
-        dispatcher={editingDispatcher}
-        onSubmit={handleSubmit}
-      />
-
-      {/* Delete now uses window.confirm */}
+      <DispatcherFormDialog open={formOpen} onOpenChange={setFormOpen} dispatcher={editingDispatcher} onSubmit={handleSubmit} />
     </div>
   );
 };

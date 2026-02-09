@@ -35,7 +35,6 @@ const AdminDashboard = () => {
   const [dispatcherFilter, setDispatcherFilter] = useState('all');
   const [driverFilter, setDriverFilter] = useState('all');
 
-  // Apply dispatcher & driver filters to loads
   const filteredLoads = loads.filter(l => {
     if (dispatcherFilter !== 'all' && l.dispatcher_id !== dispatcherFilter) return false;
     if (driverFilter !== 'all' && l.driver_id !== driverFilter) return false;
@@ -47,7 +46,6 @@ const AdminDashboard = () => {
   const activeLoads = filteredLoads.filter(l => ['in_transit', 'pending'].includes(l.status)).length;
   const availableTrucks = trucks.filter(t => t.status === 'available').length;
 
-  // Expense data for widgets
   const now = new Date();
   const thisMonthExpenses = expenses.filter(e => {
     const d = new Date(e.expense_date + 'T00:00:00');
@@ -55,8 +53,6 @@ const AdminDashboard = () => {
   });
   const monthlyExpenseTotal = thisMonthExpenses.reduce((s, e) => s + e.total_amount, 0);
   const recentExpenses = expenses.slice(0, 5);
-
-  // High expense alerts (> $400 single expense)
   const highExpenses = thisMonthExpenses.filter(e => e.total_amount > 400).slice(0, 3);
 
   const dispatcherOptions = dispatchers.map(d => ({ id: d.id, name: d.name }));
@@ -66,7 +62,7 @@ const AdminDashboard = () => {
     <div className="space-y-6">
       <div>
         <h1 className="page-header">Dashboard</h1>
-        <p className="page-description">Resumen general del sistema de transporte</p>
+        <p className="page-description">General overview of the transportation system</p>
       </div>
       <DashboardFilters
         year={year} month={month} week={week}
@@ -77,35 +73,32 @@ const AdminDashboard = () => {
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Cargas Activas" value={activeLoads} icon={Package} trend={{ value: '+12%', positive: true }} />
-        <StatCard title="Camiones Disponibles" value={`${availableTrucks}/${trucks.length}`} icon={Truck} iconClassName="bg-success/10 text-success" />
-        <StatCard title="Ingresos del Mes" value={`$${totalRevenue.toLocaleString()}`} icon={DollarSign} trend={{ value: '+8%', positive: true }} iconClassName="bg-warning/10 text-warning" />
-        <StatCard title="Pagos Pendientes" value={`$${pendingPayments.toLocaleString()}`} icon={AlertTriangle} iconClassName="bg-destructive/10 text-destructive" subtitle={`${payments.filter(p => p.status === 'pending').length} pagos`} />
+        <StatCard title="Active Loads" value={activeLoads} icon={Package} trend={{ value: '+12%', positive: true }} />
+        <StatCard title="Available Trucks" value={`${availableTrucks}/${trucks.length}`} icon={Truck} iconClassName="bg-success/10 text-success" />
+        <StatCard title="Monthly Revenue" value={`$${totalRevenue.toLocaleString()}`} icon={DollarSign} trend={{ value: '+8%', positive: true }} iconClassName="bg-warning/10 text-warning" />
+        <StatCard title="Pending Payments" value={`$${pendingPayments.toLocaleString()}`} icon={AlertTriangle} iconClassName="bg-destructive/10 text-destructive" subtitle={`${payments.filter(p => p.status === 'pending').length} payments`} />
       </div>
 
-      {/* Charts Row 1: Rates by Driver + Weekly Rates */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <RatesByDriverChart loads={filteredLoads} drivers={drivers} year={year} month={month} week={week} />
         <WeeklyRatesChart loads={filteredLoads} />
       </div>
 
-      {/* Charts Row 2: Dispatcher Commissions + Market Analysis */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <DispatcherCommissionsChart loads={filteredLoads} dispatchers={dispatchers} drivers={drivers} year={year} month={month} week={week} />
         <MarketAnalysisCard loads={filteredLoads} trucks={trucks} />
       </div>
 
-      {/* Recent loads table */}
       <Card>
-        <CardHeader><CardTitle className="text-base">Cargas Recientes</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">Recent Loads</CardTitle></CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead><tr className="border-b bg-muted/50">
-                <th className="text-left p-3 font-medium text-muted-foreground">Referencia</th>
-                <th className="text-left p-3 font-medium text-muted-foreground">Ruta</th>
-                <th className="text-left p-3 font-medium text-muted-foreground">Estado</th>
-                <th className="text-right p-3 font-medium text-muted-foreground">Tarifa</th>
+                <th className="text-left p-3 font-medium text-muted-foreground">Reference</th>
+                <th className="text-left p-3 font-medium text-muted-foreground">Route</th>
+                <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
+                <th className="text-right p-3 font-medium text-muted-foreground">Rate</th>
               </tr></thead>
               <tbody>
                 {loads.slice(0, 5).map(load => (
@@ -124,7 +117,6 @@ const AdminDashboard = () => {
 
       {/* Expense Widgets Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Recent Expenses Widget */}
         <Card>
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
@@ -173,7 +165,6 @@ const AdminDashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Expense Alerts Widget */}
         <Card>
           <CardHeader className="pb-2">
             <div className="flex items-center gap-2">
@@ -230,28 +221,28 @@ const DispatcherDashboard = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="page-header">Mi Dashboard</h1>
-        <p className="page-description">Resumen de tus cargas, drivers y comisiones</p>
+        <h1 className="page-header">My Dashboard</h1>
+        <p className="page-description">Overview of your loads, drivers, and commissions</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Mis Cargas Activas" value={loads.filter(l => ['in_transit', 'pending'].includes(l.status)).length} icon={Package} />
-        <StatCard title="Mis Drivers" value={drivers.length} icon={Users} iconClassName="bg-info/10 text-info" />
-        <StatCard title="Comisiones del Mes" value="$0" icon={DollarSign} iconClassName="bg-success/10 text-success" />
-        <StatCard title="Comisiones Pendientes" value="$0" icon={TrendingUp} iconClassName="bg-warning/10 text-warning" />
+        <StatCard title="My Active Loads" value={loads.filter(l => ['in_transit', 'pending'].includes(l.status)).length} icon={Package} />
+        <StatCard title="My Drivers" value={drivers.length} icon={Users} iconClassName="bg-info/10 text-info" />
+        <StatCard title="Monthly Commissions" value="$0" icon={DollarSign} iconClassName="bg-success/10 text-success" />
+        <StatCard title="Pending Commissions" value="$0" icon={TrendingUp} iconClassName="bg-warning/10 text-warning" />
       </div>
 
       <Card>
-        <CardHeader><CardTitle className="text-base">Mis Cargas</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">My Loads</CardTitle></CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead><tr className="border-b bg-muted/50">
-                <th className="text-left p-3 font-medium text-muted-foreground">Referencia</th>
-                <th className="text-left p-3 font-medium text-muted-foreground">Ruta</th>
+                <th className="text-left p-3 font-medium text-muted-foreground">Reference</th>
+                <th className="text-left p-3 font-medium text-muted-foreground">Route</th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Driver</th>
-                <th className="text-left p-3 font-medium text-muted-foreground">Estado</th>
-                <th className="text-right p-3 font-medium text-muted-foreground">Tarifa</th>
+                <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
+                <th className="text-right p-3 font-medium text-muted-foreground">Rate</th>
               </tr></thead>
               <tbody>
                 {loads.slice(0, 10).map(load => {

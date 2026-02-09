@@ -69,7 +69,7 @@ const Drivers = () => {
     }
 
     navigator.clipboard.writeText(text);
-    toast({ title: 'Copiado al portapapeles' });
+    toast({ title: 'Copied to clipboard' });
   };
 
   const isDispatcher = role === 'dispatcher';
@@ -85,14 +85,12 @@ const Drivers = () => {
   const handleSubmit = async (data: DriverInput, files: Record<string, File | null>) => {
     let docUrls: Record<string, string> = {};
     const driverId = editingDriver?.id || 'new-' + Date.now();
-
     for (const [key, file] of Object.entries(files)) {
       if (file) {
         const url = await uploadDocument(file, driverId, key);
         if (url) docUrls[key + '_url'] = url;
       }
     }
-
     if (editingDriver) {
       await updateDriver(editingDriver.id, { ...data, ...docUrls });
     } else {
@@ -112,8 +110,8 @@ const Drivers = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="page-header">Conductores</h1>
-          <p className="page-description">{isDispatcher ? 'Drivers bajo tu gestión' : 'Gestión completa de conductores'}</p>
+          <h1 className="page-header">Drivers</h1>
+          <p className="page-description">{isDispatcher ? 'Drivers under your management' : 'Complete driver management'}</p>
         </div>
         {!isDispatcher && (
           <div className="flex gap-2">
@@ -121,7 +119,7 @@ const Drivers = () => {
               <Link2 className="h-4 w-4" /> Onboarding Link
             </Button>
             <Button size="sm" className="gap-2" onClick={() => { setEditingDriver(null); setFormOpen(true); }}>
-              <Plus className="h-4 w-4" /> Nuevo Driver
+              <Plus className="h-4 w-4" /> New Driver
             </Button>
           </div>
         )}
@@ -129,11 +127,11 @@ const Drivers = () => {
 
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input placeholder="Buscar por nombre o email..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+        <Input placeholder="Search by name or email..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
       </div>
 
       {loading ? (
-        <p className="text-muted-foreground text-sm">Cargando drivers...</p>
+        <p className="text-muted-foreground text-sm">Loading drivers...</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map(driver => {
@@ -156,10 +154,10 @@ const Drivers = () => {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="available">Disponible</SelectItem>
-                        <SelectItem value="assigned">Asignado</SelectItem>
-                        <SelectItem value="resting">Descansando</SelectItem>
-                        <SelectItem value="inactive">Inactivo</SelectItem>
+                        <SelectItem value="available">Available</SelectItem>
+                        <SelectItem value="assigned">Assigned</SelectItem>
+                        <SelectItem value="resting">Resting</SelectItem>
+                        <SelectItem value="inactive">Inactive</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -170,24 +168,24 @@ const Drivers = () => {
                     </div>
                     <div className="flex items-center gap-2">
                       <TruckIcon className="h-3.5 w-3.5 text-primary" />
-                      <span>{truckLabel || <span className="text-muted-foreground italic">Sin asignar</span>}</span>
+                      <span>{truckLabel || <span className="text-muted-foreground italic">Unassigned</span>}</span>
                     </div>
                   </div>
 
                   <div className="mt-3 pt-3 border-t flex items-center gap-1.5">
-                    <Button variant="outline" size="icon" className="h-8 w-10 border-sky-300 bg-sky-50 text-sky-600 hover:bg-sky-100 hover:text-sky-700" onClick={() => copyDriverInfo(driver)} title="Copiar">
+                    <Button variant="outline" size="icon" className="h-8 w-10 border-sky-300 bg-sky-50 text-sky-600 hover:bg-sky-100 hover:text-sky-700" onClick={() => copyDriverInfo(driver)} title="Copy">
                       <Copy className="h-4 w-4" />
                     </Button>
                     <div className="flex-1" />
-                    <Button variant="outline" size="icon" className="h-8 w-10 border-emerald-300 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700" onClick={() => setDetailDriver(driver)} title="Detalle">
+                    <Button variant="outline" size="icon" className="h-8 w-10 border-emerald-300 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700" onClick={() => setDetailDriver(driver)} title="Detail">
                       <Eye className="h-4 w-4" />
                     </Button>
                     {!isDispatcher && (
                       <>
-                        <Button variant="outline" size="icon" className="h-8 w-10 border-amber-300 bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700" onClick={() => { setEditingDriver(driver); setFormOpen(true); }} title="Editar">
+                        <Button variant="outline" size="icon" className="h-8 w-10 border-amber-300 bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700" onClick={() => { setEditingDriver(driver); setFormOpen(true); }} title="Edit">
                           <Pencil className="h-4 w-4" />
                         </Button>
-                        <Button variant="outline" size="icon" className="h-8 w-10 border-red-300 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700" onClick={async () => { if (window.confirm(`¿Eliminar driver ${driver.name}? Esta acción es permanente.`)) { await deleteDriver(driver.id); } }} title="Eliminar">
+                        <Button variant="outline" size="icon" className="h-8 w-10 border-red-300 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700" onClick={async () => { if (window.confirm(`Delete driver ${driver.name}? This action is permanent.`)) { await deleteDriver(driver.id); } }} title="Delete">
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </>
@@ -200,28 +198,9 @@ const Drivers = () => {
         </div>
       )}
 
-      <DriverFormDialog
-        open={formOpen}
-        onOpenChange={setFormOpen}
-        driver={editingDriver}
-        onSubmit={handleSubmit}
-        trucks={trucks}
-        dispatchers={dispatchers}
-      />
-
-      <DriverDetailDialog
-        open={!!detailDriver}
-        onOpenChange={open => !open && setDetailDriver(null)}
-        driver={detailDriver}
-        truckLabel={detailDriver ? getTruckLabel(detailDriver.truck_id) : null}
-        dispatcherName={detailDriver ? dispatchers.find(d => d.id === detailDriver.dispatcher_id)?.name || null : null}
-      />
-
-      <GenerateOnboardingLinkDialog
-        open={onboardingOpen}
-        onOpenChange={setOnboardingOpen}
-        dispatchers={dispatchers}
-      />
+      <DriverFormDialog open={formOpen} onOpenChange={setFormOpen} driver={editingDriver} onSubmit={handleSubmit} trucks={trucks} dispatchers={dispatchers} />
+      <DriverDetailDialog open={!!detailDriver} onOpenChange={open => !open && setDetailDriver(null)} driver={detailDriver} truckLabel={detailDriver ? getTruckLabel(detailDriver.truck_id) : null} dispatcherName={detailDriver ? dispatchers.find(d => d.id === detailDriver.dispatcher_id)?.name || null : null} />
+      <GenerateOnboardingLinkDialog open={onboardingOpen} onOpenChange={setOnboardingOpen} dispatchers={dispatchers} />
     </div>
   );
 };

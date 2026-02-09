@@ -24,10 +24,10 @@ const roleBadgeStyles: Record<string, string> = {
 };
 
 const roleLabels: Record<string, string> = {
-  admin: 'Administrador',
-  accounting: 'Contabilidad',
+  admin: 'Admin',
+  accounting: 'Accounting',
   dispatcher: 'Dispatcher',
-  driver: 'Conductor',
+  driver: 'Driver',
 };
 
 interface UserRow {
@@ -49,51 +49,29 @@ const UsersPage = () => {
   const fetchUsers = useCallback(async () => {
     if (!profile?.tenant_id) return;
     setLoading(true);
-
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('id, full_name, email, phone, is_active')
-      .eq('tenant_id', profile.tenant_id);
-
+    const { data: profiles } = await supabase.from('profiles').select('id, full_name, email, phone, is_active').eq('tenant_id', profile.tenant_id);
     if (!profiles) { setLoading(false); return; }
-
-    const { data: roles } = await supabase
-      .from('user_roles')
-      .select('user_id, role')
-      .eq('tenant_id', profile.tenant_id);
-
+    const { data: roles } = await supabase.from('user_roles').select('user_id, role').eq('tenant_id', profile.tenant_id);
     const roleMap = new Map((roles || []).map(r => [r.user_id, r.role]));
-
-    const merged: UserRow[] = profiles.map(p => ({
-      ...p,
-      role: roleMap.get(p.id) || 'admin',
-    }));
-
+    const merged: UserRow[] = profiles.map(p => ({ ...p, role: roleMap.get(p.id) || 'admin' }));
     setUsers(merged);
     setLoading(false);
   }, [profile?.tenant_id]);
 
   useEffect(() => { fetchUsers(); }, [fetchUsers]);
 
-  const handleCreate = () => {
-    setEditingUser(null);
-    setDialogOpen(true);
-  };
-
-  const handleEdit = (user: UserRow) => {
-    setEditingUser(user);
-    setDialogOpen(true);
-  };
+  const handleCreate = () => { setEditingUser(null); setDialogOpen(true); };
+  const handleEdit = (user: UserRow) => { setEditingUser(user); setDialogOpen(true); };
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="page-header">Gestión de Usuarios</h1>
-          <p className="page-description">Administración de cuentas y permisos</p>
+          <h1 className="page-header">User Management</h1>
+          <p className="page-description">Account and permission administration</p>
         </div>
         <Button size="sm" className="gap-2" onClick={handleCreate}>
-          <Plus className="h-4 w-4" /> Nuevo Usuario
+          <Plus className="h-4 w-4" /> New User
         </Button>
       </div>
 
@@ -108,17 +86,17 @@ const UsersPage = () => {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b bg-muted/50">
-                    <th className="text-left p-3 font-medium text-muted-foreground">Usuario</th>
+                    <th className="text-left p-3 font-medium text-muted-foreground">User</th>
                     <th className="text-left p-3 font-medium text-muted-foreground">Email</th>
-                    <th className="text-left p-3 font-medium text-muted-foreground">Teléfono</th>
-                    <th className="text-left p-3 font-medium text-muted-foreground">Rol</th>
-                    <th className="text-left p-3 font-medium text-muted-foreground">Estado</th>
-                    <th className="text-right p-3 font-medium text-muted-foreground">Acciones</th>
+                    <th className="text-left p-3 font-medium text-muted-foreground">Phone</th>
+                    <th className="text-left p-3 font-medium text-muted-foreground">Role</th>
+                    <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
+                    <th className="text-right p-3 font-medium text-muted-foreground">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {users.length === 0 ? (
-                    <tr><td colSpan={6} className="p-8 text-center text-muted-foreground">No hay usuarios registrados</td></tr>
+                    <tr><td colSpan={6} className="p-8 text-center text-muted-foreground">No users registered</td></tr>
                   ) : users.map(u => {
                     const initials = u.full_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
                     const RoleIcon = roleIcons[u.role] || Shield;
@@ -141,7 +119,7 @@ const UsersPage = () => {
                         </td>
                         <td className="p-3"><StatusBadge status={u.is_active ? 'active' : 'inactive'} /></td>
                         <td className="p-3 text-right">
-                          <Button variant="outline" size="icon" className="h-8 w-10 border-amber-300 bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700" onClick={() => handleEdit(u)} title="Editar">
+                          <Button variant="outline" size="icon" className="h-8 w-10 border-amber-300 bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700" onClick={() => handleEdit(u)} title="Edit">
                             <Pencil className="h-4 w-4" />
                           </Button>
                         </td>
@@ -155,12 +133,7 @@ const UsersPage = () => {
         </CardContent>
       </Card>
 
-      <UserFormDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        user={editingUser}
-        onSuccess={fetchUsers}
-      />
+      <UserFormDialog open={dialogOpen} onOpenChange={setDialogOpen} user={editingUser} onSuccess={fetchUsers} />
     </div>
   );
 };

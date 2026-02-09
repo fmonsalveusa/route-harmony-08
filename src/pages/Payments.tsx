@@ -42,7 +42,6 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [batchProcessing, setBatchProcessing] = useState(false);
   const [loadDateMap, setLoadDateMap] = useState<Record<string, string>>({});
-  // Filters
   const [beneficiaryFilter, setBeneficiaryFilter] = useState('all');
   const [weekFilter, setWeekFilter] = useState('all');
   const [monthFilter, setMonthFilter] = useState('all');
@@ -80,19 +79,15 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
   }, [allPayments, type]);
 
   useEffect(() => { fetchLoadDates(); }, [fetchLoadDates]);
-
-  // Clear selection when filter changes
   useEffect(() => { setSelectedIds(new Set()); }, [statusFilter, beneficiaryFilter, weekFilter, monthFilter, yearFilter, dateFrom, dateTo]);
 
   const allTypePayments = allPayments.filter(p => p.recipient_type === type);
 
-  // Unique beneficiaries for filter
   const uniqueBeneficiaries = useMemo(() => {
     const names = [...new Set(allTypePayments.map(p => p.recipient_name))];
     return names.sort();
   }, [allTypePayments]);
 
-  // Get ISO week number (Mon-Sun)
   const getISOWeek = (d: Date) => {
     const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
     date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay() || 7));
@@ -100,7 +95,6 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
     return Math.ceil(((date.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
   };
 
-  // Available weeks/months/years from load dates
   const dateOptions = useMemo(() => {
     const dates = allTypePayments
       .map(p => loadDateMap[p.load_id])
@@ -124,9 +118,8 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
     };
   }, [allTypePayments, loadDateMap]);
 
-  const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-  // Apply all filters
   const filteredPayments = useMemo(() => {
     let result = statusFilter === 'all' ? allTypePayments : allTypePayments.filter(p => p.status === statusFilter);
 
@@ -199,35 +192,27 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
   };
 
   const selectedPayments = payments.filter(p => selectedIds.has(p.id));
-
-  // Validate selection: all must be same recipient
-  const canBatchPay = selectedPayments.length > 0 &&
-    new Set(selectedPayments.map(p => p.recipient_id)).size === 1;
-
+  const canBatchPay = selectedPayments.length > 0 && new Set(selectedPayments.map(p => p.recipient_id)).size === 1;
   const selectedTotal = selectedPayments.reduce((s, p) => s + Number(p.amount) + (adjMap[p.id] || 0), 0);
 
   const handleBatchPayAndReceipt = async () => {
     if (!canBatchPay) {
-      toast({ title: 'Error', description: 'Selecciona pagos del mismo beneficiario.', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Select payments from the same beneficiary.', variant: 'destructive' });
       return;
     }
     setBatchProcessing(true);
     try {
       const today = new Date().toISOString().split('T')[0];
-      // Update all selected to paid
       for (const p of selectedPayments) {
         await supabase.from('payments').update({ status: 'paid', payment_date: today }).eq('id', p.id);
       }
-
-      // Generate batch receipt
       const items = selectedPayments.map(p => ({
         payment: p,
         adjustment: adjMap[p.id] || 0,
         finalAmount: Number(p.amount) + (adjMap[p.id] || 0),
       }));
       generateBatchPaymentReceipt(selectedPayments[0].recipient_name, selectedPayments[0].recipient_type, items);
-
-      toast({ title: `${selectedPayments.length} pago(s) marcados como pagados`, description: 'Recibo grupal generado.' });
+      toast({ title: `${selectedPayments.length} payment(s) marked as paid`, description: 'Batch receipt generated.' });
       setSelectedIds(new Set());
       refetch();
     } catch (err: any) {
@@ -239,7 +224,7 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
 
   const handleBatchReceiptOnly = () => {
     if (!canBatchPay) {
-      toast({ title: 'Error', description: 'Selecciona pagos del mismo beneficiario.', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Select payments from the same beneficiary.', variant: 'destructive' });
       return;
     }
     const items = selectedPayments.map(p => ({
@@ -248,7 +233,7 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
       finalAmount: Number(p.amount) + (adjMap[p.id] || 0),
     }));
     generateBatchPaymentReceipt(selectedPayments[0].recipient_name, selectedPayments[0].recipient_type, items);
-    toast({ title: 'Recibo grupal generado' });
+    toast({ title: 'Batch receipt generated' });
   };
 
   const confirmDelete = async () => {
@@ -267,9 +252,9 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard title="Total Pendiente" value={`$${totalPending.toLocaleString('en-US', { minimumFractionDigits: 2 })}`} icon={Clock} iconClassName="bg-warning/10 text-warning" />
-        <StatCard title="Total Pagado" value={`$${totalPaid.toLocaleString('en-US', { minimumFractionDigits: 2 })}`} icon={CheckCircle} iconClassName="bg-success/10 text-success" />
-        <StatCard title="Total General" value={`$${(totalPending + totalPaid).toLocaleString('en-US', { minimumFractionDigits: 2 })}`} icon={DollarSign} />
+        <StatCard title="Total Pending" value={`$${totalPending.toLocaleString('en-US', { minimumFractionDigits: 2 })}`} icon={Clock} iconClassName="bg-warning/10 text-warning" />
+        <StatCard title="Total Paid" value={`$${totalPaid.toLocaleString('en-US', { minimumFractionDigits: 2 })}`} icon={CheckCircle} iconClassName="bg-success/10 text-success" />
+        <StatCard title="Grand Total" value={`$${(totalPending + totalPaid).toLocaleString('en-US', { minimumFractionDigits: 2 })}`} icon={DollarSign} />
       </div>
 
       <Tabs value={statusFilter} onValueChange={setStatusFilter}>
@@ -277,20 +262,20 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
           <TabsTrigger value="pending">Pending ({pendingCount})</TabsTrigger>
           <TabsTrigger value="in_process">In Process ({inProcessCount})</TabsTrigger>
           <TabsTrigger value="paid">Paid ({paidCount})</TabsTrigger>
-          <TabsTrigger value="all">Todos ({allTypePayments.length})</TabsTrigger>
+          <TabsTrigger value="all">All ({allTypePayments.length})</TabsTrigger>
         </TabsList>
       </Tabs>
 
       {/* Filters */}
       <div className="flex flex-wrap items-end gap-3">
         <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">Beneficiario</label>
+          <label className="text-xs font-medium text-muted-foreground">Beneficiary</label>
           <Select value={beneficiaryFilter} onValueChange={setBeneficiaryFilter}>
             <SelectTrigger className="h-8 w-[180px] text-xs">
-              <SelectValue placeholder="Todos" />
+              <SelectValue placeholder="All" />
             </SelectTrigger>
             <SelectContent className="bg-popover z-50">
-              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="all">All</SelectItem>
               {uniqueBeneficiaries.map(name => (
                 <SelectItem key={name} value={name}>{name}</SelectItem>
               ))}
@@ -299,13 +284,13 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">Semana</label>
+          <label className="text-xs font-medium text-muted-foreground">Week</label>
           <Select value={weekFilter} onValueChange={setWeekFilter}>
             <SelectTrigger className="h-8 w-[140px] text-xs">
-              <SelectValue placeholder="Todas" />
+              <SelectValue placeholder="All" />
             </SelectTrigger>
             <SelectContent className="bg-popover z-50">
-              <SelectItem value="all">Todas</SelectItem>
+              <SelectItem value="all">All</SelectItem>
               {dateOptions.weeks.map(w => (
                 <SelectItem key={w} value={w}>{w}</SelectItem>
               ))}
@@ -314,13 +299,13 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">Mes</label>
+          <label className="text-xs font-medium text-muted-foreground">Month</label>
           <Select value={monthFilter} onValueChange={setMonthFilter}>
             <SelectTrigger className="h-8 w-[140px] text-xs">
-              <SelectValue placeholder="Todos" />
+              <SelectValue placeholder="All" />
             </SelectTrigger>
             <SelectContent className="bg-popover z-50">
-              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="all">All</SelectItem>
               {dateOptions.months.map(m => {
                 const [y, mo] = m.split('-');
                 return <SelectItem key={m} value={m}>{monthNames[parseInt(mo) - 1]} {y}</SelectItem>;
@@ -330,13 +315,13 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">Año</label>
+          <label className="text-xs font-medium text-muted-foreground">Year</label>
           <Select value={yearFilter} onValueChange={setYearFilter}>
             <SelectTrigger className="h-8 w-[100px] text-xs">
-              <SelectValue placeholder="Todos" />
+              <SelectValue placeholder="All" />
             </SelectTrigger>
             <SelectContent className="bg-popover z-50">
-              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="all">All</SelectItem>
               {dateOptions.years.map(y => (
                 <SelectItem key={y} value={y}>{y}</SelectItem>
               ))}
@@ -345,12 +330,12 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">Desde</label>
+          <label className="text-xs font-medium text-muted-foreground">From</label>
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="outline" className={cn("h-8 w-[130px] justify-start text-xs font-normal", !dateFrom && "text-muted-foreground")}>
                 <CalendarIcon className="mr-1.5 h-3.5 w-3.5" />
-                {dateFrom ? format(dateFrom, 'MM/dd/yyyy') : 'Desde'}
+                {dateFrom ? format(dateFrom, 'MM/dd/yyyy') : 'From'}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0 z-50" align="start">
@@ -360,12 +345,12 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">Hasta</label>
+          <label className="text-xs font-medium text-muted-foreground">To</label>
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="outline" className={cn("h-8 w-[130px] justify-start text-xs font-normal", !dateTo && "text-muted-foreground")}>
                 <CalendarIcon className="mr-1.5 h-3.5 w-3.5" />
-                {dateTo ? format(dateTo, 'MM/dd/yyyy') : 'Hasta'}
+                {dateTo ? format(dateTo, 'MM/dd/yyyy') : 'To'}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0 z-50" align="start">
@@ -376,27 +361,27 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
 
         {hasActiveFilters && (
           <Button variant="ghost" size="sm" className="h-8 gap-1 text-xs" onClick={clearFilters}>
-            <X className="h-3.5 w-3.5" /> Limpiar
+            <X className="h-3.5 w-3.5" /> Clear
           </Button>
         )}
       </div>
 
       {selectedIds.size > 0 && (
         <div className="flex items-center gap-3 p-3 rounded-lg border bg-primary/5 border-primary/20">
-          <span className="text-sm font-medium">{selectedIds.size} seleccionado(s)</span>
+          <span className="text-sm font-medium">{selectedIds.size} selected</span>
           <span className="text-sm text-muted-foreground">•</span>
           <span className="text-sm font-semibold">${selectedTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
           {!canBatchPay && selectedPayments.length > 0 && (
-            <span className="text-xs text-destructive ml-2">⚠ Selecciona pagos del mismo beneficiario</span>
+            <span className="text-xs text-destructive ml-2">⚠ Select payments from the same beneficiary</span>
           )}
           <div className="ml-auto flex items-center gap-2">
             <Button size="sm" variant="outline" className="gap-1.5" onClick={handleBatchReceiptOnly} disabled={!canBatchPay}>
-              <FileText className="h-3.5 w-3.5" /> Recibo
+              <FileText className="h-3.5 w-3.5" /> Receipt
             </Button>
             <Button size="sm" className="gap-1.5" onClick={handleBatchPayAndReceipt} disabled={!canBatchPay || batchProcessing}>
-              <CheckCheck className="h-3.5 w-3.5" /> Pagar y Generar Recibo
+              <CheckCheck className="h-3.5 w-3.5" /> Pay & Generate Receipt
             </Button>
-            <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>Cancelar</Button>
+            <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>Cancel</Button>
           </div>
         </div>
       )}
@@ -412,29 +397,26 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
                     onCheckedChange={toggleSelectAll}
                   />
                 </th>
-                <th className="text-left p-3 font-medium text-muted-foreground">Referencia</th>
-                <th className="text-left p-3 font-medium text-muted-foreground">Beneficiario</th>
-                <th className="text-left p-3 font-medium text-muted-foreground">Fecha</th>
+                <th className="text-left p-3 font-medium text-muted-foreground">Reference</th>
+                <th className="text-left p-3 font-medium text-muted-foreground">Beneficiary</th>
+                <th className="text-left p-3 font-medium text-muted-foreground">Date</th>
                 <th className="text-right p-3 font-medium text-muted-foreground">Rate</th>
                 <th className="text-right p-3 font-medium text-muted-foreground">%</th>
-                <th className="text-right p-3 font-medium text-muted-foreground">Monto Base</th>
-                <th className="text-right p-3 font-medium text-muted-foreground">Ajuste</th>
-                <th className="text-right p-3 font-medium text-muted-foreground">Monto Total</th>
-                <th className="text-left p-3 font-medium text-muted-foreground">Estado</th>
-                <th className="text-left p-3 font-medium text-muted-foreground">Fecha Pago</th>
-                <th className="text-right p-3 font-medium text-muted-foreground">Acciones</th>
+                <th className="text-right p-3 font-medium text-muted-foreground">Base Amount</th>
+                <th className="text-right p-3 font-medium text-muted-foreground">Adjustment</th>
+                <th className="text-right p-3 font-medium text-muted-foreground">Total Amount</th>
+                <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
+                <th className="text-left p-3 font-medium text-muted-foreground">Payment Date</th>
+                <th className="text-right p-3 font-medium text-muted-foreground">Actions</th>
               </tr></thead>
               <tbody>
                 {payments.length === 0 && !loading && (
-                  <tr><td colSpan={12} className="p-6 text-center text-muted-foreground">Sin pagos registrados</td></tr>
+                  <tr><td colSpan={12} className="p-6 text-center text-muted-foreground">No payments recorded</td></tr>
                 )}
                 {payments.map(p => (
                   <tr key={p.id} className={`border-b last:border-0 hover:bg-muted/30 ${selectedIds.has(p.id) ? 'bg-primary/5' : ''}`}>
                     <td className="p-3">
-                      <Checkbox
-                        checked={selectedIds.has(p.id)}
-                        onCheckedChange={() => toggleSelect(p.id)}
-                      />
+                      <Checkbox checked={selectedIds.has(p.id)} onCheckedChange={() => toggleSelect(p.id)} />
                     </td>
                     <td className="p-3 font-medium text-primary">{p.load_reference}</td>
                     <td className="p-3">{p.recipient_name}</td>
@@ -515,10 +497,10 @@ const Payments = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="page-header">Pagos</h1>
-          <p className="page-description">Gestión de pagos a drivers, investors y dispatchers</p>
+          <h1 className="page-header">Payments</h1>
+          <p className="page-description">Manage payments to drivers, investors, and dispatchers</p>
         </div>
-        <Button variant="outline" size="sm" className="gap-2"><Download className="h-4 w-4" /> Exportar</Button>
+        <Button variant="outline" size="sm" className="gap-2"><Download className="h-4 w-4" /> Export</Button>
       </div>
 
       <Tabs defaultValue="drivers">
@@ -532,7 +514,7 @@ const Payments = () => {
         <TabsContent value="dispatchers">
           <div className="mb-4">
             <Button size="sm" className="gap-1.5" onClick={() => setManualDialogOpen(true)}>
-              <PlusCircle className="h-4 w-4" /> Generar Pago Manual
+              <PlusCircle className="h-4 w-4" /> Generate Manual Payment
             </Button>
           </div>
           <PaymentsSection type="dispatcher" />

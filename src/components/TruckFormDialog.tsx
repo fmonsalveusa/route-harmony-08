@@ -76,7 +76,7 @@ export function TruckFormDialog({ open, onOpenChange, truck, onSave }: Props) {
 
   const handleSubmit = async () => {
     if (!form.unit_number.trim()) {
-      toast.error('Campo requerido: Unit #');
+      toast.error('Required field: Unit #');
       return;
     }
     setSaving(true);
@@ -89,14 +89,14 @@ export function TruckFormDialog({ open, onOpenChange, truck, onSave }: Props) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{truck ? 'Editar Camión' : 'Nuevo Camión'}</DialogTitle>
-          <DialogDescription>Completa la información del camión</DialogDescription>
+          <DialogTitle>{truck ? 'Edit Truck' : 'New Truck'}</DialogTitle>
+          <DialogDescription>Complete the truck information</DialogDescription>
         </DialogHeader>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
           <div className="space-y-2">
             <Label>Unit #</Label>
-            <Input value={form.unit_number} onChange={e => set('unit_number', e.target.value)} placeholder="Ej: 101" />
+            <Input value={form.unit_number} onChange={e => set('unit_number', e.target.value)} placeholder="e.g. 101" />
           </div>
           <div className="space-y-2">
             <Label>Truck Type</Label>
@@ -107,11 +107,11 @@ export function TruckFormDialog({ open, onOpenChange, truck, onSave }: Props) {
           </div>
           <div className="space-y-2">
             <Label>Make</Label>
-            <Input value={form.make || ''} onChange={e => set('make', e.target.value)} placeholder="Ej: Freightliner" />
+            <Input value={form.make || ''} onChange={e => set('make', e.target.value)} placeholder="e.g. Freightliner" />
           </div>
           <div className="space-y-2">
             <Label>Model</Label>
-            <Input value={form.model || ''} onChange={e => set('model', e.target.value)} placeholder="Ej: Cascadia" />
+            <Input value={form.model || ''} onChange={e => set('model', e.target.value)} placeholder="e.g. Cascadia" />
           </div>
           <div className="space-y-2">
             <Label>Year</Label>
@@ -143,7 +143,7 @@ export function TruckFormDialog({ open, onOpenChange, truck, onSave }: Props) {
         {/* Box Truck dimensions */}
         {form.truck_type === 'Box Truck' && (
           <div className="border-t pt-4 space-y-2">
-            <Label className="text-base font-semibold">Dimensiones Box Truck</Label>
+            <Label className="text-base font-semibold">Box Truck Dimensions</Label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs">Cargo Length (ft)</Label>
@@ -172,7 +172,7 @@ export function TruckFormDialog({ open, onOpenChange, truck, onSave }: Props) {
         {/* Hotshot dimensions */}
         {form.truck_type === 'Hotshot' && (
           <div className="border-t pt-4 space-y-2">
-            <Label className="text-base font-semibold">Dimensiones Hotshot</Label>
+            <Label className="text-base font-semibold">Hotshot Dimensions</Label>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs">Trailer Length (ft)</Label>
@@ -181,7 +181,7 @@ export function TruckFormDialog({ open, onOpenChange, truck, onSave }: Props) {
               <div className="space-y-1">
                 <Label className="text-xs">Mega Ramp</Label>
                 <Select value={form.mega_ramp || ''} onValueChange={v => set('mega_ramp', v)}>
-                  <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                   <SelectContent className="bg-popover z-50">
                     <SelectItem value="SI">SI</SelectItem>
                     <SelectItem value="NO">NO</SelectItem>
@@ -194,7 +194,7 @@ export function TruckFormDialog({ open, onOpenChange, truck, onSave }: Props) {
 
         {/* Document uploads */}
         <div className="space-y-3 border-t pt-4">
-          <Label className="text-base font-semibold">Documentos y Fotos</Label>
+          <Label className="text-base font-semibold">Documents & Photos</Label>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {DOC_FIELDS.map(doc => (
               <FileUploadField
@@ -209,9 +209,9 @@ export function TruckFormDialog({ open, onOpenChange, truck, onSave }: Props) {
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button onClick={handleSubmit} disabled={saving || !form.unit_number.trim()}>
-            {saving ? 'Guardando...' : truck ? 'Actualizar' : 'Crear'}
+            {saving ? 'Saving...' : truck ? 'Update' : 'Create'}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -228,7 +228,7 @@ function DateField({ label, value, onChange }: { label: string; value: string | 
         <PopoverTrigger asChild>
           <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}>
             <CalendarIcon className="mr-2 h-4 w-4" />
-            {date ? format(date, 'MM/dd/yyyy') : 'Seleccionar fecha'}
+            {date ? format(date, 'MM/dd/yyyy') : 'Select date'}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
@@ -256,7 +256,7 @@ function FileUploadField({ label, existingUrl, file, onFileChange }: {
       <input ref={ref} type="file" accept="image/*,.pdf" className="hidden" onChange={e => { if (e.target.files?.[0]) onFileChange(e.target.files[0]); }} />
       <Button type="button" variant="outline" size="sm" className="w-full justify-start gap-2 text-xs" onClick={() => ref.current?.click()}>
         {hasFile ? <FileCheck className="h-3.5 w-3.5 text-primary" /> : <Upload className="h-3.5 w-3.5" />}
-        {file ? file.name : existingUrl ? 'Documento cargado ✓' : 'Cargar archivo'}
+        {file ? file.name : existingUrl ? 'Document uploaded ✓' : 'Upload file'}
       </Button>
     </div>
   );

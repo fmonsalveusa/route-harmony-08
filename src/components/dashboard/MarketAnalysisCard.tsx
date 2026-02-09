@@ -38,7 +38,6 @@ export function MarketAnalysisCard({ loads, trucks }: Props) {
   }, []);
 
   const rpmByType = useMemo(() => {
-    // Map truck_id -> truck_type
     const truckTypeMap: Record<string, string> = {};
     trucks.forEach(t => { truckTypeMap[t.id] = t.truck_type; });
 
@@ -67,12 +66,12 @@ export function MarketAnalysisCard({ loads, trucks }: Props) {
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2">
           <Target className="h-4 w-4 text-primary" />
-          <CardTitle className="text-base">Market Analysis · RPM por Tipo de Camión</CardTitle>
+          <CardTitle className="text-base">Market Analysis · RPM by Truck Type</CardTitle>
         </div>
       </CardHeader>
       <CardContent className="space-y-5">
         {rpmByType.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-6">Sin datos de RPM disponibles. Asegúrate de que las cargas tengan millas y camión asignado.</p>
+          <p className="text-sm text-muted-foreground text-center py-6">No RPM data available. Make sure loads have miles and an assigned truck.</p>
         ) : (
           rpmByType.map(item => {
             const target = targets[item.type] || 0;
@@ -84,7 +83,7 @@ export function MarketAnalysisCard({ loads, trucks }: Props) {
                 <div className="flex items-center justify-between">
                   <div>
                     <span className="text-sm font-medium">{item.type}</span>
-                    <span className="text-xs text-muted-foreground ml-2">({item.loadCount} cargas)</span>
+                    <span className="text-xs text-muted-foreground ml-2">({item.loadCount} loads)</span>
                   </div>
                   <span className={`text-sm font-bold ${isAbove ? 'text-success' : target > 0 ? 'text-destructive' : ''}`}>
                     ${item.avgRpm.toFixed(2)}/mi
