@@ -29,9 +29,20 @@ const AdminDashboard = () => {
   const { expenses } = useExpenses();
   const navigate = useNavigate();
 
-  const [year, setYear] = useState('all');
+  // Calculate current ISO week number
+  const getCurrentWeek = () => {
+    const now = new Date();
+    const jan4 = new Date(now.getFullYear(), 0, 4);
+    const mondayOfWeek1 = new Date(jan4);
+    mondayOfWeek1.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7));
+    const diff = now.getTime() - mondayOfWeek1.getTime();
+    const weekNum = Math.floor(diff / (7 * 24 * 60 * 60 * 1000)) + 1;
+    return String(Math.min(weekNum, 52));
+  };
+
+  const [year, setYear] = useState(String(new Date().getFullYear()));
   const [month, setMonth] = useState('all');
-  const [week, setWeek] = useState('all');
+  const [week, setWeek] = useState(getCurrentWeek());
   const [dispatcherFilter, setDispatcherFilter] = useState('all');
   const [driverFilter, setDriverFilter] = useState('all');
 
