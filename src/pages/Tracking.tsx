@@ -301,7 +301,7 @@ const Tracking = () => {
       </div>
 
       {/* Main layout: Map + Side Panel */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4" style={{ minHeight: '520px' }}>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Map */}
         <Card className="lg:col-span-2 overflow-hidden">
           <div className="h-[520px]">
@@ -362,8 +362,88 @@ const Tracking = () => {
           </div>
         </Card>
 
+        {/* Drivers Available - below map */}
+        <Card className="lg:col-span-2">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Drivers Available ({availableDrivers.length})
+              </CardTitle>
+              <Select value={dispatcherFilter} onValueChange={setDispatcherFilter}>
+                <SelectTrigger className="w-[180px] h-8 text-xs">
+                  <SelectValue placeholder="All Dispatchers" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Dispatchers</SelectItem>
+                  {dispatchers.filter(d => d.status === 'active').map(d => (
+                    <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {availableDrivers.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                <User className="h-8 w-8 mb-2 opacity-40" />
+                <p className="text-sm">No available drivers</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+                {availableDrivers.map(driver => {
+                  const truck = trucks.find(t => t.id === driver.truck_id);
+                  const dispatcher = dispatchers.find(d => d.id === driver.dispatcher_id);
+                  const lastDel = lastDeliveryStops[driver.id];
+                  return (
+                    <div key={driver.id} className="p-3 rounded-lg border border-border hover:border-primary/30 transition-all">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="p-1.5 rounded-full bg-[hsl(152,60%,40%)]/10">
+                          <User className="h-3.5 w-3.5 text-[hsl(152,60%,40%)]" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold truncate">{driver.name}</p>
+                          <p className="text-[10px] text-muted-foreground">{driver.phone}</p>
+                        </div>
+                      </div>
+                      <div className="space-y-1 text-xs text-muted-foreground">
+                        {truck && (
+                          <div className="flex items-center gap-1">
+                            <Truck className="h-3 w-3" />
+                            <span>Unit {truck.unit_number}</span>
+                          </div>
+                        )}
+                        {dispatcher && (
+                          <div className="flex items-center gap-1">
+                            <Users className="h-3 w-3" />
+                            <span>{dispatcher.name}</span>
+                          </div>
+                        )}
+                        {lastDel ? (
+                          <div className="mt-1.5 pt-1.5 border-t">
+                            <p className="text-[10px] font-medium text-foreground">Last Delivery</p>
+                            <div className="flex items-start gap-1 mt-0.5">
+                              <MapPin className="h-3 w-3 shrink-0 mt-0.5 text-destructive" />
+                              <span className="text-[10px] leading-tight">{lastDel.address}</span>
+                            </div>
+                            {lastDel.date && (
+                              <p className="text-[10px] mt-0.5 opacity-70">{format(parseISO(lastDel.date), 'MMM dd, yyyy')}</p>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-[10px] italic mt-1">No delivery history</p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Side Panel */}
-        <Card className="flex flex-col">
+        <Card className="flex flex-col lg:row-span-2 max-h-[900px]">
           <CardHeader className="pb-2 px-3 pt-3">
             <CardTitle className="text-sm font-semibold">Active Loads ({filteredLoads.length})</CardTitle>
             <div className="flex gap-2 mt-2">
@@ -436,85 +516,6 @@ const Tracking = () => {
         </Card>
       </div>
 
-      {/* Drivers Available */}
-      <Card>
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Drivers Available ({availableDrivers.length})
-            </CardTitle>
-            <Select value={dispatcherFilter} onValueChange={setDispatcherFilter}>
-              <SelectTrigger className="w-[180px] h-8 text-xs">
-                <SelectValue placeholder="All Dispatchers" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Dispatchers</SelectItem>
-                {dispatchers.filter(d => d.status === 'active').map(d => (
-                  <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {availableDrivers.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-              <User className="h-8 w-8 mb-2 opacity-40" />
-              <p className="text-sm">No available drivers</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-              {availableDrivers.map(driver => {
-                const truck = trucks.find(t => t.id === driver.truck_id);
-                const dispatcher = dispatchers.find(d => d.id === driver.dispatcher_id);
-                const lastDel = lastDeliveryStops[driver.id];
-                return (
-                  <div key={driver.id} className="p-3 rounded-lg border border-border hover:border-primary/30 transition-all">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="p-1.5 rounded-full bg-[hsl(152,60%,40%)]/10">
-                        <User className="h-3.5 w-3.5 text-[hsl(152,60%,40%)]" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold truncate">{driver.name}</p>
-                        <p className="text-[10px] text-muted-foreground">{driver.phone}</p>
-                      </div>
-                    </div>
-                    <div className="space-y-1 text-xs text-muted-foreground">
-                      {truck && (
-                        <div className="flex items-center gap-1">
-                          <Truck className="h-3 w-3" />
-                          <span>Unit {truck.unit_number}</span>
-                        </div>
-                      )}
-                      {dispatcher && (
-                        <div className="flex items-center gap-1">
-                          <Users className="h-3 w-3" />
-                          <span>{dispatcher.name}</span>
-                        </div>
-                      )}
-                      {lastDel ? (
-                        <div className="mt-1.5 pt-1.5 border-t">
-                          <p className="text-[10px] font-medium text-foreground">Last Delivery</p>
-                          <div className="flex items-start gap-1 mt-0.5">
-                            <MapPin className="h-3 w-3 shrink-0 mt-0.5 text-destructive" />
-                            <span className="text-[10px] leading-tight">{lastDel.address}</span>
-                          </div>
-                          {lastDel.date && (
-                            <p className="text-[10px] mt-0.5 opacity-70">{format(parseISO(lastDel.date), 'MMM dd, yyyy')}</p>
-                          )}
-                        </div>
-                      ) : (
-                        <p className="text-[10px] italic mt-1">No delivery history</p>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
       {/* Selected Load Detail */}
       {selectedLoad && (
