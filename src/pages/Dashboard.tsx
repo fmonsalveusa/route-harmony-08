@@ -7,13 +7,18 @@ import { useDrivers } from '@/hooks/useDrivers';
 import { useTrucks } from '@/hooks/useTrucks';
 import { usePayments } from '@/hooks/usePayments';
 import { useDispatchers } from '@/hooks/useDispatchers';
-import { Package, Truck, DollarSign, AlertTriangle, TrendingUp, Users, Headphones } from 'lucide-react';
+import { useExpenses } from '@/hooks/useExpenses';
+import { Package, Truck, DollarSign, AlertTriangle, TrendingUp, Users, Headphones, Fuel, Receipt, ArrowRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { DashboardFilters } from '@/components/dashboard/DashboardFilters';
 import { RatesByDriverChart } from '@/components/dashboard/RatesByDriverChart';
 import { WeeklyRatesChart } from '@/components/dashboard/WeeklyRatesChart';
 import { DispatcherCommissionsChart } from '@/components/dashboard/DispatcherCommissionsChart';
 import { MarketAnalysisCard } from '@/components/dashboard/MarketAnalysisCard';
+import { EXPENSE_TYPE_LABELS } from '@/components/expenses/expenseConstants';
+import { useNavigate } from 'react-router-dom';
 
 const AdminDashboard = () => {
   const { loads } = useLoads();
@@ -21,6 +26,8 @@ const AdminDashboard = () => {
   const { trucks } = useTrucks();
   const { payments } = usePayments();
   const { dispatchers } = useDispatchers();
+  const { expenses } = useExpenses();
+  const navigate = useNavigate();
 
   const [year, setYear] = useState('all');
   const [month, setMonth] = useState('all');
@@ -30,6 +37,18 @@ const AdminDashboard = () => {
   const pendingPayments = payments.filter(p => p.status === 'pending').reduce((s, p) => s + p.amount, 0);
   const activeLoads = loads.filter(l => ['in_transit', 'pending'].includes(l.status)).length;
   const availableTrucks = trucks.filter(t => t.status === 'available').length;
+
+  // Expense data for widgets
+  const now = new Date();
+  const thisMonthExpenses = expenses.filter(e => {
+    const d = new Date(e.expense_date + 'T00:00:00');
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  });
+  const monthlyExpenseTotal = thisMonthExpenses.reduce((s, e) => s + e.total_amount, 0);
+  const recentExpenses = expenses.slice(0, 5);
+
+  // High expense alerts (> $400 single expense)
+  const highExpenses = thisMonthExpenses.filter(e => e.total_amount > 400).slice(0, 3);
 
   return (
     <div className="space-y-6">
@@ -86,6 +105,103 @@ const AdminDashboard = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Expense Widgets Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Recent Expenses Widget */}
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Receipt className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-base">Recent Expenses</CardTitle>
+              </div>
+              <Badge variant="outline" className="text-xs">
+                This Month: ${monthlyExpenseTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-muted/50">
+                    <th className="text-left p-2.5 font-medium text-muted-foreground text-xs">Date</th>
+                    <th className="text-left p-2.5 font-medium text-muted-foreground text-xs">Truck</th>
+                    <th className="text-left p-2.5 font-medium text-muted-foreground text-xs">Type</th>
+                    <th className="text-right p-2.5 font-medium text-muted-foreground text-xs">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentExpenses.length === 0 ? (
+                    <tr><td colSpan={4} className="p-4 text-center text-muted-foreground text-xs">No expenses recorded</td></tr>
+                  ) : recentExpenses.map(e => {
+                    const t = trucks.find(tr => tr.id === e.truck_id);
+                    return (
+                      <tr key={e.id} className="border-b last:border-0 hover:bg-muted/30">
+                        <td className="p-2.5 text-xs">{new Date(e.expense_date + 'T00:00:00').toLocaleDateString('en-US')}</td>
+                        <td className="p-2.5 text-xs">{t ? `#${t.unit_number}` : '—'}</td>
+                        <td className="p-2.5 text-xs">{EXPENSE_TYPE_LABELS[e.expense_type] || e.expense_type}</td>
+                        <td className="p-2.5 text-right text-xs font-semibold">${e.total_amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <div className="p-3 border-t">
+              <Button variant="ghost" size="sm" className="w-full text-xs gap-1" onClick={() => navigate('/expenses')}>
+                View All Expenses <ArrowRight className="h-3 w-3" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Expense Alerts Widget */}
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-amber-500" />
+              <CardTitle className="text-base">Expense Alerts</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {highExpenses.length === 0 && thisMonthExpenses.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">No alerts this month</p>
+            ) : (
+              <>
+                {highExpenses.map(e => {
+                  const t = trucks.find(tr => tr.id === e.truck_id);
+                  return (
+                    <div key={e.id} className="flex items-start gap-3 p-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
+                      <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium">
+                          High expense: {t ? `Truck #${t.unit_number}` : 'Unknown'} — ${e.total_amount.toFixed(2)}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {EXPENSE_TYPE_LABELS[e.expense_type] || e.expense_type}: {e.description}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+                {thisMonthExpenses.length > 0 && (
+                  <div className="flex items-start gap-3 p-2.5 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800">
+                    <Fuel className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
+                    <div>
+                      <p className="text-xs font-medium">Monthly fuel spending</p>
+                      <p className="text-xs text-muted-foreground">
+                        ${thisMonthExpenses.filter(e => e.expense_type === 'fuel').reduce((s, e) => s + e.total_amount, 0).toLocaleString('en-US', { minimumFractionDigits: 2 })} spent on fuel this month
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
