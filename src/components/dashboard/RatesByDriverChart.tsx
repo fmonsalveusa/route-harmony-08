@@ -41,7 +41,7 @@ export function RatesByDriverChart({ loads, drivers, year, month, week }: Props)
 
   const renderVerticalLabel = (props: any) => {
     const { x, y, width, height, value } = props;
-    if (height < 30) return null;
+    if (height < 40) return null;
     return (
       <text
         x={x + width / 2}
@@ -49,8 +49,8 @@ export function RatesByDriverChart({ loads, drivers, year, month, week }: Props)
         fill="#fff"
         textAnchor="middle"
         dominantBaseline="central"
-        fontSize={11}
-        fontWeight={600}
+        fontSize={14}
+        fontWeight={700}
         transform={`rotate(-90, ${x + width / 2}, ${y + height / 2})`}
       >
         ${Number(value).toLocaleString()}
@@ -70,7 +70,7 @@ export function RatesByDriverChart({ loads, drivers, year, month, week }: Props)
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={data}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="name" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} interval={0} angle={-25} textAnchor="end" height={60} />
+              <XAxis dataKey="name" tick={{ fontSize: 13, fill: 'hsl(var(--muted-foreground))', fontWeight: 600 }} interval={0} angle={-25} textAnchor="end" height={70} />
               <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} tickFormatter={v => `$${(v / 1000).toFixed(0)}k`} />
               <Tooltip formatter={(v: number) => [`$${v.toLocaleString()}`, 'Total Rate']} />
               <Bar dataKey="total" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]}>
