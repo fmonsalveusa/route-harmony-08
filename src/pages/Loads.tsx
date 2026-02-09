@@ -15,6 +15,7 @@ import { generateInvoicePdf } from '@/lib/invoicePdf';
 import { supabase } from '@/integrations/supabase/client';
 import { LoadFormDialog } from '@/components/LoadFormDialog';
 import { LoadDetailPanel } from '@/components/LoadDetailPanel';
+import { LoadImportWizard } from '@/components/loads/LoadImportWizard';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -64,7 +65,7 @@ const Loads = () => {
     return { city: address, state: '' };
   };
   const { user, role, profile } = useAuth();
-  const { loads: dbLoads, loading: loadsLoading, createLoad, updateLoad, deleteLoad, fetchLoads } = useLoads();
+  const { loads: dbLoads, loading: loadsLoading, createLoad, updateLoad, deleteLoad, fetchLoads, createLoadsBulk } = useLoads();
   const { drivers } = useDrivers();
   const { trucks } = useTrucks();
   const { dispatchers } = useDispatchers();
@@ -85,7 +86,7 @@ const Loads = () => {
   const [deleteTarget, setDeleteTarget] = useState<DbLoad | null>(null);
   const [detailKey, setDetailKey] = useState(0);
   const [podUploadLoadId, setPodUploadLoadId] = useState<string | null>(null);
-
+  const [showImportWizard, setShowImportWizard] = useState(false);
   const handleGenerateInvoice = async (load: DbLoad) => {
     if (!load.broker_client) { toast.error('Esta carga no tiene broker asignado'); return; }
     const company = companies.length > 0 ? companies[0] : null;
@@ -171,9 +172,14 @@ const Loads = () => {
           <h1 className="page-header">Gestión de Cargas</h1>
           <p className="page-description">Administra todas las cargas y asignaciones</p>
         </div>
-        <Button size="sm" className="gap-2" onClick={() => { setEditLoad(null); setShowForm(true); }}>
-          <Plus className="h-4 w-4" /> Nueva Carga
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" className="gap-2" onClick={() => setShowImportWizard(true)}>
+            <Upload className="h-4 w-4" /> Import CSV
+          </Button>
+          <Button size="sm" className="gap-2" onClick={() => { setEditLoad(null); setShowForm(true); }}>
+            <Plus className="h-4 w-4" /> Nueva Carga
+          </Button>
+        </div>
       </div>
 
       {/* Search + Filters */}
@@ -511,6 +517,17 @@ const Loads = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* CSV Import Wizard */}
+      <LoadImportWizard
+        open={showImportWizard}
+        onOpenChange={setShowImportWizard}
+        onImport={createLoadsBulk}
+        drivers={drivers.map(d => ({ id: d.id, name: d.name }))}
+        trucks={trucks.map(t => ({ id: t.id, unit_number: t.unit_number, license_plate: t.license_plate }))}
+        dispatchers={dispatchers.map(d => ({ id: d.id, name: d.name }))}
+        existingLoads={dbLoads}
+      />
     </div>
   );
 };
