@@ -13,8 +13,7 @@ import {
 } from 'lucide-react';
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip as ReTooltip,
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Legend,
-  BarChart, Bar, LabelList,
+  BarChart, Bar, LabelList, XAxis, YAxis, CartesianGrid,
 } from 'recharts';
 import { EXPENSE_TYPE_LABELS } from './expenseConstants';
 import type { DbExpense } from '@/hooks/useExpenses';
@@ -97,31 +96,6 @@ export function ExpenseSummaryDashboard({ expenses, trucks, drivers }: Props) {
       .sort((a, b) => b.value - a.value);
   }, [filteredExpenses, totalExpenses]);
 
-  // --- Line chart: expenses over time (by week) ---
-  const lineData = useMemo(() => {
-    if (filteredExpenses.length === 0) return [];
-    const sorted = [...filteredExpenses].sort((a, b) => a.expense_date.localeCompare(b.expense_date));
-    const weekMap: Record<string, { total: number; fuel: number; maint: number }> = {};
-
-    sorted.forEach(e => {
-      const d = new Date(e.expense_date + 'T00:00:00');
-      const weekStart = new Date(d);
-      weekStart.setDate(d.getDate() - ((d.getDay() + 6) % 7));
-      const key = weekStart.toISOString().split('T')[0];
-      if (!weekMap[key]) weekMap[key] = { total: 0, fuel: 0, maint: 0 };
-      weekMap[key].total += e.total_amount;
-      if (e.expense_type === 'fuel') weekMap[key].fuel += e.total_amount;
-      if (['maintenance', 'repairs'].includes(e.expense_type)) weekMap[key].maint += e.total_amount;
-    });
-
-    return Object.entries(weekMap).map(([week, v]) => ({
-      week: new Date(week + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      Total: Math.round(v.total),
-      Fuel: Math.round(v.fuel),
-      Maintenance: Math.round(v.maint),
-    }));
-  }, [filteredExpenses]);
-
   // --- Top trucks bar chart ---
   const truckBarData = useMemo(() => {
     const byTruck: Record<string, number> = {};
@@ -169,9 +143,8 @@ export function ExpenseSummaryDashboard({ expenses, trucks, drivers }: Props) {
       const d = t ? drivers.find(dr => dr.id === t.driver_id) : null;
       return {
         ...row,
-        truck: t ? `${t.license_plate || ''} - ${t.model || t.make || ''} - #${t.unit_number}` : 'Unknown',
-        driverName: d?.name || row.truckId,
-        avg: row.count > 0 ? row.total / row.count : 0,
+        truck: t ? `#${t.unit_number}` : 'Unknown',
+        driverName: d?.name || '—',
       };
     });
 
@@ -232,7 +205,6 @@ export function ExpenseSummaryDashboard({ expenses, trucks, drivers }: Props) {
   };
 
   const exportToExcel = () => {
-    // Export as TSV (opens in Excel)
     const headers = ['Date', 'Truck', 'Driver', 'Type', 'Description', 'Amount', 'Tax', 'Total', 'Vendor', 'Payment Method'];
     const rows = filteredExpenses.map(e => {
       const t = trucks.find(tr => tr.id === e.truck_id);
@@ -263,11 +235,11 @@ export function ExpenseSummaryDashboard({ expenses, trucks, drivers }: Props) {
   };
 
   const exportTruckBreakdown = () => {
-    const headers = ['Truck', 'Driver', 'Total', 'Fuel', 'Maintenance', 'Repairs', 'Tires', 'Other', 'Avg/Expense', 'Last Date'];
+    const headers = ['Truck', 'Driver', 'Fuel', 'Maintenance', 'Repairs', 'Tires', 'Other', 'Total'];
     const rows = truckTableData.map(r => [
-      r.truck, r.driverName, r.total.toFixed(2), r.fuel.toFixed(2),
+      r.truck, r.driverName, r.fuel.toFixed(2),
       r.maintenance.toFixed(2), r.repairs.toFixed(2), r.tires.toFixed(2),
-      r.other.toFixed(2), r.avg.toFixed(2), r.lastDate,
+      r.other.toFixed(2), r.total.toFixed(2),
     ]);
     const tsv = [headers, ...rows].map(r => r.join('\t')).join('\n');
     downloadFile(tsv, 'application/vnd.ms-excel', `TruckExpenseBreakdown_${new Date().toISOString().split('T')[0]}.xls`);
@@ -494,10 +466,6 @@ export function ExpenseSummaryDashboard({ expenses, trucks, drivers }: Props) {
                         <th className="p-2.5 text-left font-medium text-muted-foreground">Truck</th>
                         <th className="p-2.5 text-left font-medium text-muted-foreground">Driver</th>
                         <th className="p-2.5 text-right font-medium text-muted-foreground cursor-pointer hover:text-foreground"
-                          onClick={() => handleTruckSort('total')}>
-                          Total {truckSort === 'total' && (truckSortDir === 'desc' ? '↓' : '↑')}
-                        </th>
-                        <th className="p-2.5 text-right font-medium text-muted-foreground cursor-pointer hover:text-foreground"
                           onClick={() => handleTruckSort('fuel')}>
                           Fuel {truckSort === 'fuel' && (truckSortDir === 'desc' ? '↓' : '↑')}
                         </th>
@@ -508,27 +476,25 @@ export function ExpenseSummaryDashboard({ expenses, trucks, drivers }: Props) {
                         <th className="p-2.5 text-right font-medium text-muted-foreground hidden md:table-cell">Repairs</th>
                         <th className="p-2.5 text-right font-medium text-muted-foreground hidden lg:table-cell">Tires</th>
                         <th className="p-2.5 text-right font-medium text-muted-foreground hidden lg:table-cell">Other</th>
-                        <th className="p-2.5 text-right font-medium text-muted-foreground hidden md:table-cell">Avg/Exp</th>
-                        <th className="p-2.5 text-left font-medium text-muted-foreground hidden lg:table-cell">Last Date</th>
+                        <th className="p-2.5 text-right font-medium text-muted-foreground cursor-pointer hover:text-foreground bg-primary/5 border-l-2 border-primary"
+                          onClick={() => handleTruckSort('total')}>
+                          Total {truckSort === 'total' && (truckSortDir === 'desc' ? '↓' : '↑')}
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
                       {truckTablePaged.length === 0 ? (
-                        <tr><td colSpan={10} className="p-6 text-center text-muted-foreground">No truck data</td></tr>
+                        <tr><td colSpan={8} className="p-6 text-center text-muted-foreground">No truck data</td></tr>
                       ) : truckTablePaged.map(row => (
                         <tr key={row.truckId} className="border-b hover:bg-muted/30">
                           <td className="p-2.5 font-medium">{row.truck}</td>
                           <td className="p-2.5 text-muted-foreground">{row.driverName}</td>
-                          <td className="p-2.5 text-right font-semibold">${fmt(row.total)}</td>
                           <td className="p-2.5 text-right">${fmt(row.fuel)}</td>
                           <td className="p-2.5 text-right hidden md:table-cell">${fmt(row.maintenance)}</td>
                           <td className="p-2.5 text-right hidden md:table-cell">${fmt(row.repairs)}</td>
                           <td className="p-2.5 text-right hidden lg:table-cell">${fmt(row.tires)}</td>
                           <td className="p-2.5 text-right hidden lg:table-cell">${fmt(row.other)}</td>
-                          <td className="p-2.5 text-right hidden md:table-cell">${fmt(row.avg)}</td>
-                          <td className="p-2.5 hidden lg:table-cell text-muted-foreground">
-                            {new Date(row.lastDate + 'T00:00:00').toLocaleDateString('en-US')}
-                          </td>
+                          <td className="p-2.5 text-right font-bold text-primary bg-primary/5 border-l-2 border-primary">${fmt(row.total)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -538,14 +504,12 @@ export function ExpenseSummaryDashboard({ expenses, trucks, drivers }: Props) {
                           <td className="p-2.5" colSpan={2}>
                             Total ({truckTableData.length} trucks)
                           </td>
-                          <td className="p-2.5 text-right">${fmt(truckTableTotals.total)}</td>
                           <td className="p-2.5 text-right">${fmt(truckTableTotals.fuel)}</td>
                           <td className="p-2.5 text-right hidden md:table-cell">${fmt(truckTableTotals.maintenance)}</td>
                           <td className="p-2.5 text-right hidden md:table-cell">${fmt(truckTableTotals.repairs)}</td>
                           <td className="p-2.5 text-right hidden lg:table-cell">${fmt(truckTableTotals.tires)}</td>
                           <td className="p-2.5 text-right hidden lg:table-cell">${fmt(truckTableTotals.other)}</td>
-                          <td className="p-2.5 hidden md:table-cell" />
-                          <td className="p-2.5 hidden lg:table-cell" />
+                          <td className="p-2.5 text-right font-bold text-primary bg-primary/5 border-l-2 border-primary">${fmt(truckTableTotals.total)}</td>
                         </tr>
                       </tfoot>
                     )}
