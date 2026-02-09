@@ -80,8 +80,8 @@ export default function Performance() {
       const truckId = l.truck_id;
       const isCompany = (driverId && companyDriverIds.has(driverId)) || (truckId && companyTruckIds.has(truckId));
       if (!isCompany) return false;
-      const delivered = l.status === 'delivered' || l.status === 'paid';
-      return delivered && filterByPeriod(l.delivery_date || l.pickup_date || l.created_at, start, end);
+      if (l.status === 'cancelled') return false;
+      return filterByPeriod(l.delivery_date || l.pickup_date || l.created_at, start, end);
     }), [loads, companyDriverIds, companyTruckIds, start, end]);
 
   const prevPeriodLoads = useMemo(() =>
@@ -90,8 +90,8 @@ export default function Performance() {
       const truckId = l.truck_id;
       const isCompany = (driverId && companyDriverIds.has(driverId)) || (truckId && companyTruckIds.has(truckId));
       if (!isCompany) return false;
-      const delivered = l.status === 'delivered' || l.status === 'paid';
-      return delivered && filterByPeriod(l.delivery_date || l.pickup_date || l.created_at, prev.start, prev.end);
+      if (l.status === 'cancelled') return false;
+      return filterByPeriod(l.delivery_date || l.pickup_date || l.created_at, prev.start, prev.end);
     }), [loads, companyDriverIds, companyTruckIds, prev]);
 
   const periodExpenses = useMemo(() =>
