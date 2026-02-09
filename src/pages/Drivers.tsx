@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Plus, Search, Phone, Truck as TruckIcon, Pencil, Trash2, Eye, Copy } from 'lucide-react';
+import { Plus, Search, Phone, Truck as TruckIcon, Pencil, Trash2, Eye, Copy, Link2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useDrivers, DbDriver, DriverInput } from '@/hooks/useDrivers';
@@ -12,6 +12,7 @@ import { useTrucks } from '@/hooks/useTrucks';
 import { useDispatchers } from '@/hooks/useDispatchers';
 import { DriverFormDialog } from '@/components/DriverFormDialog';
 import { DriverDetailDialog } from '@/components/DriverDetailDialog';
+import { GenerateOnboardingLinkDialog } from '@/components/GenerateOnboardingLinkDialog';
 import { toast } from '@/hooks/use-toast';
 
 const driverStatusColor = (status: string) => {
@@ -34,6 +35,7 @@ const Drivers = () => {
   const [editingDriver, setEditingDriver] = useState<DbDriver | null>(null);
   const [deletingDriver, setDeletingDriver] = useState<DbDriver | null>(null);
   const [detailDriver, setDetailDriver] = useState<DbDriver | null>(null);
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
 
   const getTruckLabel = (id: string | null) => {
     if (!id) return null;
@@ -112,9 +114,14 @@ const Drivers = () => {
           <p className="page-description">{isDispatcher ? 'Drivers bajo tu gestión' : 'Gestión completa de conductores'}</p>
         </div>
         {!isDispatcher && (
-          <Button size="sm" className="gap-2" onClick={() => { setEditingDriver(null); setFormOpen(true); }}>
-            <Plus className="h-4 w-4" /> Nuevo Driver
-          </Button>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" className="gap-2" onClick={() => setOnboardingOpen(true)}>
+              <Link2 className="h-4 w-4" /> Onboarding Link
+            </Button>
+            <Button size="sm" className="gap-2" onClick={() => { setEditingDriver(null); setFormOpen(true); }}>
+              <Plus className="h-4 w-4" /> Nuevo Driver
+            </Button>
+          </div>
         )}
       </div>
 
@@ -207,7 +214,11 @@ const Drivers = () => {
         dispatcherName={detailDriver ? dispatchers.find(d => d.id === detailDriver.dispatcher_id)?.name || null : null}
       />
 
-      {/* Delete now uses window.confirm */}
+      <GenerateOnboardingLinkDialog
+        open={onboardingOpen}
+        onOpenChange={setOnboardingOpen}
+        dispatchers={dispatchers}
+      />
     </div>
   );
 };

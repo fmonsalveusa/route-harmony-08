@@ -1,1 +1,4 @@
 project_id = "rycwycqlbfcnkjiqmzyt"
+
+[functions.driver-onboarding]
+verify_jwt = false

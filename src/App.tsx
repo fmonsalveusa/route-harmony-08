@@ -25,6 +25,7 @@ import MasterStats from "./pages/MasterStats";
 import MasterBilling from "./pages/MasterBilling";
 import MasterSettings from "./pages/MasterSettings";
 import NotFound from "./pages/NotFound";
+import DriverOnboarding from "./pages/DriverOnboarding";
 
 const queryClient = new QueryClient();
 
@@ -65,6 +66,7 @@ const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/auth" element={user ? <Navigate to={isMasterAdmin ? '/master' : '/'} replace /> : <Auth />} />
+      <Route path="/onboarding/:token" element={<DriverOnboarding />} />
 
       {/* Tenant routes */}
       <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />

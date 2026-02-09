@@ -581,6 +581,50 @@ export type Database = {
           },
         ]
       }
+      onboarding_tokens: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          dispatcher_id: string | null
+          driver_name: string | null
+          expires_at: string
+          id: string
+          status: string
+          tenant_id: string
+          token: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          dispatcher_id?: string | null
+          driver_name?: string | null
+          expires_at?: string
+          id?: string
+          status?: string
+          tenant_id: string
+          token?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          dispatcher_id?: string | null
+          driver_name?: string | null
+          expires_at?: string
+          id?: string
+          status?: string
+          tenant_id?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_tokens_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_adjustments: {
         Row: {
           adjustment_type: string
