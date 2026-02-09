@@ -362,7 +362,79 @@ const Tracking = () => {
           </div>
         </Card>
 
-        {/* Drivers Available - below map */}
+        {/* Side Panel - Active Loads */}
+        <Card className="flex flex-col lg:row-span-2 max-h-[900px]">
+          <CardHeader className="pb-2 px-3 pt-3">
+            <CardTitle className="text-sm font-semibold">Active Loads ({filteredLoads.length})</CardTitle>
+            <div className="flex gap-2 mt-2">
+              <div className="relative flex-1">
+                <Search className="h-3.5 w-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Search..."
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  className="pl-7 h-8 text-xs"
+                />
+              </div>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[110px] h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="dispatched">Dispatched</SelectItem>
+                  <SelectItem value="in_transit">In Transit</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardHeader>
+          <CardContent className="flex-1 overflow-y-auto px-3 pb-3 space-y-2">
+            {filteredLoads.length === 0 && (
+              <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
+                <Package className="h-8 w-8 mb-2 opacity-40" />
+                <p className="text-sm">No active loads</p>
+              </div>
+            )}
+            {filteredLoads.map(load => {
+              const driver = drivers.find(d => d.id === load.driver_id);
+              const truck = trucks.find(t => t.id === load.truck_id);
+              const isSelected = load.id === selectedLoadId;
+              return (
+                <div
+                  key={load.id}
+                  onClick={() => handleSelectLoad(load)}
+                  className={`p-3 rounded-lg border cursor-pointer transition-all hover:shadow-md ${
+                    isSelected ? 'border-primary bg-primary/5 shadow-md' : 'border-border hover:border-primary/30'
+                  }`}
+                >
+                  <div className="flex items-start justify-between mb-1.5">
+                    <span className="font-semibold text-sm">{load.reference_number}</span>
+                    <StatusBadge status={load.status} />
+                  </div>
+                  <div className="space-y-1 text-xs">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-2 h-2 rounded-full bg-[#5ee14c] shrink-0" />
+                      <span className="truncate">{load.origin}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-2 h-2 rounded-full bg-destructive shrink-0" />
+                      <span className="truncate">{load.destination}</span>
+                    </div>
+                  </div>
+                  <div className="mt-2 pt-2 border-t flex items-center justify-between text-[11px] text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <Truck className="h-3 w-3" />
+                      {truck?.unit_number || '—'}
+                    </span>
+                    <span>{driver?.name || 'Unassigned'}</span>
+                    {load.miles > 0 && <span>{load.miles} mi</span>}
+                  </div>
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+
         <Card className="lg:col-span-2">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
@@ -439,79 +511,6 @@ const Tracking = () => {
                 })}
               </div>
             )}
-          </CardContent>
-        </Card>
-
-        {/* Side Panel */}
-        <Card className="flex flex-col lg:row-span-2 max-h-[900px]">
-          <CardHeader className="pb-2 px-3 pt-3">
-            <CardTitle className="text-sm font-semibold">Active Loads ({filteredLoads.length})</CardTitle>
-            <div className="flex gap-2 mt-2">
-              <div className="relative flex-1">
-                <Search className="h-3.5 w-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Search..."
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  className="pl-7 h-8 text-xs"
-                />
-              </div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[110px] h-8 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="dispatched">Dispatched</SelectItem>
-                  <SelectItem value="in_transit">In Transit</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </CardHeader>
-          <CardContent className="flex-1 overflow-y-auto px-3 pb-3 space-y-2">
-            {filteredLoads.length === 0 && (
-              <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
-                <Package className="h-8 w-8 mb-2 opacity-40" />
-                <p className="text-sm">No active loads</p>
-              </div>
-            )}
-            {filteredLoads.map(load => {
-              const driver = drivers.find(d => d.id === load.driver_id);
-              const truck = trucks.find(t => t.id === load.truck_id);
-              const isSelected = load.id === selectedLoadId;
-              return (
-                <div
-                  key={load.id}
-                  onClick={() => handleSelectLoad(load)}
-                  className={`p-3 rounded-lg border cursor-pointer transition-all hover:shadow-md ${
-                    isSelected ? 'border-primary bg-primary/5 shadow-md' : 'border-border hover:border-primary/30'
-                  }`}
-                >
-                  <div className="flex items-start justify-between mb-1.5">
-                    <span className="font-semibold text-sm">{load.reference_number}</span>
-                    <StatusBadge status={load.status} />
-                  </div>
-                  <div className="space-y-1 text-xs">
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-2 h-2 rounded-full bg-[#5ee14c] shrink-0" />
-                      <span className="truncate">{load.origin}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-2 h-2 rounded-full bg-destructive shrink-0" />
-                      <span className="truncate">{load.destination}</span>
-                    </div>
-                  </div>
-                  <div className="mt-2 pt-2 border-t flex items-center justify-between text-[11px] text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <Truck className="h-3 w-3" />
-                      {truck?.unit_number || '—'}
-                    </span>
-                    <span>{driver?.name || 'Unassigned'}</span>
-                    {load.miles > 0 && <span>{load.miles} mi</span>}
-                  </div>
-                </div>
-              );
-            })}
           </CardContent>
         </Card>
       </div>
