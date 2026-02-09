@@ -19,6 +19,7 @@ interface DashboardFiltersProps {
   onDriverChange: (v: string) => void;
   dispatchers: FilterOption[];
   drivers: FilterOption[];
+  hideDispatcherFilter?: boolean;
 }
 
 const currentYear = new Date().getFullYear();
@@ -29,7 +30,7 @@ const monthNames = ['January','February','March','April','May','June','July','Au
 export function DashboardFilters({
   year, month, week, dispatcher, driver,
   onYearChange, onMonthChange, onWeekChange, onDispatcherChange, onDriverChange,
-  dispatchers, drivers,
+  dispatchers, drivers, hideDispatcherFilter,
 }: DashboardFiltersProps) {
   return (
     <div className="flex flex-wrap gap-2 items-center">
@@ -79,15 +80,17 @@ export function DashboardFilters({
           })}
         </SelectContent>
       </Select>
-      <Select value={dispatcher} onValueChange={onDispatcherChange}>
-        <SelectTrigger className="w-[160px] h-8 text-xs">
-          <SelectValue placeholder="Dispatcher" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Dispatchers</SelectItem>
-          {dispatchers.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
-        </SelectContent>
-      </Select>
+      {!hideDispatcherFilter && (
+        <Select value={dispatcher} onValueChange={onDispatcherChange}>
+          <SelectTrigger className="w-[160px] h-8 text-xs">
+            <SelectValue placeholder="Dispatcher" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Dispatchers</SelectItem>
+            {dispatchers.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      )}
       <Select value={driver} onValueChange={onDriverChange}>
         <SelectTrigger className="w-[160px] h-8 text-xs">
           <SelectValue placeholder="Driver" />
