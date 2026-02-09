@@ -99,7 +99,7 @@ const Companies = () => {
                         <Button variant="outline" size="icon" className="h-8 w-10 border-amber-300 bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700" onClick={() => openEdit(c)} title="Editar">
                           <Pencil className="h-4 w-4" />
                         </Button>
-                        <Button variant="outline" size="icon" className="h-8 w-10 border-red-300 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700" onClick={() => setDeleteTarget(c)} title="Eliminar">
+                        <Button variant="outline" size="icon" className="h-8 w-10 border-red-300 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700" onClick={async () => { if (window.confirm(`¿Eliminar empresa ${c.name}? Esta acción es permanente.`)) { await deleteCompany(c.id); } }} title="Eliminar">
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -142,19 +142,7 @@ const Companies = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirm */}
-      <Dialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>¿Eliminar empresa?</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">Esta acción no se puede deshacer. Se eliminará "{deleteTarget?.name}".</p>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancelar</Button>
-            <Button variant="destructive" onClick={() => { if (deleteTarget) deleteCompany(deleteTarget.id); setDeleteTarget(null); }}>Eliminar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Delete now uses window.confirm */}
     </div>
   );
 };

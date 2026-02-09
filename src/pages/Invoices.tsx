@@ -191,7 +191,7 @@ const Invoices = () => {
                         <Button variant="outline" size="icon" className="h-8 w-10 border-amber-300 bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700" onClick={() => openEdit(inv)} title="Editar">
                           <Pencil className="h-4 w-4" />
                         </Button>
-                        <Button variant="outline" size="icon" className="h-8 w-10 border-red-300 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700" onClick={() => setDeleteTarget(inv.id)} title="Eliminar">
+                        <Button variant="outline" size="icon" className="h-8 w-10 border-red-300 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700" onClick={async () => { if (window.confirm(`¿Eliminar factura ${inv.invoice_number}? Esta acción es permanente.`)) { await deleteInvoice(inv.id); } }} title="Eliminar">
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -269,18 +269,7 @@ const Invoices = () => {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>¿Eliminar factura?</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">Esta acción no se puede deshacer.</p>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancelar</Button>
-            <Button variant="destructive" onClick={() => { if (deleteTarget) deleteInvoice(deleteTarget); setDeleteTarget(null); }}>Eliminar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Delete now uses window.confirm */}
     </div>
   );
 };
