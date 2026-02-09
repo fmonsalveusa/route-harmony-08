@@ -20,19 +20,18 @@ const BAR_COLORS = [
   '#0891b2', '#ca8a04', '#6366f1', '#059669', '#d946ef',
 ];
 
-const renderVerticalLabel = (props: any) => {
+const renderHorizontalLabel = (props: any) => {
   const { x, y, width, height, value } = props;
-  if (height < 40) return null;
+  if (height < 20 || width < 40) return null;
   return (
     <text
       x={x + width / 2}
-      y={y + 30}
+      y={y + height / 2}
       fill="#fff"
       textAnchor="middle"
       dominantBaseline="central"
-      fontSize={14}
+      fontSize={12}
       fontWeight={700}
-      transform={`rotate(-90, ${x + width / 2}, ${y + 30})`}
     >
       ${Number(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
     </text>
@@ -95,7 +94,7 @@ export function DispatcherCommissionsChart({ loads, dispatchers, drivers, year, 
               <Tooltip formatter={(v: number) => [`$${v.toLocaleString()}`, 'Comisión']} />
               <Bar dataKey="total" radius={[4, 4, 0, 0]}>
                 {data.map((_, i) => <Cell key={i} fill={BAR_COLORS[i % BAR_COLORS.length]} />)}
-                <LabelList dataKey="total" content={renderVerticalLabel} />
+                <LabelList dataKey="total" content={renderHorizontalLabel} />
               </Bar>
             </BarChart>
           </ResponsiveContainer>
