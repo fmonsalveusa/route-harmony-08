@@ -403,7 +403,7 @@ export function ExpenseSummaryDashboard({ expenses, trucks, drivers }: Props) {
             </div>
 
             {/* Charts Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {/* Donut Chart */}
               <Card>
                 <CardHeader className="pb-2">
@@ -448,31 +448,6 @@ export function ExpenseSummaryDashboard({ expenses, trucks, drivers }: Props) {
                 </CardContent>
               </Card>
 
-              {/* Line Chart */}
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">Expenses Over Time</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {lineData.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-8">No data</p>
-                  ) : (
-                    <ResponsiveContainer width="100%" height={230}>
-                      <LineChart data={lineData}>
-                        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                        <XAxis dataKey="week" tick={{ fontSize: 10 }} className="fill-muted-foreground" />
-                        <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `$${v >= 1000 ? `${(v/1000).toFixed(0)}k` : v}`} className="fill-muted-foreground" />
-                        <ReTooltip formatter={(val: number) => `$${fmt(val)}`} />
-                        <Legend wrapperStyle={{ fontSize: 11 }} />
-                        <Line type="monotone" dataKey="Total" stroke="#3b82f6" strokeWidth={2} dot={false} />
-                        <Line type="monotone" dataKey="Fuel" stroke="#22c55e" strokeDasharray="5 5" strokeWidth={1.5} dot={false} />
-                        <Line type="monotone" dataKey="Maintenance" stroke="#f97316" strokeDasharray="2 2" strokeWidth={1.5} dot={false} />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  )}
-                </CardContent>
-              </Card>
-
               {/* Bar Chart - Top Trucks */}
               <Card>
                 <CardHeader className="pb-2">
@@ -483,7 +458,7 @@ export function ExpenseSummaryDashboard({ expenses, trucks, drivers }: Props) {
                     <p className="text-sm text-muted-foreground text-center py-8">No data</p>
                   ) : (
                     <ResponsiveContainer width="100%" height={230}>
-                      <BarChart data={truckBarData} layout="vertical" margin={{ left: 10, right: 30 }}>
+                      <BarChart data={truckBarData} layout="vertical" margin={{ left: 10, right: 10 }}>
                         <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                         <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={v => `$${v >= 1000 ? `${(v/1000).toFixed(0)}k` : v}`} className="fill-muted-foreground" />
                         <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} width={60} className="fill-muted-foreground" />
@@ -492,6 +467,7 @@ export function ExpenseSummaryDashboard({ expenses, trucks, drivers }: Props) {
                           {truckBarData.map((entry, i) => (
                             <Cell key={i} fill={entry.color} />
                           ))}
+                          <LabelList dataKey="total" position="insideRight" fill="#ffffff" fontSize={11} fontWeight={600} formatter={(v: number) => `$${fmt(v)}`} />
                         </Bar>
                       </BarChart>
                     </ResponsiveContainer>
