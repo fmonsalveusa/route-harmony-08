@@ -33,7 +33,7 @@ const PAGE_SIZES = [25, 50, 100];
 
 const Drivers = () => {
   const { role, profile } = useAuth();
-  const { drivers, loading, createDriver, createDriversBulk, updateDriver, deleteDriver, uploadDocument } = useDrivers();
+  const { drivers, loading, createDriver, createDriversBulk, updateDriver, deleteDriver, uploadDocument, getDocSignedUrl } = useDrivers();
   const { trucks } = useTrucks();
   const { dispatchers } = useDispatchers();
   const [search, setSearch] = useState('');
@@ -206,7 +206,7 @@ const Drivers = () => {
                     {isExpanded && (
                       <tr key={`${driver.id}-detail`}>
                         <td colSpan={6} className="p-0">
-                          <DriverDetailPanel driver={driver} truckLabel={truckLabel} dispatcherName={dispatcher?.name || null} />
+                          <DriverDetailPanel driver={driver} truckLabel={truckLabel} dispatcherName={dispatcher?.name || null} getDocSignedUrl={getDocSignedUrl} />
                         </td>
                       </tr>
                     )}
@@ -301,7 +301,7 @@ const Drivers = () => {
       )}
 
       <DriverFormDialog open={formOpen} onOpenChange={setFormOpen} driver={editingDriver} onSubmit={handleSubmit} trucks={trucks} dispatchers={dispatchers} />
-      <DriverDetailDialog open={!!detailDriver} onOpenChange={open => !open && setDetailDriver(null)} driver={detailDriver} truckLabel={detailDriver ? getTruckLabel(detailDriver.truck_id) : null} dispatcherName={detailDriver ? dispatchers.find(d => d.id === detailDriver.dispatcher_id)?.name || null : null} />
+      <DriverDetailDialog open={!!detailDriver} onOpenChange={open => !open && setDetailDriver(null)} driver={detailDriver} truckLabel={detailDriver ? getTruckLabel(detailDriver.truck_id) : null} dispatcherName={detailDriver ? dispatchers.find(d => d.id === detailDriver.dispatcher_id)?.name || null : null} getDocSignedUrl={getDocSignedUrl} />
       <GenerateOnboardingLinkDialog open={onboardingOpen} onOpenChange={setOnboardingOpen} dispatchers={dispatchers} />
       <DriverImportWizard
         open={importOpen}
