@@ -46,11 +46,11 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName }: Props)
         <Info label="Dispatcher">{dispatcherName || 'Unassigned'}</Info>
         <Info label="Truck">{truckLabel || 'Unassigned'}</Info>
         <Info label="Investor">{driver.investor_name || '—'}</Info>
-        <Info label="% Driver Pay">{driver.pay_percentage}%</Info>
+        <Info label="% Investor Pay">{driver.investor_pay_percentage ?? '—'}%</Info>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3 border-t pt-3">
-        <Info label="% Investor Pay">{driver.investor_pay_percentage ?? '—'}%</Info>
+        <Info label="% Driver Pay">{driver.pay_percentage}%</Info>
         <Info label="Loads This Month">{driver.loads_this_month}</Info>
         <Info label="Earned This Month">${Number(driver.earnings_this_month).toLocaleString()}</Info>
       </div>

@@ -78,8 +78,8 @@ export function DriverDetailDialog({ open, onOpenChange, driver, truckLabel, dis
           <section className="space-y-2 border-t pt-4">
             <h3 className="font-semibold text-sm border-b pb-1">Payments & Performance</h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3">
-              <Info label="% Driver Pay">{driver.pay_percentage}%</Info>
               <Info label="% Investor Pay">{driver.investor_pay_percentage ?? '—'}%</Info>
+              <Info label="% Driver Pay">{driver.pay_percentage}%</Info>
               <Info label="Loads This Month">{driver.loads_this_month}</Info>
               <Info label="Earned This Month">${Number(driver.earnings_this_month).toLocaleString()}</Info>
             </div>
