@@ -132,6 +132,7 @@ export function useDrivers() {
       return { success: 0, errors: inputs.length };
     }
     const count = (data as any[])?.length || 0;
+    await fetchDrivers();
     return { success: count, errors: inputs.length - count };
   };
 
