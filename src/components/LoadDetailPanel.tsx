@@ -379,8 +379,8 @@ export const LoadDetailPanel = ({ load, onMilesCalculated }: LoadDetailPanelProp
         </div>
 
         {/* Map */}
-        <div className="rounded-lg overflow-hidden border bg-card" style={{ minHeight: 280 }}>
-          <div ref={mapRef} style={{ height: '100%', minHeight: 280 }} />
+        <div className="rounded-lg overflow-hidden border bg-card relative" style={{ minHeight: 280, zIndex: 0 }}>
+          <div ref={mapRef} style={{ height: '100%', minHeight: 280, zIndex: 0 }} />
         </div>
       </div>
     </div>
