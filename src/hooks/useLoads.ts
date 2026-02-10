@@ -86,6 +86,19 @@ export function useLoads() {
 
   const createLoad = useCallback(async (input: CreateLoadInput) => {
     const tenant_id = await getTenantId();
+
+    // Check for duplicate reference number
+    const { data: existing } = await supabase
+      .from('loads')
+      .select('id')
+      .eq('reference_number', input.reference_number)
+      .maybeSingle();
+
+    if (existing) {
+      toastRef.current({ title: 'Carga duplicada', description: `Ya existe una carga con referencia: ${input.reference_number}`, variant: 'destructive' });
+      return null;
+    }
+
     const { data, error } = await supabase
       .from('loads')
       .insert([{ ...input, tenant_id } as any])
