@@ -123,6 +123,18 @@ export function useDrivers() {
     return urlData?.signedUrl || null;
   };
 
+  const getDocSignedUrl = async (storedUrl: string): Promise<string | null> => {
+    try {
+      const match = storedUrl.match(/\/driver-documents\/([^?]+)/);
+      if (!match) return storedUrl;
+      const path = decodeURIComponent(match[1]);
+      const { data } = await supabase.storage.from('driver-documents').createSignedUrl(path, 3600);
+      return data?.signedUrl || storedUrl;
+    } catch {
+      return storedUrl;
+    }
+  };
+
   const createDriversBulk = async (inputs: DriverInput[]): Promise<{ success: number; errors: number }> => {
     const tenant_id = await getTenantId();
     const records = inputs.map(input => ({ ...input, tenant_id }));
@@ -136,5 +148,5 @@ export function useDrivers() {
     return { success: count, errors: inputs.length - count };
   };
 
-  return { drivers, loading, createDriver, createDriversBulk, updateDriver, deleteDriver, uploadDocument, refetch: fetchDrivers };
+  return { drivers, loading, createDriver, createDriversBulk, updateDriver, deleteDriver, uploadDocument, getDocSignedUrl, refetch: fetchDrivers };
 }

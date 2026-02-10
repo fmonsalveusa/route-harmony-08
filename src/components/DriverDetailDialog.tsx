@@ -1,8 +1,8 @@
+import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/StatusBadge';
 import { DbDriver } from '@/hooks/useDrivers';
-import { FileText, ExternalLink } from 'lucide-react';
+import { FileText, ExternalLink, Loader2 } from 'lucide-react';
 import { formatDate } from '@/lib/dateUtils';
 
 interface DriverDetailDialogProps {
@@ -11,6 +11,7 @@ interface DriverDetailDialogProps {
   driver: DbDriver | null;
   truckLabel?: string | null;
   dispatcherName?: string | null;
+  getDocSignedUrl?: (storedUrl: string) => Promise<string | null>;
 }
 
 function Info({ label, children }: { label: string; children: React.ReactNode }) {
@@ -30,8 +31,24 @@ const docFields = [
   { key: 'service_agreement_url', label: 'Service Agreement' },
 ];
 
-export function DriverDetailDialog({ open, onOpenChange, driver, truckLabel, dispatcherName }: DriverDetailDialogProps) {
+export function DriverDetailDialog({ open, onOpenChange, driver, truckLabel, dispatcherName, getDocSignedUrl }: DriverDetailDialogProps) {
+  const [loadingDoc, setLoadingDoc] = useState<string | null>(null);
+
   if (!driver) return null;
+
+  const handleViewDoc = async (url: string, key: string) => {
+    if (!getDocSignedUrl) {
+      window.open(url, '_blank');
+      return;
+    }
+    setLoadingDoc(key);
+    try {
+      const signedUrl = await getDocSignedUrl(url);
+      window.open(signedUrl || url, '_blank');
+    } finally {
+      setLoadingDoc(null);
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -96,9 +113,13 @@ export function DriverDetailDialog({ open, onOpenChange, driver, truckLabel, dis
                     <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
                     <span className="font-medium flex-1">{doc.label}</span>
                     {url ? (
-                      <a href={url} target="_blank" rel="noopener" className="text-primary underline flex items-center gap-1 text-xs">
-                        View <ExternalLink className="h-3 w-3" />
-                      </a>
+                      <button
+                        onClick={() => handleViewDoc(url, doc.key)}
+                        className="text-primary underline flex items-center gap-1 text-xs hover:text-primary/80"
+                        disabled={loadingDoc === doc.key}
+                      >
+                        {loadingDoc === doc.key ? <Loader2 className="h-3 w-3 animate-spin" /> : <>View <ExternalLink className="h-3 w-3" /></>}
+                      </button>
                     ) : (
                       <span className="text-xs text-muted-foreground">No file</span>
                     )}
