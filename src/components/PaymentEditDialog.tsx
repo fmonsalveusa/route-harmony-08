@@ -53,20 +53,41 @@ export const PaymentEditDialog = ({ payment, open, onOpenChange }: Props) => {
     const rate = parseFloat(newRate);
     if (isNaN(rate) || rate <= 0) return;
     setSavingRate(true);
-    const newAmount = Math.round(rate * (payment.percentage_applied / 100) * 100) / 100;
-    const { error } = await supabase
-      .from('payments')
-      .update({ total_rate: rate, amount: newAmount } as any)
-      .eq('id', payment.id);
-    setSavingRate(false);
-    if (error) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+
+    // 1. Update the load's total_rate
+    const { error: loadError } = await supabase
+      .from('loads')
+      .update({ total_rate: rate } as any)
+      .eq('id', payment.load_id);
+
+    if (loadError) {
+      setSavingRate(false);
+      toast({ title: 'Error actualizando carga', description: loadError.message, variant: 'destructive' });
       return;
     }
+
+    // 2. Get all payments for this load and recalculate each one
+    const { data: allPayments } = await supabase
+      .from('payments')
+      .select('id, percentage_applied')
+      .eq('load_id', payment.load_id);
+
+    if (allPayments && allPayments.length > 0) {
+      for (const p of allPayments) {
+        const recalcAmount = Math.round(rate * (Number(p.percentage_applied) / 100) * 100) / 100;
+        await supabase
+          .from('payments')
+          .update({ total_rate: rate, amount: recalcAmount } as any)
+          .eq('id', p.id);
+      }
+    }
+
+    setSavingRate(false);
+    const newAmount = Math.round(rate * (payment.percentage_applied / 100) * 100) / 100;
     setCurrentRate(rate);
     setCurrentBaseAmount(newAmount);
     setEditingRate(false);
-    toast({ title: 'Rate actualizado' });
+    toast({ title: 'Rate actualizado en carga y pagos asociados' });
   };
 
   const handleGenerateReceipt = () => {
