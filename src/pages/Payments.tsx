@@ -490,9 +490,12 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
 
 const Payments = () => {
   const { payments: allP, refetch } = usePayments();
-  const pendingDrivers = allP.filter(p => p.recipient_type === 'driver' && (p.status === 'pending' || p.status === 'in_process')).length;
-  const pendingInvestors = allP.filter(p => p.recipient_type === 'investor' && (p.status === 'pending' || p.status === 'in_process')).length;
-  const pendingDispatchers = allP.filter(p => p.recipient_type === 'dispatcher' && (p.status === 'pending' || p.status === 'in_process')).length;
+  const pendingDrivers = allP.filter(p => p.recipient_type === 'driver' && p.status === 'pending').length;
+  const totalDrivers = allP.filter(p => p.recipient_type === 'driver').length;
+  const pendingInvestors = allP.filter(p => p.recipient_type === 'investor' && p.status === 'pending').length;
+  const totalInvestors = allP.filter(p => p.recipient_type === 'investor').length;
+  const pendingDispatchers = allP.filter(p => p.recipient_type === 'dispatcher' && p.status === 'pending').length;
+  const totalDispatchers = allP.filter(p => p.recipient_type === 'dispatcher').length;
   const [manualDialogOpen, setManualDialogOpen] = useState(false);
 
   return (
@@ -507,9 +510,9 @@ const Payments = () => {
 
       <Tabs defaultValue="drivers">
         <TabsList>
-          <TabsTrigger value="drivers">Drivers {pendingDrivers > 0 && <span className="ml-1.5 inline-flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[11px] font-semibold min-w-[20px] h-5 px-1.5">{pendingDrivers}</span>}</TabsTrigger>
-          <TabsTrigger value="investors">Investors {pendingInvestors > 0 && <span className="ml-1.5 inline-flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[11px] font-semibold min-w-[20px] h-5 px-1.5">{pendingInvestors}</span>}</TabsTrigger>
-          <TabsTrigger value="dispatchers">Dispatchers {pendingDispatchers > 0 && <span className="ml-1.5 inline-flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[11px] font-semibold min-w-[20px] h-5 px-1.5">{pendingDispatchers}</span>}</TabsTrigger>
+          <TabsTrigger value="drivers">Drivers <span className={`ml-1.5 inline-flex items-center justify-center rounded-full text-[11px] font-semibold min-w-[20px] h-5 px-1.5 ${pendingDrivers > 0 ? 'bg-destructive text-destructive-foreground' : 'bg-primary text-primary-foreground'}`}>{pendingDrivers > 0 ? pendingDrivers : totalDrivers}</span></TabsTrigger>
+          <TabsTrigger value="investors">Investors <span className={`ml-1.5 inline-flex items-center justify-center rounded-full text-[11px] font-semibold min-w-[20px] h-5 px-1.5 ${pendingInvestors > 0 ? 'bg-destructive text-destructive-foreground' : 'bg-primary text-primary-foreground'}`}>{pendingInvestors > 0 ? pendingInvestors : totalInvestors}</span></TabsTrigger>
+          <TabsTrigger value="dispatchers">Dispatchers <span className={`ml-1.5 inline-flex items-center justify-center rounded-full text-[11px] font-semibold min-w-[20px] h-5 px-1.5 ${pendingDispatchers > 0 ? 'bg-destructive text-destructive-foreground' : 'bg-primary text-primary-foreground'}`}>{pendingDispatchers > 0 ? pendingDispatchers : totalDispatchers}</span></TabsTrigger>
         </TabsList>
         <TabsContent value="drivers"><PaymentsSection type="driver" /></TabsContent>
         <TabsContent value="investors"><PaymentsSection type="investor" /></TabsContent>
