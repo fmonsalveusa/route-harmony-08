@@ -48,6 +48,8 @@ const InlinePodInput = ({ loadId, inputRefMap }: { loadId: string; inputRefMap: 
   );
 };
 
+const PAGE_SIZES = [25, 50, 100];
+
 const Loads = () => {
   // Extract city and state from a full address string
   const extractCityState = (address: string): { city: string; state: string } => {
@@ -87,6 +89,9 @@ const Loads = () => {
   const [detailKey, setDetailKey] = useState(0);
   const [podUploadLoadId, setPodUploadLoadId] = useState<string | null>(null);
   const [showImportWizard, setShowImportWizard] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+
   const handleGenerateInvoice = async (load: DbLoad) => {
     if (!load.broker_client) { toast.error('Esta carga no tiene broker asignado'); return; }
     const company = companies.length > 0 ? companies[0] : null;
@@ -163,7 +168,9 @@ const Loads = () => {
   const deliveredLoads = baseLoads.filter(l => ['delivered', 'tonu'].includes(l.status));
   const cancelledLoads = baseLoads.filter(l => l.status === 'cancelled');
 
-  const loads = activeTab === 'all' ? baseLoads : activeTab === 'active' ? activeLoads : activeTab === 'delivered' ? deliveredLoads : cancelledLoads;
+  const loadsAll = activeTab === 'all' ? baseLoads : activeTab === 'active' ? activeLoads : activeTab === 'delivered' ? deliveredLoads : cancelledLoads;
+  const totalPages = Math.max(1, Math.ceil(loadsAll.length / pageSize));
+  const loads = loadsAll.slice((page - 1) * pageSize, page * pageSize);
 
   return (
     <div className="space-y-6">
@@ -287,7 +294,7 @@ const Loads = () => {
         ]).map(tab => (
           <button
             key={tab.key}
-            onClick={() => { setActiveTab(tab.key); setExpandedId(null); }}
+            onClick={() => { setActiveTab(tab.key); setExpandedId(null); setPage(1); }}
             className={`px-4 py-2.5 text-sm font-medium uppercase border-b-2 transition-colors flex items-center gap-2 ${
               activeTab === tab.key
                 ? 'border-primary text-primary'
@@ -484,6 +491,26 @@ const Loads = () => {
               <p>No se encontraron cargas</p>
             </div>
           )}
+
+          {/* Pagination Footer */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border-t">
+            <div className="text-sm text-muted-foreground">
+              {loadsAll.length} loads
+            </div>
+            <div className="flex items-center gap-3 mt-2 sm:mt-0">
+              <Select value={String(pageSize)} onValueChange={v => { setPageSize(Number(v)); setPage(1); }}>
+                <SelectTrigger className="w-[80px] h-8 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {PAGE_SIZES.map(s => <SelectItem key={s} value={String(s)}>{s}/page</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <div className="flex items-center gap-1">
+                <Button variant="outline" size="sm" className="h-8" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>Prev</Button>
+                <span className="text-sm px-2">{page}/{totalPages}</span>
+                <Button variant="outline" size="sm" className="h-8" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>Next</Button>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
