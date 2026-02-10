@@ -20,6 +20,8 @@ export const ADJUSTMENT_REASONS = [
   { value: 'late_fee', label: 'Late Fee' },
   { value: 'bank_fee', label: 'Bank Fee' },
   { value: 'weekly_insurance_fee', label: 'Weekly Insurance Fee' },
+  { value: 'fuel_diesel', label: 'Fuel (Diesel)' },
+  { value: 'inspection_bonus', label: 'Inspection Bonus' },
   { value: 'other', label: 'Others' },
 ] as const;
 
