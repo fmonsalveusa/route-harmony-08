@@ -60,7 +60,7 @@ async function fetchLoadsFromDb(): Promise<DbLoad[]> {
   const { data, error } = await supabase
     .from('loads')
     .select('*')
-    .order('pickup_date', { ascending: true, nullsFirst: false });
+    .order('pickup_date', { ascending: false, nullsFirst: false });
 
   if (error) {
     console.error('Error fetching loads:', error);
