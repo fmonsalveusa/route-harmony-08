@@ -1,51 +1,54 @@
 
 
-# Importacion Masiva de 200 Cargas (Uso Unico)
+# Importacion Masiva de Drivers (Uso Unico)
 
 ## Resumen
 
-Crear un wizard simple de importacion CSV para cargar las 200 cargas de una sola vez. Seguira el mismo patron del FuelImportWizard existente pero adaptado para cargas.
+Crear un wizard de importacion CSV para drivers siguiendo el mismo patron del LoadImportWizard existente. Wizard de 4 pasos: Upload, Mapeo de columnas, Validacion y Confirmacion.
 
-## Flujo
+## Campos mapeables
 
-1. El admin hace clic en "Import CSV" en la pagina de Loads
-2. Sube el archivo CSV
-3. Mapea las columnas del CSV a los campos de la tabla loads
-4. Revisa y valida los datos (duplicados, fechas invalidas, drivers/trucks no encontrados)
-5. Confirma la importacion - se insertan en lotes de 50
+**Obligatorios:** Name, Email, Phone, License
+**Opcionales:** License Expiry, Medical Card Expiry, Status, Service Type, Dispatcher (por nombre), Truck (por unit number), Investor Name, Pay Percentage, Investor Pay Percentage, Factoring Percentage, Hire Date
+
+## Validaciones
+
+- Duplicados por email o license (case-insensitive)
+- Fechas invalidas en license_expiry, medical_card_expiry, hire_date
+- Dispatchers no encontrados por nombre
+- Trucks no encontrados por unit_number
+- Emails con formato invalido
+- Porcentajes fuera de rango (0-100)
 
 ## Archivos a crear
 
-### `src/components/loads/LoadImportWizard.tsx`
-- Wizard de 4 pasos: Upload, Mapeo de columnas, Validacion, Confirmacion
-- Reutiliza el patron visual del FuelImportWizard (mismos componentes UI, misma estructura de pasos)
-- Campos mapeables:
-  - **Obligatorios**: Reference Number, Origin, Destination, Total Rate
-  - **Opcionales**: Pickup Date, Delivery Date, Miles, Weight, Broker/Client, Driver (nombre), Truck (unit number), Status, Cargo Type, Notes, Driver Pay, Dispatcher Pay, Investor Pay
-- Validacion: detecta duplicados por reference_number, fechas invalidas, drivers/trucks que no existen
-- Codificacion por colores: verde (valido), amarillo (advertencia), rojo (error)
+### `src/components/drivers/DriverImportWizard.tsx`
+- Wizard de 4 pasos identico en estructura al LoadImportWizard
+- Deteccion automatica de delimitador (coma, punto y coma, tab)
+- Auto-deteccion de columnas por nombre de header
+- Tabla de validacion con colores (verde/amarillo/rojo)
 - Checkboxes para saltar filas problematicas
-- Barra de progreso durante la importacion
+- Barra de progreso durante importacion
 - Boton para descargar plantilla CSV de ejemplo
+- Importacion en lotes de 50
 
 ## Archivos a modificar
 
-### `src/hooks/useLoads.ts`
-- Agregar funcion `createLoadsBulk(inputs: CreateLoadInput[]): Promise<{success: number, errors: number}>`
+### `src/hooks/useDrivers.ts`
+- Agregar funcion `createDriversBulk(inputs: DriverInput[]): Promise<{success: number, errors: number}>`
 - Inserta en lotes de 50 con el tenant_id del usuario
-- Invalida la cache al finalizar
+- Invalida (refetch) al finalizar
 
-### `src/pages/Loads.tsx`
-- Agregar boton "Import CSV" con icono Upload junto al boton "New Load"
-- Integrar el LoadImportWizard como dialogo modal
-- Pasar drivers, trucks y loads existentes como props para validacion
+### `src/pages/Drivers.tsx`
+- Agregar boton "Import CSV" con icono Upload junto al boton "New Driver"
+- Integrar el DriverImportWizard como dialogo modal
+- Pasar drivers existentes, trucks y dispatchers como props para validacion
 
 ## Detalles tecnicos
 
-- Parseo de CSV con deteccion automatica de delimitador (coma, punto y coma, tab)
-- Matching de drivers por nombre (case-insensitive, trim)
-- Matching de trucks por unit_number o plate_number
-- Insercion en lotes de 50 registros usando `supabase.from('loads').insert(batch)`
-- Cada registro incluye el tenant_id del usuario autenticado
-- Al finalizar, `queryClient.invalidateQueries` para refrescar la lista
+- Matching de dispatchers por nombre (case-insensitive, trim)
+- Matching de trucks por unit_number (case-insensitive)
+- Deteccion de duplicados contra drivers existentes por email o license
+- Valores por defecto: status="available", service_type="owner_operator", pay_percentage=0, factoring_percentage=0, hire_date=hoy
+- Cada registro incluye el tenant_id del usuario autenticado via getTenantId()
 
