@@ -19,6 +19,8 @@ const STATUS_OPTIONS = [
 const getStatusStyle = (status: string) =>
   STATUS_OPTIONS.find(s => s.value === status)?.bg || '';
 
+const PAGE_SIZES = [25, 50, 100];
+
 const Fleet = () => {
   const { trucks, loading, createTruck, updateTruck, deleteTruck, uploadDocument } = useTrucks();
   const { drivers } = useDrivers();
@@ -31,6 +33,8 @@ const Fleet = () => {
   const [detailTruck, setDetailTruck] = useState<DbTruck | null>(null);
   const [activeTab, setActiveTab] = useState('active');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
 
   const openNew = () => { setEditTruck(null); setDialogOpen(true); };
   const openEdit = (t: DbTruck) => { setEditTruck(t); setDialogOpen(true); };
@@ -57,7 +61,10 @@ const Fleet = () => {
     return trucks;
   };
 
-  const renderTrucksTable = (trucksList: DbTruck[]) => (
+  const renderTrucksTable = (trucksList: DbTruck[]) => {
+    const totalPages = Math.max(1, Math.ceil(trucksList.length / pageSize));
+    const paged = trucksList.slice((page - 1) * pageSize, page * pageSize);
+    return (
     <Card>
       <CardContent className="p-0">
         <div className="overflow-x-auto">
@@ -73,7 +80,7 @@ const Fleet = () => {
               </tr>
             </thead>
             <tbody>
-              {trucksList.map(truck => {
+              {paged.map(truck => {
                 const isExpanded = expandedId === truck.id;
                 const driverName = getDriverName(truck.id);
                 return (
@@ -139,9 +146,30 @@ const Fleet = () => {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Footer */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border-t">
+          <div className="text-sm text-muted-foreground">
+            {trucksList.length} trucks
+          </div>
+          <div className="flex items-center gap-3 mt-2 sm:mt-0">
+            <Select value={String(pageSize)} onValueChange={v => { setPageSize(Number(v)); setPage(1); }}>
+              <SelectTrigger className="w-[80px] h-8 text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {PAGE_SIZES.map(s => <SelectItem key={s} value={String(s)}>{s}/page</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <div className="flex items-center gap-1">
+              <Button variant="outline" size="sm" className="h-8" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>Prev</Button>
+              <span className="text-sm px-2">{page}/{totalPages}</span>
+              <Button variant="outline" size="sm" className="h-8" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>Next</Button>
+            </div>
+          </div>
+        </div>
       </CardContent>
     </Card>
-  );
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -160,9 +188,9 @@ const Fleet = () => {
       ) : (
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
-            <TabsTrigger value="active">Active <span className={`text-xs rounded-full px-2 py-0.5 font-semibold ${activeTab === 'active' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{trucks.filter(t => t.status !== 'inactive').length}</span></TabsTrigger>
-            <TabsTrigger value="inactive">Inactive <span className={`text-xs rounded-full px-2 py-0.5 font-semibold ${activeTab === 'inactive' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{trucks.filter(t => t.status === 'inactive').length}</span></TabsTrigger>
-            <TabsTrigger value="all">All <span className={`text-xs rounded-full px-2 py-0.5 font-semibold ${activeTab === 'all' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{trucks.length}</span></TabsTrigger>
+            <TabsTrigger value="active" onClick={() => setPage(1)}>Active <span className={`text-xs rounded-full px-2 py-0.5 font-semibold ${activeTab === 'active' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{trucks.filter(t => t.status !== 'inactive').length}</span></TabsTrigger>
+            <TabsTrigger value="inactive" onClick={() => setPage(1)}>Inactive <span className={`text-xs rounded-full px-2 py-0.5 font-semibold ${activeTab === 'inactive' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{trucks.filter(t => t.status === 'inactive').length}</span></TabsTrigger>
+            <TabsTrigger value="all" onClick={() => setPage(1)}>All <span className={`text-xs rounded-full px-2 py-0.5 font-semibold ${activeTab === 'all' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{trucks.length}</span></TabsTrigger>
           </TabsList>
           {['active', 'inactive', 'all'].map(tab => (
             <TabsContent key={tab} value={tab}>
