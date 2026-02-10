@@ -13,7 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { PaymentEditDialog } from '@/components/PaymentEditDialog';
-import { DollarSign, CheckCircle, Clock, Download, Pencil, Trash2, FileText, CheckCheck, CalendarIcon, X, PlusCircle } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { DollarSign, CheckCircle, Clock, Download, Pencil, Trash2, FileText, CheckCheck, CalendarIcon, X, PlusCircle, Search } from 'lucide-react';
 import { generatePaymentReceipt } from '@/lib/paymentReceipt';
 import { generateBatchPaymentReceipt } from '@/lib/batchPaymentReceipt';
 import { supabase } from '@/integrations/supabase/client';
@@ -48,6 +49,7 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
   const [yearFilter, setYearFilter] = useState('all');
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
   const [dateTo, setDateTo] = useState<Date | undefined>();
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Fetch all adjustments for payments of this type
   const fetchAdjustments = useCallback(async () => {
@@ -152,10 +154,19 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
       });
     }
 
+    // Search filter
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      result = result.filter(p =>
+        p.load_reference.toLowerCase().includes(q) ||
+        p.recipient_name.toLowerCase().includes(q)
+      );
+    }
+
     // Sort newest first by created_at
     result.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
     return result;
-  }, [allTypePayments, statusFilter, beneficiaryFilter, weekFilter, monthFilter, yearFilter, dateFrom, dateTo, loadDateMap]);
+  }, [allTypePayments, statusFilter, beneficiaryFilter, weekFilter, monthFilter, yearFilter, dateFrom, dateTo, loadDateMap, searchQuery]);
 
   const payments = filteredPayments;
 
@@ -268,7 +279,17 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
         </TabsList>
       </Tabs>
 
-      {/* Filters */}
+      {/* Search & Filters */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Search by reference or beneficiary..."
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          className="pl-9 h-9 text-sm"
+        />
+      </div>
+
       <div className="flex flex-wrap items-end gap-3">
         <div className="space-y-1">
           <label className="text-xs font-medium text-muted-foreground">Beneficiary</label>
