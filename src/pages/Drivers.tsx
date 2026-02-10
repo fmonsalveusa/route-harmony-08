@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { DriverImportWizard } from '@/components/drivers/DriverImportWizard';
 import { useAuth } from '@/contexts/AuthContext';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Plus, Search, Phone, Truck as TruckIcon, Pencil, Trash2, Eye, Copy, Link2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Search, Phone, Truck as TruckIcon, Pencil, Trash2, Eye, Copy, Link2, ChevronDown, ChevronUp, Upload } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useDrivers, DbDriver, DriverInput } from '@/hooks/useDrivers';
 import { useTrucks } from '@/hooks/useTrucks';
@@ -30,7 +31,7 @@ const driverStatusColor = (status: string) => {
 
 const Drivers = () => {
   const { role, profile } = useAuth();
-  const { drivers, loading, createDriver, updateDriver, deleteDriver, uploadDocument } = useDrivers();
+  const { drivers, loading, createDriver, createDriversBulk, updateDriver, deleteDriver, uploadDocument } = useDrivers();
   const { trucks } = useTrucks();
   const { dispatchers } = useDispatchers();
   const [search, setSearch] = useState('');
@@ -39,6 +40,7 @@ const Drivers = () => {
   const [deletingDriver, setDeletingDriver] = useState<DbDriver | null>(null);
   const [detailDriver, setDetailDriver] = useState<DbDriver | null>(null);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('active');
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -230,7 +232,10 @@ const Drivers = () => {
           <p className="page-description">{isDispatcher ? 'Drivers under your management' : 'Complete driver management'}</p>
         </div>
         {!isDispatcher && (
-          <div className="flex gap-2">
+           <div className="flex gap-2">
+            <Button size="sm" variant="outline" className="gap-2" onClick={() => setImportOpen(true)}>
+              <Upload className="h-4 w-4" /> Import CSV
+            </Button>
             <Button size="sm" variant="outline" className="gap-2" onClick={() => setOnboardingOpen(true)}>
               <Link2 className="h-4 w-4" /> Onboarding Link
             </Button>
@@ -270,6 +275,14 @@ const Drivers = () => {
       <DriverFormDialog open={formOpen} onOpenChange={setFormOpen} driver={editingDriver} onSubmit={handleSubmit} trucks={trucks} dispatchers={dispatchers} />
       <DriverDetailDialog open={!!detailDriver} onOpenChange={open => !open && setDetailDriver(null)} driver={detailDriver} truckLabel={detailDriver ? getTruckLabel(detailDriver.truck_id) : null} dispatcherName={detailDriver ? dispatchers.find(d => d.id === detailDriver.dispatcher_id)?.name || null : null} />
       <GenerateOnboardingLinkDialog open={onboardingOpen} onOpenChange={setOnboardingOpen} dispatchers={dispatchers} />
+      <DriverImportWizard
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        onImport={createDriversBulk}
+        existingDrivers={drivers}
+        trucks={trucks}
+        dispatchers={dispatchers}
+      />
     </div>
   );
 };

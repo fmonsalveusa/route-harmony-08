@@ -123,5 +123,17 @@ export function useDrivers() {
     return urlData?.signedUrl || null;
   };
 
-  return { drivers, loading, createDriver, updateDriver, deleteDriver, uploadDocument, refetch: fetchDrivers };
+  const createDriversBulk = async (inputs: DriverInput[]): Promise<{ success: number; errors: number }> => {
+    const tenant_id = await getTenantId();
+    const records = inputs.map(input => ({ ...input, tenant_id }));
+    const { data, error } = await supabase.from('drivers' as any).insert(records as any).select();
+    if (error) {
+      toast({ title: 'Bulk import error', description: error.message, variant: 'destructive' });
+      return { success: 0, errors: inputs.length };
+    }
+    const count = (data as any[])?.length || 0;
+    return { success: count, errors: inputs.length - count };
+  };
+
+  return { drivers, loading, createDriver, createDriversBulk, updateDriver, deleteDriver, uploadDocument, refetch: fetchDrivers };
 }
