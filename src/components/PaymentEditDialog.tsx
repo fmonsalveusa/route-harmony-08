@@ -7,8 +7,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { usePaymentAdjustments, ADJUSTMENT_REASONS } from '@/hooks/usePaymentAdjustments';
 import type { DbPayment } from '@/hooks/usePayments';
-import { Plus, Trash2, FileText, PlusCircle, MinusCircle } from 'lucide-react';
+import { Plus, Trash2, FileText, PlusCircle, MinusCircle, Pencil, Check, X } from 'lucide-react';
 import { generatePaymentReceipt } from '@/lib/paymentReceipt';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
 interface Props {
   payment: DbPayment;
@@ -23,8 +25,13 @@ export const PaymentEditDialog = ({ payment, open, onOpenChange }: Props) => {
   const [adjReason, setAdjReason] = useState<string>('detention');
   const [adjAmount, setAdjAmount] = useState('');
   const [adjDesc, setAdjDesc] = useState('');
+  const [editingRate, setEditingRate] = useState(false);
+  const [newRate, setNewRate] = useState(String(payment.total_rate));
+  const [currentRate, setCurrentRate] = useState(Number(payment.total_rate));
+  const [currentBaseAmount, setCurrentBaseAmount] = useState(Number(payment.amount));
+  const [savingRate, setSavingRate] = useState(false);
 
-  const finalAmount = Number(payment.amount) + totalAdjustment;
+  const finalAmount = currentBaseAmount + totalAdjustment;
 
   const handleAdd = async () => {
     const amt = parseFloat(adjAmount);
@@ -42,8 +49,29 @@ export const PaymentEditDialog = ({ payment, open, onOpenChange }: Props) => {
     }
   };
 
+  const handleSaveRate = async () => {
+    const rate = parseFloat(newRate);
+    if (isNaN(rate) || rate <= 0) return;
+    setSavingRate(true);
+    const newAmount = Math.round(rate * (payment.percentage_applied / 100) * 100) / 100;
+    const { error } = await supabase
+      .from('payments')
+      .update({ total_rate: rate, amount: newAmount } as any)
+      .eq('id', payment.id);
+    setSavingRate(false);
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      return;
+    }
+    setCurrentRate(rate);
+    setCurrentBaseAmount(newAmount);
+    setEditingRate(false);
+    toast({ title: 'Rate actualizado' });
+  };
+
   const handleGenerateReceipt = () => {
-    generatePaymentReceipt(payment, adjustments, totalAdjustment, finalAmount);
+    const updatedPayment = { ...payment, total_rate: currentRate, amount: currentBaseAmount };
+    generatePaymentReceipt(updatedPayment, adjustments, totalAdjustment, finalAmount);
   };
 
   const reasonLabel = (r: string) => ADJUSTMENT_REASONS.find(a => a.value === r)?.label || r;
@@ -59,9 +87,36 @@ export const PaymentEditDialog = ({ payment, open, onOpenChange }: Props) => {
           {/* Payment summary */}
           <div className="grid grid-cols-2 gap-3 text-sm p-3 rounded-lg bg-muted/50">
             <div><span className="text-muted-foreground">Beneficiario:</span> <span className="font-medium">{payment.recipient_name}</span></div>
-            <div><span className="text-muted-foreground">Rate:</span> <span className="font-medium">${Number(payment.total_rate).toLocaleString()}</span></div>
+            <div>
+              <span className="text-muted-foreground">Rate:</span>{' '}
+              {editingRate ? (
+                <span className="inline-flex items-center gap-1">
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={newRate}
+                    onChange={e => setNewRate(e.target.value)}
+                    className="h-6 w-24 text-xs inline-block"
+                  />
+                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={handleSaveRate} disabled={savingRate}>
+                    <Check className="h-3.5 w-3.5 text-green-600" />
+                  </Button>
+                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => { setEditingRate(false); setNewRate(String(currentRate)); }}>
+                    <X className="h-3.5 w-3.5 text-destructive" />
+                  </Button>
+                </span>
+              ) : (
+                <span className="font-medium">
+                  ${currentRate.toLocaleString()}
+                  <Button variant="ghost" size="sm" className="h-5 w-5 p-0 ml-1 inline-flex" onClick={() => { setEditingRate(true); setNewRate(String(currentRate)); }}>
+                    <Pencil className="h-3 w-3 text-muted-foreground" />
+                  </Button>
+                </span>
+              )}
+            </div>
             <div><span className="text-muted-foreground">Porcentaje:</span> <span className="font-medium">{payment.percentage_applied}%</span></div>
-            <div><span className="text-muted-foreground">Monto Base:</span> <span className="font-medium">${Number(payment.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span></div>
+            <div><span className="text-muted-foreground">Monto Base:</span> <span className="font-medium">${currentBaseAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span></div>
           </div>
 
           {/* Adjustments list */}
