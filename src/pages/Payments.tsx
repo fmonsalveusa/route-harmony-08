@@ -280,17 +280,16 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
       </Tabs>
 
       {/* Search & Filters */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Search by reference or beneficiary..."
-          value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
-          className="pl-9 h-9 text-sm"
-        />
-      </div>
-
       <div className="flex flex-wrap items-end gap-3">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search..."
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            className="pl-9 h-8 w-[180px] text-xs"
+          />
+        </div>
         <div className="space-y-1">
           <label className="text-xs font-medium text-muted-foreground">Beneficiary</label>
           <Select value={beneficiaryFilter} onValueChange={setBeneficiaryFilter}>
