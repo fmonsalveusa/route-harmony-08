@@ -329,13 +329,12 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
         </DialogHeader>
 
         {/* PDF Upload */}
-        {!editLoad && (
-          <div className="mt-2 p-4 rounded-lg border-2 border-dashed border-primary/30 bg-primary/5">
+        <div className="mt-2 p-4 rounded-lg border-2 border-dashed border-primary/30 bg-primary/5">
             <div className="flex items-center gap-3 mb-3">
               <FileText className="h-5 w-5 text-primary" />
               <div>
-                <h4 className="text-sm font-semibold">Extract data from PDF</h4>
-                <p className="text-xs text-muted-foreground">Upload a rate confirmation or BOL</p>
+                <h4 className="text-sm font-semibold">{editLoad ? 'Replace Rate Confirmation' : 'Extract data from PDF'}</h4>
+                <p className="text-xs text-muted-foreground">{editLoad ? 'Upload a new PDF to update load data' : 'Upload a rate confirmation or BOL'}</p>
               </div>
             </div>
             <input ref={fileInputRef} type="file" accept=".pdf" onChange={handlePdfUpload} className="hidden" />
@@ -370,7 +369,6 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
               </div>
             )}
           </div>
-        )}
 
         {/* PDF Preview */}
         {pdfPreviewUrl && (
@@ -391,11 +389,9 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
                     <Download className="h-3.5 w-3.5" /> Download
                   </a>
                 </Button>
-                {!editLoad && (
-                  <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive" onClick={removePdf}>
-                    <X className="h-3.5 w-3.5" />
-                  </Button>
-                )}
+                <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive" onClick={removePdf}>
+                  <X className="h-3.5 w-3.5" />
+                </Button>
               </div>
             </div>
             <div className="rounded border bg-background h-40 overflow-hidden">
