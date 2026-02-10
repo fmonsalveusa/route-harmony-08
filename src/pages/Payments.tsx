@@ -153,7 +153,7 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
     }
 
     // Sort newest first by created_at
-    result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    result.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
     return result;
   }, [allTypePayments, statusFilter, beneficiaryFilter, weekFilter, monthFilter, yearFilter, dateFrom, dateTo, loadDateMap]);
 
