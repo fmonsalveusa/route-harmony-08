@@ -172,12 +172,12 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
           </div>
 
           <div className="space-y-2">
-            <Label>% Driver Pay</Label>
-            <Input type="number" value={form.pay_percentage} onChange={e => set('pay_percentage', Number(e.target.value))} />
-          </div>
-          <div className="space-y-2">
             <Label>% Investor Pay</Label>
             <Input type="number" value={form.investor_pay_percentage ?? ''} onChange={e => set('investor_pay_percentage', Number(e.target.value))} />
+          </div>
+          <div className="space-y-2">
+            <Label>% Driver Pay</Label>
+            <Input type="number" value={form.pay_percentage} onChange={e => set('pay_percentage', Number(e.target.value))} />
           </div>
           <div className="space-y-2">
             <Label>% Factoring</Label>
