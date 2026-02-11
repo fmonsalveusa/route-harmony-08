@@ -83,6 +83,7 @@ const Loads = () => {
   const [filterWeek, setFilterWeek] = useState<string>('all');
   const [filterMonth, setFilterMonth] = useState<string>('all');
   const [filterBroker, setFilterBroker] = useState<string>('all');
+  const [filterFactoring, setFilterFactoring] = useState<string>('all');
   const [showForm, setShowForm] = useState(false);
   const [editLoad, setEditLoad] = useState<DbLoad | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -139,6 +140,7 @@ const Loads = () => {
   if (filterTruck !== 'all') baseLoads = baseLoads.filter(l => l.truck_id === filterTruck);
   if (filterDispatcher !== 'all') baseLoads = baseLoads.filter(l => l.dispatcher_id === filterDispatcher);
   if (filterBroker !== 'all') baseLoads = baseLoads.filter(l => l.broker_client === filterBroker);
+  if (filterFactoring !== 'all') baseLoads = baseLoads.filter(l => (l.factoring || '') === filterFactoring);
   if (filterMonth !== 'all') {
     const monthIdx = parseInt(filterMonth);
     const year = new Date().getFullYear();
@@ -277,8 +279,19 @@ const Loads = () => {
               ))}
             </SelectContent>
           </Select>
-          {(filterDriver !== 'all' || filterTruck !== 'all' || filterDispatcher !== 'all' || filterWeek !== 'all' || filterMonth !== 'all' || filterBroker !== 'all') && (
-            <Button variant="ghost" size="sm" className="h-8 text-xs text-muted-foreground" onClick={() => { setFilterDriver('all'); setFilterTruck('all'); setFilterDispatcher('all'); setFilterWeek('all'); setFilterMonth('all'); setFilterBroker('all'); }}>
+          <Select value={filterFactoring} onValueChange={setFilterFactoring}>
+            <SelectTrigger className="w-[160px] h-8 text-xs">
+              <SelectValue placeholder="Factoring" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Factoring</SelectItem>
+              {[...new Set(dbLoads.map(l => l.factoring || '').filter(Boolean))].sort().map(f => (
+                <SelectItem key={f} value={f}>{f}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {(filterDriver !== 'all' || filterTruck !== 'all' || filterDispatcher !== 'all' || filterWeek !== 'all' || filterMonth !== 'all' || filterBroker !== 'all' || filterFactoring !== 'all') && (
+            <Button variant="ghost" size="sm" className="h-8 text-xs text-muted-foreground" onClick={() => { setFilterDriver('all'); setFilterTruck('all'); setFilterDispatcher('all'); setFilterWeek('all'); setFilterMonth('all'); setFilterBroker('all'); setFilterFactoring('all'); }}>
               Limpiar filtros
             </Button>
           )}
