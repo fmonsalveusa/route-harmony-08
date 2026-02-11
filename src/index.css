@@ -119,3 +119,13 @@
     @apply rounded-lg border bg-card overflow-hidden;
   }
 }
+
+/* Fix Leaflet map z-index so it doesn't overlap dialogs/modals */
+.leaflet-container {
+  z-index: 0 !important;
+}
+.leaflet-pane,
+.leaflet-top,
+.leaflet-bottom {
+  z-index: 0 !important;
+}
