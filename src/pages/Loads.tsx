@@ -387,8 +387,24 @@ const Loads = () => {
                         <td className="p-3 text-right font-semibold">${Number(load.total_rate).toLocaleString()}</td>
                         <td className="p-3 text-right hidden md:table-cell text-muted-foreground">{load.miles && Number(load.miles) > 0 ? Number(load.miles).toLocaleString() : '—'}</td>
                         <td className="p-3 text-right hidden md:table-cell text-muted-foreground">{load.empty_miles && Number(load.empty_miles) > 0 ? Number(load.empty_miles).toLocaleString() : '—'}</td>
-                        <td className="p-3 text-right hidden md:table-cell text-muted-foreground">
-                          {load.miles && load.miles > 0 ? `$${(Number(load.total_rate) / Number(load.miles)).toFixed(2)}` : '—'}
+                        <td className="p-3 text-right hidden md:table-cell">
+                          {(() => {
+                            if (!load.miles || Number(load.miles) <= 0) return <span className="text-muted-foreground">—</span>;
+                            const rpm = Number(load.total_rate) / Number(load.miles);
+                            const truck = trucks.find(t => t.id === load.truck_id);
+                            const truckType = (truck?.truck_type || '').toLowerCase();
+                            const isHotshot = truckType.includes('hotshot');
+                            let colorClass = 'text-red-600'; // default red
+                            if (isHotshot) {
+                              if (rpm >= 1.90) colorClass = 'text-green-600';
+                              else if (rpm >= 1.60) colorClass = 'text-amber-500';
+                            } else {
+                              // Box Truck / default
+                              if (rpm >= 1.70) colorClass = 'text-green-600';
+                              else if (rpm >= 1.40) colorClass = 'text-amber-500';
+                            }
+                            return <span className={`font-semibold ${colorClass}`}>${rpm.toFixed(2)}</span>;
+                          })()}
                         </td>
                         <td className="p-3 hidden lg:table-cell">{dispatcher?.name || '—'}</td>
                         <td className="p-3" onClick={e => e.stopPropagation()}>
