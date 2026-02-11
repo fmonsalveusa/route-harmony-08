@@ -7,7 +7,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Plus, Shield, Calculator, Headphones, Truck as TruckIcon, Loader2, Pencil } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Plus, Shield, Calculator, Headphones, Truck as TruckIcon, Loader2, Pencil, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 const roleIcons: Record<string, any> = {
   admin: Shield,
@@ -45,6 +47,8 @@ const UsersPage = () => {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserRow | null>(null);
+  const [deletingUser, setDeletingUser] = useState<UserRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchUsers = useCallback(async () => {
     if (!profile?.tenant_id) return;
@@ -62,6 +66,32 @@ const UsersPage = () => {
 
   const handleCreate = () => { setEditingUser(null); setDialogOpen(true); };
   const handleEdit = (user: UserRow) => { setEditingUser(user); setDialogOpen(true); };
+  const handleDelete = async () => {
+    if (!deletingUser) return;
+    setDeleting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Not authenticated');
+      const { data, error } = await supabase.functions.invoke('manage-user', {
+        body: { action: 'delete', user_id: deletingUser.id },
+      });
+      if (error) {
+        let msg = 'Error deleting user';
+        if (error?.context?.body) {
+          try { const b = JSON.parse(error.context.body); if (b.error) msg = b.error; } catch {}
+        } else if (error?.message) msg = error.message;
+        throw new Error(msg);
+      }
+      if (data?.error) throw new Error(data.error);
+      toast.success('User deleted successfully');
+      setDeletingUser(null);
+      fetchUsers();
+    } catch (err: any) {
+      toast.error(err.message || 'Error deleting user');
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -119,9 +149,16 @@ const UsersPage = () => {
                         </td>
                         <td className="p-3"><StatusBadge status={u.is_active ? 'active' : 'inactive'} /></td>
                         <td className="p-3 text-right">
-                          <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-amber-400 bg-white text-amber-600 hover:bg-amber-50 hover:text-amber-700 gap-1" onClick={() => handleEdit(u)} title="Edit">
-                            <Pencil className="h-4 w-4" /> Edit
-                          </Button>
+                          <div className="flex items-center justify-end gap-1">
+                            <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-amber-400 bg-white text-amber-600 hover:bg-amber-50 hover:text-amber-700 gap-1" onClick={() => handleEdit(u)} title="Edit">
+                              <Pencil className="h-4 w-4" /> Edit
+                            </Button>
+                            {u.id !== profile?.id && (
+                              <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-destructive/40 bg-white text-destructive hover:bg-destructive/10 gap-1" onClick={() => setDeletingUser(u)} title="Delete">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -134,6 +171,23 @@ const UsersPage = () => {
       </Card>
 
       <UserFormDialog open={dialogOpen} onOpenChange={setDialogOpen} user={editingUser} onSuccess={fetchUsers} />
+
+      <AlertDialog open={!!deletingUser} onOpenChange={(open) => !open && setDeletingUser(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete User</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{deletingUser?.full_name}</strong> ({deletingUser?.email})? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={deleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {deleting ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

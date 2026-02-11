@@ -193,6 +193,37 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (action === "delete") {
+      const { user_id } = payload;
+      if (!user_id || typeof user_id !== "string" || !UUID_REGEX.test(user_id as string)) {
+        throw new Error("Valid user_id is required");
+      }
+
+      // Prevent self-deletion
+      if (user_id === caller.id) {
+        throw new Error("Cannot delete your own account");
+      }
+
+      // Verify target belongs to same tenant
+      const { data: targetProfile } = await supabaseAdmin
+        .from("profiles")
+        .select("tenant_id")
+        .eq("id", user_id)
+        .single();
+
+      if (!callerProfile?.is_master_admin && targetProfile?.tenant_id !== callerProfile?.tenant_id) {
+        throw new Error("Cannot delete users from another tenant");
+      }
+
+      // Delete from auth (cascades to profiles and user_roles)
+      const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(user_id);
+      if (deleteError) throw deleteError;
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     throw new Error("Invalid action");
   } catch (error) {
     return new Response(JSON.stringify({ error: error.message }), {
