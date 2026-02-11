@@ -154,10 +154,12 @@ const Drivers = () => {
                           <Avatar className="h-9 w-9">
                             <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm">{initials}</AvatarFallback>
                           </Avatar>
-                          <span className="font-semibold">{driver.name}</span>
-                          <Button variant="outline" size="icon" className="h-7 w-7 border-sky-300 bg-sky-50 text-sky-600 hover:bg-sky-100 hover:text-sky-700 ml-1" onClick={(e) => { e.stopPropagation(); copyDriverInfo(driver); }} title="Copy">
-                            <Copy className="h-3.5 w-3.5" />
-                          </Button>
+                          <div className="flex flex-col items-start">
+                            <span className="font-semibold">{driver.name}</span>
+                            <Button variant="outline" size="sm" className="h-6 px-2 text-[11px] border-sky-300 bg-sky-50 text-sky-600 hover:bg-sky-100 hover:text-sky-700 gap-1 mt-0.5" onClick={(e) => { e.stopPropagation(); copyDriverInfo(driver); }} title="Copy">
+                              <Copy className="h-3 w-3" /> Copy
+                            </Button>
+                          </div>
                         </div>
                       </td>
                       <td className="p-3 text-muted-foreground">
