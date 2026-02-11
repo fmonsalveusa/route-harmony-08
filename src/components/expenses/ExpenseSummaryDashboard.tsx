@@ -430,7 +430,7 @@ export function ExpenseSummaryDashboard({ expenses, trucks, drivers }: Props) {
                     <p className="text-sm text-muted-foreground text-center py-8">No data</p>
                   ) : (
                     <ResponsiveContainer width="100%" height={230}>
-                      <BarChart data={truckBarData} layout="vertical" margin={{ left: 10, right: 10 }}>
+                      <BarChart data={truckBarData} layout="vertical" margin={{ left: 10, right: 60 }}>
                         <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                         <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={v => `$${v >= 1000 ? `${(v/1000).toFixed(0)}k` : v}`} className="fill-muted-foreground" />
                         <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} width={60} className="fill-muted-foreground" />
@@ -439,7 +439,7 @@ export function ExpenseSummaryDashboard({ expenses, trucks, drivers }: Props) {
                           {truckBarData.map((entry, i) => (
                             <Cell key={i} fill={entry.color} />
                           ))}
-                          <LabelList dataKey="total" position="insideRight" fill="#ffffff" fontSize={11} fontWeight={600} formatter={(v: number) => `$${fmt(v)}`} />
+                          <LabelList dataKey="total" position="right" fill="#1e3a5f" fontSize={12} fontWeight={700} formatter={(v: number) => `$${fmt(v)}`} />
                         </Bar>
                       </BarChart>
                     </ResponsiveContainer>
