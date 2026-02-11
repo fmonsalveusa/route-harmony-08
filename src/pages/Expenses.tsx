@@ -356,14 +356,14 @@ const Expenses = () => {
                         </Badge>
                       </td>
                       <td className="p-3 text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <Button variant="ghost" size="icon" className="h-7 w-7"
+                        <div className="flex items-center justify-end gap-1.5">
+                          <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-amber-300 bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700 gap-1"
                             onClick={() => { setEditExpense(expense); setFormOpen(true); }}>
-                            <Pencil className="h-3.5 w-3.5" />
+                            <Pencil className="h-3.5 w-3.5" /> Edit
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive"
+                          <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-red-300 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 gap-1"
                             onClick={() => setDeleteTarget(expense)}>
-                            <Trash2 className="h-3.5 w-3.5" />
+                            <Trash2 className="h-3.5 w-3.5" /> Delete
                           </Button>
                         </div>
                       </td>
