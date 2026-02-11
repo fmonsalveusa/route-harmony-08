@@ -30,11 +30,12 @@ export default defineConfig(({ mode }) => ({
         start_url: "/driver",
         scope: "/",
         icons: [
-          { src: "/favicon.png", sizes: "192x192", type: "image/png" },
-          { src: "/favicon.png", sizes: "512x512", type: "image/png", purpose: "any maskable" },
+          { src: "/pwa-icon.png", sizes: "192x192", type: "image/png" },
+          { src: "/pwa-icon.png", sizes: "512x512", type: "image/png", purpose: "any maskable" },
         ],
       },
       workbox: {
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         navigateFallbackDenylist: [/^\/~oauth/],
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
       },
