@@ -54,7 +54,7 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3 border-t pt-3">
-        <Info label="Driver License #">{driver.license}</Info>
+        <Info label="Driver License #">{driver.license}{driver.state ? ` (${driver.state})` : ''}</Info>
         <Info label="License Expiry">{formatDate(driver.license_expiry)}</Info>
         <Info label="Medical Card Expiry">{formatDate(driver.medical_card_expiry)}</Info>
         <Info label="Factoring %">{driver.factoring_percentage}%</Info>
