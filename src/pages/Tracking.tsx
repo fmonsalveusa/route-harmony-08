@@ -442,6 +442,88 @@ const Tracking = () => {
         </Card>
       </div>
 
+      {/* Active Drivers with Loads */}
+      {(() => {
+        const assignedStatuses = ['planned', 'dispatched', 'in_transit'];
+        const assignedLoads = loads.filter(l => assignedStatuses.includes(l.status) && l.driver_id);
+        const driverLoadMap = new Map<string, typeof loads[0][]>();
+        assignedLoads.forEach(l => {
+          const arr = driverLoadMap.get(l.driver_id!) || [];
+          arr.push(l);
+          driverLoadMap.set(l.driver_id!, arr);
+        });
+
+        const statusBorder: Record<string, string> = {
+          planned: 'border-l-amber-400 bg-amber-50/50 dark:bg-amber-950/20',
+          dispatched: 'border-l-[hsl(270,60%,50%)] bg-purple-50/50 dark:bg-purple-950/20',
+          in_transit: 'border-l-[#5ee14c] bg-green-50/50 dark:bg-green-950/20',
+        };
+        const statusLabel: Record<string, string> = { planned: 'Planned', dispatched: 'Dispatched', in_transit: 'In Transit' };
+        const statusBadgeStyle: Record<string, string> = {
+          planned: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+          dispatched: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
+          in_transit: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
+        };
+
+        const parseCityState = (loc: string) => {
+          const parts = loc.split(',').map(p => p.trim());
+          if (parts.length >= 2) {
+            const state = parts[parts.length - 1].replace(/\d{5}(-\d{4})?/, '').trim();
+            const city = parts.length >= 3 ? parts[parts.length - 2] : parts[0];
+            return state ? `${city}, ${state}` : city;
+          }
+          return loc;
+        };
+
+        const allEntries: { driver: typeof drivers[0]; load: typeof loads[0] }[] = [];
+        driverLoadMap.forEach((dLoads, driverId) => {
+          const driver = drivers.find(d => d.id === driverId);
+          if (!driver) return;
+          dLoads.forEach(load => allEntries.push({ driver, load }));
+        });
+        const order = { in_transit: 0, dispatched: 1, planned: 2 };
+        allEntries.sort((a, b) => (order[a.load.status as keyof typeof order] ?? 3) - (order[b.load.status as keyof typeof order] ?? 3));
+
+        if (allEntries.length === 0) return null;
+
+        return (
+          <Card>
+            <CardHeader className="pb-2 px-4 pt-3">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <Truck className="h-4 w-4" />
+                Active Drivers ({allEntries.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-4 pb-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
+                {allEntries.map(({ driver, load }) => (
+                  <div
+                    key={`${driver.id}-${load.id}`}
+                    className={`border-l-4 rounded-lg border px-3 py-2 cursor-pointer hover:shadow-md transition-shadow ${statusBorder[load.status] || ''}`}
+                    onClick={() => handleSelectLoad(enrichedLoads.find(l => l.id === load.id) || load as any)}
+                  >
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-bold truncate">{driver.name}</span>
+                      <Badge className={`text-[10px] px-1.5 py-0 h-4 ${statusBadgeStyle[load.status] || ''}`}>
+                        {statusLabel[load.status] || load.status}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground ml-auto whitespace-nowrap">
+                        {parseCityState(load.origin)} → {parseCityState(load.destination)}
+                      </span>
+                      {load.delivery_date && (
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">
+                          · {format(parseISO(load.delivery_date), 'MMM dd')}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })()}
+
 
       {/* Selected Load Detail */}
       {selectedLoad && (
