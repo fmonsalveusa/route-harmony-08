@@ -437,23 +437,23 @@ const Loads = () => {
                         </td>
                         <td className="p-3 text-right" onClick={e => e.stopPropagation()}>
                           <div className="flex justify-end gap-1.5">
-                            <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-purple-300 bg-purple-50 text-purple-600 hover:bg-purple-100 hover:text-purple-700 gap-1" onClick={() => { inputRefMap.current[load.id]?.click(); }} title="POD">
+                            <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-purple-400 bg-white text-purple-600 hover:bg-purple-50 hover:text-purple-700 gap-1" onClick={() => { inputRefMap.current[load.id]?.click(); }} title="POD">
                               <Upload className="h-4 w-4" /> POD
                             </Button>
                             {load.pdf_url && (
-                              <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-sky-300 bg-sky-50 text-sky-600 hover:bg-sky-100 hover:text-sky-700 gap-1" asChild title="PDF">
+                              <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-sky-400 bg-white text-sky-600 hover:bg-sky-50 hover:text-sky-700 gap-1" asChild title="PDF">
                                 <a href={load.pdf_url} target="_blank" rel="noopener noreferrer">
                                   <ExternalLink className="h-4 w-4" /> PDF
                                 </a>
                               </Button>
                             )}
-                            <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-emerald-300 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 gap-1" onClick={() => handleGenerateInvoice(load)} title="Invoice">
+                            <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-emerald-400 bg-white text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 gap-1" onClick={() => handleGenerateInvoice(load)} title="Invoice">
                               <FileText className="h-4 w-4" /> Invoice
                             </Button>
-                            <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-amber-300 bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700 gap-1" onClick={() => { setEditLoad(load); setShowForm(true); }} title="Edit">
+                            <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-amber-400 bg-white text-amber-600 hover:bg-amber-50 hover:text-amber-700 gap-1" onClick={() => { setEditLoad(load); setShowForm(true); }} title="Edit">
                               <Pencil className="h-4 w-4" /> Edit
                             </Button>
-                            <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-red-300 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 gap-1" onClick={async (e) => { e.stopPropagation(); e.preventDefault(); if (window.confirm(`¿Eliminar carga ${load.reference_number}? Esta acción es permanente.`)) { await deleteLoad(load.id); } }} title="Delete">
+                            <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-red-400 bg-white text-red-600 hover:bg-red-50 hover:text-red-700 gap-1" onClick={async (e) => { e.stopPropagation(); e.preventDefault(); if (window.confirm(`¿Eliminar carga ${load.reference_number}? Esta acción es permanente.`)) { await deleteLoad(load.id); } }} title="Delete">
                               <Trash2 className="h-4 w-4" /> Delete
                             </Button>
                           </div>

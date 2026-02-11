@@ -175,23 +175,23 @@ const Invoices = () => {
                     <td className="p-3 hidden lg:table-cell text-muted-foreground">{formatDate(inv.created_at)}</td>
                     <td className="p-3 text-right">
                       <div className="flex justify-end gap-1.5">
-                        <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-emerald-300 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 gap-1" onClick={() => handleDownloadPdf(inv)} title="PDF">
+                        <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-emerald-400 bg-white text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 gap-1" onClick={() => handleDownloadPdf(inv)} title="PDF">
                           <Download className="h-4 w-4" /> PDF
                         </Button>
                         {loadDataMap[inv.load_id]?.pdf_url && (
-                          <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-sky-300 bg-sky-50 text-sky-600 hover:bg-sky-100 hover:text-sky-700 gap-1" asChild title="Rate Conf.">
+                          <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-sky-400 bg-white text-sky-600 hover:bg-sky-50 hover:text-sky-700 gap-1" asChild title="Rate Conf.">
                             <a href={loadDataMap[inv.load_id].pdf_url} target="_blank" rel="noopener noreferrer">
                               <FileText className="h-4 w-4" /> Rate
                             </a>
                           </Button>
                         )}
-                        <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-purple-300 bg-purple-50 text-purple-600 hover:bg-purple-100 hover:text-purple-700 gap-1" onClick={() => openPodViewer(inv.load_id)} title="PODs">
+                        <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-purple-400 bg-white text-purple-600 hover:bg-purple-50 hover:text-purple-700 gap-1" onClick={() => openPodViewer(inv.load_id)} title="PODs">
                           <Image className="h-4 w-4" /> POD
                         </Button>
-                        <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-amber-300 bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700 gap-1" onClick={() => openEdit(inv)} title="Edit">
+                        <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-amber-400 bg-white text-amber-600 hover:bg-amber-50 hover:text-amber-700 gap-1" onClick={() => openEdit(inv)} title="Edit">
                           <Pencil className="h-4 w-4" /> Edit
                         </Button>
-                        <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-red-300 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 gap-1" onClick={async () => { if (window.confirm(`¿Eliminar factura ${inv.invoice_number}? Esta acción es permanente.`)) { await deleteInvoice(inv.id); } }} title="Delete">
+                        <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-red-400 bg-white text-red-600 hover:bg-red-50 hover:text-red-700 gap-1" onClick={async () => { if (window.confirm(`¿Eliminar factura ${inv.invoice_number}? Esta acción es permanente.`)) { await deleteInvoice(inv.id); } }} title="Delete">
                           <Trash2 className="h-4 w-4" /> Delete
                         </Button>
                       </div>
@@ -232,12 +232,12 @@ const Invoices = () => {
                     <p className="text-xs text-muted-foreground">{formatDate(pod.created_at)}</p>
                   </div>
                   <div className="flex gap-1.5">
-                    <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-sky-300 bg-sky-50 text-sky-600 hover:bg-sky-100 hover:text-sky-700 gap-1" asChild title="View">
+                    <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-sky-400 bg-white text-sky-600 hover:bg-sky-50 hover:text-sky-700 gap-1" asChild title="View">
                       <a href={pod.file_url} target="_blank" rel="noopener noreferrer">
                         <ExternalLink className="h-4 w-4" /> View
                       </a>
                     </Button>
-                    <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-emerald-300 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 gap-1" asChild title="Download">
+                    <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-emerald-400 bg-white text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 gap-1" asChild title="Download">
                       <a href={pod.file_url} download={pod.file_name}>
                         <Download className="h-4 w-4" /> Download
                       </a>
