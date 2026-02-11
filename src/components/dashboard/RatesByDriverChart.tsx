@@ -35,19 +35,17 @@ export function RatesByDriverChart({ loads, drivers, year, month, week }: Props)
       .sort((a, b) => b.total - a.total);
   }, [loads, drivers, year, month, week]);
 
-  const renderVerticalLabel = (props: any) => {
-    const { x, y, width, height, value } = props;
-    if (height < 40) return null;
+  const renderTopLabel = (props: any) => {
+    const { x, y, width, value } = props;
     return (
       <text
         x={x + width / 2}
-        y={y + 30}
-        fill="#fff"
+        y={y - 8}
+        fill="#1e3a5f"
         textAnchor="middle"
-        dominantBaseline="central"
-        fontSize={14}
+        dominantBaseline="auto"
+        fontSize={12}
         fontWeight={700}
-        transform={`rotate(-90, ${x + width / 2}, ${y + 30})`}
       >
         ${Number(value).toLocaleString()}
       </text>
@@ -67,11 +65,11 @@ export function RatesByDriverChart({ loads, drivers, year, month, week }: Props)
             <BarChart data={data}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis dataKey="name" tick={{ fontSize: 13, fill: 'hsl(var(--muted-foreground))', fontWeight: 600 }} interval={0} angle={-25} textAnchor="end" height={70} />
-              <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} tickFormatter={v => `$${(v / 1000).toFixed(0)}k`} domain={[0, (max: number) => Math.ceil(max * 1.1)]} />
+              <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} tickFormatter={v => `$${(v / 1000).toFixed(0)}k`} domain={[0, (max: number) => Math.ceil(max * 1.15)]} />
               <Tooltip formatter={(v: number) => [`$${v.toLocaleString()}`, 'Total Rate']} />
               <Bar dataKey="total" radius={[4, 4, 0, 0]}>
                 {data.map((_, i) => <Cell key={i} fill={BAR_COLORS[i % BAR_COLORS.length]} />)}
-                <LabelList dataKey="total" content={renderVerticalLabel} />
+                <LabelList dataKey="total" content={renderTopLabel} />
               </Bar>
             </BarChart>
           </ResponsiveContainer>
