@@ -1,54 +1,30 @@
 
 
-# Notificaciones Bidireccionales: Web a Driver
+# Fix: Error al crear usuario con rol Driver
 
-## Situacion actual
+## Problema encontrado
 
-Las notificaciones ya funcionan en una direccion: cuando el driver toma acciones (Arrived, Upload POD, Start Route, Delivered), la app web recibe la notificacion en tiempo real a traves de la campana.
+El error "Edge Function returned a non-2xx status code" ocurre por un desajuste en la validacion de la contrasena:
 
-Sin embargo, **falta la direccion contraria**: cuando el dispatcher/admin crea o asigna una carga, el driver no recibe ninguna notificacion.
+- El formulario en la UI acepta contrasenas de **6 caracteres** minimo (`minLength={6}`)
+- La Edge Function requiere **8 caracteres** minimo
 
-## Que se va a agregar
+Si se ingresa una contrasena de 6 o 7 caracteres, el formulario la acepta pero el backend la rechaza con un error 400.
 
-### 1. Notificacion al asignar una carga a un driver
+Adicionalmente, el mensaje de error del backend no se muestra correctamente al usuario porque la respuesta viene como `{ error: "..." }` pero el codigo verifica `data?.error` solo despues de verificar `error` del SDK, que a veces envuelve el mensaje real.
 
-Cuando un dispatcher crea o edita una carga y le asigna un driver, se generara automaticamente una notificacion visible en la app movil del driver.
+## Solucion
 
-Escenarios cubiertos:
-- Crear una carga nueva con driver asignado
-- Editar una carga existente y cambiarle el driver
+### 1. Alinear validacion del formulario (UserFormDialog.tsx)
 
-### 2. Campana de notificaciones en la app movil del driver
+Cambiar `minLength={6}` a `minLength={8}` en el campo de password y actualizar el placeholder para indicar "Minimo 8 caracteres".
 
-Actualmente la app del driver no tiene campana de notificaciones. Se agregara:
-- Icono de campana en el header del layout movil
-- Badge con conteo de no leidas
-- Panel con lista de notificaciones recientes
-- Al tocar una notificacion de carga asignada, navega al detalle de esa carga
+### 2. Mejorar mensaje de error
 
-### 3. Tipo de notificacion nuevo
+Asegurar que cuando el backend retorna un error de validacion, el toast muestre el mensaje real (ej: "Password must be at least 8 characters") en vez del generico "Edge Function returned a non-2xx status code".
 
-Se usara el tipo `load_assigned` para estas notificaciones, con un mensaje como:
-"Se te asigno la carga #REF-123 de Miami, FL a Atlanta, GA"
-
-## Tecnico: Archivos a modificar
+## Cambios tecnicos
 
 | Archivo | Cambio |
 |---|---|
-| `src/components/LoadFormDialog.tsx` | Agregar llamada a `createNotification` cuando se crea/edita una carga con driver asignado |
-| `src/components/driver-app/DriverMobileLayout.tsx` | Agregar campana de notificaciones en el header del layout movil |
-| `src/components/NotificationBell.tsx` | Agregar icono para el tipo `load_assigned` |
-| `src/pages/driver-app/DriverDashboard.tsx` | Agregar seccion de notificaciones recientes (opcional) |
-
-### Flujo completo
-
-```text
-Dispatcher crea carga + asigna driver
-  --> Se inserta notificacion tipo "load_assigned"
-  --> Realtime la envia al driver
-  --> Campana en app movil muestra badge
-  --> Driver toca notificacion --> ve detalle de la carga
-  --> Driver toma acciones (Arrived, POD, Delivered)
-  --> Notificaciones llegan a la app web del dispatcher
-```
-
+| `src/components/UserFormDialog.tsx` | Cambiar `minLength={6}` a `minLength={8}`, actualizar placeholder, mejorar manejo de error en catch |
