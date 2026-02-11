@@ -9,6 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus, Truck as TruckIcon, Pencil, Trash2, Eye, User, ChevronDown, ChevronUp } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ExpiryIndicators } from '@/components/ExpiryIndicators';
 
 const STATUS_OPTIONS = [
   { value: 'active', label: 'Active', bg: 'bg-green-600 text-white' },
@@ -94,7 +95,13 @@ const Fleet = () => {
                           <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
                             <TruckIcon className="h-4 w-4 text-primary" />
                           </div>
-                          <span className="font-bold text-base">#{truck.unit_number}</span>
+                          <div className="flex flex-col">
+                            <span className="font-bold text-base">#{truck.unit_number}</span>
+                            <ExpiryIndicators items={[
+                              { date: truck.registration_expiry, label: 'Registration' },
+                              { date: truck.insurance_expiry, label: 'Insurance' },
+                            ]} />
+                          </div>
                         </div>
                       </td>
                       <td className="p-3">{truck.truck_type}</td>

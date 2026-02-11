@@ -17,6 +17,7 @@ import { DriverDetailDialog } from '@/components/DriverDetailDialog';
 import { DriverDetailPanel } from '@/components/DriverDetailPanel';
 import { GenerateOnboardingLinkDialog } from '@/components/GenerateOnboardingLinkDialog';
 import { toast } from '@/hooks/use-toast';
+import { ExpiryIndicators } from '@/components/ExpiryIndicators';
 
 const driverStatusColor = (status: string) => {
   switch (status) {
@@ -156,6 +157,10 @@ const Drivers = () => {
                           </Avatar>
                           <div className="flex flex-col items-start">
                             <span className="font-semibold">{driver.name}</span>
+                            <ExpiryIndicators items={[
+                              { date: driver.license_expiry, label: 'License' },
+                              { date: driver.medical_card_expiry, label: 'Medical' },
+                            ]} />
                             <Button variant="outline" size="sm" className="h-6 px-2 text-[11px] border-sky-400 bg-white text-sky-600 hover:bg-sky-50 hover:text-sky-700 gap-1 mt-0.5" onClick={(e) => { e.stopPropagation(); copyDriverInfo(driver); }} title="Copy">
                               <Copy className="h-3 w-3" /> Copy
                             </Button>
