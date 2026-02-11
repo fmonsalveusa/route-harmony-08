@@ -12,8 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { toast } from 'sonner';
 
-import { FileText, DollarSign, AlertTriangle, CheckCircle, Search, Trash2, Pencil, Download, Send, Image, ExternalLink } from 'lucide-react';
+import { FileText, DollarSign, AlertTriangle, CheckCircle, Search, Trash2, Pencil, Download, Send, Image, ExternalLink, Mail, Loader2 } from 'lucide-react';
 import type { PodDocument } from '@/hooks/usePodDocuments';
 
 const Invoices = () => {
@@ -28,6 +29,11 @@ const Invoices = () => {
   const [podViewLoadId, setPodViewLoadId] = useState<string | null>(null);
   const [podDocs, setPodDocs] = useState<PodDocument[]>([]);
   const [podLoading, setPodLoading] = useState(false);
+  
+  // Email state
+  const [emailInvoice, setEmailInvoice] = useState<Invoice | null>(null);
+  const [brokerEmail, setBrokerEmail] = useState('');
+  const [sendingEmail, setSendingEmail] = useState(false);
 
   const openPodViewer = async (loadId: string) => {
     setPodViewLoadId(loadId);
@@ -82,6 +88,31 @@ const Invoices = () => {
       company: company || null,
       createdAt: inv.created_at,
     });
+  };
+
+  const handleSendEmail = async () => {
+    if (!emailInvoice || !brokerEmail) return;
+    setSendingEmail(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-invoice-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({ invoiceId: emailInvoice.id, brokerEmail }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Error sending email');
+      toast.success(`Email enviado a ${brokerEmail}`);
+      setEmailInvoice(null);
+      setBrokerEmail('');
+    } catch (e: any) {
+      toast.error(e.message || 'Error enviando email');
+    } finally {
+      setSendingEmail(false);
+    }
   };
 
   const filtered = useMemo(() => {
@@ -188,6 +219,9 @@ const Invoices = () => {
                         <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-purple-400 bg-white text-purple-600 hover:bg-purple-50 hover:text-purple-700 gap-1" onClick={() => openPodViewer(inv.load_id)} title="PODs">
                           <Image className="h-4 w-4" /> POD
                         </Button>
+                        <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-blue-400 bg-white text-blue-600 hover:bg-blue-50 hover:text-blue-700 gap-1" onClick={() => { setEmailInvoice(inv); setBrokerEmail(''); }} title="Enviar por Email">
+                          <Mail className="h-4 w-4" /> Mail
+                        </Button>
                         <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-amber-400 bg-white text-amber-600 hover:bg-amber-50 hover:text-amber-700 gap-1" onClick={() => openEdit(inv)} title="Edit">
                           <Pencil className="h-4 w-4" /> Edit
                         </Button>
@@ -269,7 +303,38 @@ const Invoices = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Delete now uses window.confirm */}
+      {/* Email Dialog */}
+      <Dialog open={!!emailInvoice} onOpenChange={() => setEmailInvoice(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5" /> Enviar Factura por Email
+            </DialogTitle>
+          </DialogHeader>
+          {emailInvoice && (
+            <div className="grid gap-4 py-2">
+              <div className="text-sm space-y-1">
+                <p><span className="font-medium">Invoice:</span> {emailInvoice.invoice_number}</p>
+                <p><span className="font-medium">Broker:</span> {emailInvoice.broker_name}</p>
+                <p><span className="font-medium">Monto:</span> ${Number(emailInvoice.amount).toLocaleString()}</p>
+              </div>
+              <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
+                Se adjuntará: Invoice PDF, Rate Confirmation y PODs (si existen).
+              </div>
+              <div>
+                <Label>Email del Broker</Label>
+                <Input type="email" placeholder="broker@example.com" value={brokerEmail} onChange={e => setBrokerEmail(e.target.value)} />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEmailInvoice(null)} disabled={sendingEmail}>Cancelar</Button>
+            <Button onClick={handleSendEmail} disabled={sendingEmail || !brokerEmail}>
+              {sendingEmail ? <><Loader2 className="h-4 w-4 animate-spin mr-1" /> Enviando...</> : <><Send className="h-4 w-4 mr-1" /> Enviar</>}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
