@@ -475,22 +475,9 @@ const Tracking = () => {
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-semibold truncate">{driver.name}</p>
-                          <p className="text-[10px] text-muted-foreground">{driver.phone}</p>
                         </div>
                       </div>
                       <div className="space-y-1 text-xs text-muted-foreground">
-                        {truck && (
-                          <div className="flex items-center gap-1">
-                            <Truck className="h-3 w-3" />
-                            <span>Unit {truck.unit_number}</span>
-                          </div>
-                        )}
-                        {dispatcher && (
-                          <div className="flex items-center gap-1">
-                            <Users className="h-3 w-3" />
-                            <span>{dispatcher.name}</span>
-                          </div>
-                        )}
                         {lastDel ? (
                           <div className="mt-1.5 pt-1.5 border-t">
                             <p className="text-[10px] font-medium text-foreground">Last Delivery</p>
