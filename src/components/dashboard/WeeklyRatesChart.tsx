@@ -55,7 +55,7 @@ export function WeeklyRatesChart({ loads }: Props) {
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis
                 dataKey="week"
-                tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
+                tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
                 interval={data.length > 20 ? Math.floor(data.length / 10) : 0}
                 angle={-45}
                 textAnchor="end"
