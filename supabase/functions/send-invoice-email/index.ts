@@ -104,8 +104,18 @@ Deno.serve(async (req) => {
     }
 
     // --- Send email via Gmail SMTP ---
-    const gmailUser = Deno.env.get("GMAIL_USER")!;
-    const gmailPass = Deno.env.get("GMAIL_APP_PASSWORD")!;
+    const gmailUser = (Deno.env.get("GMAIL_USER") ?? "").trim();
+    const gmailPassRaw = Deno.env.get("GMAIL_APP_PASSWORD") ?? "";
+    // Google App Passwords are shown with spaces; SMTP auth expects the 16 chars without whitespace.
+    const gmailPass = gmailPassRaw.replace(/\s+/g, "").trim();
+
+    if (!gmailUser) throw new Error("Missing GMAIL_USER secret");
+    if (!gmailPass) throw new Error("Missing GMAIL_APP_PASSWORD secret");
+    if (gmailPass.length !== 16) {
+      throw new Error(
+        "Invalid GMAIL_APP_PASSWORD: generate a Google App Password (16 chars) and paste it here (not your normal Gmail password)."
+      );
+    }
 
     const client = new SMTPClient({
       connection: {
