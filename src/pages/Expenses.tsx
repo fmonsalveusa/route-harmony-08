@@ -199,14 +199,13 @@ const Expenses = () => {
       </div>
 
       {/* Search + Filters */}
-      <div className="flex flex-col gap-3">
-        <div className="relative">
+      <div className="flex flex-wrap gap-2 items-center">
+        <div className="relative w-[220px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search by truck, description, vendor..." value={search}
-            onChange={e => { setSearch(e.target.value); setPage(1); }} className="pl-9" />
+          <Input placeholder="Search..." value={search}
+            onChange={e => { setSearch(e.target.value); setPage(1); }} className="pl-9 h-8 text-xs" />
         </div>
-        <div className="flex flex-wrap gap-2 items-center">
-          <Filter className="h-4 w-4 text-muted-foreground" />
+        <Filter className="h-4 w-4 text-muted-foreground" />
           <Select value={filterDateQuick} onValueChange={v => { setFilterDateQuick(v); setPage(1); }}>
             <SelectTrigger className="w-[130px] h-8 text-xs"><SelectValue placeholder="Date" /></SelectTrigger>
             <SelectContent>
@@ -257,7 +256,6 @@ const Expenses = () => {
               setFilterType('all'); setFilterTruck('all'); setFilterPayment('all'); setFilterSource('all'); setFilterDateQuick('all'); setPage(1);
             }}>Clear filters</Button>
           )}
-        </div>
       </div>
 
       {/* Expense Summary Dashboard */}
