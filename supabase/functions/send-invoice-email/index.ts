@@ -92,11 +92,35 @@ Deno.serve(async (req) => {
     // 3) POD documents
     if (pods && pods.length > 0) {
       for (const pod of pods) {
-        if (!pod.file_url || pod.file_url.trim() === "") {
-          console.log("Skipping POD with empty file_url:", pod.id);
-          continue;
+        let fileUrl = pod.file_url?.trim() || "";
+
+        // If file_url is empty, try to find the file in storage by listing the folder
+        if (!fileUrl) {
+          console.log("POD has empty file_url, attempting repair:", pod.id, pod.file_name);
+          try {
+            const folder = `pods/${pod.load_id}`;
+            const { data: objects } = await adminClient.storage
+              .from("driver-documents")
+              .list(folder, { limit: 1000 });
+            const match = (objects || []).find((o: any) =>
+              o.name === pod.file_name || o.name.endsWith(`_${pod.file_name}`)
+            );
+            if (match) {
+              fileUrl = `${folder}/${match.name}`;
+              console.log("Repaired POD path:", fileUrl);
+              // Update the record for future use
+              await adminClient.from("pod_documents").update({ file_url: fileUrl }).eq("id", pod.id);
+            } else {
+              console.log("Could not find file in storage for POD:", pod.id);
+              continue;
+            }
+          } catch (e) {
+            console.error("Error repairing POD path:", e);
+            continue;
+          }
         }
-        const podBytes = await downloadStorageFile(adminClient, pod.file_url);
+
+        const podBytes = await downloadStorageFile(adminClient, fileUrl);
         if (podBytes) {
           attachments.push({
             filename: pod.file_name,
