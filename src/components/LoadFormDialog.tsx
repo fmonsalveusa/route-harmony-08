@@ -316,7 +316,10 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
     onOpenChange(false);
   };
 
-  const activeTrucks = trucks.filter(t => t.status === 'active');
+  const dispatcherDriverIds = dispatcherId
+    ? drivers.filter(d => d.dispatcher_id === dispatcherId).map(d => d.truck_id).filter(Boolean)
+    : null;
+  const activeTrucks = trucks.filter(t => t.status === 'active').filter(t => dispatcherDriverIds ? dispatcherDriverIds.includes(t.id) : true);
 
   const pickupStops = stopEntries.map((s, i) => ({ ...s, originalIndex: i })).filter(s => s.stop_type === 'pickup');
   const deliveryStops = stopEntries.map((s, i) => ({ ...s, originalIndex: i })).filter(s => s.stop_type === 'delivery');
@@ -522,7 +525,10 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
             <Select value={selectedDispatcher} onValueChange={setSelectedDispatcher}>
               <SelectTrigger><SelectValue placeholder="Seleccionar dispatcher" /></SelectTrigger>
               <SelectContent>
-                {dispatchers.filter(d => d.status === 'active').map(d => (
+                {dispatchers
+                  .filter(d => d.status === 'active')
+                  .filter(d => dispatcherId ? d.id === dispatcherId : true)
+                  .map(d => (
                   <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                 ))}
               </SelectContent>
