@@ -72,7 +72,13 @@ export const UserFormDialog = ({ open, onOpenChange, user, onSuccess }: UserForm
       onSuccess();
       onOpenChange(false);
     } catch (err: any) {
-      toast.error(err.message || 'Error saving user');
+      let msg = 'Error saving user';
+      if (err?.context?.body) {
+        try { const b = JSON.parse(err.context.body); if (b.error) msg = b.error; } catch {}
+      } else if (err?.message) {
+        msg = err.message;
+      }
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -125,7 +131,7 @@ export const UserFormDialog = ({ open, onOpenChange, user, onSuccess }: UserForm
             <Label htmlFor="password">{isEdit ? 'New password (leave empty to keep current)' : 'Password'}</Label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder={isEdit ? '••••••••' : 'Minimum 6 characters'} className="pl-10" required={!isEdit} minLength={6} />
+              <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder={isEdit ? '••••••••' : 'Mínimo 8 caracteres'} className="pl-10" required={!isEdit} minLength={8} />
             </div>
           </div>
 
