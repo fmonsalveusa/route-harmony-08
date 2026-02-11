@@ -264,11 +264,6 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard title="Total Pending" value={`$${totalPending.toLocaleString('en-US', { minimumFractionDigits: 2 })}`} icon={Clock} iconClassName="bg-warning/10 text-warning" />
-        <StatCard title="Total Paid" value={`$${totalPaid.toLocaleString('en-US', { minimumFractionDigits: 2 })}`} icon={CheckCircle} iconClassName="bg-success/10 text-success" />
-        <StatCard title="Grand Total" value={`$${(totalPending + totalPaid).toLocaleString('en-US', { minimumFractionDigits: 2 })}`} icon={DollarSign} />
-      </div>
 
       <Tabs value={statusFilter} onValueChange={setStatusFilter}>
         <TabsList>
@@ -528,6 +523,18 @@ const Payments = () => {
         <Button variant="outline" size="sm" className="gap-2"><Download className="h-4 w-4" /> Export</Button>
       </div>
 
+
+      {(() => {
+        const totalPending = allP.filter(p => p.status === 'pending' || p.status === 'in_process').reduce((s, p) => s + Number(p.amount), 0);
+        const totalPaid = allP.filter(p => p.status === 'paid').reduce((s, p) => s + Number(p.amount), 0);
+        return (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <StatCard title="Total Pending" value={`$${totalPending.toLocaleString('en-US', { minimumFractionDigits: 2 })}`} icon={Clock} iconClassName="bg-warning/10 text-warning" />
+            <StatCard title="Total Paid" value={`$${totalPaid.toLocaleString('en-US', { minimumFractionDigits: 2 })}`} icon={CheckCircle} iconClassName="bg-success/10 text-success" />
+            <StatCard title="Grand Total" value={`$${(totalPending + totalPaid).toLocaleString('en-US', { minimumFractionDigits: 2 })}`} icon={DollarSign} />
+          </div>
+        );
+      })()}
 
       <Tabs defaultValue="drivers">
         <TabsList>
