@@ -4,6 +4,7 @@ import { MapPin, Calendar, Weight, DollarSign, User, Truck, Route, Navigation, F
 import { Button } from '@/components/ui/button';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useDispatchers } from '@/hooks/useDispatchers';
+import { useTrucks } from '@/hooks/useTrucks';
 import type { DbLoad } from '@/hooks/useLoads';
 import { useLoadStops } from '@/hooks/useLoadStops';
 import { supabase } from '@/integrations/supabase/client';
@@ -91,9 +92,16 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
 
   const { drivers } = useDrivers();
   const { dispatchers } = useDispatchers();
+  const { trucks } = useTrucks();
   const driver = drivers.find(d => d.id === load.driver_id);
   const dispatcher = dispatchers.find(d => d.id === load.dispatcher_id);
+  const truck = trucks.find(t => t.id === load.truck_id);
   const rpm = totalMiles > 0 ? Number(load.total_rate) / totalMiles : 0;
+  const truckType = (truck?.truck_type || '').toLowerCase();
+  const isHotshot = truckType.includes('hotshot');
+  const rpmColorClass = rpm <= 0 ? 'text-muted-foreground' : isHotshot
+    ? (rpm >= 1.90 ? 'text-green-600' : rpm >= 1.60 ? 'text-amber-500' : 'text-red-600')
+    : (rpm >= 1.70 ? 'text-green-600' : rpm >= 1.40 ? 'text-amber-500' : 'text-red-600');
 
   const resolveDriverDocsUrl = async (url: string): Promise<string> => {
     if (!url) return '';
@@ -460,7 +468,7 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
             </div>
             <div className="flex items-center gap-2">
               <DollarSign className="h-3.5 w-3.5 text-primary" />
-              <div><span className="text-muted-foreground">RPM:</span> <span className="font-bold text-primary">{rpm > 0 ? `$${rpm.toFixed(2)}` : '—'}</span></div>
+              <div><span className="text-muted-foreground">RPM:</span> <span className={`font-bold ${rpmColorClass}`}>{rpm > 0 ? `$${rpm.toFixed(2)}` : '—'}</span></div>
             </div>
             <div className="flex items-center gap-2">
               <User className="h-3.5 w-3.5 text-muted-foreground" />
