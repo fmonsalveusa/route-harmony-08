@@ -362,156 +362,78 @@ const Tracking = () => {
           </div>
         </Card>
 
-        {/* Side Panel - Active Loads */}
+        {/* Side Panel - Drivers Available */}
         <Card className="flex flex-col overflow-hidden h-[520px]">
           <CardHeader className="pb-2 px-3 pt-3">
-            <CardTitle className="text-sm font-semibold">Active Loads ({filteredLoads.length})</CardTitle>
-            <div className="flex gap-2 mt-2">
-              <div className="relative flex-1">
-                <Search className="h-3.5 w-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Search..."
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  className="pl-7 h-8 text-xs"
-                />
-              </div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[110px] h-8 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="dispatched">Dispatched</SelectItem>
-                  <SelectItem value="in_transit">In Transit</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </CardHeader>
-          <CardContent className="flex-1 overflow-y-auto px-3 pb-3 space-y-2">
-            {filteredLoads.length === 0 && (
-              <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
-                <Package className="h-8 w-8 mb-2 opacity-40" />
-                <p className="text-sm">No active loads</p>
-              </div>
-            )}
-            {filteredLoads.map(load => {
-              const driver = drivers.find(d => d.id === load.driver_id);
-              const truck = trucks.find(t => t.id === load.truck_id);
-              const isSelected = load.id === selectedLoadId;
-              return (
-                <div
-                  key={load.id}
-                  onClick={() => handleSelectLoad(load)}
-                  className={`p-3 rounded-lg border cursor-pointer transition-all hover:shadow-md ${
-                    isSelected ? 'border-primary bg-primary/5 shadow-md' : 'border-border hover:border-primary/30'
-                  }`}
-                >
-                  <div className="flex items-start justify-between mb-1.5">
-                    <span className="font-semibold text-sm">{driver?.name || 'Unassigned'}</span>
-                    <StatusBadge status={load.status} />
-                  </div>
-                  <div className="space-y-1 text-xs">
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-2 h-2 rounded-full bg-[#5ee14c] shrink-0" />
-                      <span className="truncate">{load.origin}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-2 h-2 rounded-full bg-destructive shrink-0" />
-                      <span className="truncate">{load.destination}</span>
-                    </div>
-                  </div>
-                  <div className="mt-2 pt-2 border-t flex items-center justify-between text-[11px] text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <Truck className="h-3 w-3" />
-                      {truck?.unit_number || '—'}
-                    </span>
-                    <span>{load.reference_number}</span>
-                    {load.miles > 0 && <span>{load.miles} mi</span>}
-                  </div>
-                </div>
-              );
-            })}
-          </CardContent>
-        </Card>
-
-        <Card className="lg:col-span-3">
-          <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base flex items-center gap-2">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
                 <Users className="h-4 w-4" />
                 Drivers Available ({availableDrivers.length})
               </CardTitle>
-              <Select value={dispatcherFilter} onValueChange={setDispatcherFilter}>
-                <SelectTrigger className="w-[180px] h-8 text-xs">
-                  <SelectValue placeholder="All Dispatchers" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Dispatchers</SelectItem>
-                  {dispatchers.filter(d => d.status === 'active').map(d => (
-                    <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </div>
+            <Select value={dispatcherFilter} onValueChange={setDispatcherFilter}>
+              <SelectTrigger className="w-full h-8 text-xs mt-2">
+                <SelectValue placeholder="All Dispatchers" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Dispatchers</SelectItem>
+                {dispatchers.filter(d => d.status === 'active').map(d => (
+                  <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex-1 overflow-y-auto px-3 pb-3 space-y-2">
             {availableDrivers.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+              <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
                 <User className="h-8 w-8 mb-2 opacity-40" />
                 <p className="text-sm">No available drivers</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-                {availableDrivers.map(driver => {
-                  const truck = trucks.find(t => t.id === driver.truck_id);
-                  const dispatcher = dispatchers.find(d => d.id === driver.dispatcher_id);
-                  const lastDel = lastDeliveryStops[driver.id];
-                  return (
-                    <div key={driver.id} className="p-3 rounded-lg border border-border hover:border-primary/30 transition-all">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="p-1.5 rounded-full bg-[hsl(152,60%,40%)]/10">
-                          <User className="h-3.5 w-3.5 text-[hsl(152,60%,40%)]" />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-semibold truncate">{driver.name}</p>
-                        </div>
+              availableDrivers.map(driver => {
+                const lastDel = lastDeliveryStops[driver.id];
+                return (
+                  <div key={driver.id} className="p-3 rounded-lg border border-border hover:border-primary/30 transition-all">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="p-1.5 rounded-full bg-[hsl(152,60%,40%)]/10">
+                        <User className="h-3.5 w-3.5 text-[hsl(152,60%,40%)]" />
                       </div>
-                      <div className="space-y-1 text-xs text-muted-foreground">
-                        {lastDel ? (
-                          <div className="mt-1.5 pt-1.5 border-t">
-                            <p className="text-[10px] font-medium text-foreground">Last Delivery</p>
-                            <div className="flex items-start gap-1 mt-0.5">
-                              <MapPin className="h-3 w-3 shrink-0 mt-0.5 text-destructive" />
-                              <span className="text-xs leading-tight">
-                                {(() => {
-                                  // Extract City, State from address
-                                  const parts = lastDel.address.split(',').map(p => p.trim());
-                                  if (parts.length >= 3) {
-                                    // Format: "Street, City, State ZIP" or "City, State, ZIP"
-                                    const stateZip = parts[parts.length - 1];
-                                    const state = stateZip.replace(/\d{5}(-\d{4})?/, '').trim();
-                                    const city = parts[parts.length - 2];
-                                    return state ? `${city}, ${state}` : `${city}`;
-                                  } else if (parts.length === 2) {
-                                    return lastDel.address;
-                                  }
-                                  return lastDel.address;
-                                })()}
-                              </span>
-                            </div>
-                            {lastDel.date && (
-                              <p className="text-xs mt-0.5 opacity-70">{format(parseISO(lastDel.date), 'MMM dd, yyyy')}</p>
-                            )}
-                          </div>
-                        ) : (
-                          <p className="text-[10px] italic mt-1">No delivery history</p>
-                        )}
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold truncate">{driver.name}</p>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
+                    <div className="space-y-1 text-xs text-muted-foreground">
+                      {lastDel ? (
+                        <div className="mt-1.5 pt-1.5 border-t">
+                          <p className="text-[10px] font-medium text-foreground">Last Delivery</p>
+                          <div className="flex items-start gap-1 mt-0.5">
+                            <MapPin className="h-3 w-3 shrink-0 mt-0.5 text-destructive" />
+                            <span className="text-xs leading-tight">
+                              {(() => {
+                                const parts = lastDel.address.split(',').map(p => p.trim());
+                                if (parts.length >= 3) {
+                                  const stateZip = parts[parts.length - 1];
+                                  const state = stateZip.replace(/\d{5}(-\d{4})?/, '').trim();
+                                  const city = parts[parts.length - 2];
+                                  return state ? `${city}, ${state}` : `${city}`;
+                                } else if (parts.length === 2) {
+                                  return lastDel.address;
+                                }
+                                return lastDel.address;
+                              })()}
+                            </span>
+                          </div>
+                          {lastDel.date && (
+                            <p className="text-xs mt-0.5 opacity-70">{format(parseISO(lastDel.date), 'MMM dd, yyyy')}</p>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-[10px] italic mt-1">No delivery history</p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
             )}
           </CardContent>
         </Card>
