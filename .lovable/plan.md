@@ -1,43 +1,154 @@
 
-# Empty Miles (Deadhead) Feature
+# Funcionalidades Avanzadas para la App del Driver
 
-## What It Does
-Each load will automatically calculate and display the "empty miles" -- the distance a driver travels without cargo from their last delivery location to the first pickup of the current load. This helps you see the true cost and efficiency of each assignment.
+## Resumen
 
-## How It Works
+Agregar al plan de la PWA del conductor las siguientes funciones clave: navegacion con Google Maps desde cada direccion, estatus "Arrived" por parada, carga de fotos/escaneo de PODs, cambio de estatus a Delivered, notificaciones en tiempo real en la app web, y vista de pagos por carga.
 
-1. When a load is expanded or viewed, the system will look up the driver's previous load (the most recent delivered/completed load before this one, sorted by delivery date).
-2. It will take the last delivery stop of that previous load and calculate the driving distance (via OSRM, same routing engine already in use) to the first pickup stop of the current load.
-3. The result is saved to the database so it only needs to be calculated once.
-4. On the map in the Load Detail panel, a dashed line will show the deadhead segment from the previous delivery point to the first pickup.
+---
 
-## What You'll See
-- A new "Empty Miles" field displayed alongside the existing "Miles" field in the load detail panel and the loads table.
-- A dashed route line on the map showing the deadhead path.
-- The value updates automatically when the load has a driver assigned and stops with coordinates.
+## 1. Link "Ir a Mapa" en cada direccion
 
-## Technical Details
+Cada direccion (pickup y delivery) en el detalle de carga del driver tendra un boton/link que abre Google Maps en modo navegacion directamente en su telefono.
 
-### Database Change
-- Add `empty_miles` (NUMERIC, default 0) and `empty_miles_origin` (TEXT, nullable) columns to the `loads` table.
+- Se genera un URL con formato `https://www.google.com/maps/dir/?api=1&destination={address}`
+- En celulares Android abre la app de Google Maps automaticamente; en iPhone abre el navegador y ofrece abrir Maps
+- Se muestra como un icono de navegacion al lado de cada direccion
 
-### Code Changes
+**Nota:** Este link tambien se agregara en el `LoadDetailPanel.tsx` de la app web para que cualquier usuario pueda usarlo.
 
-**1. `src/hooks/useLoads.ts`**
-- Add `empty_miles` and `empty_miles_origin` to the `DbLoad` interface.
+---
 
-**2. `src/components/LoadDetailPanel.tsx`**
-- After resolving stops and calculating the main route, look up the driver's previous load (query `loads` table for the same `driver_id`, with `delivery_date` before the current load's `pickup_date`, ordered descending, limit 1).
-- Fetch the last delivery stop of that previous load from `load_stops`.
-- If coordinates exist (or can be geocoded), calculate driving distance via OSRM to the first pickup of the current load.
-- Persist `empty_miles` and `empty_miles_origin` (the address of the previous delivery) to the current load record.
-- Render a dashed polyline on the map from the previous delivery point to the first pickup point.
-- Display the empty miles value in the info section next to the existing Miles field.
+## 2. Estatus "Arrived" por parada
 
-**3. `src/pages/Loads.tsx`**
-- Show the `empty_miles` value in the loads table row (new column or alongside existing miles display).
+### Base de datos
+- Agregar columna `arrived_at` (TIMESTAMPTZ, nullable) a la tabla `load_stops`
+- Cuando el driver presiona "Arrived" en una parada, se guarda la fecha/hora actual
 
-### What Won't Change
-- The existing route calculation, miles, stops, and map rendering logic remains untouched.
-- All current filters, status workflows, and payment calculations stay the same.
-- The empty miles field is purely informational and does not affect financial calculations.
+### Interfaz del driver
+- Cada parada muestra un boton "Arrived" si aun no tiene `arrived_at`
+- Al presionarlo, se registra el timestamp y el boton cambia a un badge verde con la hora de llegada
+- Las paradas se muestran en orden cronologico con indicadores visuales (pendiente, arrived, completado)
+
+### Reflejo en la app web
+- El `LoadDetailPanel` mostrara el timestamp de llegada junto a cada parada
+- El estatus de cada parada sera visible en tiempo real
+
+---
+
+## 3. Carga de fotos y escaneo de PODs por parada
+
+### Interfaz del driver
+- En cada parada, despues de marcar "Arrived", aparece un boton "Subir Foto / Escanear POD"
+- Usa `<input type="file" accept="image/*" capture="environment">` para abrir la camara directamente
+- Tambien permite seleccionar fotos de la galeria o archivos PDF
+- Las fotos se suben al bucket `driver-documents` en la ruta `pods/{load_id}/`
+- Se registran en la tabla `pod_documents` con el `stop_id` correspondiente
+
+### Escaneo de paginas
+- El driver puede tomar multiples fotos (una por pagina del POD)
+- Cada foto se sube como documento independiente asociado a la parada
+- Se muestra una galeria de miniaturas de los documentos subidos
+
+---
+
+## 4. Cambio de estatus a "Delivered"
+
+### Flujo del driver
+- Cuando el driver marca "Arrived" en la ultima parada de delivery y sube al menos un POD, se habilita el boton "Mark as Delivered"
+- Al presionarlo, el estatus de la carga cambia de `in_transit` a `delivered` en la tabla `loads`
+- Se muestra una confirmacion visual
+
+### Flujo completo de estatus desde la app del driver
+```text
+dispatched --> [Driver presiona "Start Route"] --> in_transit
+in_transit --> [Arrived a cada parada + sube fotos] --> ...
+in_transit --> [Ultima delivery + POD subido + "Mark Delivered"] --> delivered
+```
+
+---
+
+## 5. Notificaciones en la app web
+
+### Base de datos
+- Nueva tabla `notifications`:
+
+```text
+notifications
+  - id (UUID, PK)
+  - tenant_id (UUID)
+  - type (TEXT) -- 'driver_arrived', 'pod_uploaded', 'status_changed'
+  - title (TEXT)
+  - message (TEXT)
+  - load_id (UUID, nullable)
+  - driver_id (TEXT, nullable)
+  - is_read (BOOLEAN, default false)
+  - created_at (TIMESTAMPTZ)
+```
+
+- Habilitar Realtime en la tabla `notifications`
+- Politicas RLS: lectura para usuarios del mismo tenant
+
+### Generacion de notificaciones
+- Se crean automaticamente cuando el driver:
+  - Marca "Arrived" en una parada
+  - Sube un POD/foto
+  - Cambia el estatus de la carga (Start Route, Delivered)
+- Se insertan desde el frontend del driver al momento de la accion
+
+### Interfaz web (app de dispatchers/admin)
+- Icono de campana en el header/navbar con badge de conteo de no leidas
+- Panel desplegable con lista de notificaciones recientes
+- Al hacer clic en una notificacion, navega a la carga correspondiente
+- Suscripcion Realtime para recibir nuevas notificaciones sin refrescar
+
+---
+
+## 6. Vista de pagos por carga
+
+### Interfaz del driver
+- Seccion "Mis Pagos" en el detalle de cada carga
+- Consulta la tabla `payments` filtrando por `load_id` y `recipient_id` (el driver)
+- Muestra:
+  - Monto del pago
+  - Porcentaje aplicado
+  - Estatus: badge verde "Paid" o badge amarillo "Pending"
+  - Fecha de pago (si aplica)
+- Tambien una vista general "Todos mis Pagos" con totales pendientes vs pagados
+
+---
+
+## Plan tecnico de archivos
+
+| Archivo | Accion |
+|---|---|
+| Migracion SQL | Agregar `arrived_at` a `load_stops`, crear tabla `notifications` con RLS y Realtime |
+| `src/pages/driver-app/DriverLoads.tsx` | Lista de cargas con detalle, botones de estatus, link a Google Maps |
+| `src/pages/driver-app/DriverLoadDetail.tsx` | Detalle completo: paradas con Arrived, fotos, PODs, pagos, Google Maps |
+| `src/pages/driver-app/DriverPayments.tsx` | Vista de pagos del driver (pendientes vs pagados) |
+| `src/components/driver-app/StopCard.tsx` | Componente de parada con Arrived, fotos, Google Maps link |
+| `src/components/driver-app/DriverMobileLayout.tsx` | Layout movil con tab bar inferior |
+| `src/components/NotificationBell.tsx` | Icono de campana con badge y panel de notificaciones para la app web |
+| `src/hooks/useNotifications.ts` | Hook para leer/marcar notificaciones con suscripcion Realtime |
+| `src/hooks/useDriverPayments.ts` | Hook para consultar pagos del driver autenticado |
+| `src/components/LoadDetailPanel.tsx` | Agregar link "Ir a Mapa" en cada direccion y mostrar `arrived_at` |
+| `src/components/AppLayout.tsx` | Agregar campana de notificaciones en el header |
+| `src/App.tsx` | Agregar rutas `/driver/*` con layout movil |
+| `vite.config.ts` | Agregar plugin PWA |
+| `index.html` | Meta tags moviles y manifest |
+| `src/pages/Install.tsx` | Pagina de instrucciones para instalar la PWA |
+
+### Flujo visual del driver en la app
+
+```text
+Login --> Dashboard (cargas activas)
+  --> Tap en carga --> Detalle con paradas
+    --> Cada parada:
+        [Ir a Mapa] --> Google Maps con navegacion
+        [Arrived] --> Registra hora de llegada
+        [Subir Foto] --> Camara/galeria --> Sube POD
+    --> Ultima delivery completada:
+        [Mark Delivered] --> Cambia status
+        --> Notificacion enviada al dispatcher
+  --> Tab "Pagos" --> Lista de pagos (Paid/Pending)
+```
