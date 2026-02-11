@@ -20,17 +20,16 @@ const BAR_COLORS = [
   '#0891b2', '#ca8a04', '#6366f1', '#059669', '#d946ef',
 ];
 
-const renderHorizontalLabel = (props: any) => {
-  const { x, y, width, height, value } = props;
-  if (height < 20 || width < 40) return null;
+const renderTopLabel = (props: any) => {
+  const { x, y, width, value } = props;
   return (
     <text
       x={x + width / 2}
-      y={y + 18}
-      fill="#fff"
+      y={y - 8}
+      fill="#1e3a5f"
       textAnchor="middle"
-      dominantBaseline="central"
-      fontSize={14}
+      dominantBaseline="auto"
+      fontSize={12}
       fontWeight={700}
     >
       ${Number(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -81,11 +80,11 @@ export function DispatcherCommissionsChart({ loads, dispatchers, drivers, year, 
             <BarChart data={data}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis dataKey="name" tick={{ fontSize: 13, fill: 'hsl(var(--muted-foreground))', fontWeight: 600 }} interval={0} angle={-25} textAnchor="end" height={70} />
-              <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} tickFormatter={v => `$${(v / 1000).toFixed(1)}k`} domain={[0, (max: number) => Math.ceil(max * 1.1)]} />
+              <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} tickFormatter={v => `$${(v / 1000).toFixed(1)}k`} domain={[0, (max: number) => Math.ceil(max * 1.15)]} />
               <Tooltip formatter={(v: number) => [`$${v.toLocaleString()}`, 'Comisión']} />
               <Bar dataKey="total" radius={[4, 4, 0, 0]}>
                 {data.map((_, i) => <Cell key={i} fill={BAR_COLORS[i % BAR_COLORS.length]} />)}
-                <LabelList dataKey="total" content={renderHorizontalLabel} />
+                <LabelList dataKey="total" content={renderTopLabel} />
               </Bar>
             </BarChart>
           </ResponsiveContainer>
