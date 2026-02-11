@@ -479,7 +479,7 @@ export default function Performance() {
           <CardContent>
             {profitLossChartData.length > 0 ? (
               <ResponsiveContainer width="100%" height={Math.max(200, profitLossChartData.length * 40)}>
-                <BarChart data={profitLossChartData} layout="vertical" margin={{ left: 10, right: 50 }}>
+                <BarChart data={profitLossChartData} layout="vertical" margin={{ left: 10, right: 70 }}>
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                   <XAxis type="number" tickFormatter={v => `$${(v / 1000).toFixed(0)}k`} />
                   <YAxis type="category" dataKey="name" width={60} tick={{ fontSize: 12 }} />
@@ -488,7 +488,7 @@ export default function Performance() {
                     {profitLossChartData.map((entry, i) => (
                       <Cell key={i} fill={entry.fill} />
                     ))}
-                    <LabelList dataKey="profit" position="insideRight" formatter={(v: number) => fmt(v)} style={{ fontSize: 14, fontWeight: 700, fill: '#ffffff' }} />
+                    <LabelList dataKey="profit" position="right" formatter={(v: number) => fmt(v)} style={{ fontSize: 12, fontWeight: 700, fill: '#1e3a5f' }} />
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
@@ -509,11 +509,11 @@ export default function Performance() {
                 <BarChart data={revenueVsExpensesData} margin={{ left: 0, right: 10 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                  <YAxis tickFormatter={v => `$${(v / 1000).toFixed(0)}k`} />
+                  <YAxis tickFormatter={v => `$${(v / 1000).toFixed(0)}k`} domain={[0, (max: number) => Math.ceil(max * 1.15)]} />
                   <Tooltip formatter={(v: number) => fmt(v)} />
                   <Legend />
                   <Bar dataKey="Revenue" fill="hsl(217, 78%, 42%)" radius={[4, 4, 0, 0]}>
-                    <LabelList dataKey="Revenue" position="insideTop" formatter={(v: number) => v ? fmt(v) : ''} style={{ fontSize: 14, fontWeight: 700, fill: '#ffffff' }} />
+                    <LabelList dataKey="Revenue" position="top" formatter={(v: number) => v ? fmt(v) : ''} style={{ fontSize: 12, fontWeight: 700, fill: '#1e3a5f' }} />
                   </Bar>
                   <Bar dataKey="Fuel" stackId="expenses" fill="hsl(28, 92%, 52%)">
                     <LabelList dataKey="Fuel" position="center" formatter={(v: number) => v ? fmt(v) : ''} style={{ fontSize: 11, fontWeight: 700, fill: '#ffffff' }} />
