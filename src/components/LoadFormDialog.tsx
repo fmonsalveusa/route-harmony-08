@@ -14,6 +14,7 @@ import { useDrivers } from '@/hooks/useDrivers';
 import { useDispatchers } from '@/hooks/useDispatchers';
 import { useLoadStops } from '@/hooks/useLoadStops';
 import type { DbLoad, CreateLoadInput } from '@/hooks/useLoads';
+import { createNotification } from '@/hooks/useNotifications';
 
 interface StopEntry {
   stop_type: 'pickup' | 'delivery';
@@ -380,6 +381,21 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
     // Clear cached route since stops changed
     if (editLoad?.id) {
       await supabase.from('loads').update({ route_geometry: null, miles: 0 } as any).eq('id', editLoad.id);
+    }
+
+    // Notify driver when a load is assigned (new or changed driver)
+    const assignedDriverId = selectedDriver;
+    const previousDriverId = editLoad?.driver_id;
+    if (assignedDriverId && assignedDriverId !== previousDriverId) {
+      const driverName = drivers.find(d => d.id === assignedDriverId)?.name || '';
+      const refNum = payload.reference_number;
+      createNotification({
+        type: 'load_assigned',
+        title: 'Nueva carga asignada',
+        message: `Se te asignó la carga #${refNum} de ${origin} a ${destination}`,
+        load_id: loadId || undefined,
+        driver_id: assignedDriverId,
+      });
     }
 
     onOpenChange(false);

@@ -10,6 +10,7 @@ const typeIcons: Record<string, string> = {
   driver_arrived: '📍',
   pod_uploaded: '📄',
   status_changed: '🚚',
+  load_assigned: '📦',
 };
 
 export const NotificationBell = () => {
