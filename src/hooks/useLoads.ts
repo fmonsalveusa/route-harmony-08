@@ -29,6 +29,8 @@ export interface DbLoad {
   notes: string | null;
   created_at: string;
   route_geometry: any;
+  empty_miles: number;
+  empty_miles_origin: string | null;
 }
 
 export interface CreateLoadInput {
