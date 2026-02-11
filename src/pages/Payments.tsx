@@ -265,6 +265,16 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
   return (
     <div className="space-y-6">
 
+
+      <Tabs value={statusFilter} onValueChange={setStatusFilter}>
+        <TabsList>
+          <TabsTrigger value="pending">Pending ({pendingCount})</TabsTrigger>
+          <TabsTrigger value="in_process">In Process ({inProcessCount})</TabsTrigger>
+          <TabsTrigger value="paid">Paid ({paidCount})</TabsTrigger>
+          <TabsTrigger value="all">All ({allTypePayments.length})</TabsTrigger>
+        </TabsList>
+      </Tabs>
+
       {/* Search & Filters */}
       <div className="flex flex-wrap items-end gap-3">
         <div className="relative">
@@ -373,15 +383,6 @@ const PaymentsSection = ({ type }: PaymentsSectionProps) => {
           </Button>
         )}
       </div>
-
-      <Tabs value={statusFilter} onValueChange={setStatusFilter}>
-        <TabsList>
-          <TabsTrigger value="pending">Pending ({pendingCount})</TabsTrigger>
-          <TabsTrigger value="in_process">In Process ({inProcessCount})</TabsTrigger>
-          <TabsTrigger value="paid">Paid ({paidCount})</TabsTrigger>
-          <TabsTrigger value="all">All ({allTypePayments.length})</TabsTrigger>
-        </TabsList>
-      </Tabs>
 
       {selectedIds.size > 0 && (
         <div className="flex items-center gap-3 p-3 rounded-lg border bg-primary/5 border-primary/20">
