@@ -401,6 +401,9 @@ const Tracking = () => {
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-semibold truncate">{driver.name}</p>
                       </div>
+                      {driver.phone && (
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">{driver.phone}</span>
+                      )}
                     </div>
                     <div className="space-y-1 text-xs text-muted-foreground">
                       {lastDel ? (
