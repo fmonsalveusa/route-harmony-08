@@ -132,6 +132,50 @@ export type Database = {
           },
         ]
       }
+      driver_locations: {
+        Row: {
+          accuracy: number | null
+          driver_id: string
+          heading: number | null
+          id: string
+          lat: number
+          lng: number
+          speed: number | null
+          tenant_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          accuracy?: number | null
+          driver_id: string
+          heading?: number | null
+          id?: string
+          lat: number
+          lng: number
+          speed?: number | null
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          accuracy?: number | null
+          driver_id?: string
+          heading?: number | null
+          id?: string
+          lat?: number
+          lng?: number
+          speed?: number | null
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_locations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       drivers: {
         Row: {
           created_at: string
@@ -435,6 +479,7 @@ export type Database = {
       load_stops: {
         Row: {
           address: string
+          arrived_at: string | null
           created_at: string
           date: string | null
           distance_from_prev: number | null
@@ -448,6 +493,7 @@ export type Database = {
         }
         Insert: {
           address: string
+          arrived_at?: string | null
           created_at?: string
           date?: string | null
           distance_from_prev?: number | null
@@ -461,6 +507,7 @@ export type Database = {
         }
         Update: {
           address?: string
+          arrived_at?: string | null
           created_at?: string
           date?: string | null
           distance_from_prev?: number | null
@@ -583,6 +630,57 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "loads_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          driver_id: string | null
+          id: string
+          is_read: boolean
+          load_id: string | null
+          message: string
+          tenant_id: string | null
+          title: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          driver_id?: string | null
+          id?: string
+          is_read?: boolean
+          load_id?: string | null
+          message: string
+          tenant_id?: string | null
+          title: string
+          type?: string
+        }
+        Update: {
+          created_at?: string
+          driver_id?: string | null
+          id?: string
+          is_read?: boolean
+          load_id?: string | null
+          message?: string
+          tenant_id?: string | null
+          title?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_load_id_fkey"
+            columns: ["load_id"]
+            isOneToOne: false
+            referencedRelation: "loads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"

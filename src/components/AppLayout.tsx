@@ -14,6 +14,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { Button } from '@/components/ui/button';
 import { LoadFormDialog } from '@/components/LoadFormDialog';
 import { useLoads } from '@/hooks/useLoads';
+import { NotificationBell } from '@/components/NotificationBell';
 
 interface NavItem {
   label: string;
@@ -221,6 +222,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
           )}
 
           <div className="flex items-center gap-3">
+            <NotificationBell />
             <Badge className={`text-xs ${roleBadgeStyles[role || 'admin']}`}>
               {roleLabels[role || 'admin']}
             </Badge>
