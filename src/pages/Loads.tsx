@@ -488,7 +488,9 @@ const Loads = () => {
                                   updateData.route_geometry = routeGeometry;
                                 }
                                 await supabase.from('loads').update(updateData).eq('id', loadId);
+                                await fetchLoads();
                               }}
+                              onLoadDataUpdated={() => fetchLoads()}
                             />
                           </td>
                         </tr>
