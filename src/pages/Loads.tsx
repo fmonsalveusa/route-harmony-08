@@ -190,13 +190,12 @@ const Loads = () => {
       </div>
 
       {/* Search + Filters */}
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap gap-2 items-center">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Buscar por referencia, ruta o cliente..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+          <Input placeholder="Buscar..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-8 w-[180px] text-xs" />
         </div>
-        <div className="flex flex-wrap gap-2 items-center">
-          <Filter className="h-4 w-4 text-muted-foreground" />
+        <Filter className="h-4 w-4 text-muted-foreground" />
           <Select value={filterDriver} onValueChange={setFilterDriver}>
             <SelectTrigger className="w-[160px] h-8 text-xs">
               <SelectValue placeholder="Driver" />
@@ -282,7 +281,6 @@ const Loads = () => {
               Limpiar filtros
             </Button>
           )}
-        </div>
       </div>
 
       <div className="flex gap-2 border-b">
