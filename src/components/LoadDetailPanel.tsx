@@ -92,6 +92,50 @@ export const LoadDetailPanel = ({ load, onMilesCalculated }: LoadDetailPanelProp
   const dispatcher = dispatchers.find(d => d.id === load.dispatcher_id);
   const rpm = totalMiles > 0 ? Number(load.total_rate) / totalMiles : 0;
 
+  const resolveDriverDocsUrl = async (url: string): Promise<string> => {
+    if (!url) return '';
+
+    const match = url.match(/\/storage\/v1\/object\/sign\/driver-documents\/([^?]+)/);
+    if (match?.[1]) {
+      let storagePath = match[1];
+      try { storagePath = decodeURIComponent(storagePath); } catch {}
+
+      const { data, error } = await supabase.storage
+        .from('driver-documents')
+        .createSignedUrl(storagePath, 3600);
+
+      if (!error && data?.signedUrl) return data.signedUrl;
+    }
+
+    return url;
+  };
+
+  const openOriginalPdf = async () => {
+    const url = await resolveDriverDocsUrl(load.pdf_url || '');
+    if (url) window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  const downloadOriginalPdf = async () => {
+    const url = await resolveDriverDocsUrl(load.pdf_url || '');
+    if (!url) return;
+
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = `RC_${load.reference_number}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+    } catch (e) {
+      console.error('Error downloading original PDF:', e);
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  };
   const hasCachedRoute = load.route_geometry && Array.isArray(load.route_geometry) && load.route_geometry.length > 0;
   const hasCachedMiles = load.miles && Number(load.miles) > 0;
 
@@ -360,15 +404,25 @@ export const LoadDetailPanel = ({ load, onMilesCalculated }: LoadDetailPanelProp
                 <FileText className="h-3.5 w-3.5 text-primary" /> Documento Original (PDF)
               </h5>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" className="gap-1.5 text-xs" asChild>
-                  <a href={load.pdf_url} target="_blank" rel="noopener noreferrer">
-                    <ExternalLink className="h-3.5 w-3.5" /> Ver PDF
-                  </a>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 text-xs"
+                  onClick={() => {
+                    void openOriginalPdf();
+                  }}
+                >
+                  <ExternalLink className="h-3.5 w-3.5" /> Ver PDF
                 </Button>
-                <Button variant="outline" size="sm" className="gap-1.5 text-xs" asChild>
-                  <a href={load.pdf_url} target="_blank" rel="noopener noreferrer">
-                    <Download className="h-3.5 w-3.5" /> Descargar
-                  </a>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 text-xs"
+                  onClick={() => {
+                    void downloadOriginalPdf();
+                  }}
+                >
+                  <Download className="h-3.5 w-3.5" /> Descargar
                 </Button>
               </div>
             </div>
