@@ -502,18 +502,17 @@ const Tracking = () => {
                     className={`border-l-4 rounded-lg border px-3 py-2 cursor-pointer hover:shadow-md transition-shadow ${statusBorder[load.status] || ''}`}
                     onClick={() => handleSelectLoad(enrichedLoads.find(l => l.id === load.id) || load as any)}
                   >
-                    <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-center justify-between gap-2">
                       <span className="text-sm font-bold truncate">{driver.name}</span>
-                      <Badge className={`text-[10px] px-1.5 py-0 h-4 ${statusBadgeStyle[load.status] || ''}`}>
+                      <Badge className={`text-[10px] px-1.5 py-0 h-4 shrink-0 ${statusBadgeStyle[load.status] || ''}`}>
                         {statusLabel[load.status] || load.status}
                       </Badge>
-                      <span className="text-xs text-muted-foreground ml-auto whitespace-nowrap">
-                        {parseCityState(load.origin)} → {parseCityState(load.destination)}
-                      </span>
+                    </div>
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                      <MapPin className="h-3 w-3 shrink-0" />
+                      <span className="truncate">{parseCityState(load.origin)} → {parseCityState(load.destination)}</span>
                       {load.delivery_date && (
-                        <span className="text-xs text-muted-foreground whitespace-nowrap">
-                          · {format(parseISO(load.delivery_date), 'MMM dd')}
-                        </span>
+                        <span className="whitespace-nowrap ml-auto">· {format(parseISO(load.delivery_date), 'MMM dd')}</span>
                       )}
                     </div>
                   </div>
