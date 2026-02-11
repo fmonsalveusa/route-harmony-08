@@ -155,6 +155,9 @@ const Drivers = () => {
                             <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm">{initials}</AvatarFallback>
                           </Avatar>
                           <span className="font-semibold">{driver.name}</span>
+                          <Button variant="outline" size="icon" className="h-7 w-7 border-sky-300 bg-sky-50 text-sky-600 hover:bg-sky-100 hover:text-sky-700 ml-1" onClick={(e) => { e.stopPropagation(); copyDriverInfo(driver); }} title="Copy">
+                            <Copy className="h-3.5 w-3.5" />
+                          </Button>
                         </div>
                       </td>
                       <td className="p-3 text-muted-foreground">
@@ -184,9 +187,6 @@ const Drivers = () => {
                       </td>
                       <td className="p-3" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-1.5">
-                          <Button variant="outline" size="icon" className="h-8 w-10 border-sky-300 bg-sky-50 text-sky-600 hover:bg-sky-100 hover:text-sky-700" onClick={() => copyDriverInfo(driver)} title="Copy">
-                            <Copy className="h-4 w-4" />
-                          </Button>
                           <Button variant="outline" size="icon" className="h-8 w-10 border-emerald-300 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700" onClick={() => setDetailDriver(driver)} title="Detail">
                             <Eye className="h-4 w-4" />
                           </Button>
