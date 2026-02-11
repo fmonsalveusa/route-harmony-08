@@ -49,38 +49,67 @@ serve(async (req) => {
       );
     }
 
-    const { pdfBase64 } = await req.json();
+    const body = await req.json().catch(() => ({} as any));
+    const pdfBase64 = body?.pdfBase64;
+    const pdfUrl = body?.pdfUrl;
 
-    if (!pdfBase64 || typeof pdfBase64 !== 'string') {
+    if ((!pdfBase64 || typeof pdfBase64 !== 'string') && (!pdfUrl || typeof pdfUrl !== 'string')) {
       return new Response(
         JSON.stringify({ error: 'PDF data is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Validate size: ~13MB base64 ≈ 10MB PDF
-    const MAX_BASE64_SIZE = 13 * 1024 * 1024;
-    if (pdfBase64.length > MAX_BASE64_SIZE) {
-      return new Response(
-        JSON.stringify({ error: 'PDF too large (max 10MB)' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    console.log('extract-pdf request received', {
+      mode: pdfUrl ? 'url' : 'base64',
+      base64Length: typeof pdfBase64 === 'string' ? pdfBase64.length : 0,
+    });
 
-    // Validate base64 format and PDF magic number
-    try {
-      const decoded = atob(pdfBase64.slice(0, 20));
-      if (!decoded.startsWith('%PDF-')) {
+    let documentUrl = '';
+
+    if (pdfUrl && typeof pdfUrl === 'string') {
+      if (!/^https?:\/\//i.test(pdfUrl)) {
         return new Response(
-          JSON.stringify({ error: 'File is not a valid PDF' }),
+          JSON.stringify({ error: 'Invalid PDF URL' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-    } catch {
-      return new Response(
-        JSON.stringify({ error: 'Invalid base64 encoding' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+
+      if (pdfUrl.length > 4096) {
+        return new Response(
+          JSON.stringify({ error: 'PDF URL too long' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      documentUrl = pdfUrl;
+    } else {
+      // Validate size: ~13MB base64 ≈ 10MB PDF
+      const MAX_BASE64_SIZE = 13 * 1024 * 1024;
+      if (pdfBase64.length > MAX_BASE64_SIZE) {
+        return new Response(
+          JSON.stringify({ error: 'PDF too large (max 10MB)' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Validate base64 format and PDF magic number
+      try {
+        const decoded = atob(pdfBase64.slice(0, 20));
+        if (!decoded.startsWith('%PDF-')) {
+          return new Response(
+            JSON.stringify({ error: 'File is not a valid PDF' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      } catch {
+        return new Response(
+          JSON.stringify({ error: 'Invalid base64 encoding' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      documentUrl = `data:application/pdf;base64,${pdfBase64}`;
     }
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
@@ -126,7 +155,7 @@ IMPORTANT: Look carefully for ALL stops — some documents have multiple pickup 
               {
                 type: 'image_url',
                 image_url: {
-                  url: `data:application/pdf;base64,${pdfBase64}`
+                  url: documentUrl
                 }
               }
             ]

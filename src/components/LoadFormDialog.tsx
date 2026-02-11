@@ -65,6 +65,8 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
   const [pdfFileName, setPdfFileName] = useState('');
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
+  const [uploadedPdfPath, setUploadedPdfPath] = useState<string | null>(null);
+  const [uploadedPdfSignedUrl, setUploadedPdfSignedUrl] = useState<string | null>(null);
   const [stopEntries, setStopEntries] = useState<StopEntry[]>([
     { stop_type: 'pickup', address: '', date: '' },
     { stop_type: 'delivery', address: '', date: '' },
@@ -89,6 +91,8 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       setSelectedDispatcher(editLoad.dispatcher_id || '');
       setSelectedStatus(editLoad.status);
       setPdfPreviewUrl(editLoad.pdf_url || null);
+      setUploadedPdfPath(null);
+      setUploadedPdfSignedUrl(editLoad.pdf_url || null);
 
       // Load existing stops
       if (existingStops.length > 0) {
@@ -113,6 +117,8 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       setPdfFileName('');
       setPdfFile(null);
       setPdfPreviewUrl(null);
+      setUploadedPdfPath(null);
+      setUploadedPdfSignedUrl(null);
       setStopEntries([
         { stop_type: 'pickup', address: '', date: '' },
         { stop_type: 'delivery', address: '', date: '' },
@@ -163,28 +169,80 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
   const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
     if (file.type !== 'application/pdf') {
       toast({ title: 'Error', description: 'Only PDF files are allowed', variant: 'destructive' });
       return;
     }
+
     if (file.size > 10 * 1024 * 1024) {
       toast({ title: 'Error', description: 'File cannot exceed 10MB', variant: 'destructive' });
       return;
     }
+
+    // Reset any previously uploaded artifact so submit can reuse the newest PDF.
+    setUploadedPdfPath(null);
+    setUploadedPdfSignedUrl(null);
+
     setPdfFileName(file.name);
     setPdfFile(file);
     setPdfPreviewUrl(URL.createObjectURL(file));
     setExtractionStatus('uploading');
     setIsExtracting(true);
+
     try {
-      const buffer = await file.arrayBuffer();
-      const bytes = new Uint8Array(buffer);
-      let binary = '';
-      for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
-      const base64 = btoa(binary);
+      // Prefer sending a URL to the backend function (avoids large request bodies).
+      const storagePath = `loads/${Date.now()}_${file.name}`;
+      const { error: uploadError } = await supabase.storage
+        .from('driver-documents')
+        .upload(storagePath, file, { contentType: 'application/pdf' });
+
+      let invokeBody: Record<string, unknown> | null = null;
+
+      if (!uploadError) {
+        const { data: urlData, error: signedError } = await supabase.storage
+          .from('driver-documents')
+          .createSignedUrl(storagePath, 31536000);
+
+        if (!signedError && urlData?.signedUrl) {
+          setUploadedPdfPath(storagePath);
+          setUploadedPdfSignedUrl(urlData.signedUrl);
+          invokeBody = { pdfUrl: urlData.signedUrl };
+        } else {
+          console.warn('Could not create signed URL for PDF; falling back to base64 extraction', signedError);
+        }
+      } else {
+        console.warn('Could not upload PDF; falling back to base64 extraction', uploadError);
+      }
+
+      if (!invokeBody) {
+        const buffer = await file.arrayBuffer();
+        const bytes = new Uint8Array(buffer);
+        let binary = '';
+        for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+        const base64 = btoa(binary);
+        invokeBody = { pdfBase64: base64 };
+      }
+
       setExtractionStatus('processing');
-      const { data, error } = await supabase.functions.invoke('extract-pdf', { body: { pdfBase64: base64 } });
-      if (error) throw error;
+      const { data, error } = await supabase.functions.invoke('extract-pdf', { body: invokeBody });
+
+      if (error) {
+        let detail = error.message;
+        const ctx: any = (error as any)?.context;
+        if (ctx && typeof ctx.json === 'function') {
+          try {
+            const body = await ctx.json();
+            const msg = body?.error || body?.message;
+            if (typeof msg === 'string' && msg.trim()) detail = msg;
+            else if (body) detail = JSON.stringify(body);
+          } catch {
+            // ignore
+          }
+        }
+        throw new Error(detail);
+      }
+
       if (data?.success && data?.data) {
         const extracted = data.data;
         setFormData(prev => ({
@@ -199,6 +257,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
           brokerClient: extracted.brokerClient || prev.brokerClient,
           miles: extracted.miles || prev.miles,
         }));
+
         // Update stop entries from extracted multi-stop data
         if (extracted.stops && Array.isArray(extracted.stops) && extracted.stops.length > 0) {
           setStopEntries(extracted.stops.map((s: any) => ({
@@ -212,14 +271,20 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
             { stop_type: 'delivery', address: extracted.destination || '', date: extracted.deliveryDate || '' },
           ]);
         }
+
         setExtractionStatus('done');
         toast({ title: 'Extraction successful', description: 'Fields auto-filled.' });
       } else {
         throw new Error(data?.error || 'Failed to extract information');
       }
     } catch (err: any) {
+      console.error('PDF extraction failed:', err);
       setExtractionStatus('error');
-      toast({ title: 'PDF extraction error', description: err.message, variant: 'destructive' });
+      toast({
+        title: 'PDF extraction error',
+        description: err?.message || 'Error desconocido',
+        variant: 'destructive',
+      });
     } finally {
       setIsExtracting(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -233,6 +298,8 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
     setPdfFile(null);
     setPdfFileName('');
     setPdfPreviewUrl(null);
+    setUploadedPdfPath(null);
+    setUploadedPdfSignedUrl(null);
     setExtractionStatus('idle');
   };
 
@@ -259,11 +326,13 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
     const pickupDate = pickups[0]?.date || formData.pickupDate;
     const deliveryDate = deliveries[deliveries.length - 1]?.date || formData.deliveryDate;
 
-    let pdfUrl: string | undefined = editLoad?.pdf_url || undefined;
+    let pdfUrl: string | undefined = uploadedPdfSignedUrl || editLoad?.pdf_url || undefined;
 
-    if (pdfFile) {
+    if (pdfFile && !uploadedPdfSignedUrl) {
       const fileName = `loads/${Date.now()}_${pdfFile.name}`;
-      const { error: uploadError } = await supabase.storage.from('driver-documents').upload(fileName, pdfFile, { contentType: 'application/pdf' });
+      const { error: uploadError } = await supabase.storage
+        .from('driver-documents')
+        .upload(fileName, pdfFile, { contentType: 'application/pdf' });
       if (uploadError) {
         toast({ title: 'Error', description: 'Failed to upload PDF', variant: 'destructive' });
       } else {
