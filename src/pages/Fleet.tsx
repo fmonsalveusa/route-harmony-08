@@ -94,7 +94,7 @@ const Fleet = () => {
                           <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
                             <TruckIcon className="h-4 w-4 text-primary" />
                           </div>
-                          <span className="font-bold">Unit #{truck.unit_number}</span>
+                          <span className="font-bold">#{truck.unit_number}</span>
                         </div>
                       </td>
                       <td className="p-3">{truck.truck_type}</td>
