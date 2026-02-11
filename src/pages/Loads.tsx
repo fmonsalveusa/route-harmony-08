@@ -336,8 +336,8 @@ const Loads = () => {
                 <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Pickup</th>
                 <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Delivery</th>
                 <th className="text-right p-3 font-medium text-muted-foreground">Rate</th>
-                <th className="text-right p-3 font-medium text-muted-foreground hidden md:table-cell">Miles</th>
                 <th className="text-right p-3 font-medium text-muted-foreground hidden md:table-cell">Empty Mi</th>
+                <th className="text-right p-3 font-medium text-muted-foreground hidden md:table-cell">Miles</th>
                 <th className="text-right p-3 font-medium text-muted-foreground hidden md:table-cell">RPM</th>
                 <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Dispatcher</th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
@@ -385,8 +385,8 @@ const Loads = () => {
                         <td className="p-3 hidden lg:table-cell text-muted-foreground">{formatDate(load.pickup_date)}</td>
                         <td className="p-3 hidden lg:table-cell text-muted-foreground">{formatDate(load.delivery_date)}</td>
                         <td className="p-3 text-right font-semibold">${Number(load.total_rate).toLocaleString()}</td>
-                        <td className="p-3 text-right hidden md:table-cell text-muted-foreground">{load.miles && Number(load.miles) > 0 ? Number(load.miles).toLocaleString() : '—'}</td>
                         <td className="p-3 text-right hidden md:table-cell text-muted-foreground">{load.empty_miles && Number(load.empty_miles) > 0 ? Number(load.empty_miles).toLocaleString() : '—'}</td>
+                        <td className="p-3 text-right hidden md:table-cell text-muted-foreground">{load.miles && Number(load.miles) > 0 ? Number(load.miles).toLocaleString() : '—'}</td>
                         <td className="p-3 text-right hidden md:table-cell">
                           {(() => {
                             if (!load.miles || Number(load.miles) <= 0) return <span className="text-muted-foreground">—</span>;
