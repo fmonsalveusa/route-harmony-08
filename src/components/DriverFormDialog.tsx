@@ -14,6 +14,7 @@ import { DbDriver, DriverInput } from '@/hooks/useDrivers';
 import { DbTruck } from '@/hooks/useTrucks';
 import { DbDispatcher } from '@/hooks/useDispatchers';
 import { toast } from 'sonner';
+import { US_STATES } from '@/lib/usStates';
 
 interface DriverFormDialogProps {
   open: boolean;
@@ -32,6 +33,7 @@ const emptyForm: DriverInput = {
   investor_name: null, pay_percentage: 0, investor_pay_percentage: 0,
   factoring_percentage: 2,
   hire_date: todayET(),
+  state: null,
 };
 
 type DocKey = 'license_photo' | 'medical_card_photo' | 'form_w9' | 'leasing_agreement' | 'service_agreement';
@@ -56,7 +58,7 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
         name: driver.name, email: driver.email, phone: driver.phone,
         license: driver.license, license_expiry: driver.license_expiry,
         medical_card_expiry: driver.medical_card_expiry, status: driver.status,
-        service_type: driver.service_type,
+        service_type: driver.service_type, state: driver.state,
         dispatcher_id: driver.dispatcher_id, truck_id: driver.truck_id,
         investor_name: driver.investor_name, pay_percentage: driver.pay_percentage,
         investor_pay_percentage: driver.investor_pay_percentage,
@@ -114,6 +116,16 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
           <div className="space-y-2">
             <Label>Driver License # *</Label>
             <Input value={form.license} onChange={e => set('license', e.target.value)} placeholder="CDL-A-XXXXX" />
+          </div>
+          <div className="space-y-2">
+            <Label>State</Label>
+            <Select value={form.state || 'none'} onValueChange={v => set('state', v === 'none' ? null : v)}>
+              <SelectTrigger><SelectValue placeholder="Select state" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">— Select —</SelectItem>
+                {US_STATES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </div>
 
           <DatePickerField label="License Expiry" value={form.license_expiry} onChange={v => set('license_expiry', v)} />

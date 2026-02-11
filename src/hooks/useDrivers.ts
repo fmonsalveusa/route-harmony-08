@@ -27,6 +27,7 @@ export interface DbDriver {
   leasing_agreement_url: string | null;
   service_agreement_url: string | null;
   service_type: string;
+  state: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -47,6 +48,7 @@ export interface DriverInput {
   investor_pay_percentage?: number | null;
   factoring_percentage?: number;
   hire_date: string;
+  state?: string | null;
 }
 
 export function useDrivers() {

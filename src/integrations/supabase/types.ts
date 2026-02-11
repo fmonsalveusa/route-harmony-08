@@ -156,6 +156,7 @@ export type Database = {
           phone: string
           service_agreement_url: string | null
           service_type: string
+          state: string | null
           status: string
           tenant_id: string | null
           truck_id: string | null
@@ -184,6 +185,7 @@ export type Database = {
           phone: string
           service_agreement_url?: string | null
           service_type?: string
+          state?: string | null
           status?: string
           tenant_id?: string | null
           truck_id?: string | null
@@ -212,6 +214,7 @@ export type Database = {
           phone?: string
           service_agreement_url?: string | null
           service_type?: string
+          state?: string | null
           status?: string
           tenant_id?: string | null
           truck_id?: string | null
