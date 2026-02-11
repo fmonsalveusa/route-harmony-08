@@ -156,7 +156,7 @@ const Drivers = () => {
                           </Avatar>
                           <div className="flex flex-col items-start">
                             <span className="font-semibold">{driver.name}</span>
-                            <Button variant="outline" size="sm" className="h-6 px-2 text-[11px] border-sky-300 bg-sky-50 text-sky-600 hover:bg-sky-100 hover:text-sky-700 gap-1 mt-0.5" onClick={(e) => { e.stopPropagation(); copyDriverInfo(driver); }} title="Copy">
+                            <Button variant="outline" size="sm" className="h-6 px-2 text-[11px] border-sky-400 bg-white text-sky-600 hover:bg-sky-50 hover:text-sky-700 gap-1 mt-0.5" onClick={(e) => { e.stopPropagation(); copyDriverInfo(driver); }} title="Copy">
                               <Copy className="h-3 w-3" /> Copy
                             </Button>
                           </div>
@@ -189,15 +189,15 @@ const Drivers = () => {
                       </td>
                       <td className="p-3" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-1.5">
-                          <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-emerald-300 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 gap-1" onClick={() => setDetailDriver(driver)} title="Detail">
+                          <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-emerald-400 bg-white text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 gap-1" onClick={() => setDetailDriver(driver)} title="Detail">
                             <Eye className="h-4 w-4" /> Detail
                           </Button>
                           {!isDispatcher && (
                             <>
-                              <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-amber-300 bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700 gap-1" onClick={() => { setEditingDriver(driver); setFormOpen(true); }} title="Edit">
+                              <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-amber-400 bg-white text-amber-600 hover:bg-amber-50 hover:text-amber-700 gap-1" onClick={() => { setEditingDriver(driver); setFormOpen(true); }} title="Edit">
                                 <Pencil className="h-4 w-4" /> Edit
                               </Button>
-                              <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-red-300 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 gap-1" onClick={async () => { if (window.confirm(`Delete driver ${driver.name}? This action is permanent.`)) { await deleteDriver(driver.id); } }} title="Delete">
+                              <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-red-400 bg-white text-red-600 hover:bg-red-50 hover:text-red-700 gap-1" onClick={async () => { if (window.confirm(`Delete driver ${driver.name}? This action is permanent.`)) { await deleteDriver(driver.id); } }} title="Delete">
                                 <Trash2 className="h-4 w-4" /> Delete
                               </Button>
                             </>

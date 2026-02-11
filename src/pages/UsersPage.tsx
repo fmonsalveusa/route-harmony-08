@@ -119,8 +119,8 @@ const UsersPage = () => {
                         </td>
                         <td className="p-3"><StatusBadge status={u.is_active ? 'active' : 'inactive'} /></td>
                         <td className="p-3 text-right">
-                          <Button variant="outline" size="icon" className="h-8 w-10 border-amber-300 bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700" onClick={() => handleEdit(u)} title="Edit">
-                            <Pencil className="h-4 w-4" />
+                          <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-amber-400 bg-white text-amber-600 hover:bg-amber-50 hover:text-amber-700 gap-1" onClick={() => handleEdit(u)} title="Edit">
+                            <Pencil className="h-4 w-4" /> Edit
                           </Button>
                         </td>
                       </tr>
