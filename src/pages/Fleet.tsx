@@ -121,14 +121,14 @@ const Fleet = () => {
                       </td>
                       <td className="p-3" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-1.5">
-                          <Button variant="outline" size="icon" className="h-8 w-10 border-emerald-300 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700" onClick={() => setDetailTruck(truck)} title="Detail">
-                            <Eye className="h-4 w-4" />
+                          <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-emerald-300 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 gap-1" onClick={() => setDetailTruck(truck)} title="Detail">
+                            <Eye className="h-4 w-4" /> Detail
                           </Button>
-                          <Button variant="outline" size="icon" className="h-8 w-10 border-amber-300 bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700" onClick={() => openEdit(truck)} title="Edit">
-                            <Pencil className="h-4 w-4" />
+                          <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-amber-300 bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700 gap-1" onClick={() => openEdit(truck)} title="Edit">
+                            <Pencil className="h-4 w-4" /> Edit
                           </Button>
-                          <Button variant="outline" size="icon" className="h-8 w-10 border-red-300 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700" onClick={async () => { if (window.confirm(`Delete truck Unit #${truck.unit_number}? This action is permanent.`)) { await deleteTruck(truck.id); } }} title="Delete">
-                            <Trash2 className="h-4 w-4" />
+                          <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-red-300 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 gap-1" onClick={async () => { if (window.confirm(`Delete truck Unit #${truck.unit_number}? This action is permanent.`)) { await deleteTruck(truck.id); } }} title="Delete">
+                            <Trash2 className="h-4 w-4" /> Delete
                           </Button>
                         </div>
                       </td>
