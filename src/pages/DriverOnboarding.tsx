@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import logoImg from '@/assets/logo.png';
+import { US_STATES } from '@/lib/usStates';
 
 const TRUCK_TYPES = ['Box Truck', 'Hotshot', 'Flatbed', 'Dry Van'];
 
@@ -46,6 +47,7 @@ export default function DriverOnboarding() {
   // Driver form
   const [driver, setDriver] = useState({
     name: '', email: '', phone: '', license: '',
+    state: null as string | null,
     license_expiry: null as string | null,
     medical_card_expiry: null as string | null,
   });
@@ -243,6 +245,16 @@ export default function DriverOnboarding() {
                   <Label>Driver License # *</Label>
                   <Input value={driver.license} onChange={e => setDriver(d => ({ ...d, license: e.target.value }))} placeholder="CDL-A-XXXXX" />
                 </div>
+                <div className="space-y-2">
+                  <Label>State</Label>
+                  <Select value={driver.state || 'none'} onValueChange={v => setDriver(d => ({ ...d, state: v === 'none' ? null : v }))}>
+                    <SelectTrigger><SelectValue placeholder="Select state" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">— Select —</SelectItem>
+                      {US_STATES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <OnboardingDateField label="License Expiry" value={driver.license_expiry} onChange={v => setDriver(d => ({ ...d, license_expiry: v }))} />
                 <OnboardingDateField label="Medical Card Expiry" value={driver.medical_card_expiry} onChange={v => setDriver(d => ({ ...d, medical_card_expiry: v }))} />
               </div>
@@ -392,6 +404,7 @@ export default function DriverOnboarding() {
                   <div><span className="text-muted-foreground">Email:</span> {driver.email}</div>
                   <div><span className="text-muted-foreground">Phone:</span> {driver.phone}</div>
                   <div><span className="text-muted-foreground">License:</span> {driver.license}</div>
+                  {driver.state && <div><span className="text-muted-foreground">State:</span> {driver.state}</div>}
                   {driver.license_expiry && <div><span className="text-muted-foreground">License Exp:</span> {driver.license_expiry}</div>}
                   {driver.medical_card_expiry && <div><span className="text-muted-foreground">Medical Card Exp:</span> {driver.medical_card_expiry}</div>}
                   <div className="col-span-2"><span className="text-muted-foreground">Documents:</span> {Object.keys(driverFiles).length} file(s)</div>
