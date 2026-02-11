@@ -70,7 +70,7 @@ export function DispatcherCommissionsChart({ loads, dispatchers, drivers, year, 
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-base">Comisiones por Dispatcher</CardTitle>
+        <CardTitle className="text-base">Weekly Dispatcher Commissions</CardTitle>
       </CardHeader>
       <CardContent>
         {data.length === 0 ? (

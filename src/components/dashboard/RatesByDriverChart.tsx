@@ -55,7 +55,7 @@ export function RatesByDriverChart({ loads, drivers, year, month, week }: Props)
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-base">Total Rates por Driver</CardTitle>
+        <CardTitle className="text-base">Drivers Performance</CardTitle>
       </CardHeader>
       <CardContent>
         {data.length === 0 ? (
