@@ -528,15 +528,6 @@ const Payments = () => {
         <Button variant="outline" size="sm" className="gap-2"><Download className="h-4 w-4" /> Export</Button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard
-          title="Payments Pending"
-          value={pendingDrivers + pendingInvestors + pendingDispatchers}
-          subtitle={`${pendingDrivers} drivers · ${pendingInvestors} investors · ${pendingDispatchers} dispatchers`}
-          icon={Clock}
-          iconClassName="bg-warning/10 text-warning"
-        />
-      </div>
 
       <Tabs defaultValue="drivers">
         <TabsList>
