@@ -483,7 +483,7 @@ const Tracking = () => {
                             <p className="text-[10px] font-medium text-foreground">Last Delivery</p>
                             <div className="flex items-start gap-1 mt-0.5">
                               <MapPin className="h-3 w-3 shrink-0 mt-0.5 text-destructive" />
-                              <span className="text-[10px] leading-tight">
+                              <span className="text-xs leading-tight">
                                 {(() => {
                                   // Extract City, State from address
                                   const parts = lastDel.address.split(',').map(p => p.trim());
@@ -501,7 +501,7 @@ const Tracking = () => {
                               </span>
                             </div>
                             {lastDel.date && (
-                              <p className="text-[10px] mt-0.5 opacity-70">{format(parseISO(lastDel.date), 'MMM dd, yyyy')}</p>
+                              <p className="text-xs mt-0.5 opacity-70">{format(parseISO(lastDel.date), 'MMM dd, yyyy')}</p>
                             )}
                           </div>
                         ) : (
