@@ -336,7 +336,7 @@ const Loads = () => {
                 <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Pickup</th>
                 <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Delivery</th>
                 <th className="text-right p-3 font-medium text-muted-foreground">Rate</th>
-                <th className="text-right p-3 font-medium text-muted-foreground hidden md:table-cell">Empty Mi</th>
+                <th className="text-right p-3 font-medium text-muted-foreground hidden md:table-cell">DH-O</th>
                 <th className="text-right p-3 font-medium text-muted-foreground hidden md:table-cell">Miles</th>
                 <th className="text-right p-3 font-medium text-muted-foreground hidden md:table-cell">RPM</th>
                 <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Dispatcher</th>
