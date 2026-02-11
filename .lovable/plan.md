@@ -1,54 +1,43 @@
 
+# Empty Miles (Deadhead) Feature
 
-# Importacion Masiva de Drivers (Uso Unico)
+## What It Does
+Each load will automatically calculate and display the "empty miles" -- the distance a driver travels without cargo from their last delivery location to the first pickup of the current load. This helps you see the true cost and efficiency of each assignment.
 
-## Resumen
+## How It Works
 
-Crear un wizard de importacion CSV para drivers siguiendo el mismo patron del LoadImportWizard existente. Wizard de 4 pasos: Upload, Mapeo de columnas, Validacion y Confirmacion.
+1. When a load is expanded or viewed, the system will look up the driver's previous load (the most recent delivered/completed load before this one, sorted by delivery date).
+2. It will take the last delivery stop of that previous load and calculate the driving distance (via OSRM, same routing engine already in use) to the first pickup stop of the current load.
+3. The result is saved to the database so it only needs to be calculated once.
+4. On the map in the Load Detail panel, a dashed line will show the deadhead segment from the previous delivery point to the first pickup.
 
-## Campos mapeables
+## What You'll See
+- A new "Empty Miles" field displayed alongside the existing "Miles" field in the load detail panel and the loads table.
+- A dashed route line on the map showing the deadhead path.
+- The value updates automatically when the load has a driver assigned and stops with coordinates.
 
-**Obligatorios:** Name, Email, Phone, License
-**Opcionales:** License Expiry, Medical Card Expiry, Status, Service Type, Dispatcher (por nombre), Truck (por unit number), Investor Name, Pay Percentage, Investor Pay Percentage, Factoring Percentage, Hire Date
+## Technical Details
 
-## Validaciones
+### Database Change
+- Add `empty_miles` (NUMERIC, default 0) and `empty_miles_origin` (TEXT, nullable) columns to the `loads` table.
 
-- Duplicados por email o license (case-insensitive)
-- Fechas invalidas en license_expiry, medical_card_expiry, hire_date
-- Dispatchers no encontrados por nombre
-- Trucks no encontrados por unit_number
-- Emails con formato invalido
-- Porcentajes fuera de rango (0-100)
+### Code Changes
 
-## Archivos a crear
+**1. `src/hooks/useLoads.ts`**
+- Add `empty_miles` and `empty_miles_origin` to the `DbLoad` interface.
 
-### `src/components/drivers/DriverImportWizard.tsx`
-- Wizard de 4 pasos identico en estructura al LoadImportWizard
-- Deteccion automatica de delimitador (coma, punto y coma, tab)
-- Auto-deteccion de columnas por nombre de header
-- Tabla de validacion con colores (verde/amarillo/rojo)
-- Checkboxes para saltar filas problematicas
-- Barra de progreso durante importacion
-- Boton para descargar plantilla CSV de ejemplo
-- Importacion en lotes de 50
+**2. `src/components/LoadDetailPanel.tsx`**
+- After resolving stops and calculating the main route, look up the driver's previous load (query `loads` table for the same `driver_id`, with `delivery_date` before the current load's `pickup_date`, ordered descending, limit 1).
+- Fetch the last delivery stop of that previous load from `load_stops`.
+- If coordinates exist (or can be geocoded), calculate driving distance via OSRM to the first pickup of the current load.
+- Persist `empty_miles` and `empty_miles_origin` (the address of the previous delivery) to the current load record.
+- Render a dashed polyline on the map from the previous delivery point to the first pickup point.
+- Display the empty miles value in the info section next to the existing Miles field.
 
-## Archivos a modificar
+**3. `src/pages/Loads.tsx`**
+- Show the `empty_miles` value in the loads table row (new column or alongside existing miles display).
 
-### `src/hooks/useDrivers.ts`
-- Agregar funcion `createDriversBulk(inputs: DriverInput[]): Promise<{success: number, errors: number}>`
-- Inserta en lotes de 50 con el tenant_id del usuario
-- Invalida (refetch) al finalizar
-
-### `src/pages/Drivers.tsx`
-- Agregar boton "Import CSV" con icono Upload junto al boton "New Driver"
-- Integrar el DriverImportWizard como dialogo modal
-- Pasar drivers existentes, trucks y dispatchers como props para validacion
-
-## Detalles tecnicos
-
-- Matching de dispatchers por nombre (case-insensitive, trim)
-- Matching de trucks por unit_number (case-insensitive)
-- Deteccion de duplicados contra drivers existentes por email o license
-- Valores por defecto: status="available", service_type="owner_operator", pay_percentage=0, factoring_percentage=0, hire_date=hoy
-- Cada registro incluye el tenant_id del usuario autenticado via getTenantId()
-
+### What Won't Change
+- The existing route calculation, miles, stops, and map rendering logic remains untouched.
+- All current filters, status workflows, and payment calculations stay the same.
+- The empty miles field is purely informational and does not affect financial calculations.
