@@ -1,16 +1,12 @@
 import { useState } from 'react';
 import { useDispatchers, DbDispatcher, DispatcherInput } from '@/hooks/useDispatchers';
-import { useLoads } from '@/hooks/useLoads';
-import { useDrivers } from '@/hooks/useDrivers';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { DispatcherFormDialog } from '@/components/DispatcherFormDialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Plus, Phone, Mail, Percent, Pencil, Trash2, ChevronDown, ChevronUp, Package, User, MapPin, DollarSign } from 'lucide-react';
+import { Plus, Phone, Mail, Percent, Pencil, Trash2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { StatusBadge } from '@/components/StatusBadge';
-import { formatDate } from '@/lib/dateUtils';
 
 const dispatcherStatusColor = (status: string) => {
   switch (status) {
@@ -22,21 +18,9 @@ const dispatcherStatusColor = (status: string) => {
 
 const Dispatchers = () => {
   const { dispatchers, loading, createDispatcher, updateDispatcher, deleteDispatcher } = useDispatchers();
-  const { loads } = useLoads();
-  const { drivers } = useDrivers();
   const [formOpen, setFormOpen] = useState(false);
   const [editingDispatcher, setEditingDispatcher] = useState<DbDispatcher | null>(null);
   const [activeTab, setActiveTab] = useState('active');
-  const [expandedDispatcher, setExpandedDispatcher] = useState<string | null>(null);
-
-  const getLoadsForDispatcher = (dispatcherId: string) =>
-    loads.filter(l => l.dispatcher_id === dispatcherId);
-
-  const getDriverName = (driverId: string | null) => {
-    if (!driverId) return 'Unassigned';
-    const driver = drivers.find(d => d.id === driverId);
-    return driver?.name || 'Unknown';
-  };
 
   const handleSubmit = async (data: DispatcherInput) => {
     if (editingDispatcher) {
@@ -55,7 +39,6 @@ const Dispatchers = () => {
 
   const renderDispatcherCard = (d: DbDispatcher) => {
     const initials = d.name.split(' ').map(n => n[0]).join('');
-    const dispatcherLoads = getLoadsForDispatcher(d.id);
     return (
       <Card key={d.id} className="hover:shadow-md transition-shadow animate-fade-in">
         <CardContent className="p-5">
@@ -90,58 +73,14 @@ const Dispatchers = () => {
             </div>
           </div>
 
-          <div className="mt-3 pt-3 border-t flex justify-between items-center">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 px-2 text-xs gap-1 text-muted-foreground"
-              onClick={() => setExpandedDispatcher(expandedDispatcher === d.id ? null : d.id)}
-            >
-              <Package className="h-3.5 w-3.5" />
-              Loads ({dispatcherLoads.length})
-              {expandedDispatcher === d.id ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+          <div className="mt-3 pt-3 border-t flex justify-end gap-1.5">
+            <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-amber-400 bg-white text-amber-600 hover:bg-amber-50 hover:text-amber-700 gap-1" onClick={() => { setEditingDispatcher(d); setFormOpen(true); }} title="Edit">
+              <Pencil className="h-4 w-4" /> Edit
             </Button>
-            <div className="flex gap-1.5">
-              <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-amber-400 bg-white text-amber-600 hover:bg-amber-50 hover:text-amber-700 gap-1" onClick={() => { setEditingDispatcher(d); setFormOpen(true); }} title="Edit">
-                <Pencil className="h-4 w-4" /> Edit
-              </Button>
-              <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-red-400 bg-white text-red-600 hover:bg-red-50 hover:text-red-700 gap-1" onClick={async () => { if (window.confirm(`Delete dispatcher ${d.name}? This action is permanent.`)) { await deleteDispatcher(d.id); } }} title="Delete">
-                <Trash2 className="h-4 w-4" /> Delete
-              </Button>
-            </div>
+            <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-red-400 bg-white text-red-600 hover:bg-red-50 hover:text-red-700 gap-1" onClick={async () => { if (window.confirm(`Delete dispatcher ${d.name}? This action is permanent.`)) { await deleteDispatcher(d.id); } }} title="Delete">
+              <Trash2 className="h-4 w-4" /> Delete
+            </Button>
           </div>
-
-          {expandedDispatcher === d.id && (
-            <div className="mt-3 pt-3 border-t space-y-2">
-              {dispatcherLoads.length === 0 ? (
-                <p className="text-xs text-muted-foreground text-center py-2">No loads assigned</p>
-              ) : (
-                dispatcherLoads.map(load => (
-                  <div key={load.id} className="rounded-lg border bg-muted/30 p-3 space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold">{load.reference_number}</span>
-                      <StatusBadge status={load.status as any} />
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <User className="h-3 w-3" />
-                      <span>{getDriverName(load.driver_id)}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <MapPin className="h-3 w-3" />
-                      <span className="truncate">{load.origin} → {load.destination}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">{load.pickup_date ? formatDate(load.pickup_date) : '—'}</span>
-                      <div className="flex items-center gap-1 font-medium">
-                        <DollarSign className="h-3 w-3" />
-                        {load.total_rate.toLocaleString()}
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          )}
         </CardContent>
       </Card>
     );
