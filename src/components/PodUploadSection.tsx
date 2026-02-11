@@ -8,7 +8,7 @@ interface PodUploadSectionProps {
 }
 
 export const PodUploadSection = ({ loadId }: PodUploadSectionProps) => {
-  const { pods, loading, uploading, uploadPod, deletePod } = usePodDocuments(loadId);
+  const { pods, loading, uploading, uploadPod, deletePod, openPod, downloadPod } = usePodDocuments(loadId);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const handleFileChange = async (files: FileList | null) => {
@@ -44,13 +44,23 @@ export const PodUploadSection = ({ loadId }: PodUploadSectionProps) => {
         />
       </div>
 
-      <PodFileList pods={pods} onDelete={deletePod} />
+      <PodFileList pods={pods} onDelete={deletePod} onOpen={openPod} onDownload={downloadPod} />
       {loading && <p className="text-xs text-muted-foreground">Cargando PODs...</p>}
     </div>
   );
 };
 
-function PodFileList({ pods, onDelete }: { pods: { id: string; file_url: string; file_name: string; file_type: string }[]; onDelete: (id: string) => void }) {
+function PodFileList({
+  pods,
+  onDelete,
+  onOpen,
+  onDownload,
+}: {
+  pods: { id: string; file_url: string; file_name: string; file_type: string }[];
+  onDelete: (id: string) => void;
+  onOpen: (pod: any) => void;
+  onDownload: (pod: any) => void;
+}) {
   if (pods.length === 0) return <p className="text-xs text-muted-foreground italic ml-1">Sin archivos</p>;
 
   return (
@@ -58,13 +68,23 @@ function PodFileList({ pods, onDelete }: { pods: { id: string; file_url: string;
       {pods.map(pod => (
         <div key={pod.id} className="flex items-center gap-1.5 bg-muted/50 rounded-md px-2 py-1 text-xs border">
           {pod.file_type === 'image' ? <Image className="h-3 w-3 text-primary" /> : <FileText className="h-3 w-3 text-primary" />}
-          <a href={pod.file_url} target="_blank" rel="noopener noreferrer" className="hover:underline truncate max-w-[120px]" title={pod.file_name}>
+          <button
+            onClick={() => onOpen(pod)}
+            className="hover:underline truncate max-w-[120px] text-left"
+            title={pod.file_name}
+            type="button"
+          >
             {pod.file_name}
-          </a>
-          <a href={pod.file_url} download className="text-muted-foreground hover:text-foreground">
+          </button>
+          <button
+            onClick={() => onDownload(pod)}
+            className="text-muted-foreground hover:text-foreground"
+            type="button"
+            title="Descargar"
+          >
             <Download className="h-3 w-3" />
-          </a>
-          <button onClick={() => onDelete(pod.id)} className="text-destructive hover:text-destructive/80">
+          </button>
+          <button onClick={() => onDelete(pod.id)} className="text-destructive hover:text-destructive/80" type="button">
             <Trash2 className="h-3 w-3" />
           </button>
         </div>
