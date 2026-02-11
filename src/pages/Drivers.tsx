@@ -186,7 +186,7 @@ const Drivers = () => {
                         </Select>
                       </td>
                       <td className="p-3" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center justify-end gap-1.5">
+                        <div className="flex flex-col items-end gap-1.5">
                           <Button variant="outline" size="icon" className="h-8 w-10 border-emerald-300 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700" onClick={() => setDetailDriver(driver)} title="Detail">
                             <Eye className="h-4 w-4" />
                           </Button>
