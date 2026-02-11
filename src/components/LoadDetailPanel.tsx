@@ -76,9 +76,10 @@ interface ResolvedStop {
 interface LoadDetailPanelProps {
   load: DbLoad & { route_geometry?: [number, number][] | null };
   onMilesCalculated?: (loadId: string, miles: number, routeGeometry?: [number, number][]) => void;
+  onLoadDataUpdated?: () => void;
 }
 
-export const LoadDetailPanel = ({ load, onMilesCalculated }: LoadDetailPanelProps) => {
+export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: LoadDetailPanelProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const persistedRef = useRef(false);
@@ -241,6 +242,7 @@ export const LoadDetailPanel = ({ load, onMilesCalculated }: LoadDetailPanelProp
           empty_miles: roundedDist,
           empty_miles_origin: prevStop.address,
         } as any).eq('id', load.id);
+        onLoadDataUpdated?.();
 
         // Draw dashed line on map
         const deadheadIcon = L.divIcon({
