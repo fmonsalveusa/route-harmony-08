@@ -92,6 +92,10 @@ Deno.serve(async (req) => {
     // 3) POD documents
     if (pods && pods.length > 0) {
       for (const pod of pods) {
+        if (!pod.file_url || pod.file_url.trim() === "") {
+          console.log("Skipping POD with empty file_url:", pod.id);
+          continue;
+        }
         const podBytes = await downloadStorageFile(adminClient, pod.file_url);
         if (podBytes) {
           attachments.push({
@@ -184,15 +188,16 @@ async function downloadStorageFile(
     let filePath = fileUrl;
     if (fileUrl.includes("/object/sign/") || fileUrl.includes("/object/public/")) {
       const match = fileUrl.match(/\/object\/(?:sign|public)\/([^?]+)/);
-      if (match) filePath = match[1];
+      if (match) filePath = decodeURIComponent(match[1]);
     } else if (fileUrl.includes("/storage/v1/")) {
       const match = fileUrl.match(/\/storage\/v1\/(?:object\/(?:sign|public)\/)?(driver-documents\/[^?]+)/);
-      if (match) filePath = match[1];
+      if (match) filePath = decodeURIComponent(match[1]);
     }
 
     // Remove bucket prefix if present
     const bucket = "driver-documents";
     const path = filePath.startsWith(`${bucket}/`) ? filePath.substring(bucket.length + 1) : filePath;
+    console.log("Downloading POD from path:", path);
 
     const { data, error } = await client.storage.from(bucket).download(path);
     if (error) {
