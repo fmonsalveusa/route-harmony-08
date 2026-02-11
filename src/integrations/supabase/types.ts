@@ -501,6 +501,8 @@ export type Database = {
           dispatcher_pay_amount: number | null
           driver_id: string | null
           driver_pay_amount: number | null
+          empty_miles: number | null
+          empty_miles_origin: string | null
           factoring: string | null
           id: string
           investor_pay_amount: number | null
@@ -529,6 +531,8 @@ export type Database = {
           dispatcher_pay_amount?: number | null
           driver_id?: string | null
           driver_pay_amount?: number | null
+          empty_miles?: number | null
+          empty_miles_origin?: string | null
           factoring?: string | null
           id?: string
           investor_pay_amount?: number | null
@@ -557,6 +561,8 @@ export type Database = {
           dispatcher_pay_amount?: number | null
           driver_id?: string | null
           driver_pay_amount?: number | null
+          empty_miles?: number | null
+          empty_miles_origin?: string | null
           factoring?: string | null
           id?: string
           investor_pay_amount?: number | null
