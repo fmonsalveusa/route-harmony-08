@@ -426,7 +426,7 @@ const Tracking = () => {
                       <Truck className="h-3 w-3" />
                       {truck?.unit_number || '—'}
                     </span>
-                    <span>{driver?.name || 'Unassigned'}</span>
+                    <span>{load.reference_number}</span>
                     {load.miles > 0 && <span>{load.miles} mi</span>}
                   </div>
                 </div>
