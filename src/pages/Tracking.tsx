@@ -408,7 +408,7 @@ const Tracking = () => {
                   }`}
                 >
                   <div className="flex items-start justify-between mb-1.5">
-                    <span className="font-semibold text-sm">{load.reference_number}</span>
+                    <span className="font-semibold text-sm">{driver?.name || 'Unassigned'}</span>
                     <StatusBadge status={load.status} />
                   </div>
                   <div className="space-y-1 text-xs">
