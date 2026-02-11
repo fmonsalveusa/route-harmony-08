@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { DbDriver } from '@/hooks/useDrivers';
 import { FileText, ExternalLink, Loader2 } from 'lucide-react';
 import { formatDate } from '@/lib/dateUtils';
+import { ExpiryBadge } from '@/components/ExpiryBadge';
 
 function Info({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -46,6 +47,13 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
 
   return (
     <div className="p-5 bg-muted/20 border-t space-y-4 animate-fade-in">
+      {/* Document Expiry Alerts */}
+      {(driver.license_expiry || driver.medical_card_expiry) && (
+        <div className="flex flex-wrap gap-2">
+          <ExpiryBadge date={driver.license_expiry} label="Driver License" />
+          <ExpiryBadge date={driver.medical_card_expiry} label="Medical Card" />
+        </div>
+      )}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3">
         <Info label="Email">{driver.email}</Info>
         <Info label="Phone">{driver.phone}</Info>

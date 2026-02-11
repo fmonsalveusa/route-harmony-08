@@ -2,6 +2,7 @@ import type { DbTruck } from '@/hooks/useTrucks';
 import { ExternalLink, FileText } from 'lucide-react';
 import { StatusBadge } from '@/components/StatusBadge';
 import { formatDate } from '@/lib/dateUtils';
+import { ExpiryBadge } from '@/components/ExpiryBadge';
 
 function Info({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -30,6 +31,13 @@ interface Props {
 export function TruckDetailPanel({ truck, driverName }: Props) {
   return (
     <div className="p-5 bg-muted/20 border-t space-y-4 animate-fade-in">
+      {/* Document Expiry Alerts */}
+      {(truck.registration_expiry || truck.insurance_expiry) && (
+        <div className="flex flex-wrap gap-2">
+          <ExpiryBadge date={truck.registration_expiry} label="Registration" />
+          <ExpiryBadge date={truck.insurance_expiry} label="Insurance" />
+        </div>
+      )}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3">
         <Info label="Make / Model">{truck.make || '—'} {truck.model || ''}</Info>
         <Info label="Year">{truck.year ?? '—'}</Info>
