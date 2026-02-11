@@ -36,7 +36,7 @@ export function WeeklyRatesChart({ loads }: Props) {
     <Card>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base">Rates Acumulados por Semana</CardTitle>
+          <CardTitle className="text-base">Weekly Production</CardTitle>
           <span className="text-xs text-muted-foreground">Sin filtros · Todas las semanas</span>
         </div>
       </CardHeader>
