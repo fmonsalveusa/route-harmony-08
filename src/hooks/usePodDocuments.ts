@@ -49,10 +49,6 @@ export function usePodDocuments(loadId: string) {
 
       if (uploadError) throw uploadError;
 
-      const { data: urlData } = await supabase.storage
-        .from('driver-documents')
-        .createSignedUrl(path, 31536000);
-
       const fileType = file.type.startsWith('image/') ? 'image' : 'pdf';
       const tenant_id = await getTenantId();
 
@@ -61,7 +57,7 @@ export function usePodDocuments(loadId: string) {
         .insert({
           load_id: loadId,
           stop_id: stopId || null,
-          file_url: urlData?.signedUrl || '',
+          file_url: path,
           file_name: file.name,
           file_type: fileType,
           tenant_id,
@@ -93,5 +89,39 @@ export function usePodDocuments(loadId: string) {
     }
   }, [fetchPods, toast]);
 
-  return { pods, loading, uploading, uploadPod, deletePod };
+  const getSignedUrl = useCallback(async (fileUrl: string): Promise<string> => {
+    // If it's already a full URL (legacy), return as-is
+    if (fileUrl.startsWith('http')) return fileUrl;
+    // Otherwise it's a storage path — generate a fresh signed URL
+    const { data, error } = await supabase.storage
+      .from('driver-documents')
+      .createSignedUrl(fileUrl, 3600);
+    if (error || !data?.signedUrl) {
+      console.error('Error creating signed URL:', error);
+      return '';
+    }
+    return data.signedUrl;
+  }, []);
+
+  const downloadPod = useCallback(async (pod: PodDocument) => {
+    try {
+      const url = await getSignedUrl(pod.file_url);
+      if (!url) throw new Error('No URL');
+      const res = await fetch(url);
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = pod.file_name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      console.error('Error downloading POD:', err);
+      toast({ title: 'Error', description: 'No se pudo descargar el archivo', variant: 'destructive' });
+    }
+  }, [getSignedUrl, toast]);
+
+  return { pods, loading, uploading, uploadPod, deletePod, downloadPod, getSignedUrl };
 }

@@ -1,14 +1,14 @@
-import { useRef } from 'react';
-import { usePodDocuments } from '@/hooks/usePodDocuments';
+import { useRef, useState } from 'react';
+import { usePodDocuments, PodDocument } from '@/hooks/usePodDocuments';
 import { Button } from '@/components/ui/button';
-import { Upload, FileText, Image, Download, Trash2, Loader2 } from 'lucide-react';
+import { Upload, FileText, Image, Download, Trash2, Loader2, Eye } from 'lucide-react';
 
 interface PodUploadSectionProps {
   loadId: string;
 }
 
 export const PodUploadSection = ({ loadId }: PodUploadSectionProps) => {
-  const { pods, loading, uploading, uploadPod, deletePod } = usePodDocuments(loadId);
+  const { pods, loading, uploading, uploadPod, deletePod, downloadPod, getSignedUrl } = usePodDocuments(loadId);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const handleFileChange = async (files: FileList | null) => {
@@ -16,6 +16,11 @@ export const PodUploadSection = ({ loadId }: PodUploadSectionProps) => {
     for (let i = 0; i < files.length; i++) {
       await uploadPod(files[i]);
     }
+  };
+
+  const handleView = async (pod: PodDocument) => {
+    const url = await getSignedUrl(pod.file_url);
+    if (url) window.open(url, '_blank');
   };
 
   return (
@@ -44,13 +49,18 @@ export const PodUploadSection = ({ loadId }: PodUploadSectionProps) => {
         />
       </div>
 
-      <PodFileList pods={pods} onDelete={deletePod} />
+      <PodFileList pods={pods} onDelete={deletePod} onDownload={downloadPod} onView={handleView} />
       {loading && <p className="text-xs text-muted-foreground">Cargando PODs...</p>}
     </div>
   );
 };
 
-function PodFileList({ pods, onDelete }: { pods: { id: string; file_url: string; file_name: string; file_type: string }[]; onDelete: (id: string) => void }) {
+function PodFileList({ pods, onDelete, onDownload, onView }: {
+  pods: PodDocument[];
+  onDelete: (id: string) => void;
+  onDownload: (pod: PodDocument) => void;
+  onView: (pod: PodDocument) => void;
+}) {
   if (pods.length === 0) return <p className="text-xs text-muted-foreground italic ml-1">Sin archivos</p>;
 
   return (
@@ -58,12 +68,12 @@ function PodFileList({ pods, onDelete }: { pods: { id: string; file_url: string;
       {pods.map(pod => (
         <div key={pod.id} className="flex items-center gap-1.5 bg-muted/50 rounded-md px-2 py-1 text-xs border">
           {pod.file_type === 'image' ? <Image className="h-3 w-3 text-primary" /> : <FileText className="h-3 w-3 text-primary" />}
-          <a href={pod.file_url} target="_blank" rel="noopener noreferrer" className="hover:underline truncate max-w-[120px]" title={pod.file_name}>
+          <button onClick={() => onView(pod)} className="hover:underline truncate max-w-[120px]" title={pod.file_name}>
             {pod.file_name}
-          </a>
-          <a href={pod.file_url} download className="text-muted-foreground hover:text-foreground">
+          </button>
+          <button onClick={() => onDownload(pod)} className="text-muted-foreground hover:text-foreground" title="Descargar">
             <Download className="h-3 w-3" />
-          </a>
+          </button>
           <button onClick={() => onDelete(pod.id)} className="text-destructive hover:text-destructive/80">
             <Trash2 className="h-3 w-3" />
           </button>
