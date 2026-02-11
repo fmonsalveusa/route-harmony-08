@@ -423,18 +423,29 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
               resolvedStops.map((stop, i) => (
                 <div key={i} className="flex items-center gap-2">
                   <MapPin className={`h-3.5 w-3.5 ${stop.type === 'pickup' ? 'text-green-600' : 'text-red-600'}`} />
-                  <div><span className="text-muted-foreground">{stop.type === 'pickup' ? 'Pick Up' : 'Delivery'}:</span> <span className="font-medium">{stop.address}</span></div>
+                  <div className="flex-1"><span className="text-muted-foreground">{stop.type === 'pickup' ? 'Pick Up' : 'Delivery'}:</span> <span className="font-medium">{stop.address}</span></div>
+                  <a
+                    href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(stop.address)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-shrink-0 p-1 rounded hover:bg-muted text-primary"
+                    title="Navigate in Google Maps"
+                  >
+                    <Navigation className="h-3.5 w-3.5" />
+                  </a>
                 </div>
               ))
             ) : (
               <>
                 <div className="flex items-center gap-2">
                   <MapPin className="h-3.5 w-3.5 text-green-600" />
-                  <div><span className="text-muted-foreground">Pick Up:</span> <span className="font-medium">{load.origin}</span></div>
+                  <div className="flex-1"><span className="text-muted-foreground">Pick Up:</span> <span className="font-medium">{load.origin}</span></div>
+                  <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(load.origin)}`} target="_blank" rel="noopener noreferrer" className="p-1 rounded hover:bg-muted text-primary"><Navigation className="h-3.5 w-3.5" /></a>
                 </div>
                 <div className="flex items-center gap-2">
                   <MapPin className="h-3.5 w-3.5 text-red-600" />
-                  <div><span className="text-muted-foreground">Delivery:</span> <span className="font-medium">{load.destination}</span></div>
+                  <div className="flex-1"><span className="text-muted-foreground">Delivery:</span> <span className="font-medium">{load.destination}</span></div>
+                  <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(load.destination)}`} target="_blank" rel="noopener noreferrer" className="p-1 rounded hover:bg-muted text-primary"><Navigation className="h-3.5 w-3.5" /></a>
                 </div>
               </>
             )}

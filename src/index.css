@@ -118,6 +118,9 @@
   .table-container {
     @apply rounded-lg border bg-card overflow-hidden;
   }
+  .safe-area-pb {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
 }
 
 /* Fix Leaflet map z-index so it doesn't overlap dialogs/modals */

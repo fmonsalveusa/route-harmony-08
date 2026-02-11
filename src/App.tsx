@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/AppLayout";
+import { DriverMobileLayout } from "@/components/driver-app/DriverMobileLayout";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Loads from "./pages/Loads";
@@ -26,6 +27,14 @@ import MasterBilling from "./pages/MasterBilling";
 import MasterSettings from "./pages/MasterSettings";
 import NotFound from "./pages/NotFound";
 import DriverOnboarding from "./pages/DriverOnboarding";
+import Install from "./pages/Install";
+
+import DriverDashboard from "./pages/driver-app/DriverDashboard";
+import DriverLoads from "./pages/driver-app/DriverLoads";
+import DriverLoadDetail from "./pages/driver-app/DriverLoadDetail";
+import DriverPayments from "./pages/driver-app/DriverPayments";
+import DriverProfile from "./pages/driver-app/DriverProfile";
+import DriverTracking from "./pages/driver-app/DriverTracking";
 
 const queryClient = new QueryClient();
 
@@ -52,8 +61,8 @@ const ProtectedRoute = ({ children, masterOnly = false }: { children: React.Reac
   return <AppLayout>{children}</AppLayout>;
 };
 
-const AppRoutes = () => {
-  const { user, loading, isMasterAdmin } = useAuth();
+const DriverRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, loading } = useAuth();
 
   if (loading) {
     return (
@@ -63,10 +72,42 @@ const AppRoutes = () => {
     );
   }
 
+  if (!user) return <Navigate to="/auth" replace />;
+
+  return <DriverMobileLayout>{children}</DriverMobileLayout>;
+};
+
+const AppRoutes = () => {
+  const { user, loading, isMasterAdmin, role } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    );
+  }
+
+  // Determine redirect path after login
+  const getRedirectPath = () => {
+    if (isMasterAdmin) return '/master';
+    if (role === 'driver') return '/driver';
+    return '/';
+  };
+
   return (
     <Routes>
-      <Route path="/auth" element={user ? <Navigate to={isMasterAdmin ? '/master' : '/'} replace /> : <Auth />} />
+      <Route path="/auth" element={user ? <Navigate to={getRedirectPath()} replace /> : <Auth />} />
       <Route path="/onboarding/:token" element={<DriverOnboarding />} />
+      <Route path="/install" element={<Install />} />
+
+      {/* Driver mobile routes */}
+      <Route path="/driver" element={<DriverRoute><DriverDashboard /></DriverRoute>} />
+      <Route path="/driver/loads" element={<DriverRoute><DriverLoads /></DriverRoute>} />
+      <Route path="/driver/loads/:loadId" element={<DriverRoute><DriverLoadDetail /></DriverRoute>} />
+      <Route path="/driver/payments" element={<DriverRoute><DriverPayments /></DriverRoute>} />
+      <Route path="/driver/profile" element={<DriverRoute><DriverProfile /></DriverRoute>} />
+      <Route path="/driver/tracking" element={<DriverRoute><DriverTracking /></DriverRoute>} />
 
       {/* Tenant routes */}
       <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
