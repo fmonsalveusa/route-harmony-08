@@ -3,6 +3,17 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { getTenantId } from '@/hooks/useTenantId';
 
+function extractDriverDocumentsPathFromSignedUrl(url: string): string | null {
+  const match = url.match(/\/storage\/v1\/object\/sign\/driver-documents\/([^?]+)/);
+  if (!match?.[1]) return null;
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return match[1];
+  }
+}
+
+
 export interface PodDocument {
   id: string;
   load_id: string;
@@ -91,8 +102,17 @@ export function usePodDocuments(loadId: string) {
   }, [fetchPods, toast]);
 
   const resolvePodUrl = useCallback(async (pod: PodDocument): Promise<string> => {
-    // Legacy: already a full signed URL
-    if (pod.file_url?.startsWith('http')) return pod.file_url;
+    // Legacy: previously stored signed URLs — re-sign them to avoid expired links
+    if (pod.file_url?.startsWith('http')) {
+      const extractedPath = extractDriverDocumentsPathFromSignedUrl(pod.file_url);
+      if (extractedPath) {
+        const { data, error } = await supabase.storage
+          .from('driver-documents')
+          .createSignedUrl(extractedPath, 3600);
+        if (!error && data?.signedUrl) return data.signedUrl;
+      }
+      return pod.file_url;
+    }
 
     let storagePath = pod.file_url;
 
@@ -151,15 +171,25 @@ export function usePodDocuments(loadId: string) {
       toast({ title: 'Error', description: 'No se pudo descargar el archivo (ruta no encontrada)', variant: 'destructive' });
       return;
     }
-    // Use an anchor click to avoid CORS/download inconsistencies
-    const a = document.createElement('a');
-    a.href = url;
-    a.target = '_blank';
-    a.rel = 'noopener noreferrer';
-    a.download = pod.file_name;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = pod.file_name || 'POD';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      console.error('Error downloading POD:', err);
+      // Fallback: al menos abrirlo
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
   }, [resolvePodUrl, toast]);
 
   return { pods, loading, uploading, uploadPod, deletePod, openPod, downloadPod };
