@@ -207,76 +207,109 @@ async function downloadStorageFile(
 }
 
 function buildInvoicePdf(invoice: any, load: any, company: any): Uint8Array {
-  // Minimal PDF generation for email attachment
-  // Uses raw PDF construction since jsPDF is not available in Deno
-  const lines: string[] = [];
-  const addLine = (text: string) => lines.push(text);
+  // Professional PDF matching frontend jsPDF layout (A4: 595.28 x 841.89 pt)
+  const pageW = 595.28;
+  const margin = 42.52;
+  const rightX = pageW - margin;
+  let y = 56.69;
 
-  addLine(`INVOICE`);
-  addLine(``);
+  const cmds: string[] = [];
+
+  const esc = (t: string) => t.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
+
+  const addText = (text: string, x: number, yP: number, size: number, bold = false, align: "left" | "right" | "center" = "left", r = 0, g = 0, b = 0) => {
+    const font = bold ? "/F2" : "/F1";
+    let tx = x;
+    if (align === "right") tx = x - text.length * size * 0.45;
+    else if (align === "center") tx = x - (text.length * size * 0.45) / 2;
+    cmds.push(`${(r/255).toFixed(3)} ${(g/255).toFixed(3)} ${(b/255).toFixed(3)} rg`);
+    cmds.push(`BT ${font} ${size} Tf ${tx.toFixed(2)} ${(841.89 - yP).toFixed(2)} Td (${esc(text)}) Tj ET`);
+  };
+
+  const fillRect = (x: number, yP: number, w: number, h: number, r: number, g: number, b: number) => {
+    cmds.push(`${(r/255).toFixed(3)} ${(g/255).toFixed(3)} ${(b/255).toFixed(3)} rg`);
+    cmds.push(`${x.toFixed(2)} ${(841.89 - yP - h).toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)} re f`);
+  };
+
+  const drawLine = (x1: number, y1: number, x2: number, y2: number) => {
+    cmds.push(`0.784 0.784 0.784 RG 0.5 w ${x1.toFixed(2)} ${(841.89-y1).toFixed(2)} m ${x2.toFixed(2)} ${(841.89-y2).toFixed(2)} l S`);
+  };
+
+  // Company header (right-aligned)
   if (company) {
-    addLine(company.name);
-    if (company.address) addLine(company.address);
-    if (company.city || company.state || company.zip) addLine(`${company.city || ""}, ${company.state || ""} ${company.zip || ""}`.trim());
-    if (company.phone) addLine(`Phone: ${company.phone}`);
-    if (company.email) addLine(`Email: ${company.email}`);
-    if (company.mc_number) addLine(`MC# ${company.mc_number}`);
-    if (company.dot_number) addLine(`DOT# ${company.dot_number}`);
-    addLine(``);
+    addText(company.name, rightX, y, 16, true, "right");
+    y += 17;
+    if (company.address) { addText(company.address, rightX, y, 9, false, "right"); y += 11; }
+    const cityLine = `${company.city||""}, ${company.state||""} ${company.zip||""}`.trim();
+    if (cityLine.length > 2) { addText(cityLine, rightX, y, 9, false, "right"); y += 11; }
+    if (company.phone) { addText(`Phone: ${company.phone}`, rightX, y, 9, false, "right"); y += 11; }
+    if (company.email) { addText(`Email: ${company.email}`, rightX, y, 9, false, "right"); y += 11; }
+    if (company.mc_number) { addText(`MC# ${company.mc_number}`, rightX, y, 9, false, "right"); y += 11; }
+    if (company.dot_number) { addText(`DOT# ${company.dot_number}`, rightX, y, 9, false, "right"); y += 11; }
   }
-  addLine(`Invoice #: ${invoice.invoice_number}`);
-  addLine(`Date: ${new Date(invoice.created_at).toLocaleDateString("en-US")}`);
-  addLine(``);
-  addLine(`BILL TO: ${invoice.broker_name}`);
-  addLine(``);
-  addLine(`LOAD DETAILS`);
-  addLine(`Load Reference: ${load?.reference_number || invoice.invoice_number}`);
-  addLine(`Origin: ${load?.origin || "N/A"}`);
-  addLine(`Destination: ${load?.destination || "N/A"}`);
-  if (load?.pickup_date) addLine(`Pickup: ${new Date(load.pickup_date).toLocaleDateString("en-US")}`);
-  if (load?.delivery_date) addLine(`Delivery: ${new Date(load.delivery_date).toLocaleDateString("en-US")}`);
-  if (load?.miles) addLine(`Miles: ${Number(load.miles).toLocaleString()}`);
-  addLine(``);
-  addLine(`TOTAL DUE: $${Number(invoice.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}`);
-  addLine(``);
-  addLine(`Thank you for your business!`);
 
-  const content = lines.join("\n");
+  // INVOICE title
+  y = Math.max(y + 22, 142);
+  addText("INVOICE", margin, y, 24, true, "left", 30, 64, 120);
 
-  // Build a simple PDF manually
-  const textBytes = new TextEncoder().encode(content);
-  const pdf = buildSimplePdf(textBytes, content);
-  return pdf;
-}
+  // Invoice # and Date
+  y += 34;
+  addText("Invoice #:", margin, y, 10, true);
+  addText(invoice.invoice_number, margin + 113, y, 10);
+  addText("Date:", pageW / 2 + 28, y, 10, true);
+  addText(new Date(invoice.created_at).toLocaleDateString("en-US"), pageW / 2 + 85, y, 10);
 
-function buildSimplePdf(textBytes: Uint8Array, content: string): Uint8Array {
-  // Minimal valid PDF with text content
-  const textLines = content.split("\n");
-  
-  // Build page stream with text positioning
-  let streamContent = "BT\n/F1 11 Tf\n";
-  let yPos = 780;
-  for (const line of textLines) {
-    if (yPos < 50) break;
-    const escaped = line.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
-    streamContent += `1 0 0 1 50 ${yPos} Tm\n(${escaped}) Tj\n`;
-    yPos -= 16;
-  }
-  streamContent += "ET";
+  // BILL TO section
+  y += 40;
+  fillRect(margin, y - 11, pageW - margin * 2, 28, 240, 240, 245);
+  addText("BILL TO", margin + 9, y + 9, 11, true);
+  y += 40;
+  addText(invoice.broker_name, margin + 9, y, 12, true);
+  y += 17;
 
+  // LOAD DETAILS header
+  y += 28;
+  fillRect(margin, y - 11, pageW - margin * 2, 28, 30, 64, 120);
+  addText("LOAD DETAILS", margin + 9, y + 9, 10, true, "left", 255, 255, 255);
+  y += 40;
+
+  // Detail rows
+  const addRow = (label: string, value: string) => {
+    addText(label, margin + 9, y, 10, true);
+    addText(value, margin + 156, y, 10);
+    y += 20;
+  };
+
+  addRow("Load Reference:", load?.reference_number || invoice.invoice_number);
+  addRow("Origin:", load?.origin || "N/A");
+  addRow("Destination:", load?.destination || "N/A");
+  if (load?.pickup_date) addRow("Pickup Date:", new Date(load.pickup_date).toLocaleDateString("en-US"));
+  if (load?.delivery_date) addRow("Delivery Date:", new Date(load.delivery_date).toLocaleDateString("en-US"));
+  if (load?.miles && Number(load.miles) > 0) addRow("Miles:", Number(load.miles).toLocaleString());
+
+  // Total
+  y += 22;
+  drawLine(margin, y, rightX, y);
+  y += 28;
+  addText("TOTAL DUE:", margin + 9, y, 14, true);
+  const totalStr = `$${Number(invoice.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+  addText(totalStr, rightX - 9, y, 14, true, "right", 30, 64, 120);
+
+  // Footer
+  y += 57;
+  addText("Thank you for your business!", pageW / 2, y, 9, false, "center", 120, 120, 120);
+
+  // Build PDF structure
+  const streamContent = cmds.join("\n");
   const streamBytes = new TextEncoder().encode(streamContent);
 
   const objects: string[] = [];
-  // obj 1: catalog
   objects.push("1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj");
-  // obj 2: pages
   objects.push("2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj");
-  // obj 3: page
-  objects.push(`3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>\nendobj`);
-  // obj 4: stream
+  objects.push(`3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Contents 4 0 R /Resources << /Font << /F1 5 0 R /F2 6 0 R >> >> >>\nendobj`);
   objects.push(`4 0 obj\n<< /Length ${streamBytes.length} >>\nstream\n${streamContent}\nendstream\nendobj`);
-  // obj 5: font
   objects.push("5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj");
+  objects.push("6 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>\nendobj");
 
   let body = "%PDF-1.4\n";
   const offsets: number[] = [];
