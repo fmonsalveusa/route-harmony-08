@@ -366,7 +366,7 @@ export const LoadDetailPanel = ({ load, onMilesCalculated }: LoadDetailPanelProp
                   </a>
                 </Button>
                 <Button variant="outline" size="sm" className="gap-1.5 text-xs" asChild>
-                  <a href={load.pdf_url} download>
+                  <a href={load.pdf_url} target="_blank" rel="noopener noreferrer">
                     <Download className="h-3.5 w-3.5" /> Descargar
                   </a>
                 </Button>
