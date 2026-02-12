@@ -1,35 +1,51 @@
 
-# Fix: Landing Page y boton "Go to App" para Master Admin
 
-## Problema
+# Agente de IA para la Landing Page (reemplazando el boton de WhatsApp)
 
-1. Al visitar `loaduptms.com` estando logueado como Master Admin, la ruta `/` redirige automaticamente a `/master` (linea 104 de App.tsx), por lo que nunca se ve la landing page.
-2. El boton "Go to App" en el sidebar apunta a `/` (linea 146 de AppLayout.tsx), pero como `/` redirige a `/master`, el boton no hace nada visible.
+## Resumen
 
-## Solucion
+Se eliminara el boton flotante de WhatsApp y se reemplazara por un widget de chat con IA en la esquina inferior derecha. El agente respondera en espanol sobre los servicios de Load Up y guiara a los visitantes. El enlace de WhatsApp seguira disponible en el navbar, hero y footer.
 
-### 1. AppLayout.tsx - Corregir el enlace "Go to App"
-- Cambiar el destino del boton "Go to App" de `/` a `/dashboard`
-- Asi el Master Admin navega directamente al Dashboard operativo del TMS
+## Cambios
 
-### 2. App.tsx - Sin cambios necesarios
-- El comportamiento actual de la ruta `/` es correcto: usuarios autenticados van a su dashboard correspondiente, usuarios no autenticados ven la landing page
-- La landing page publica se muestra correctamente para visitantes no logueados
+### 1. Crear Edge Function: `supabase/functions/landing-chat/index.ts`
+- Endpoint publico (sin JWT) que recibe mensajes del visitante
+- System prompt detallado con informacion de los 7 servicios de Load Up, contacto WhatsApp, y tono profesional en espanol
+- Usa Lovable AI Gateway con modelo `google/gemini-3-flash-preview`
+- Streaming SSE para respuestas en tiempo real
 
-## Detalle Tecnico
+### 2. Crear componente: `src/components/landing/AIChatWidget.tsx`
+- Boton flotante en esquina inferior derecha (posicion actual del WhatsApp)
+- Ventana de chat con:
+  - Header "Asistente Load Up"
+  - Mensajes con scroll
+  - Botones de opciones rapidas: "Dispatching", "Leasing", "Curso", "Permisos", "Otro"
+  - Input de texto libre
+  - Indicador de escritura durante streaming
+- Responsive en movil
 
-Archivo `src/components/AppLayout.tsx`, linea 146:
+### 3. Actualizar: `src/pages/Landing.tsx`
+- Eliminar `<WhatsAppButton />`
+- Agregar `<AIChatWidget />`
 
-Cambiar:
-```
-to={isMasterRoute ? '/' : '/master'}
-```
-Por:
-```
-to={isMasterRoute ? '/dashboard' : '/master'}
-```
+### 4. Actualizar: `supabase/config.toml`
+- Agregar `[functions.landing-chat]` con `verify_jwt = false`
 
-Esto resuelve ambos problemas porque:
-- "Go to App" ahora lleva al `/dashboard` (la app operativa)
-- La landing page en `/` sigue siendo publica para visitantes sin login
-- Los usuarios autenticados que visiten `/` directamente seguiran siendo redirigidos a su panel correspondiente
+### 5. Archivo `src/components/landing/WhatsAppButton.tsx`
+- Se deja sin usar (no se elimina el archivo, solo se quita de Landing.tsx)
+
+## System Prompt del agente
+
+Incluira:
+- Los 7 servicios: Dispatching MC propio, Leasing bajo MC de Load Up, Curso de Dispatcher, Tracking Up App, Asesoria Personal, Tramite de Permisos, Load Up TMS
+- WhatsApp: +1 (980) 766-8815
+- Instrucciones para guiar al registro o contacto por WhatsApp
+- No inventar precios ni datos no proporcionados
+
+## Detalles tecnicos
+
+- Modelo: `google/gemini-3-flash-preview`
+- Sin dependencias nuevas
+- Sin persistencia de conversaciones (efimeras)
+- Manejo de errores 429/402 con mensajes amigables
+
