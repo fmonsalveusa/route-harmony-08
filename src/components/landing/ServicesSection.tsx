@@ -161,7 +161,7 @@ export function ServicesSection() {
               className="group bg-card border rounded-xl overflow-hidden hover:shadow-lg hover:border-accent/40 transition-all duration-300 cursor-pointer"
               onClick={() => setSelectedService(i)}
             >
-              <div className="aspect-video overflow-hidden">
+              <div className="aspect-[2/1] overflow-hidden">
                 <img
                   src={s.image}
                   alt={s.title}
