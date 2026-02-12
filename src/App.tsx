@@ -28,6 +28,7 @@ import MasterSettings from "./pages/MasterSettings";
 import NotFound from "./pages/NotFound";
 import DriverOnboarding from "./pages/DriverOnboarding";
 import Install from "./pages/Install";
+import Landing from "./pages/Landing";
 
 import DriverDashboard from "./pages/driver-app/DriverDashboard";
 import DriverLoads from "./pages/driver-app/DriverLoads";
@@ -100,6 +101,7 @@ const AppRoutes = () => {
       <Route path="/auth" element={user ? <Navigate to={getRedirectPath()} replace /> : <Auth />} />
       <Route path="/onboarding/:token" element={<DriverOnboarding />} />
       <Route path="/install" element={<Install />} />
+      <Route path="/landing" element={<Landing />} />
 
       {/* Driver mobile routes */}
       <Route path="/driver" element={<DriverRoute><DriverDashboard /></DriverRoute>} />
