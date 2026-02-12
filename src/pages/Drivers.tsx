@@ -48,6 +48,7 @@ const Drivers = () => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
+  const [dispatcherFilter, setDispatcherFilter] = useState<string>('all');
 
   const getTruckLabel = (id: string | null) => {
     if (!id) return null;
@@ -84,6 +85,10 @@ const Drivers = () => {
 
   const isDispatcher = role === 'dispatcher';
   let filtered = drivers;
+
+  if (dispatcherFilter && dispatcherFilter !== 'all') {
+    filtered = filtered.filter(d => d.dispatcher_id === dispatcherFilter);
+  }
 
   if (search) filtered = filtered.filter(d =>
     d.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -281,9 +286,24 @@ const Drivers = () => {
         )}
       </div>
 
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input placeholder="Search by name or email..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+      <div className="flex flex-wrap gap-2 items-center">
+        <div className="relative w-[260px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input placeholder="Search by name or email..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-8 text-xs" />
+        </div>
+        {!isDispatcher && (
+          <Select value={dispatcherFilter} onValueChange={v => { setDispatcherFilter(v); setPage(1); }}>
+            <SelectTrigger className="w-[180px] h-8 text-xs">
+              <SelectValue placeholder="All Dispatchers" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Dispatchers</SelectItem>
+              {dispatchers.map(d => (
+                <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       {loading ? (
