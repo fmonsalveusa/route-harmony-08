@@ -573,7 +573,6 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
             <Input type="number" placeholder="2500" value={formData.totalRate || ''} onChange={e => updateField('totalRate', Number(e.target.value))} />
           </div>
           <div className="space-y-2">
-            {(() => { console.log('[LoadForm] drivers:', drivers.length, 'trucks:', trucks.length, 'activeTrucks:', activeTrucks.length, 'dispatchers:', dispatchers.length, 'dispatcherId prop:', dispatcherId, 'selectedDriver:', selectedDriver, 'selectedTruck:', selectedTruck, 'selectedDispatcher:', selectedDispatcher); return null; })()}
             <Label>Driver <span className="text-destructive">*</span></Label>
             <Select value={selectedDriver} onValueChange={(val) => {
               setSelectedDriver(val);
