@@ -1,51 +1,66 @@
 
 
-# Agente de IA para la Landing Page (reemplazando el boton de WhatsApp)
+# Tarjetas de servicio con imagen + Modal informativo
 
 ## Resumen
 
-Se eliminara el boton flotante de WhatsApp y se reemplazara por un widget de chat con IA en la esquina inferior derecha. El agente respondera en espanol sobre los servicios de Load Up y guiara a los visitantes. El enlace de WhatsApp seguira disponible en el navbar, hero y footer.
+Se agregara una imagen representativa a cada tarjeta de servicio en la landing page. Al hacer clic en una tarjeta, se abrira un modal con informacion detallada del servicio (sin imagen), incluyendo descripcion extendida, beneficios, requisitos y un boton de accion.
 
-## Cambios
+## Cambios visibles para el usuario
 
-### 1. Crear Edge Function: `supabase/functions/landing-chat/index.ts`
-- Endpoint publico (sin JWT) que recibe mensajes del visitante
-- System prompt detallado con informacion de los 7 servicios de Load Up, contacto WhatsApp, y tono profesional en espanol
-- Usa Lovable AI Gateway con modelo `google/gemini-3-flash-preview`
-- Streaming SSE para respuestas en tiempo real
+- Cada tarjeta de servicio mostrara una imagen en la parte superior (antes del icono y titulo)
+- Las tarjetas seran clickeables con cursor pointer
+- Al hacer clic se abre un modal con:
+  - Icono y titulo del servicio
+  - Descripcion detallada y extensa
+  - Lista de beneficios con iconos de check
+  - Boton de accion: contactar por WhatsApp o registrarse
 
-### 2. Crear componente: `src/components/landing/AIChatWidget.tsx`
-- Boton flotante en esquina inferior derecha (posicion actual del WhatsApp)
-- Ventana de chat con:
-  - Header "Asistente Load Up"
-  - Mensajes con scroll
-  - Botones de opciones rapidas: "Dispatching", "Leasing", "Curso", "Permisos", "Otro"
-  - Input de texto libre
-  - Indicador de escritura durante streaming
-- Responsive en movil
+## Imagenes por servicio
 
-### 3. Actualizar: `src/pages/Landing.tsx`
-- Eliminar `<WhatsAppButton />`
-- Agregar `<AIChatWidget />`
+| Servicio | Imagen |
+|----------|--------|
+| Dispatching MC# propio | Captura del dashboard o imagen de dispatcher trabajando |
+| Leasing bajo MC# | Camion en carretera (se puede reusar `landing-hotshot.jpg` o `landing-boxtruck.jpg`) |
+| Curso de Dispatcher | Persona capacitandose / pantalla de formacion |
+| Tracking Up App | Mapa con tracking de camiones |
+| Asesoria Personal | Reunion de consultoria profesional |
+| Tramite de Permisos | Documentos DOT/MC# |
+| Load Up TMS | Captura real del Dashboard y pagina de Cargas de la app |
 
-### 4. Actualizar: `supabase/config.toml`
-- Agregar `[functions.landing-chat]` con `verify_jwt = false`
-
-### 5. Archivo `src/components/landing/WhatsAppButton.tsx`
-- Se deja sin usar (no se elimina el archivo, solo se quita de Landing.tsx)
-
-## System Prompt del agente
-
-Incluira:
-- Los 7 servicios: Dispatching MC propio, Leasing bajo MC de Load Up, Curso de Dispatcher, Tracking Up App, Asesoria Personal, Tramite de Permisos, Load Up TMS
-- WhatsApp: +1 (980) 766-8815
-- Instrucciones para guiar al registro o contacto por WhatsApp
-- No inventar precios ni datos no proporcionados
+Para Load Up TMS se tomaran capturas reales de la aplicacion. Para los demas servicios se generaran imagenes con IA o se reutilizaran las existentes (`landing-boxtruck.jpg`, `landing-hotshot.jpg`).
 
 ## Detalles tecnicos
 
-- Modelo: `google/gemini-3-flash-preview`
-- Sin dependencias nuevas
-- Sin persistencia de conversaciones (efimeras)
-- Manejo de errores 429/402 con mensajes amigables
+### Archivo a modificar: `src/components/landing/ServicesSection.tsx`
+
+1. **Ampliar el array `services`** con nuevos campos:
+   - `image`: ruta a la imagen (en `src/assets/services/`)
+   - `details`: descripcion larga para el modal
+   - `benefits`: array de strings con beneficios clave
+   - `cta`: objeto con `label` (texto del boton) y `href` (link a WhatsApp o seccion de registro)
+
+2. **Agregar estado** `selectedService` (indice o null) para controlar el modal
+
+3. **Modificar la tarjeta** para incluir:
+   - Imagen en la parte superior con `aspect-ratio` 16:9, bordes redondeados superiores
+   - `onClick` para abrir el modal
+   - `cursor-pointer` en el className
+
+4. **Agregar un Dialog** (reutilizando `src/components/ui/dialog.tsx`) que muestre:
+   - Icono y titulo
+   - Descripcion detallada
+   - Lista de beneficios con iconos Check de lucide-react
+   - Boton CTA (WhatsApp abre `https://wa.me/19807668815?text=...`, registro hace scroll a la seccion de onboarding)
+
+### Imagenes nuevas a crear: `src/assets/services/`
+
+- Se generaran 5-6 imagenes con IA usando el modelo `google/gemini-2.5-flash-image` desde una edge function temporal, o se agregaran directamente al proyecto
+- Para "Load Up TMS" se usara un screenshot real del Dashboard
+- Para "Leasing" se puede reusar `landing-boxtruck.jpg` ya existente
+- Formato JPG, tamano aproximado 800x450px
+
+### Sin dependencias nuevas
+- Se reutiliza Dialog de Radix UI y framer-motion existentes
+- Imagenes como imports estaticos de Vite
 
