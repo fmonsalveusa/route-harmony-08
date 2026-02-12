@@ -287,7 +287,7 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
       // Helper: calculate empty miles (deadhead) from previous load's last delivery
       const calculateEmptyMiles = async (L: any, map: any, resolved: ResolvedStop[], bounds: [number, number][]) => {
         // Skip if already cached
-        if (Number((load as any).empty_miles) > 0) {
+        if (Number((load as any).empty_miles) > 0 || (load as any).empty_miles_origin) {
           setEmptyMiles(Number((load as any).empty_miles));
           setEmptyMilesOrigin((load as any).empty_miles_origin || null);
           // Draw dashed line from empty_miles_origin to first pickup if we have coords
