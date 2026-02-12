@@ -138,13 +138,23 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
       }
 
       const rounded = Math.round(dist);
-      setEmptyMiles(rounded);
-      setEmptyMilesOrigin(trimmed);
 
-      await supabase.from('loads').update({
+      // Persist to database first
+      const { error: updateError } = await supabase.from('loads').update({
         empty_miles: rounded,
         empty_miles_origin: trimmed,
-      } as any).eq('id', load.id);
+      }).eq('id', load.id);
+
+      if (updateError) {
+        console.error('Error updating empty miles:', updateError);
+        toast({ title: 'Error', description: 'No se pudo guardar en la base de datos', variant: 'destructive' });
+        setRecalculating(false);
+        return;
+      }
+
+      // Update local state after successful DB save
+      setEmptyMiles(rounded);
+      setEmptyMilesOrigin(trimmed);
       onLoadDataUpdated?.();
 
       // Redraw map with new empty miles origin
