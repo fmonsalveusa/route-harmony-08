@@ -57,6 +57,22 @@ const statusColors: Record<string, string> = {
   in_transit: '#5ee14c',
 };
 
+const createTruckIcon = (heading?: number | null) => {
+  const rotation = heading != null ? heading : 0;
+  return new L.DivIcon({
+    html: `<div style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;">
+      <div style="width:28px;height:28px;border-radius:50%;background:hsl(217,91%,60%);border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;animation:pulse 2s infinite;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(${rotation}deg)">
+          <path d="M12 2L19 21L12 17L5 21Z"/>
+        </svg>
+      </div>
+    </div>`,
+    className: '',
+    iconSize: [32, 32],
+    iconAnchor: [16, 16],
+  });
+};
+
 const Tracking = () => {
   const { loads } = useLoads();
   const { drivers } = useDrivers();
@@ -71,6 +87,29 @@ const Tracking = () => {
   const [mapCenter, setMapCenter] = useState<[number, number]>([39.8283, -98.5795]);
   const [mapZoom, setMapZoom] = useState(4);
   const [lastDeliveryStops, setLastDeliveryStops] = useState<Record<string, { address: string; lat: number; lng: number; date: string }>>({});
+
+  // Driver live locations
+  const [driverLocations, setDriverLocations] = useState<Array<{
+    driver_id: string; lat: number; lng: number; speed: number | null; heading: number | null; updated_at: string;
+  }>>([]);
+
+  // Fetch driver locations + realtime
+  useEffect(() => {
+    const fetchLocations = async () => {
+      const { data } = await supabase.from('driver_locations').select('*');
+      if (data) setDriverLocations(data as any);
+    };
+    fetchLocations();
+
+    const channel = supabase
+      .channel('driver-locations-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'driver_locations' }, () => {
+        fetchLocations();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
   // Fetch all stops for active loads
   const activeStatuses = ['dispatched', 'in_transit'];
@@ -356,6 +395,30 @@ const Tracking = () => {
                       </Marker>
                     ))}
                   </div>
+                );
+              })}
+              {/* Driver live location markers */}
+              {driverLocations.map(loc => {
+                const driver = drivers.find(d => d.id === loc.driver_id);
+                if (!driver) return null;
+                return (
+                  <Marker
+                    key={`loc-${loc.driver_id}`}
+                    position={[loc.lat, loc.lng]}
+                    icon={createTruckIcon(loc.heading)}
+                  >
+                    <LeafletTooltip direction="top" offset={[0, -18]} permanent className="driver-name-tooltip">
+                      <span style={{ fontSize: '11px', fontWeight: 600 }}>{driver.name}</span>
+                    </LeafletTooltip>
+                    <Popup>
+                      <div className="text-xs">
+                        <strong>{driver.name}</strong>
+                        <br />📍 GPS Live
+                        {loc.speed != null && <><br />Speed: {(loc.speed * 2.237).toFixed(0)} mph</>}
+                        <br /><span className="text-muted-foreground">Updated: {new Date(loc.updated_at).toLocaleTimeString()}</span>
+                      </div>
+                    </Popup>
+                  </Marker>
                 );
               })}
             </MapContainer>
