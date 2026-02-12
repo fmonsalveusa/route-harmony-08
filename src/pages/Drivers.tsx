@@ -137,6 +137,7 @@ const Drivers = () => {
               <tr className="border-b bg-muted/50">
                 <th className="w-8 p-3"></th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Driver</th>
+                <th className="w-[70px] p-3"></th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Phone</th>
                 <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Truck</th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
@@ -166,11 +167,13 @@ const Drivers = () => {
                               { date: driver.license_expiry, label: 'License' },
                               { date: driver.medical_card_expiry, label: 'Medical' },
                             ]} />
-                            <Button variant="outline" size="sm" className="h-6 px-2 text-[11px] border-sky-400 bg-white text-sky-600 hover:bg-sky-50 hover:text-sky-700 gap-1 mt-0.5" onClick={(e) => { e.stopPropagation(); copyDriverInfo(driver); }} title="Copy">
-                              <Copy className="h-3 w-3" /> Copy
-                            </Button>
                           </div>
                         </div>
+                      </td>
+                      <td className="p-3" onClick={e => e.stopPropagation()}>
+                        <Button variant="outline" size="sm" className="h-6 px-2 text-[11px] border-sky-400 bg-white text-sky-600 hover:bg-sky-50 hover:text-sky-700 gap-1" onClick={() => copyDriverInfo(driver)} title="Copy">
+                          <Copy className="h-3 w-3" /> Copy
+                        </Button>
                       </td>
                       <td className="p-3 text-muted-foreground">
                         <div className="flex items-center gap-1.5">
@@ -217,7 +220,7 @@ const Drivers = () => {
                     </tr>
                     {isExpanded && (
                       <tr key={`${driver.id}-detail`}>
-                        <td colSpan={6} className="p-0">
+                        <td colSpan={7} className="p-0">
                           <DriverDetailPanel driver={driver} truckLabel={truckLabel} dispatcherName={dispatcher?.name || null} getDocSignedUrl={getDocSignedUrl} />
                         </td>
                       </tr>
