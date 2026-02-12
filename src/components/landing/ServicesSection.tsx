@@ -11,6 +11,7 @@ import imgTracking from "@/assets/services/tracking-app.jpg";
 import imgAsesoria from "@/assets/services/asesoria.jpg";
 import imgPermisos from "@/assets/services/permisos.jpg";
 import imgTms from "@/assets/services/tms-dashboard.jpg";
+import imgAuditoria from "@/assets/services/auditoria-fmcsa.jpg";
 
 interface Service {
   icon: LucideIcon;
@@ -128,6 +129,22 @@ const services: Service[] = [
       "App móvil para conductores con tracking integrado",
     ],
     cta: { label: "Registrarse ahora", href: "#onboarding" },
+  },
+  {
+    icon: FileCheck,
+    title: "Asistencia en Auditorías del FMCSA",
+    description: "Te acompañamos en todo el proceso de auditoría federal. Preparación, documentación y respuesta ante el FMCSA.",
+    image: imgAuditoria,
+    details: "Nuestro equipo de expertos en compliance te guía paso a paso durante las auditorías del FMCSA. Desde la preparación de documentos hasta la respuesta formal, nos aseguramos de que tu empresa cumpla con todos los requisitos federales y evite sanciones o multas.",
+    benefits: [
+      "New Entrance Audit: preparación completa para nuevos MC#",
+      "Revisión y organización de archivos de seguridad (driver files)",
+      "Preparación de políticas de drogas y alcohol (Drug & Alcohol Program)",
+      "Asistencia en auditorías de horas de servicio (HOS)",
+      "Respuesta y plan correctivo ante hallazgos del FMCSA",
+      "Asesoría continua para mantener un safety rating satisfactorio",
+    ],
+    cta: { label: "Contactar por WhatsApp", href: "https://wa.me/19807668815?text=Hola%2C%20me%20interesa%20la%20Asistencia%20en%20Auditor%C3%ADas%20del%20FMCSA" },
   },
 ];
 
