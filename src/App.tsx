@@ -36,6 +36,7 @@ import DriverLoadDetail from "./pages/driver-app/DriverLoadDetail";
 import DriverPayments from "./pages/driver-app/DriverPayments";
 import DriverProfile from "./pages/driver-app/DriverProfile";
 import DriverTracking from "./pages/driver-app/DriverTracking";
+import { DriverTrackingProvider } from "./contexts/DriverTrackingContext";
 
 const queryClient = new QueryClient();
 
@@ -75,7 +76,11 @@ const DriverRoute = ({ children }: { children: React.ReactNode }) => {
 
   if (!user) return <Navigate to="/auth" replace />;
 
-  return <DriverMobileLayout>{children}</DriverMobileLayout>;
+  return (
+    <DriverTrackingProvider>
+      <DriverMobileLayout>{children}</DriverMobileLayout>
+    </DriverTrackingProvider>
+  );
 };
 
 const AppRoutes = () => {
