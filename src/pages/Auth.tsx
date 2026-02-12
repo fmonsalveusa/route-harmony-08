@@ -112,75 +112,31 @@ const Auth = () => {
                 <CardDescription>Sign in to your account or register</CardDescription>
               </CardHeader>
               <CardContent>
-                <Tabs defaultValue="login">
-                  <TabsList className="grid w-full grid-cols-2 mb-4">
-                    <TabsTrigger value="login">Sign In</TabsTrigger>
-                    <TabsTrigger value="register">Register</TabsTrigger>
-                  </TabsList>
-
-                  <TabsContent value="login">
-                    <form onSubmit={handleSignIn} className="space-y-4">
-                      {error && (
-                        <div className="flex items-center gap-2 p-3 rounded-md bg-destructive/10 text-destructive text-sm">
-                          <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                          {error}
-                        </div>
-                      )}
-                      <div className="space-y-2">
-                        <Label htmlFor="login-email">Email</Label>
-                        <div className="relative">
-                          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                          <Input id="login-email" type="email" placeholder="you@email.com" value={email} onChange={e => setEmail(e.target.value)} className="pl-10" required />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="login-password">Password</Label>
-                        <div className="relative">
-                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                          <Input id="login-password" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} className="pl-10" required />
-                        </div>
-                      </div>
-                      <Button type="submit" className="w-full" disabled={isLoading}>
-                        {isLoading ? 'Signing in...' : 'Sign In'}
-                      </Button>
-                    </form>
-                  </TabsContent>
-
-                  <TabsContent value="register">
-                    <form onSubmit={handleSignUp} className="space-y-4">
-                      {error && (
-                        <div className="flex items-center gap-2 p-3 rounded-md bg-destructive/10 text-destructive text-sm">
-                          <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                          {error}
-                        </div>
-                      )}
-                      <div className="space-y-2">
-                        <Label htmlFor="reg-name">Full Name</Label>
-                        <div className="relative">
-                          <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                          <Input id="reg-name" placeholder="Your name" value={fullName} onChange={e => setFullName(e.target.value)} className="pl-10" required />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="reg-email">Email</Label>
-                        <div className="relative">
-                          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                          <Input id="reg-email" type="email" placeholder="you@email.com" value={email} onChange={e => setEmail(e.target.value)} className="pl-10" required />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="reg-password">Password</Label>
-                        <div className="relative">
-                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                          <Input id="reg-password" type="password" placeholder="At least 6 characters" value={password} onChange={e => setPassword(e.target.value)} className="pl-10" required minLength={6} />
-                        </div>
-                      </div>
-                      <Button type="submit" className="w-full" disabled={isLoading}>
-                        {isLoading ? 'Registering...' : 'Create Account'}
-                      </Button>
-                    </form>
-                  </TabsContent>
-                </Tabs>
+                <form onSubmit={handleSignIn} className="space-y-4">
+                  {error && (
+                    <div className="flex items-center gap-2 p-3 rounded-md bg-destructive/10 text-destructive text-sm">
+                      <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                      {error}
+                    </div>
+                  )}
+                  <div className="space-y-2">
+                    <Label htmlFor="login-email">Email</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input id="login-email" type="email" placeholder="you@email.com" value={email} onChange={e => setEmail(e.target.value)} className="pl-10" required />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="login-password">Password</Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input id="login-password" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} className="pl-10" required />
+                    </div>
+                  </div>
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading ? 'Signing in...' : 'Sign In'}
+                  </Button>
+                </form>
               </CardContent>
             </Card>
           )}
