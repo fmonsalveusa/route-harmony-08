@@ -551,7 +551,7 @@ const Loads = () => {
         open={showForm}
         onOpenChange={(open) => { setShowForm(open); if (!open) { setEditLoad(null); setDetailKey(k => k + 1); fetchLoads(); } }}
         editLoad={editLoad}
-        dispatcherId={(user as any)?.dispatcher_id || 'd1'}
+        dispatcherId={(user as any)?.dispatcher_id || undefined}
         onSubmit={async (input) => {
           if (editLoad) {
             await updateLoad(editLoad.id, input);
