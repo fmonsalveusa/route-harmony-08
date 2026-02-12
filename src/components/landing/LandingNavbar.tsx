@@ -17,7 +17,7 @@ export function LandingNavbar() {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-[hsl(214,52%,15%)]/95 backdrop-blur-md border-b border-white/10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
-        <a href="#" className="flex items-center gap-2">
+        <a href="/" className="flex items-center gap-2">
           <img src={logo} alt="Load Up TMS" className="h-8 w-auto" />
           <span className="text-white font-bold text-lg tracking-tight">Load Up</span>
         </a>
@@ -35,6 +35,12 @@ export function LandingNavbar() {
             className="bg-accent text-accent-foreground px-4 py-2 rounded-md text-sm font-semibold hover:brightness-110 transition"
           >
             WhatsApp
+          </a>
+          <a
+            href="/auth"
+            className="border border-white/30 text-white px-4 py-2 rounded-md text-sm font-semibold hover:bg-white/10 transition"
+          >
+            Iniciar Sesión
           </a>
         </div>
 

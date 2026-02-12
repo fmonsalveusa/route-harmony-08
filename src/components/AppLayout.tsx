@@ -24,7 +24,7 @@ interface NavItem {
 }
 
 const tenantNavItems: NavItem[] = [
-  { label: 'Dashboard', icon: LayoutDashboard, path: '/', permission: 'dashboard' },
+  { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', permission: 'dashboard' },
   { label: 'Loads', icon: Package, path: '/loads', permission: 'loads' },
   { label: 'Tracking', icon: MapPin, path: '/tracking', permission: 'tracking' },
   { label: 'Fleet', icon: Truck, path: '/fleet', permission: 'fleet' },

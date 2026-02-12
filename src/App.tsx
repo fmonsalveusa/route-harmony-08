@@ -93,7 +93,7 @@ const AppRoutes = () => {
   const getRedirectPath = () => {
     if (isMasterAdmin) return '/master';
     if (role === 'driver') return '/driver';
-    return '/';
+    return '/dashboard';
   };
 
   return (
@@ -101,7 +101,7 @@ const AppRoutes = () => {
       <Route path="/auth" element={user ? <Navigate to={getRedirectPath()} replace /> : <Auth />} />
       <Route path="/onboarding/:token" element={<DriverOnboarding />} />
       <Route path="/install" element={<Install />} />
-      <Route path="/landing" element={<Landing />} />
+      <Route path="/" element={user ? <Navigate to={getRedirectPath()} replace /> : <Landing />} />
 
       {/* Driver mobile routes */}
       <Route path="/driver" element={<DriverRoute><DriverDashboard /></DriverRoute>} />
@@ -112,7 +112,7 @@ const AppRoutes = () => {
       <Route path="/driver/tracking" element={<DriverRoute><DriverTracking /></DriverRoute>} />
 
       {/* Tenant routes */}
-      <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/loads" element={<ProtectedRoute><Loads /></ProtectedRoute>} />
       <Route path="/fleet" element={<ProtectedRoute><Fleet /></ProtectedRoute>} />
       <Route path="/drivers" element={<ProtectedRoute><Drivers /></ProtectedRoute>} />
