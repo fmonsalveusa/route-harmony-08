@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { formatDate } from '@/lib/dateUtils';
 import { MapPin, Calendar, Weight, DollarSign, User, Truck, Route, Navigation, FileText, Download, ExternalLink, Pencil, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -94,8 +95,16 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
   const [editingEmptyOrigin, setEditingEmptyOrigin] = useState(false);
   const [customOriginInput, setCustomOriginInput] = useState('');
   const [recalculating, setRecalculating] = useState(false);
+  const queryClient = useQueryClient();
   const { toast } = useToast();
   const { stops: dbStops, loading: stopsLoading, updateStopGeodata } = useLoadStops(load.id);
+
+  // Sync local state when load prop changes (after refetch)
+  useEffect(() => {
+    setEmptyMiles(Number((load as any).empty_miles) || 0);
+    setEmptyMilesOrigin((load as any).empty_miles_origin || null);
+    setTotalMiles(Number(load.miles) || 0);
+  }, [load.id, (load as any).empty_miles, (load as any).empty_miles_origin, load.miles]);
 
   const { drivers } = useDrivers();
   const { dispatchers } = useDispatchers();
@@ -155,6 +164,8 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
       // Update local state after successful DB save
       setEmptyMiles(rounded);
       setEmptyMilesOrigin(trimmed);
+      // Invalidate React Query cache so parent gets fresh data
+      await queryClient.invalidateQueries({ queryKey: ['loads'] });
       onLoadDataUpdated?.();
 
       // Redraw map with new empty miles origin
