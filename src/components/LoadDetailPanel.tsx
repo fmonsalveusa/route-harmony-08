@@ -149,14 +149,24 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
       const rounded = Math.round(dist);
 
       // Persist to database first
-      const { error: updateError } = await supabase.from('loads').update({
+      console.log('Updating empty miles in DB:', { id: load.id, empty_miles: rounded, empty_miles_origin: trimmed });
+      const { error: updateError, data: updateData, count } = await supabase.from('loads').update({
         empty_miles: rounded,
         empty_miles_origin: trimmed,
-      }).eq('id', load.id);
+      }).eq('id', load.id).select();
+
+      console.log('Update result:', { error: updateError, data: updateData, count });
 
       if (updateError) {
         console.error('Error updating empty miles:', updateError);
         toast({ title: 'Error', description: 'No se pudo guardar en la base de datos', variant: 'destructive' });
+        setRecalculating(false);
+        return;
+      }
+
+      if (!updateData || updateData.length === 0) {
+        console.error('No rows updated - possible RLS issue');
+        toast({ title: 'Error', description: 'No se pudo actualizar la carga (permisos)', variant: 'destructive' });
         setRecalculating(false);
         return;
       }
