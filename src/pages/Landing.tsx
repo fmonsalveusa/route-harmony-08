@@ -5,7 +5,7 @@ import { HowItWorks } from "@/components/landing/HowItWorks";
 import { OnboardingSection } from "@/components/landing/OnboardingSection";
 import { VehicleGallery } from "@/components/landing/VehicleGallery";
 import { LandingFooter } from "@/components/landing/LandingFooter";
-import { WhatsAppButton } from "@/components/landing/WhatsAppButton";
+import { AIChatWidget } from "@/components/landing/AIChatWidget";
 
 export default function Landing() {
   return (
@@ -17,7 +17,7 @@ export default function Landing() {
       <VehicleGallery />
       <OnboardingSection />
       <LandingFooter />
-      <WhatsAppButton />
+      <AIChatWidget />
     </div>
   );
 }
