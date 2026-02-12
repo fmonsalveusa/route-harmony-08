@@ -143,7 +143,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
           {isMasterAdmin && (
             <div className={`mt-4 pt-3 border-t ${sidebarBorder}`}>
               <Link
-                to={isMasterRoute ? '/' : '/master'}
+                to={isMasterRoute ? '/dashboard' : '/master'}
                 onClick={() => setMobileOpen(false)}
                 className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
               >
