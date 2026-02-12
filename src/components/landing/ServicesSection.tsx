@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Radio, Key, GraduationCap, MapPin, Users, FileCheck } from "lucide-react";
+import { Radio, Key, GraduationCap, MapPin, Users, FileCheck, LayoutDashboard } from "lucide-react";
 
 const services = [
   {
@@ -31,6 +31,11 @@ const services = [
     icon: FileCheck,
     title: "Trámite de Permisos (DOT, MC#)",
     description: "Gestión completa de permisos y licencias federales. DOT, MC#, IFTA y más. Sin estrés.",
+  },
+  {
+    icon: LayoutDashboard,
+    title: "Load Up TMS",
+    description: "Software de gestión de transporte completo. Control de cargas, pagos, conductores, flota y reportes en una sola plataforma.",
   },
 ];
 
