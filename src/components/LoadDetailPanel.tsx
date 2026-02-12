@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { formatDate } from '@/lib/dateUtils';
-import { MapPin, Calendar, Weight, DollarSign, User, Truck, Route, Navigation, FileText, Download, ExternalLink } from 'lucide-react';
+import { MapPin, Calendar, Weight, DollarSign, User, Truck, Route, Navigation, FileText, Download, ExternalLink, Pencil, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useDispatchers } from '@/hooks/useDispatchers';
@@ -9,6 +9,9 @@ import type { DbLoad } from '@/hooks/useLoads';
 import { useLoadStops } from '@/hooks/useLoadStops';
 import { supabase } from '@/integrations/supabase/client';
 import { PodUploadSection } from '@/components/PodUploadSection';
+import { Input } from '@/components/ui/input';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { useToast } from '@/hooks/use-toast';
 import 'leaflet/dist/leaflet.css';
 
 // Geocoding with progressive fallback: full address → without suite → city+state+zip
@@ -88,6 +91,10 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
   const [totalMiles, setTotalMiles] = useState<number>(Number(load.miles) || 0);
   const [emptyMiles, setEmptyMiles] = useState<number>(Number((load as any).empty_miles) || 0);
   const [emptyMilesOrigin, setEmptyMilesOrigin] = useState<string | null>((load as any).empty_miles_origin || null);
+  const [editingEmptyOrigin, setEditingEmptyOrigin] = useState(false);
+  const [customOriginInput, setCustomOriginInput] = useState('');
+  const [recalculating, setRecalculating] = useState(false);
+  const { toast } = useToast();
   const { stops: dbStops, loading: stopsLoading, updateStopGeodata } = useLoadStops(load.id);
 
   const { drivers } = useDrivers();
@@ -102,6 +109,82 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
   const rpmColorClass = rpm <= 0 ? 'text-muted-foreground' : isHotshot
     ? (rpm >= 1.90 ? 'text-green-600' : rpm >= 1.60 ? 'text-amber-500' : 'text-red-600')
     : (rpm >= 1.70 ? 'text-green-600' : rpm >= 1.40 ? 'text-amber-500' : 'text-red-600');
+
+  const handleRecalculateEmptyMiles = async () => {
+    const trimmed = customOriginInput.trim();
+    if (!trimmed) return;
+
+    setRecalculating(true);
+    try {
+      const newCoords = await geocode(trimmed);
+      if (!newCoords) {
+        toast({ title: 'Error', description: 'No se pudo geocodificar la dirección ingresada', variant: 'destructive' });
+        setRecalculating(false);
+        return;
+      }
+
+      const firstPickup = resolvedStops.find(s => s.type === 'pickup' && s.coords);
+      if (!firstPickup?.coords) {
+        toast({ title: 'Error', description: 'No se encontró el primer pickup con coordenadas', variant: 'destructive' });
+        setRecalculating(false);
+        return;
+      }
+
+      const dist = await drivingDistance(newCoords[0], newCoords[1], firstPickup.coords[0], firstPickup.coords[1]);
+      if (dist === null) {
+        toast({ title: 'Error', description: 'No se pudo calcular la distancia', variant: 'destructive' });
+        setRecalculating(false);
+        return;
+      }
+
+      const rounded = Math.round(dist);
+      setEmptyMiles(rounded);
+      setEmptyMilesOrigin(trimmed);
+
+      await supabase.from('loads').update({
+        empty_miles: rounded,
+        empty_miles_origin: trimmed,
+      } as any).eq('id', load.id);
+      onLoadDataUpdated?.();
+
+      // Redraw map with new empty miles origin
+      if (mapInstanceRef.current) {
+        const L = (await import('leaflet')).default;
+        const map = mapInstanceRef.current;
+
+        // Remove existing empty miles layers and redraw
+        map.eachLayer((layer: any) => {
+          if (layer._popup?.getContent()?.includes?.('Empty Miles Origin')) {
+            map.removeLayer(layer);
+          }
+          if (layer.options?.color === 'hsl(38,92%,50%)') {
+            map.removeLayer(layer);
+          }
+        });
+
+        const deadheadIcon = L.divIcon({
+          html: '<div style="background:hsl(38,92%,50%);color:white;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:10px;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,.3)">E</div>',
+          className: '', iconSize: [24, 24], iconAnchor: [12, 12],
+        });
+        L.marker(newCoords, { icon: deadheadIcon }).addTo(map).bindPopup(`<b>Empty Miles Origin</b><br/>${trimmed}`);
+
+        const deadheadRoute = await drivingRoute([newCoords, firstPickup.coords]);
+        if (deadheadRoute) {
+          L.polyline(deadheadRoute, { color: 'hsl(38,92%,50%)', weight: 3, dashArray: '8 6', opacity: 0.8 }).addTo(map);
+        } else {
+          L.polyline([newCoords, firstPickup.coords], { color: 'hsl(38,92%,50%)', weight: 3, dashArray: '8 6', opacity: 0.8 }).addTo(map);
+        }
+      }
+
+      setEditingEmptyOrigin(false);
+      toast({ title: 'Empty miles actualizadas', description: `${rounded} mi desde ${trimmed}` });
+    } catch (e) {
+      console.error('Error recalculating empty miles:', e);
+      toast({ title: 'Error', description: 'Error inesperado al recalcular', variant: 'destructive' });
+    } finally {
+      setRecalculating(false);
+    }
+  };
 
   const resolveDriverDocsUrl = async (url: string): Promise<string> => {
     if (!url) return '';
@@ -471,9 +554,43 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
             </div>
             <div className="flex items-center gap-2">
               <Route className="h-3.5 w-3.5 text-amber-500" />
-              <div>
-                <span className="text-muted-foreground">Empty Miles:</span>{' '}
-                <span className="font-bold text-amber-500">{emptyMiles > 0 ? emptyMiles.toLocaleString() : '—'}</span>
+              <div className="flex-1">
+                <div className="flex items-center gap-1">
+                  <span className="text-muted-foreground">Empty Miles:</span>{' '}
+                  <span className="font-bold text-amber-500">{emptyMiles > 0 ? emptyMiles.toLocaleString() : '—'}</span>
+                  <Popover open={editingEmptyOrigin} onOpenChange={(open) => {
+                    setEditingEmptyOrigin(open);
+                    if (open) setCustomOriginInput(emptyMilesOrigin || '');
+                  }}>
+                    <PopoverTrigger asChild>
+                      <button className="p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground" title="Editar origen de millas vacías">
+                        <Pencil className="h-3 w-3" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80" align="start">
+                      <div className="space-y-2">
+                        <p className="text-xs font-medium">Nuevo origen de millas vacías</p>
+                        <Input
+                          placeholder="Ej: Dallas, TX 75001"
+                          value={customOriginInput}
+                          onChange={(e) => setCustomOriginInput(e.target.value)}
+                          className="text-xs h-8"
+                          disabled={recalculating}
+                          onKeyDown={(e) => { if (e.key === 'Enter') void handleRecalculateEmptyMiles(); }}
+                        />
+                        <div className="flex gap-2 justify-end">
+                          <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setEditingEmptyOrigin(false)} disabled={recalculating}>
+                            Cancelar
+                          </Button>
+                          <Button size="sm" className="h-7 text-xs gap-1" onClick={() => void handleRecalculateEmptyMiles()} disabled={recalculating || !customOriginInput.trim()}>
+                            {recalculating && <Loader2 className="h-3 w-3 animate-spin" />}
+                            Recalcular
+                          </Button>
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
                 {emptyMilesOrigin && <div className="text-[10px] text-muted-foreground truncate max-w-[180px]">desde {emptyMilesOrigin}</div>}
               </div>
             </div>
