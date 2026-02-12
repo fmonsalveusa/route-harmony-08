@@ -170,7 +170,7 @@ const Drivers = () => {
                           </div>
                         </div>
                       </td>
-                      <td className="p-3" onClick={e => e.stopPropagation()}>
+                      <td className="p-3 pl-0" onClick={e => e.stopPropagation()}>
                         <Button variant="outline" size="sm" className="h-6 px-2 text-[11px] border-sky-400 bg-white text-sky-600 hover:bg-sky-50 hover:text-sky-700 gap-1" onClick={() => copyDriverInfo(driver)} title="Copy">
                           <Copy className="h-3 w-3" /> Copy
                         </Button>
