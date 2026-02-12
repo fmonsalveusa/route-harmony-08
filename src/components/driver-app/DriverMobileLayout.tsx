@@ -1,7 +1,8 @@
 import { ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Package, DollarSign, User, LogOut, MapPin, Bell, CheckCheck } from 'lucide-react';
+import { LayoutDashboard, Package, DollarSign, User, LogOut, MapPin, Bell, CheckCheck, Navigation } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useDriverTracking } from '@/contexts/DriverTrackingContext';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useState, useRef, useEffect } from 'react';
 import { formatDistanceToNow } from 'date-fns';
@@ -27,6 +28,7 @@ export const DriverMobileLayout = ({ children }: { children: ReactNode }) => {
   const navigate = useNavigate();
   const { signOut, profile } = useAuth();
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+  const { tracking } = useDriverTracking();
   const [bellOpen, setBellOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -53,7 +55,13 @@ export const DriverMobileLayout = ({ children }: { children: ReactNode }) => {
           <span className="text-sm font-bold text-foreground">Load Up Driver</span>
         </div>
         <div className="flex items-center gap-2">
-          {/* Notification Bell */}
+          {/* GPS Tracking Indicator */}
+          {tracking && (
+            <Link to="/driver/tracking" className="flex items-center gap-1 px-2 py-1 rounded-full bg-success/15 text-success text-[10px] font-semibold animate-pulse">
+              <Navigation className="h-3 w-3" />
+              GPS
+            </Link>
+          )}
           <div className="relative" ref={panelRef}>
             <button onClick={() => setBellOpen(!bellOpen)} className="relative p-2 rounded-md text-muted-foreground hover:bg-muted">
               <Bell className="h-5 w-5" />
