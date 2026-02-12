@@ -73,7 +73,9 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
     { stop_type: 'delivery', address: '', date: '' },
   ]);
 
+  // Initialize form when dialog opens or editLoad changes (NOT when existingStops changes)
   useEffect(() => {
+    if (!open) return;
     if (editLoad) {
       setFormData({
         origin: editLoad.origin,
@@ -94,20 +96,6 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       setPdfPreviewUrl(editLoad.pdf_url || null);
       setUploadedPdfPath(null);
       setUploadedPdfSignedUrl(editLoad.pdf_url || null);
-
-      // Load existing stops
-      if (existingStops.length > 0) {
-        setStopEntries(existingStops.map(s => ({
-          stop_type: s.stop_type as 'pickup' | 'delivery',
-          address: s.address,
-          date: s.date || '',
-        })));
-      } else {
-        setStopEntries([
-          { stop_type: 'pickup', address: editLoad.origin, date: editLoad.pickup_date || '' },
-          { stop_type: 'delivery', address: editLoad.destination, date: editLoad.delivery_date || '' },
-        ]);
-      }
     } else {
       setFormData(emptyForm);
       setSelectedDriver('');
@@ -125,7 +113,24 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
         { stop_type: 'delivery', address: '', date: '' },
       ]);
     }
-  }, [editLoad, open, existingStops]);
+  }, [editLoad?.id, open]);
+
+  // Sync stop entries separately when existingStops load
+  useEffect(() => {
+    if (!open || !editLoad) return;
+    if (existingStops.length > 0) {
+      setStopEntries(existingStops.map(s => ({
+        stop_type: s.stop_type as 'pickup' | 'delivery',
+        address: s.address,
+        date: s.date || '',
+      })));
+    } else {
+      setStopEntries([
+        { stop_type: 'pickup', address: editLoad.origin, date: editLoad.pickup_date || '' },
+        { stop_type: 'delivery', address: editLoad.destination, date: editLoad.delivery_date || '' },
+      ]);
+    }
+  }, [existingStops, open, editLoad?.id]);
 
   useEffect(() => {
     return () => {
