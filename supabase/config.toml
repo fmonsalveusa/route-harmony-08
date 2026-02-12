@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.create-onboarding-token]
 verify_jwt = false
+
+[functions.landing-chat]
+verify_jwt = false
