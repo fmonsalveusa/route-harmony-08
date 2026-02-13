@@ -79,6 +79,64 @@ export type Database = {
           },
         ]
       }
+      dispatcher_payment_items: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          load_id: string
+          load_reference: string
+          payment_id: string
+          percentage_applied: number
+          tenant_id: string | null
+          total_rate: number
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          id?: string
+          load_id: string
+          load_reference: string
+          payment_id: string
+          percentage_applied?: number
+          tenant_id?: string | null
+          total_rate?: number
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          load_id?: string
+          load_reference?: string
+          payment_id?: string
+          percentage_applied?: number
+          tenant_id?: string | null
+          total_rate?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dispatcher_payment_items_load_id_fkey"
+            columns: ["load_id"]
+            isOneToOne: false
+            referencedRelation: "loads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dispatcher_payment_items_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dispatcher_payment_items_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dispatchers: {
         Row: {
           commission_percentage: number
