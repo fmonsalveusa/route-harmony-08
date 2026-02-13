@@ -114,7 +114,7 @@ const PaymentsSection = ({ type, refreshKey }: PaymentsSectionProps) => {
 
   useEffect(() => { fetchLoadDates(); }, [fetchLoadDates]);
   useEffect(() => { setSelectedIds(new Set()); }, [statusFilter, beneficiaryFilter, weekFilter, monthFilter, yearFilter, dateFrom, dateTo]);
-  useEffect(() => { if (refreshKey) refetch(); }, [refreshKey]);
+  useEffect(() => { if (refreshKey && refreshKey > 0) refetch(); }, [refreshKey, refetch]);
 
   const allTypePayments = allPayments.filter(p => p.recipient_type === type);
 
@@ -576,15 +576,15 @@ const Payments = () => {
           <TabsTrigger value="investors">Investors <span className={`ml-1.5 inline-flex items-center justify-center rounded-full text-[11px] font-semibold min-w-[20px] h-5 px-1.5 ${pendingInvestors > 0 ? 'bg-destructive text-destructive-foreground' : 'bg-primary text-primary-foreground'}`}>{pendingInvestors > 0 ? pendingInvestors : totalInvestors}</span></TabsTrigger>
           <TabsTrigger value="dispatchers">Dispatchers <span className={`ml-1.5 inline-flex items-center justify-center rounded-full text-[11px] font-semibold min-w-[20px] h-5 px-1.5 ${pendingDispatchers > 0 ? 'bg-destructive text-destructive-foreground' : 'bg-primary text-primary-foreground'}`}>{pendingDispatchers > 0 ? pendingDispatchers : totalDispatchers}</span></TabsTrigger>
         </TabsList>
-        <TabsContent value="drivers"><PaymentsSection type="driver" refreshKey={refreshKey} /></TabsContent>
-        <TabsContent value="investors"><PaymentsSection type="investor" refreshKey={refreshKey} /></TabsContent>
+        <TabsContent value="drivers"><PaymentsSection key={`driver-${refreshKey}`} type="driver" refreshKey={refreshKey} /></TabsContent>
+        <TabsContent value="investors"><PaymentsSection key={`investor-${refreshKey}`} type="investor" refreshKey={refreshKey} /></TabsContent>
         <TabsContent value="dispatchers">
           <div className="mb-4">
             <Button size="sm" className="gap-1.5" onClick={() => setManualDialogOpen(true)}>
               <PlusCircle className="h-4 w-4" /> Generate Manual Payment
             </Button>
           </div>
-          <PaymentsSection type="dispatcher" refreshKey={refreshKey} />
+          <PaymentsSection key={`dispatcher-${refreshKey}`} type="dispatcher" refreshKey={refreshKey} />
         </TabsContent>
       </Tabs>
 
