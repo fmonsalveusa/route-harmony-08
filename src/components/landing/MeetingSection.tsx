@@ -27,14 +27,21 @@ const SERVICE_OPTIONS = [
 
 const TRUCK_TYPES = ["Box Truck", "Hotshot", "Dry Van", "Flatbed", "Reefer"];
 
-const TIME_SLOTS = Array.from({ length: 21 }, (_, i) => {
-  const totalMinutes = 8 * 60 + i * 30;
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-  const period = hours >= 12 ? "PM" : "AM";
-  const displayHour = hours > 12 ? hours - 12 : hours;
-  return `${displayHour}:${String(minutes).padStart(2, "0")} ${period}`;
-});
+function getTimeSlots(selectedDate: Date | undefined) {
+  if (!selectedDate) return [];
+  const day = selectedDate.getDay(); // 0=Sun, 6=Sat
+  const startHour = day === 6 ? 9 : 10;
+  const endHour = day === 6 ? 12 : 17;
+  const slots: string[] = [];
+  for (let h = startHour; h < endHour; h++) {
+    for (const m of [0, 30]) {
+      const period = h >= 12 ? "PM" : "AM";
+      const displayHour = h > 12 ? h - 12 : h;
+      slots.push(`${displayHour}:${String(m).padStart(2, "0")} ${period}`);
+    }
+  }
+  return slots;
+}
 
 export function MeetingSection() {
   const [loading, setLoading] = useState(false);
@@ -189,8 +196,12 @@ export function MeetingSection() {
                       <Calendar
                         mode="single"
                         selected={date}
-                        onSelect={setDate}
-                        disabled={(d) => d < new Date()}
+                        onSelect={(d) => { setDate(d); setForm(f => ({ ...f, meeting_time: "" })); }}
+                        disabled={(d) => {
+                          const today = new Date();
+                          today.setHours(0, 0, 0, 0);
+                          return d < today || d.getDay() === 0;
+                        }}
                         initialFocus
                         className="p-3 pointer-events-auto"
                       />
@@ -204,8 +215,8 @@ export function MeetingSection() {
                       <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
                       <SelectValue placeholder="Hora" />
                     </SelectTrigger>
-                    <SelectContent className="max-h-[200px]">
-                      {TIME_SLOTS.map((t) => (
+                     <SelectContent className="max-h-[200px]">
+                      {getTimeSlots(date).map((t) => (
                         <SelectItem key={t} value={t}>{t}</SelectItem>
                       ))}
                     </SelectContent>
