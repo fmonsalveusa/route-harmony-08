@@ -218,7 +218,23 @@ export const ManualDispatcherPaymentDialog = ({ open, onOpenChange, onComplete }
 
     const totalAmount = lineItems.reduce((s, i) => s + i.amount, 0);
     const totalRate = lineItems.reduce((s, i) => s + Number(i.load.total_rate), 0);
-    const references = lineItems.map(i => i.load.reference_number).join(', ');
+
+    // Generate consecutive INVD number
+    const { data: lastPayment } = await supabase
+      .from('payments')
+      .select('load_reference')
+      .eq('recipient_type', 'dispatcher')
+      .like('load_reference', 'INVD-%')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    let nextNum = 1;
+    if (lastPayment?.load_reference) {
+      const match = (lastPayment.load_reference as string).match(/^INVD-(\d+)/);
+      if (match) nextNum = parseInt(match[1], 10) + 1;
+    }
+    const invdNumber = `INVD-${String(nextNum).padStart(4, '0')}`;
 
     // Insert ONE single consolidated payment using first load_id for FK constraint
     const { data: paymentData, error } = await supabase.from('payments').insert({
@@ -226,7 +242,7 @@ export const ManualDispatcherPaymentDialog = ({ open, onOpenChange, onComplete }
       recipient_type: 'dispatcher',
       recipient_id: dispatcher.id,
       recipient_name: dispatcher.name,
-      load_reference: references,
+      load_reference: invdNumber,
       amount: Math.round(totalAmount * 100) / 100,
       percentage_applied: lineItems[0].pct,
       total_rate: Math.round(totalRate * 100) / 100,
