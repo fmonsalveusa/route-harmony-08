@@ -329,8 +329,8 @@ const Loads = () => {
               <thead><tr className="border-b bg-muted/50">
                 <th className="w-8 p-3"></th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Load #</th>
-                <th className="text-left p-3 font-medium text-muted-foreground">Broker</th>
                 <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Driver/Truck</th>
+                <th className="text-left p-3 font-medium text-muted-foreground">Broker</th>
                 <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Origin</th>
                 <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Destination</th>
                 <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Pickup</th>
@@ -361,11 +361,11 @@ const Loads = () => {
                           {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                         </td>
                         <td className="p-3 font-medium text-primary">{load.reference_number}</td>
-                        <td className="p-3 text-foreground">{load.broker_client || '—'}</td>
                         <td className="p-3 hidden md:table-cell">
                           <div className="text-sm font-bold text-foreground">{driver?.name || <span className="text-muted-foreground italic font-normal">Sin asignar</span>}</div>
                           <div className="text-muted-foreground text-xs">{trucks.find(t => t.id === load.truck_id)?.unit_number ? `Unit #${trucks.find(t => t.id === load.truck_id)!.unit_number}` : '—'}</div>
                         </td>
+                        <td className="p-3 text-foreground">{load.broker_client || '—'}</td>
                         <td className="p-3 hidden md:table-cell">
                           {(() => { const { city, state } = extractCityState(load.origin); return (
                             <div className="flex items-center gap-1.5">
