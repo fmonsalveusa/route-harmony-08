@@ -443,7 +443,7 @@ const PaymentsSection = ({ type, refreshKey }: PaymentsSectionProps) => {
                 </th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Reference</th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Beneficiary</th>
-                <th className="text-left p-3 font-medium text-muted-foreground">Date</th>
+                <th className="text-left p-3 font-medium text-muted-foreground">{type === 'dispatcher' ? 'Date' : 'Delivered Date'}</th>
                 <th className="text-right p-3 font-medium text-muted-foreground">Rate</th>
                 <th className="text-right p-3 font-medium text-muted-foreground">%</th>
                 <th className="text-right p-3 font-medium text-muted-foreground">Base Amount</th>
