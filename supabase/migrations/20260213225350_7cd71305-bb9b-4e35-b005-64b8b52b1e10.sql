@@ -1,0 +1,1 @@
+ALTER TABLE public.loads ADD COLUMN service_type text;

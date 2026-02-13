@@ -618,6 +618,7 @@ export type Database = {
           pickup_date: string | null
           reference_number: string
           route_geometry: Json | null
+          service_type: string | null
           status: string
           tenant_id: string | null
           total_rate: number
@@ -648,6 +649,7 @@ export type Database = {
           pickup_date?: string | null
           reference_number: string
           route_geometry?: Json | null
+          service_type?: string | null
           status?: string
           tenant_id?: string | null
           total_rate?: number
@@ -678,6 +680,7 @@ export type Database = {
           pickup_date?: string | null
           reference_number?: string
           route_geometry?: Json | null
+          service_type?: string | null
           status?: string
           tenant_id?: string | null
           total_rate?: number

@@ -61,6 +61,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
   const [selectedTruck, setSelectedTruck] = useState('');
   const [selectedDispatcher, setSelectedDispatcher] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('planned');
+  const [selectedServiceType, setSelectedServiceType] = useState('');
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractionStatus, setExtractionStatus] = useState<'idle' | 'uploading' | 'processing' | 'done' | 'error'>('idle');
   const [pdfFileName, setPdfFileName] = useState('');
@@ -93,6 +94,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       setSelectedTruck(editLoad.truck_id || '');
       setSelectedDispatcher(editLoad.dispatcher_id || '');
       setSelectedStatus(editLoad.status);
+      setSelectedServiceType((editLoad as any).service_type || '');
       setPdfPreviewUrl(editLoad.pdf_url || null);
       setUploadedPdfPath(null);
       setUploadedPdfSignedUrl(editLoad.pdf_url || null);
@@ -102,6 +104,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       setSelectedTruck('');
       setSelectedDispatcher('');
       setSelectedStatus('planned');
+      setSelectedServiceType('');
       setExtractionStatus('idle');
       setPdfFileName('');
       setPdfFile(null);
@@ -367,7 +370,8 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       pdf_url: pdfUrl,
       notes: formData.notes || undefined,
       status: selectedStatus,
-    };
+      service_type: selectedServiceType || undefined,
+    } as any;
 
     const result = await onSubmit(payload);
 
@@ -587,6 +591,10 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
               } else {
                 setSelectedDispatcher('');
               }
+              // Auto-populate service type from driver's default
+              if (driver?.service_type) {
+                setSelectedServiceType(driver.service_type);
+              }
             }}>
               <SelectTrigger><SelectValue placeholder="Seleccionar driver" /></SelectTrigger>
               <SelectContent>
@@ -621,6 +629,17 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
                   .map(d => (
                   <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Service Type</Label>
+            <Select value={selectedServiceType} onValueChange={setSelectedServiceType}>
+              <SelectTrigger><SelectValue placeholder="Tipo de servicio" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="owner_operator">OWNER OPERATOR</SelectItem>
+                <SelectItem value="company_driver">COMPANY DRIVER</SelectItem>
+                <SelectItem value="dispatch_service">DISPATCH SERVICE</SelectItem>
               </SelectContent>
             </Select>
           </div>
