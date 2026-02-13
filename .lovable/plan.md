@@ -1,41 +1,47 @@
 
-# Fix: GPS Tracking se apaga al navegar entre pantallas
 
-## Problema
-Cada ruta del driver (`/driver`, `/driver/loads`, etc.) esta envuelta individualmente en `<DriverRoute>`, que crea una nueva instancia de `<DriverTrackingProvider>` en cada navegacion. Al cambiar de pantalla, el provider se desmonta y se vuelve a montar, reiniciando el estado de tracking a `false` y deteniendo el GPS.
+# Notificacion en la app web cuando un driver completa el onboarding
 
-## Solucion
-Mover el `<DriverTrackingProvider>` fuera de `<DriverRoute>` para que envuelva todas las rutas del driver una sola vez, evitando que se desmonte al navegar.
+## Que se hara
+
+Cuando un conductor complete el proceso de onboarding publico, se creara automaticamente una notificacion en la tabla `notifications` para que los administradores la vean en tiempo real a traves de:
+- La campana de notificaciones (NotificationBell)
+- Un toast persistente en la esquina inferior derecha (LiveNotificationToasts)
+
+Al hacer clic en la notificacion, se redirigira a la pagina de Drivers.
+
+## Cambios
+
+### 1. Edge Function `driver-onboarding/index.ts`
+Agregar un INSERT en la tabla `notifications` despues de completar el onboarding exitosamente (justo antes de marcar el token como completado). La notificacion incluira:
+- `type`: `"new_driver_onboarded"`
+- `title`: `"New Driver Registered"`
+- `message`: Nombre del conductor y numero de unidad del camion
+- `tenant_id`: El tenant correspondiente
+
+### 2. Componente `LiveNotificationToasts.tsx`
+- Agregar el tipo `new_driver_onboarded` al mapa de iconos (usando icono `UserPlus`) y colores (verde).
+- Modificar `handleClick` para que cuando el tipo sea `new_driver_onboarded`, redirija a `/drivers` en lugar de `/loads`.
 
 ---
 
 ## Detalles tecnicos
 
-### Archivo: `src/App.tsx`
+En `driver-onboarding/index.ts`, agregar antes del paso 5 (mark token as completed):
 
-1. **Eliminar** `<DriverTrackingProvider>` de dentro del componente `DriverRoute`.
-2. **Envolver** todas las rutas `/driver/*` con un layout route que contenga `<DriverTrackingProvider>` una sola vez.
-
-El componente `DriverRoute` pasara de:
-
-```text
-DriverRoute
-  -> DriverTrackingProvider (se crea cada vez)
-    -> DriverMobileLayout
-      -> children
+```typescript
+await supabaseAdmin.from("notifications").insert({
+  tenant_id: tenantId,
+  type: "new_driver_onboarded",
+  title: "New Driver Registered",
+  message: `${driverData.name} completed onboarding — Unit ${truckData.unit_number}`,
+  driver_id: driverId,
+});
 ```
 
-A una estructura donde el provider vive arriba de todas las rutas:
+En `LiveNotificationToasts.tsx`:
+- Importar `UserPlus` de lucide-react
+- Agregar `new_driver_onboarded: UserPlus` al mapa de iconos
+- Agregar `new_driver_onboarded: 'text-green-500'` al mapa de colores
+- En `handleClick`, navegar a `/drivers` cuando `toast.type === 'new_driver_onboarded'`
 
-```text
-DriverTrackingProvider (una sola instancia)
-  -> DriverRoute
-    -> DriverMobileLayout
-      -> children
-```
-
-Concretamente:
-- Crear un componente wrapper `DriverWrapper` que contenga la logica de autenticacion + `DriverTrackingProvider` + `DriverMobileLayout` y use `<Outlet />` para renderizar las rutas hijas.
-- Reemplazar las 6 rutas individuales `/driver/*` por una ruta padre con rutas anidadas.
-
-Esto garantiza que el contexto de tracking persista mientras el conductor navega entre Home, Loads, Tracking, Payments y Profile.
