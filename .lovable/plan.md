@@ -1,30 +1,41 @@
 
+# Fix: GPS Tracking se apaga al navegar entre pantallas
 
-## Simplificar el registro de Driver en la Landing Page
+## Problema
+Cada ruta del driver (`/driver`, `/driver/loads`, etc.) esta envuelta individualmente en `<DriverRoute>`, que crea una nueva instancia de `<DriverTrackingProvider>` en cada navegacion. Al cambiar de pantalla, el provider se desmonta y se vuelve a montar, reiniciando el estado de tracking a `false` y deteniendo el GPS.
 
-### Problema
-El llamado a registrarse como Driver aparece 4 veces en la landing page, lo cual puede sentirse repetitivo y agresivo para el visitante.
+## Solucion
+Mover el `<DriverTrackingProvider>` fuera de `<DriverRoute>` para que envuelva todas las rutas del driver una sola vez, evitando que se desmonte al navegar.
 
-### Propuesta
+---
 
-Mantener el formulario de registro SOLO en la seccion OnboardingSection (al final de la pagina), que ya tiene el patron de boton oculto que revela el formulario. Eliminar o cambiar las demas referencias:
+## Detalles tecnicos
 
-**1. Navbar** - Cambiar "Registrate" por "Servicios" o simplemente eliminarlo (ya hay links a servicios y contacto). Alternativa: dejarlo pero con texto mas sutil como "Para Drivers".
+### Archivo: `src/App.tsx`
 
-**2. Hero Section** - Reemplazar el boton "Registrate como Driver" por algo mas general orientado a los servicios, como "Conoce Nuestros Servicios" que haga scroll a la seccion de servicios. Asi el hero vende la empresa, no empuja al registro.
+1. **Eliminar** `<DriverTrackingProvider>` de dentro del componente `DriverRoute`.
+2. **Envolver** todas las rutas `/driver/*` con un layout route que contenga `<DriverTrackingProvider>` una sola vez.
 
-**3. Servicios (Load Up TMS)** - Cambiar el CTA de "Registrarse ahora" por "Contactar por WhatsApp" como los demas servicios, para mantener consistencia.
+El componente `DriverRoute` pasara de:
 
-**4. OnboardingSection** - Se mantiene igual. Es el unico lugar donde aparece el formulario de registro de Driver con su boton "Registrate como Driver".
+```text
+DriverRoute
+  -> DriverTrackingProvider (se crea cada vez)
+    -> DriverMobileLayout
+      -> children
+```
 
-### Resultado
-El registro aparece una sola vez al final de la pagina, de forma sutil (oculto tras un boton). El resto de la landing se enfoca en mostrar servicios y generar confianza antes de pedir el registro.
+A una estructura donde el provider vive arriba de todas las rutas:
 
-### Seccion tecnica
+```text
+DriverTrackingProvider (una sola instancia)
+  -> DriverRoute
+    -> DriverMobileLayout
+      -> children
+```
 
-Archivos a modificar:
-- `src/components/landing/HeroSection.tsx` - Cambiar el primer boton de "Registrate como Driver" a "Conoce Nuestros Servicios" apuntando a `#servicios`
-- `src/components/landing/LandingNavbar.tsx` - Eliminar el link "Registrate" del array `navLinks`
-- `src/components/landing/ServicesSection.tsx` - Cambiar el CTA del servicio "Load Up TMS" (linea 131) de `{ label: "Registrarse ahora", href: "#onboarding" }` a `{ label: "Contactar por WhatsApp", href: "https://wa.me/19807668815?text=..." }`
-- `src/components/landing/OnboardingSection.tsx` - Sin cambios, se mantiene como el unico punto de registro
+Concretamente:
+- Crear un componente wrapper `DriverWrapper` que contenga la logica de autenticacion + `DriverTrackingProvider` + `DriverMobileLayout` y use `<Outlet />` para renderizar las rutas hijas.
+- Reemplazar las 6 rutas individuales `/driver/*` por una ruta padre con rutas anidadas.
 
+Esto garantiza que el contexto de tracking persista mientras el conductor navega entre Home, Loads, Tracking, Payments y Profile.
