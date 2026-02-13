@@ -77,6 +77,9 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3 border-t pt-3">
         <Info label="% Driver Pay">{driver.pay_percentage}%</Info>
+        {driver.service_type === 'dispatch_service' && (
+          <Info label="% Dispatch Service">{(driver as any).dispatch_service_percentage ?? 0}%</Info>
+        )}
         <Info label="Loads This Month">{driver.loads_this_month}</Info>
         <Info label="Earned This Month">${Number(driver.earnings_this_month).toLocaleString()}</Info>
       </div>
