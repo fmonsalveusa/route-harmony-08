@@ -220,7 +220,7 @@ export const ManualDispatcherPaymentDialog = ({ open, onOpenChange, onComplete }
     const totalRate = lineItems.reduce((s, i) => s + Number(i.load.total_rate), 0);
     const references = lineItems.map(i => i.load.reference_number).join(', ');
 
-    // Insert ONE consolidated payment using first load_id for FK
+    // Insert ONE single consolidated payment using first load_id for FK constraint
     const { data: paymentData, error } = await supabase.from('payments').insert({
       load_id: selectedLoads[0].id,
       recipient_type: 'dispatcher',
