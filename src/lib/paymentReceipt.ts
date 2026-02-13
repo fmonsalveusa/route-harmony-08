@@ -5,6 +5,27 @@ import { ADJUSTMENT_REASONS } from '@/hooks/usePaymentAdjustments';
 
 const reasonLabel = (r: string) => ADJUSTMENT_REASONS.find(a => a.value === r)?.label || r;
 
+/** Extract "City, ST" from a full address like "123 Main St, Springfield, IL 62701" */
+const extractCityState = (address: string): string => {
+  if (!address) return '—';
+  // Split by comma, trim parts, try to find city + state
+  const parts = address.split(',').map(p => p.trim());
+  if (parts.length >= 3) {
+    // Typical: "street, city, ST ZIP" or "street, city, ST, ZIP"
+    const city = parts[parts.length - 2];
+    const stateZip = parts[parts.length - 1];
+    // Extract just the state abbreviation (first word of last part)
+    const stateMatch = stateZip.match(/^([A-Z]{2})/);
+    if (stateMatch) return `${city}, ${stateMatch[1]}`;
+    // If no match, return city + last part trimmed
+    return `${city}, ${stateZip}`;
+  }
+  if (parts.length === 2) {
+    return `${parts[0]}, ${parts[1]}`;
+  }
+  return address;
+};
+
 export interface DispatcherLoadItem {
   load_reference: string;
   origin: string;
@@ -108,8 +129,8 @@ export function generatePaymentReceipt(
 
       doc.setTextColor(55, 65, 81);
       doc.text(item.load_reference, margin + 2, y);
-      doc.text(item.origin.substring(0, 22), margin + 28, y);
-      doc.text(item.destination.substring(0, 22), margin + 72, y);
+      doc.text(extractCityState(item.origin).substring(0, 22), margin + 28, y);
+      doc.text(extractCityState(item.destination).substring(0, 22), margin + 72, y);
       doc.text(`$${Number(item.total_rate).toLocaleString('en-US', { minimumFractionDigits: 2 })}`, margin + 116, y);
       doc.text(`${item.percentage_applied}%`, margin + 138, y);
       doc.setFont('helvetica', 'bold');
