@@ -8,10 +8,22 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { CalendarIcon, Loader2, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { US_STATES } from "@/lib/usStates";
+
+const SERVICE_OPTIONS = [
+  "Dispatching para MC# propio",
+  "Leasing bajo nuestro MC#",
+  "Curso de Dispatcher",
+  "Tracking Up App",
+  "Asesoría de Negocios",
+  "Tramitación de Permisos",
+  "Load Up TMS",
+  "Auditoría FMCSA",
+];
 
 const TRUCK_TYPES = ["Box Truck", "Hotshot", "Dry Van", "Flatbed", "Reefer"];
 
@@ -33,6 +45,8 @@ export function MeetingSection() {
     state: "",
     truck_type: "",
     meeting_time: "",
+    service_interest: "",
+    comments: "",
   });
   const [date, setDate] = useState<Date>();
 
@@ -59,7 +73,7 @@ export function MeetingSection() {
       if (data?.error) throw new Error(data.error);
 
       toast.success("¡Reunión agendada! Te contactaremos para confirmar.");
-      setForm({ driver_name: "", phone: "", city: "", state: "", truck_type: "", meeting_time: "" });
+      setForm({ driver_name: "", phone: "", city: "", state: "", truck_type: "", meeting_time: "", service_interest: "", comments: "" });
       setDate(undefined);
     } catch (err: any) {
       toast.error(err.message || "Error al procesar tu solicitud");
@@ -146,6 +160,18 @@ export function MeetingSection() {
                 </Select>
               </div>
 
+              <div>
+                <Label>Servicio de interés</Label>
+                <Select value={form.service_interest} onValueChange={(v) => setForm({ ...form, service_interest: v })}>
+                  <SelectTrigger><SelectValue placeholder="Seleccionar servicio" /></SelectTrigger>
+                  <SelectContent className="bg-popover z-50">
+                    {SERVICE_OPTIONS.map((s) => (
+                      <SelectItem key={s} value={s}>{s}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label>Fecha *</Label>
@@ -185,6 +211,11 @@ export function MeetingSection() {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+
+              <div>
+                <Label htmlFor="meeting-comments">Comentario</Label>
+                <Textarea id="meeting-comments" placeholder="Algún comentario adicional..." maxLength={500} rows={3} value={form.comments} onChange={(e) => setForm({ ...form, comments: e.target.value })} />
               </div>
 
               <Button type="submit" disabled={loading} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-semibold py-3 text-base">

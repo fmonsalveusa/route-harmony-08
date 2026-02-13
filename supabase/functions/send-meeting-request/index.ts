@@ -13,7 +13,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { driver_name, phone, city, state, truck_type, meeting_date, meeting_time } = await req.json();
+    const { driver_name, phone, city, state, truck_type, meeting_date, meeting_time, service_interest, comments } = await req.json();
 
     // Validate required fields
     if (!driver_name || !phone || !city || !state || !truck_type || !meeting_date || !meeting_time) {
@@ -40,6 +40,8 @@ Deno.serve(async (req) => {
         truck_type,
         meeting_date,
         meeting_time,
+        service_interest: service_interest || null,
+        comments: comments?.trim() || null,
       });
 
     if (insertError) {
@@ -79,7 +81,7 @@ Deno.serve(async (req) => {
       from: gmailUser,
       to: "agartransportation1@gmail.com",
       subject: `Nueva Solicitud de Reunión - ${driver_name}`,
-      content: `Nueva solicitud de reunión:\n\nNombre: ${driver_name}\nTeléfono: ${phone}\nCiudad: ${city}, ${state}\nTipo de Vehículo: ${truck_type}\nFecha: ${formattedDate}\nHora: ${meeting_time}`,
+      content: `Nueva solicitud de reunión:\n\nNombre: ${driver_name}\nTeléfono: ${phone}\nCiudad: ${city}, ${state}\nTipo de Vehículo: ${truck_type}\nServicio: ${service_interest || "No especificado"}\nFecha: ${formattedDate}\nHora: ${meeting_time}\nComentario: ${comments || "Ninguno"}`,
       html: `
         <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f9fafb;padding:24px;border-radius:12px">
           <div style="background:#1e3a5f;padding:20px;border-radius:8px 8px 0 0;text-align:center">
@@ -91,8 +93,10 @@ Deno.serve(async (req) => {
               <tr><td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;font-weight:bold;color:#374151">📞 Teléfono</td><td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;color:#111827">${phone}</td></tr>
               <tr><td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;font-weight:bold;color:#374151">📍 Ubicación</td><td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;color:#111827">${city}, ${state}</td></tr>
               <tr><td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;font-weight:bold;color:#374151">🚛 Vehículo</td><td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;color:#111827">${truck_type}</td></tr>
+              <tr><td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;font-weight:bold;color:#374151">💼 Servicio</td><td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;color:#111827">${service_interest || "No especificado"}</td></tr>
               <tr><td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;font-weight:bold;color:#374151">📅 Fecha</td><td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;color:#111827">${formattedDate}</td></tr>
-              <tr><td style="padding:10px 12px;font-weight:bold;color:#374151">🕐 Hora</td><td style="padding:10px 12px;color:#111827">${meeting_time}</td></tr>
+              <tr><td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;font-weight:bold;color:#374151">🕐 Hora</td><td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;color:#111827">${meeting_time}</td></tr>
+              ${comments ? `<tr><td style="padding:10px 12px;font-weight:bold;color:#374151">💬 Comentario</td><td style="padding:10px 12px;color:#111827">${comments}</td></tr>` : ""}
             </table>
             <p style="margin-top:20px;color:#6b7280;font-size:13px;text-align:center">Este mensaje fue enviado automáticamente desde el formulario de la página web.</p>
           </div>

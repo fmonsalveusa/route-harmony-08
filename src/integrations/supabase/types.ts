@@ -640,36 +640,42 @@ export type Database = {
       meeting_requests: {
         Row: {
           city: string
+          comments: string | null
           created_at: string
           driver_name: string
           id: string
           meeting_date: string
           meeting_time: string
           phone: string
+          service_interest: string | null
           state: string
           status: string
           truck_type: string
         }
         Insert: {
           city: string
+          comments?: string | null
           created_at?: string
           driver_name: string
           id?: string
           meeting_date: string
           meeting_time: string
           phone: string
+          service_interest?: string | null
           state: string
           status?: string
           truck_type: string
         }
         Update: {
           city?: string
+          comments?: string | null
           created_at?: string
           driver_name?: string
           id?: string
           meeting_date?: string
           meeting_time?: string
           phone?: string
+          service_interest?: string | null
           state?: string
           status?: string
           truck_type?: string
