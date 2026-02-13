@@ -738,34 +738,43 @@ export type Database = {
           completed_at: string | null
           created_at: string
           dispatcher_id: string | null
+          driver_email: string | null
           driver_name: string | null
+          driver_phone: string | null
           expires_at: string
           id: string
           status: string
           tenant_id: string
           token: string
+          truck_type: string | null
         }
         Insert: {
           completed_at?: string | null
           created_at?: string
           dispatcher_id?: string | null
+          driver_email?: string | null
           driver_name?: string | null
+          driver_phone?: string | null
           expires_at?: string
           id?: string
           status?: string
           tenant_id: string
           token?: string
+          truck_type?: string | null
         }
         Update: {
           completed_at?: string | null
           created_at?: string
           dispatcher_id?: string | null
+          driver_email?: string | null
           driver_name?: string | null
+          driver_phone?: string | null
           expires_at?: string
           id?: string
           status?: string
           tenant_id?: string
           token?: string
+          truck_type?: string | null
         }
         Relationships: [
           {
