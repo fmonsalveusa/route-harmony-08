@@ -13,7 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
-import { FileText, AlertTriangle, CheckCircle, Search, Trash2, Plus, Users } from 'lucide-react';
+import { FileText, AlertTriangle, CheckCircle, Search, Trash2, Plus, Users, Download } from 'lucide-react';
+import { generateDSInvoicePdf } from '@/lib/dsInvoicePdf';
 
 interface LoadForDS {
   id: string;
@@ -270,6 +271,27 @@ export function DispatchServiceTab() {
                     <td className="p-3 hidden lg:table-cell text-muted-foreground">{formatDate(inv.created_at)}</td>
                     <td className="p-3 text-right">
                       <div className="flex justify-end gap-1.5">
+                        <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-emerald-400 bg-white text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 gap-1" onClick={() => {
+                          const loads = Array.isArray(inv.loads) ? inv.loads : [];
+                          generateDSInvoicePdf({
+                            invoiceNumber: inv.invoice_number,
+                            driverName: inv.driver_name,
+                            loads: loads.map((l: any) => ({
+                              reference_number: l.reference_number || '',
+                              origin: l.origin || '',
+                              destination: l.destination || '',
+                              total_rate: Number(l.total_rate || 0),
+                              fee: Number(l.fee || 0),
+                              driver_name: l.driver_name || inv.driver_name,
+                              percentage: Number(l.percentage || inv.percentage_applied || 0),
+                            })),
+                            totalAmount: Number(inv.total_amount),
+                            createdAt: inv.created_at,
+                            notes: inv.notes,
+                          });
+                        }}>
+                          <Download className="h-4 w-4" /> PDF
+                        </Button>
                         <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-destructive/50 text-destructive hover:bg-destructive/10 gap-1" onClick={async () => { if (window.confirm(`¿Eliminar factura ${inv.invoice_number}?`)) { await deleteInvoice(inv.id); } }}>
                           <Trash2 className="h-4 w-4" /> Delete
                         </Button>
