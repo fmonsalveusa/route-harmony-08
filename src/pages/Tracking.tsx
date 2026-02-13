@@ -377,7 +377,7 @@ const Tracking = () => {
                         position={[stop.lat!, stop.lng!]}
                         icon={stop.stop_type === 'pickup' ? pickupIcon : deliveryIcon}
                       >
-                        {driver && (
+                        {driver && stop.stop_type === 'pickup' && (
                           <LeafletTooltip direction="top" offset={[0, -10]} permanent className="driver-name-tooltip">
                             <span style={{ fontSize: '11px', fontWeight: 600 }}>{driver.name}</span>
                           </LeafletTooltip>
