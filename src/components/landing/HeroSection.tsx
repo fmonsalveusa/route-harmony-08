@@ -29,10 +29,10 @@ export function HeroSection() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4">
             <a
-              href="#onboarding"
+              href="#servicios"
               className="inline-flex items-center justify-center gap-2 bg-accent text-accent-foreground px-6 py-3 rounded-lg font-semibold text-base hover:brightness-110 transition shadow-lg shadow-accent/25"
             >
-              Regístrate como Driver <ArrowRight size={18} />
+              Conoce Nuestros Servicios <ArrowRight size={18} />
             </a>
             <a
               href="https://wa.me/19807668815?text=Hola,%20me%20interesa%20información%20sobre%20sus%20servicios"
