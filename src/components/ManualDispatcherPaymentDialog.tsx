@@ -88,8 +88,16 @@ export const ManualDispatcherPaymentDialog = ({ open, onOpenChange, onComplete }
       return;
     }
 
-    // Get existing dispatcher payments for these loads
+    // Get existing dispatcher payments for these loads (check both payments table and items table)
     const loadIds = loadsData.map((l: any) => l.id);
+    
+    // Check dispatcher_payment_items for consolidated payments
+    const { data: existingItems } = await supabase
+      .from('dispatcher_payment_items')
+      .select('load_id')
+      .in('load_id', loadIds);
+
+    // Also check legacy individual payments
     const { data: existingPayments } = await supabase
       .from('payments')
       .select('load_id')
@@ -97,7 +105,10 @@ export const ManualDispatcherPaymentDialog = ({ open, onOpenChange, onComplete }
       .eq('recipient_id', dispatcherId)
       .in('load_id', loadIds);
 
-    const paidLoadIds = new Set((existingPayments || []).map((p: any) => p.load_id));
+    const paidLoadIds = new Set([
+      ...((existingItems || []).map((p: any) => p.load_id)),
+      ...((existingPayments || []).map((p: any) => p.load_id)),
+    ]);
     const availableLoads = (loadsData as LoadOption[]).filter(l => !paidLoadIds.has(l.id));
 
     // Fetch driver info for available loads
@@ -193,35 +204,60 @@ export const ManualDispatcherPaymentDialog = ({ open, onOpenChange, onComplete }
     setSubmitting(true);
 
     const tenant_id = await getTenantId();
-    const paymentsToInsert = filteredLoads
-      .filter(l => selectedLoadIds.has(l.id))
-      .map(l => {
-        const driverSvc = l.driver_id ? (driverServiceTypes[l.driver_id] || 'owner_operator') : 'owner_operator';
-        const pct = driverSvc === 'dispatch_service'
-          ? (dispatcher.dispatch_service_percentage ?? 0)
-          : (dispatcher.commission_percentage ?? 0);
-        const amount = Math.round(Number(l.total_rate) * pct / 100 * 100) / 100;
-        return {
-          load_id: l.id,
-          recipient_type: 'dispatcher',
-          recipient_id: dispatcher.id,
-          recipient_name: dispatcher.name,
-          load_reference: l.reference_number,
-          amount,
-          percentage_applied: pct,
-          total_rate: Number(l.total_rate),
-          tenant_id,
-        };
-      });
+    const selectedLoads = filteredLoads.filter(l => selectedLoadIds.has(l.id));
 
-    const { error } = await supabase.from('payments').insert(paymentsToInsert);
+    // Build individual line items
+    const lineItems = selectedLoads.map(l => {
+      const driverSvc = l.driver_id ? (driverServiceTypes[l.driver_id] || 'owner_operator') : 'owner_operator';
+      const pct = driverSvc === 'dispatch_service'
+        ? (dispatcher.dispatch_service_percentage ?? 0)
+        : (dispatcher.commission_percentage ?? 0);
+      const amount = Math.round(Number(l.total_rate) * pct / 100 * 100) / 100;
+      return { load: l, pct, amount };
+    });
+
+    const totalAmount = lineItems.reduce((s, i) => s + i.amount, 0);
+    const totalRate = lineItems.reduce((s, i) => s + Number(i.load.total_rate), 0);
+    const references = lineItems.map(i => i.load.reference_number).join(', ');
+
+    // Insert ONE consolidated payment using first load_id for FK
+    const { data: paymentData, error } = await supabase.from('payments').insert({
+      load_id: selectedLoads[0].id,
+      recipient_type: 'dispatcher',
+      recipient_id: dispatcher.id,
+      recipient_name: dispatcher.name,
+      load_reference: references,
+      amount: Math.round(totalAmount * 100) / 100,
+      percentage_applied: lineItems[0].pct,
+      total_rate: Math.round(totalRate * 100) / 100,
+      tenant_id,
+    } as any).select().single();
+
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
-    } else {
-      toast({ title: `${paymentsToInsert.length} payment(s) generated successfully` });
-      onComplete();
-      onOpenChange(false);
+      setSubmitting(false);
+      return;
     }
+
+    // Insert individual load items into junction table
+    const items = lineItems.map(i => ({
+      payment_id: (paymentData as any).id,
+      load_id: i.load.id,
+      load_reference: i.load.reference_number,
+      total_rate: Number(i.load.total_rate),
+      percentage_applied: i.pct,
+      amount: i.amount,
+      tenant_id,
+    }));
+
+    const { error: itemsError } = await supabase.from('dispatcher_payment_items').insert(items);
+    if (itemsError) {
+      console.error('Error inserting payment items:', itemsError);
+    }
+
+    toast({ title: `Consolidated payment generated for ${selectedLoads.length} load(s)` });
+    onComplete();
+    onOpenChange(false);
     setSubmitting(false);
   };
 
@@ -387,7 +423,7 @@ export const ManualDispatcherPaymentDialog = ({ open, onOpenChange, onComplete }
           <Button variant="outline" onClick={() => handleClose(false)}>Cancel</Button>
           <Button onClick={handleSubmit} disabled={selectedLoadIds.size === 0 || submitting}>
             {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            Generate {selectedLoadIds.size > 0 ? `${selectedLoadIds.size} Payment(s)` : 'Payments'}
+            Generate Consolidated Payment{selectedLoadIds.size > 0 ? ` (${selectedLoadIds.size} loads)` : ''}
           </Button>
         </DialogFooter>
       </DialogContent>
