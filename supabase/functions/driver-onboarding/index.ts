@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -236,6 +237,76 @@ Deno.serve(async (req) => {
       .from("onboarding_tokens")
       .update({ status: "completed", completed_at: new Date().toISOString() })
       .eq("id", tokenRecord.id);
+
+    // 6. Send email notification to company
+    try {
+      // Get tenant info for company email
+      const { data: tenant } = await supabaseAdmin
+        .from("tenants")
+        .select("name, email")
+        .eq("id", tenantId)
+        .single();
+
+      const companyEmail = tenant?.email;
+      const companyName = tenant?.name || "Your Company";
+      const gmailUser = (Deno.env.get("GMAIL_USER") ?? "").trim();
+      const gmailPass = (Deno.env.get("GMAIL_APP_PASSWORD") ?? "").replace(/\s+/g, "").trim();
+
+      if (companyEmail && gmailUser && gmailPass.length === 16) {
+        const driverName = driverData.name as string;
+        const driverEmail = driverData.email as string;
+        const driverPhone = driverData.phone as string;
+        const truckUnit = truckData.unit_number as string;
+        const truckType = (truckData.truck_type as string) || "N/A";
+        const truckMake = (truckData.make as string) || "";
+        const truckModel = (truckData.model as string) || "";
+        const truckYear = truckData.year ? String(truckData.year) : "";
+        const truckVehicle = [truckYear, truckMake, truckModel].filter(Boolean).join(" ") || "N/A";
+
+        const smtpClient = new SMTPClient({
+          connection: {
+            hostname: "smtp.gmail.com",
+            port: 465,
+            tls: true,
+            auth: { username: gmailUser, password: gmailPass },
+          },
+        });
+
+        await smtpClient.send({
+          from: gmailUser,
+          to: companyEmail,
+          subject: `🚛 New Driver Onboarding Completed — ${driverName}`,
+          content: `A new driver has completed the onboarding process.\n\nDriver: ${driverName}\nEmail: ${driverEmail}\nPhone: ${driverPhone}\nTruck: ${truckUnit} (${truckType}) — ${truckVehicle}\n\nThe driver status is set to PENDING. Please review and approve from the Drivers section.\n\n— ${companyName}`,
+          html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px">
+            <div style="background:#1e4078;color:white;padding:16px 24px;border-radius:8px 8px 0 0">
+              <h2 style="margin:0;font-size:18px">🚛 New Driver Onboarding Completed</h2>
+            </div>
+            <div style="border:1px solid #e5e7eb;border-top:none;padding:24px;border-radius:0 0 8px 8px">
+              <p style="margin:0 0 16px;color:#333">A new driver has completed the registration process and is awaiting your review.</p>
+              <table style="width:100%;border-collapse:collapse;margin-bottom:20px">
+                <tr><td style="padding:8px 12px;border:1px solid #e5e7eb;font-weight:bold;background:#f9fafb;width:35%">Driver Name</td><td style="padding:8px 12px;border:1px solid #e5e7eb">${driverName}</td></tr>
+                <tr><td style="padding:8px 12px;border:1px solid #e5e7eb;font-weight:bold;background:#f9fafb">Email</td><td style="padding:8px 12px;border:1px solid #e5e7eb">${driverEmail}</td></tr>
+                <tr><td style="padding:8px 12px;border:1px solid #e5e7eb;font-weight:bold;background:#f9fafb">Phone</td><td style="padding:8px 12px;border:1px solid #e5e7eb">${driverPhone}</td></tr>
+                <tr><td style="padding:8px 12px;border:1px solid #e5e7eb;font-weight:bold;background:#f9fafb">Truck Unit</td><td style="padding:8px 12px;border:1px solid #e5e7eb">${truckUnit} (${truckType})</td></tr>
+                <tr><td style="padding:8px 12px;border:1px solid #e5e7eb;font-weight:bold;background:#f9fafb">Vehicle</td><td style="padding:8px 12px;border:1px solid #e5e7eb">${truckVehicle}</td></tr>
+              </table>
+              <div style="background:#fef3c7;border:1px solid #f59e0b;padding:12px 16px;border-radius:6px;margin-bottom:16px">
+                <p style="margin:0;color:#92400e;font-size:14px"><strong>⚠️ Action Required:</strong> The driver status is <strong>PENDING</strong>. Please review and approve from the Drivers section.</p>
+              </div>
+              <p style="color:#9ca3af;font-size:12px;margin:0">— ${companyName}</p>
+            </div>
+          </div>`,
+        });
+
+        await smtpClient.close();
+        console.log("Onboarding notification email sent to:", companyEmail);
+      } else {
+        console.log("Skipping email notification: missing company email or SMTP credentials");
+      }
+    } catch (emailErr) {
+      // Don't fail the onboarding if email fails
+      console.error("Failed to send onboarding notification email:", emailErr);
+    }
 
     return new Response(
       JSON.stringify({ success: true, driver_id: driverId, truck_id: truckId }),
