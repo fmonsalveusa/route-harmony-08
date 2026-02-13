@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { LoadFormDialog } from '@/components/LoadFormDialog';
 import { useLoads } from '@/hooks/useLoads';
 import { NotificationBell } from '@/components/NotificationBell';
+import { LiveNotificationToasts } from '@/components/LiveNotificationToasts';
 
 interface NavItem {
   label: string;
@@ -256,6 +257,10 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
         onOpenChange={setLoadDialogOpen}
         onSubmit={handleCreateLoad}
       />
+
+      {(role === 'admin' || role === 'dispatcher' || role === 'accounting' || role === 'master_admin') && (
+        <LiveNotificationToasts />
+      )}
     </div>
   );
 };
