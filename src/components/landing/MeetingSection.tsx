@@ -1,0 +1,200 @@
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { format } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CalendarIcon, Loader2, Clock } from "lucide-react";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import { US_STATES } from "@/lib/usStates";
+
+const TRUCK_TYPES = ["Box Truck", "Hotshot", "Dry Van", "Flatbed", "Reefer"];
+
+const TIME_SLOTS = Array.from({ length: 21 }, (_, i) => {
+  const totalMinutes = 8 * 60 + i * 30;
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  const period = hours >= 12 ? "PM" : "AM";
+  const displayHour = hours > 12 ? hours - 12 : hours;
+  return `${displayHour}:${String(minutes).padStart(2, "0")} ${period}`;
+});
+
+export function MeetingSection() {
+  const [loading, setLoading] = useState(false);
+  const [form, setForm] = useState({
+    driver_name: "",
+    phone: "",
+    city: "",
+    state: "",
+    truck_type: "",
+    meeting_time: "",
+  });
+  const [date, setDate] = useState<Date>();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.driver_name || !form.phone || !form.city || !form.state || !form.truck_type || !date || !form.meeting_time) {
+      toast.error("Por favor completa todos los campos");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-meeting-request", {
+        body: {
+          ...form,
+          driver_name: form.driver_name.trim(),
+          phone: form.phone.trim(),
+          city: form.city.trim(),
+          meeting_date: format(date, "yyyy-MM-dd"),
+        },
+      });
+
+      if (error) throw new Error("Error al enviar la solicitud");
+      if (data?.error) throw new Error(data.error);
+
+      toast.success("¡Reunión agendada! Te contactaremos para confirmar.");
+      setForm({ driver_name: "", phone: "", city: "", state: "", truck_type: "", meeting_time: "" });
+      setDate(undefined);
+    } catch (err: any) {
+      toast.error(err.message || "Error al procesar tu solicitud");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <section id="meeting" className="py-20 bg-[hsl(214,52%,12%)]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+              Agenda una <span className="text-accent">Reunión</span>
+            </h2>
+            <p className="text-white/60 mb-6 leading-relaxed">
+              ¿Tienes preguntas sobre nuestros servicios? Agenda una reunión con nuestro equipo y te explicaremos cómo podemos ayudarte a crecer tu negocio de trucking.
+            </p>
+            <ul className="space-y-3 text-white/70 text-sm">
+              <li className="flex items-center gap-2">📅 Elige la fecha y hora que mejor te convenga</li>
+              <li className="flex items-center gap-2">📞 Te contactaremos para confirmar</li>
+              <li className="flex items-center gap-2">💼 Consulta personalizada sin compromiso</li>
+              <li className="flex items-center gap-2">🇺🇸 Atención en español e inglés</li>
+            </ul>
+          </motion.div>
+
+          <motion.form
+            onSubmit={handleSubmit}
+            initial={{ opacity: 0, x: 20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            className="bg-card rounded-2xl p-8 shadow-2xl border"
+          >
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
+                <CalendarIcon className="text-accent" size={20} />
+              </div>
+              <h3 className="font-bold text-foreground text-lg">Agendar Reunión</h3>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="meeting-name">Nombre completo *</Label>
+                <Input id="meeting-name" placeholder="Tu nombre" maxLength={100} value={form.driver_name} onChange={(e) => setForm({ ...form, driver_name: e.target.value })} required />
+              </div>
+
+              <div>
+                <Label htmlFor="meeting-phone">Teléfono *</Label>
+                <Input id="meeting-phone" type="tel" placeholder="+1 (000) 000-0000" maxLength={20} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} required />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label htmlFor="meeting-city">Ciudad *</Label>
+                  <Input id="meeting-city" placeholder="Tu ciudad" maxLength={100} value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} required />
+                </div>
+                <div>
+                  <Label>Estado *</Label>
+                  <Select value={form.state} onValueChange={(v) => setForm({ ...form, state: v })}>
+                    <SelectTrigger><SelectValue placeholder="Estado" /></SelectTrigger>
+                    <SelectContent className="max-h-[200px]">
+                      {US_STATES.map((s) => (
+                        <SelectItem key={s} value={s}>{s}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div>
+                <Label>Tipo de vehículo *</Label>
+                <Select value={form.truck_type} onValueChange={(v) => setForm({ ...form, truck_type: v })}>
+                  <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+                  <SelectContent>
+                    {TRUCK_TYPES.map((t) => (
+                      <SelectItem key={t} value={t}>{t}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Fecha *</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {date ? format(date, "MM/dd/yyyy") : "Seleccionar"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={date}
+                        onSelect={setDate}
+                        disabled={(d) => d < new Date()}
+                        initialFocus
+                        className="p-3 pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div>
+                  <Label>Hora *</Label>
+                  <Select value={form.meeting_time} onValueChange={(v) => setForm({ ...form, meeting_time: v })}>
+                    <SelectTrigger>
+                      <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
+                      <SelectValue placeholder="Hora" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-[200px]">
+                      {TIME_SLOTS.map((t) => (
+                        <SelectItem key={t} value={t}>{t}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <Button type="submit" disabled={loading} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-semibold py-3 text-base">
+                {loading ? <Loader2 className="animate-spin mr-2" size={18} /> : null}
+                {loading ? "Enviando..." : "Agendar Reunión"}
+              </Button>
+            </div>
+          </motion.form>
+        </div>
+      </div>
+    </section>
+  );
+}
