@@ -10,6 +10,7 @@ import type { DbLoad } from '@/hooks/useLoads';
 import { useLoadStops } from '@/hooks/useLoadStops';
 import { supabase } from '@/integrations/supabase/client';
 import { PodUploadSection } from '@/components/PodUploadSection';
+import { PickupPicturesSection } from '@/components/PickupPicturesSection';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { useToast } from '@/hooks/use-toast';
@@ -712,6 +713,9 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
               </div>
             </div>
           )}
+
+          {/* Pick Up Pictures */}
+          <PickupPicturesSection loadId={load.id} />
 
           {/* POD Upload Section */}
           <PodUploadSection loadId={load.id} />
