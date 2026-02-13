@@ -14,15 +14,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import logoImg from '@/assets/logo.png';
 import { US_STATES } from '@/lib/usStates';
+import DocumentSigningStep, { SignedDocs } from '@/components/onboarding/DocumentSigningStep';
 
 const TRUCK_TYPES = ['Box Truck', 'Hotshot', 'Flatbed', 'Dry Van'];
 
 const DRIVER_DOC_FIELDS = [
   { key: 'license_photo', label: 'License Photo' },
   { key: 'medical_card_photo', label: 'Medical Card Photo' },
-  { key: 'form_w9', label: 'Form W9' },
-  { key: 'leasing_agreement', label: 'Leasing Agreement' },
-  { key: 'service_agreement', label: 'Service Agreement' },
 ];
 
 const TRUCK_DOC_FIELDS = [
@@ -34,6 +32,8 @@ const TRUCK_DOC_FIELDS = [
   { key: 'truck_plate_photo', label: 'Truck Plate Photo' },
   { key: 'cargo_area_photo', label: 'Cargo Area Photo' },
 ];
+
+const STEP_LABELS = ['Driver Info', 'Truck Info', 'Documents', 'Review'];
 
 export default function DriverOnboarding() {
   const { token } = useParams<{ token: string }>();
@@ -69,6 +69,9 @@ export default function DriverOnboarding() {
     mega_ramp: null as string | null,
   });
   const [truckFiles, setTruckFiles] = useState<Record<string, File>>({});
+
+  // Signed documents
+  const [signedDocs, setSignedDocs] = useState<SignedDocs>({ w9: null, leasing: null, service: null });
 
   useEffect(() => {
     if (!token) return;
@@ -130,6 +133,11 @@ export default function DriverOnboarding() {
       for (const [key, file] of Object.entries(truckFiles)) {
         formData.append(`truck_${key}`, file);
       }
+
+      // Append signed document PDFs
+      if (signedDocs.w9) formData.append('driver_form_w9', signedDocs.w9, 'w9_signed.pdf');
+      if (signedDocs.leasing) formData.append('driver_leasing_agreement', signedDocs.leasing, 'leasing_agreement_signed.pdf');
+      if (signedDocs.service) formData.append('driver_service_agreement', signedDocs.service, 'service_agreement_signed.pdf');
 
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const res = await fetch(`${supabaseUrl}/functions/v1/driver-onboarding`, {
@@ -201,7 +209,7 @@ export default function DriverOnboarding() {
 
         {/* Step indicator */}
         <div className="flex items-center justify-center gap-2">
-          {[1, 2, 3].map(s => (
+          {[1, 2, 3, 4].map(s => (
             <div key={s} className="flex items-center gap-2">
               <div className={cn(
                 "w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-colors",
@@ -210,14 +218,12 @@ export default function DriverOnboarding() {
               )}>
                 {s < step ? '✓' : s}
               </div>
-              {s < 3 && <div className={cn("w-12 h-0.5", s < step ? "bg-green-500" : "bg-muted")} />}
+              {s < 4 && <div className={cn("w-8 h-0.5", s < step ? "bg-green-500" : "bg-muted")} />}
             </div>
           ))}
         </div>
-        <div className="flex justify-center gap-8 text-xs text-muted-foreground">
-          <span>Driver Info</span>
-          <span>Truck Info</span>
-          <span>Review</span>
+        <div className="flex justify-center gap-4 text-xs text-muted-foreground">
+          {STEP_LABELS.map(l => <span key={l}>{l}</span>)}
         </div>
 
         {/* Step 1: Driver Info */}
@@ -382,15 +388,27 @@ export default function DriverOnboarding() {
               <div className="flex justify-between pt-2">
                 <Button variant="outline" onClick={() => setStep(1)}>← Back</Button>
                 <Button onClick={() => { if (validateStep2()) setStep(3); }}>
-                  Next: Review →
+                  Next: Documents →
                 </Button>
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Step 3: Review */}
+        {/* Step 3: Document Signing */}
         {step === 3 && (
+          <DocumentSigningStep
+            driverData={driver}
+            truckData={truck}
+            signedDocs={signedDocs}
+            onSignedDocsChange={setSignedDocs}
+            onNext={() => setStep(4)}
+            onBack={() => setStep(2)}
+          />
+        )}
+
+        {/* Step 4: Review */}
+        {step === 4 && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2"><Send className="h-5 w-5" /> Review & Submit</CardTitle>
@@ -425,8 +443,17 @@ export default function DriverOnboarding() {
                 </div>
               </div>
 
+              <div className="space-y-3">
+                <h3 className="font-semibold">📝 Signed Documents</h3>
+                <div className="grid grid-cols-1 gap-2 text-sm bg-muted/50 p-4 rounded-lg">
+                  <div className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-green-500" /> W-9 Form</div>
+                  <div className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-green-500" /> Leasing Agreement</div>
+                  <div className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-green-500" /> Service Agreement</div>
+                </div>
+              </div>
+
               <div className="flex justify-between pt-2">
-                <Button variant="outline" onClick={() => setStep(2)}>← Back</Button>
+                <Button variant="outline" onClick={() => setStep(3)}>← Back</Button>
                 <Button onClick={handleSubmit} disabled={submitting} className="gap-2">
                   {submitting ? 'Submitting...' : '✓ Submit Onboarding'}
                 </Button>
