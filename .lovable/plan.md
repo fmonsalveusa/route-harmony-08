@@ -1,49 +1,26 @@
 
 
-## Agendar Reunion - Seccion Landing Page con Notificacion por Email
+## Reorganizar la seccion de Registro de Driver en la Landing Page
 
-### Objetivo
-Agregar una nueva seccion en la landing page que permita a los visitantes agendar una reunion con la empresa, con un formulario completo y envio de email de notificacion al correo de la empresa.
+### Problema actual
+La landing page muestra dos formularios grandes uno tras otro (Agendar Reunion + Registro de Driver), lo cual se ve cargado visualmente.
 
-### Campos del Formulario
-- **Nombre Completo del Driver** (texto, requerido)
-- **Numero de Telefono** (telefono, requerido)
-- **Ciudad** (texto, requerido)
-- **Estado** (dropdown con las 51 siglas de estados de EE.UU. desde `usStates.ts`)
-- **Tipo de Vehiculo** (dropdown: Box Truck, Hotshot, Dry Van, Flatbed, Reefer)
-- **Fecha** (calendario con selector de fecha usando el componente Calendar existente)
-- **Hora** (dropdown con intervalos de 30 minutos: 8:00 AM, 8:30 AM, ... 6:00 PM)
+### Solucion propuesta
+Reemplazar el formulario visible de registro por una seccion compacta tipo "call-to-action" con un boton prominente "Registrate como Driver". Al pulsarlo, se mostrara el formulario con una animacion suave.
 
-### Cambios Planificados
+### Cambios en `src/components/landing/OnboardingSection.tsx`
 
-**1. Nueva tabla en la base de datos: `meeting_requests`**
-Almacena cada solicitud de reunion para tener un registro persistente.
-- Columnas: `id`, `driver_name`, `phone`, `city`, `state`, `truck_type`, `meeting_date`, `meeting_time`, `status` (pending/confirmed/completed), `created_at`
-- RLS: permitir INSERT publico (sin autenticacion, ya que es la landing page publica), SELECT solo para usuarios autenticados del tenant
+1. **Agregar un estado `showForm`** (inicialmente `false`) para controlar la visibilidad del formulario.
 
-**2. Nueva Edge Function: `send-meeting-request`**
-- Recibe los datos del formulario
-- Inserta el registro en `meeting_requests`
-- Envia un email de notificacion a `agartransportation1@gmail.com` (usando las credenciales GMAIL existentes) con todos los detalles de la reunion solicitada
-- No requiere autenticacion (formulario publico)
-- Usa la misma libreria `denomailer` que ya se usa en `send-invoice-email`
+2. **Vista inicial (formulario oculto)**: Mostrar la seccion con el texto motivacional existente (titulo, descripcion, lista de beneficios) y un boton grande y visible "Registrate como Driver" que al hacer clic cambia `showForm` a `true`.
 
-**3. Nuevo componente: `src/components/landing/MeetingSection.tsx`**
-- Diseno visual consistente con la seccion OnboardingSection existente (fondo oscuro, formulario en card con animacion)
-- Icono de calendario y titulo "Agenda una Reunion"
-- Lado izquierdo: texto de beneficios y descripcion
-- Lado derecho: formulario con los campos solicitados
-- Validacion de campos requeridos antes de enviar
-- Feedback con toast de exito/error
+3. **Vista expandida (formulario visible)**: Al pulsar el boton, el formulario actual aparece con una animacion usando `framer-motion` (`AnimatePresence` + `motion.div`). Se reemplaza el boton por el formulario completo.
 
-**4. Modificar: `src/pages/Landing.tsx`**
-- Importar y agregar `MeetingSection` entre VehicleGallery y OnboardingSection
+4. **Layout**: Cuando el formulario esta oculto, la seccion se centra en una sola columna con el CTA prominente. Cuando se muestra, vuelve al grid de 2 columnas actual con el formulario a la derecha.
 
-### Detalles Tecnicos
+### Detalles tecnicos
 
-- **Selector de Fecha**: usa el componente `Calendar` con `Popover` existente, formato MM/DD/YYYY
-- **Selector de Hora**: genera intervalos de 30 minutos desde 8:00 AM hasta 6:00 PM (21 opciones)
-- **Estados**: reutiliza la lista `US_STATES` de `src/lib/usStates.ts`
-- **Email**: HTML formateado con tabla de detalles de la reunion, enviado via Gmail SMTP con los secrets `GMAIL_USER` y `GMAIL_APP_PASSWORD` ya configurados
-- **Sin nuevas dependencias**: todo se logra con componentes y librerias existentes
+- Se usara `AnimatePresence` de `framer-motion` (ya importado) para animar la aparicion del formulario.
+- El boton "Registrate como Driver" usara los estilos de accent existentes (`bg-accent text-accent-foreground`) con un tamano grande para destacar.
+- No se requieren cambios en la base de datos ni en otros archivos. Solo se modifica `OnboardingSection.tsx`.
 
