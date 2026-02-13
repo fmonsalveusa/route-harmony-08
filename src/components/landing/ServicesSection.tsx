@@ -128,7 +128,7 @@ const services: Service[] = [
       "Facturación automática a brokers con envío por email",
       "App móvil para conductores con tracking integrado",
     ],
-    cta: { label: "Registrarse ahora", href: "#onboarding" },
+    cta: { label: "Contactar por WhatsApp", href: "https://wa.me/19807668815?text=Hola%2C%20me%20interesa%20el%20software%20Load%20Up%20TMS" },
   },
   {
     icon: FileCheck,
