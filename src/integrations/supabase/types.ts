@@ -79,6 +79,65 @@ export type Database = {
           },
         ]
       }
+      dispatch_service_invoices: {
+        Row: {
+          created_at: string
+          driver_id: string
+          driver_name: string
+          id: string
+          invoice_number: string
+          loads: Json
+          notes: string | null
+          percentage_applied: number
+          period_from: string | null
+          period_to: string | null
+          status: string
+          tenant_id: string | null
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          driver_id: string
+          driver_name: string
+          id?: string
+          invoice_number: string
+          loads?: Json
+          notes?: string | null
+          percentage_applied?: number
+          period_from?: string | null
+          period_to?: string | null
+          status?: string
+          tenant_id?: string | null
+          total_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          driver_id?: string
+          driver_name?: string
+          id?: string
+          invoice_number?: string
+          loads?: Json
+          notes?: string | null
+          percentage_applied?: number
+          period_from?: string | null
+          period_to?: string | null
+          status?: string
+          tenant_id?: string | null
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dispatch_service_invoices_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dispatcher_payment_items: {
         Row: {
           amount: number
@@ -237,6 +296,7 @@ export type Database = {
       drivers: {
         Row: {
           created_at: string
+          dispatch_service_percentage: number
           dispatcher_id: string | null
           earnings_this_month: number | null
           email: string
@@ -266,6 +326,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          dispatch_service_percentage?: number
           dispatcher_id?: string | null
           earnings_this_month?: number | null
           email: string
@@ -295,6 +356,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          dispatch_service_percentage?: number
           dispatcher_id?: string | null
           earnings_this_month?: number | null
           email?: string

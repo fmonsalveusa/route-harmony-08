@@ -156,6 +156,14 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
             </Select>
           </div>
 
+          {form.service_type === 'dispatch_service' && (
+            <div className="space-y-2 p-3 rounded-lg border-2 border-orange-400/50 bg-orange-50">
+              <Label className="font-semibold text-orange-700">% Dispatch Service Fee ⭐</Label>
+              <Input type="number" step="0.5" value={form.dispatch_service_percentage ?? 0} onChange={e => set('dispatch_service_percentage', Number(e.target.value))} placeholder="Ej: 10" />
+              <p className="text-xs text-orange-600">Porcentaje que la empresa cobra al driver por el servicio de despacho</p>
+            </div>
+          )}
+
           <div className="space-y-2 p-3 rounded-lg border-2 border-emerald-400/50 bg-emerald-50">
             <Label className="font-semibold text-emerald-700">Assigned Dispatcher ⭐</Label>
             <Select value={form.dispatcher_id || 'none'} onValueChange={v => set('dispatcher_id', v === 'none' ? null : v)}>

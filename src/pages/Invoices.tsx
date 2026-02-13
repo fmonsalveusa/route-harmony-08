@@ -12,6 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { DispatchServiceTab } from '@/components/DispatchServiceTab';
 import { toast } from 'sonner';
 
 import { FileText, DollarSign, AlertTriangle, CheckCircle, Search, Trash2, Pencil, Download, Send, Image, ExternalLink, Mail, Loader2 } from 'lucide-react';
@@ -136,8 +138,17 @@ const Invoices = () => {
     <div className="space-y-6">
       <div>
         <h1 className="page-header">Facturación</h1>
-        <p className="page-description">Gestión de facturas generadas a brokers</p>
+        <p className="page-description">Gestión de facturas</p>
       </div>
+
+      <Tabs defaultValue="broker" className="w-full">
+        <TabsList>
+          <TabsTrigger value="broker">Broker Invoices</TabsTrigger>
+          <TabsTrigger value="dispatch_service">Dispatch Service</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="broker">
+        <div className="space-y-6">
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <StatCard title="Pendientes" value={`$${totalPending.toLocaleString()}`} icon={AlertTriangle} iconClassName="bg-warning/10 text-warning" />
@@ -335,6 +346,13 @@ const Invoices = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+        </div>
+        </TabsContent>
+
+        <TabsContent value="dispatch_service">
+          <DispatchServiceTab />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
