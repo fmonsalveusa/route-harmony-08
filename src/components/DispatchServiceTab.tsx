@@ -202,15 +202,16 @@ export function DispatchServiceTab() {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard title="Pendiente" value={`$${totalPending.toLocaleString()}`} icon={AlertTriangle} iconClassName="bg-warning/10 text-warning" />
         <StatCard title="Cobrado" value={`$${totalPaid.toLocaleString()}`} icon={CheckCircle} iconClassName="bg-success/10 text-success" />
         <StatCard title="Total Facturas DS" value={invoices.length} icon={FileText} />
-        <div className="flex items-end">
-          <Button onClick={openGenerateDialog} className="w-full gap-2">
-            <Plus className="h-4 w-4" /> Generar Factura DS
-          </Button>
-        </div>
+      </div>
+
+      <div>
+        <Button onClick={openGenerateDialog} className="gap-2">
+          <Plus className="h-4 w-4" /> Generar Factura DS
+        </Button>
       </div>
 
       <div className="flex flex-wrap gap-3 items-center">
