@@ -1,66 +1,37 @@
 
 
-# Tarjetas de servicio con imagen + Modal informativo
+## Notificaciones persistentes en tiempo real para la app web
 
-## Resumen
+### Objetivo
+Cuando un driver ejecute acciones clave (marcar llegada, subir fotos/POD, cambiar estado), aparecera un panel de notificaciones "toast" persistente en la esquina inferior derecha de la pantalla principal de la app web. Estas notificaciones se mantendran visibles hasta que el usuario las cierre o haga clic en ellas, momento en que sera redirigido a la pagina relevante (ej. detalle de la carga).
 
-Se agregara una imagen representativa a cada tarjeta de servicio en la landing page. Al hacer clic en una tarjeta, se abrira un modal con informacion detallada del servicio (sin imagen), incluyendo descripcion extendida, beneficios, requisitos y un boton de accion.
+### Comportamiento
+- Las notificaciones apareceran como tarjetas apiladas en la esquina inferior derecha
+- Cada tarjeta mostrara: icono del tipo de accion, nombre del driver, descripcion de la accion (ej. "Juan Perez arrived at Pick Up - 123 Main St")
+- Se mantendran visibles hasta que el usuario haga clic o las cierre manualmente con una "X"
+- Al hacer clic, redirigiran a la pagina de Loads donde podran ver los detalles
+- Maximo 5 notificaciones visibles a la vez (las mas nuevas reemplazan las mas antiguas)
+- Animacion de entrada suave (slide-in desde la derecha)
 
-## Cambios visibles para el usuario
+### Cambios planificados
 
-- Cada tarjeta de servicio mostrara una imagen en la parte superior (antes del icono y titulo)
-- Las tarjetas seran clickeables con cursor pointer
-- Al hacer clic se abre un modal con:
-  - Icono y titulo del servicio
-  - Descripcion detallada y extensa
-  - Lista de beneficios con iconos de check
-  - Boton de accion: contactar por WhatsApp o registrarse
+**1. Nuevo componente: `src/components/LiveNotificationToasts.tsx`**
+- Componente que se suscribe al canal de Supabase Realtime en la tabla `notifications`
+- Escucha eventos `INSERT` y muestra tarjetas persistentes
+- Cada tarjeta incluye: icono segun tipo, titulo, mensaje, timestamp, boton de cerrar
+- Al hacer clic en la tarjeta: marca como leida + navega a `/loads`
+- Auto-limita a 5 notificaciones visibles simultaneamente
+- Animaciones con Framer Motion (ya instalado) para entrada/salida
 
-## Imagenes por servicio
+**2. Modificar: `src/components/AppLayout.tsx`**
+- Importar y renderizar `<LiveNotificationToasts />` dentro del layout principal, justo antes del cierre del div principal
+- Solo se mostrara para usuarios con roles admin/dispatcher (no para drivers, ya que ellos usan la app movil)
 
-| Servicio | Imagen |
-|----------|--------|
-| Dispatching MC# propio | Captura del dashboard o imagen de dispatcher trabajando |
-| Leasing bajo MC# | Camion en carretera (se puede reusar `landing-hotshot.jpg` o `landing-boxtruck.jpg`) |
-| Curso de Dispatcher | Persona capacitandose / pantalla de formacion |
-| Tracking Up App | Mapa con tracking de camiones |
-| Asesoria Personal | Reunion de consultoria profesional |
-| Tramite de Permisos | Documentos DOT/MC# |
-| Load Up TMS | Captura real del Dashboard y pagina de Cargas de la app |
+### Detalles tecnicos
 
-Para Load Up TMS se tomaran capturas reales de la aplicacion. Para los demas servicios se generaran imagenes con IA o se reutilizaran las existentes (`landing-boxtruck.jpg`, `landing-hotshot.jpg`).
-
-## Detalles tecnicos
-
-### Archivo a modificar: `src/components/landing/ServicesSection.tsx`
-
-1. **Ampliar el array `services`** con nuevos campos:
-   - `image`: ruta a la imagen (en `src/assets/services/`)
-   - `details`: descripcion larga para el modal
-   - `benefits`: array de strings con beneficios clave
-   - `cta`: objeto con `label` (texto del boton) y `href` (link a WhatsApp o seccion de registro)
-
-2. **Agregar estado** `selectedService` (indice o null) para controlar el modal
-
-3. **Modificar la tarjeta** para incluir:
-   - Imagen en la parte superior con `aspect-ratio` 16:9, bordes redondeados superiores
-   - `onClick` para abrir el modal
-   - `cursor-pointer` en el className
-
-4. **Agregar un Dialog** (reutilizando `src/components/ui/dialog.tsx`) que muestre:
-   - Icono y titulo
-   - Descripcion detallada
-   - Lista de beneficios con iconos Check de lucide-react
-   - Boton CTA (WhatsApp abre `https://wa.me/19807668815?text=...`, registro hace scroll a la seccion de onboarding)
-
-### Imagenes nuevas a crear: `src/assets/services/`
-
-- Se generaran 5-6 imagenes con IA usando el modelo `google/gemini-2.5-flash-image` desde una edge function temporal, o se agregaran directamente al proyecto
-- Para "Load Up TMS" se usara un screenshot real del Dashboard
-- Para "Leasing" se puede reusar `landing-boxtruck.jpg` ya existente
-- Formato JPG, tamano aproximado 800x450px
-
-### Sin dependencias nuevas
-- Se reutiliza Dialog de Radix UI y framer-motion existentes
-- Imagenes como imports estaticos de Vite
+- Reutiliza la suscripcion Realtime existente en la tabla `notifications` (ya configurada con `supabase_realtime`)
+- Filtra notificaciones por `tenant_id` del usuario autenticado para seguridad
+- Usa `framer-motion` para animaciones `AnimatePresence` con transiciones slide + fade
+- Estado local con `useState` para la lista de toasts activos (independiente del hook `useNotifications` existente que maneja el historial en la campana)
+- No requiere cambios en la base de datos ni nuevas migraciones
 
