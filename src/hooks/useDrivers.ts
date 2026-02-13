@@ -127,9 +127,18 @@ export function useDrivers() {
 
   const getDocSignedUrl = async (storedUrl: string): Promise<string | null> => {
     try {
+      // If it's already a full signed URL, extract the storage path
       const match = storedUrl.match(/\/driver-documents\/([^?]+)/);
-      if (!match) return storedUrl;
-      const path = decodeURIComponent(match[1]);
+      let path: string;
+      if (match) {
+        path = decodeURIComponent(match[1]);
+      } else if (storedUrl.startsWith('http')) {
+        // Unknown full URL — just return as-is
+        return storedUrl;
+      } else {
+        // It's a raw storage path (e.g. from onboarding uploads)
+        path = storedUrl;
+      }
       const { data } = await supabase.storage.from('driver-documents').createSignedUrl(path, 3600);
       return data?.signedUrl || storedUrl;
     } catch {
