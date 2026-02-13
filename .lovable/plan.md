@@ -1,29 +1,30 @@
 
 
-## Pre-llenar datos del formulario de la Landing en el Onboarding
+## Simplificar el registro de Driver en la Landing Page
 
 ### Problema
-Cuando un driver llena el formulario en la landing page (nombre, email, telefono, tipo de vehiculo) y hace clic en "Comenzar Registro", se abre la pagina de onboarding pero solo aparece el nombre pre-llenado. El email, telefono y tipo de vehiculo se pierden porque no se guardan en la base de datos.
+El llamado a registrarse como Driver aparece 4 veces en la landing page, lo cual puede sentirse repetitivo y agresivo para el visitante.
 
-### Causa raiz
-- La Edge Function `create-onboarding-token` recibe los 4 campos (name, email, phone, truck_type) pero solo guarda `driver_name` en la tabla `onboarding_tokens`
-- La tabla `onboarding_tokens` no tiene columnas para email, phone ni truck_type
-- La pagina de onboarding solo pre-llena el nombre desde `data.driver_name`
+### Propuesta
 
-### Solucion
+Mantener el formulario de registro SOLO en la seccion OnboardingSection (al final de la pagina), que ya tiene el patron de boton oculto que revela el formulario. Eliminar o cambiar las demas referencias:
 
-**1. Agregar columnas a la tabla `onboarding_tokens`**
-- `driver_email` (text, nullable)
-- `driver_phone` (text, nullable)
-- `truck_type` (text, nullable)
+**1. Navbar** - Cambiar "Registrate" por "Servicios" o simplemente eliminarlo (ya hay links a servicios y contacto). Alternativa: dejarlo pero con texto mas sutil como "Para Drivers".
 
-**2. Actualizar la Edge Function `create-onboarding-token`**
-- Guardar `email`, `phone` y `truck_type` en las nuevas columnas al crear el token
+**2. Hero Section** - Reemplazar el boton "Registrate como Driver" por algo mas general orientado a los servicios, como "Conoce Nuestros Servicios" que haga scroll a la seccion de servicios. Asi el hero vende la empresa, no empuja al registro.
 
-**3. Actualizar `src/pages/DriverOnboarding.tsx`**
-- Al cargar el token, pre-llenar tambien email, phone en el formulario de driver
-- Pre-llenar truck_type en el formulario de truck
+**3. Servicios (Load Up TMS)** - Cambiar el CTA de "Registrarse ahora" por "Contactar por WhatsApp" como los demas servicios, para mantener consistencia.
+
+**4. OnboardingSection** - Se mantiene igual. Es el unico lugar donde aparece el formulario de registro de Driver con su boton "Registrate como Driver".
 
 ### Resultado
-Al hacer clic en "Comenzar Registro" desde la landing, todos los campos previamente llenados (nombre, email, telefono, tipo de vehiculo) apareceran ya completados en el formulario de onboarding.
+El registro aparece una sola vez al final de la pagina, de forma sutil (oculto tras un boton). El resto de la landing se enfoca en mostrar servicios y generar confianza antes de pedir el registro.
+
+### Seccion tecnica
+
+Archivos a modificar:
+- `src/components/landing/HeroSection.tsx` - Cambiar el primer boton de "Registrate como Driver" a "Conoce Nuestros Servicios" apuntando a `#servicios`
+- `src/components/landing/LandingNavbar.tsx` - Eliminar el link "Registrate" del array `navLinks`
+- `src/components/landing/ServicesSection.tsx` - Cambiar el CTA del servicio "Load Up TMS" (linea 131) de `{ label: "Registrarse ahora", href: "#onboarding" }` a `{ label: "Contactar por WhatsApp", href: "https://wa.me/19807668815?text=..." }`
+- `src/components/landing/OnboardingSection.tsx` - Sin cambios, se mantiene como el unico punto de registro
 
