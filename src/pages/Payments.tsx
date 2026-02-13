@@ -74,14 +74,13 @@ const PaymentsSection = ({ type, refreshKey }: PaymentsSectionProps) => {
   const [adjMap, setAdjMap] = useState<Record<string, number>>({});
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [batchProcessing, setBatchProcessing] = useState(false);
-  const [loadDateMap, setLoadDateMap] = useState<Record<string, string>>({});
+  const [searchQuery, setSearchQuery] = useState('');
   const [beneficiaryFilter, setBeneficiaryFilter] = useState('all');
   const [weekFilter, setWeekFilter] = useState('all');
   const [monthFilter, setMonthFilter] = useState('all');
   const [yearFilter, setYearFilter] = useState('all');
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
   const [dateTo, setDateTo] = useState<Date | undefined>();
-  const [searchQuery, setSearchQuery] = useState('');
 
   // Fetch all adjustments for payments of this type
   const fetchAdjustments = useCallback(async () => {
@@ -100,19 +99,14 @@ const PaymentsSection = ({ type, refreshKey }: PaymentsSectionProps) => {
 
   useEffect(() => { fetchAdjustments(); }, [fetchAdjustments]);
 
-  // Fetch load created_at dates
-  const fetchLoadDates = useCallback(async () => {
-    const loadIds = [...new Set(allPayments.filter(p => p.recipient_type === type).map(p => p.load_id))];
-    if (loadIds.length === 0) return;
-    const { data } = await supabase.from('loads').select('id, created_at').in('id', loadIds);
-    if (data) {
-      const map: Record<string, string> = {};
-      (data as any[]).forEach(l => { map[l.id] = l.created_at; });
-      setLoadDateMap(map);
-    }
+  // Build date map from payment created_at (payments are generated when load is marked delivered)
+  const paymentDateMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    allPayments.filter(p => p.recipient_type === type).forEach(p => {
+      map[p.id] = p.created_at;
+    });
+    return map;
   }, [allPayments, type]);
-
-  useEffect(() => { fetchLoadDates(); }, [fetchLoadDates]);
   useEffect(() => { setSelectedIds(new Set()); }, [statusFilter, beneficiaryFilter, weekFilter, monthFilter, yearFilter, dateFrom, dateTo]);
   useEffect(() => { if (refreshKey && refreshKey > 0) refetch(); }, [refreshKey, refetch]);
 
@@ -132,7 +126,7 @@ const PaymentsSection = ({ type, refreshKey }: PaymentsSectionProps) => {
 
   const dateOptions = useMemo(() => {
     const dates = allTypePayments
-      .map(p => loadDateMap[p.load_id])
+      .map(p => paymentDateMap[p.id])
       .filter(Boolean)
       .map(d => parseISO(d));
     
@@ -151,7 +145,7 @@ const PaymentsSection = ({ type, refreshKey }: PaymentsSectionProps) => {
       months: [...months].sort().reverse(),
       years: [...years].sort().reverse(),
     };
-  }, [allTypePayments, loadDateMap]);
+  }, [allTypePayments, paymentDateMap]);
 
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -164,7 +158,7 @@ const PaymentsSection = ({ type, refreshKey }: PaymentsSectionProps) => {
 
     if (weekFilter !== 'all' || monthFilter !== 'all' || yearFilter !== 'all' || dateFrom || dateTo) {
       result = result.filter(p => {
-        const dateStr = loadDateMap[p.load_id];
+        const dateStr = paymentDateMap[p.id];
         if (!dateStr) return false;
         const d = parseISO(dateStr);
 
@@ -199,7 +193,7 @@ const PaymentsSection = ({ type, refreshKey }: PaymentsSectionProps) => {
     // Sort newest first by created_at
     result.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
     return result;
-  }, [allTypePayments, statusFilter, beneficiaryFilter, weekFilter, monthFilter, yearFilter, dateFrom, dateTo, loadDateMap, searchQuery]);
+  }, [allTypePayments, statusFilter, beneficiaryFilter, weekFilter, monthFilter, yearFilter, dateFrom, dateTo, paymentDateMap, searchQuery]);
 
   const payments = filteredPayments;
 
@@ -470,7 +464,7 @@ const PaymentsSection = ({ type, refreshKey }: PaymentsSectionProps) => {
                     </td>
                     <td className="p-3 font-medium text-primary">{p.load_reference}</td>
                     <td className="p-3">{p.recipient_name}</td>
-                    <td className="p-3 text-muted-foreground">{loadDateMap[p.load_id] ? formatDate(loadDateMap[p.load_id]) : '—'}</td>
+                    <td className="p-3 text-muted-foreground">{formatDate(p.created_at)}</td>
                     <td className="p-3 text-right text-muted-foreground">${Number(p.total_rate).toLocaleString()}</td>
                     <td className="p-3 text-right text-muted-foreground">{p.percentage_applied}%</td>
                     <td className="p-3 text-right text-muted-foreground">${Number(p.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
