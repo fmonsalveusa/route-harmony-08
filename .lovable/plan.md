@@ -1,52 +1,49 @@
 
 
-## Escaner de documentos real con soporte multi-pagina
+## Agendar Reunion - Seccion Landing Page con Notificacion por Email
 
 ### Objetivo
-Reemplazar el boton actual "Scanear BOL/POD" (que solo abre la camara) con un verdadero escaner de documentos que incluya:
-- Captura de foto con la camara del movil
-- Vista previa de cada pagina escaneada con opcion de re-tomar
-- Mejora automatica de imagen (alto contraste, blanco y negro para documentos)
-- Soporte para escanear multiples paginas antes de enviar
-- Interfaz de pantalla completa optimizada para movil
+Agregar una nueva seccion en la landing page que permita a los visitantes agendar una reunion con la empresa, con un formulario completo y envio de email de notificacion al correo de la empresa.
 
-### Comportamiento del usuario
-1. El driver pulsa "Scanear BOL" o "Scanear POD"
-2. Se abre un dialogo de pantalla completa (modal)
-3. Captura una foto con la camara
-4. Ve la vista previa de la pagina escaneada con opciones:
-   - **Mejorar**: aplica filtro de alto contraste blanco/negro (modo documento)
-   - **Re-tomar**: descarta y vuelve a capturar
-   - **Agregar pagina**: captura otra pagina adicional
-5. Puede ver todas las paginas escaneadas en una galeria de miniaturas
-6. Puede eliminar paginas individuales
-7. Al pulsar **"Subir todo"**, todas las paginas se suben al storage
+### Campos del Formulario
+- **Nombre Completo del Driver** (texto, requerido)
+- **Numero de Telefono** (telefono, requerido)
+- **Ciudad** (texto, requerido)
+- **Estado** (dropdown con las 51 siglas de estados de EE.UU. desde `usStates.ts`)
+- **Tipo de Vehiculo** (dropdown: Box Truck, Hotshot, Dry Van, Flatbed, Reefer)
+- **Fecha** (calendario con selector de fecha usando el componente Calendar existente)
+- **Hora** (dropdown con intervalos de 30 minutos: 8:00 AM, 8:30 AM, ... 6:00 PM)
 
-### Cambios planificados
+### Cambios Planificados
 
-**1. Nuevo componente: `src/components/driver-app/DocumentScanner.tsx`**
-- Dialogo de pantalla completa con fondo oscuro
-- Utiliza Canvas API para procesamiento de imagen:
-  - Conversion a escala de grises
-  - Aumento de contraste (threshold adaptativo)
-  - Resultado: imagen limpia tipo "escaneado"
-- Estado interno con array de paginas escaneadas (como data URLs)
-- Galeria de miniaturas en la parte inferior
-- Botones: "Agregar pagina", "Subir todo", "Cancelar"
-- Convierte cada pagina procesada a Blob para subir al storage
+**1. Nueva tabla en la base de datos: `meeting_requests`**
+Almacena cada solicitud de reunion para tener un registro persistente.
+- Columnas: `id`, `driver_name`, `phone`, `city`, `state`, `truck_type`, `meeting_date`, `meeting_time`, `status` (pending/confirmed/completed), `created_at`
+- RLS: permitir INSERT publico (sin autenticacion, ya que es la landing page publica), SELECT solo para usuarios autenticados del tenant
 
-**2. Modificar: `src/components/driver-app/StopCard.tsx`**
-- Importar el nuevo componente `DocumentScanner`
-- El boton "Scanear BOL/POD" ahora abre el `DocumentScanner` en lugar de un input file
-- El `DocumentScanner` recibe como props: `stop`, `loadRef`, `driverName`, `onUpdate` y maneja internamente la subida de archivos
+**2. Nueva Edge Function: `send-meeting-request`**
+- Recibe los datos del formulario
+- Inserta el registro en `meeting_requests`
+- Envia un email de notificacion a `agartransportation1@gmail.com` (usando las credenciales GMAIL existentes) con todos los detalles de la reunion solicitada
+- No requiere autenticacion (formulario publico)
+- Usa la misma libreria `denomailer` que ya se usa en `send-invoice-email`
 
-### Detalles tecnicos
+**3. Nuevo componente: `src/components/landing/MeetingSection.tsx`**
+- Diseno visual consistente con la seccion OnboardingSection existente (fondo oscuro, formulario en card con animacion)
+- Icono de calendario y titulo "Agenda una Reunion"
+- Lado izquierdo: texto de beneficios y descripcion
+- Lado derecho: formulario con los campos solicitados
+- Validacion de campos requeridos antes de enviar
+- Feedback con toast de exito/error
 
-- **Procesamiento de imagen con Canvas API** (sin dependencias externas):
-  - `getImageData()` para acceder a los pixeles
-  - Conversion a escala de grises: promedio ponderado de canales RGB
-  - Contraste adaptativo: umbral (threshold) para binarizar la imagen simulando un escaneo real
-  - Resultado exportado como JPEG de alta calidad
-- **Multi-pagina**: array de `{ original: string, enhanced: string }` en estado local
-- **Sin nuevas dependencias**: todo se logra con APIs nativas del navegador (Canvas, FileReader, Camera API)
-- **No requiere cambios en la base de datos**: usa el mismo flujo de subida a storage y tabla `pod_documents` existente
+**4. Modificar: `src/pages/Landing.tsx`**
+- Importar y agregar `MeetingSection` entre VehicleGallery y OnboardingSection
+
+### Detalles Tecnicos
+
+- **Selector de Fecha**: usa el componente `Calendar` con `Popover` existente, formato MM/DD/YYYY
+- **Selector de Hora**: genera intervalos de 30 minutos desde 8:00 AM hasta 6:00 PM (21 opciones)
+- **Estados**: reutiliza la lista `US_STATES` de `src/lib/usStates.ts`
+- **Email**: HTML formateado con tabla de detalles de la reunion, enviado via Gmail SMTP con los secrets `GMAIL_USER` y `GMAIL_APP_PASSWORD` ya configurados
+- **Sin nuevas dependencias**: todo se logra con componentes y librerias existentes
+
