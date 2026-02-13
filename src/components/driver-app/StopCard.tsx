@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MapPin, Navigation, Camera, Check, Clock, Image } from 'lucide-react';
+import { MapPin, Navigation, Camera, Check, Clock, Image, ScanLine } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
@@ -145,22 +145,39 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments }: 
         )}
 
         {isArrived && (
-          <label>
-            <Button variant="outline" size="sm" className="gap-1.5 text-xs" asChild disabled={uploading}>
-              <span>
-                <Camera className="h-3.5 w-3.5" />
-                {uploading ? 'Uploading...' : stop.stop_type === 'pickup' ? 'BOL & Load Pictures' : 'Upload POD'}
-              </span>
-            </Button>
-            <input
-              type="file"
-              accept="image/*,application/pdf"
-              capture="environment"
-              multiple
-              className="hidden"
-              onChange={handleFileUpload}
-            />
-          </label>
+          <>
+            <label>
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs" asChild disabled={uploading}>
+                <span>
+                  <Camera className="h-3.5 w-3.5" />
+                  {uploading ? 'Uploading...' : stop.stop_type === 'pickup' ? 'BOL & Load Pictures' : 'Upload POD'}
+                </span>
+              </Button>
+              <input
+                type="file"
+                accept="image/*,application/pdf"
+                capture="environment"
+                multiple
+                className="hidden"
+                onChange={handleFileUpload}
+              />
+            </label>
+            <label>
+              <Button variant="default" size="sm" className="gap-1.5 text-xs" asChild disabled={uploading}>
+                <span>
+                  <ScanLine className="h-3.5 w-3.5" />
+                  {uploading ? 'Scanning...' : stop.stop_type === 'pickup' ? 'Scanear BOL' : 'Scanear POD'}
+                </span>
+              </Button>
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={handleFileUpload}
+              />
+            </label>
+          </>
         )}
       </div>
 
