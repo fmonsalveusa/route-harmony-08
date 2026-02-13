@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { MapPin, Navigation, Camera, Check, Clock, Image, ScanLine } from 'lucide-react';
+import { MapPin, Navigation, Camera, Check, Clock, Image } from 'lucide-react';
+import { DocumentScanner } from './DocumentScanner';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
@@ -27,6 +28,7 @@ interface StopCardProps {
 export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments }: StopCardProps) => {
   const [arriving, setArriving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [scannerOpen, setScannerOpen] = useState(false);
 
   const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(stop.address)}`;
 
@@ -162,21 +164,15 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments }: 
                 onChange={handleFileUpload}
               />
             </label>
-            <label>
-              <Button variant="default" size="sm" className="gap-1.5 text-xs" asChild disabled={uploading}>
-                <span>
-                  <ScanLine className="h-3.5 w-3.5" />
-                  {uploading ? 'Scanning...' : stop.stop_type === 'pickup' ? 'Scanear BOL' : 'Scanear POD'}
-                </span>
-              </Button>
-              <input
-                type="file"
-                accept="image/*"
-                capture="environment"
-                className="hidden"
-                onChange={handleFileUpload}
-              />
-            </label>
+            <Button
+              variant="default"
+              size="sm"
+              className="gap-1.5 text-xs"
+              onClick={() => setScannerOpen(true)}
+            >
+              <Camera className="h-3.5 w-3.5" />
+              {stop.stop_type === 'pickup' ? 'Scanear BOL' : 'Scanear POD'}
+            </Button>
           </>
         )}
       </div>
@@ -197,6 +193,15 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments }: 
           ))}
         </div>
       )}
+
+      <DocumentScanner
+        open={scannerOpen}
+        onClose={() => setScannerOpen(false)}
+        stop={stop}
+        loadRef={loadRef}
+        driverName={driverName}
+        onUpdate={onUpdate}
+      />
     </div>
   );
 };
