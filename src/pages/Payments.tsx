@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { PaymentEditDialog } from '@/components/PaymentEditDialog';
 import { Input } from '@/components/ui/input';
 import { DollarSign, CheckCircle, Clock, Download, Pencil, Trash2, FileText, CheckCheck, CalendarIcon, X, PlusCircle, Search } from 'lucide-react';
-import { generatePaymentReceipt } from '@/lib/paymentReceipt';
+import { generatePaymentReceipt, type DispatcherLoadItem } from '@/lib/paymentReceipt';
 import { generateBatchPaymentReceipt } from '@/lib/batchPaymentReceipt';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -26,7 +26,38 @@ const handleGenerateReceipt = async (p: DbPayment) => {
   const { data } = await supabase.from('payment_adjustments').select('*').eq('payment_id', p.id).order('created_at', { ascending: true });
   const adjustments = (data as any[]) || [];
   const totalAdj = adjustments.reduce((sum: number, a: any) => sum + (a.adjustment_type === 'addition' ? Number(a.amount) : -Number(a.amount)), 0);
-  generatePaymentReceipt(p, adjustments, totalAdj, Number(p.amount) + totalAdj);
+
+  // For dispatcher payments, fetch load item details
+  let dispatcherItems: DispatcherLoadItem[] | undefined;
+  if (p.recipient_type === 'dispatcher') {
+    const { data: items } = await supabase
+      .from('dispatcher_payment_items')
+      .select('load_id, load_reference, total_rate, percentage_applied, amount')
+      .eq('payment_id', p.id);
+
+    if (items && items.length > 0) {
+      // Fetch origin/destination from loads
+      const loadIds = (items as any[]).map((i: any) => i.load_id);
+      const { data: loads } = await supabase
+        .from('loads')
+        .select('id, origin, destination')
+        .in('id', loadIds);
+
+      const loadMap: Record<string, { origin: string; destination: string }> = {};
+      (loads as any[] || []).forEach((l: any) => { loadMap[l.id] = { origin: l.origin, destination: l.destination }; });
+
+      dispatcherItems = (items as any[]).map((i: any) => ({
+        load_reference: i.load_reference,
+        origin: loadMap[i.load_id]?.origin || '—',
+        destination: loadMap[i.load_id]?.destination || '—',
+        total_rate: i.total_rate,
+        percentage_applied: i.percentage_applied,
+        amount: i.amount,
+      }));
+    }
+  }
+
+  generatePaymentReceipt(p, adjustments, totalAdj, Number(p.amount) + totalAdj, dispatcherItems);
 };
 
 interface PaymentsSectionProps {

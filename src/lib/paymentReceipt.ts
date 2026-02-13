@@ -5,11 +5,21 @@ import { ADJUSTMENT_REASONS } from '@/hooks/usePaymentAdjustments';
 
 const reasonLabel = (r: string) => ADJUSTMENT_REASONS.find(a => a.value === r)?.label || r;
 
+export interface DispatcherLoadItem {
+  load_reference: string;
+  origin: string;
+  destination: string;
+  total_rate: number;
+  percentage_applied: number;
+  amount: number;
+}
+
 export function generatePaymentReceipt(
   payment: DbPayment,
   adjustments: DbPaymentAdjustment[],
   totalAdjustment: number,
   finalAmount: number,
+  dispatcherLoadItems?: DispatcherLoadItem[],
 ) {
   const doc = new jsPDF();
   const date = payment.payment_date || new Date().toISOString().split('T')[0];
@@ -60,6 +70,59 @@ export function generatePaymentReceipt(
     doc.text(value, margin + 60, y);
     y += 7;
   });
+
+  // Dispatcher consolidated load details
+  if (dispatcherLoadItems && dispatcherLoadItems.length > 0) {
+    y += 6;
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(55, 65, 81);
+    doc.text('Load Details', margin, y);
+    y += 3;
+    doc.setDrawColor(37, 99, 235);
+    doc.setLineWidth(0.5);
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 8;
+
+    // Table header
+    doc.setFontSize(8);
+    doc.setFillColor(243, 244, 246);
+    doc.rect(margin, y - 4, pageWidth - margin * 2, 8, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(55, 65, 81);
+    doc.text('Load #', margin + 2, y);
+    doc.text('Origin', margin + 28, y);
+    doc.text('Destination', margin + 72, y);
+    doc.text('Rate', margin + 116, y);
+    doc.text('%', margin + 138, y);
+    doc.text('Payment', pageWidth - margin - 2, y, { align: 'right' });
+    y += 8;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    dispatcherLoadItems.forEach(item => {
+      if (y > 260) {
+        doc.addPage();
+        y = 20;
+      }
+
+      doc.setTextColor(55, 65, 81);
+      doc.text(item.load_reference, margin + 2, y);
+      doc.text(item.origin.substring(0, 22), margin + 28, y);
+      doc.text(item.destination.substring(0, 22), margin + 72, y);
+      doc.text(`$${Number(item.total_rate).toLocaleString('en-US', { minimumFractionDigits: 2 })}`, margin + 116, y);
+      doc.text(`${item.percentage_applied}%`, margin + 138, y);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`$${Number(item.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}`, pageWidth - margin - 2, y, { align: 'right' });
+      doc.setFont('helvetica', 'normal');
+
+      y += 2;
+      doc.setDrawColor(229, 231, 235);
+      doc.setLineWidth(0.2);
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 6;
+    });
+  }
 
   if (adjustments.length > 0) {
     y += 6;
