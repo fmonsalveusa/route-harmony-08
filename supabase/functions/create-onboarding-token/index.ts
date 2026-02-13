@@ -52,6 +52,9 @@ Deno.serve(async (req) => {
       .insert({
         tenant_id: tenant.id,
         driver_name: name,
+        driver_email: email,
+        driver_phone: phone,
+        truck_type: truck_type || null,
         status: "pending",
         expires_at: expiresAt.toISOString(),
       })

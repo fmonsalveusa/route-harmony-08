@@ -91,6 +91,9 @@ export default function DriverOnboarding() {
         setTokenValid(true);
         setTokenData(data);
         if (data.driver_name) setDriver(d => ({ ...d, name: data.driver_name }));
+        if ((data as any).driver_email) setDriver(d => ({ ...d, email: (data as any).driver_email }));
+        if ((data as any).driver_phone) setDriver(d => ({ ...d, phone: (data as any).driver_phone }));
+        if ((data as any).truck_type) setTruck(t => ({ ...t, truck_type: (data as any).truck_type }));
       }
       setValidating(false);
     })();
