@@ -1,4 +1,4 @@
-import { ReactNode, useState } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import logoImg from '@/assets/logo.png';
 import { useAuth } from '@/contexts/AuthContext';
 import { Link, useLocation } from 'react-router-dom';
@@ -16,6 +16,7 @@ import { LoadFormDialog } from '@/components/LoadFormDialog';
 import { useLoads } from '@/hooks/useLoads';
 import { NotificationBell } from '@/components/NotificationBell';
 import { LiveNotificationToasts } from '@/components/LiveNotificationToasts';
+import { supabase } from '@/integrations/supabase/client';
 
 interface NavItem {
   label: string;
@@ -69,7 +70,26 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [loadDialogOpen, setLoadDialogOpen] = useState(false);
+  const [pendingDrivers, setPendingDrivers] = useState(0);
   const { createLoad, fetchLoads } = useLoads();
+
+  useEffect(() => {
+    if (!profile?.tenant_id) return;
+    const fetchPending = async () => {
+      const { count } = await supabase
+        .from('drivers')
+        .select('*', { count: 'exact', head: true })
+        .eq('tenant_id', profile.tenant_id)
+        .eq('status', 'pending');
+      setPendingDrivers(count || 0);
+    };
+    fetchPending();
+    const channel = supabase
+      .channel('pending-drivers-sidebar')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'drivers' }, () => fetchPending())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [profile?.tenant_id]);
 
   if (!profile) return null;
 
@@ -135,7 +155,12 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
                 `}
               >
                 <item.icon className="h-4.5 w-4.5 flex-shrink-0" />
-                {!collapsed && <span className="text-[15px]">{item.label}</span>}
+                {!collapsed && <span className="text-[15px] flex-1">{item.label}</span>}
+                {!collapsed && item.path === '/drivers' && pendingDrivers > 0 && (
+                  <span className="ml-auto inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-orange-500 text-white text-[11px] font-bold leading-none">
+                    {pendingDrivers}
+                  </span>
+                )}
               </Link>
             );
           })}
