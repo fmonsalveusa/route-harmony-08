@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { X, MapPin, Camera, Truck, Bell } from 'lucide-react';
+import { X, MapPin, Camera, Truck, Bell, UserPlus } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 interface LiveToast {
@@ -19,12 +19,14 @@ const typeIcons: Record<string, typeof Bell> = {
   driver_arrived: MapPin,
   pod_uploaded: Camera,
   status_change: Truck,
+  new_driver_onboarded: UserPlus,
 };
 
 const typeColors: Record<string, string> = {
   driver_arrived: 'text-blue-500',
   pod_uploaded: 'text-emerald-500',
   status_change: 'text-amber-500',
+  new_driver_onboarded: 'text-green-500',
 };
 
 export function LiveNotificationToasts() {
@@ -73,7 +75,7 @@ export function LiveNotificationToasts() {
       .update({ is_read: true } as any)
       .eq('id', toast.id);
     dismiss(toast.id);
-    navigate('/loads');
+    navigate(toast.type === 'new_driver_onboarded' ? '/drivers' : '/loads');
   };
 
   if (toasts.length === 0) return null;
