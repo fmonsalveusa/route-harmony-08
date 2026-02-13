@@ -637,6 +637,45 @@ export type Database = {
           },
         ]
       }
+      meeting_requests: {
+        Row: {
+          city: string
+          created_at: string
+          driver_name: string
+          id: string
+          meeting_date: string
+          meeting_time: string
+          phone: string
+          state: string
+          status: string
+          truck_type: string
+        }
+        Insert: {
+          city: string
+          created_at?: string
+          driver_name: string
+          id?: string
+          meeting_date: string
+          meeting_time: string
+          phone: string
+          state: string
+          status?: string
+          truck_type: string
+        }
+        Update: {
+          city?: string
+          created_at?: string
+          driver_name?: string
+          id?: string
+          meeting_date?: string
+          meeting_time?: string
+          phone?: string
+          state?: string
+          status?: string
+          truck_type?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
