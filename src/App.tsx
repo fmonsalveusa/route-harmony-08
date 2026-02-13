@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/AppLayout";
 import { DriverMobileLayout } from "@/components/driver-app/DriverMobileLayout";
@@ -63,7 +63,7 @@ const ProtectedRoute = ({ children, masterOnly = false }: { children: React.Reac
   return <AppLayout>{children}</AppLayout>;
 };
 
-const DriverRoute = ({ children }: { children: React.ReactNode }) => {
+const DriverWrapper = () => {
   const { user, loading } = useAuth();
 
   if (loading) {
@@ -78,7 +78,9 @@ const DriverRoute = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <DriverTrackingProvider>
-      <DriverMobileLayout>{children}</DriverMobileLayout>
+      <DriverMobileLayout>
+        <Outlet />
+      </DriverMobileLayout>
     </DriverTrackingProvider>
   );
 };
@@ -109,12 +111,14 @@ const AppRoutes = () => {
       <Route path="/" element={user ? <Navigate to={getRedirectPath()} replace /> : <Landing />} />
 
       {/* Driver mobile routes */}
-      <Route path="/driver" element={<DriverRoute><DriverDashboard /></DriverRoute>} />
-      <Route path="/driver/loads" element={<DriverRoute><DriverLoads /></DriverRoute>} />
-      <Route path="/driver/loads/:loadId" element={<DriverRoute><DriverLoadDetail /></DriverRoute>} />
-      <Route path="/driver/payments" element={<DriverRoute><DriverPayments /></DriverRoute>} />
-      <Route path="/driver/profile" element={<DriverRoute><DriverProfile /></DriverRoute>} />
-      <Route path="/driver/tracking" element={<DriverRoute><DriverTracking /></DriverRoute>} />
+      <Route path="/driver" element={<DriverWrapper />}>
+        <Route index element={<DriverDashboard />} />
+        <Route path="loads" element={<DriverLoads />} />
+        <Route path="loads/:loadId" element={<DriverLoadDetail />} />
+        <Route path="payments" element={<DriverPayments />} />
+        <Route path="profile" element={<DriverProfile />} />
+        <Route path="tracking" element={<DriverTracking />} />
+      </Route>
 
       {/* Tenant routes */}
       <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
