@@ -1,5 +1,6 @@
-import { useRef } from 'react';
+import { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import { usePodDocuments } from '@/hooks/usePodDocuments';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Upload, FileText, Image, Download, Trash2, Loader2 } from 'lucide-react';
 
@@ -10,6 +11,29 @@ interface PodUploadSectionProps {
 export const PodUploadSection = ({ loadId }: PodUploadSectionProps) => {
   const { pods, loading, uploading, uploadPod, deletePod, openPod, downloadPod } = usePodDocuments(loadId);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Get delivery stop IDs to filter only delivery PODs
+  const [deliveryStopIds, setDeliveryStopIds] = useState<Set<string>>(new Set());
+  const [stopsLoaded, setStopsLoaded] = useState(false);
+
+  useEffect(() => {
+    const fetchDeliveryStops = async () => {
+      const { data } = await supabase
+        .from('load_stops')
+        .select('id')
+        .eq('load_id', loadId)
+        .eq('stop_type', 'delivery');
+      setDeliveryStopIds(new Set((data || []).map(s => s.id)));
+      setStopsLoaded(true);
+    };
+    fetchDeliveryStops();
+  }, [loadId]);
+
+  // Filter: only show docs linked to delivery stops OR docs with no stop_id (legacy uploaded via this section)
+  const deliveryPods = useMemo(() => {
+    if (!stopsLoaded) return [];
+    return pods.filter(p => !p.stop_id || deliveryStopIds.has(p.stop_id));
+  }, [pods, deliveryStopIds, stopsLoaded]);
 
   const handleFileChange = async (files: FileList | null) => {
     if (!files) return;
@@ -44,7 +68,7 @@ export const PodUploadSection = ({ loadId }: PodUploadSectionProps) => {
         />
       </div>
 
-      <PodFileList pods={pods} onDelete={deletePod} onOpen={openPod} onDownload={downloadPod} />
+      <PodFileList pods={deliveryPods} onDelete={deletePod} onOpen={openPod} onDownload={downloadPod} />
       {loading && <p className="text-xs text-muted-foreground">Cargando PODs...</p>}
     </div>
   );
