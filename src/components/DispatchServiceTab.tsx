@@ -272,9 +272,9 @@ export function DispatchServiceTab() {
                     <td className="p-3 hidden lg:table-cell text-muted-foreground">{formatDate(inv.created_at)}</td>
                     <td className="p-3 text-right">
                       <div className="flex justify-end gap-1.5">
-                        <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-emerald-400 bg-white text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 gap-1" onClick={() => {
+                        <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-emerald-400 bg-white text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 gap-1" onClick={async () => {
                           const loads = Array.isArray(inv.loads) ? inv.loads : [];
-                          generateDSInvoicePdf({
+                          await generateDSInvoicePdf({
                             invoiceNumber: inv.invoice_number,
                             driverName: inv.driver_name,
                             loads: loads.map((l: any) => ({
