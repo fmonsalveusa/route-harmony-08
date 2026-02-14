@@ -1,4 +1,5 @@
 import jsPDF from 'jspdf';
+import dispatchUpLogo from '@/assets/dispatch-up-logo.png';
 
 interface DSLoadItem {
   reference_number: string;
@@ -19,17 +20,35 @@ interface DSInvoicePdfData {
   notes?: string | null;
 }
 
-export function generateDSInvoicePdf(data: DSInvoicePdfData) {
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
+export async function generateDSInvoicePdf(data: DSInvoicePdfData) {
   const doc = new jsPDF();
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
   let y = 20;
 
+  // Logo
+  try {
+    const img = await loadImage(dispatchUpLogo);
+    doc.addImage(img, 'PNG', 15, 8, 45, 20);
+  } catch (e) {
+    // fallback: no logo
+  }
+
   // Title
-  doc.setFontSize(22);
+  doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(30, 64, 120);
-  doc.text('DISPATCH SERVICE INVOICE', 15, y);
+  doc.text('DISPATCH SERVICE INVOICE', pageW - 15, y + 8, { align: 'right' });
   doc.setTextColor(0, 0, 0);
 
   // Invoice info
