@@ -53,7 +53,7 @@ const Expenses = () => {
   // Only trucks with company drivers assigned (for the expense form)
   const companyDriverTrucks = useMemo(() => {
     return trucks.filter(t => {
-      const driver = drivers.find(d => d.id === t.driver_id);
+      const driver = drivers.find(d => d.truck_id === t.id);
       return driver && driver.service_type === 'company_driver';
     });
   }, [trucks, drivers]);
