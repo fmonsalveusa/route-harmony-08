@@ -4,12 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Upload, FileText, X } from 'lucide-react';
-import { format } from 'date-fns';
-import { formatDate, todayET } from '@/lib/dateUtils';
-import { cn } from '@/lib/utils';
+import { Upload, FileText, X } from 'lucide-react';
+import { todayET } from '@/lib/dateUtils';
 import { DbDriver, DriverInput } from '@/hooks/useDrivers';
 import { DbTruck } from '@/hooks/useTrucks';
 import { DbDispatcher } from '@/hooks/useDispatchers';
@@ -259,27 +255,10 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
 }
 
 function DatePickerField({ label, value, onChange }: { label: string; value: string | null | undefined; onChange: (v: string | null) => void }) {
-  const date = value ? new Date(value + 'T00:00:00') : undefined;
   return (
     <div className="space-y-2">
       <Label>{label}</Label>
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}>
-            <CalendarIcon className="mr-2 h-4 w-4" />
-            {date ? formatDate(format(date, 'yyyy-MM-dd')) : 'Select date'}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
-          <Calendar
-            mode="single"
-            selected={date}
-            onSelect={d => onChange(d ? format(d, 'yyyy-MM-dd') : null)}
-            initialFocus
-            className={cn("p-3 pointer-events-auto")}
-          />
-        </PopoverContent>
-      </Popover>
+      <Input type="date" value={value || ''} onChange={e => onChange(e.target.value || null)} />
     </div>
   );
 }
