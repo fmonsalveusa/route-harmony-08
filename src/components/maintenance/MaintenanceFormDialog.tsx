@@ -21,6 +21,10 @@ interface Props {
 }
 
 export function MaintenanceFormDialog({ open, onOpenChange, trucks, drivers, onSubmit, editItem }: Props) {
+  const companyDriverTrucks = trucks.filter(t => {
+    const driver = drivers.find(d => d.id === t.driver_id);
+    return driver && driver.service_type === 'company_driver';
+  });
   const [truckId, setTruckId] = useState('');
   const [maintenanceType, setMaintenanceType] = useState('oil_change');
   const [customType, setCustomType] = useState('');
@@ -51,7 +55,7 @@ export function MaintenanceFormDialog({ open, onOpenChange, trucks, drivers, onS
         setDescription(editItem.description || '');
         setIsRecurring(!!(editItem.interval_miles || editItem.interval_days));
       } else {
-        setTruckId(trucks[0]?.id || '');
+        setTruckId(companyDriverTrucks[0]?.id || '');
         setMaintenanceType('oil_change');
         setCustomType('');
         setPerformedAt(new Date().toISOString().split('T')[0]);
@@ -126,7 +130,7 @@ export function MaintenanceFormDialog({ open, onOpenChange, trucks, drivers, onS
                 <Select value={truckId} onValueChange={setTruckId}>
                   <SelectTrigger><SelectValue placeholder="Select truck" /></SelectTrigger>
                   <SelectContent>
-                    {trucks.map(t => {
+                    {companyDriverTrucks.map(t => {
                       const driver = drivers.find(d => d.id === t.driver_id);
                       return (
                         <SelectItem key={t.id} value={t.id}>
