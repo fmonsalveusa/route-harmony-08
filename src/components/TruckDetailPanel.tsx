@@ -39,14 +39,18 @@ export function TruckDetailPanel({ truck, driverName, getDocSignedUrl }: Props) 
   const [loadingDoc, setLoadingDoc] = useState<string | null>(null);
 
   const handleViewDoc = async (url: string, key: string) => {
+    // Open window synchronously to avoid popup blocker
+    const newWindow = window.open('about:blank', '_blank');
     if (!getDocSignedUrl) {
-      window.open(url, '_blank');
+      if (newWindow) newWindow.location.href = url;
       return;
     }
     setLoadingDoc(key);
     try {
       const signedUrl = await getDocSignedUrl(url);
-      window.open(signedUrl || url, '_blank');
+      if (newWindow) newWindow.location.href = signedUrl || url;
+    } catch {
+      if (newWindow) newWindow.location.href = url;
     } finally {
       setLoadingDoc(null);
     }
