@@ -1,8 +1,8 @@
+import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Button } from '@/components/ui/button';
-import { ExternalLink, Truck as TruckIcon } from 'lucide-react';
+import { ExternalLink, Truck as TruckIcon, Loader2 } from 'lucide-react';
 import type { DbTruck } from '@/hooks/useTrucks';
 import { formatDate } from '@/lib/dateUtils';
 
@@ -20,12 +20,29 @@ interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   truck: DbTruck | null;
+  getDocSignedUrl?: (storedUrl: string) => Promise<string | null>;
 }
 
-export function TruckDetailDialog({ open, onOpenChange, truck }: Props) {
+export function TruckDetailDialog({ open, onOpenChange, truck, getDocSignedUrl }: Props) {
+  const [loadingDoc, setLoadingDoc] = useState<string | null>(null);
+
   if (!truck) return null;
 
   const docs = DOC_LABELS.filter(d => truck[d.key]);
+
+  const handleViewDoc = async (url: string, key: string) => {
+    if (!getDocSignedUrl) {
+      window.open(url, '_blank');
+      return;
+    }
+    setLoadingDoc(key);
+    try {
+      const signedUrl = await getDocSignedUrl(url);
+      window.open(signedUrl || url, '_blank');
+    } finally {
+      setLoadingDoc(null);
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -88,20 +105,21 @@ export function TruckDetailDialog({ open, onOpenChange, truck }: Props) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {docs.map(d => {
                   const url = truck[d.key] as string;
-                  const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
                   return (
                     <div key={d.key} className="border rounded-lg overflow-hidden">
-                      {isImage ? (
-                        <img src={url} alt={d.label} className="w-full h-40 object-cover" />
-                      ) : (
-                        <div className="h-40 flex items-center justify-center bg-muted">
-                          <span className="text-muted-foreground text-xs">PDF / Documento</span>
-                        </div>
-                      )}
+                      <div className="h-40 flex items-center justify-center bg-muted">
+                        <span className="text-muted-foreground text-xs">Click to view</span>
+                      </div>
                       <div className="p-2 flex items-center justify-between">
                         <span className="text-xs font-medium">{d.label}</span>
-                        <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
-                          <a href={url} target="_blank" rel="noopener noreferrer"><ExternalLink className="h-3.5 w-3.5" /></a>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          disabled={loadingDoc === d.key}
+                          onClick={() => handleViewDoc(url, d.key)}
+                        >
+                          {loadingDoc === d.key ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ExternalLink className="h-3.5 w-3.5" />}
                         </Button>
                       </div>
                     </div>

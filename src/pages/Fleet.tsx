@@ -23,7 +23,7 @@ const getStatusStyle = (status: string) =>
 const PAGE_SIZES = [25, 50, 100];
 
 const Fleet = () => {
-  const { trucks, loading, createTruck, updateTruck, deleteTruck, uploadDocument } = useTrucks();
+  const { trucks, loading, createTruck, updateTruck, deleteTruck, uploadDocument, getDocSignedUrl } = useTrucks();
   const { drivers } = useDrivers();
   const getDriverName = (truckId: string) => {
     const d = drivers.find(d => d.truck_id === truckId);
@@ -143,7 +143,7 @@ const Fleet = () => {
                     {isExpanded && (
                       <tr key={`${truck.id}-detail`}>
                         <td colSpan={6} className="p-0">
-                          <TruckDetailPanel truck={truck} driverName={driverName} />
+                          <TruckDetailPanel truck={truck} driverName={driverName} getDocSignedUrl={getDocSignedUrl} />
                         </td>
                       </tr>
                     )}
@@ -212,7 +212,7 @@ const Fleet = () => {
       )}
 
       <TruckFormDialog open={dialogOpen} onOpenChange={setDialogOpen} truck={editTruck} onSave={handleSave} />
-      <TruckDetailDialog open={!!detailTruck} onOpenChange={v => !v && setDetailTruck(null)} truck={detailTruck} />
+      <TruckDetailDialog open={!!detailTruck} onOpenChange={v => !v && setDetailTruck(null)} truck={detailTruck} getDocSignedUrl={getDocSignedUrl} />
     </div>
   );
 };

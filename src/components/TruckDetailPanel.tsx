@@ -1,6 +1,6 @@
+import { useState } from 'react';
 import type { DbTruck } from '@/hooks/useTrucks';
-import { ExternalLink, FileText, Wrench } from 'lucide-react';
-import { StatusBadge } from '@/components/StatusBadge';
+import { ExternalLink, FileText, Wrench, Loader2 } from 'lucide-react';
 import { formatDate } from '@/lib/dateUtils';
 import { ExpiryBadge } from '@/components/ExpiryBadge';
 import { useTruckMaintenance } from '@/hooks/useTruckMaintenance';
@@ -30,11 +30,27 @@ const DOC_LABELS: { key: keyof DbTruck; label: string }[] = [
 interface Props {
   truck: DbTruck;
   driverName: string | null;
+  getDocSignedUrl?: (storedUrl: string) => Promise<string | null>;
 }
 
-export function TruckDetailPanel({ truck, driverName }: Props) {
+export function TruckDetailPanel({ truck, driverName, getDocSignedUrl }: Props) {
   const { maintenanceItems } = useTruckMaintenance();
   const truckMaint = maintenanceItems.filter(m => m.truck_id === truck.id);
+  const [loadingDoc, setLoadingDoc] = useState<string | null>(null);
+
+  const handleViewDoc = async (url: string, key: string) => {
+    if (!getDocSignedUrl) {
+      window.open(url, '_blank');
+      return;
+    }
+    setLoadingDoc(key);
+    try {
+      const signedUrl = await getDocSignedUrl(url);
+      window.open(signedUrl || url, '_blank');
+    } finally {
+      setLoadingDoc(null);
+    }
+  };
 
   return (
     <div className="p-5 bg-muted/20 border-t space-y-4 animate-fade-in">
@@ -117,9 +133,13 @@ export function TruckDetailPanel({ truck, driverName }: Props) {
                 <FileText className="h-3.5 w-3.5 text-muted-foreground" />
                 <span className="font-medium">{doc.label}</span>
                 {url ? (
-                  <a href={url} target="_blank" rel="noopener" className="text-primary underline flex items-center gap-0.5" onClick={e => e.stopPropagation()}>
-                    View <ExternalLink className="h-3 w-3" />
-                  </a>
+                  <button
+                    onClick={e => { e.stopPropagation(); handleViewDoc(url, doc.key); }}
+                    className="text-primary underline flex items-center gap-0.5 hover:text-primary/80"
+                    disabled={loadingDoc === doc.key}
+                  >
+                    {loadingDoc === doc.key ? <Loader2 className="h-3 w-3 animate-spin" /> : <>View <ExternalLink className="h-3 w-3" /></>}
+                  </button>
                 ) : (
                   <span className="text-muted-foreground">—</span>
                 )}

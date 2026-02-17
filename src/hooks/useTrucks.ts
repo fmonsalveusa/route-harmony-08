@@ -122,5 +122,23 @@ export function useTrucks() {
     return urlData?.signedUrl || null;
   };
 
-  return { trucks, loading, createTruck, updateTruck, deleteTruck, uploadDocument, refetch: fetchTrucks };
+  const getDocSignedUrl = async (storedUrl: string): Promise<string | null> => {
+    try {
+      const match = storedUrl.match(/\/driver-documents\/([^?]+)/);
+      let path: string;
+      if (match) {
+        path = decodeURIComponent(match[1]);
+      } else if (storedUrl.startsWith('http')) {
+        return storedUrl;
+      } else {
+        path = storedUrl;
+      }
+      const { data } = await supabase.storage.from('driver-documents').createSignedUrl(path, 3600);
+      return data?.signedUrl || storedUrl;
+    } catch {
+      return storedUrl;
+    }
+  };
+
+  return { trucks, loading, createTruck, updateTruck, deleteTruck, uploadDocument, getDocSignedUrl, refetch: fetchTrucks };
 }
