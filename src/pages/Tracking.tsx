@@ -9,13 +9,15 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { StatusBadge } from '@/components/StatusBadge';
-import { MapPin, Truck, Package, Navigation, Clock, Search, ChevronRight, AlertTriangle, Eye, User, Users } from 'lucide-react';
+import { MapPin, Truck, Package, Navigation, Clock, Search, ChevronRight, AlertTriangle, Eye, User, Users, Pencil, Loader2 } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, Tooltip as LeafletTooltip, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { LoadStop } from '@/hooks/useLoadStops';
 import { format, parseISO, isToday } from 'date-fns';
+import { toast } from '@/hooks/use-toast';
 
 // Fix default marker icons
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -73,9 +75,22 @@ const createTruckIcon = (heading?: number | null) => {
   });
 };
 
+const manualLocationIcon = new L.DivIcon({
+  html: `<div style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;">
+    <div style="width:24px;height:24px;border-radius:50%;background:hsl(38,92%,50%);border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+      </svg>
+    </div>
+  </div>`,
+  className: '',
+  iconSize: [28, 28],
+  iconAnchor: [14, 14],
+});
+
 const Tracking = () => {
   const { loads } = useLoads();
-  const { drivers } = useDrivers();
+  const { drivers, refetch: refetchDrivers } = useDrivers();
   const { trucks } = useTrucks();
   const { dispatchers } = useDispatchers();
 
@@ -87,6 +102,44 @@ const Tracking = () => {
   const [mapCenter, setMapCenter] = useState<[number, number]>([39.8283, -98.5795]);
   const [mapZoom, setMapZoom] = useState(4);
   const [lastDeliveryStops, setLastDeliveryStops] = useState<Record<string, { address: string; lat: number; lng: number; date: string }>>({});
+
+  // Manual location dialog state
+  const [editLocationDriver, setEditLocationDriver] = useState<string | null>(null);
+  const [locationInput, setLocationInput] = useState('');
+  const [savingLocation, setSavingLocation] = useState(false);
+
+  const handleSaveManualLocation = async () => {
+    if (!editLocationDriver || !locationInput.trim()) return;
+    setSavingLocation(true);
+    try {
+      const addr = encodeURIComponent(locationInput.trim());
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${addr}&countrycodes=us&limit=1`);
+      const results = await res.json();
+      if (results.length === 0) {
+        toast({ title: 'Location not found', description: 'Try a different address or city, state format.', variant: 'destructive' });
+        setSavingLocation(false);
+        return;
+      }
+      const lat = parseFloat(results[0].lat);
+      const lng = parseFloat(results[0].lon);
+      const displayName = results[0].display_name || locationInput.trim();
+
+      await supabase.from('drivers' as any).update({
+        manual_location_address: displayName,
+        manual_location_lat: lat,
+        manual_location_lng: lng,
+      } as any).eq('id', editLocationDriver);
+
+      toast({ title: 'Location updated' });
+      setEditLocationDriver(null);
+      setLocationInput('');
+      // Refresh drivers
+      refetchDrivers();
+    } catch {
+      toast({ title: 'Error updating location', variant: 'destructive' });
+    }
+    setSavingLocation(false);
+  };
 
   // Driver live locations
   const [driverLocations, setDriverLocations] = useState<Array<{
@@ -421,6 +474,25 @@ const Tracking = () => {
                   </Marker>
                 );
               })}
+              {/* Manual location markers for available drivers */}
+              {availableDrivers.filter(d => (d as any).manual_location_lat && (d as any).manual_location_lng).map(driver => (
+                <Marker
+                  key={`manual-${driver.id}`}
+                  position={[(driver as any).manual_location_lat, (driver as any).manual_location_lng]}
+                  icon={manualLocationIcon}
+                >
+                  <LeafletTooltip direction="top" offset={[0, -16]} permanent className="driver-name-tooltip">
+                    <span style={{ fontSize: '11px', fontWeight: 600 }}>{driver.name}</span>
+                  </LeafletTooltip>
+                  <Popup>
+                    <div className="text-xs">
+                      <strong>{driver.name}</strong>
+                      <br />📍 Manual Location
+                      <br /><span className="text-muted-foreground">{(driver as any).manual_location_address}</span>
+                    </div>
+                  </Popup>
+                </Marker>
+              ))}
             </MapContainer>
           </div>
         </Card>
@@ -469,6 +541,27 @@ const Tracking = () => {
                       )}
                     </div>
                     <div className="space-y-1 text-xs text-muted-foreground">
+                      {/* Manual location override */}
+                      {(driver as any).manual_location_address && (
+                        <div className="mt-1.5 pt-1.5 border-t">
+                          <p className="text-[10px] font-medium text-foreground flex items-center gap-1">
+                            <MapPin className="h-3 w-3 text-[hsl(38,92%,50%)]" />
+                            Manual Location
+                          </p>
+                          <p className="text-xs leading-tight mt-0.5 pl-4">
+                            {(() => {
+                              const parts = ((driver as any).manual_location_address || '').split(',').map((p: string) => p.trim());
+                              if (parts.length >= 3) {
+                                const stateZip = parts[parts.length - 1];
+                                const state = stateZip.replace(/\d{5}(-\d{4})?/, '').trim();
+                                const city = parts[parts.length - 2];
+                                return state ? `${city}, ${state}` : city;
+                              }
+                              return (driver as any).manual_location_address;
+                            })()}
+                          </p>
+                        </div>
+                      )}
                       {lastDel ? (
                         <div className="mt-1.5 pt-1.5 border-t">
                           <p className="text-[10px] font-medium text-foreground">Last Delivery</p>
@@ -494,9 +587,21 @@ const Tracking = () => {
                           )}
                         </div>
                       ) : (
-                        <p className="text-[10px] italic mt-1">No delivery history</p>
+                        !((driver as any).manual_location_address) && <p className="text-[10px] italic mt-1">No delivery history</p>
                       )}
                     </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full mt-2 h-7 text-xs gap-1"
+                      onClick={() => {
+                        setEditLocationDriver(driver.id);
+                        setLocationInput((driver as any).manual_location_address || '');
+                      }}
+                    >
+                      <Pencil className="h-3 w-3" />
+                      {(driver as any).manual_location_address ? 'Edit Location' : 'Set Location'}
+                    </Button>
                   </div>
                 );
               })
@@ -661,6 +766,33 @@ const Tracking = () => {
           </CardContent>
         </Card>
       )}
+      {/* Manual Location Dialog */}
+      <Dialog open={!!editLocationDriver} onOpenChange={(open) => { if (!open) { setEditLocationDriver(null); setLocationInput(''); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MapPin className="h-4 w-4" />
+              Set Driver Location
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">Enter a city, state or full address. This will be used as the starting point for empty miles calculation on the next assigned load.</p>
+            <Input
+              placeholder="e.g. Dallas, TX"
+              value={locationInput}
+              onChange={(e) => setLocationInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSaveManualLocation()}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setEditLocationDriver(null); setLocationInput(''); }}>Cancel</Button>
+            <Button onClick={handleSaveManualLocation} disabled={savingLocation || !locationInput.trim()}>
+              {savingLocation && <Loader2 className="h-4 w-4 animate-spin" />}
+              Save Location
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

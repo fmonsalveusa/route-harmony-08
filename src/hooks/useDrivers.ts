@@ -29,6 +29,9 @@ export interface DbDriver {
   service_type: string;
   dispatch_service_percentage: number;
   state: string | null;
+  manual_location_address: string | null;
+  manual_location_lat: number | null;
+  manual_location_lng: number | null;
   created_at: string;
   updated_at: string;
 }

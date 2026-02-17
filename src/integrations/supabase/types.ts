@@ -311,6 +311,9 @@ export type Database = {
           license_expiry: string | null
           license_photo_url: string | null
           loads_this_month: number | null
+          manual_location_address: string | null
+          manual_location_lat: number | null
+          manual_location_lng: number | null
           medical_card_expiry: string | null
           medical_card_photo_url: string | null
           name: string
@@ -341,6 +344,9 @@ export type Database = {
           license_expiry?: string | null
           license_photo_url?: string | null
           loads_this_month?: number | null
+          manual_location_address?: string | null
+          manual_location_lat?: number | null
+          manual_location_lng?: number | null
           medical_card_expiry?: string | null
           medical_card_photo_url?: string | null
           name: string
@@ -371,6 +377,9 @@ export type Database = {
           license_expiry?: string | null
           license_photo_url?: string | null
           loads_this_month?: number | null
+          manual_location_address?: string | null
+          manual_location_lat?: number | null
+          manual_location_lng?: number | null
           medical_card_expiry?: string | null
           medical_card_photo_url?: string | null
           name?: string
