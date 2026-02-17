@@ -113,7 +113,7 @@ const Tracking = () => {
     setSavingLocation(true);
     try {
       const addr = encodeURIComponent(locationInput.trim());
-      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${addr}&countrycodes=us&limit=1`);
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${addr}&countrycodes=us&limit=1&addressdetails=1`);
       const results = await res.json();
       if (results.length === 0) {
         toast({ title: 'Location not found', description: 'Try a different address or city, state format.', variant: 'destructive' });
@@ -122,7 +122,11 @@ const Tracking = () => {
       }
       const lat = parseFloat(results[0].lat);
       const lng = parseFloat(results[0].lon);
-      const displayName = results[0].display_name || locationInput.trim();
+      const a = results[0].address || {};
+      const city = a.city || a.town || a.village || a.hamlet || '';
+      const state = a.state || '';
+      const zip = a.postcode || '';
+      const displayName = [city, state].filter(Boolean).join(', ') + (zip ? `. ${zip}` : '');
 
       await supabase.from('drivers' as any).update({
         manual_location_address: displayName,
@@ -549,16 +553,7 @@ const Tracking = () => {
                             Manual Location
                           </p>
                           <p className="text-xs leading-tight mt-0.5 pl-4">
-                            {(() => {
-                              const parts = ((driver as any).manual_location_address || '').split(',').map((p: string) => p.trim());
-                              if (parts.length >= 3) {
-                                const stateZip = parts[parts.length - 1];
-                                const state = stateZip.replace(/\d{5}(-\d{4})?/, '').trim();
-                                const city = parts[parts.length - 2];
-                                return state ? `${city}, ${state}` : city;
-                              }
-                              return (driver as any).manual_location_address;
-                            })()}
+                            {(driver as any).manual_location_address}
                           </p>
                         </div>
                       )}
