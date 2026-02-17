@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTruckMaintenance, DbTruckMaintenance } from '@/hooks/useTruckMaintenance';
 import { useTrucks } from '@/hooks/useTrucks';
+import { useDrivers } from '@/hooks/useDrivers';
 import { MaintenanceFormDialog } from '@/components/maintenance/MaintenanceFormDialog';
 import { MaintenanceCard } from '@/components/maintenance/MaintenanceCard';
 import { LogServiceDialog } from '@/components/maintenance/LogServiceDialog';
@@ -14,6 +15,7 @@ import { StatCard } from '@/components/StatCard';
 const Maintenance = () => {
   const { maintenanceItems, loading, createMaintenance, updateMaintenance, deleteMaintenance, recalculateMiles, logNewService } = useTruckMaintenance();
   const { trucks } = useTrucks();
+  const { drivers } = useDrivers();
   const [formOpen, setFormOpen] = useState(false);
   const [editItem, setEditItem] = useState<DbTruckMaintenance | null>(null);
   const [logItem, setLogItem] = useState<DbTruckMaintenance | null>(null);
@@ -155,6 +157,7 @@ const Maintenance = () => {
         open={formOpen}
         onOpenChange={setFormOpen}
         trucks={trucks}
+        drivers={drivers}
         editItem={editItem}
         onSubmit={async (input) => {
           if (editItem) {
