@@ -20,6 +20,7 @@ import Tracking from "./pages/Tracking";
 import UsersPage from "./pages/UsersPage";
 import Expenses from "./pages/Expenses";
 import Performance from "./pages/Performance";
+import Maintenance from "./pages/Maintenance";
 import MasterDashboard from "./pages/MasterDashboard";
 import MasterTenants from "./pages/MasterTenants";
 import MasterStats from "./pages/MasterStats";
@@ -133,6 +134,7 @@ const AppRoutes = () => {
       
       <Route path="/expenses" element={<ProtectedRoute><Expenses /></ProtectedRoute>} />
       <Route path="/performance" element={<ProtectedRoute><Performance /></ProtectedRoute>} />
+      <Route path="/maintenance" element={<ProtectedRoute><Maintenance /></ProtectedRoute>} />
       <Route path="/users" element={<ProtectedRoute><UsersPage /></ProtectedRoute>} />
 
       {/* Master Admin routes */}
