@@ -106,7 +106,7 @@ function CopyLoadInfoButton({ load, totalMiles, emptyMiles, rpm, driver, dispatc
     setTimeout(() => setCopied(false), 2000);
   };
   return (
-    <button onClick={handleCopy} className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors" title="Copy load info">
+    <button onClick={handleCopy} className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-info/10 text-info hover:bg-info/20 transition-colors" title="Copy load info">
       {copied ? <><Check className="h-4 w-4" /> Copied</> : <><Copy className="h-4 w-4" /> Copy</>}
     </button>
   );
