@@ -79,6 +79,15 @@ const AdminDashboard = () => {
   );
   const availableTrucks = trucks.filter(t => !trucksWithActiveLoad.has(t.id)).length;
 
+  // Month-to-date revenue (current month, all loads regardless of filters)
+  const monthToDateRevenue = loads.filter(l => {
+    if (l.status === 'cancelled') return false;
+    const dateStr = l.pickup_date || l.created_at;
+    if (!dateStr) return false;
+    const d = new Date(dateStr.includes('T') ? dateStr : dateStr + 'T00:00:00');
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  }).reduce((s, l) => s + l.total_rate, 0);
+
   const now = new Date();
   const thisMonthExpenses = expenses.filter(e => {
     const d = new Date(e.expense_date + 'T00:00:00');
@@ -105,10 +114,11 @@ const AdminDashboard = () => {
         dispatchers={dispatcherOptions} drivers={driverOptions}
       />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <StatCard title="Active Loads" value={activeLoads} icon={Package} trend={{ value: '+12%', positive: true }} />
         <StatCard title="Available Trucks" value={`${availableTrucks}/${trucks.length}`} icon={Truck} iconClassName="bg-success/10 text-success" />
-        <StatCard title="Monthly Revenue" value={`$${totalRevenue.toLocaleString()}`} icon={DollarSign} trend={{ value: '+8%', positive: true }} iconClassName="bg-warning/10 text-warning" />
+        <StatCard title="Week Revenue" value={`$${totalRevenue.toLocaleString()}`} icon={DollarSign} trend={{ value: '+8%', positive: true }} iconClassName="bg-warning/10 text-warning" />
+        <StatCard title="Month-to-date" value={`$${monthToDateRevenue.toLocaleString()}`} icon={TrendingUp} iconClassName="bg-info/10 text-info" />
         <StatCard title="Pending Payments" value={`$${pendingPayments.toLocaleString()}`} icon={AlertTriangle} iconClassName="bg-destructive/10 text-destructive" subtitle={`${payments.filter(p => p.status === 'pending').length} payments`} />
       </div>
 
