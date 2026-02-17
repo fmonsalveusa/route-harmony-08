@@ -659,7 +659,7 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
             </div>
             <div className="flex items-center gap-2">
               <Truck className="h-3.5 w-3.5 text-muted-foreground" />
-              <div><span className="text-muted-foreground">Type:</span> <span className="font-medium">{load.cargo_type || '—'}</span></div>
+              <div><span className="text-muted-foreground">Type:</span> <span className="font-medium">{truck?.truck_type || '—'}</span></div>
             </div>
             <div className="flex items-center gap-2">
               <Route className="h-3.5 w-3.5 text-primary" />
