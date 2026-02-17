@@ -37,7 +37,7 @@ const Companies = () => {
 
   const handleSave = async () => {
     if (!form.name.trim()) {
-      toast.error('Campo requerido: Nombre de la empresa');
+      toast.error('Required field: Company Name');
       return;
     }
     const payload: any = { ...form };
@@ -54,16 +54,16 @@ const Companies = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="page-header">Empresas</h1>
-          <p className="page-description">Configura la información de tus empresas de transporte</p>
+          <h1 className="page-header">Companies</h1>
+          <p className="page-description">Configure your trucking company information</p>
         </div>
         <Button size="sm" className="gap-2" onClick={openNew}>
-          <Plus className="h-4 w-4" /> Nueva Empresa
+          <Plus className="h-4 w-4" /> New Company
         </Button>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <StatCard title="Total Empresas" value={companies.length} icon={Building2} />
+        <StatCard title="Total Companies" value={companies.length} icon={Building2} />
       </div>
 
       <Card>
@@ -71,17 +71,17 @@ const Companies = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-[15px]">
               <thead><tr className="border-b bg-muted/50">
-                <th className="text-left p-3 font-medium text-muted-foreground">Empresa</th>
+                <th className="text-left p-3 font-medium text-muted-foreground">Company</th>
                 <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">MC#</th>
                 <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">DOT#</th>
-                <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Ciudad</th>
-                <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Teléfono</th>
+                <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">City</th>
+                <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Phone</th>
                 <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Email</th>
-                <th className="text-right p-3 font-medium text-muted-foreground">Acciones</th>
+                <th className="text-right p-3 font-medium text-muted-foreground">Actions</th>
               </tr></thead>
               <tbody>
                 {companies.length === 0 && !loading && (
-                  <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">No hay empresas configuradas. Agrega una para incluirla en tus facturas.</td></tr>
+                  <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">No companies configured. Add one to include it in your invoices.</td></tr>
                 )}
                 {companies.map(c => (
                   <tr key={c.id} className="border-b last:border-0 hover:bg-muted/30">
@@ -96,10 +96,10 @@ const Companies = () => {
                     <td className="p-3 hidden lg:table-cell text-muted-foreground">{c.email || '—'}</td>
                     <td className="p-3 text-right">
                       <div className="flex justify-end gap-1.5">
-                        <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-amber-400 bg-white text-amber-600 hover:bg-amber-50 hover:text-amber-700 gap-1" onClick={() => openEdit(c)} title="Editar">
+                        <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-amber-400 bg-white text-amber-600 hover:bg-amber-50 hover:text-amber-700 gap-1" onClick={() => openEdit(c)} title="Edit">
                           <Pencil className="h-4 w-4" /> Edit
                         </Button>
-                        <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-red-400 bg-white text-red-600 hover:bg-red-50 hover:text-red-700 gap-1" onClick={async () => { if (window.confirm(`¿Eliminar empresa ${c.name}? Esta acción es permanente.`)) { await deleteCompany(c.id); } }} title="Eliminar">
+                        <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-red-400 bg-white text-red-600 hover:bg-red-50 hover:text-red-700 gap-1" onClick={async () => { if (window.confirm(`Delete company ${c.name}? This action is permanent.`)) { await deleteCompany(c.id); } }} title="Delete">
                           <Trash2 className="h-4 w-4" /> Delete
                         </Button>
                       </div>
@@ -116,28 +116,28 @@ const Companies = () => {
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editId ? 'Editar Empresa' : 'Nueva Empresa'}</DialogTitle>
+            <DialogTitle>{editId ? 'Edit Company' : 'New Company'}</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-2">
             <div className="grid grid-cols-2 gap-3">
-              <div className="col-span-2"><Label>Nombre *</Label><Input value={form.name} onChange={e => set('name', e.target.value)} /></div>
-              <div className="col-span-2"><Label>Razón Social</Label><Input value={form.legal_name} onChange={e => set('legal_name', e.target.value)} /></div>
+              <div className="col-span-2"><Label>Name *</Label><Input value={form.name} onChange={e => set('name', e.target.value)} /></div>
+              <div className="col-span-2"><Label>Legal Name</Label><Input value={form.legal_name} onChange={e => set('legal_name', e.target.value)} /></div>
               <div><Label>MC#</Label><Input value={form.mc_number} onChange={e => set('mc_number', e.target.value)} /></div>
               <div><Label>DOT#</Label><Input value={form.dot_number} onChange={e => set('dot_number', e.target.value)} /></div>
-              <div className="col-span-2"><Label>Dirección</Label><Input value={form.address} onChange={e => set('address', e.target.value)} /></div>
-              <div><Label>Ciudad</Label><Input value={form.city} onChange={e => set('city', e.target.value)} /></div>
+              <div className="col-span-2"><Label>Address</Label><Input value={form.address} onChange={e => set('address', e.target.value)} /></div>
+              <div><Label>City</Label><Input value={form.city} onChange={e => set('city', e.target.value)} /></div>
               <div className="grid grid-cols-2 gap-2">
-                <div><Label>Estado</Label><Input value={form.state} onChange={e => set('state', e.target.value)} /></div>
+                <div><Label>State</Label><Input value={form.state} onChange={e => set('state', e.target.value)} /></div>
                 <div><Label>ZIP</Label><Input value={form.zip} onChange={e => set('zip', e.target.value)} /></div>
               </div>
-              <div><Label>Teléfono</Label><Input value={form.phone} onChange={e => set('phone', e.target.value)} /></div>
+              <div><Label>Phone</Label><Input value={form.phone} onChange={e => set('phone', e.target.value)} /></div>
               <div><Label>Email</Label><Input value={form.email} onChange={e => set('email', e.target.value)} type="email" /></div>
-              <div className="col-span-2"><Label>Sitio Web</Label><Input value={form.website} onChange={e => set('website', e.target.value)} /></div>
+              <div className="col-span-2"><Label>Website</Label><Input value={form.website} onChange={e => set('website', e.target.value)} /></div>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>
-            <Button onClick={handleSave} disabled={!form.name.trim()}>Guardar</Button>
+            <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
+            <Button onClick={handleSave} disabled={!form.name.trim()}>Save</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
