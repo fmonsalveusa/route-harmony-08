@@ -1,17 +1,16 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { getTenantId } from '@/hooks/useTenantId';
 import { toast } from '@/hooks/use-toast';
 import { formatDate } from '@/lib/dateUtils';
-import { Loader2, CalendarIcon } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Loader2 } from 'lucide-react';
+
 
 interface Props {
   open: boolean;
@@ -54,8 +53,8 @@ export const ManualDispatcherPaymentDialog = ({ open, onOpenChange, onComplete }
   const [driverServiceTypes, setDriverServiceTypes] = useState<Record<string, string>>({});
 
   // Filters
-  const [dateFrom, setDateFrom] = useState<Date | undefined>();
-  const [dateTo, setDateTo] = useState<Date | undefined>();
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [driverFilter, setDriverFilter] = useState('all');
 
   // Fetch dispatchers
@@ -72,8 +71,8 @@ export const ManualDispatcherPaymentDialog = ({ open, onOpenChange, onComplete }
     setLoadingLoads(true);
     setSelectedLoadIds(new Set());
     setDriverFilter('all');
-    setDateFrom(undefined);
-    setDateTo(undefined);
+    setDateFrom('');
+    setDateTo('');
 
     const { data: loadsData } = await supabase
       .from('loads')
@@ -145,17 +144,15 @@ export const ManualDispatcherPaymentDialog = ({ open, onOpenChange, onComplete }
 
     if (dateFrom) {
       result = result.filter(l => {
-        const d = parseISO(l.created_at);
+        const d = l.created_at.split('T')[0];
         return d >= dateFrom;
       });
     }
 
     if (dateTo) {
-      const endOfDay = new Date(dateTo);
-      endOfDay.setHours(23, 59, 59, 999);
       result = result.filter(l => {
-        const d = parseISO(l.created_at);
-        return d <= endOfDay;
+        const d = l.created_at.split('T')[0];
+        return d <= dateTo;
       });
     }
 
@@ -283,8 +280,8 @@ export const ManualDispatcherPaymentDialog = ({ open, onOpenChange, onComplete }
       setAllLoads([]);
       setSelectedLoadIds(new Set());
       setDrivers([]);
-      setDateFrom(undefined);
-      setDateTo(undefined);
+      setDateFrom('');
+      setDateTo('');
       setDriverFilter('all');
     }
     onOpenChange(o);
@@ -316,32 +313,12 @@ export const ManualDispatcherPaymentDialog = ({ open, onOpenChange, onComplete }
             <div className="flex flex-wrap items-end gap-3">
               <div className="space-y-1">
                 <label className="text-xs font-medium text-muted-foreground">From (Load Created)</label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className={cn("h-8 w-[150px] justify-start text-xs font-normal", !dateFrom && "text-muted-foreground")}>
-                      <CalendarIcon className="mr-1.5 h-3.5 w-3.5" />
-                      {dateFrom ? format(dateFrom, 'MM/dd/yyyy') : 'Start date'}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0 z-50" align="start">
-                    <Calendar mode="single" selected={dateFrom} onSelect={setDateFrom} initialFocus className={cn("p-3 pointer-events-auto")} />
-                  </PopoverContent>
-                </Popover>
+                <Input type="date" className="h-8 w-[150px] text-xs" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
               </div>
 
               <div className="space-y-1">
                 <label className="text-xs font-medium text-muted-foreground">To (Load Created)</label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className={cn("h-8 w-[150px] justify-start text-xs font-normal", !dateTo && "text-muted-foreground")}>
-                      <CalendarIcon className="mr-1.5 h-3.5 w-3.5" />
-                      {dateTo ? format(dateTo, 'MM/dd/yyyy') : 'End date'}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0 z-50" align="start">
-                    <Calendar mode="single" selected={dateTo} onSelect={setDateTo} initialFocus className={cn("p-3 pointer-events-auto")} />
-                  </PopoverContent>
-                </Popover>
+                <Input type="date" className="h-8 w-[150px] text-xs" value={dateTo} onChange={e => setDateTo(e.target.value)} />
               </div>
 
               <div className="space-y-1">
