@@ -108,18 +108,15 @@ export function WeeklyRatesChart({ loads }: Props) {
                 label={data.length <= 20 ? ({ x, y, value, index }: any) => {
                   const item = data[index];
                   const pct = item?.pctChange;
+                  const valText = `$${Number(value).toLocaleString()}`;
+                  const pctText = pct !== null && pct !== undefined ? ` ${pct >= 0 ? '↑' : '↓'}${Math.abs(pct).toFixed(1)}%` : '';
                   return (
-                    <g>
-                      <text x={x} y={y - 18} textAnchor="middle" fill="hsl(var(--foreground))" fontSize={11} fontWeight={700}>
-                        ${Number(value).toLocaleString()}
-                      </text>
-                      {pct !== null && pct !== undefined && (
-                        <text x={x} y={y - 6} textAnchor="middle" fontSize={9} fontWeight={600}
-                          fill={pct >= 0 ? 'hsl(var(--success))' : 'hsl(var(--destructive))'}>
-                          {pct >= 0 ? '↑' : '↓'}{Math.abs(pct).toFixed(1)}%
-                        </text>
+                    <text x={x} y={y - 12} textAnchor="middle" fontSize={11} fontWeight={700}>
+                      <tspan fill="hsl(var(--foreground))">{valText}</tspan>
+                      {pctText && (
+                        <tspan fill={pct! >= 0 ? 'hsl(var(--success))' : 'hsl(var(--destructive))'} fontSize={9}>{pctText}</tspan>
                       )}
-                    </g>
+                    </text>
                   );
                 } : undefined}
               />
