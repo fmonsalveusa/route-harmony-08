@@ -5,8 +5,8 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Truck, Users, Package, MapPin, FileText,
   BarChart3, LogOut, DollarSign, UserCog, ChevronLeft,
-  ChevronRight, Headphones, Menu, Building2, Crown, CreditCard, Settings, Plus, Receipt, Trophy, Wrench
-} from 'lucide-react';
+  ChevronRight, Headphones, Menu, Building2, Crown, CreditCard, Settings, Plus, Receipt, Trophy, Wrench } from
+'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -26,35 +26,35 @@ interface NavItem {
 }
 
 const tenantNavItems: NavItem[] = [
-  { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', permission: 'dashboard' },
-  { label: 'Loads', icon: Package, path: '/loads', permission: 'loads' },
-  { label: 'Tracking', icon: MapPin, path: '/tracking', permission: 'tracking' },
-  { label: 'Fleet', icon: Truck, path: '/fleet', permission: 'fleet' },
-  { label: 'Drivers', icon: Users, path: '/drivers', permission: 'drivers' },
-  { label: 'Dispatchers', icon: Headphones, path: '/dispatchers', permission: 'dispatchers' },
-  { label: 'Payments', icon: DollarSign, path: '/payments', permission: 'payments.drivers' },
-  { label: 'Expenses', icon: Receipt, path: '/expenses', permission: 'expenses' },
-  { label: 'Maintenance', icon: Wrench, path: '/maintenance', permission: 'fleet' },
-  { label: 'Performance', icon: Trophy, path: '/performance', permission: 'performance' },
-  { label: 'Invoices', icon: FileText, path: '/invoices', permission: 'invoices' },
-  { label: 'Companies', icon: Building2, path: '/companies', permission: 'companies' },
-  { label: 'Users', icon: UserCog, path: '/users', permission: 'users' },
-];
+{ label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', permission: 'dashboard' },
+{ label: 'Loads', icon: Package, path: '/loads', permission: 'loads' },
+{ label: 'Tracking', icon: MapPin, path: '/tracking', permission: 'tracking' },
+{ label: 'Fleet', icon: Truck, path: '/fleet', permission: 'fleet' },
+{ label: 'Drivers', icon: Users, path: '/drivers', permission: 'drivers' },
+{ label: 'Dispatchers', icon: Headphones, path: '/dispatchers', permission: 'dispatchers' },
+{ label: 'Payments', icon: DollarSign, path: '/payments', permission: 'payments.drivers' },
+{ label: 'Expenses', icon: Receipt, path: '/expenses', permission: 'expenses' },
+{ label: 'Maintenance', icon: Wrench, path: '/maintenance', permission: 'fleet' },
+{ label: 'Performance', icon: Trophy, path: '/performance', permission: 'performance' },
+{ label: 'Invoices', icon: FileText, path: '/invoices', permission: 'invoices' },
+{ label: 'Companies', icon: Building2, path: '/companies', permission: 'companies' },
+{ label: 'Users', icon: UserCog, path: '/users', permission: 'users' }];
+
 
 const masterNavItems: NavItem[] = [
-  { label: 'Dashboard', icon: LayoutDashboard, path: '/master', permission: 'master' },
-  { label: 'Companies', icon: Building2, path: '/master/tenants', permission: 'master' },
-  { label: 'Statistics', icon: BarChart3, path: '/master/stats', permission: 'master' },
-  { label: 'Billing', icon: CreditCard, path: '/master/billing', permission: 'master' },
-  { label: 'Settings', icon: Settings, path: '/master/settings', permission: 'master' },
-];
+{ label: 'Dashboard', icon: LayoutDashboard, path: '/master', permission: 'master' },
+{ label: 'Companies', icon: Building2, path: '/master/tenants', permission: 'master' },
+{ label: 'Statistics', icon: BarChart3, path: '/master/stats', permission: 'master' },
+{ label: 'Billing', icon: CreditCard, path: '/master/billing', permission: 'master' },
+{ label: 'Settings', icon: Settings, path: '/master/settings', permission: 'master' }];
+
 
 const roleBadgeStyles: Record<string, string> = {
   master_admin: 'bg-purple-600 text-white',
   admin: 'bg-destructive text-destructive-foreground',
   accounting: 'bg-warning text-warning-foreground',
   dispatcher: 'bg-info text-info-foreground',
-  driver: 'bg-success text-success-foreground',
+  driver: 'bg-success text-success-foreground'
 };
 
 const roleLabels: Record<string, string> = {
@@ -62,10 +62,10 @@ const roleLabels: Record<string, string> = {
   admin: 'ADMIN',
   accounting: 'ACCOUNTING',
   dispatcher: 'DISPATCHER',
-  driver: 'DRIVER',
+  driver: 'DRIVER'
 };
 
-export const AppLayout = ({ children }: { children: ReactNode }) => {
+export const AppLayout = ({ children }: {children: ReactNode;}) => {
   const { profile, role, tenant, subscription, signOut, hasPermission, isMasterAdmin } = useAuth();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
@@ -77,19 +77,19 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (!profile?.tenant_id) return;
     const fetchPending = async () => {
-      const { count } = await supabase
-        .from('drivers')
-        .select('*', { count: 'exact', head: true })
-        .eq('tenant_id', profile.tenant_id)
-        .eq('status', 'pending');
+      const { count } = await supabase.
+      from('drivers').
+      select('*', { count: 'exact', head: true }).
+      eq('tenant_id', profile.tenant_id).
+      eq('status', 'pending');
       setPendingDrivers(count || 0);
     };
     fetchPending();
-    const channel = supabase
-      .channel('pending-drivers-sidebar')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'drivers' }, () => fetchPending())
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    const channel = supabase.
+    channel('pending-drivers-sidebar').
+    on('postgres_changes', { event: '*', schema: 'public', table: 'drivers' }, () => fetchPending()).
+    subscribe();
+    return () => {supabase.removeChannel(channel);};
   }, [profile?.tenant_id]);
 
   if (!profile) return null;
@@ -100,8 +100,8 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
   };
 
   const navItems = isMasterAdmin && location.pathname.startsWith('/master') ? masterNavItems : tenantNavItems;
-  const visibleItems = navItems.filter(item => hasPermission(item.permission));
-  const initials = profile.full_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+  const visibleItems = navItems.filter((item) => hasPermission(item.permission));
+  const initials = profile.full_name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
 
   const isMasterRoute = location.pathname.startsWith('/master');
   const sidebarBg = isMasterAdmin && isMasterRoute ? 'bg-[hsl(270,40%,15%)]' : 'bg-sidebar';
@@ -110,9 +110,9 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
-      {mobileOpen && (
-        <div className="fixed inset-0 z-40 bg-foreground/50 lg:hidden" onClick={() => setMobileOpen(false)} />
-      )}
+      {mobileOpen &&
+      <div className="fixed inset-0 z-40 bg-foreground/50 lg:hidden" onClick={() => setMobileOpen(false)} />
+      }
 
       <aside className={`
         fixed lg:static inset-y-0 left-0 z-50 flex flex-col ${sidebarBg} border-r ${sidebarBorder}
@@ -122,26 +122,26 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
       `}>
         {/* Logo */}
         <div className={`flex items-center h-16 px-4 border-b ${sidebarBorder}`}>
-          {isMasterAdmin && isMasterRoute ? (
-            <>
+          {isMasterAdmin && isMasterRoute ?
+          <>
               <img src={logoImg} alt="Load Up TMS" className="h-7 w-7 rounded flex-shrink-0 object-cover" />
               {!collapsed && <span className="ml-3 text-lg font-bold text-purple-200 tracking-tight">Load Up TMS</span>}
-            </>
-          ) : (
-            <>
-              {tenant?.logo_url ? (
-                <img src={tenant.logo_url} alt="" className="h-7 w-7 rounded flex-shrink-0 object-cover" />
-              ) : (
-                <img src={logoImg} alt="Load Up TMS" className="h-7 w-7 rounded flex-shrink-0 object-cover" />
-              )}
+            </> :
+
+          <>
+              {tenant?.logo_url ?
+            <img src={tenant.logo_url} alt="" className="h-7 w-7 rounded flex-shrink-0 object-cover" /> :
+
+            <img src={logoImg} alt="Load Up TMS" className="h-7 w-7 rounded flex-shrink-0 object-cover" />
+            }
               {!collapsed && <span className="ml-3 text-sm font-semibold text-sidebar-foreground tracking-tight truncate">{tenant?.name || 'Load Up TMS'}</span>}
             </>
-          )}
+          }
         </div>
 
         {/* Nav */}
         <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
-          {visibleItems.map(item => {
+          {visibleItems.map((item) => {
             const active = location.pathname === item.path;
             return (
               <Link
@@ -149,48 +149,48 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
                 to={item.path}
                 onClick={() => setMobileOpen(false)}
                 className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors
-                  ${active
-                    ? `${sidebarAccent} ${isMasterAdmin && isMasterRoute ? 'text-purple-300' : 'text-sidebar-primary'}`
-                    : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
-                  }
-                `}
-              >
+                  ${active ?
+                `${sidebarAccent} ${isMasterAdmin && isMasterRoute ? 'text-purple-300' : 'text-sidebar-primary'}` :
+                'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'}
+                `
+                }>
+
                 <item.icon className="h-4.5 w-4.5 flex-shrink-0" />
                 {!collapsed && <span className="text-[15px] flex-1">{item.label}</span>}
-                {!collapsed && item.path === '/drivers' && pendingDrivers > 0 && (
-                  <span className="ml-auto inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-orange-500 text-white text-[11px] font-bold leading-none">
+                {!collapsed && item.path === '/drivers' && pendingDrivers > 0 &&
+                <span className="ml-auto inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-orange-500 text-white text-[11px] font-bold leading-none">
                     {pendingDrivers}
                   </span>
-                )}
-              </Link>
-            );
+                }
+              </Link>);
+
           })}
 
           {/* Switch between master and app views */}
-          {isMasterAdmin && (
-            <div className={`mt-4 pt-3 border-t ${sidebarBorder}`}>
+          {isMasterAdmin &&
+          <div className={`mt-4 pt-3 border-t ${sidebarBorder}`}>
               <Link
-                to={isMasterRoute ? '/dashboard' : '/master'}
-                onClick={() => setMobileOpen(false)}
-                className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
-              >
+              to={isMasterRoute ? '/dashboard' : '/master'}
+              onClick={() => setMobileOpen(false)}
+              className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors">
+
                 {isMasterRoute ? <Truck className="h-4.5 w-4.5 flex-shrink-0" /> : <Crown className="h-4.5 w-4.5 flex-shrink-0" />}
                 {!collapsed && <span>{isMasterRoute ? 'Go to App' : 'Master Panel'}</span>}
               </Link>
             </div>
-          )}
+          }
         </nav>
 
         {/* Plan widget for tenant admins */}
-        {!isMasterAdmin && subscription && !collapsed && role === 'admin' && (
-          <div className={`mx-2 mb-2 p-3 rounded-lg border ${sidebarBorder} bg-sidebar-accent/50`}>
+        {!isMasterAdmin && subscription && !collapsed && role === 'admin' &&
+        <div className={`mx-2 mb-2 p-3 rounded-lg border ${sidebarBorder} bg-sidebar-accent/50`}>
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-semibold text-sidebar-foreground uppercase">{subscription.plan}</span>
               <Badge className={
-                subscription.plan === 'pro' ? 'bg-amber-500 text-white text-[10px]'
-                : subscription.plan === 'intermediate' ? 'bg-blue-500 text-white text-[10px]'
-                : 'bg-green-500 text-white text-[10px]'
-              }>
+            subscription.plan === 'pro' ? 'bg-amber-500 text-white text-[10px]' :
+            subscription.plan === 'intermediate' ? 'bg-blue-500 text-white text-[10px]' :
+            'bg-green-500 text-white text-[10px]'
+            }>
                 ${subscription.price_monthly}/mo
               </Badge>
             </div>
@@ -211,14 +211,14 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
               </div>
             </div>
           </div>
-        )}
+        }
 
         {/* Collapse */}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className={`hidden lg:flex items-center justify-center h-10 border-t ${sidebarBorder} text-sidebar-muted hover:text-sidebar-accent-foreground transition-colors`}
-        >
-          {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          className={`hidden lg:flex items-center justify-center h-10 border-t ${sidebarBorder} text-sidebar-muted hover:text-sidebar-accent-foreground transition-colors`}>
+
+          {collapsed ? <ChevronRight className="w-[25px] h-[25px]" /> : <ChevronLeft className="h-4 w-4" />}
         </button>
       </aside>
 
@@ -230,23 +230,23 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
           </button>
 
           <div className="hidden lg:flex items-center gap-3">
-            {isMasterAdmin && isMasterRoute && (
-              <span className="text-sm font-medium text-purple-600">Global Administration Panel</span>
-            )}
-            {hasPermission('loads') && (
-              <Button size="sm" onClick={() => setLoadDialogOpen(true)} className="gap-1">
+            {isMasterAdmin && isMasterRoute &&
+            <span className="text-sm font-medium text-purple-600">Global Administration Panel</span>
+            }
+            {hasPermission('loads') &&
+            <Button size="sm" onClick={() => setLoadDialogOpen(true)} className="gap-1">
                 <Plus className="h-4 w-4" />
                 New Load
               </Button>
-            )}
+            }
           </div>
 
           {/* Mobile: nueva carga button next to hamburger */}
-          {hasPermission('loads') && (
-            <Button size="sm" onClick={() => setLoadDialogOpen(true)} className="lg:hidden gap-1 ml-2">
+          {hasPermission('loads') &&
+          <Button size="sm" onClick={() => setLoadDialogOpen(true)} className="lg:hidden gap-1 ml-2">
               <Plus className="h-4 w-4" />
             </Button>
-          )}
+          }
 
           <div className="flex items-center gap-3">
             <NotificationBell />
@@ -281,12 +281,12 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
       <LoadFormDialog
         open={loadDialogOpen}
         onOpenChange={setLoadDialogOpen}
-        onSubmit={handleCreateLoad}
-      />
+        onSubmit={handleCreateLoad} />
 
-      {(role === 'admin' || role === 'dispatcher' || role === 'accounting' || role === 'master_admin') && (
-        <LiveNotificationToasts />
-      )}
-    </div>
-  );
+
+      {(role === 'admin' || role === 'dispatcher' || role === 'accounting' || role === 'master_admin') &&
+      <LiveNotificationToasts />
+      }
+    </div>);
+
 };
