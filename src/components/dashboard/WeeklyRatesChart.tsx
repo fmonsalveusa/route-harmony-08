@@ -50,14 +50,7 @@ export function WeeklyRatesChart({ loads }: Props) {
     <Card>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <CardTitle className="text-base">Weekly Production</CardTitle>
-            {trend && (
-              <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${trend.positive ? 'text-success bg-success/10' : 'text-destructive bg-destructive/10'}`}>
-                {trend.positive ? '↑' : '↓'} {trend.value} vs prev week
-              </span>
-            )}
-          </div>
+          <CardTitle className="text-base">Weekly Production</CardTitle>
           <span className="text-xs text-muted-foreground">No filters · All weeks</span>
         </div>
       </CardHeader>
