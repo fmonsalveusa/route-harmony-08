@@ -22,7 +22,7 @@ interface Props {
 
 export function MaintenanceFormDialog({ open, onOpenChange, trucks, drivers, onSubmit, editItem }: Props) {
   const companyDriverTrucks = trucks.filter(t => {
-    const driver = drivers.find(d => d.id === t.driver_id);
+    const driver = drivers.find(d => d.truck_id === t.id);
     return driver && driver.service_type === 'company_driver';
   });
   const [truckId, setTruckId] = useState('');
@@ -83,7 +83,7 @@ export function MaintenanceFormDialog({ open, onOpenChange, trucks, drivers, onS
   }, [maintenanceType, editItem]);
 
   const selectedTruck = trucks.find(t => t.id === truckId);
-  const assignedDriver = selectedTruck ? drivers.find(d => d.id === selectedTruck.driver_id) : null;
+  const assignedDriver = selectedTruck ? drivers.find(d => d.truck_id === selectedTruck.id) : null;
 
   const handleSubmit = async () => {
     if (!truckId) return;
