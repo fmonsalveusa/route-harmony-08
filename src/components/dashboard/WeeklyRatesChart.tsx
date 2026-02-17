@@ -26,18 +26,20 @@ export function WeeklyRatesChart({ loads }: Props) {
 
     const sorted = Object.entries(byWeek)
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([week, total]) => ({
-        week: week.replace(/^\d{4}-/, ''),
-        total,
-      }));
+      .map(([week, total], i, arr) => {
+        let pctChange: number | null = null;
+        if (i > 0) {
+          const prev = arr[i - 1][1];
+          if (prev > 0) pctChange = ((total - prev) / prev) * 100;
+        }
+        return { week: week.replace(/^\d{4}-/, ''), total, pctChange };
+      });
 
     let trend: { value: string; positive: boolean } | null = null;
     if (sorted.length >= 2) {
-      const curr = sorted[sorted.length - 1].total;
-      const prev = sorted[sorted.length - 2].total;
-      if (prev > 0) {
-        const pct = ((curr - prev) / prev) * 100;
-        trend = { value: `${Math.abs(pct).toFixed(1)}%`, positive: pct >= 0 };
+      const last = sorted[sorted.length - 1];
+      if (last.pctChange !== null) {
+        trend = { value: `${Math.abs(last.pctChange).toFixed(1)}%`, positive: last.pctChange >= 0 };
       }
     }
 
@@ -103,11 +105,23 @@ export function WeeklyRatesChart({ loads }: Props) {
                 fill="url(#weeklyRateGradient)"
                 dot={{ r: data.length <= 20 ? 4 : 0, fill: 'hsl(var(--primary))' }}
                 activeDot={{ r: 6, strokeWidth: 2 }}
-                label={data.length <= 20 ? ({ x, y, value }: any) => (
-                  <text x={x} y={y - 12} textAnchor="middle" fill="hsl(var(--foreground))" fontSize={11} fontWeight={700}>
-                    ${Number(value).toLocaleString()}
-                  </text>
-                ) : undefined}
+                label={data.length <= 20 ? ({ x, y, value, index }: any) => {
+                  const item = data[index];
+                  const pct = item?.pctChange;
+                  return (
+                    <g>
+                      <text x={x} y={y - 18} textAnchor="middle" fill="hsl(var(--foreground))" fontSize={11} fontWeight={700}>
+                        ${Number(value).toLocaleString()}
+                      </text>
+                      {pct !== null && pct !== undefined && (
+                        <text x={x} y={y - 6} textAnchor="middle" fontSize={9} fontWeight={600}
+                          fill={pct >= 0 ? 'hsl(var(--success))' : 'hsl(var(--destructive))'}>
+                          {pct >= 0 ? '↑' : '↓'}{Math.abs(pct).toFixed(1)}%
+                        </text>
+                      )}
+                    </g>
+                  );
+                } : undefined}
               />
             </AreaChart>
           </ResponsiveContainer>
