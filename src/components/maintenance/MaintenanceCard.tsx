@@ -21,6 +21,7 @@ export function MaintenanceCard({ item, onEdit, onDelete, onLogService }: Props)
   const colors = getStatusColor(item.status);
   const Icon = cfg.icon;
 
+  const isRecurring = !!(item.interval_miles || item.interval_days);
   const milesPercent = item.interval_miles && item.interval_miles > 0
     ? Math.min((item.miles_accumulated / item.interval_miles) * 100, 100)
     : null;
@@ -46,7 +47,7 @@ export function MaintenanceCard({ item, onEdit, onDelete, onLogService }: Props)
           </div>
         </div>
         <Badge variant="outline" className={`${colors.text} ${colors.border} text-[10px] uppercase font-bold`}>
-          {item.status}
+          {isRecurring ? item.status : 'one-time'}
         </Badge>
       </div>
 
@@ -80,9 +81,11 @@ export function MaintenanceCard({ item, onEdit, onDelete, onLogService }: Props)
 
       {/* Actions */}
       <div className="flex gap-1.5 pt-1">
-        <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={onLogService}>
-          <RotateCcw className="h-3 w-3" /> Log Service
-        </Button>
+        {isRecurring && (
+          <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={onLogService}>
+            <RotateCcw className="h-3 w-3" /> Log Service
+          </Button>
+        )}
         <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={onEdit}>
           <Pencil className="h-3 w-3" />
         </Button>

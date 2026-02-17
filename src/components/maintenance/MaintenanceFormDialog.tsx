@@ -32,6 +32,7 @@ export function MaintenanceFormDialog({ open, onOpenChange, trucks, drivers, onS
   const [vendor, setVendor] = useState('');
   const [description, setDescription] = useState('');
   const [createExpense, setCreateExpense] = useState(true);
+  const [isRecurring, setIsRecurring] = useState(true);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -48,6 +49,7 @@ export function MaintenanceFormDialog({ open, onOpenChange, trucks, drivers, onS
         setCost(editItem.cost ? String(editItem.cost) : '');
         setVendor(editItem.vendor || '');
         setDescription(editItem.description || '');
+        setIsRecurring(!!(editItem.interval_miles || editItem.interval_days));
       } else {
         setTruckId(trucks[0]?.id || '');
         setMaintenanceType('oil_change');
@@ -60,6 +62,7 @@ export function MaintenanceFormDialog({ open, onOpenChange, trucks, drivers, onS
         setVendor('');
         setDescription('');
         setCreateExpense(true);
+        setIsRecurring(true);
       }
     }
   }, [open, editItem, trucks]);
@@ -89,8 +92,8 @@ export function MaintenanceFormDialog({ open, onOpenChange, trucks, drivers, onS
       truck_id: truckId,
       maintenance_type: typeLabel,
       description: description || null,
-      interval_miles: intervalMiles ? Number(intervalMiles) : null,
-      interval_days: intervalDays ? Number(intervalDays) : null,
+      interval_miles: isRecurring && intervalMiles ? Number(intervalMiles) : null,
+      interval_days: isRecurring && intervalDays ? Number(intervalDays) : null,
       last_performed_at: performedAt,
       last_miles: Number(lastMiles) || 0,
       cost: cost ? Number(cost) : null,
@@ -192,17 +195,24 @@ export function MaintenanceFormDialog({ open, onOpenChange, trucks, drivers, onS
 
           {/* Section 3: Schedule Intervals */}
           <div>
-            <h3 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">Schedule Intervals</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label>Interval (miles)</Label>
-                <Input type="number" value={intervalMiles} onChange={e => setIntervalMiles(e.target.value)} placeholder="e.g. 10000" />
-              </div>
-              <div>
-                <Label>Interval (days)</Label>
-                <Input type="number" value={intervalDays} onChange={e => setIntervalDays(e.target.value)} placeholder="e.g. 365" />
-              </div>
+            <h3 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">Schedule</h3>
+            <div className="flex items-center gap-2 mb-4">
+              <Switch checked={isRecurring} onCheckedChange={setIsRecurring} />
+              <Label className="cursor-pointer">Recurring maintenance</Label>
+              {!isRecurring && <span className="text-xs text-muted-foreground ml-1">(one-time service)</span>}
             </div>
+            {isRecurring && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label>Interval (miles)</Label>
+                  <Input type="number" value={intervalMiles} onChange={e => setIntervalMiles(e.target.value)} placeholder="e.g. 10000" />
+                </div>
+                <div>
+                  <Label>Interval (days)</Label>
+                  <Input type="number" value={intervalDays} onChange={e => setIntervalDays(e.target.value)} placeholder="e.g. 365" />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Section 4: Cost Information */}
