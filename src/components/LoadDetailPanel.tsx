@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { formatDate } from '@/lib/dateUtils';
-import { MapPin, Calendar, Weight, DollarSign, User, Truck, Route, Navigation, FileText, Download, ExternalLink, Pencil, Loader2 } from 'lucide-react';
+import { MapPin, Calendar, Weight, DollarSign, User, Truck, Route, Navigation, FileText, Download, ExternalLink, Pencil, Loader2, Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useDispatchers } from '@/hooks/useDispatchers';
@@ -83,6 +83,33 @@ interface LoadDetailPanelProps {
   load: DbLoad & { route_geometry?: [number, number][] | null };
   onMilesCalculated?: (loadId: string, miles: number, routeGeometry?: [number, number][]) => void;
   onLoadDataUpdated?: () => void;
+}
+
+function CopyLoadInfoButton({ load, totalMiles, emptyMiles, rpm, driver, dispatcher }: {
+  load: DbLoad; totalMiles: number; emptyMiles: number; rpm: number;
+  driver?: { name: string } | undefined; dispatcher?: { name: string } | undefined;
+}) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = () => {
+    const lines = [
+      `Broker: ${load.broker_client || '—'}`,
+      `Recogida: ${formatDate(load.pickup_date)}`,
+      `Entrega: ${formatDate(load.delivery_date)}`,
+      `Peso: ${load.weight ? `${load.weight.toLocaleString()} lbs` : '—'}`,
+      `Empty Miles: ${emptyMiles > 0 ? emptyMiles.toLocaleString() : '—'}`,
+      `Loaded Miles: ${totalMiles > 0 ? totalMiles.toLocaleString() : '—'}`,
+      `Tarifa: $${Number(load.total_rate).toLocaleString()}`,
+      `RPM: $${rpm > 0 ? rpm.toFixed(2) : '—'}`,
+    ];
+    navigator.clipboard.writeText(lines.join('\n'));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  return (
+    <button onClick={handleCopy} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" title="Copiar info de la carga">
+      {copied ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
+    </button>
+  );
 }
 
 export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: LoadDetailPanelProps) => {
@@ -581,8 +608,11 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
     <div className="p-4 bg-muted/30 border-t animate-in slide-in-from-top-2 duration-200">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Info */}
-        <div className="space-y-3">
-          <h4 className="font-semibold text-sm text-foreground">Detalle de la Carga</h4>
+          <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <h4 className="font-semibold text-sm text-foreground">Detalle de la Carga</h4>
+            <CopyLoadInfoButton load={load} totalMiles={totalMiles} emptyMiles={emptyMiles} rpm={rpm} driver={driver} dispatcher={dispatcher} />
+          </div>
           <div className="grid grid-cols-2 gap-3 text-sm">
             {/* Dynamic stops display */}
             {resolvedStops.length > 0 ? (
