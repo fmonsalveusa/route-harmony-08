@@ -252,6 +252,18 @@ export function useTruckMaintenance() {
       expense_id = (expData as any)?.id || null;
     }
 
+    // Insert into service log history
+    const tenant_id2 = await getTenantId();
+    await supabase.from('maintenance_service_log' as any).insert({
+      maintenance_id: id,
+      tenant_id: tenant_id2,
+      performed_at: input.last_performed_at,
+      odometer_miles: input.last_miles,
+      cost: input.cost || null,
+      vendor: input.vendor || null,
+      expense_id,
+    } as any);
+
     const { error } = await supabase.from('truck_maintenance' as any)
       .update({
         last_performed_at: input.last_performed_at,
@@ -273,6 +285,7 @@ export function useTruckMaintenance() {
     toastRef.current({ title: 'Service logged successfully' });
     invalidate();
     qc.invalidateQueries({ queryKey: ['expenses'] });
+    qc.invalidateQueries({ queryKey: ['service_log', id] });
     return true;
   }, [maintenanceItems, invalidate, qc]);
 

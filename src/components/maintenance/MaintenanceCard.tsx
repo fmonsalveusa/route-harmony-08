@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Pencil, Trash2, RotateCcw } from 'lucide-react';
+import { Pencil, Trash2, RotateCcw, History } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -12,9 +12,10 @@ interface Props {
   onEdit: () => void;
   onDelete: () => void;
   onLogService: () => void;
+  onViewHistory: () => void;
 }
 
-export function MaintenanceCard({ item, onEdit, onDelete, onLogService }: Props) {
+export function MaintenanceCard({ item, onEdit, onDelete, onLogService, onViewHistory }: Props) {
   const cfg = getMaintenanceTypeConfig(
     item.maintenance_type.toLowerCase().replace(/\s+/g, '_')
   );
@@ -84,6 +85,11 @@ export function MaintenanceCard({ item, onEdit, onDelete, onLogService }: Props)
         {isRecurring && (
           <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={onLogService}>
             <RotateCcw className="h-3 w-3" /> Log Service
+          </Button>
+        )}
+        {isRecurring && (
+          <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={onViewHistory}>
+            <History className="h-3 w-3" /> History
           </Button>
         )}
         <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={onEdit}>

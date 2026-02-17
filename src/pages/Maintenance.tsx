@@ -10,6 +10,7 @@ import { useDrivers } from '@/hooks/useDrivers';
 import { MaintenanceFormDialog } from '@/components/maintenance/MaintenanceFormDialog';
 import { MaintenanceCard } from '@/components/maintenance/MaintenanceCard';
 import { LogServiceDialog } from '@/components/maintenance/LogServiceDialog';
+import { ServiceHistoryDialog } from '@/components/maintenance/ServiceHistoryDialog';
 import { StatCard } from '@/components/StatCard';
 
 const Maintenance = () => {
@@ -19,6 +20,7 @@ const Maintenance = () => {
   const [formOpen, setFormOpen] = useState(false);
   const [editItem, setEditItem] = useState<DbTruckMaintenance | null>(null);
   const [logItem, setLogItem] = useState<DbTruckMaintenance | null>(null);
+  const [historyItem, setHistoryItem] = useState<DbTruckMaintenance | null>(null);
   const [filterTruck, setFilterTruck] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [recalculating, setRecalculating] = useState(false);
@@ -144,6 +146,7 @@ const Maintenance = () => {
                     onEdit={() => { setEditItem(item); setFormOpen(true); }}
                     onDelete={() => deleteMaintenance(item.id)}
                     onLogService={() => setLogItem(item)}
+                    onViewHistory={() => setHistoryItem(item)}
                   />
                 ))}
               </CardContent>
@@ -175,6 +178,13 @@ const Maintenance = () => {
           onSubmit={(data) => logNewService(logItem.id, data)}
         />
       )}
+
+      <ServiceHistoryDialog
+        open={!!historyItem}
+        onOpenChange={(open) => { if (!open) setHistoryItem(null); }}
+        maintenanceId={historyItem?.id ?? null}
+        maintenanceType={historyItem?.maintenance_type ?? ''}
+      />
     </div>
   );
 };

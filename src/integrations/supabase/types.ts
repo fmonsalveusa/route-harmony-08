@@ -769,6 +769,67 @@ export type Database = {
           },
         ]
       }
+      maintenance_service_log: {
+        Row: {
+          cost: number | null
+          created_at: string
+          expense_id: string | null
+          id: string
+          maintenance_id: string
+          notes: string | null
+          odometer_miles: number
+          performed_at: string
+          tenant_id: string | null
+          vendor: string | null
+        }
+        Insert: {
+          cost?: number | null
+          created_at?: string
+          expense_id?: string | null
+          id?: string
+          maintenance_id: string
+          notes?: string | null
+          odometer_miles?: number
+          performed_at?: string
+          tenant_id?: string | null
+          vendor?: string | null
+        }
+        Update: {
+          cost?: number | null
+          created_at?: string
+          expense_id?: string | null
+          id?: string
+          maintenance_id?: string
+          notes?: string | null
+          odometer_miles?: number
+          performed_at?: string
+          tenant_id?: string | null
+          vendor?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_service_log_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_service_log_maintenance_id_fkey"
+            columns: ["maintenance_id"]
+            isOneToOne: false
+            referencedRelation: "truck_maintenance"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_service_log_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meeting_requests: {
         Row: {
           city: string

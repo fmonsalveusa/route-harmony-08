@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { X, MapPin, Camera, Truck, Bell, UserPlus } from 'lucide-react';
+import { X, MapPin, Camera, Truck, Bell, UserPlus, Wrench } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 interface LiveToast {
@@ -20,6 +20,7 @@ const typeIcons: Record<string, typeof Bell> = {
   pod_uploaded: Camera,
   status_change: Truck,
   new_driver_onboarded: UserPlus,
+  maintenance: Wrench,
 };
 
 const typeColors: Record<string, string> = {
@@ -27,12 +28,34 @@ const typeColors: Record<string, string> = {
   pod_uploaded: 'text-emerald-500',
   status_change: 'text-amber-500',
   new_driver_onboarded: 'text-green-500',
+  maintenance: 'text-orange-500',
 };
+
+// Request browser notification permission on mount
+function requestNotificationPermission() {
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+}
+
+function showBrowserNotification(title: string, body: string) {
+  if ('Notification' in window && Notification.permission === 'granted') {
+    try {
+      new Notification(title, { body, icon: '/pwa-icon.png' });
+    } catch {
+      // Silent fail for environments that don't support Notification constructor
+    }
+  }
+}
 
 export function LiveNotificationToasts() {
   const [toasts, setToasts] = useState<LiveToast[]>([]);
   const { profile } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    requestNotificationPermission();
+  }, []);
 
   useEffect(() => {
     if (!profile?.tenant_id) return;
@@ -56,6 +79,11 @@ export function LiveNotificationToasts() {
           };
 
           setToasts((prev) => [toast, ...prev].slice(0, 5));
+
+          // Browser push notification for maintenance alerts
+          if (n.type === 'maintenance') {
+            showBrowserNotification(n.title, n.message);
+          }
         }
       )
       .subscribe();
@@ -75,7 +103,7 @@ export function LiveNotificationToasts() {
       .update({ is_read: true } as any)
       .eq('id', toast.id);
     dismiss(toast.id);
-    navigate(toast.type === 'new_driver_onboarded' ? '/drivers' : '/loads');
+    navigate(toast.type === 'new_driver_onboarded' ? '/drivers' : toast.type === 'maintenance' ? '/maintenance' : '/loads');
   };
 
   if (toasts.length === 0) return null;
