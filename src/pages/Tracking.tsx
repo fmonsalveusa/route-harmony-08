@@ -124,9 +124,13 @@ const Tracking = () => {
       const lng = parseFloat(results[0].lon);
       const a = results[0].address || {};
       const city = a.city || a.town || a.village || a.hamlet || '';
-      const state = a.state || '';
+      const stateFull = a.state || '';
       const zip = a.postcode || '';
-      const displayName = [city, state].filter(Boolean).join(', ') + (zip ? `. ${zip}` : '');
+      const stateAbbrevMap: Record<string, string> = {
+        'Alabama':'AL','Alaska':'AK','Arizona':'AZ','Arkansas':'AR','California':'CA','Colorado':'CO','Connecticut':'CT','Delaware':'DE','Florida':'FL','Georgia':'GA','Hawaii':'HI','Idaho':'ID','Illinois':'IL','Indiana':'IN','Iowa':'IA','Kansas':'KS','Kentucky':'KY','Louisiana':'LA','Maine':'ME','Maryland':'MD','Massachusetts':'MA','Michigan':'MI','Minnesota':'MN','Mississippi':'MS','Missouri':'MO','Montana':'MT','Nebraska':'NE','Nevada':'NV','New Hampshire':'NH','New Jersey':'NJ','New Mexico':'NM','New York':'NY','North Carolina':'NC','North Dakota':'ND','Ohio':'OH','Oklahoma':'OK','Oregon':'OR','Pennsylvania':'PA','Rhode Island':'RI','South Carolina':'SC','South Dakota':'SD','Tennessee':'TN','Texas':'TX','Utah':'UT','Vermont':'VT','Virginia':'VA','Washington':'WA','West Virginia':'WV','Wisconsin':'WI','Wyoming':'WY','District of Columbia':'DC',
+      };
+      const stateAbbr = stateAbbrevMap[stateFull] || stateFull;
+      const displayName = [city, stateAbbr].filter(Boolean).join(', ') + (zip ? `. ${zip}` : '');
 
       await supabase.from('drivers' as any).update({
         manual_location_address: displayName,
