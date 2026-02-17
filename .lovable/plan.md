@@ -1,58 +1,29 @@
 
 
-# Notificaciones Automaticas de Mantenimiento via Cron Job
+## Filtrar Trucks en el formulario de Mantenimiento
 
-## Problema Actual
-Las notificaciones de mantenimiento solo se generan cuando alguien abre la pagina de Maintenance. Si nadie la visita, los mantenimientos pueden vencer sin que nadie reciba una alerta.
+### Cambio
+En el dialogo "Add Maintenance Schedule" (`MaintenanceFormDialog.tsx`), la lista de trucks actualmente muestra todos los camiones. Se filtrara para mostrar **solo los trucks que tengan un driver asignado con `service_type === 'company_driver'`**.
 
-## Solucion
-Crear una Edge Function que se ejecute automaticamente cada dia, recalcule el estado de todos los mantenimientos y genere notificaciones cuando corresponda.
+### Detalle tecnico
 
-## Archivo a Crear
+**Archivo:** `src/components/maintenance/MaintenanceFormDialog.tsx`
 
-### 1. `supabase/functions/maintenance-check/index.ts`
-Edge Function que:
-- Consulta todos los registros de `truck_maintenance` con sus datos de truck
-- Para cada registro, consulta las cargas (`loads`) desde `last_performed_at` y suma `miles + empty_miles`
-- Calcula el nuevo `status` usando los umbrales existentes (80% = warning, 100% = due)
-- Tambien evalua el status por fecha (`next_due_date` - 30 dias = warning, vencido = due)
-- Si el status empeora (de "ok" a "warning", o de "warning" a "due"), inserta una notificacion en la tabla `notifications`
-- Actualiza `miles_accumulated` y `status` en `truck_maintenance`
-- Usa `SUPABASE_SERVICE_ROLE_KEY` para bypass de RLS (ya configurado en secrets)
+1. Crear una lista filtrada de trucks al inicio del componente:
+   - Filtrar `trucks` donde `truck.driver_id` exista Y el driver correspondiente en la lista `drivers` tenga `service_type === 'company_driver'`
+   - Usar esta lista filtrada (`companyDriverTrucks`) en el `<Select>` de trucks y para el valor por defecto
 
-### 2. Cron Job (SQL insert via herramienta de base de datos)
-Programar la funcion para ejecutarse diariamente a las 6:00 AM UTC:
+2. Actualizar el `useEffect` de inicializacion para usar `companyDriverTrucks[0]?.id` como valor por defecto en vez de `trucks[0]?.id`
+
+3. En el `<SelectContent>` del truck selector, iterar sobre `companyDriverTrucks` en lugar de `trucks`
+
+**Logica del filtro:**
 ```text
-Frecuencia: 0 6 * * *  (cada dia a las 6 AM UTC)
-Endpoint: /functions/v1/maintenance-check
-```
-Requiere habilitar las extensiones `pg_cron` y `pg_net`.
-
-## Flujo de Ejecucion
-
-```text
-Cron (6 AM diario)
-  |
-  v
-Edge Function: maintenance-check
-  |
-  +-- Para cada tenant:
-  |     +-- Obtener todos los truck_maintenance
-  |     +-- Para cada registro:
-  |     |     +-- Sumar miles + empty_miles de loads desde last_performed_at
-  |     |     +-- Calcular status por millas (ok/warning/due)
-  |     |     +-- Calcular status por fecha (ok/warning/due)
-  |     |     +-- Tomar el peor status
-  |     |     +-- Si status empeoro -> INSERT notificacion
-  |     |     +-- UPDATE miles_accumulated y status
-  |     +-- Fin
-  +-- Responder 200 OK
+const companyDriverTrucks = trucks.filter(t => {
+  const driver = drivers.find(d => d.id === t.driver_id);
+  return driver && driver.service_type === 'company_driver';
+});
 ```
 
-## Detalles Tecnicos
+Esto asegura que solo se puedan programar mantenimientos para camiones operados por Company Drivers, ya que son los vehiculos gestionados directamente por la empresa.
 
-- La Edge Function usara `createClient` con `SUPABASE_SERVICE_ROLE_KEY` para tener acceso completo a todas las tablas sin restricciones de RLS
-- Se agruparan los registros por `tenant_id` para que cada notificacion se asocie al tenant correcto
-- Solo se creara notificacion si el status **empeora** (evita notificaciones duplicadas cada dia)
-- Se habilitaran las extensiones `pg_cron` y `pg_net` via migracion SQL
-- El cron job se registrara via SQL insert (no migracion, ya que contiene datos especificos del proyecto)
