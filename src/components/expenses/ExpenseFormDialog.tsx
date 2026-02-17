@@ -21,10 +21,6 @@ interface Props {
 }
 
 export function ExpenseFormDialog({ open, onOpenChange, onSubmit, trucks, drivers, editExpense }: Props) {
-  const companyDriverTrucks = trucks.filter(t => {
-    const driver = drivers.find(d => d.truck_id === t.id);
-    return driver && driver.service_type === 'company_driver';
-  });
   const [form, setForm] = useState({
     expense_date: new Date().toISOString().split('T')[0],
     truck_id: '',
@@ -69,7 +65,7 @@ export function ExpenseFormDialog({ open, onOpenChange, onSubmit, trucks, driver
     }
   }, [editExpense, open]);
 
-  const selectedTruck = companyDriverTrucks.find(t => t.id === form.truck_id);
+  const selectedTruck = trucks.find(t => t.id === form.truck_id);
   const assignedDriver = selectedTruck ? drivers.find(d => d.truck_id === selectedTruck.id) : null;
   const categories = CATEGORIES_BY_TYPE[form.expense_type] || [];
   const totalAmount = (parseFloat(form.amount) || 0) + (parseFloat(form.tax_amount) || 0);
@@ -140,7 +136,7 @@ export function ExpenseFormDialog({ open, onOpenChange, onSubmit, trucks, driver
                 <Select value={form.truck_id} onValueChange={v => setForm({ ...form, truck_id: v })}>
                   <SelectTrigger><SelectValue placeholder="Select truck" /></SelectTrigger>
                   <SelectContent>
-                    {companyDriverTrucks.map(t => {
+                    {trucks.map(t => {
                       const driver = drivers.find(d => d.truck_id === t.id);
                       return (
                         <SelectItem key={t.id} value={t.id}>
