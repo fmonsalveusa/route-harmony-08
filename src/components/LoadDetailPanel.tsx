@@ -93,12 +93,12 @@ function CopyLoadInfoButton({ load, totalMiles, emptyMiles, rpm, driver, dispatc
   const handleCopy = () => {
     const lines = [
       `Broker: ${load.broker_client || '—'}`,
-      `Recogida: ${formatDate(load.pickup_date)}`,
-      `Entrega: ${formatDate(load.delivery_date)}`,
-      `Peso: ${load.weight ? `${load.weight.toLocaleString()} lbs` : '—'}`,
+      `Pickup: ${formatDate(load.pickup_date)}`,
+      `Delivery: ${formatDate(load.delivery_date)}`,
+      `Weight: ${load.weight ? `${load.weight.toLocaleString()} lbs` : '—'}`,
       `Empty Miles: ${emptyMiles > 0 ? emptyMiles.toLocaleString() : '—'}`,
       `Loaded Miles: ${totalMiles > 0 ? totalMiles.toLocaleString() : '—'}`,
-      `Tarifa: $${Number(load.total_rate).toLocaleString()}`,
+      `Rate: $${Number(load.total_rate).toLocaleString()}`,
       `RPM: $${rpm > 0 ? rpm.toFixed(2) : '—'}`,
     ];
     navigator.clipboard.writeText(lines.join('\n'));
@@ -106,7 +106,7 @@ function CopyLoadInfoButton({ load, totalMiles, emptyMiles, rpm, driver, dispatc
     setTimeout(() => setCopied(false), 2000);
   };
   return (
-    <button onClick={handleCopy} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" title="Copiar info de la carga">
+    <button onClick={handleCopy} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" title="Copy load info">
       {copied ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
     </button>
   );
@@ -610,7 +610,7 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
         {/* Info */}
           <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <h4 className="font-semibold text-sm text-foreground">Detalle de la Carga</h4>
+            <h4 className="font-semibold text-sm text-foreground">Load Detail</h4>
             <CopyLoadInfoButton load={load} totalMiles={totalMiles} emptyMiles={emptyMiles} rpm={rpm} driver={driver} dispatcher={dispatcher} />
           </div>
           <div className="grid grid-cols-2 gap-3 text-sm">
@@ -647,19 +647,19 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
             )}
             <div className="flex items-center gap-2">
               <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-              <div><span className="text-muted-foreground">Recogida:</span> <span className="font-medium">{formatDate(load.pickup_date)}</span></div>
+              <div><span className="text-muted-foreground">Pickup:</span> <span className="font-medium">{formatDate(load.pickup_date)}</span></div>
             </div>
             <div className="flex items-center gap-2">
               <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-              <div><span className="text-muted-foreground">Entrega:</span> <span className="font-medium">{formatDate(load.delivery_date)}</span></div>
+              <div><span className="text-muted-foreground">Delivery:</span> <span className="font-medium">{formatDate(load.delivery_date)}</span></div>
             </div>
             <div className="flex items-center gap-2">
               <Weight className="h-3.5 w-3.5 text-muted-foreground" />
-              <div><span className="text-muted-foreground">Peso:</span> <span className="font-medium">{load.weight ? `${load.weight.toLocaleString()} lbs` : '—'}</span></div>
+              <div><span className="text-muted-foreground">Weight:</span> <span className="font-medium">{load.weight ? `${load.weight.toLocaleString()} lbs` : '—'}</span></div>
             </div>
             <div className="flex items-center gap-2">
               <Truck className="h-3.5 w-3.5 text-muted-foreground" />
-              <div><span className="text-muted-foreground">Tipo:</span> <span className="font-medium">{load.cargo_type || '—'}</span></div>
+              <div><span className="text-muted-foreground">Type:</span> <span className="font-medium">{load.cargo_type || '—'}</span></div>
             </div>
             <div className="flex items-center gap-2">
               <Route className="h-3.5 w-3.5 text-primary" />
@@ -725,7 +725,7 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
             </div>
             <div className="flex items-center gap-2">
               <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
-              <div><span className="text-muted-foreground">Tarifa:</span> <span className="font-bold text-primary">${Number(load.total_rate).toLocaleString()}</span></div>
+              <div><span className="text-muted-foreground">Rate:</span> <span className="font-bold text-primary">${Number(load.total_rate).toLocaleString()}</span></div>
             </div>
           </div>
 
