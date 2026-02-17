@@ -317,6 +317,57 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
         // Need driver and pickup date to find previous load
         if (!load.driver_id || !load.pickup_date) return;
 
+        // Check if driver has a manual location override
+        const { data: driverData } = await supabase
+          .from('drivers' as any)
+          .select('manual_location_address, manual_location_lat, manual_location_lng')
+          .eq('id', load.driver_id)
+          .maybeSingle();
+
+        const manualLoc = driverData as any;
+        if (manualLoc?.manual_location_lat && manualLoc?.manual_location_lng && manualLoc?.manual_location_address) {
+          // Use manual location as empty miles origin
+          const prevCoords: [number, number] = [manualLoc.manual_location_lat, manualLoc.manual_location_lng];
+          const firstPickup = resolved.find(s => s.type === 'pickup' && s.coords);
+          if (!firstPickup?.coords) return;
+
+          const dist = await drivingDistance(prevCoords[0], prevCoords[1], firstPickup.coords[0], firstPickup.coords[1]);
+          if (dist === null) return;
+
+          const roundedDist = Math.round(dist);
+          setEmptyMiles(roundedDist);
+          setEmptyMilesOrigin(manualLoc.manual_location_address);
+
+          await supabase.from('loads').update({
+            empty_miles: roundedDist,
+            empty_miles_origin: manualLoc.manual_location_address,
+          } as any).eq('id', load.id);
+          onLoadDataUpdated?.();
+
+          // Draw on map
+          const deadheadIcon = L.divIcon({
+            html: '<div style="background:hsl(38,92%,50%);color:white;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:10px;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,.3)">E</div>',
+            className: '', iconSize: [24, 24], iconAnchor: [12, 12],
+          });
+          L.marker(prevCoords, { icon: deadheadIcon }).addTo(map).bindPopup(`<b>Empty Miles Origin (Manual)</b><br/>${manualLoc.manual_location_address}`);
+          const deadheadRoute = await drivingRoute([prevCoords, firstPickup.coords]);
+          if (deadheadRoute) {
+            L.polyline(deadheadRoute, { color: 'hsl(38,92%,50%)', weight: 3, dashArray: '8 6', opacity: 0.8 }).addTo(map);
+          } else {
+            L.polyline([prevCoords, firstPickup.coords], { color: 'hsl(38,92%,50%)', weight: 3, dashArray: '8 6', opacity: 0.8 }).addTo(map);
+          }
+          bounds.push(prevCoords);
+          map.fitBounds(bounds, { padding: [40, 40] });
+
+          // Clear manual location after use
+          await supabase.from('drivers' as any).update({
+            manual_location_address: null,
+            manual_location_lat: null,
+            manual_location_lng: null,
+          } as any).eq('id', load.driver_id);
+          return;
+        }
+
         // Find the driver's previous load
         const { data: prevLoads } = await supabase
           .from('loads')
