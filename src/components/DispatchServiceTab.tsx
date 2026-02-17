@@ -217,12 +217,12 @@ export function DispatchServiceTab() {
       <div className="flex flex-wrap gap-3 items-center">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Buscar por número o driver..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+          <Input placeholder="Search by number or driver..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[150px]"><SelectValue placeholder="Estado" /></SelectTrigger>
+          <SelectTrigger className="w-[150px]"><SelectValue placeholder="Status" /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todos</SelectItem>
+            <SelectItem value="all">All</SelectItem>
             <SelectItem value="pending">Pending</SelectItem>
             <SelectItem value="sent">Sent</SelectItem>
             <SelectItem value="paid">Paid</SelectItem>
@@ -237,17 +237,17 @@ export function DispatchServiceTab() {
               <thead><tr className="border-b bg-muted/50">
                 <th className="text-left p-3 font-medium text-muted-foreground">Invoice #</th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Driver(s)</th>
-                <th className="text-right p-3 font-medium text-muted-foreground">Cargas</th>
-                <th className="text-right p-3 font-medium text-muted-foreground">%</th>
-                <th className="text-right p-3 font-medium text-muted-foreground">Monto</th>
-                <th className="text-left p-3 font-medium text-muted-foreground">Estado</th>
-                <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Fecha</th>
-                <th className="text-right p-3 font-medium text-muted-foreground">Acciones</th>
+                 <th className="text-right p-3 font-medium text-muted-foreground">Loads</th>
+                 <th className="text-right p-3 font-medium text-muted-foreground">%</th>
+                 <th className="text-right p-3 font-medium text-muted-foreground">Amount</th>
+                 <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
+                 <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Date</th>
+                 <th className="text-right p-3 font-medium text-muted-foreground">Actions</th>
               </tr></thead>
               <tbody>
                 {filtered.length === 0 && !loading && (
                   <tr><td colSpan={8} className="p-8 text-center text-muted-foreground">
-                    {invoices.length === 0 ? 'No hay facturas de Dispatch Service.' : 'Sin resultados.'}
+                    {invoices.length === 0 ? 'No Dispatch Service invoices.' : 'No results.'}
                   </td></tr>
                 )}
                 {filtered.map(inv => (
@@ -293,7 +293,7 @@ export function DispatchServiceTab() {
                         }}>
                           <Download className="h-4 w-4" /> PDF
                         </Button>
-                        <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-destructive/50 text-destructive hover:bg-destructive/10 gap-1" onClick={async () => { if (window.confirm(`¿Eliminar factura ${inv.invoice_number}?`)) { await deleteInvoice(inv.id); } }}>
+                        <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-destructive/50 text-destructive hover:bg-destructive/10 gap-1" onClick={async () => { if (window.confirm(`Delete invoice ${inv.invoice_number}?`)) { await deleteInvoice(inv.id); } }}>
                           <Trash2 className="h-4 w-4" /> Delete
                         </Button>
                       </div>
@@ -311,16 +311,16 @@ export function DispatchServiceTab() {
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" /> Generar Factura Dispatch Service
+              <Users className="h-5 w-5" /> Generate Dispatch Service Invoice
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             {/* Driver selection with checkboxes */}
             <div>
-              <Label className="mb-2 block">Seleccionar Drivers (Dispatch Service)</Label>
+              <Label className="mb-2 block">Select Drivers (Dispatch Service)</Label>
               <div className="border rounded-lg max-h-[200px] overflow-y-auto">
                 {dsDrivers.length === 0 ? (
-                  <p className="p-4 text-center text-muted-foreground text-sm">No hay drivers con Service Type: Dispatch Service</p>
+                  <p className="p-4 text-center text-muted-foreground text-sm">No drivers with Service Type: Dispatch Service</p>
                 ) : (
                   <div className="divide-y">
                     {dsDrivers.map(d => (

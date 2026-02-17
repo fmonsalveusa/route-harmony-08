@@ -161,14 +161,14 @@ const Invoices = () => {
       <div className="flex flex-wrap gap-3 items-center">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Buscar por número, broker o empresa..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+          <Input placeholder="Search by number, broker or company..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-[150px]">
-            <SelectValue placeholder="Estado" />
+            <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todos</SelectItem>
+            <SelectItem value="all">All</SelectItem>
             <SelectItem value="pending">Pending</SelectItem>
             <SelectItem value="sent">Sent</SelectItem>
             <SelectItem value="paid">Paid</SelectItem>
@@ -184,16 +184,16 @@ const Invoices = () => {
               <thead><tr className="border-b bg-muted/50">
                 <th className="text-left p-3 font-medium text-muted-foreground">Invoice #</th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Broker</th>
-                <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Empresa</th>
-                <th className="text-right p-3 font-medium text-muted-foreground">Monto</th>
-                <th className="text-left p-3 font-medium text-muted-foreground">Estado</th>
-                <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Fecha</th>
-                <th className="text-right p-3 font-medium text-muted-foreground">Acciones</th>
+                <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Company</th>
+                <th className="text-right p-3 font-medium text-muted-foreground">Amount</th>
+                <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
+                <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Date</th>
+                <th className="text-right p-3 font-medium text-muted-foreground">Actions</th>
               </tr></thead>
               <tbody>
                 {filtered.length === 0 && !loading && (
                   <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">
-                    {invoices.length === 0 ? 'No hay facturas generadas. Genera una desde la página de Cargas.' : 'No se encontraron resultados.'}
+                    {invoices.length === 0 ? 'No invoices generated. Generate one from the Loads page.' : 'No results found.'}
                   </td></tr>
                 )}
                 {filtered.map(inv => (

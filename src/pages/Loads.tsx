@@ -179,15 +179,15 @@ const Loads = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="page-header">Gestión de Cargas</h1>
-          <p className="page-description">Administra todas las cargas y asignaciones</p>
+          <h1 className="page-header">Load Management</h1>
+          <p className="page-description">Manage all loads and assignments</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" className="gap-2" onClick={() => setShowImportWizard(true)}>
             <Upload className="h-4 w-4" /> Import CSV
           </Button>
           <Button size="sm" className="gap-2" onClick={() => { setEditLoad(null); setShowForm(true); }}>
-            <Plus className="h-4 w-4" /> Nueva Carga
+            <Plus className="h-4 w-4" /> New Load
           </Button>
         </div>
       </div>
@@ -196,7 +196,7 @@ const Loads = () => {
       <div className="flex flex-wrap gap-2 items-center">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Buscar..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-8 w-[180px] text-xs" />
+          <Input placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-8 w-[180px] text-xs" />
         </div>
         <Filter className="h-4 w-4 text-muted-foreground" />
           <Select value={filterDriver} onValueChange={setFilterDriver}>
@@ -204,7 +204,7 @@ const Loads = () => {
               <SelectValue placeholder="Driver" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todos los Drivers</SelectItem>
+              <SelectItem value="all">All Drivers</SelectItem>
               {drivers.map(d => (
                 <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
               ))}
@@ -215,7 +215,7 @@ const Loads = () => {
               <SelectValue placeholder="Truck" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todos los Trucks</SelectItem>
+              <SelectItem value="all">All Trucks</SelectItem>
               {trucks.map(t => (
                 <SelectItem key={t.id} value={t.id}>Unit #{t.unit_number}</SelectItem>
               ))}
@@ -226,7 +226,7 @@ const Loads = () => {
               <SelectValue placeholder="Dispatcher" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todos los Dispatchers</SelectItem>
+              <SelectItem value="all">All Dispatchers</SelectItem>
               {dispatchers.map(d => (
                 <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
               ))}
@@ -273,7 +273,7 @@ const Loads = () => {
               <SelectValue placeholder="Broker" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todos los Brokers</SelectItem>
+              <SelectItem value="all">All Brokers</SelectItem>
               {[...new Set(dbLoads.map(l => l.broker_client).filter(Boolean))].sort().map(b => (
                 <SelectItem key={b!} value={b!}>{b}</SelectItem>
               ))}
@@ -292,7 +292,7 @@ const Loads = () => {
           </Select>
           {(filterDriver !== 'all' || filterTruck !== 'all' || filterDispatcher !== 'all' || filterWeek !== 'all' || filterMonth !== 'all' || filterBroker !== 'all' || filterFactoring !== 'all') && (
             <Button variant="ghost" size="sm" className="h-8 text-xs text-muted-foreground" onClick={() => { setFilterDriver('all'); setFilterTruck('all'); setFilterDispatcher('all'); setFilterWeek('all'); setFilterMonth('all'); setFilterBroker('all'); setFilterFactoring('all'); }}>
-              Limpiar filtros
+              Clear filters
             </Button>
           )}
       </div>

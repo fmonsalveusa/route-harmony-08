@@ -74,15 +74,15 @@ export const DriverMobileLayout = ({ children }: { children: ReactNode }) => {
             {bellOpen && (
               <div className="absolute right-0 top-full mt-2 w-80 max-h-96 overflow-y-auto rounded-lg border bg-card shadow-lg z-50">
                 <div className="flex items-center justify-between p-3 border-b">
-                  <h3 className="text-sm font-semibold">Notificaciones</h3>
+                  <h3 className="text-sm font-semibold">Notifications</h3>
                   {unreadCount > 0 && (
                     <button onClick={markAllAsRead} className="text-xs text-primary flex items-center gap-1">
-                      <CheckCheck className="h-3.5 w-3.5" /> Marcar todas
+                      <CheckCheck className="h-3.5 w-3.5" /> Mark all read
                     </button>
                   )}
                 </div>
                 {notifications.length === 0 ? (
-                  <div className="p-6 text-center text-sm text-muted-foreground">Sin notificaciones</div>
+                  <div className="p-6 text-center text-sm text-muted-foreground">No notifications</div>
                 ) : (
                   <div className="divide-y">
                     {notifications.slice(0, 20).map(n => (
