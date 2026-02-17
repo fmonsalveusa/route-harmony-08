@@ -37,12 +37,12 @@ export function WeeklyRatesChart({ loads }: Props) {
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base">Weekly Production</CardTitle>
-          <span className="text-xs text-muted-foreground">Sin filtros · Todas las semanas</span>
+          <span className="text-xs text-muted-foreground">No filters · All weeks</span>
         </div>
       </CardHeader>
       <CardContent>
         {data.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-10">Sin datos</p>
+          <p className="text-sm text-muted-foreground text-center py-10">No data</p>
         ) : (
           <ResponsiveContainer width="100%" height={300}>
             <AreaChart data={data}>

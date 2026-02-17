@@ -74,7 +74,7 @@ export function DispatcherCommissionsChart({ loads, dispatchers, drivers, year, 
       </CardHeader>
       <CardContent>
         {data.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-10">Sin datos para los filtros seleccionados</p>
+          <p className="text-sm text-muted-foreground text-center py-10">No data for selected filters</p>
         ) : (
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={data}>
