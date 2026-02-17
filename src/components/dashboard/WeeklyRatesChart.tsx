@@ -9,7 +9,7 @@ interface Props {
 }
 
 export function WeeklyRatesChart({ loads }: Props) {
-  const data = useMemo(() => {
+  const { data, trend } = useMemo(() => {
     const byWeek: Record<string, number> = {};
     loads.forEach(l => {
       if (l.status === 'cancelled') return;
@@ -24,19 +24,38 @@ export function WeeklyRatesChart({ loads }: Props) {
       byWeek[key] = (byWeek[key] || 0) + l.total_rate;
     });
 
-    return Object.entries(byWeek)
+    const sorted = Object.entries(byWeek)
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([week, total]) => ({
         week: week.replace(/^\d{4}-/, ''),
         total,
       }));
+
+    let trend: { value: string; positive: boolean } | null = null;
+    if (sorted.length >= 2) {
+      const curr = sorted[sorted.length - 1].total;
+      const prev = sorted[sorted.length - 2].total;
+      if (prev > 0) {
+        const pct = ((curr - prev) / prev) * 100;
+        trend = { value: `${Math.abs(pct).toFixed(1)}%`, positive: pct >= 0 };
+      }
+    }
+
+    return { data: sorted, trend };
   }, [loads]);
 
   return (
     <Card>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base">Weekly Production</CardTitle>
+          <div className="flex items-center gap-2">
+            <CardTitle className="text-base">Weekly Production</CardTitle>
+            {trend && (
+              <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${trend.positive ? 'text-success bg-success/10' : 'text-destructive bg-destructive/10'}`}>
+                {trend.positive ? '↑' : '↓'} {trend.value} vs prev week
+              </span>
+            )}
+          </div>
           <span className="text-xs text-muted-foreground">No filters · All weeks</span>
         </div>
       </CardHeader>
