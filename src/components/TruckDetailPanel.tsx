@@ -1,8 +1,12 @@
 import type { DbTruck } from '@/hooks/useTrucks';
-import { ExternalLink, FileText } from 'lucide-react';
+import { ExternalLink, FileText, Wrench } from 'lucide-react';
 import { StatusBadge } from '@/components/StatusBadge';
 import { formatDate } from '@/lib/dateUtils';
 import { ExpiryBadge } from '@/components/ExpiryBadge';
+import { useTruckMaintenance } from '@/hooks/useTruckMaintenance';
+import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
+import { getStatusColor } from '@/components/maintenance/maintenanceConstants';
 
 function Info({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -29,6 +33,9 @@ interface Props {
 }
 
 export function TruckDetailPanel({ truck, driverName }: Props) {
+  const { maintenanceItems } = useTruckMaintenance();
+  const truckMaint = maintenanceItems.filter(m => m.truck_id === truck.id);
+
   return (
     <div className="p-5 bg-muted/20 border-t space-y-4 animate-fade-in">
       {/* Document Expiry Alerts */}
@@ -68,6 +75,34 @@ export function TruckDetailPanel({ truck, driverName }: Props) {
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3 border-t pt-3">
           <Info label="Trailer Length (ft)">{truck.trailer_length_ft ?? '—'}</Info>
           <Info label="Mega Ramp">{truck.mega_ramp || '—'}</Info>
+        </div>
+      )}
+
+      {/* Maintenance Summary */}
+      {truckMaint.length > 0 && (
+        <div className="border-t pt-3">
+          <p className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1">
+            <Wrench className="h-3.5 w-3.5" /> Maintenance
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            {truckMaint.map(m => {
+              const colors = getStatusColor(m.status);
+              const pct = m.interval_miles && m.interval_miles > 0
+                ? Math.min((m.miles_accumulated / m.interval_miles) * 100, 100) : null;
+              return (
+                <div key={m.id} className={`flex items-center gap-2 px-3 py-2 rounded-md border text-xs ${colors.border} ${colors.bg}`}>
+                  <div className={`w-2 h-2 rounded-full ${colors.dot}`} />
+                  <span className="font-medium flex-1">{m.maintenance_type}</span>
+                  {pct !== null && (
+                    <div className="w-16">
+                      <Progress value={pct} className="h-1.5" />
+                    </div>
+                  )}
+                  <Badge variant="outline" className={`${colors.text} text-[9px] px-1`}>{m.status.toUpperCase()}</Badge>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 

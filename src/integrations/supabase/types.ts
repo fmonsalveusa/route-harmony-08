@@ -1352,6 +1352,91 @@ export type Database = {
           },
         ]
       }
+      truck_maintenance: {
+        Row: {
+          cost: number | null
+          created_at: string
+          description: string | null
+          expense_id: string | null
+          id: string
+          interval_days: number | null
+          interval_miles: number | null
+          last_miles: number
+          last_performed_at: string
+          maintenance_type: string
+          miles_accumulated: number
+          next_due_date: string | null
+          next_due_miles: number | null
+          status: string
+          tenant_id: string | null
+          truck_id: string
+          updated_at: string
+          vendor: string | null
+        }
+        Insert: {
+          cost?: number | null
+          created_at?: string
+          description?: string | null
+          expense_id?: string | null
+          id?: string
+          interval_days?: number | null
+          interval_miles?: number | null
+          last_miles?: number
+          last_performed_at?: string
+          maintenance_type: string
+          miles_accumulated?: number
+          next_due_date?: string | null
+          next_due_miles?: number | null
+          status?: string
+          tenant_id?: string | null
+          truck_id: string
+          updated_at?: string
+          vendor?: string | null
+        }
+        Update: {
+          cost?: number | null
+          created_at?: string
+          description?: string | null
+          expense_id?: string | null
+          id?: string
+          interval_days?: number | null
+          interval_miles?: number | null
+          last_miles?: number
+          last_performed_at?: string
+          maintenance_type?: string
+          miles_accumulated?: number
+          next_due_date?: string | null
+          next_due_miles?: number | null
+          status?: string
+          tenant_id?: string | null
+          truck_id?: string
+          updated_at?: string
+          vendor?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "truck_maintenance_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "truck_maintenance_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "truck_maintenance_truck_id_fkey"
+            columns: ["truck_id"]
+            isOneToOne: false
+            referencedRelation: "trucks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trucks: {
         Row: {
           cargo_area_photo_url: string | null
