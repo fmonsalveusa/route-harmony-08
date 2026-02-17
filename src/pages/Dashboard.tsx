@@ -79,6 +79,8 @@ const AdminDashboard = () => {
   );
   const availableTrucks = trucks.filter(t => !trucksWithActiveLoad.has(t.id)).length;
 
+  const now = new Date();
+
   // Month-to-date revenue (current month, all loads regardless of filters)
   const monthToDateRevenue = loads.filter(l => {
     if (l.status === 'cancelled') return false;
@@ -87,8 +89,6 @@ const AdminDashboard = () => {
     const d = new Date(dateStr.includes('T') ? dateStr : dateStr + 'T00:00:00');
     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
   }).reduce((s, l) => s + l.total_rate, 0);
-
-  const now = new Date();
   const thisMonthExpenses = expenses.filter(e => {
     const d = new Date(e.expense_date + 'T00:00:00');
     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
