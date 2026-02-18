@@ -1,10 +1,9 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { StatusBadge } from '@/components/StatusBadge';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { formatDate } from '@/lib/dateUtils';
-import { Users } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Users, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface Load {
   id: string;
@@ -27,53 +26,65 @@ interface Driver {
 interface Props {
   loads: Load[];
   drivers: Driver[];
+  trucks?: { id: string; unit_number: string; driver_id: string | null }[];
 }
 
 const ACTIVE_STATUSES = ['planned', 'dispatched', 'in_transit'];
 
-const barColors: Record<string, string> = {
-  pending: 'hsl(38,92%,50%)',
-  planned: 'hsl(215,70%,50%)',
-  dispatched: 'hsl(270,60%,50%)',
-  in_transit: 'hsl(142,70%,45%)'
+const statusConfig: Record<string, { label: string; bg: string; text: string }> = {
+  planned: { label: 'Planned', bg: 'hsl(215,70%,92%)', text: 'hsl(215,70%,35%)' },
+  dispatched: { label: 'Dispatched', bg: 'hsl(270,60%,92%)', text: 'hsl(270,60%,35%)' },
+  in_transit: { label: 'In Transit', bg: 'hsl(142,60%,90%)', text: 'hsl(142,60%,30%)' },
 };
 
-/** Extract "City, ST" from a full address like "123 Main St, Dallas, TX 75201" */
-const extractCityState = (address: string): string => {
-  // Try to find pattern: City, ST (2-letter state)
-  const match = address.match(/([A-Za-z\s.'-]+),\s*([A-Z]{2})\b/);
-  if (match) return `${match[1].trim()}, ${match[2]}`;
-  // Fallback: take last two comma-separated parts
-  const parts = address.split(',').map((p) => p.trim());
-  if (parts.length >= 2) {
-    const state = parts[parts.length - 1].replace(/\d+/g, '').trim().split(' ')[0];
-    const city = parts[parts.length - 2];
-    return `${city}, ${state}`;
-  }
-  return address.substring(0, 20);
+const barBorderColors: Record<string, string> = {
+  planned: 'hsl(215,70%,70%)',
+  dispatched: 'hsl(270,60%,70%)',
+  in_transit: 'hsl(142,60%,55%)',
 };
 
-export const DriversTimelineCard = ({ loads, drivers }: Props) => {
-  const { driverEntries, globalMin, globalMax, totalDays } = useMemo(() => {
-    const activeLoads = loads.filter(
-      (l) => ACTIVE_STATUSES.includes(l.status) && l.driver_id && l.pickup_date
-    );
+const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
-    if (activeLoads.length === 0) return { driverEntries: [], globalMin: 0, globalMax: 0, totalDays: 1 };
+const HOURS_PER_DAY = 24;
+const HOUR_WIDTH_PX = 8; // px per hour
+const DAY_WIDTH_PX = HOURS_PER_DAY * HOUR_WIDTH_PX; // 192px per day
+const VISIBLE_DAYS = 7;
+const DRIVER_COL_WIDTH = 140;
 
-    // Find global date range
-    let minTs = Infinity,maxTs = -Infinity;
-    activeLoads.forEach((l) => {
-      const p = new Date(l.pickup_date + 'T00:00:00').getTime();
-      const d = l.delivery_date ? new Date(l.delivery_date + 'T00:00:00').getTime() : p + 86400000;
-      if (p < minTs) minTs = p;
-      if (d > maxTs) maxTs = d;
+export const DriversTimelineCard = ({ loads, drivers, trucks = [] }: Props) => {
+  const [weekOffset, setWeekOffset] = useState(0);
+
+  const { driverEntries, weekStart, weekEnd, daysInView } = useMemo(() => {
+    // Calculate week boundaries
+    const today = new Date();
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay() + 1 + weekOffset * 7); // Monday
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + VISIBLE_DAYS);
+    endOfWeek.setHours(0, 0, 0, 0);
+
+    const days: Date[] = [];
+    for (let i = 0; i < VISIBLE_DAYS; i++) {
+      const d = new Date(startOfWeek);
+      d.setDate(startOfWeek.getDate() + i);
+      days.push(d);
+    }
+
+    // Filter active loads that overlap with visible range
+    const wStartTs = startOfWeek.getTime();
+    const wEndTs = endOfWeek.getTime();
+
+    const activeLoads = loads.filter((l) => {
+      if (!ACTIVE_STATUSES.includes(l.status) || !l.driver_id || !l.pickup_date) return false;
+      const pickupTs = new Date(l.pickup_date + 'T00:00:00').getTime();
+      const deliveryTs = l.delivery_date
+        ? new Date(l.delivery_date + 'T23:59:59').getTime()
+        : pickupTs + 86400000;
+      return pickupTs < wEndTs && deliveryTs > wStartTs;
     });
-
-    // Add 1 day padding on each side
-    minTs -= 86400000;
-    maxTs += 86400000;
-    const days = Math.max((maxTs - minTs) / 86400000, 1);
 
     // Group by driver
     const grouped: Record<string, Load[]> = {};
@@ -83,21 +94,35 @@ export const DriversTimelineCard = ({ loads, drivers }: Props) => {
       grouped[dId].push(l);
     });
 
-    Object.values(grouped).forEach((arr) =>
-    arr.sort((a, b) => (a.pickup_date || '').localeCompare(b.pickup_date || ''))
+    // Also include drivers with active loads outside the view (show empty row)
+    const allActiveDriverIds = new Set(
+      loads.filter((l) => ACTIVE_STATUSES.includes(l.status) && l.driver_id).map((l) => l.driver_id!)
     );
 
-    const entries = Object.entries(grouped).
-    map(([driverId, driverLoads]) => ({
-      driverId,
-      driver: drivers.find((d) => d.id === driverId),
-      loads: driverLoads
-    })).
-    filter((e) => e.driver).
-    sort((a, b) => a.driver!.name.localeCompare(b.driver!.name));
+    const entries = Array.from(allActiveDriverIds)
+      .map((driverId) => ({
+        driverId,
+        driver: drivers.find((d) => d.id === driverId),
+        truck: trucks.find((t) => t.driver_id === driverId),
+        loads: grouped[driverId] || [],
+      }))
+      .filter((e) => e.driver)
+      .sort((a, b) => a.driver!.name.localeCompare(b.driver!.name));
 
-    return { driverEntries: entries, globalMin: minTs, globalMax: maxTs, totalDays: days };
-  }, [loads, drivers]);
+    return { driverEntries: entries, weekStart: startOfWeek, weekEnd: endOfWeek, daysInView: days };
+  }, [loads, drivers, trucks, weekOffset]);
+
+  const totalGridWidth = VISIBLE_DAYS * DAY_WIDTH_PX;
+  const weekStartTs = weekStart.getTime();
+  const totalMs = VISIBLE_DAYS * 86400000;
+
+  // Month/year label
+  const monthLabel = (() => {
+    const months = new Set(daysInView.map((d) => `${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}`));
+    return Array.from(months).join(' – ');
+  })();
+
+  const hourLabels = [0, 6, 12, 18];
 
   if (driverEntries.length === 0) {
     return (
@@ -110,151 +135,198 @@ export const DriversTimelineCard = ({ loads, drivers }: Props) => {
         <CardContent>
           <p className="text-sm text-muted-foreground">No drivers with active loads</p>
         </CardContent>
-      </Card>);
-
-  }
-
-  // Generate date axis labels
-  const axisLabels: {label: string;pct: number;}[] = [];
-  const stepDays = Math.max(1, Math.floor(totalDays / 6));
-  for (let i = 0; i <= totalDays; i += stepDays) {
-    const d = new Date(globalMin + i * 86400000);
-    axisLabels.push({
-      label: `${d.getMonth() + 1}/${d.getDate()}`,
-      pct: i / totalDays * 100
-    });
+      </Card>
+    );
   }
 
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-base flex items-center gap-2">
-          <Users className="h-4 w-4" /> Drivers Load Timeline
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="px-4 pb-4">
-        {/* Color legend */}
-        <div className="flex items-center gap-4 mb-3 ml-[160px]">
-          {[
-            { label: 'Planned', color: barColors.planned },
-            { label: 'Dispatched', color: barColors.dispatched },
-            { label: 'In Transit', color: barColors.in_transit },
-          ].map((item) => (
-            <div key={item.label} className="flex items-center gap-1.5">
-              <span className="inline-block w-3 h-3 rounded-sm" style={{ backgroundColor: item.color }} />
-              <span className="text-xs text-muted-foreground font-medium">{item.label}</span>
-            </div>
-          ))}
-        </div>
-        <ScrollArea style={{ maxHeight: `${Math.min(driverEntries.length * 70 + 60, 1200)}px` }}>
-          {/* Date axis */}
-          <div className="flex items-center mb-1 ml-[160px]">
-            <div className="relative w-full h-5">
-              {axisLabels.map((a, i) =>
-              <span
-                key={i}
-                className="absolute text-[10px] text-muted-foreground -translate-x-1/2"
-                style={{ left: `${a.pct}%` }}>
-
-                  {a.label}
-                </span>
-              )}
-            </div>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Users className="h-4 w-4" /> Drivers Load Timeline
+          </CardTitle>
+          {/* Legend */}
+          <div className="flex items-center gap-3">
+            {Object.entries(statusConfig).map(([key, cfg]) => (
+              <div key={key} className="flex items-center gap-1.5">
+                <span
+                  className="inline-block w-3 h-3 rounded-sm border"
+                  style={{ backgroundColor: cfg.bg, borderColor: barBorderColors[key] }}
+                />
+                <span className="text-[11px] text-muted-foreground font-medium">{cfg.label}</span>
+              </div>
+            ))}
           </div>
+        </div>
+      </CardHeader>
 
-          {/* Today marker reference */}
-          {(() => {
-            const todayTs = new Date(new Date().toISOString().split('T')[0] + 'T00:00:00').getTime();
-            const todayPct = (todayTs - globalMin) / (totalDays * 86400000) * 100;
-            if (todayPct < 0 || todayPct > 100) return null;
-            return (
-              <div className="flex items-center mb-1 ml-[160px]">
-                <div className="relative w-full h-0">
+      <CardContent className="px-0 pb-2">
+        {/* Month + navigation */}
+        <div className="flex items-center gap-2 px-4 mb-2">
+          <span className="text-sm font-semibold text-foreground">{monthLabel}</span>
+          <div className="flex items-center gap-0.5">
+            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setWeekOffset((o) => o - 1)}>
+              <ChevronLeft className="h-3.5 w-3.5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setWeekOffset((o) => o + 1)}>
+              <ChevronRight className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-6 text-[11px] px-2 ml-1"
+            onClick={() => setWeekOffset(0)}
+          >
+            Today
+          </Button>
+        </div>
+
+        <ScrollArea className="w-full">
+          <div style={{ minWidth: `${DRIVER_COL_WIDTH + totalGridWidth + 16}px` }}>
+            {/* Day + hour headers */}
+            <div className="flex border-b border-border">
+              <div style={{ width: DRIVER_COL_WIDTH, minWidth: DRIVER_COL_WIDTH }} className="shrink-0" />
+              <div className="flex">
+                {daysInView.map((day, di) => {
+                  const isToday =
+                    day.toDateString() === new Date().toDateString();
+                  return (
+                    <div
+                      key={di}
+                      style={{ width: DAY_WIDTH_PX }}
+                      className={`border-l border-border ${isToday ? 'bg-primary/5' : ''}`}
+                    >
+                      <div className="text-[11px] font-semibold text-foreground px-1 py-0.5 border-b border-border/50">
+                        {day.getDate()} {DAY_NAMES[day.getDay()]}
+                      </div>
+                      <div className="flex h-4">
+                        {hourLabels.map((h) => (
+                          <div
+                            key={h}
+                            style={{ width: DAY_WIDTH_PX / 4 }}
+                            className="text-[9px] text-muted-foreground text-center border-r border-border/30 last:border-r-0"
+                          >
+                            {String(h).padStart(2, '0')}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Driver rows */}
+            <div>
+              {driverEntries.map(({ driverId, driver, truck, loads: dLoads }) => (
+                <div key={driverId} className="flex border-b border-border/50 hover:bg-muted/20 transition-colors">
+                  {/* Driver info */}
                   <div
-                    className="absolute top-0 w-px bg-destructive opacity-50"
-                    style={{ left: `${todayPct}%`, height: `${driverEntries.length * 60 + 20}px` }} />
+                    style={{ width: DRIVER_COL_WIDTH, minWidth: DRIVER_COL_WIDTH }}
+                    className="shrink-0 px-3 py-2 border-r border-border"
+                  >
+                    <p className="text-sm font-bold truncate leading-tight">{driver!.name}</p>
+                    <p className="text-[11px] text-muted-foreground leading-tight">
+                      {truck ? truck.unit_number : '—'}
+                    </p>
+                  </div>
 
-                  <span
-                    className="absolute -top-3 text-[9px] text-destructive font-medium -translate-x-1/2"
-                    style={{ left: `${todayPct}%` }}>
+                  {/* Timeline area */}
+                  <div className="relative" style={{ width: totalGridWidth, minHeight: 48 }}>
+                    {/* Grid lines */}
+                    {daysInView.map((day, di) => {
+                      const isToday = day.toDateString() === new Date().toDateString();
+                      return (
+                        <div
+                          key={di}
+                          className={`absolute top-0 bottom-0 border-l border-border/30 ${isToday ? 'bg-primary/5' : ''}`}
+                          style={{ left: di * DAY_WIDTH_PX, width: DAY_WIDTH_PX }}
+                        >
+                          {/* Quarter-day grid lines */}
+                          {[1, 2, 3].map((q) => (
+                            <div
+                              key={q}
+                              className="absolute top-0 bottom-0 border-l border-border/15"
+                              style={{ left: q * (DAY_WIDTH_PX / 4) }}
+                            />
+                          ))}
+                        </div>
+                      );
+                    })}
 
-                    Today
-                  </span>
-                </div>
-              </div>);
+                    {/* Today marker */}
+                    {(() => {
+                      const nowTs = Date.now();
+                      const pct = (nowTs - weekStartTs) / totalMs;
+                      if (pct < 0 || pct > 1) return null;
+                      return (
+                        <div
+                          className="absolute top-0 bottom-0 w-0.5 bg-destructive/60 z-10"
+                          style={{ left: `${pct * 100}%` }}
+                        />
+                      );
+                    })()}
 
-          })()}
+                    {/* Load bars */}
+                    <div className="relative py-1.5 space-y-1 z-20">
+                      {dLoads.map((load) => {
+                        const pickupTs = new Date(load.pickup_date + 'T00:00:00').getTime();
+                        const deliveryTs = load.delivery_date
+                          ? new Date(load.delivery_date + 'T23:59:59').getTime()
+                          : pickupTs + 86400000;
 
-          <div className="space-y-1">
-            {driverEntries.map(({ driverId, driver, loads: dLoads }) =>
-            <div key={driverId} className="flex items-start gap-2">
-                {/* Driver name column */}
-                <div className="w-[150px] shrink-0 pt-1 text-sm font-bold">
-                  <p className="text-sm font-bold truncate">{driver!.name}</p>
-                  <div className="flex items-center gap-1 mt-0.5">
-                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">
-                      {dLoads.length} load{dLoads.length > 1 ? 's' : ''}
-                    </Badge>
+                        // Clamp to visible range
+                        const clampedStart = Math.max(pickupTs, weekStartTs);
+                        const clampedEnd = Math.min(deliveryTs, weekStartTs + totalMs);
+                        if (clampedEnd <= clampedStart) return null;
+
+                        const leftPct = ((clampedStart - weekStartTs) / totalMs) * 100;
+                        const widthPct = ((clampedEnd - clampedStart) / totalMs) * 100;
+
+                        const cfg = statusConfig[load.status] || statusConfig.planned;
+                        const borderColor = barBorderColors[load.status] || 'hsl(215,15%,70%)';
+
+                        return (
+                          <div
+                            key={load.id}
+                            className="relative h-[26px] flex items-center rounded-md border overflow-hidden cursor-default"
+                            style={{
+                              position: 'absolute',
+                              left: `${leftPct}%`,
+                              width: `${widthPct}%`,
+                              minWidth: 60,
+                              backgroundColor: cfg.bg,
+                              borderColor,
+                              top: `${6 + dLoads.indexOf(load) * 30}px`,
+                            }}
+                            title={`${load.reference_number}: ${load.origin} → ${load.destination}\n$${load.total_rate.toLocaleString()}`}
+                          >
+                            <span className="text-[11px] font-semibold px-2 truncate" style={{ color: cfg.text }}>
+                              {load.reference_number}
+                            </span>
+                            <span
+                              className="text-[9px] font-medium px-1.5 py-0.5 rounded-sm mr-1 whitespace-nowrap"
+                              style={{
+                                backgroundColor: borderColor,
+                                color: 'white',
+                              }}
+                            >
+                              {cfg.label}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
-
-                {/* Timeline bars */}
-                <div className="flex-1 min-h-[50px] space-y-1 py-1">
-                  {dLoads.map((load) => {
-                  const pickupTs = new Date(load.pickup_date + 'T00:00:00').getTime();
-                  const deliveryTs = load.delivery_date ?
-                  new Date(load.delivery_date + 'T00:00:00').getTime() :
-                  pickupTs + 86400000;
-
-                  const leftPct = (pickupTs - globalMin) / (totalDays * 86400000) * 100;
-                  const widthPct = Math.max((deliveryTs - pickupTs) / (totalDays * 86400000) * 100, 2);
-                  const color = barColors[load.status] || 'hsl(215,15%,50%)';
-
-                  const originLabel = extractCityState(load.origin);
-                  const destLabel = extractCityState(load.destination);
-
-                  return (
-                    <div key={load.id} className="relative w-full h-[28px] group">
-                        <div className="absolute inset-0 bg-muted/30 rounded-sm" />
-                        {/* Origin label */}
-                        <span
-                        className="absolute text-[8px] text-muted-foreground font-medium whitespace-nowrap"
-                        style={{ left: `${leftPct}%`, top: '-1px', transform: 'translateX(0)' }}>
-
-                          {originLabel}
-                        </span>
-                        {/* Bar */}
-                        <div
-                        className="absolute top-[10px] h-[16px] rounded-sm flex items-center justify-center overflow-hidden cursor-default transition-opacity hover:opacity-90"
-                        style={{
-                          left: `${leftPct}%`,
-                          width: `${widthPct}%`,
-                          backgroundColor: color,
-                          minWidth: '30px'
-                        }}
-                        title={`${load.reference_number}: ${load.origin} → ${load.destination}\nPickup: ${formatDate(load.pickup_date)} | Delivery: ${formatDate(load.delivery_date)}\n$${load.total_rate.toLocaleString()}`}>
-
-                          <span className="text-[9px] text-white font-medium truncate px-1">
-                            {load.reference_number}
-                          </span>
-                        </div>
-                        {/* Destination label */}
-                        <span
-                        className="absolute text-[8px] text-muted-foreground font-medium whitespace-nowrap"
-                        style={{ left: `${leftPct + widthPct}%`, top: '-1px', transform: 'translateX(-100%)' }}>
-
-                          {destLabel}
-                        </span>
-                      </div>);
-
-                })}
-                </div>
-              </div>
-            )}
+              ))}
+            </div>
           </div>
-          <div className="h-8" />
+          <ScrollBar orientation="horizontal" />
         </ScrollArea>
       </CardContent>
-    </Card>);
-
+    </Card>
+  );
 };
