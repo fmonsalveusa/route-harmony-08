@@ -10,6 +10,7 @@ import type { DbLoad } from '@/hooks/useLoads';
 import { useLoadStops } from '@/hooks/useLoadStops';
 import { supabase } from '@/integrations/supabase/client';
 import { PodUploadSection } from '@/components/PodUploadSection';
+import { LoadAdjustmentsSection } from '@/components/LoadAdjustmentsSection';
 import { PickupPicturesSection } from '@/components/PickupPicturesSection';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
@@ -728,6 +729,11 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
               <div><span className="text-muted-foreground">Rate:</span> <span className="font-bold text-primary">${Number(load.total_rate).toLocaleString()}</span></div>
             </div>
           </div>
+
+          {/* Load Adjustments */}
+          {(load.status === 'delivered' || load.status === 'paid') && (
+            <LoadAdjustmentsSection loadId={load.id} />
+          )}
 
           {/* Stops / Route breakdown */}
           <div className="p-3 rounded-lg bg-card border text-sm">

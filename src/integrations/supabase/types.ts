@@ -605,6 +605,57 @@ export type Database = {
           },
         ]
       }
+      load_adjustments: {
+        Row: {
+          adjustment_type: string
+          amount: number
+          apply_to: string[]
+          created_at: string
+          description: string | null
+          id: string
+          load_id: string
+          reason: string
+          tenant_id: string | null
+        }
+        Insert: {
+          adjustment_type?: string
+          amount?: number
+          apply_to?: string[]
+          created_at?: string
+          description?: string | null
+          id?: string
+          load_id: string
+          reason?: string
+          tenant_id?: string | null
+        }
+        Update: {
+          adjustment_type?: string
+          amount?: number
+          apply_to?: string[]
+          created_at?: string
+          description?: string | null
+          id?: string
+          load_id?: string
+          reason?: string
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "load_adjustments_load_id_fkey"
+            columns: ["load_id"]
+            isOneToOne: false
+            referencedRelation: "loads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "load_adjustments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       load_stops: {
         Row: {
           address: string
@@ -986,6 +1037,7 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          load_adjustment_id: string | null
           payment_id: string
           reason: string
           tenant_id: string | null
@@ -996,6 +1048,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          load_adjustment_id?: string | null
           payment_id: string
           reason?: string
           tenant_id?: string | null
@@ -1006,11 +1059,19 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          load_adjustment_id?: string | null
           payment_id?: string
           reason?: string
           tenant_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "payment_adjustments_load_adjustment_id_fkey"
+            columns: ["load_adjustment_id"]
+            isOneToOne: false
+            referencedRelation: "load_adjustments"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "payment_adjustments_payment_id_fkey"
             columns: ["payment_id"]
