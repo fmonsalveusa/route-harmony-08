@@ -122,11 +122,52 @@ export async function generatePaymentsForLoad(load: {
 
   const tenant_id = await getTenantId();
   const withTenant = paymentsToInsert.map(p => ({ ...p, tenant_id }));
-  const { error } = await supabase.from('payments').insert(withTenant as any);
+  const { data: insertedPayments, error } = await supabase.from('payments').insert(withTenant as any).select();
   if (error) {
     toast({ title: 'Error generating payments', description: error.message, variant: 'destructive' });
   } else {
     toast({ title: `${paymentsToInsert.length} payment(s) generated automatically` });
+
+    // Propagate pending load_adjustments to payment_adjustments
+    if (insertedPayments && insertedPayments.length > 0) {
+      const { data: loadAdjs } = await supabase
+        .from('load_adjustments')
+        .select('*')
+        .eq('load_id', load.id);
+
+      if (loadAdjs && loadAdjs.length > 0) {
+        const payAdjsToInsert: any[] = [];
+
+        for (const adj of loadAdjs as any[]) {
+          const applyTo: string[] = adj.apply_to || [];
+          const matchingPayments = (insertedPayments as any[]).filter(
+            (p: any) => applyTo.includes(p.recipient_type)
+          );
+
+          for (const payment of matchingPayments) {
+            payAdjsToInsert.push({
+              payment_id: payment.id,
+              adjustment_type: adj.adjustment_type,
+              reason: adj.reason,
+              description: adj.description,
+              amount: adj.amount,
+              load_adjustment_id: adj.id,
+              tenant_id,
+            });
+          }
+        }
+
+        if (payAdjsToInsert.length > 0) {
+          const { error: paError } = await supabase
+            .from('payment_adjustments')
+            .insert(payAdjsToInsert as any);
+
+          if (paError) {
+            console.error('Error propagating load adjustments to payments:', paError);
+          }
+        }
+      }
+    }
   }
 }
 
