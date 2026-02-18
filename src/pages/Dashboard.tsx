@@ -133,7 +133,7 @@ const AdminDashboard = () => {
         <MarketAnalysisCard loads={filteredLoads} trucks={trucks} />
       </div>
 
-      <DriversTimelineCard loads={loads} drivers={drivers} />
+      <DriversTimelineCard loads={loads} drivers={drivers} trucks={trucks} />
 
 
     </div>
@@ -243,7 +243,7 @@ const DispatcherDashboard = () => {
         <MarketAnalysisCard loads={filteredLoads} trucks={trucks} />
       </div>
 
-      <DriversTimelineCard loads={loads} drivers={drivers} />
+      <DriversTimelineCard loads={loads} drivers={drivers} trucks={trucks} />
 
       <Card>
         <CardHeader><CardTitle className="text-base">My Loads</CardTitle></CardHeader>
