@@ -29,9 +29,10 @@ interface Props {
   drivers: Driver[];
 }
 
-const ACTIVE_STATUSES = ['planned', 'dispatched', 'in_transit'];
+const ACTIVE_STATUSES = ['pending', 'planned', 'dispatched', 'in_transit'];
 
 const barColors: Record<string, string> = {
+  pending: 'hsl(38,92%,50%)',
   planned: 'hsl(215,70%,50%)',
   dispatched: 'hsl(270,60%,50%)',
   in_transit: 'hsl(142,70%,45%)',
