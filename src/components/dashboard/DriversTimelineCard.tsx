@@ -133,6 +133,19 @@ export const DriversTimelineCard = ({ loads, drivers }: Props) => {
         </CardTitle>
       </CardHeader>
       <CardContent className="px-4 pb-4">
+        {/* Color legend */}
+        <div className="flex items-center gap-4 mb-3 ml-[160px]">
+          {[
+            { label: 'Planned', color: barColors.planned },
+            { label: 'Dispatched', color: barColors.dispatched },
+            { label: 'In Transit', color: barColors.in_transit },
+          ].map((item) => (
+            <div key={item.label} className="flex items-center gap-1.5">
+              <span className="inline-block w-3 h-3 rounded-sm" style={{ backgroundColor: item.color }} />
+              <span className="text-xs text-muted-foreground font-medium">{item.label}</span>
+            </div>
+          ))}
+        </div>
         <ScrollArea style={{ maxHeight: `${Math.min(driverEntries.length * 70 + 60, 1200)}px` }}>
           {/* Date axis */}
           <div className="flex items-center mb-1 ml-[160px]">
