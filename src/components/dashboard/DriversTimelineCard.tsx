@@ -37,6 +37,21 @@ const barColors: Record<string, string> = {
   in_transit: 'hsl(142,70%,45%)',
 };
 
+/** Extract "City, ST" from a full address like "123 Main St, Dallas, TX 75201" */
+const extractCityState = (address: string): string => {
+  // Try to find pattern: City, ST (2-letter state)
+  const match = address.match(/([A-Za-z\s.'-]+),\s*([A-Z]{2})\b/);
+  if (match) return `${match[1].trim()}, ${match[2]}`;
+  // Fallback: take last two comma-separated parts
+  const parts = address.split(',').map(p => p.trim());
+  if (parts.length >= 2) {
+    const state = parts[parts.length - 1].replace(/\d+/g, '').trim().split(' ')[0];
+    const city = parts[parts.length - 2];
+    return `${city}, ${state}`;
+  }
+  return address.substring(0, 20);
+};
+
 export const DriversTimelineCard = ({ loads, drivers }: Props) => {
   const { driverEntries, globalMin, globalMax, totalDays } = useMemo(() => {
     const activeLoads = loads.filter(
@@ -181,11 +196,22 @@ export const DriversTimelineCard = ({ loads, drivers }: Props) => {
                     const widthPct = Math.max(((deliveryTs - pickupTs) / (totalDays * 86400000)) * 100, 2);
                     const color = barColors[load.status] || 'hsl(215,15%,50%)';
 
+                    const originLabel = extractCityState(load.origin);
+                    const destLabel = extractCityState(load.destination);
+
                     return (
-                      <div key={load.id} className="relative w-full h-[18px] group">
+                      <div key={load.id} className="relative w-full h-[28px] group">
                         <div className="absolute inset-0 bg-muted/30 rounded-sm" />
+                        {/* Origin label */}
+                        <span
+                          className="absolute text-[8px] text-muted-foreground font-medium whitespace-nowrap"
+                          style={{ left: `${leftPct}%`, top: '-1px', transform: 'translateX(0)' }}
+                        >
+                          {originLabel}
+                        </span>
+                        {/* Bar */}
                         <div
-                          className="absolute top-0 h-full rounded-sm flex items-center justify-center overflow-hidden cursor-default transition-opacity hover:opacity-90"
+                          className="absolute top-[10px] h-[16px] rounded-sm flex items-center justify-center overflow-hidden cursor-default transition-opacity hover:opacity-90"
                           style={{
                             left: `${leftPct}%`,
                             width: `${widthPct}%`,
@@ -198,6 +224,13 @@ export const DriversTimelineCard = ({ loads, drivers }: Props) => {
                             {load.reference_number}
                           </span>
                         </div>
+                        {/* Destination label */}
+                        <span
+                          className="absolute text-[8px] text-muted-foreground font-medium whitespace-nowrap"
+                          style={{ left: `${leftPct + widthPct}%`, top: '-1px', transform: 'translateX(-100%)' }}
+                        >
+                          {destLabel}
+                        </span>
                       </div>
                     );
                   })}
