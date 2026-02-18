@@ -133,7 +133,7 @@ export const DriversTimelineCard = ({ loads, drivers }: Props) => {
         </CardTitle>
       </CardHeader>
       <CardContent className="px-4 pb-4">
-        <ScrollArea className="max-h-[800px]">
+        <ScrollArea style={{ maxHeight: `${Math.min(driverEntries.length * 70 + 60, 1200)}px` }}>
           {/* Date axis */}
           <div className="flex items-center mb-1 ml-[160px]">
             <div className="relative w-full h-5">
