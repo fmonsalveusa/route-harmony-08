@@ -238,6 +238,7 @@ export const DriversTimelineCard = ({ loads, drivers }: Props) => {
               </div>
             ))}
           </div>
+          <div className="h-8" />
         </ScrollArea>
       </CardContent>
     </Card>
