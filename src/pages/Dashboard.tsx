@@ -135,31 +135,6 @@ const AdminDashboard = () => {
 
       <DriversTimelineCard loads={loads} drivers={drivers} />
 
-      <Card>
-        <CardHeader><CardTitle className="text-base">Recent Loads</CardTitle></CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead><tr className="border-b bg-muted/50">
-                <th className="text-left p-3 font-medium text-muted-foreground">Reference</th>
-                <th className="text-left p-3 font-medium text-muted-foreground">Route</th>
-                <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
-                <th className="text-right p-3 font-medium text-muted-foreground">Rate</th>
-              </tr></thead>
-              <tbody>
-                {loads.slice(0, 5).map(load => (
-                  <tr key={load.id} className="border-b last:border-0 hover:bg-muted/30">
-                    <td className="p-3 font-medium">{load.reference_number}</td>
-                    <td className="p-3 text-muted-foreground">{load.origin} → {load.destination}</td>
-                    <td className="p-3"><StatusBadge status={load.status} /></td>
-                    <td className="p-3 text-right font-semibold">${load.total_rate.toLocaleString()}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
 
     </div>
   );
