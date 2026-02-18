@@ -231,7 +231,7 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [] }: Props) => {
                   >
                     <p className="text-sm font-bold truncate leading-tight">{driver!.name}</p>
                     <p className="text-[11px] text-muted-foreground leading-tight">
-                      {truck ? truck.unit_number : '—'}
+                      {truck ? `Truck #${truck.unit_number}` : 'No truck'}
                     </p>
                     {dLoads.length > 1 && (
                       <p className="text-[10px] text-muted-foreground mt-0.5">{dLoads.length} loads</p>
