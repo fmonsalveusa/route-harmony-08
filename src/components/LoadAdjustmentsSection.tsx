@@ -22,7 +22,7 @@ export function LoadAdjustmentsSection({ loadId }: LoadAdjustmentsSectionProps) 
   const [description, setDescription] = useState('');
   const [applyTo, setApplyTo] = useState<string[]>([]);
 
-  // Don't render if no payments exist
+  // Don't render if no driver is assigned (no recipients available)
   if (!loading && availableRecipients.length === 0) return null;
 
   const resetForm = () => {

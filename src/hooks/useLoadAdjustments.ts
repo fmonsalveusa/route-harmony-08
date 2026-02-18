@@ -24,23 +24,38 @@ export function useLoadAdjustments(loadId: string) {
 
     // Fetch load adjustments
     const { data: adjData } = await supabase
-      .from('load_adjustments' as any)
+      .from('load_adjustments')
       .select('*')
       .eq('load_id', loadId)
       .order('created_at', { ascending: true });
 
     setAdjustments((adjData as any) || []);
 
-    // Determine available recipients from payments
-    const { data: payments } = await supabase
-      .from('payments')
-      .select('recipient_type')
-      .eq('load_id', loadId)
-      .in('recipient_type', ['driver', 'investor']);
+    // Derive available recipients from load's driver, not from payments
+    const { data: loadData } = await supabase
+      .from('loads')
+      .select('driver_id')
+      .eq('id', loadId)
+      .single();
 
-    const types = [...new Set((payments || []).map((p: any) => p.recipient_type))];
-    setAvailableRecipients(types);
+    const recipients: string[] = [];
 
+    if (loadData?.driver_id) {
+      recipients.push('driver');
+
+      // Check if the driver has an investor
+      const { data: driverData } = await supabase
+        .from('drivers')
+        .select('investor_name')
+        .eq('id', loadData.driver_id)
+        .single();
+
+      if (driverData?.investor_name) {
+        recipients.push('investor');
+      }
+    }
+
+    setAvailableRecipients(recipients);
     setLoading(false);
   }, [loadId]);
 
@@ -57,7 +72,7 @@ export function useLoadAdjustments(loadId: string) {
 
     // 1. Insert load adjustment
     const { data: inserted, error } = await supabase
-      .from('load_adjustments' as any)
+      .from('load_adjustments')
       .insert({
         load_id: loadId,
         adjustment_type: adj.adjustment_type,
@@ -66,7 +81,7 @@ export function useLoadAdjustments(loadId: string) {
         amount: adj.amount,
         apply_to: adj.applyTo,
         tenant_id,
-      } as any)
+      })
       .select()
       .single();
 
@@ -77,14 +92,14 @@ export function useLoadAdjustments(loadId: string) {
 
     const loadAdjId = (inserted as any).id;
 
-    // 2. Find payments for the selected recipient types
+    // 2. Find payments for the selected recipient types (may not exist yet for in_transit/tonu)
     const { data: payments } = await supabase
       .from('payments')
       .select('id')
       .eq('load_id', loadId)
       .in('recipient_type', adj.applyTo);
 
-    // 3. Propagate to payment_adjustments
+    // 3. Propagate to payment_adjustments only if payments exist
     if (payments && payments.length > 0) {
       const payAdjs = payments.map((p: any) => ({
         payment_id: p.id,
@@ -113,7 +128,7 @@ export function useLoadAdjustments(loadId: string) {
   const deleteAdjustment = async (id: string) => {
     // payment_adjustments with load_adjustment_id will cascade-delete automatically
     const { error } = await supabase
-      .from('load_adjustments' as any)
+      .from('load_adjustments')
       .delete()
       .eq('id', id);
 
