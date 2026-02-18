@@ -29,12 +29,12 @@ interface Props {
   drivers: Driver[];
 }
 
-const ACTIVE_STATUSES = ['dispatched', 'in_transit', 'delivered'];
+const ACTIVE_STATUSES = ['planned', 'dispatched', 'in_transit'];
 
 const barColors: Record<string, string> = {
+  planned: 'hsl(215,70%,50%)',
   dispatched: 'hsl(270,60%,50%)',
   in_transit: 'hsl(142,70%,45%)',
-  delivered: 'hsl(152,60%,35%)',
 };
 
 export const DriversTimelineCard = ({ loads, drivers }: Props) => {
