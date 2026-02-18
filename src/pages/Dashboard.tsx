@@ -16,7 +16,7 @@ import { RatesByDriverChart } from '@/components/dashboard/RatesByDriverChart';
 import { WeeklyRatesChart } from '@/components/dashboard/WeeklyRatesChart';
 import { DispatcherCommissionsChart } from '@/components/dashboard/DispatcherCommissionsChart';
 import { MarketAnalysisCard } from '@/components/dashboard/MarketAnalysisCard';
-import { DriversTimelineCard } from '@/components/dashboard/DriversTimelineCard';
+
 
 import { useNavigate } from 'react-router-dom';
 
@@ -133,7 +133,6 @@ const AdminDashboard = () => {
         <MarketAnalysisCard loads={filteredLoads} trucks={trucks} />
       </div>
 
-      <DriversTimelineCard loads={loads} drivers={drivers} trucks={trucks} />
 
 
     </div>
@@ -242,8 +241,6 @@ const DispatcherDashboard = () => {
         <DispatcherCommissionsChart loads={filteredLoads} dispatchers={dispatchers} drivers={drivers} year={year} month={month} week={week} />
         <MarketAnalysisCard loads={filteredLoads} trucks={trucks} />
       </div>
-
-      <DriversTimelineCard loads={loads} drivers={drivers} trucks={trucks} />
 
       <Card>
         <CardHeader><CardTitle className="text-base">My Loads</CardTitle></CardHeader>
