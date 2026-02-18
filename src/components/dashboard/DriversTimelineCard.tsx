@@ -220,21 +220,26 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [] }: Props) => {
 
             {/* Driver rows */}
             <div>
-              {driverEntries.map(({ driverId, driver, truck, loads: dLoads }) => (
-                <div key={driverId} className="flex border-b border-border/50 hover:bg-muted/20 transition-colors">
+              {driverEntries.map(({ driverId, driver, truck, loads: dLoads }) => {
+                const rowHeight = Math.max(48, dLoads.length * 32 + 12);
+                return (
+                <div key={driverId} className="flex border-b border-border/50 hover:bg-muted/20 transition-colors" style={{ minHeight: rowHeight }}>
                   {/* Driver info */}
                   <div
                     style={{ width: DRIVER_COL_WIDTH, minWidth: DRIVER_COL_WIDTH }}
-                    className="shrink-0 px-3 py-2 border-r border-border"
+                    className="shrink-0 px-3 py-2 border-r border-border flex flex-col justify-center"
                   >
                     <p className="text-sm font-bold truncate leading-tight">{driver!.name}</p>
                     <p className="text-[11px] text-muted-foreground leading-tight">
                       {truck ? truck.unit_number : '—'}
                     </p>
+                    {dLoads.length > 1 && (
+                      <p className="text-[10px] text-muted-foreground mt-0.5">{dLoads.length} loads</p>
+                    )}
                   </div>
 
                   {/* Timeline area */}
-                  <div className="relative" style={{ width: totalGridWidth, minHeight: 48 }}>
+                  <div className="relative" style={{ width: totalGridWidth, height: rowHeight }}>
                     {/* Grid lines */}
                     {daysInView.map((day, di) => {
                       const isToday = day.toDateString() === new Date().toDateString();
@@ -321,7 +326,8 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [] }: Props) => {
                     </div>
                   </div>
                 </div>
-              ))}
+              );
+              })}
             </div>
           </div>
           <ScrollBar orientation="horizontal" />
