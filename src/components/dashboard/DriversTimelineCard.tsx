@@ -21,6 +21,7 @@ interface Driver {
   id: string;
   name: string;
   status: string;
+  truck_id: string | null;
 }
 
 interface Props {
@@ -103,7 +104,10 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [] }: Props) => {
       .map((driverId) => ({
         driverId,
         driver: drivers.find((d) => d.id === driverId),
-        truck: trucks.find((t) => t.driver_id === driverId),
+        truck: (() => {
+          const drv = drivers.find((d) => d.id === driverId);
+          return drv?.truck_id ? trucks.find((t) => t.id === drv.truck_id) : undefined;
+        })(),
         loads: grouped[driverId] || [],
       }))
       .filter((e) => e.driver)
