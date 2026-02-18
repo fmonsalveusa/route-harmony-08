@@ -1,49 +1,46 @@
 
+# Panel de Timeline de Drivers con Cargas Asignadas en el Dashboard
 
-# Mostrar Load Adjustments sin depender de pagos existentes
+## Que se va a construir
+Un nuevo componente tipo Card en el Dashboard (admin y dispatcher) que muestre todos los drivers que tienen al menos una carga activa (dispatched, in_transit), cada uno con su mini-timeline horizontal mostrando las fechas de pickup y delivery de sus cargas asignadas.
 
-## Problema actual
+## Diseno Visual
+- Card con titulo "Drivers Load Timeline"
+- Lista vertical de drivers (solo los que tienen cargas activas)
+- Para cada driver: nombre + badge de status del driver + mini-timeline horizontal
+- La timeline horizontal muestra cada carga como un segmento con:
+  - Icono de pickup (fecha) a la izquierda
+  - Linea conectora con referencia de carga y status badge
+  - Icono de delivery (fecha) a la derecha
+  - Color segun status: azul para dispatched, naranja para in_transit, verde para delivered
+- Si un driver tiene multiples cargas, se apilan verticalmente dentro de su seccion
+- Scroll vertical si hay muchos drivers
 
-La seccion "Load Adjustments" se renderiza para cargas `in_transit`, `delivered` y `tonu`, pero internamente se oculta si no hay pagos generados (`availableRecipients.length === 0`). Como los pagos solo se generan al marcar la carga como "Delivered", las cargas en `in_transit` y `tonu` nunca muestran la seccion.
+## Datos
+- Se reutilizan los hooks existentes `useLoads()` y `useDrivers()` que ya estan en el Dashboard
+- Se filtran las cargas con status `dispatched`, `in_transit` (y opcionalmente `delivered` recientes)
+- Se agrupan por `driver_id`
+- Solo se muestran drivers que tienen al menos 1 carga activa
 
-## Solucion
+## Cambios Tecnicos
 
-En lugar de depender de los pagos existentes para determinar los beneficiarios, derivar los beneficiarios posibles directamente de los datos de la carga:
+### 1. Nuevo componente `src/components/dashboard/DriversTimelineCard.tsx`
+- Props: `loads: DbLoad[]`, `drivers: DbDriver[]`
+- Filtra cargas con status en ['dispatched', 'in_transit', 'delivered'] que tengan `driver_id`
+- Agrupa cargas por `driver_id`
+- Para cada driver con cargas, renderiza una seccion con:
+  - Nombre del driver y cantidad de cargas activas
+  - Timeline horizontal por cada carga mostrando pickup_date, delivery_date, referencia, origen, destino y status
+- Usa `ScrollArea` para manejar overflow cuando hay muchos drivers
+- Usa los componentes existentes `StatusBadge` y `Badge`
 
-- Si la carga tiene un `driver_id` asignado, mostrar el checkbox "Driver"
-- Si el driver asignado tiene un `investor_name` (no nulo), mostrar tambien el checkbox "Investor"
-- Si no hay driver asignado, no mostrar la seccion
+### 2. Modificar `src/pages/Dashboard.tsx`
+- Importar `DriversTimelineCard`
+- Agregar el componente en ambos dashboards (Admin y Dispatcher) despues de los charts y antes de la tabla "Recent Loads" / "My Loads"
+- Pasar `loads` y `drivers` como props (ya disponibles en scope)
 
-Esto permite crear ajustes antes de que los pagos existan. Cuando la carga se marque como "Delivered" y se generen los pagos, la propagacion a `payment_adjustments` se hara en ese momento.
+### Archivos a crear
+- `src/components/dashboard/DriversTimelineCard.tsx`
 
-## Cambios tecnicos
-
-### 1. `src/hooks/useLoadAdjustments.ts`
-
-Modificar la logica de `availableRecipients`:
-
-- Consultar la tabla `loads` para obtener el `driver_id` de la carga
-- Si tiene `driver_id`, consultar la tabla `drivers` para verificar si tiene `investor_name`
-- Construir `availableRecipients` con "driver" (siempre si hay driver) e "investor" (si el driver tiene investor)
-- Mantener la logica actual de propagacion a `payment_adjustments` solo cuando los pagos existan (para cargas delivered/paid)
-
-### 2. `src/components/LoadAdjustmentsSection.tsx`
-
-- Eliminar la condicion `if (!loading && availableRecipients.length === 0) return null`
-- Reemplazarla por una condicion que oculte solo si no hay driver asignado (basado en los nuevos recipients)
-
-### 3. `src/hooks/useLoadAdjustments.ts` - Propagacion diferida
-
-- En `addAdjustment`: si no hay pagos existentes para los beneficiarios seleccionados, guardar solo en `load_adjustments` (sin propagar a `payment_adjustments`)
-- La propagacion ocurrira cuando se generen los pagos (al marcar como delivered), verificando si hay load_adjustments pendientes
-
-### 4. `src/hooks/usePayments.ts` - Propagacion al generar pagos
-
-- En `generatePaymentsForLoad`: despues de crear los pagos, consultar `load_adjustments` de esa carga
-- Para cada ajuste pendiente, crear los `payment_adjustments` correspondientes
-
-### Archivos modificados
-- `src/hooks/useLoadAdjustments.ts` - Cambiar fuente de recipients (de payments a loads/drivers)
-- `src/components/LoadAdjustmentsSection.tsx` - Ajustar condicion de visibilidad
-- `src/hooks/usePayments.ts` - Agregar propagacion de ajustes al generar pagos
-
+### Archivos a modificar
+- `src/pages/Dashboard.tsx`
