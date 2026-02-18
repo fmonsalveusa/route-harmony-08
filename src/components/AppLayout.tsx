@@ -218,7 +218,7 @@ export const AppLayout = ({ children }: {children: ReactNode;}) => {
           onClick={() => setCollapsed(!collapsed)}
           className={`hidden lg:flex items-center justify-center h-10 border-t ${sidebarBorder} text-sidebar-muted hover:text-sidebar-accent-foreground transition-colors`}>
 
-          {collapsed ? <ChevronRight className="w-[25px] h-[25px]" /> : <ChevronLeft className="h-4 w-4" />}
+          {collapsed ? <ChevronRight className="w-[30px] h-[30px]" /> : <ChevronLeft className="h-4 w-4" />}
         </button>
       </aside>
 
