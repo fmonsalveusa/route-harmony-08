@@ -731,7 +731,7 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
           </div>
 
           {/* Load Adjustments */}
-          {(load.status === 'delivered' || load.status === 'paid') && (
+          {(['in_transit', 'delivered', 'tonu'].includes(load.status)) && (
             <LoadAdjustmentsSection loadId={load.id} />
           )}
 
