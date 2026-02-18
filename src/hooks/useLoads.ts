@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -81,6 +81,24 @@ export function useLoads() {
     queryKey: LOADS_QUERY_KEY,
     queryFn: fetchLoadsFromDb,
   });
+
+  // Realtime subscription: auto-refresh on any loads change
+  useEffect(() => {
+    const channel = supabase
+      .channel('loads-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'loads' },
+        () => {
+          queryClient.invalidateQueries({ queryKey: LOADS_QUERY_KEY });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   const fetchLoads = useCallback(async () => {
     await queryClient.invalidateQueries({ queryKey: LOADS_QUERY_KEY });
