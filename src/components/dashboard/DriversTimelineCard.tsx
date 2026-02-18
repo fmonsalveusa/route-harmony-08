@@ -177,7 +177,7 @@ export const DriversTimelineCard = ({ loads, drivers }: Props) => {
             <div key={driverId} className="flex items-start gap-2">
                 {/* Driver name column */}
                 <div className="w-[150px] shrink-0 pt-1 text-sm font-bold">
-                  <p className="text-xs font-medium truncate">{driver!.name}</p>
+                  <p className="text-sm font-bold truncate">{driver!.name}</p>
                   <div className="flex items-center gap-1 mt-0.5">
                     <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">
                       {dLoads.length} load{dLoads.length > 1 ? 's' : ''}
