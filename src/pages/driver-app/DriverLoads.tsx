@@ -80,6 +80,13 @@ export default function DriverLoads() {
             </div>
           </div>
 
+          {load.broker_client && (
+            <div className="text-xs">
+              <span className="text-muted-foreground">Broker: </span>
+              <span className="font-medium">{load.broker_client}</span>
+            </div>
+          )}
+
           <div className="flex items-center justify-between text-xs">
             <div>
               <span className="text-muted-foreground">Rate: </span>
