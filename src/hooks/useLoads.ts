@@ -93,9 +93,20 @@ export function useLoads() {
           queryClient.invalidateQueries({ queryKey: LOADS_QUERY_KEY });
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          // Force refetch on channel issues
+          queryClient.invalidateQueries({ queryKey: LOADS_QUERY_KEY });
+        }
+      });
+
+    // Polling fallback: refetch every 30s in case Realtime misses events
+    const pollId = setInterval(() => {
+      queryClient.invalidateQueries({ queryKey: LOADS_QUERY_KEY });
+    }, 30000);
 
     return () => {
+      clearInterval(pollId);
       supabase.removeChannel(channel);
     };
   }, [queryClient]);

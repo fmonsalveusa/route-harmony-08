@@ -84,7 +84,10 @@ export function LiveNotificationToasts() {
 
           // Refresh loads data when a status change or driver action notification arrives
           if (['status_changed', 'driver_arrived', 'pod_uploaded'].includes(n.type)) {
-            queryClient.invalidateQueries({ queryKey: ['loads'] });
+            // Small delay to ensure DB write is committed before refetching
+            setTimeout(() => {
+              queryClient.invalidateQueries({ queryKey: ['loads'] });
+            }, 500);
           }
 
           // Browser push notification for maintenance alerts
