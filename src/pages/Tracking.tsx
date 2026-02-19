@@ -611,7 +611,9 @@ const Tracking = () => {
       </div>
 
       {/* Drivers Load Timeline */}
-      <DriversTimelineCard loads={loads} drivers={drivers} trucks={trucks} />
+      <div className="lg:w-[calc(66.666%-0.5rem)]">
+        <DriversTimelineCard loads={loads} drivers={drivers} trucks={trucks} />
+      </div>
 
       {/* Selected Load Detail */}
       {selectedLoad && (
