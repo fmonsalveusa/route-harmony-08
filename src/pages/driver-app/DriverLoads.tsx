@@ -30,6 +30,9 @@ export default function DriverLoads() {
     const styles: Record<string, string> = {
       dispatched: 'bg-warning text-warning-foreground',
       in_transit: 'bg-info text-info-foreground',
+      on_site_pickup: 'bg-warning text-warning-foreground',
+      picked_up: 'bg-primary text-primary-foreground',
+      on_site_delivery: 'bg-warning text-warning-foreground',
       delivered: 'bg-success text-success-foreground',
       paid: 'bg-success text-success-foreground',
       pending: 'bg-muted text-muted-foreground',
@@ -37,7 +40,17 @@ export default function DriverLoads() {
     return styles[status] || 'bg-muted text-muted-foreground';
   };
 
-  const active = loads.filter(l => ['dispatched', 'in_transit'].includes(l.status));
+  const statusLabel = (status: string) => {
+    const labels: Record<string, string> = {
+      on_site_pickup: 'On Site - Pickup',
+      picked_up: 'Picked Up',
+      on_site_delivery: 'On Site - Delivery',
+      in_transit: 'In Transit',
+    };
+    return labels[status] || status.replace('_', ' ');
+  };
+
+  const active = loads.filter(l => !['delivered', 'paid', 'tonu', 'cancelled'].includes(l.status));
   const completed = loads.filter(l => ['delivered', 'paid'].includes(l.status));
 
   if (loading) return <div className="flex items-center justify-center h-40"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" /></div>;
@@ -66,7 +79,7 @@ export default function DriverLoads() {
         <CardContent className="p-3 space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-sm font-bold">Load #{load.reference_number}</span>
-            <Badge className={statusBadge(load.status)}>{load.status.replace('_', ' ')}</Badge>
+            <Badge className={statusBadge(load.status)}>{statusLabel(load.status)}</Badge>
           </div>
 
           <div className="space-y-1">
