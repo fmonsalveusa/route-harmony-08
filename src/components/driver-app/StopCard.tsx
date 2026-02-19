@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { MapPin, Navigation, Camera, Check, Clock, Image, Loader2 } from 'lucide-react';
+import { MapPin, Navigation, Camera, Check, Clock, Image, Loader2, Trash2 } from 'lucide-react';
 import { DocumentScanner } from './DocumentScanner';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -137,6 +137,28 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments }: 
     resolveUrls();
   }, [resolveUrls]);
 
+  const handleDeletePod = async (doc: { id: string; file_url: string; file_name: string }) => {
+    // Delete storage file
+    let path = doc.file_url;
+    if (path.startsWith('http')) {
+      const match = path.match(/\/storage\/v1\/object\/sign\/driver-documents\/([^?]+)/);
+      if (match?.[1]) path = decodeURIComponent(match[1]);
+    }
+    if (path && !path.startsWith('http')) {
+      await supabase.storage.from('driver-documents').remove([path]);
+    }
+    // Delete DB record
+    const { error } = await supabase.from('pod_documents').delete().eq('id', doc.id);
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Archivo eliminado' });
+      onUpdate();
+    }
+  };
+
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
   const handleOpenPod = async (doc: { id: string; file_url: string }) => {
     // Open blank window synchronously to avoid popup blocker
     const win = window.open('', '_blank');
@@ -218,17 +240,48 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments }: 
       {stopPods.length > 0 && (
         <div className="flex flex-wrap gap-2 pt-1">
           {stopPods.map(doc => (
-            <button key={doc.id} onClick={() => handleOpenPod(doc)} className="relative group" type="button">
-              <div className="w-14 h-14 rounded-lg border overflow-hidden bg-muted flex items-center justify-center">
-                {resolvedUrls[doc.id] && doc.file_name.match(/\.(jpg|jpeg|png|gif|webp)/i) ? (
-                  <img src={resolvedUrls[doc.id]} alt={doc.file_name} className="w-full h-full object-cover" />
-                ) : resolvingUrls ? (
-                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                ) : (
-                  <Image className="h-5 w-5 text-muted-foreground" />
-                )}
-              </div>
-            </button>
+            <div key={doc.id} className="relative group">
+              <button onClick={() => handleOpenPod(doc)} type="button">
+                <div className="w-14 h-14 rounded-lg border overflow-hidden bg-muted flex items-center justify-center">
+                  {resolvedUrls[doc.id] && doc.file_name.match(/\.(jpg|jpeg|png|gif|webp)/i) ? (
+                    <img src={resolvedUrls[doc.id]} alt={doc.file_name} className="w-full h-full object-cover" />
+                  ) : resolvingUrls ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  ) : (
+                    <Image className="h-5 w-5 text-muted-foreground" />
+                  )}
+                </div>
+              </button>
+              {deletingId === doc.id ? (
+                <div className="absolute -top-1 -right-1 flex gap-0.5">
+                  <button
+                    type="button"
+                    className="bg-destructive text-destructive-foreground rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold shadow"
+                    onClick={async () => {
+                      await handleDeletePod(doc as any);
+                      setDeletingId(null);
+                    }}
+                  >
+                    ✓
+                  </button>
+                  <button
+                    type="button"
+                    className="bg-muted text-muted-foreground rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold shadow border"
+                    onClick={() => setDeletingId(null)}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full w-5 h-5 flex items-center justify-center shadow opacity-0 group-active:opacity-100 transition-opacity"
+                  onClick={() => setDeletingId(doc.id)}
+                >
+                  <Trash2 className="h-3 w-3" />
+                </button>
+              )}
+            </div>
           ))}
         </div>
       )}
