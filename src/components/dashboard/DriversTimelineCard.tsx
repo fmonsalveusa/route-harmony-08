@@ -377,7 +377,7 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [] }: Props) => {
                               {load.reference_number}
                             </span>
                             <span
-                              className="text-[9px] font-medium px-1.5 py-0.5 rounded-sm mr-1 whitespace-nowrap"
+                              className="text-[9px] font-medium px-1.5 py-0.5 rounded-sm mr-2 whitespace-nowrap"
                               style={{
                                 backgroundColor: borderColor,
                                 color: 'white',
