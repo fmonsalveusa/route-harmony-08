@@ -19,6 +19,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
 import { ManualDispatcherPaymentDialog } from '@/components/ManualDispatcherPaymentDialog';
+import { ManualPaymentDialog } from '@/components/ManualPaymentDialog';
 
 const handleGenerateReceipt = async (p: DbPayment) => {
   const { data } = await supabase.from('payment_adjustments').select('*').eq('payment_id', p.id).order('created_at', { ascending: true });
@@ -513,7 +514,11 @@ const Payments = () => {
   const pendingDispatchers = allP.filter(p => p.recipient_type === 'dispatcher' && p.status === 'pending').length;
   const totalDispatchers = allP.filter(p => p.recipient_type === 'dispatcher').length;
   const [manualDialogOpen, setManualDialogOpen] = useState(false);
+  const [manualDriverDialogOpen, setManualDriverDialogOpen] = useState(false);
+  const [manualInvestorDialogOpen, setManualInvestorDialogOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+
+  const handleManualComplete = () => { refetch(); setRefreshKey(k => k + 1); };
 
   return (
     <div className="space-y-6">
@@ -544,8 +549,22 @@ const Payments = () => {
           <TabsTrigger value="investors">Investors <span className={`ml-1.5 inline-flex items-center justify-center rounded-full text-[11px] font-semibold min-w-[20px] h-5 px-1.5 ${pendingInvestors > 0 ? 'bg-destructive text-destructive-foreground' : 'bg-primary text-primary-foreground'}`}>{pendingInvestors > 0 ? pendingInvestors : totalInvestors}</span></TabsTrigger>
           <TabsTrigger value="dispatchers">Dispatchers <span className={`ml-1.5 inline-flex items-center justify-center rounded-full text-[11px] font-semibold min-w-[20px] h-5 px-1.5 ${pendingDispatchers > 0 ? 'bg-destructive text-destructive-foreground' : 'bg-primary text-primary-foreground'}`}>{pendingDispatchers > 0 ? pendingDispatchers : totalDispatchers}</span></TabsTrigger>
         </TabsList>
-        <TabsContent value="drivers"><PaymentsSection key={`driver-${refreshKey}`} type="driver" refreshKey={refreshKey} /></TabsContent>
-        <TabsContent value="investors"><PaymentsSection key={`investor-${refreshKey}`} type="investor" refreshKey={refreshKey} /></TabsContent>
+        <TabsContent value="drivers">
+          <div className="mb-4">
+            <Button size="sm" className="gap-1.5" onClick={() => setManualDriverDialogOpen(true)}>
+              <PlusCircle className="h-4 w-4" /> Create Manual Payment
+            </Button>
+          </div>
+          <PaymentsSection key={`driver-${refreshKey}`} type="driver" refreshKey={refreshKey} />
+        </TabsContent>
+        <TabsContent value="investors">
+          <div className="mb-4">
+            <Button size="sm" className="gap-1.5" onClick={() => setManualInvestorDialogOpen(true)}>
+              <PlusCircle className="h-4 w-4" /> Create Manual Payment
+            </Button>
+          </div>
+          <PaymentsSection key={`investor-${refreshKey}`} type="investor" refreshKey={refreshKey} />
+        </TabsContent>
         <TabsContent value="dispatchers">
           <div className="mb-4">
             <Button size="sm" className="gap-1.5" onClick={() => setManualDialogOpen(true)}>
@@ -559,7 +578,19 @@ const Payments = () => {
       <ManualDispatcherPaymentDialog
         open={manualDialogOpen}
         onOpenChange={setManualDialogOpen}
-        onComplete={() => { refetch(); setRefreshKey(k => k + 1); }}
+        onComplete={handleManualComplete}
+      />
+      <ManualPaymentDialog
+        open={manualDriverDialogOpen}
+        onOpenChange={setManualDriverDialogOpen}
+        recipientType="driver"
+        onComplete={handleManualComplete}
+      />
+      <ManualPaymentDialog
+        open={manualInvestorDialogOpen}
+        onOpenChange={setManualInvestorDialogOpen}
+        recipientType="investor"
+        onComplete={handleManualComplete}
       />
     </div>
   );
