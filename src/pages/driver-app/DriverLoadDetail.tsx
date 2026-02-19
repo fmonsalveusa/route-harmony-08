@@ -6,7 +6,7 @@ import { StopCard } from '@/components/driver-app/StopCard';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, Play, CheckCircle2, DollarSign, FileText, MapPin, PackageCheck, Truck } from 'lucide-react';
+import { ArrowLeft, Play, CheckCircle2, DollarSign, FileText, MapPin, PackageCheck, Truck, Undo2 } from 'lucide-react';
 import { createNotification } from '@/hooks/useNotifications';
 import { toast } from '@/hooks/use-toast';
 import { generatePaymentsForLoad } from '@/hooks/usePayments';
@@ -161,22 +161,43 @@ export default function DriverLoadDetail() {
         </Button>
       )}
 
-      {/* Status change buttons */}
+      {/* Status change buttons with rollback */}
       {load.status === 'in_transit' && (
-        <Button className="w-full gap-2 bg-warning hover:bg-warning/90 text-warning-foreground" size="lg" onClick={() => handleChangeStatus('on_site_pickup', 'On Site - Pickup')}>
-          <MapPin className="h-5 w-5" /> On Site - Pick Up
-        </Button>
+        <div className="space-y-2">
+          <Button className="w-full gap-2 bg-warning hover:bg-warning/90 text-warning-foreground" size="lg" onClick={() => handleChangeStatus('on_site_pickup', 'On Site - Pickup')}>
+            <MapPin className="h-5 w-5" /> On Site - Pick Up
+          </Button>
+          <Button variant="outline" className="w-full gap-2 text-muted-foreground" size="sm" onClick={() => handleChangeStatus('dispatched', 'Dispatched')}>
+            <Undo2 className="h-4 w-4" /> Back to Dispatched
+          </Button>
+        </div>
       )}
 
       {load.status === 'on_site_pickup' && (
-        <Button className="w-full gap-2 bg-primary hover:bg-primary/90" size="lg" onClick={() => handleChangeStatus('picked_up', 'Picked Up')}>
-          <PackageCheck className="h-5 w-5" /> Picked Up
-        </Button>
+        <div className="space-y-2">
+          <Button className="w-full gap-2 bg-primary hover:bg-primary/90" size="lg" onClick={() => handleChangeStatus('picked_up', 'Picked Up')}>
+            <PackageCheck className="h-5 w-5" /> Picked Up
+          </Button>
+          <Button variant="outline" className="w-full gap-2 text-muted-foreground" size="sm" onClick={() => handleChangeStatus('in_transit', 'In Transit')}>
+            <Undo2 className="h-4 w-4" /> Back to In Transit
+          </Button>
+        </div>
       )}
 
       {load.status === 'picked_up' && (
-        <Button className="w-full gap-2 bg-warning hover:bg-warning/90 text-warning-foreground" size="lg" onClick={() => handleChangeStatus('on_site_delivery', 'On Site - Delivery')}>
-          <MapPin className="h-5 w-5" /> On Site - Delivery
+        <div className="space-y-2">
+          <Button className="w-full gap-2 bg-warning hover:bg-warning/90 text-warning-foreground" size="lg" onClick={() => handleChangeStatus('on_site_delivery', 'On Site - Delivery')}>
+            <MapPin className="h-5 w-5" /> On Site - Delivery
+          </Button>
+          <Button variant="outline" className="w-full gap-2 text-muted-foreground" size="sm" onClick={() => handleChangeStatus('on_site_pickup', 'On Site - Pickup')}>
+            <Undo2 className="h-4 w-4" /> Back to On Site - Pickup
+          </Button>
+        </div>
+      )}
+
+      {load.status === 'on_site_delivery' && !canDeliver && (
+        <Button variant="outline" className="w-full gap-2 text-muted-foreground" size="sm" onClick={() => handleChangeStatus('picked_up', 'Picked Up')}>
+          <Undo2 className="h-4 w-4" /> Back to Picked Up
         </Button>
       )}
 
