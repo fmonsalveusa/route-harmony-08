@@ -45,6 +45,7 @@ export const ManualPaymentDialog = ({ open, onOpenChange, recipientType, onCompl
   const [submitting, setSubmitting] = useState(false);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  const [customPct, setCustomPct] = useState<number | null>(null);
 
   // Fetch drivers that can receive this payment type
   useEffect(() => {
@@ -101,6 +102,11 @@ export const ManualPaymentDialog = ({ open, onOpenChange, recipientType, onCompl
 
   const handleDriverChange = (id: string) => {
     setSelectedDriverId(id);
+    const d = drivers.find(dr => dr.id === id);
+    const defaultPct = recipientType === 'investor'
+      ? (d?.investor_pay_percentage ?? 0)
+      : (d?.pay_percentage ?? 0);
+    setCustomPct(defaultPct);
     fetchLoads(id);
   };
 
@@ -130,9 +136,10 @@ export const ManualPaymentDialog = ({ open, onOpenChange, recipientType, onCompl
   };
 
   const driver = drivers.find(d => d.id === selectedDriverId);
-  const pct = recipientType === 'investor'
+  const defaultPct = recipientType === 'investor'
     ? (driver?.investor_pay_percentage ?? 0)
     : (driver?.pay_percentage ?? 0);
+  const pct = customPct ?? defaultPct;
 
   const selectedTotal = filteredLoads
     .filter(l => selectedLoadIds.has(l.id))
@@ -181,6 +188,7 @@ export const ManualPaymentDialog = ({ open, onOpenChange, recipientType, onCompl
       setSelectedLoadIds(new Set());
       setDateFrom('');
       setDateTo('');
+      setCustomPct(null);
     }
     onOpenChange(o);
   };
@@ -201,14 +209,35 @@ export const ManualPaymentDialog = ({ open, onOpenChange, recipientType, onCompl
             <Select value={selectedDriverId} onValueChange={handleDriverChange}>
               <SelectTrigger><SelectValue placeholder={`Select ${recipientLabel.toLowerCase()}...`} /></SelectTrigger>
               <SelectContent className="bg-popover z-50">
-                {drivers.map(d => (
-                  <SelectItem key={d.id} value={d.id}>
-                    {recipientType === 'investor' ? `${d.investor_name} (${d.name})` : d.name} — {pct}%
-                  </SelectItem>
-                ))}
+                {drivers.map(d => {
+                  const dPct = recipientType === 'investor'
+                    ? (d.investor_pay_percentage ?? 0)
+                    : d.pay_percentage;
+                  return (
+                    <SelectItem key={d.id} value={d.id}>
+                      {recipientType === 'investor' ? `${d.investor_name} (${d.name})` : d.name} — {dPct}%
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
           </div>
+
+          {/* Custom percentage */}
+          {selectedDriverId && (
+            <div className="space-y-1">
+              <label className="text-sm font-medium">% Applied</label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                max="100"
+                className="w-[120px]"
+                value={customPct ?? ''}
+                onChange={e => setCustomPct(e.target.value === '' ? null : Number(e.target.value))}
+              />
+            </div>
+          )}
 
           {/* Date filters */}
           {selectedDriverId && !loadingLoads && allLoads.length > 0 && (
