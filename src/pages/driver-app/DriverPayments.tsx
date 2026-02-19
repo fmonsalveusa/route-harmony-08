@@ -1,7 +1,24 @@
 import { useDriverPayments } from '@/hooks/useDriverPayments';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { DollarSign, TrendingUp, Clock } from 'lucide-react';
+import { TrendingUp, Clock, MapPin } from 'lucide-react';
+import { formatDate } from '@/lib/dateUtils';
+
+/** Extract "City, ST" from a full address */
+function shortLocation(address: string): string {
+  if (!address) return '—';
+  const parts = address.split(',').map(s => s.trim());
+  if (parts.length >= 2) {
+    const city = parts[0];
+    // Try to find state abbreviation (2-letter uppercase) in the second or third part
+    for (let i = 1; i < parts.length; i++) {
+      const match = parts[i].match(/\b([A-Z]{2})\b/);
+      if (match) return `${city}, ${match[1]}`;
+    }
+    return `${city}, ${parts[1]}`;
+  }
+  return parts[0];
+}
 
 export default function DriverPayments() {
   const { payments, loading, totalPending, totalPaid } = useDriverPayments();
@@ -37,23 +54,56 @@ export default function DriverPayments() {
         {payments.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-8">No payments yet</p>
         ) : (
-          payments.map(p => (
-            <Card key={p.id}>
-              <CardContent className="p-3 flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-bold">{p.load_reference}</p>
-                  <p className="text-xs text-muted-foreground">{p.percentage_applied}% of ${Number(p.total_rate).toLocaleString()}</p>
-                  {p.payment_date && <p className="text-xs text-muted-foreground">Paid: {p.payment_date}</p>}
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-bold">${Number(p.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
-                  <Badge className={p.status === 'paid' ? 'bg-success text-success-foreground' : 'bg-warning text-warning-foreground'}>
-                    {p.status === 'paid' ? 'Paid' : 'Pending'}
-                  </Badge>
-                </div>
-              </CardContent>
-            </Card>
-          ))
+          payments.map(p => {
+            const adjAmount = p.total_adjustments ?? 0;
+            return (
+              <Card key={p.id}>
+                <CardContent className="p-3 space-y-2">
+                  {/* Header: Load # + Status */}
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-bold">Load #{p.load_reference}</p>
+                    <Badge className={p.status === 'paid' ? 'bg-success text-success-foreground' : 'bg-warning text-warning-foreground'}>
+                      {p.status === 'paid' ? 'Paid' : 'Pending'}
+                    </Badge>
+                  </div>
+
+                  {/* Origin → Destination */}
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <MapPin className="h-3 w-3 shrink-0" />
+                    <span>{shortLocation(p.origin || '')} → {shortLocation(p.destination || '')}</span>
+                  </div>
+
+                  {/* Details grid */}
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Rate</span>
+                      <span className="font-medium">${Number(p.total_rate).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">% Assigned</span>
+                      <span className="font-medium">{p.percentage_applied}%</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Adjustment</span>
+                      <span className={`font-medium ${adjAmount > 0 ? 'text-success' : adjAmount < 0 ? 'text-destructive' : ''}`}>
+                        {adjAmount === 0 ? '—' : `${adjAmount > 0 ? '+' : ''}$${Math.abs(adjAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Paid Date</span>
+                      <span className="font-medium">{p.payment_date ? formatDate(p.payment_date) : '—'}</span>
+                    </div>
+                  </div>
+
+                  {/* Total */}
+                  <div className="flex items-center justify-between pt-1 border-t border-border">
+                    <span className="text-xs font-medium text-muted-foreground">Total Paid</span>
+                    <span className="text-sm font-bold">${(p.net_amount ?? p.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })
         )}
       </div>
     </div>
