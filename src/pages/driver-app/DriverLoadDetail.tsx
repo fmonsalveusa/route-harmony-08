@@ -6,7 +6,7 @@ import { StopCard } from '@/components/driver-app/StopCard';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, Play, CheckCircle2, DollarSign } from 'lucide-react';
+import { ArrowLeft, Play, CheckCircle2, DollarSign, FileText } from 'lucide-react';
 import { createNotification } from '@/hooks/useNotifications';
 import { toast } from '@/hooks/use-toast';
 import { generatePaymentsForLoad } from '@/hooks/usePayments';
@@ -117,6 +117,35 @@ export default function DriverLoadDetail() {
           <div className="text-lg font-bold text-primary">${Number(load.total_rate).toLocaleString()}</div>
         </CardContent>
       </Card>
+
+      {/* Rate Confirmation PDF */}
+      {load.pdf_url && (
+        <Button
+          variant="outline"
+          className="w-full gap-2"
+          onClick={async (e) => {
+            e.stopPropagation();
+            const win = window.open('', '_blank');
+            try {
+              const path = load.pdf_url.includes('driver-documents/') 
+                ? load.pdf_url.split('driver-documents/')[1] 
+                : load.pdf_url;
+              const { data } = await supabase.storage.from('driver-documents').createSignedUrl(path, 3600);
+              if (data?.signedUrl && win) {
+                win.location.href = data.signedUrl;
+              } else {
+                win?.close();
+                toast({ title: 'Could not open document', variant: 'destructive' });
+              }
+            } catch {
+              win?.close();
+              toast({ title: 'Error opening document', variant: 'destructive' });
+            }
+          }}
+        >
+          <FileText className="h-4 w-4" /> View Rate Confirmation
+        </Button>
+      )}
 
       {/* Start Route button */}
       {load.status === 'dispatched' && (
