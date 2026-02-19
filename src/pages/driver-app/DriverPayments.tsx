@@ -8,16 +8,17 @@ import { formatDate } from '@/lib/dateUtils';
 function shortLocation(address: string): string {
   if (!address) return '—';
   const parts = address.split(',').map(s => s.trim());
-  if (parts.length >= 2) {
-    const city = parts[0];
-    // Try to find state abbreviation (2-letter uppercase) in the second or third part
-    for (let i = 1; i < parts.length; i++) {
-      const match = parts[i].match(/\b([A-Z]{2})\b/);
-      if (match) return `${city}, ${match[1]}`;
+  // Find the part containing a 2-letter state code
+  for (let i = parts.length - 1; i >= 1; i--) {
+    const match = parts[i].match(/\b([A-Z]{2})\b/);
+    if (match) {
+      // The city is the part right before the state part
+      const city = parts[i - 1] || parts[0];
+      return `${city}, ${match[1]}`;
     }
-    return `${city}, ${parts[1]}`;
   }
-  return parts[0];
+  // Fallback: first two parts
+  return parts.length >= 2 ? `${parts[0]}, ${parts[1]}` : parts[0];
 }
 
 export default function DriverPayments() {
