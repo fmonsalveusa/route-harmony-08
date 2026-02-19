@@ -167,7 +167,7 @@ const Loads = () => {
     });
   }
 
-  const activeLoads = baseLoads.filter(l => ['planned', 'dispatched', 'in_transit', 'on_site_pickup', 'picked_up', 'on_site_delivery'].includes(l.status));
+  const activeLoads = baseLoads.filter(l => !['delivered', 'tonu', 'cancelled'].includes(l.status));
   const deliveredLoads = baseLoads.filter(l => ['delivered', 'tonu'].includes(l.status));
   const cancelledLoads = baseLoads.filter(l => l.status === 'cancelled');
 
