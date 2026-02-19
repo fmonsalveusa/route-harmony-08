@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const Auth = () => {
-  const { user, loading, signIn, signUp, isMasterAdmin } = useAuth();
+  const { user, loading, signIn, signUp, isMasterAdmin, role } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
@@ -26,8 +26,9 @@ const Auth = () => {
     );
   }
 
-  if (user) {
-    return <Navigate to={isMasterAdmin ? '/master' : '/'} replace />;
+  if (user && role) {
+    const redirectPath = isMasterAdmin ? '/master' : role === 'driver' ? '/driver' : '/dashboard';
+    return <Navigate to={redirectPath} replace />;
   }
 
   const handleSignIn = async (e: React.FormEvent) => {
