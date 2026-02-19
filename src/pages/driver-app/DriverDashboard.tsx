@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Package, DollarSign, MapPin, AlertTriangle } from 'lucide-react';
+import { Package, DollarSign, MapPin, AlertTriangle, Calendar } from 'lucide-react';
+import { formatDate } from '@/lib/dateUtils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -101,20 +102,45 @@ export default function DriverDashboard() {
           <div className="space-y-2">
             {activeLoads.map(load => (
               <Card key={load.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate(`/driver/loads/${load.id}`)}>
-                <CardContent className="p-3">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-bold">{load.reference_number}</span>
+                <CardContent className="p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold">Load #{load.reference_number}</span>
                     <Badge className={load.status === 'in_transit' ? 'bg-info text-info-foreground' : 'bg-warning text-warning-foreground'}>
                       {load.status === 'in_transit' ? 'In Transit' : 'Dispatched'}
                     </Badge>
                   </div>
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <MapPin className="h-3 w-3" />
-                    <span className="truncate">{load.origin}</span>
-                    <span>→</span>
-                    <span className="truncate">{load.destination}</span>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <MapPin className="h-3 w-3 shrink-0 text-success" />
+                      <span className="truncate">{(() => { const p = load.origin?.split(',').map((s: string) => s.trim()); return p?.length >= 2 ? `${p[0]}, ${p[1]}` : load.origin; })()}</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <MapPin className="h-3 w-3 shrink-0 text-destructive" />
+                      <span className="truncate">{(() => { const p = load.destination?.split(',').map((s: string) => s.trim()); return p?.length >= 2 ? `${p[0]}, ${p[1]}` : load.destination; })()}</span>
+                    </div>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">${Number(load.total_rate).toLocaleString()}</p>
+                  {load.broker_client && (
+                    <div className="text-xs">
+                      <span className="text-muted-foreground">Broker: </span>
+                      <span className="font-medium">{load.broker_client}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between text-xs">
+                    <div>
+                      <span className="text-muted-foreground">Rate: </span>
+                      <span className="font-semibold text-primary">${Number(load.total_rate).toLocaleString()}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">RPM: </span>
+                      <span className="font-semibold">{Number(load.miles) > 0 ? `$${(Number(load.total_rate) / Number(load.miles)).toFixed(2)}` : '—'}</span>
+                    </div>
+                  </div>
+                  {load.delivery_date && (
+                    <div className="text-xs text-muted-foreground">
+                      <Calendar className="h-3 w-3 inline mr-1" />
+                      Est. Delivery: <span className="font-medium text-foreground">{formatDate(load.delivery_date)}</span>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))}
