@@ -6,7 +6,7 @@ import { StopCard } from '@/components/driver-app/StopCard';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, Play, CheckCircle2, DollarSign, FileText } from 'lucide-react';
+import { ArrowLeft, Play, CheckCircle2, DollarSign, FileText, MapPin, PackageCheck, Truck } from 'lucide-react';
 import { createNotification } from '@/hooks/useNotifications';
 import { toast } from '@/hooks/use-toast';
 import { generatePaymentsForLoad } from '@/hooks/usePayments';
@@ -44,22 +44,23 @@ export default function DriverLoadDetail() {
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
-  const handleStartRoute = async () => {
-    await supabase.from('loads').update({ status: 'in_transit' }).eq('id', loadId!);
+  const handleChangeStatus = async (newStatus: string, label: string) => {
+    await supabase.from('loads').update({ status: newStatus }).eq('id', loadId!);
     await createNotification({
       type: 'status_changed',
-      title: 'Route started',
-      message: `${profile?.full_name} started route for load ${load?.reference_number}`,
+      title: `Status: ${label}`,
+      message: `${profile?.full_name} changed load ${load?.reference_number} to ${label}`,
       load_id: loadId,
     });
-    toast({ title: 'Route started!' });
+    toast({ title: `Status: ${label}` });
     fetchAll();
   };
+
+  const handleStartRoute = async () => handleChangeStatus('in_transit', 'In Transit');
 
   const handleMarkDelivered = async () => {
     await supabase.from('loads').update({ status: 'delivered' }).eq('id', loadId!);
 
-    // Generate payments
     if (driver && load) {
       const { data: dispatcherData } = await supabase.from('dispatchers').select('*').eq('id', load.dispatcher_id).maybeSingle();
       await generatePaymentsForLoad(
@@ -86,7 +87,7 @@ export default function DriverLoadDetail() {
   const lastDelivery = deliveryStops[deliveryStops.length - 1];
   const lastDeliveryArrived = lastDelivery?.arrived_at;
   const hasPodsOnLastDelivery = lastDelivery ? podDocs.some(p => p.stop_id === lastDelivery.id) : false;
-  const canDeliver = load.status === 'in_transit' && lastDeliveryArrived && (hasPodsOnLastDelivery || podDocs.length > 0);
+  const canDeliver = (load.status === 'in_transit' || load.status === 'on_site_delivery') && lastDeliveryArrived && (hasPodsOnLastDelivery || podDocs.length > 0);
 
   return (
     <div className="p-4 pb-24 space-y-4">
@@ -102,11 +103,17 @@ export default function DriverLoadDetail() {
         </div>
         <Badge className={
           load.status === 'in_transit' ? 'bg-info text-info-foreground'
+          : load.status === 'on_site_pickup' ? 'bg-warning text-warning-foreground'
+          : load.status === 'picked_up' ? 'bg-primary text-primary-foreground'
+          : load.status === 'on_site_delivery' ? 'bg-warning text-warning-foreground'
           : load.status === 'delivered' ? 'bg-success text-success-foreground'
           : load.status === 'paid' ? 'bg-success text-success-foreground'
           : 'bg-warning text-warning-foreground'
         }>
-          {load.status.replace('_', ' ')}
+          {load.status === 'on_site_pickup' ? 'On Site - Pickup'
+           : load.status === 'picked_up' ? 'Picked Up'
+           : load.status === 'on_site_delivery' ? 'On Site - Delivery'
+           : load.status.replace('_', ' ')}
         </Badge>
       </div>
 
@@ -151,6 +158,25 @@ export default function DriverLoadDetail() {
       {load.status === 'dispatched' && (
         <Button className="w-full gap-2" size="lg" onClick={handleStartRoute}>
           <Play className="h-5 w-5" /> Start Route
+        </Button>
+      )}
+
+      {/* Status change buttons */}
+      {load.status === 'in_transit' && (
+        <Button className="w-full gap-2 bg-warning hover:bg-warning/90 text-warning-foreground" size="lg" onClick={() => handleChangeStatus('on_site_pickup', 'On Site - Pickup')}>
+          <MapPin className="h-5 w-5" /> On Site - Pick Up
+        </Button>
+      )}
+
+      {load.status === 'on_site_pickup' && (
+        <Button className="w-full gap-2 bg-primary hover:bg-primary/90" size="lg" onClick={() => handleChangeStatus('picked_up', 'Picked Up')}>
+          <PackageCheck className="h-5 w-5" /> Picked Up
+        </Button>
+      )}
+
+      {load.status === 'picked_up' && (
+        <Button className="w-full gap-2 bg-warning hover:bg-warning/90 text-warning-foreground" size="lg" onClick={() => handleChangeStatus('on_site_delivery', 'On Site - Delivery')}>
+          <MapPin className="h-5 w-5" /> On Site - Delivery
         </Button>
       )}
 
