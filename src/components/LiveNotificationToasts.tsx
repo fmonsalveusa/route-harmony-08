@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X, MapPin, Camera, Truck, Bell, UserPlus, Wrench } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
@@ -52,6 +53,7 @@ export function LiveNotificationToasts() {
   const [toasts, setToasts] = useState<LiveToast[]>([]);
   const { profile } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     requestNotificationPermission();
@@ -79,6 +81,11 @@ export function LiveNotificationToasts() {
           };
 
           setToasts((prev) => [toast, ...prev].slice(0, 5));
+
+          // Refresh loads data when a status change or driver action notification arrives
+          if (['status_changed', 'driver_arrived', 'pod_uploaded'].includes(n.type)) {
+            queryClient.invalidateQueries({ queryKey: ['loads'] });
+          }
 
           // Browser push notification for maintenance alerts
           if (n.type === 'maintenance') {
