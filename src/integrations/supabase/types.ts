@@ -198,6 +198,7 @@ export type Database = {
       }
       dispatchers: {
         Row: {
+          commission_2_percentage: number
           commission_percentage: number
           created_at: string
           dispatch_service_percentage: number
@@ -212,6 +213,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          commission_2_percentage?: number
           commission_percentage?: number
           created_at?: string
           dispatch_service_percentage?: number
@@ -226,6 +228,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          commission_2_percentage?: number
           commission_percentage?: number
           created_at?: string
           dispatch_service_percentage?: number

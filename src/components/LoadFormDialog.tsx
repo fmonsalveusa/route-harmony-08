@@ -62,6 +62,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
   const [selectedDispatcher, setSelectedDispatcher] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('planned');
   const [selectedServiceType, setSelectedServiceType] = useState('');
+  const [selectedCommissionType, setSelectedCommissionType] = useState<'commission_1' | 'commission_2'>('commission_1');
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractionStatus, setExtractionStatus] = useState<'idle' | 'uploading' | 'processing' | 'done' | 'error'>('idle');
   const [pdfFileName, setPdfFileName] = useState('');
@@ -312,9 +313,15 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
     setExtractionStatus('idle');
   };
 
-  const driverPay = formData.totalRate * 0.30;
-  const investorPay = formData.totalRate * 0.15;
-  const dispatcherPay = formData.totalRate * 0.08;
+  const selectedDriverObj = drivers.find(d => d.id === selectedDriver);
+  const selectedDispatcherObj = dispatchers.find(d => d.id === selectedDispatcher);
+
+  const driverPay = formData.totalRate * (selectedDriverObj?.pay_percentage ?? 30) / 100;
+  const investorPay = formData.totalRate * (selectedDriverObj?.investor_pay_percentage ?? 15) / 100;
+  const dispatcherPct = selectedCommissionType === 'commission_2'
+    ? (selectedDispatcherObj?.commission_2_percentage ?? 0)
+    : (selectedDispatcherObj?.commission_percentage ?? 8);
+  const dispatcherPay = formData.totalRate * dispatcherPct / 100;
   const companyProfit = formData.totalRate - driverPay - investorPay - dispatcherPay;
 
   const handleSubmit = async () => {
@@ -620,7 +627,10 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
           </div>
           <div className="space-y-2">
             <Label>Dispatcher</Label>
-            <Select value={selectedDispatcher} onValueChange={setSelectedDispatcher}>
+            <Select value={selectedDispatcher} onValueChange={(val) => {
+              setSelectedDispatcher(val);
+              setSelectedCommissionType('commission_1');
+            }}>
               <SelectTrigger><SelectValue placeholder="Seleccionar dispatcher" /></SelectTrigger>
               <SelectContent>
                 {dispatchers
@@ -632,6 +642,18 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
               </SelectContent>
             </Select>
           </div>
+          {selectedDispatcherObj && (selectedDispatcherObj.commission_2_percentage ?? 0) > 0 && (
+            <div className="space-y-2">
+              <Label>Commission Type</Label>
+              <Select value={selectedCommissionType} onValueChange={(v) => setSelectedCommissionType(v as 'commission_1' | 'commission_2')}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="commission_1">Commission 1: {selectedDispatcherObj.commission_percentage}%</SelectItem>
+                  <SelectItem value="commission_2">Commission 2: {selectedDispatcherObj.commission_2_percentage}%</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div className="space-y-2">
             <Label>Service Type</Label>
             <Select value={selectedServiceType} onValueChange={setSelectedServiceType}>
