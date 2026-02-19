@@ -1,46 +1,54 @@
 
-# Panel de Timeline de Drivers con Cargas Asignadas en el Dashboard
+# Escaner de Documentos Inteligente con Deteccion de Bordes
 
-## Que se va a construir
-Un nuevo componente tipo Card en el Dashboard (admin y dispatcher) que muestre todos los drivers que tienen al menos una carga activa (dispatched, in_transit), cada uno con su mini-timeline horizontal mostrando las fechas de pickup y delivery de sus cargas asignadas.
+## Problema Actual
+El escaner actual solo toma la foto completa y aplica un filtro de blanco y negro. No detecta los bordes del documento ni recorta el area relevante, resultando en imagenes con fondo innecesario (mesa, escritorio, etc.).
 
-## Diseno Visual
-- Card con titulo "Drivers Load Timeline"
-- Lista vertical de drivers (solo los que tienen cargas activas)
-- Para cada driver: nombre + badge de status del driver + mini-timeline horizontal
-- La timeline horizontal muestra cada carga como un segmento con:
-  - Icono de pickup (fecha) a la izquierda
-  - Linea conectora con referencia de carga y status badge
-  - Icono de delivery (fecha) a la derecha
-  - Color segun status: azul para dispatched, naranja para in_transit, verde para delivered
-- Si un driver tiene multiples cargas, se apilan verticalmente dentro de su seccion
-- Scroll vertical si hay muchos drivers
+## Solucion Propuesta
 
-## Datos
-- Se reutilizan los hooks existentes `useLoads()` y `useDrivers()` que ya estan en el Dashboard
-- Se filtran las cargas con status `dispatched`, `in_transit` (y opcionalmente `delivered` recientes)
-- Se agrupan por `driver_id`
-- Solo se muestran drivers que tienen al menos 1 carga activa
+Implementar un flujo de escaneo en 3 pasos:
 
-## Cambios Tecnicos
+1. **Captura** - El conductor toma la foto
+2. **Deteccion y ajuste de bordes** - La IA detecta automaticamente las 4 esquinas del documento y muestra una vista previa con puntos arrastrables para que el conductor pueda ajustar si es necesario
+3. **Recorte y mejora** - Se aplica transformacion de perspectiva para enderezar y recortar solo el documento, seguido del filtro de mejora existente
 
-### 1. Nuevo componente `src/components/dashboard/DriversTimelineCard.tsx`
-- Props: `loads: DbLoad[]`, `drivers: DbDriver[]`
-- Filtra cargas con status en ['dispatched', 'in_transit', 'delivered'] que tengan `driver_id`
-- Agrupa cargas por `driver_id`
-- Para cada driver con cargas, renderiza una seccion con:
-  - Nombre del driver y cantidad de cargas activas
-  - Timeline horizontal por cada carga mostrando pickup_date, delivery_date, referencia, origen, destino y status
-- Usa `ScrollArea` para manejar overflow cuando hay muchos drivers
-- Usa los componentes existentes `StatusBadge` y `Badge`
+```text
++-------------------+     +-------------------+     +-------------------+
+|  1. Tomar Foto    | --> |  2. Ajustar       | --> |  3. Resultado     |
+|                   |     |  Esquinas         |     |  Recortado        |
+|  [foto completa]  |     |  [4 puntos drag]  |     |  [solo documento] |
++-------------------+     +-------------------+     +-------------------+
+```
 
-### 2. Modificar `src/pages/Dashboard.tsx`
-- Importar `DriversTimelineCard`
-- Agregar el componente en ambos dashboards (Admin y Dispatcher) despues de los charts y antes de la tabla "Recent Loads" / "My Loads"
-- Pasar `loads` y `drivers` como props (ya disponibles en scope)
+## Detalle Tecnico
 
-### Archivos a crear
-- `src/components/dashboard/DriversTimelineCard.tsx`
+### 1. Edge Function: `detect-document-edges`
+- Recibe la imagen capturada (base64)
+- Usa **Gemini Vision** (modelo disponible en Lovable AI, sin API key necesaria) para detectar las 4 esquinas del documento
+- Retorna las coordenadas (x,y) de cada esquina como porcentaje de la imagen
+- Prompt de IA: "Identify the 4 corners of the paper document in this photo, return as JSON coordinates"
 
-### Archivos a modificar
-- `src/pages/Dashboard.tsx`
+### 2. Nuevo componente: `EdgeCropOverlay`
+- Muestra la imagen capturada con un overlay semi-transparente
+- Dibuja 4 puntos (handles) en las esquinas detectadas por la IA
+- Los puntos son **arrastrables** con touch/mouse para ajuste manual
+- Muestra lineas conectando los 4 puntos para visualizar el area de recorte
+- Botones: "Confirmar recorte" y "Omitir" (usar foto completa)
+
+### 3. Transformacion de perspectiva (Canvas)
+- Funcion `perspectiveTransform` que toma la imagen original + 4 coordenadas de esquinas
+- Aplica una transformacion geometrica para convertir el cuadrilatero irregular en un rectangulo perfecto
+- El resultado es una imagen recortada y enderezada del documento solamente
+- Despues se aplica el filtro de mejora (blanco/negro con contraste) existente
+
+### 4. Cambios al flujo del `DocumentScanner`
+- Despues de capturar la foto, se muestra el `EdgeCropOverlay` en vez de ir directo al resultado
+- Se agrega un estado intermedio `cropping` al flujo
+- Si la IA no detecta bordes (ej: foto solo del documento sin fondo), permite continuar sin recorte
+- El boton "Omitir" permite saltarse la deteccion si el conductor prefiere
+
+### Archivos a crear/modificar:
+- **Crear**: `supabase/functions/detect-document-edges/index.ts` - Edge function con Gemini Vision
+- **Crear**: `src/components/driver-app/EdgeCropOverlay.tsx` - Componente de ajuste de esquinas
+- **Crear**: `src/lib/perspectiveTransform.ts` - Logica de transformacion geometrica
+- **Modificar**: `src/components/driver-app/DocumentScanner.tsx` - Integrar el nuevo flujo con el paso de recorte
