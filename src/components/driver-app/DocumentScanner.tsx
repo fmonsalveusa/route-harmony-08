@@ -79,10 +79,11 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
       const dataUrl = reader.result as string;
+      const enhanced = await enhanceImage(dataUrl);
       setPages(prev => {
-        const next = [...prev, { original: dataUrl, enhanced: null, showEnhanced: false }];
+        const next = [...prev, { original: dataUrl, enhanced, showEnhanced: true }];
         setSelectedIndex(next.length - 1);
         return next;
       });
@@ -267,7 +268,6 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
         ref={fileRef}
         type="file"
         accept="image/*"
-        capture="environment"
         className="hidden"
         onChange={handleCapture}
       />
