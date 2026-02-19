@@ -38,18 +38,30 @@ interface Props {
   trucks?: { id: string; unit_number: string; driver_id: string | null }[];
 }
 
-const ACTIVE_STATUSES = ['planned', 'dispatched', 'in_transit'];
+const ACTIVE_STATUSES = ['planned', 'dispatched', 'in_transit', 'on_site_pickup', 'picked_up', 'on_site_delivery'];
 
 const statusConfig: Record<string, { label: string; bg: string; text: string }> = {
-  planned: { label: 'Planned', bg: 'hsl(215,70%,92%)', text: 'hsl(215,70%,35%)' },
-  dispatched: { label: 'Dispatched', bg: 'hsl(270,60%,92%)', text: 'hsl(270,60%,35%)' },
-  in_transit: { label: 'In Transit', bg: 'hsl(142,60%,90%)', text: 'hsl(142,60%,30%)' },
+  planned: { label: 'Planned', bg: 'hsl(48,92%,85%)', text: 'hsl(48,92%,30%)' },
+  dispatched: { label: 'Dispatched', bg: 'hsl(80,65%,85%)', text: 'hsl(80,65%,25%)' },
+  in_transit: { label: 'In Transit', bg: 'hsl(140,60%,85%)', text: 'hsl(140,60%,25%)' },
+  on_site_pickup: { label: 'On Site - Pickup', bg: 'hsl(170,60%,85%)', text: 'hsl(170,60%,25%)' },
+  picked_up: { label: 'Picked Up', bg: 'hsl(200,70%,87%)', text: 'hsl(200,70%,30%)' },
+  on_site_delivery: { label: 'On Site - Delivery', bg: 'hsl(230,60%,88%)', text: 'hsl(230,60%,30%)' },
+  delivered: { label: 'Delivered', bg: 'hsl(270,55%,88%)', text: 'hsl(270,55%,30%)' },
+  tonu: { label: 'TONU', bg: 'hsl(25,85%,87%)', text: 'hsl(25,85%,30%)' },
+  cancelled: { label: 'Canceled', bg: 'hsl(0,72%,90%)', text: 'hsl(0,72%,30%)' },
 };
 
 const barBorderColors: Record<string, string> = {
-  planned: 'hsl(215,70%,70%)',
-  dispatched: 'hsl(270,60%,70%)',
-  in_transit: 'hsl(142,60%,55%)',
+  planned: 'hsl(48,92%,50%)',
+  dispatched: 'hsl(80,65%,45%)',
+  in_transit: 'hsl(140,60%,40%)',
+  on_site_pickup: 'hsl(170,60%,40%)',
+  picked_up: 'hsl(200,70%,48%)',
+  on_site_delivery: 'hsl(230,60%,50%)',
+  delivered: 'hsl(270,55%,50%)',
+  tonu: 'hsl(25,85%,50%)',
+  cancelled: 'hsl(0,72%,50%)',
 };
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
