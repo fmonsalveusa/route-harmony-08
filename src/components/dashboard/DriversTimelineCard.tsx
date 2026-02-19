@@ -39,6 +39,7 @@ interface Props {
 }
 
 const ACTIVE_STATUSES = ['planned', 'dispatched', 'in_transit', 'on_site_pickup', 'picked_up', 'on_site_delivery'];
+const LEGEND_STATUSES = ['planned', 'dispatched', 'in_transit', 'on_site_pickup', 'picked_up', 'on_site_delivery'];
 
 const statusConfig: Record<string, { label: string; bg: string; text: string }> = {
   planned: { label: 'Planned', bg: 'hsl(48,92%,85%)', text: 'hsl(48,92%,30%)' },
@@ -213,7 +214,9 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [] }: Props) => {
           </CardTitle>
           {/* Legend */}
           <div className="flex items-center gap-3">
-            {Object.entries(statusConfig).map(([key, cfg]) => (
+            {LEGEND_STATUSES.map((key) => {
+              const cfg = statusConfig[key];
+              return (
               <div key={key} className="flex items-center gap-1.5">
                 <span
                   className="inline-block w-3 h-3 rounded-sm border"
@@ -221,7 +224,8 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [] }: Props) => {
                 />
                 <span className="text-[11px] text-muted-foreground font-medium">{cfg.label}</span>
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </CardHeader>
