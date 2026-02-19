@@ -202,7 +202,7 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments }: 
               <Button variant="outline" size="sm" className="gap-1.5 text-xs" asChild disabled={uploading}>
                 <span>
                   <Camera className="h-3.5 w-3.5" />
-                  {uploading ? 'Uploading...' : stop.stop_type === 'pickup' ? 'BOL & Load Pictures' : 'Upload POD'}
+                  {uploading ? 'Uploading...' : stop.stop_type === 'pickup' ? 'Load Pictures' : 'Upload POD'}
                 </span>
               </Button>
               <input type="file" accept="image/*,application/pdf" capture="environment" multiple className="hidden" onChange={handleFileUpload} />
