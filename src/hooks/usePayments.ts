@@ -122,14 +122,20 @@ export async function generatePaymentsForLoad(load: {
 
   const tenant_id = await getTenantId();
   const withTenant = paymentsToInsert.map(p => ({ ...p, tenant_id }));
-  const { data: insertedPayments, error } = await supabase.from('payments').insert(withTenant as any).select();
+  const { error } = await supabase.from('payments').insert(withTenant as any);
   if (error) {
     toast({ title: 'Error generating payments', description: error.message, variant: 'destructive' });
   } else {
     toast({ title: `${paymentsToInsert.length} payment(s) generated automatically` });
 
-    // Propagate pending load_adjustments to payment_adjustments
-    if (insertedPayments && insertedPayments.length > 0) {
+    // Fetch the newly created payments separately to avoid .insert().select() RLS issues
+    const { data: createdPayments } = await supabase
+      .from('payments')
+      .select('*')
+      .eq('load_id', load.id);
+
+    if (createdPayments && createdPayments.length > 0) {
+      // Propagate pending load_adjustments to payment_adjustments
       const { data: loadAdjs } = await supabase
         .from('load_adjustments')
         .select('*')
@@ -139,8 +145,8 @@ export async function generatePaymentsForLoad(load: {
         const payAdjsToInsert: any[] = [];
 
         for (const adj of loadAdjs as any[]) {
-          const applyTo: string[] = adj.apply_to || [];
-          const matchingPayments = (insertedPayments as any[]).filter(
+          const applyTo: string[] = Array.isArray(adj.apply_to) ? adj.apply_to : [];
+          const matchingPayments = (createdPayments as any[]).filter(
             (p: any) => applyTo.includes(p.recipient_type)
           );
 
