@@ -42,7 +42,7 @@ import { DriverTrackingProvider } from "./contexts/DriverTrackingContext";
 const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children, masterOnly = false }: { children: React.ReactNode; masterOnly?: boolean }) => {
-  const { user, loading, isMasterAdmin, profile } = useAuth();
+  const { user, loading, isMasterAdmin, profile, role } = useAuth();
 
   if (loading) {
     return (
@@ -53,6 +53,9 @@ const ProtectedRoute = ({ children, masterOnly = false }: { children: React.Reac
   }
 
   if (!user) return <Navigate to="/auth" replace />;
+
+  // Drivers should always use the mobile app
+  if (role === 'driver') return <Navigate to="/driver" replace />;
 
   // Check tenant is active for non-master users
   if (!isMasterAdmin && profile && !profile.is_master_admin) {
