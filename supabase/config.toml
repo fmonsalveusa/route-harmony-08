@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.maintenance-check]
 verify_jwt = false
+
+[functions.detect-document-edges]
+verify_jwt = false
