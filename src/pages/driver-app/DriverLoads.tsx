@@ -4,7 +4,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MapPin } from 'lucide-react';
+import { MapPin, Calendar } from 'lucide-react';
+import { formatDate } from '@/lib/dateUtils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function DriverLoads() {
@@ -41,23 +42,65 @@ export default function DriverLoads() {
 
   if (loading) return <div className="flex items-center justify-center h-40"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" /></div>;
 
-  const LoadCard = ({ load }: { load: any }) => (
-    <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate(`/driver/loads/${load.id}`)}>
-      <CardContent className="p-3">
-        <div className="flex items-center justify-between mb-1">
-          <span className="text-sm font-bold">{load.reference_number}</span>
-          <Badge className={statusBadge(load.status)}>{load.status.replace('_', ' ')}</Badge>
-        </div>
-        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-          <MapPin className="h-3 w-3" />
-          <span className="truncate">{load.origin}</span>
-          <span>→</span>
-          <span className="truncate">{load.destination}</span>
-        </div>
-        <p className="text-xs font-semibold text-primary mt-1">${Number(load.total_rate).toLocaleString()}</p>
-      </CardContent>
-    </Card>
-  );
+  const formatCityState = (location: string) => {
+    if (!location) return '—';
+    // Try to extract city, state from full address
+    const parts = location.split(',').map(p => p.trim());
+    if (parts.length >= 2) return `${parts[0]}, ${parts[1]}`;
+    return location;
+  };
+
+  const rpm = (load: any) => {
+    const miles = Number(load.miles) || 0;
+    if (miles === 0) return '—';
+    return `$${(Number(load.total_rate) / miles).toFixed(2)}`;
+  };
+
+  const LoadCard = ({ load }: { load: any }) => {
+    const isActive = ['dispatched', 'in_transit'].includes(load.status);
+    const dateLabel = isActive ? 'Est. Delivery' : 'Delivered';
+    const dateValue = isActive ? load.delivery_date : load.delivery_date;
+
+    return (
+      <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate(`/driver/loads/${load.id}`)}>
+        <CardContent className="p-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-bold">Load #{load.reference_number}</span>
+            <Badge className={statusBadge(load.status)}>{load.status.replace('_', ' ')}</Badge>
+          </div>
+
+          <div className="space-y-1">
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <MapPin className="h-3 w-3 shrink-0 text-success" />
+              <span className="truncate">{formatCityState(load.origin)}</span>
+            </div>
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <MapPin className="h-3 w-3 shrink-0 text-destructive" />
+              <span className="truncate">{formatCityState(load.destination)}</span>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between text-xs">
+            <div>
+              <span className="text-muted-foreground">Rate: </span>
+              <span className="font-semibold text-primary">${Number(load.total_rate).toLocaleString()}</span>
+            </div>
+            <div>
+              <span className="text-muted-foreground">RPM: </span>
+              <span className="font-semibold">{rpm(load)}</span>
+            </div>
+          </div>
+
+          {dateValue && (
+            <div className="text-xs text-muted-foreground">
+              <Calendar className="h-3 w-3 inline mr-1" />
+              {dateLabel}: <span className="font-medium text-foreground">{formatDate(dateValue)}</span>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
     <div className="p-4 pb-20">
