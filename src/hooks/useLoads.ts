@@ -28,7 +28,7 @@ export interface DbLoad {
   pdf_url: string | null;
   notes: string | null;
   created_at: string;
-  route_geometry: any;
+  route_geometry?: any;
   empty_miles: number;
   empty_miles_origin: string | null;
 }
@@ -61,7 +61,7 @@ const LOADS_QUERY_KEY = ['loads'];
 async function fetchLoadsFromDb(): Promise<DbLoad[]> {
   const { data, error } = await supabase
     .from('loads')
-    .select('*')
+    .select('id,reference_number,origin,destination,pickup_date,delivery_date,weight,cargo_type,total_rate,status,driver_id,truck_id,dispatcher_id,broker_client,driver_pay_amount,investor_pay_amount,dispatcher_pay_amount,company_profit,miles,factoring,pdf_url,notes,created_at,empty_miles,empty_miles_origin,service_type,tenant_id,updated_at')
     .order('pickup_date', { ascending: false, nullsFirst: false });
 
   if (error) {
@@ -100,10 +100,10 @@ export function useLoads() {
         }
       });
 
-    // Polling fallback: refetch every 30s in case Realtime misses events
+    // Polling fallback: refetch every 2 min in case Realtime misses events
     const pollId = setInterval(() => {
       queryClient.invalidateQueries({ queryKey: LOADS_QUERY_KEY });
-    }, 30000);
+    }, 120000);
 
     return () => {
       clearInterval(pollId);
