@@ -1,9 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Users, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Users, ChevronLeft, ChevronRight, X } from 'lucide-react';
 
 interface Load {
   id: string;
@@ -15,6 +15,14 @@ interface Load {
   status: string;
   driver_id: string | null;
   total_rate: number;
+  miles?: number | null;
+}
+
+interface SelectedLoadInfo {
+  load: Load;
+  driverName: string;
+  truckUnit: string;
+  rect: { top: number; left: number; width: number };
 }
 
 interface Driver {
@@ -55,6 +63,36 @@ const DRIVER_COL_WIDTH = 140;
 
 export const DriversTimelineCard = ({ loads, drivers, trucks = [] }: Props) => {
   const [weekOffset, setWeekOffset] = useState(0);
+  const [selectedLoad, setSelectedLoad] = useState<SelectedLoadInfo | null>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  // Close popup on outside click
+  useEffect(() => {
+    if (!selectedLoad) return;
+    const handler = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.closest('[data-load-popup]')) return;
+      setSelectedLoad(null);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [selectedLoad]);
+
+  const handleLoadClick = useCallback((e: React.MouseEvent, load: Load, driverName: string, truckUnit: string) => {
+    e.stopPropagation();
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const cardRect = cardRef.current?.getBoundingClientRect();
+    setSelectedLoad({
+      load,
+      driverName,
+      truckUnit,
+      rect: {
+        top: rect.bottom - (cardRect?.top || 0) + 4,
+        left: rect.left - (cardRect?.left || 0),
+        width: rect.width,
+      },
+    });
+  }, []);
 
   const { driverEntries, weekStart, weekEnd, daysInView } = useMemo(() => {
     // Calculate week boundaries
@@ -143,8 +181,19 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [] }: Props) => {
     );
   }
 
+  const formatCityState = (location: string) => {
+    // Try to extract "City, ST" from addresses like "City, ST" or "City, State, ..."
+    const parts = location.split(',').map(s => s.trim());
+    if (parts.length >= 2) return `${parts[0]}, ${parts[1]}`;
+    return location;
+  };
+
+  const rpm = selectedLoad?.load.miles && selectedLoad.load.miles > 0
+    ? (selectedLoad.load.total_rate / selectedLoad.load.miles).toFixed(2)
+    : 'N/A';
+
   return (
-    <Card>
+    <Card ref={cardRef} className="relative">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base flex items-center gap-2">
@@ -300,7 +349,7 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [] }: Props) => {
                         return (
                           <div
                             key={load.id}
-                            className="relative h-[26px] flex items-center rounded-md border overflow-hidden cursor-default"
+                            className="relative h-[26px] flex items-center rounded-md border overflow-hidden cursor-pointer hover:brightness-95 transition-all"
                             style={{
                               position: 'absolute',
                               left: `${leftPct}%`,
@@ -310,7 +359,7 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [] }: Props) => {
                               borderColor,
                               top: `${6 + dLoads.indexOf(load) * 30}px`,
                             }}
-                            title={`${load.reference_number}: ${load.origin} → ${load.destination}\n$${load.total_rate.toLocaleString()}`}
+                            onClick={(e) => handleLoadClick(e, load, driver!.name, truck ? `#${truck.unit_number}` : 'N/A')}
                           >
                             <span className="text-[11px] font-semibold px-2 truncate" style={{ color: cfg.text }}>
                               {load.reference_number}
@@ -336,6 +385,69 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [] }: Props) => {
           </div>
           <ScrollBar orientation="horizontal" />
         </ScrollArea>
+
+        {/* Load Detail Popup */}
+        {selectedLoad && (() => {
+          const { load, driverName, truckUnit, rect } = selectedLoad;
+          const cfg = statusConfig[load.status] || statusConfig.planned;
+          const borderColor = barBorderColors[load.status] || 'hsl(215,15%,70%)';
+          return (
+            <div
+              data-load-popup
+              className="absolute z-50 w-72 bg-background border border-border rounded-lg shadow-xl p-4 space-y-2"
+              style={{ top: rect.top + 8, left: Math.max(8, Math.min(rect.left, (cardRef.current?.offsetWidth || 400) - 300)) }}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-bold text-foreground">Load #{load.reference_number}</span>
+                <button onClick={() => setSelectedLoad(null)} className="text-muted-foreground hover:text-foreground">
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[12px]">
+                <div>
+                  <span className="text-muted-foreground">Status</span>
+                  <p className="font-semibold" style={{ color: cfg.text }}>{cfg.label}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Driver</span>
+                  <p className="font-semibold text-foreground truncate">{driverName}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Truck</span>
+                  <p className="font-semibold text-foreground">{truckUnit}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Rate</span>
+                  <p className="font-semibold text-foreground">${load.total_rate.toLocaleString()}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">RPM</span>
+                  <p className="font-semibold text-foreground">{rpm === 'N/A' ? rpm : `$${rpm}`}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Miles</span>
+                  <p className="font-semibold text-foreground">{load.miles ? load.miles.toLocaleString() : 'N/A'}</p>
+                </div>
+              </div>
+              <div className="border-t border-border pt-2 space-y-1.5 text-[12px]">
+                <div className="flex items-start gap-2">
+                  <span className="text-green-600 font-bold mt-0.5">P</span>
+                  <div>
+                    <p className="font-semibold text-foreground">{formatCityState(load.origin)}</p>
+                    <p className="text-muted-foreground">{load.pickup_date || '—'}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-red-600 font-bold mt-0.5">D</span>
+                  <div>
+                    <p className="font-semibold text-foreground">{formatCityState(load.destination)}</p>
+                    <p className="text-muted-foreground">{load.delivery_date || '—'}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
       </CardContent>
     </Card>
   );
