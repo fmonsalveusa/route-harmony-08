@@ -1,15 +1,15 @@
 import { Badge } from '@/components/ui/badge';
 
 const statusConfig: Record<string, { label: string; className: string }> = {
-  planned: { label: 'Planned', className: 'bg-[hsl(215,70%,50%)] text-white' },
-  dispatched: { label: 'Dispatched', className: 'bg-[hsl(270,60%,50%)] text-white' },
-  in_transit: { label: 'In Transit', className: 'bg-[#5ee14c] text-white' },
-  on_site_pickup: { label: 'On Site - Pickup', className: 'bg-[hsl(38,92%,50%)] text-white' },
-  picked_up: { label: 'Picked Up', className: 'bg-[hsl(180,60%,40%)] text-white' },
-  on_site_delivery: { label: 'On Site - Delivery', className: 'bg-[hsl(25,90%,50%)] text-white' },
-  delivered: { label: 'Delivered', className: 'bg-[#1b6f1b] text-white' },
-  tonu: { label: 'TONU', className: 'bg-[hsl(30,90%,50%)] text-white' },
-  cancelled: { label: 'Canceled', className: 'bg-[hsl(0,72%,51%)] text-white' },
+  planned: { label: 'Planned', className: 'bg-[hsl(48,92%,50%)] text-white' },
+  dispatched: { label: 'Dispatched', className: 'bg-[hsl(80,65%,45%)] text-white' },
+  in_transit: { label: 'In Transit', className: 'bg-[hsl(140,60%,40%)] text-white' },
+  on_site_pickup: { label: 'On Site - Pickup', className: 'bg-[hsl(170,60%,40%)] text-white' },
+  picked_up: { label: 'Picked Up', className: 'bg-[hsl(200,70%,48%)] text-white' },
+  on_site_delivery: { label: 'On Site - Delivery', className: 'bg-[hsl(230,60%,50%)] text-white' },
+  delivered: { label: 'Delivered', className: 'bg-[hsl(270,55%,50%)] text-white' },
+  tonu: { label: 'TONU', className: 'bg-[hsl(25,85%,50%)] text-white' },
+  cancelled: { label: 'Canceled', className: 'bg-[hsl(0,72%,50%)] text-white' },
   // Factoring statuses
   pending_factoring: { label: 'Pending', className: 'bg-[hsl(38,92%,50%)] text-white' },
   in_progress_factoring: { label: 'In Progress', className: 'bg-[hsl(205,85%,50%)] text-white' },
