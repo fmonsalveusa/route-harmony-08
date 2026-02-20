@@ -65,7 +65,7 @@ export const PickupPicturesSection = ({ loadId }: { loadId: string }) => {
       .from('pod_documents')
       .select('*')
       .eq('load_id', loadId)
-      .in('stop_id', stopIds)
+      .or(`stop_id.in.(${stopIds.join(',')}),stop_id.is.null`)
       .order('created_at', { ascending: true });
 
     setDocs((podDocs || []).map((d: any) => ({
