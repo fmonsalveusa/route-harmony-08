@@ -1,107 +1,64 @@
 
-## Problema: App Driver se ve pequeña en Android de Jorge Torres
 
-### Diagnóstico Completo
+# Plan: Solucion Robusta para Escaner en Android
 
-Después de revisar el código, hay **3 causas** que combinadas explican el problema, incluso después de aplicar los cambios anteriores:
+## Problema
+El pipeline de escaneo (deteccion de bordes, recorte, mejora) no funciona en el Android de Jorge. Las correcciones anteriores (ArrayBuffer, resize, spinner) no resolvieron el problema. Es probable que las funciones de canvas (`new Image()`, `canvas.toDataURL()`) fallen silenciosamente en ciertos dispositivos Android.
+
+## Solucion (3 partes)
+
+### 1. Modo "Escaneo Rapido" (fallback garantizado)
+Agregar un tercer boton **"Subir directo"** que salta todo el pipeline de procesamiento (sin deteccion de bordes, sin recorte, sin perspectiva) y solo aplica la mejora de contraste basica antes de subir. Esto garantiza que Jorge pueda subir documentos aunque el pipeline completo falle.
+
+### 2. Reemplazar `new Image()` con `createImageBitmap`
+La funcion `new Image()` con data URLs grandes falla silenciosamente en muchos navegadores Android. `createImageBitmap()` es una API nativa del navegador mas robusta y asincrona que maneja mejor imagenes grandes. Se actualizaran las funciones `resizeForCrop`, `resizeForDetection`, y `enhanceImage` para usar esta API.
+
+### 3. Flujo de App Externa
+Agregar instrucciones claras en la interfaz para que Jorge pueda usar apps como Google Drive Scanner, Adobe Scan, o la app de camara nativa de Samsung/Google (que incluyen modo documento), y luego seleccionar la imagen ya escaneada con el boton "Galeria".
 
 ---
 
-### Causa 1 — El CSS `height` no funciona igual que `min-height` en Android
+## Detalles Tecnicos
 
-En `src/index.css`:
-```css
-html, body, #root {
-  height: 100dvh;  /* ← esto funciona en algunos, no en todos */
-}
+### Cambios en `src/components/driver-app/DocumentScanner.tsx`
+
+**a) Nueva funcion `createImageBitmapSafe`:**
+```text
+- Wrapper que usa createImageBitmap cuando esta disponible
+- Fallback a new Image() si no esta soportado
+- Convierte Blob directamente sin pasar por data URL cuando es posible
 ```
 
-En Chrome Android, `height: 100dvh` en el `html` root puede ser ignorado o calculado incorrectamente. La solución correcta es:
-```css
-html, body {
-  height: 100%;
-}
-#root {
-  min-height: 100dvh;
-  height: 100dvh;
-}
+**b) Refactorizar funciones de canvas:**
+- `resizeForCrop()`: Usar `createImageBitmap` + `OffscreenCanvas` o canvas regular
+- `resizeForDetection()`: Mismo cambio
+- `enhanceImage()`: Mismo cambio
+- `fileToDataUrl()`: Agregar opcion de retornar Blob directamente para evitar conversion innecesaria a base64
+
+**c) Nuevo boton "Subir directo":**
+```text
+- Abre el picker de camara/galeria
+- Comprime la imagen con compressImage() existente
+- Sube directamente sin pasar por crop overlay ni edge detection
+- Muestra toast de confirmacion
 ```
 
----
+**d) Mensaje informativo:**
+- Al abrir el escaner, mostrar un tip: "Para mejor calidad, escanea primero con tu app de camara y luego selecciona desde Galeria"
 
-### Causa 2 — El viewport meta tag bloquea el escalado correcto en High-DPI
-
-En `index.html` existe esta línea:
-```html
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-```
-
-El `maximum-scale=1.0` en combinación con `user-scalable=no` **puede causar que en pantallas High-DPI de Android** (como Samsung Galaxy S series) el contenido aparezca pequeño porque el navegador no puede ajustar el escalado. Cambiar a:
-```html
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-```
-
-Agregar `viewport-fit=cover` es crucial para que el contenido ocupe toda la pantalla incluyendo las áreas de la muesca (notch) y bordes redondeados.
-
----
-
-### Causa 3 — La app no está instalada como PWA (problema principal)
-
-Mientras la app se acceda desde Chrome browser (no instalada), Chrome mantiene su barra de URL y navegación, lo cual "roba" espacio visual. Esto hace que la app parezca pequeña y apretada.
-
-**Solución definitiva:** Jorge debe instalar la app desde `/install`. Una vez instalada, corre en modo `standalone` (pantalla completa, sin barras del navegador), y el layout funcionará perfectamente.
-
----
-
-### Cambios a Realizar
-
-**1. `index.html`** — Corregir el viewport meta tag:
-- Quitar `maximum-scale=1.0, user-scalable=no` que bloquea el escalado
-- Agregar `viewport-fit=cover` para ocupar toda la pantalla incluyendo notch
-
-**2. `src/index.css`** — Corregir el CSS del height para que funcione en todos los Android:
-- Cambiar `html, body` a `height: 100%`
-- Mantener `#root` con `height: 100dvh` y agregar también `min-height: 100dvh`
-
-**3. `src/pages/Install.tsx`** — Agregar un banner de alerta prominente al inicio de la pantalla de instalación que explique por qué la app puede verse pequeña mientras no está instalada, motivando a Jorge a completar la instalación.
-
----
-
-### Por qué esto soluciona el problema
+### Flujo actualizado en Android
 
 ```text
-MODO BROWSER (sin instalar) — PROBLEMÁTICO:
-┌──────────────────────┐
-│  Chrome URL Bar 56px │ ← roba espacio, causa problemas de layout
-├──────────────────────┤
-│     App Header       │
-│                      │
-│  Contenido pequeño   │ ← todo se ve comprimido
-│                      │
-│     Nav Bar 72px     │
-└──────────────────────┘
-
-MODO PWA INSTALADA — CORRECTO:
-┌──────────────────────┐
-│     App Header       │ ← ocupa toda la pantalla
-│                      │
-│  Contenido normal    │ ← tamaño correcto
-│                      │
-│     Nav Bar 72px     │
-└──────────────────────┘
+Usuario abre "Scanear BOL"
+  |
+  +-- Opcion 1: "Camara" -> intenta pipeline completo (con createImageBitmap)
+  |     Si funciona -> crop overlay -> mejora -> subir
+  |     Si falla -> fallback automatico a subida directa
+  |
+  +-- Opcion 2: "Galeria" -> seleccionar imagen ya escaneada -> pipeline completo
+  |
+  +-- Opcion 3: "Subir directo" -> tomar/seleccionar foto -> comprimir -> subir sin procesamiento
 ```
 
-### Archivos a Modificar
-- `index.html` — viewport meta tag
-- `src/index.css` — corrección del height CSS
-- `src/pages/Install.tsx` — banner explicativo de por qué instalar la app
-
-### Instrucciones para Jorge (incluidas en la pantalla /install)
-1. Abrir Chrome en Android
-2. Ir a la URL de la app
-3. Tocar el menú ⋮ (tres puntos)
-4. Tocar "Install app" o "Add to Home Screen"
-5. Confirmar la instalación
-6. Abrir la app desde el icono en la pantalla de inicio (NO desde Chrome)
-
-Esto garantiza modo standalone y la app se verá en tamaño completo.
+### Archivos a modificar
+- `src/components/driver-app/DocumentScanner.tsx` - Logica principal, nuevo boton, createImageBitmap, fallback automatico
