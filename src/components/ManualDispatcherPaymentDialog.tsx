@@ -22,6 +22,7 @@ interface DispatcherOption {
   id: string;
   name: string;
   commission_percentage: number;
+  commission_2_percentage: number;
   dispatch_service_percentage: number;
 }
 
@@ -35,6 +36,7 @@ interface LoadOption {
   origin: string;
   destination: string;
   dispatcher_pay_amount: number | null;
+  service_type: string | null;
 }
 
 interface DriverOption {
@@ -62,7 +64,7 @@ export const ManualDispatcherPaymentDialog = ({ open, onOpenChange, onComplete }
   useEffect(() => {
     if (!open) return;
     (async () => {
-      const { data } = await supabase.from('dispatchers').select('id, name, commission_percentage, dispatch_service_percentage').eq('status', 'active').order('name');
+      const { data } = await supabase.from('dispatchers').select('id, name, commission_percentage, commission_2_percentage, dispatch_service_percentage').eq('status', 'active').order('name');
       setDispatchers((data as DispatcherOption[]) || []);
     })();
   }, [open]);
@@ -77,7 +79,7 @@ export const ManualDispatcherPaymentDialog = ({ open, onOpenChange, onComplete }
 
     const { data: loadsData } = await supabase
       .from('loads')
-      .select('id, reference_number, broker_client, total_rate, created_at, driver_id, origin, destination, dispatcher_pay_amount')
+      .select('id, reference_number, broker_client, total_rate, created_at, driver_id, origin, destination, dispatcher_pay_amount, service_type')
       .eq('dispatcher_id', dispatcherId)
       .neq('status', 'cancelled')
       .order('created_at', { ascending: false });
@@ -188,12 +190,33 @@ export const ManualDispatcherPaymentDialog = ({ open, onOpenChange, onComplete }
     return driver?.name || '—';
   };
 
+  /** Calculate dispatcher commission for a load, using stored value or fallback */
+  const calcCommission = (l: LoadOption) => {
+    // If the load already has a stored dispatcher_pay_amount > 0, use it
+    const stored = Number(l.dispatcher_pay_amount ?? 0);
+    if (stored > 0) {
+      const rate = Number(l.total_rate);
+      const pct = rate > 0 ? Math.round((stored / rate) * 10000) / 100 : 0;
+      return { amount: Math.round(stored * 100) / 100, pct };
+    }
+    // Fallback: recalculate based on load's service_type and driver's service_type
+    if (!dispatcher) return { amount: 0, pct: 0 };
+    const loadSvcType = l.service_type;
+    const driverSvc = loadSvcType || (l.driver_id ? (driverServiceTypes[l.driver_id] || 'owner_operator') : 'owner_operator');
+    let pct: number;
+    if (driverSvc === 'dispatch_service') {
+      pct = dispatcher.dispatch_service_percentage ?? 0;
+    } else {
+      // Use commission_1 as default
+      pct = dispatcher.commission_percentage ?? 0;
+    }
+    const amount = Math.round(Number(l.total_rate) * pct / 100 * 100) / 100;
+    return { amount, pct };
+  };
+
   const selectedTotal = filteredLoads
     .filter(l => selectedLoadIds.has(l.id))
-    .reduce((sum, l) => {
-      const amount = Number(l.dispatcher_pay_amount ?? 0);
-      return sum + amount;
-    }, 0);
+    .reduce((sum, l) => sum + calcCommission(l).amount, 0);
 
   const handleSubmit = async () => {
     if (!dispatcher || selectedLoadIds.size === 0) return;
@@ -204,9 +227,7 @@ export const ManualDispatcherPaymentDialog = ({ open, onOpenChange, onComplete }
 
     // Build individual line items
     const lineItems = selectedLoads.map(l => {
-      const amount = Math.round(Number(l.dispatcher_pay_amount ?? 0) * 100) / 100;
-      const rate = Number(l.total_rate);
-      const pct = rate > 0 ? Math.round((amount / rate) * 10000) / 100 : 0;
+      const { amount, pct } = calcCommission(l);
       return { load: l, pct, amount };
     });
 
@@ -299,7 +320,7 @@ export const ManualDispatcherPaymentDialog = ({ open, onOpenChange, onComplete }
               <SelectTrigger><SelectValue placeholder="Select dispatcher..." /></SelectTrigger>
               <SelectContent className="bg-popover z-50">
                 {dispatchers.map(d => (
-                  <SelectItem key={d.id} value={d.id}>{d.name} — {d.commission_percentage}% / DS {d.dispatch_service_percentage}%</SelectItem>
+                  <SelectItem key={d.id} value={d.id}>{d.name} — C1: {d.commission_percentage}%{d.commission_2_percentage > 0 ? ` / C2: ${d.commission_2_percentage}%` : ''}{d.dispatch_service_percentage > 0 ? ` / DS: ${d.dispatch_service_percentage}%` : ''}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -372,9 +393,7 @@ export const ManualDispatcherPaymentDialog = ({ open, onOpenChange, onComplete }
                     </thead>
                     <tbody>
                       {filteredLoads.map(l => {
-                        const amount = Math.round(Number(l.dispatcher_pay_amount ?? 0) * 100) / 100;
-                        const rate = Number(l.total_rate);
-                        const pct = rate > 0 ? Math.round((amount / rate) * 10000) / 100 : 0;
+                        const { amount, pct } = calcCommission(l);
 
                         return (
                           <tr key={l.id} className={`border-b last:border-0 hover:bg-muted/30 cursor-pointer ${selectedLoadIds.has(l.id) ? 'bg-primary/5' : ''}`} onClick={() => toggleLoad(l.id)}>
