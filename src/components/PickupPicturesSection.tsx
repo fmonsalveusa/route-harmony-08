@@ -1,168 +1,49 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { usePodDocuments } from '@/hooks/usePodDocuments';
 import { Camera, Image, FileText, Download, Trash2, Copy, CheckSquare, Square, Loader2, Upload } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { copyImageToClipboard } from '@/lib/clipboardUtils';
-import { compressImage } from '@/lib/imageCompression';
-import { getTenantId } from '@/hooks/useTenantId';
 import { toast } from '@/hooks/use-toast';
 
-interface PickupDoc {
-  id: string;
-  file_url: string;
-  file_name: string;
-  file_type: string;
-  stop_address: string;
-}
-
-function extractPath(url: string): string | null {
-  const match = url.match(/\/storage\/v1\/object\/sign\/driver-documents\/([^?]+)/);
-  if (!match?.[1]) return null;
-  try { return decodeURIComponent(match[1]); } catch { return match[1]; }
-}
-
-async function resolveUrl(fileUrl: string, loadId: string, fileName: string): Promise<string> {
-  if (fileUrl?.startsWith('http')) {
-    const p = extractPath(fileUrl);
-    if (p) {
-      const { data } = await supabase.storage.from('driver-documents').createSignedUrl(p, 3600);
-      if (data?.signedUrl) return data.signedUrl;
-    }
-    return fileUrl;
-  }
-  if (!fileUrl) return '';
-  const { data } = await supabase.storage.from('driver-documents').createSignedUrl(fileUrl, 3600);
-  return data?.signedUrl || '';
-}
-
 export const PickupPicturesSection = ({ loadId }: { loadId: string }) => {
-  const [docs, setDocs] = useState<PickupDoc[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { pods, loading, uploading, uploadPod, deletePod, openPod, downloadPod } = usePodDocuments(loadId);
+
+  const [pickupStopIds, setPickupStopIds] = useState<Set<string>>(new Set());
+  const [firstPickupStopId, setFirstPickupStopId] = useState<string | null>(null);
+  const [stopsLoaded, setStopsLoaded] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [copyIndex, setCopyIndex] = useState(0);
   const [copying, setCopying] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const [pickupStopId, setPickupStopId] = useState<string | null>(null);
 
-  const imageDocs = docs.filter(d => d.file_type === 'image');
-
-  const fetchDocs = useCallback(async () => {
-    const { data: stops } = await supabase
-      .from('load_stops')
-      .select('id, address')
-      .eq('load_id', loadId)
-      .eq('stop_type', 'pickup');
-
-    const stopIds = (stops || []).map(s => s.id);
-    const stopMap = Object.fromEntries((stops || []).map(s => [s.id, s.address]));
-    if (stops && stops.length > 0) {
-      setPickupStopId(stops[0].id);
-    }
-
-    // Build query: include docs matching pickup stop IDs OR with null stop_id
-    let query = supabase
-      .from('pod_documents')
-      .select('*')
-      .eq('load_id', loadId);
-
-    if (stopIds.length > 0) {
-      query = query.or(`stop_id.in.(${stopIds.join(',')}),stop_id.is.null`);
-    } else {
-      query = query.is('stop_id', null);
-    }
-
-    const { data: podDocs } = await query.order('created_at', { ascending: true });
-
-    setDocs((podDocs || []).map((d: any) => ({
-      id: d.id,
-      file_url: d.file_url,
-      file_name: d.file_name,
-      file_type: d.file_type,
-      stop_address: stopMap[d.stop_id] || 'Pick Up',
-    })));
-    setLoading(false);
+  useEffect(() => {
+    const fetchPickupStops = async () => {
+      const { data } = await supabase
+        .from('load_stops')
+        .select('id')
+        .eq('load_id', loadId)
+        .eq('stop_type', 'pickup');
+      const ids = (data || []).map(s => s.id);
+      setPickupStopIds(new Set(ids));
+      setFirstPickupStopId(ids[0] || null);
+      setStopsLoaded(true);
+    };
+    fetchPickupStops();
   }, [loadId]);
 
-  useEffect(() => { fetchDocs(); }, [fetchDocs]);
+  // Show docs that belong to pickup stops OR have no stop_id (null)
+  const pickupDocs = useMemo(() => {
+    if (!stopsLoaded) return [];
+    return pods.filter(p => !p.stop_id || pickupStopIds.has(p.stop_id));
+  }, [pods, pickupStopIds, stopsLoaded]);
 
-  const handleOpen = async (doc: PickupDoc) => {
-    const url = await resolveUrl(doc.file_url, loadId, doc.file_name);
-    if (url) window.open(url, '_blank', 'noopener,noreferrer');
-  };
+  const imageDocs = useMemo(() => pickupDocs.filter(d => d.file_type === 'image'), [pickupDocs]);
 
-  const handleDownload = async (doc: PickupDoc) => {
-    const url = await resolveUrl(doc.file_url, loadId, doc.file_name);
-    if (!url) return;
-    try {
-      const res = await fetch(url);
-      const blob = await res.blob();
-      const blobUrl = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = blobUrl;
-      a.download = doc.file_name;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(blobUrl);
-    } catch {
-      window.open(url, '_blank', 'noopener,noreferrer');
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    await supabase.from('pod_documents').delete().eq('id', id);
-    setDocs(prev => prev.filter(d => d.id !== id));
-    setSelectedIds(prev => { const n = new Set(prev); n.delete(id); return n; });
-  };
-
-  const handleUpload = async (files: FileList | null) => {
-    if (!files || !pickupStopId) return;
-    setUploading(true);
-    try {
-      const tenantId = await getTenantId();
-      if (!tenantId) {
-        toast({ title: 'Error', description: 'No se pudo obtener el tenant. Recarga la página.', variant: 'destructive' });
-        return;
-      }
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const isImage = file.type.startsWith('image/');
-        const compressed = isImage ? await compressImage(file) : file;
-        const ext = isImage ? 'jpg' : file.name.split('.').pop();
-        const storagePath = `pods/${loadId}/${Date.now()}_${ext === 'jpg' ? file.name.replace(/\.[^.]+$/, '.jpg') : file.name}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from('driver-documents')
-          .upload(storagePath, compressed, isImage ? { contentType: 'image/jpeg' } : undefined);
-        if (uploadError) throw uploadError;
-
-        const fileType = isImage ? 'image' : 'pdf';
-        const insertPayload = {
-          load_id: loadId,
-          stop_id: pickupStopId,
-          file_url: storagePath,
-          file_name: file.name,
-          file_type: fileType,
-          tenant_id: tenantId,
-        };
-        const { error: insertError } = await supabase
-          .from('pod_documents')
-          .insert(insertPayload as any);
-        if (insertError) {
-          console.error('pod_documents insert error:', insertError);
-          throw insertError;
-        }
-
-        toast({ title: 'BOL subido', description: file.name });
-      }
-      await fetchDocs();
-    } catch (err: any) {
-      console.error('Error uploading BOL:', err);
-      toast({ title: 'Error al subir', description: err.message, variant: 'destructive' });
-    } finally {
-      setUploading(false);
+  const handleFileChange = async (files: FileList | null) => {
+    if (!files) return;
+    for (let i = 0; i < files.length; i++) {
+      await uploadPod(files[i], firstPickupStopId || undefined);
     }
   };
 
@@ -184,6 +65,11 @@ export const PickupPicturesSection = ({ loadId }: { loadId: string }) => {
     setCopyIndex(0);
   };
 
+  const handleDelete = (id: string) => {
+    deletePod(id);
+    setSelectedIds(prev => { const n = new Set(prev); n.delete(id); return n; });
+  };
+
   const handleCopy = async () => {
     const selected = imageDocs.filter(d => selectedIds.has(d.id));
     if (selected.length === 0) return;
@@ -192,9 +78,14 @@ export const PickupPicturesSection = ({ loadId }: { loadId: string }) => {
 
     setCopying(true);
     try {
-      const url = await resolveUrl(doc.file_url, loadId, doc.file_name);
+      const url = doc.file_url;
       if (!url) throw new Error('No URL');
-      const ok = await copyImageToClipboard(url);
+      // Resolve signed URL
+      const { data } = await supabase.storage.from('driver-documents').createSignedUrl(
+        url.startsWith('http') ? url : url, 3600
+      );
+      const resolvedUrl = data?.signedUrl || url;
+      const ok = await copyImageToClipboard(resolvedUrl);
       if (ok) {
         toast({ title: `Copiada ${idx + 1} de ${selected.length}`, description: 'Pega con Ctrl+V / Cmd+V' });
         setCopyIndex(idx + 1);
@@ -229,32 +120,32 @@ export const PickupPicturesSection = ({ loadId }: { loadId: string }) => {
             variant="outline"
             size="sm"
             className="gap-1.5 text-xs h-7"
-            disabled={uploading || !pickupStopId}
-            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            onClick={() => document.getElementById(`pickup-file-${loadId}`)?.click()}
           >
             {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
             Subir BOL
           </Button>
           <input
-            ref={fileInputRef}
+            id={`pickup-file-${loadId}`}
             type="file"
             accept="image/*,.pdf"
             multiple
             className="hidden"
-            onChange={e => { handleUpload(e.target.files); e.target.value = ''; }}
+            onChange={e => { handleFileChange(e.target.files); e.target.value = ''; }}
           />
         </div>
       </div>
 
       {loading && <p className="text-xs text-muted-foreground">Cargando fotos...</p>}
 
-      {!loading && docs.length === 0 && (
+      {!loading && pickupDocs.length === 0 && (
         <p className="text-xs text-muted-foreground italic ml-1">Sin archivos de Pick Up</p>
       )}
 
-      {docs.length > 0 && (
+      {pickupDocs.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          {docs.map(doc => (
+          {pickupDocs.map(doc => (
             <div key={doc.id} className="flex items-center gap-1.5 bg-muted/50 rounded-md px-2 py-1 text-xs border">
               {doc.file_type === 'image' && (
                 <Checkbox
@@ -264,10 +155,10 @@ export const PickupPicturesSection = ({ loadId }: { loadId: string }) => {
                 />
               )}
               {doc.file_type === 'image' ? <Image className="h-3 w-3 text-primary" /> : <FileText className="h-3 w-3 text-primary" />}
-              <button onClick={() => handleOpen(doc)} className="hover:underline truncate max-w-[120px] text-left" title={`${doc.file_name} — ${doc.stop_address}`} type="button">
+              <button onClick={() => openPod(doc)} className="hover:underline truncate max-w-[120px] text-left" title={doc.file_name} type="button">
                 {doc.file_name}
               </button>
-              <button onClick={() => handleDownload(doc)} className="text-muted-foreground hover:text-foreground" type="button" title="Descargar">
+              <button onClick={() => downloadPod(doc)} className="text-muted-foreground hover:text-foreground" type="button" title="Descargar">
                 <Download className="h-3 w-3" />
               </button>
               <button onClick={() => handleDelete(doc.id)} className="text-destructive hover:text-destructive/80" type="button">
