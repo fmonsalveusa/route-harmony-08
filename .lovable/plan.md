@@ -1,63 +1,63 @@
 
-## Problema identificado
+## Problema: App Driver se ve pequeña / con espacio vacío en Android
 
-La carga EXP7406566 tiene `service_type = 'owner_operator'` a nivel de carga (override correcto), pero su `dispatcher_pay_amount` guardado en la base de datos es $144 — que equivale al 6% de $1,800 (la tasa de Dispatch Service de Eric Owen), no al 4% (Commission 1).
+### Causa del Problema
 
-Esto sucedio porque en algun momento el `dispatcher_pay_amount` fue calculado usando el `service_type` del perfil del driver (Jose Cruz = `dispatch_service`) en vez del `service_type` guardado en la carga (`owner_operator`).
+El problema en Android está causado por cómo los navegadores móviles calculan `100vh` (la unidad usada por la clase `h-screen` de Tailwind):
 
-El codigo actual en `calcCommission` tiene la siguiente logica:
+- En Android (Chrome, Samsung Browser), `100vh` incluye la barra de URL del navegador, la barra de navegación del sistema, etc.
+- Esto provoca que el contenedor principal tenga una altura mayor o menor que el área visual real
+- El resultado es: espacio vacío en la parte inferior, o contenido cortado
 
+La solución moderna es usar **`100dvh`** (Dynamic Viewport Height), introducida en CSS para resolver exactamente este problema en móviles. Esta unidad se ajusta dinámicamente cuando la barra de URL del navegador aparece o desaparece.
+
+### Cambios a Realizar
+
+**1. `src/components/driver-app/DriverMobileLayout.tsx`**
+- Cambiar `h-screen` por `h-[100dvh]` (dynamic viewport height) en el contenedor principal `div`
+- Esto garantiza que el layout siempre ocupe exactamente el área visual disponible en Android e iOS
+
+**2. `src/index.css`**
+- Agregar una regla global para el elemento `html` y `body` que también use `100dvh`:
+  ```css
+  html, body, #root {
+    height: 100dvh;
+  }
+  ```
+- Esto asegura que la base del árbol DOM también respete el viewport dinámico
+
+**3. Padding inferior de páginas internas**
+- Las páginas internas (`DriverDashboard`, `DriverLoads`, `DriverPayments`, `DriverProfile`, `DriverTracking`) usan `pb-20` o `pb-24` hardcoded para evitar que el contenido quede detrás del tab bar
+- Cambiar estos paddings a `pb-[calc(72px+env(safe-area-inset-bottom,0px))]` para que el padding sea exactamente el tamaño del nav bar (72px) más el safe area del sistema operativo
+
+### Por qué funciona esto
+
+```text
+ANTES (h-screen = 100vh en Android):
+┌─────────────────┐ ← Viewport real del browser (variable)
+│   Header 64px   │
+│                 │
+│    Content      │
+│                 │
+│  [espacio vacío]│ ← 100vh incluye barra URL
+│   Nav 72px      │
+└─────────────────┘
+
+DESPUÉS (h-[100dvh]):
+┌─────────────────┐ ← Viewport dinámico (siempre exacto)
+│   Header 64px   │
+│                 │
+│    Content      │ ← Llena todo el espacio disponible
+│                 │
+│   Nav 72px      │
+└─────────────────┘
 ```
-if (stored dispatcher_pay_amount > 0) → usa el stored sin verificar
-```
 
-Esto hace que el valor incorrecto almacenado se muestre tal cual, ignorando el `service_type` real de la carga.
-
-### Causa raiz
-Hay dos problemas separados:
-
-1. **El valor guardado ($144 / 6%) es incorrecto** para esta carga — deberia ser $72 (4%) segun el `service_type = 'owner_operator'` de la carga y la `commission_percentage = 4%` del dispatcher.
-2. **La logica de calcCommission** confia ciegamente en el `dispatcher_pay_amount` almacenado sin verificarlo contra el `service_type` de la carga.
-
-### Solucion
-
-#### Parte 1: Corregir la logica en `ManualDispatcherPaymentDialog.tsx`
-
-Cambiar el orden de prioridad en `calcCommission`:
-
-- **SIEMPRE** calcular el porcentaje usando el `service_type` de la carga (`l.service_type`) para determinar que tasa aplicar.
-- Usar `dispatcher_pay_amount` solo si NO existe el `service_type` en la carga (cargas muy antiguas sin ese campo).
-- Si existe `service_type` en la carga → recalcular usando el porcentaje correcto del dispatcher segun ese tipo.
-
-Nueva logica propuesta:
-
-```
-Si load.service_type existe:
-  → usar el % del dispatcher segun ese service_type
-  → ignorar el dispatcher_pay_amount almacenado (puede estar mal calculado)
-Si load.service_type NO existe:
-  → usar dispatcher_pay_amount si > 0 (fallback para cargas antiguas)
-  → si tampoco existe, usar commission_percentage del dispatcher
-```
-
-#### Parte 2: Corregir el valor en la base de datos
-
-Actualizar el `dispatcher_pay_amount` de la carga EXP7406566 de $144 (6%) a $72 (4%) para que coincida con el `service_type = owner_operator` y `commission_percentage = 4%` del dispatcher Eric Owen.
-
-### Archivos a modificar
-
-- `src/components/ManualDispatcherPaymentDialog.tsx` — corregir la funcion `calcCommission` para priorizar el `service_type` de la carga sobre el `dispatcher_pay_amount` almacenado.
-
-### Resultado esperado
-
-| Campo | Antes | Despues |
-|-------|-------|---------|
-| Carga EXP7406566 mostrada | 6% ($144) | 4% ($72) |
-| Logica general | Confia en stored value | Prioriza service_type de la carga |
-
-### Nota tecnica
-
-Este cambio es seguro porque:
-- Las cargas que tienen `service_type` definido calcularan siempre con el porcentaje correcto del dispatcher segun ese tipo.
-- Las cargas mas antiguas sin `service_type` continuaran usando el `dispatcher_pay_amount` almacenado como fallback.
-- Al momento de generar el pago, los `amount` en `dispatcher_payment_items` se calcularan con el valor correcto.
+### Archivos Modificados
+- `src/components/driver-app/DriverMobileLayout.tsx` — cambiar `h-screen` → `h-[100dvh]`
+- `src/index.css` — agregar `height: 100dvh` a `html, body, #root`
+- `src/pages/driver-app/DriverDashboard.tsx` — ajustar padding inferior
+- `src/pages/driver-app/DriverLoads.tsx` — ajustar padding inferior
+- `src/pages/driver-app/DriverPayments.tsx` — ajustar padding inferior
+- `src/pages/driver-app/DriverProfile.tsx` — ajustar padding inferior
+- `src/pages/driver-app/DriverTracking.tsx` — ajustar padding inferior
