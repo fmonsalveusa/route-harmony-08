@@ -190,26 +190,38 @@ export const ManualDispatcherPaymentDialog = ({ open, onOpenChange, onComplete }
     return driver?.name || '—';
   };
 
-  /** Calculate dispatcher commission for a load, using stored value or fallback */
+  /** Calculate dispatcher commission for a load.
+   * Priority:
+   * 1. If load has service_type defined → always recalculate using the correct dispatcher rate for that type
+   * 2. If load has NO service_type (legacy loads) → use stored dispatcher_pay_amount if > 0
+   * 3. Final fallback → use dispatcher's commission_percentage
+   */
   const calcCommission = (l: LoadOption) => {
-    // If the load already has a stored dispatcher_pay_amount > 0, use it
+    if (!dispatcher) return { amount: 0, pct: 0 };
+
+    // Priority 1: load has explicit service_type → use it to pick the right dispatcher rate
+    if (l.service_type) {
+      let pct: number;
+      if (l.service_type === 'dispatch_service') {
+        pct = dispatcher.dispatch_service_percentage ?? 0;
+      } else {
+        // owner_operator or company_driver → Commission 1
+        pct = dispatcher.commission_percentage ?? 0;
+      }
+      const amount = Math.round(Number(l.total_rate) * pct / 100 * 100) / 100;
+      return { amount, pct };
+    }
+
+    // Priority 2: no service_type on load (legacy) → use stored dispatcher_pay_amount if available
     const stored = Number(l.dispatcher_pay_amount ?? 0);
     if (stored > 0) {
       const rate = Number(l.total_rate);
       const pct = rate > 0 ? Math.round((stored / rate) * 10000) / 100 : 0;
       return { amount: Math.round(stored * 100) / 100, pct };
     }
-    // Fallback: recalculate based on load's service_type and driver's service_type
-    if (!dispatcher) return { amount: 0, pct: 0 };
-    const loadSvcType = l.service_type;
-    const driverSvc = loadSvcType || (l.driver_id ? (driverServiceTypes[l.driver_id] || 'owner_operator') : 'owner_operator');
-    let pct: number;
-    if (driverSvc === 'dispatch_service') {
-      pct = dispatcher.dispatch_service_percentage ?? 0;
-    } else {
-      // Use commission_1 as default
-      pct = dispatcher.commission_percentage ?? 0;
-    }
+
+    // Priority 3: final fallback → commission_percentage
+    const pct = dispatcher.commission_percentage ?? 0;
     const amount = Math.round(Number(l.total_rate) * pct / 100 * 100) / 100;
     return { amount, pct };
   };
