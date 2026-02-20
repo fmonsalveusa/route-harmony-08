@@ -211,6 +211,7 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [] }: Props) => {
         <div className="flex items-center justify-between">
           <CardTitle className="text-base flex items-center gap-2">
             <Users className="h-4 w-4" /> Drivers Load Timeline
+            <Badge variant="secondary" className="ml-2 text-xs">{loads.filter(l => ACTIVE_STATUSES.includes(l.status) && l.driver_id).length} loads</Badge>
           </CardTitle>
           {/* Legend */}
           <div className="flex items-center gap-3">
