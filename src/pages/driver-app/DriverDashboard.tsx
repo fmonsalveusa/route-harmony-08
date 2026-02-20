@@ -26,7 +26,7 @@ export default function DriverDashboard() {
         .from('loads')
         .select('*')
         .eq('driver_id', d.id)
-        .in('status', ['dispatched', 'in_transit'])
+        .not('status', 'in', '("delivered","paid","tonu","cancelled")')
         .order('pickup_date', { ascending: true });
       setActiveLoads(loads || []);
 
@@ -105,8 +105,17 @@ export default function DriverDashboard() {
                 <CardContent className="p-3 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-base font-bold">Load #{load.reference_number}</span>
-                    <Badge className={load.status === 'in_transit' ? 'bg-info text-info-foreground' : 'bg-warning text-warning-foreground'}>
-                      {load.status === 'in_transit' ? 'In Transit' : 'Dispatched'}
+                    <Badge className={
+                      load.status === 'in_transit' ? 'bg-info text-info-foreground' :
+                      load.status === 'picked_up' ? 'bg-primary text-primary-foreground' :
+                      load.status === 'on_site_pickup' || load.status === 'on_site_delivery' ? 'bg-warning text-warning-foreground' :
+                      'bg-warning text-warning-foreground'
+                    }>
+                      {load.status === 'in_transit' ? 'In Transit' :
+                       load.status === 'picked_up' ? 'Picked Up' :
+                       load.status === 'on_site_pickup' ? 'On Site - Pickup' :
+                       load.status === 'on_site_delivery' ? 'On Site - Delivery' :
+                       'Dispatched'}
                     </Badge>
                   </div>
                   <div className="space-y-1">
