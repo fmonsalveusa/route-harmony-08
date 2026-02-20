@@ -253,7 +253,7 @@ const Tracking = () => {
   const driversWithActiveLoad = useMemo(() => {
     const activeDriverIds = new Set<string>();
     loads.forEach(l => {
-      if (['dispatched', 'in_transit'].includes(l.status) && l.driver_id) {
+      if (['dispatched', 'in_transit', 'on_site_pickup', 'picked_up', 'on_site_delivery'].includes(l.status) && l.driver_id) {
         activeDriverIds.add(l.driver_id);
       }
     });
