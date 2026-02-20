@@ -192,38 +192,59 @@ export const ManualDispatcherPaymentDialog = ({ open, onOpenChange, onComplete }
 
   /** Calculate dispatcher commission for a load.
    * Priority:
-   * 1. If load has service_type defined → always recalculate using the correct dispatcher rate for that type
-   * 2. If load has NO service_type (legacy loads) → use stored dispatcher_pay_amount if > 0
-   * 3. Final fallback → use dispatcher's commission_percentage
+   * 1. dispatch_service → always use dispatch_service_percentage
+   * 2. OO/CD with service_type → infer C1 vs C2 from stored dispatcher_pay_amount (if available), fallback to C1
+   * 3. Legacy (no service_type) → use stored dispatcher_pay_amount if > 0
+   * 4. Final fallback → commission_percentage (C1)
    */
-  const calcCommission = (l: LoadOption) => {
-    if (!dispatcher) return { amount: 0, pct: 0 };
+  const calcCommission = (l: LoadOption): { amount: number; pct: number; commissionLabel: string } => {
+    if (!dispatcher) return { amount: 0, pct: 0, commissionLabel: '' };
 
-    // Priority 1: load has explicit service_type → use it to pick the right dispatcher rate
-    if (l.service_type) {
-      let pct: number;
-      if (l.service_type === 'dispatch_service') {
-        pct = dispatcher.dispatch_service_percentage ?? 0;
-      } else {
-        // owner_operator or company_driver → Commission 1
-        pct = dispatcher.commission_percentage ?? 0;
-      }
+    // Dispatch service → DS rate
+    if (l.service_type === 'dispatch_service') {
+      const pct = dispatcher.dispatch_service_percentage ?? 0;
       const amount = Math.round(Number(l.total_rate) * pct / 100 * 100) / 100;
-      return { amount, pct };
+      return { amount, pct, commissionLabel: 'DS' };
     }
 
-    // Priority 2: no service_type on load (legacy) → use stored dispatcher_pay_amount if available
+    // OO or CD → try to infer C1 vs C2 from stored amount
+    if (l.service_type === 'owner_operator' || l.service_type === 'company_driver') {
+      const stored = Number(l.dispatcher_pay_amount ?? 0);
+      const rate = Number(l.total_rate);
+
+      if (stored > 0 && rate > 0) {
+        const storedPct = Math.round((stored / rate) * 10000) / 100;
+        const c1 = dispatcher.commission_percentage ?? 0;
+        const c2 = dispatcher.commission_2_percentage ?? 0;
+        // Determine which commission is closer to the stored percentage
+        const diffC1 = Math.abs(storedPct - c1);
+        const diffC2 = c2 > 0 ? Math.abs(storedPct - c2) : Infinity;
+        if (c2 > 0 && diffC2 < diffC1) {
+          // It was C2
+          return { amount: Math.round(stored * 100) / 100, pct: storedPct, commissionLabel: 'C2' };
+        }
+        // It was C1 (or only C1 exists)
+        return { amount: Math.round(stored * 100) / 100, pct: storedPct, commissionLabel: 'C1' };
+      }
+
+      // No stored amount → recalculate with C1
+      const pct = dispatcher.commission_percentage ?? 0;
+      const amount = Math.round(rate * pct / 100 * 100) / 100;
+      return { amount, pct, commissionLabel: 'C1' };
+    }
+
+    // Legacy load (no service_type) → use stored dispatcher_pay_amount if available
     const stored = Number(l.dispatcher_pay_amount ?? 0);
     if (stored > 0) {
       const rate = Number(l.total_rate);
       const pct = rate > 0 ? Math.round((stored / rate) * 10000) / 100 : 0;
-      return { amount: Math.round(stored * 100) / 100, pct };
+      return { amount: Math.round(stored * 100) / 100, pct, commissionLabel: '' };
     }
 
-    // Priority 3: final fallback → commission_percentage
+    // Final fallback → C1
     const pct = dispatcher.commission_percentage ?? 0;
     const amount = Math.round(Number(l.total_rate) * pct / 100 * 100) / 100;
-    return { amount, pct };
+    return { amount, pct, commissionLabel: 'C1' };
   };
 
   const selectedTotal = filteredLoads
@@ -418,17 +439,24 @@ export const ManualDispatcherPaymentDialog = ({ open, onOpenChange, onComplete }
                             <td className="p-2 text-muted-foreground">{getDriverName(l.driver_id)}</td>
                             <td className="p-2 text-muted-foreground">{l.broker_client || '—'}</td>
                             <td className="p-2">
-                              {l.service_type ? (
-                                <span className={`inline-block text-xs px-1.5 py-0.5 rounded font-medium ${
-                                  l.service_type === 'dispatch_service'
-                                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
-                                    : l.service_type === 'owner_operator'
-                                    ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300'
-                                    : 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
-                                }`}>
-                                  {l.service_type === 'dispatch_service' ? 'DS' : l.service_type === 'owner_operator' ? 'OO' : 'CD'}
-                                </span>
-                              ) : (
+                              {l.service_type ? (() => {
+                                const { commissionLabel } = calcCommission(l);
+                                const svcLabel = l.service_type === 'dispatch_service' ? 'DS' : l.service_type === 'owner_operator' ? 'OO' : 'CD';
+                                const svcColor = l.service_type === 'dispatch_service'
+                                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
+                                  : l.service_type === 'owner_operator'
+                                  ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300'
+                                  : 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300';
+                                const c2Color = 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300';
+                                return (
+                                  <div className="flex items-center gap-1">
+                                    <span className={`inline-block text-xs px-1.5 py-0.5 rounded font-medium ${svcColor}`}>{svcLabel}</span>
+                                    {commissionLabel && commissionLabel !== 'DS' && (
+                                      <span className={`inline-block text-xs px-1.5 py-0.5 rounded font-medium ${commissionLabel === 'C2' ? c2Color : 'bg-muted text-muted-foreground'}`}>{commissionLabel}</span>
+                                    )}
+                                  </div>
+                                );
+                              })() : (
                                 <span className="text-xs text-muted-foreground italic">legacy</span>
                               )}
                             </td>
