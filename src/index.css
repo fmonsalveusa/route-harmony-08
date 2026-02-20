@@ -2,8 +2,12 @@
 
 @tailwind base;
 
-html, body, #root {
+html, body {
+  height: 100%;
+}
+#root {
   height: 100dvh;
+  min-height: 100dvh;
 }
 @tailwind components;
 @tailwind utilities;
