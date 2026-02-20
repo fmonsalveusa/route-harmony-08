@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { DriverImportWizard } from '@/components/drivers/DriverImportWizard';
 import { useAuth } from '@/contexts/AuthContext';
@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Plus, Search, Phone, Truck as TruckIcon, Pencil, Trash2, Eye, Copy, Link2, ChevronDown, ChevronUp, Upload } from 'lucide-react';
+import { Plus, Search, Phone, Truck as TruckIcon, Pencil, Trash2, Eye, Copy, Link2, ChevronDown, ChevronUp, Upload, Navigation } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useDrivers, DbDriver, DriverInput } from '@/hooks/useDrivers';
 import { useTrucks } from '@/hooks/useTrucks';
@@ -18,6 +18,7 @@ import { DriverDetailPanel } from '@/components/DriverDetailPanel';
 import { GenerateOnboardingLinkDialog } from '@/components/GenerateOnboardingLinkDialog';
 import { toast } from '@/hooks/use-toast';
 import { ExpiryIndicators } from '@/components/ExpiryIndicators';
+import { supabase } from '@/integrations/supabase/client';
 
 const driverStatusColor = (status: string) => {
   switch (status) {
@@ -49,6 +50,37 @@ const Drivers = () => {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [dispatcherFilter, setDispatcherFilter] = useState<string>('all');
+  const [activeDriverIds, setActiveDriverIds] = useState<Set<string>>(new Set());
+
+  // Fetch driver_locations for GPS active indicator
+  useEffect(() => {
+    const fetchLocations = async () => {
+      const { data } = await supabase.from('driver_locations').select('driver_id, updated_at');
+      if (data) {
+        const now = Date.now();
+        const active = new Set(
+          (data as any[]).filter(d => now - new Date(d.updated_at).getTime() < 5 * 60 * 1000).map(d => d.driver_id)
+        );
+        setActiveDriverIds(active);
+      }
+    };
+    fetchLocations();
+
+    const channel = supabase
+      .channel('drivers-page-locations')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'driver_locations' }, () => {
+        fetchLocations();
+      })
+      .subscribe();
+
+    // Refresh every 60s to re-evaluate the 5-min window
+    const interval = setInterval(fetchLocations, 60000);
+
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(interval);
+    };
+  }, []);
 
   const getTruckLabel = (id: string | null) => {
     if (!id) return null;
@@ -162,7 +194,12 @@ const Drivers = () => {
                             <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm">{initials}</AvatarFallback>
                           </Avatar>
                           <div className="flex flex-col items-start">
-                            <span className="font-semibold">{driver.name}</span>
+                            <span className="font-semibold flex items-center gap-1.5">
+                              {driver.name}
+                              {activeDriverIds.has(driver.id) && (
+                                <Navigation className="h-3.5 w-3.5 text-[hsl(152,60%,40%)] animate-pulse" />
+                              )}
+                            </span>
                             <ExpiryIndicators items={[
                               { date: driver.license_expiry, label: 'License' },
                               { date: driver.medical_card_expiry, label: 'Medical' },
