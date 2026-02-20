@@ -269,7 +269,7 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [] }: Props) => {
         </div>
 
         <ScrollArea className="w-full">
-          <div ref={containerRef} style={{ minWidth: `${DRIVER_COL_WIDTH + VISIBLE_DAYS * MIN_DAY_WIDTH + 16}px` }}>
+          <div ref={containerRef} style={{ width: containerWidth > 0 ? `${DRIVER_COL_WIDTH + VISIBLE_DAYS * dayWidth + 16}px` : '100%', minWidth: `${DRIVER_COL_WIDTH + VISIBLE_DAYS * MIN_DAY_WIDTH + 16}px` }}>
             {/* Day + hour headers */}
             <div className="flex border-b border-border">
               <div style={{ width: DRIVER_COL_WIDTH, minWidth: DRIVER_COL_WIDTH }} className="shrink-0" />
