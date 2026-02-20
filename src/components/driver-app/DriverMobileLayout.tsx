@@ -58,22 +58,22 @@ export const DriverMobileLayout = ({ children }: { children: ReactNode }) => {
   return (
     <div className="flex flex-col h-screen bg-background">
       {/* Header */}
-      <header className="flex items-center justify-between h-14 px-4 border-b bg-card shadow-sm">
+      <header className="flex items-center justify-between h-16 px-4 border-b bg-card shadow-sm">
         <div className="flex items-center gap-2">
-          <img src={logoImg} alt="Logo" className="h-7 w-7 rounded" />
-          <span className="text-sm font-bold text-foreground">Load Up Driver</span>
+          <img src={logoImg} alt="Logo" className="h-8 w-8 rounded" />
+          <span className="text-base font-bold text-foreground">Load Up Driver</span>
         </div>
         <div className="flex items-center gap-2">
           {/* GPS Tracking Indicator */}
           {tracking && (
-            <Link to="/driver/tracking" className="flex items-center gap-1 px-2 py-1 rounded-full bg-success/15 text-success text-[10px] font-semibold animate-pulse">
-              <Navigation className="h-3 w-3" />
+            <Link to="/driver/tracking" className="flex items-center gap-1 px-2 py-1 rounded-full bg-success/15 text-success text-xs font-semibold animate-pulse">
+              <Navigation className="h-3.5 w-3.5" />
               GPS
             </Link>
           )}
           <div className="relative" ref={panelRef}>
             <button onClick={() => setBellOpen(!bellOpen)} className="relative p-2 rounded-md text-muted-foreground hover:bg-muted">
-              <Bell className="h-5 w-5" />
+              <Bell className="h-6 w-6" />
               {unreadCount > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground animate-pulse">
                   {unreadCount > 9 ? '9+' : unreadCount}
@@ -116,7 +116,7 @@ export const DriverMobileLayout = ({ children }: { children: ReactNode }) => {
             )}
           </div>
           <button onClick={signOut} className="p-2 rounded-md text-muted-foreground hover:bg-muted">
-            <LogOut className="h-4 w-4" />
+            <LogOut className="h-5 w-5" />
           </button>
         </div>
       </header>
@@ -127,10 +127,10 @@ export const DriverMobileLayout = ({ children }: { children: ReactNode }) => {
           <div className="flex items-start gap-2">
             <MapPinCheck className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-foreground">
+              <p className="text-sm font-semibold text-foreground">
                 {nearbyStop.stop_type === 'pickup' ? '📦 Near Pickup' : '🏁 Near Delivery'}
               </p>
-              <p className="text-xs text-muted-foreground truncate mt-0.5">{nearbyStop.address}</p>
+              <p className="text-sm text-muted-foreground truncate mt-0.5">{nearbyStop.address}</p>
               <div className="flex gap-2 mt-2">
                 <Button size="sm" className="h-7 text-xs" onClick={handleConfirmArrival} disabled={confirming}>
                   <MapPinCheck className="h-3.5 w-3.5 mr-1" />
@@ -152,7 +152,7 @@ export const DriverMobileLayout = ({ children }: { children: ReactNode }) => {
       </main>
 
       {/* Bottom Tab Bar */}
-      <nav className="flex items-center justify-around h-16 border-t bg-card shadow-[0_-2px_10px_rgba(0,0,0,0.05)] safe-area-pb">
+      <nav className="flex items-center justify-around h-[72px] border-t bg-card shadow-[0_-2px_10px_rgba(0,0,0,0.05)] safe-area-pb">
         {tabs.map(tab => {
           const active = location.pathname === tab.path || (tab.path !== '/driver' && location.pathname.startsWith(tab.path));
           return (
@@ -163,8 +163,8 @@ export const DriverMobileLayout = ({ children }: { children: ReactNode }) => {
                 active ? 'text-primary' : 'text-muted-foreground'
               }`}
             >
-              <tab.icon className={`h-5 w-5 ${active ? 'text-primary' : ''}`} />
-              <span className="text-[10px] font-medium">{tab.label}</span>
+              <tab.icon className={`h-6 w-6 ${active ? 'text-primary' : ''}`} />
+              <span className="text-xs font-medium">{tab.label}</span>
             </Link>
           );
         })}

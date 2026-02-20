@@ -28,24 +28,24 @@ export default function DriverPayments() {
 
   return (
     <div className="p-4 pb-20 space-y-4">
-      <h1 className="text-lg font-bold">My Payments</h1>
+      <h1 className="text-xl font-bold">My Payments</h1>
 
       <div className="grid grid-cols-2 gap-3">
         <Card>
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 rounded-full bg-success/10"><TrendingUp className="h-5 w-5 text-success" /></div>
+            <div className="p-2 rounded-full bg-success/10"><TrendingUp className="h-6 w-6 text-success" /></div>
             <div>
-              <p className="text-lg font-bold text-success">${totalPaid.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
-              <p className="text-xs text-muted-foreground">Paid</p>
+              <p className="text-xl font-bold text-success">${totalPaid.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+              <p className="text-sm text-muted-foreground">Paid</p>
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 rounded-full bg-warning/10"><Clock className="h-5 w-5 text-warning" /></div>
+            <div className="p-2 rounded-full bg-warning/10"><Clock className="h-6 w-6 text-warning" /></div>
             <div>
-              <p className="text-lg font-bold text-warning">${totalPending.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
-              <p className="text-xs text-muted-foreground">Pending</p>
+              <p className="text-xl font-bold text-warning">${totalPending.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+              <p className="text-sm text-muted-foreground">Pending</p>
             </div>
           </CardContent>
         </Card>
@@ -53,7 +53,7 @@ export default function DriverPayments() {
 
       <div className="space-y-2">
         {payments.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-8">No payments yet</p>
+          <p className="text-base text-muted-foreground text-center py-8">No payments yet</p>
         ) : (
           payments.map(p => {
             const adjAmount = p.total_adjustments ?? 0;
@@ -62,20 +62,20 @@ export default function DriverPayments() {
                 <CardContent className="p-3 space-y-2">
                   {/* Header: Load # + Status */}
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-bold">Load #{p.load_reference}</p>
+                    <p className="text-base font-bold">Load #{p.load_reference}</p>
                     <Badge className={p.status === 'paid' ? 'bg-success text-success-foreground' : 'bg-warning text-warning-foreground'}>
                       {p.status === 'paid' ? 'Paid' : 'Pending'}
                     </Badge>
                   </div>
 
                   {/* Origin → Destination */}
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <MapPin className="h-3 w-3 shrink-0" />
+                  <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                    <MapPin className="h-3.5 w-3.5 shrink-0" />
                     <span>{shortLocation(p.origin || '')} → {shortLocation(p.destination || '')}</span>
                   </div>
 
                   {/* Details grid */}
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Rate</span>
                       <span className="font-medium">${Number(p.total_rate).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
@@ -98,8 +98,8 @@ export default function DriverPayments() {
 
                   {/* Total */}
                   <div className="flex items-center justify-between pt-1 border-t border-border">
-                    <span className="text-xs font-medium text-muted-foreground">Total Paid</span>
-                    <span className="text-sm font-bold">${(p.net_amount ?? p.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                    <span className="text-sm font-medium text-muted-foreground">Total Paid</span>
+                    <span className="text-base font-bold">${(p.net_amount ?? p.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                   </div>
                 </CardContent>
               </Card>

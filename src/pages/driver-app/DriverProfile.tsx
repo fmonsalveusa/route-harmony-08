@@ -30,17 +30,17 @@ export default function DriverProfile() {
 
   const InfoRow = ({ icon: Icon, label, value }: { icon: any; label: string; value: string }) => (
     <div className="flex items-center gap-3 py-2">
-      <Icon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+      <Icon className="h-5 w-5 text-muted-foreground flex-shrink-0" />
       <div>
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="text-sm font-medium">{value || '—'}</p>
+        <p className="text-sm text-muted-foreground">{label}</p>
+        <p className="text-base font-medium">{value || '—'}</p>
       </div>
     </div>
   );
 
   return (
     <div className="p-4 pb-20 space-y-4">
-      <h1 className="text-lg font-bold">My Profile</h1>
+      <h1 className="text-xl font-bold">My Profile</h1>
 
       <Card>
         <CardHeader className="pb-2">

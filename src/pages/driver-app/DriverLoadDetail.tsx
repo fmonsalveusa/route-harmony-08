@@ -66,15 +66,15 @@ export default function DriverLoadDetail() {
 
   return (
     <div className="p-4 pb-24 space-y-4">
-      <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="h-4 w-4" /> Back
+      <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-base text-muted-foreground hover:text-foreground">
+        <ArrowLeft className="h-5 w-5" /> Back
       </button>
 
       {/* Load header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-bold">{load.reference_number}</h1>
-          <p className="text-xs text-muted-foreground">{load.broker_client}</p>
+          <h1 className="text-xl font-bold">{load.reference_number}</h1>
+          <p className="text-sm text-muted-foreground">{load.broker_client}</p>
         </div>
         <Badge className={
           load.status === 'in_transit' ? 'bg-info text-info-foreground'
@@ -95,8 +95,8 @@ export default function DriverLoadDetail() {
       {/* Rate info */}
       <Card>
         <CardContent className="p-3 flex items-center justify-between">
-          <div className="text-sm text-muted-foreground">Total Rate</div>
-          <div className="text-lg font-bold text-primary">${Number(load.total_rate).toLocaleString()}</div>
+          <div className="text-base text-muted-foreground">Total Rate</div>
+          <div className="text-xl font-bold text-primary">${Number(load.total_rate).toLocaleString()}</div>
         </CardContent>
       </Card>
 
@@ -138,7 +138,7 @@ export default function DriverLoadDetail() {
 
       {/* Stops */}
       <div>
-        <h2 className="text-sm font-semibold mb-2">Stops</h2>
+        <h2 className="text-base font-semibold mb-2">Stops</h2>
         <div className="space-y-3">
           {stops.map(stop => (
             <StopCard
@@ -159,14 +159,14 @@ export default function DriverLoadDetail() {
       {/* Payments section */}
       {payments.length > 0 && (
         <div>
-          <h2 className="text-sm font-semibold mb-2 flex items-center gap-1"><DollarSign className="h-4 w-4" /> My Payments</h2>
+          <h2 className="text-base font-semibold mb-2 flex items-center gap-1"><DollarSign className="h-5 w-5" /> My Payments</h2>
           <div className="space-y-2">
             {payments.map((p: any) => (
               <Card key={p.id}>
                 <CardContent className="p-3 flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium">${Number(p.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
-                    <p className="text-xs text-muted-foreground">{p.percentage_applied}% of ${Number(p.total_rate).toLocaleString()}</p>
+                    <p className="text-base font-medium">${Number(p.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                    <p className="text-sm text-muted-foreground">{p.percentage_applied}% of ${Number(p.total_rate).toLocaleString()}</p>
                   </div>
                   <Badge className={p.status === 'paid' ? 'bg-success text-success-foreground' : 'bg-warning text-warning-foreground'}>
                     {p.status === 'paid' ? 'Paid' : 'Pending'}
