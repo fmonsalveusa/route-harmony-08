@@ -78,29 +78,29 @@ export default function DriverLoads() {
       <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate(`/driver/loads/${load.id}`)}>
         <CardContent className="p-3 space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-bold">Load #{load.reference_number}</span>
+            <span className="text-base font-bold">Load #{load.reference_number}</span>
             <Badge className={statusBadge(load.status)}>{statusLabel(load.status)}</Badge>
           </div>
 
-          <div className="space-y-1">
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <MapPin className="h-3 w-3 shrink-0 text-success" />
+            <div className="space-y-1">
+            <div className="flex items-center gap-1 text-sm text-muted-foreground">
+              <MapPin className="h-3.5 w-3.5 shrink-0 text-success" />
               <span className="truncate">{formatCityState(load.origin)}</span>
             </div>
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <MapPin className="h-3 w-3 shrink-0 text-destructive" />
+            <div className="flex items-center gap-1 text-sm text-muted-foreground">
+              <MapPin className="h-3.5 w-3.5 shrink-0 text-destructive" />
               <span className="truncate">{formatCityState(load.destination)}</span>
             </div>
           </div>
 
           {load.broker_client && (
-            <div className="text-xs">
+            <div className="text-sm">
               <span className="text-muted-foreground">Broker: </span>
               <span className="font-medium">{load.broker_client}</span>
             </div>
           )}
 
-          <div className="flex items-center justify-between text-xs">
+          <div className="flex items-center justify-between text-sm">
             <div>
               <span className="text-muted-foreground">Rate: </span>
               <span className="font-semibold text-primary">${Number(load.total_rate).toLocaleString()}</span>
@@ -112,8 +112,8 @@ export default function DriverLoads() {
           </div>
 
           {dateValue && (
-            <div className="text-xs text-muted-foreground">
-              <Calendar className="h-3 w-3 inline mr-1" />
+            <div className="text-sm text-muted-foreground">
+              <Calendar className="h-3.5 w-3.5 inline mr-1" />
               {dateLabel}: <span className="font-medium text-foreground">{formatDate(dateValue)}</span>
             </div>
           )}
@@ -124,7 +124,7 @@ export default function DriverLoads() {
 
   return (
     <div className="p-4 pb-20">
-      <h1 className="text-lg font-bold mb-3">My Loads</h1>
+      <h1 className="text-xl font-bold mb-3">My Loads</h1>
       <Tabs defaultValue="active">
         <TabsList className="w-full">
           <TabsTrigger value="active" className="flex-1">Active ({active.length})</TabsTrigger>

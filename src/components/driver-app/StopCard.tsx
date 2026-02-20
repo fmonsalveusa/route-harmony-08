@@ -227,14 +227,14 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
             {stop.stop_type === 'pickup' ? 'P' : 'D'}
           </div>
           <div>
-            <p className="text-sm font-semibold">{stop.stop_type === 'pickup' ? 'Pick Up' : 'Delivery'}</p>
-            <p className="text-xs text-muted-foreground">{stop.address}</p>
-            {stop.date && <p className="text-xs text-muted-foreground mt-0.5">{format(new Date(stop.date), 'MMM dd, yyyy')}</p>}
+            <p className="text-base font-semibold">{stop.stop_type === 'pickup' ? 'Pick Up' : 'Delivery'}</p>
+            <p className="text-sm text-muted-foreground">{stop.address}</p>
+            {stop.date && <p className="text-sm text-muted-foreground mt-0.5">{format(new Date(stop.date), 'MMM dd, yyyy')}</p>}
           </div>
         </div>
 
         {isArrived && (
-          <Badge className="bg-success text-success-foreground text-[10px] gap-1">
+          <Badge className="bg-success text-success-foreground text-xs gap-1">
             <Check className="h-3 w-3" />
             {format(new Date(stop.arrived_at!), 'h:mm a')}
           </Badge>
@@ -243,14 +243,14 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
 
       <div className="flex flex-wrap gap-2">
         <a href={googleMapsUrl} target="_blank" rel="noopener noreferrer">
-          <Button variant="outline" size="sm" className="gap-1.5 text-xs">
-            <Navigation className="h-3.5 w-3.5" /> Navigate
+          <Button variant="outline" size="sm" className="gap-1.5 text-sm">
+            <Navigation className="h-4 w-4" /> Navigate
           </Button>
         </a>
 
         {!isArrived && (
-          <Button size="sm" className="gap-1.5 text-xs" onClick={handleArrived} disabled={arriving}>
-            <MapPin className="h-3.5 w-3.5" />
+          <Button size="sm" className="gap-1.5 text-sm" onClick={handleArrived} disabled={arriving}>
+            <MapPin className="h-4 w-4" />
             {arriving ? 'Marking...' : 'Arrived'}
           </Button>
         )}
@@ -258,16 +258,16 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
         {isArrived && (
           <>
             <label>
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs" asChild disabled={uploading}>
+              <Button variant="outline" size="sm" className="gap-1.5 text-sm" asChild disabled={uploading}>
                 <span>
-                  <Camera className="h-3.5 w-3.5" />
+                  <Camera className="h-4 w-4" />
                   {uploading ? 'Uploading...' : stop.stop_type === 'pickup' ? 'Load Pictures' : 'Upload POD'}
                 </span>
               </Button>
               <input type="file" accept="image/*,application/pdf" capture="environment" multiple className="hidden" onChange={handleFileUpload} />
             </label>
-            <Button variant="default" size="sm" className="gap-1.5 text-xs" onClick={() => setScannerOpen(true)}>
-              <Camera className="h-3.5 w-3.5" />
+            <Button variant="default" size="sm" className="gap-1.5 text-sm" onClick={() => setScannerOpen(true)}>
+              <Camera className="h-4 w-4" />
               {stop.stop_type === 'pickup' ? 'Scanear BOL' : 'Scanear POD'}
             </Button>
           </>
@@ -276,8 +276,8 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
 
       {isArrived && stop.stop_type === 'pickup' && loadStatus !== 'picked_up' && loadStatus !== 'on_site_delivery' && loadStatus !== 'delivered' && loadStatus !== 'paid' && (
         <div className="flex justify-end">
-          <Button size="sm" className="gap-1.5 text-xs bg-primary hover:bg-primary/90" onClick={handlePickedUp} disabled={changingStatus}>
-            <PackageCheck className="h-3.5 w-3.5" />
+          <Button size="sm" className="gap-1.5 text-sm bg-primary hover:bg-primary/90" onClick={handlePickedUp} disabled={changingStatus}>
+            <PackageCheck className="h-4 w-4" />
             {changingStatus ? 'Updating...' : 'Picked Up'}
           </Button>
         </div>
@@ -285,8 +285,8 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
 
       {isArrived && stop.stop_type === 'delivery' && isLastDelivery && loadStatus !== 'delivered' && loadStatus !== 'paid' && (
         <div className="flex justify-end">
-          <Button size="sm" className="gap-1.5 text-xs bg-success hover:bg-success/90 text-success-foreground" onClick={handleDelivered} disabled={changingStatus}>
-            <CheckCircle2 className="h-3.5 w-3.5" />
+          <Button size="sm" className="gap-1.5 text-sm bg-success hover:bg-success/90 text-success-foreground" onClick={handleDelivered} disabled={changingStatus}>
+            <CheckCircle2 className="h-4 w-4" />
             {changingStatus ? 'Updating...' : 'Delivered'}
           </Button>
         </div>
@@ -297,7 +297,7 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
           {stopPods.map(doc => (
             <div key={doc.id} className="relative group">
               <button onClick={() => handleOpenPod(doc)} type="button">
-                <div className="w-14 h-14 rounded-lg border overflow-hidden bg-muted flex items-center justify-center">
+                <div className="w-16 h-16 rounded-lg border overflow-hidden bg-muted flex items-center justify-center">
                   {resolvedUrls[doc.id] && doc.file_name.match(/\.(jpg|jpeg|png|gif|webp)/i) ? (
                     <img src={resolvedUrls[doc.id]} alt={doc.file_name} className="w-full h-full object-cover" />
                   ) : resolvingUrls ? (

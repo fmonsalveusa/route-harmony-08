@@ -8,7 +8,7 @@ export default function DriverTracking() {
 
   return (
     <div className="p-4 pb-20 space-y-4">
-      <h1 className="text-lg font-bold">GPS Tracking</h1>
+      <h1 className="text-xl font-bold">GPS Tracking</h1>
 
       <Card>
         <CardContent className="p-6 flex flex-col items-center gap-4">
@@ -18,14 +18,14 @@ export default function DriverTracking() {
             </div>
           </div>
 
-          <p className="text-sm font-medium">{tracking ? 'Tracking Active' : 'Tracking Off'}</p>
+          <p className="text-base font-medium">{tracking ? 'Tracking Active' : 'Tracking Off'}</p>
 
           <Button
             size="lg"
             className={`w-full gap-2 ${tracking ? 'bg-destructive hover:bg-destructive/90' : ''}`}
             onClick={tracking ? stopTracking : startTracking}
           >
-            <MapPin className="h-5 w-5" />
+            <MapPin className="h-6 w-6" />
             {tracking ? 'Stop Tracking' : 'Start Tracking'}
           </Button>
         </CardContent>
@@ -34,8 +34,8 @@ export default function DriverTracking() {
       {lastPosition && (
         <Card>
           <CardContent className="p-3">
-            <p className="text-xs text-muted-foreground">Last known position</p>
-            <p className="text-sm font-mono">{lastPosition.lat.toFixed(6)}, {lastPosition.lng.toFixed(6)}</p>
+            <p className="text-sm text-muted-foreground">Last known position</p>
+            <p className="text-base font-mono">{lastPosition.lat.toFixed(6)}, {lastPosition.lng.toFixed(6)}</p>
           </CardContent>
         </Card>
       )}
