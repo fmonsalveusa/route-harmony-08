@@ -1,10 +1,9 @@
-import { ReactNode } from 'react';
+import { ReactNode, useState, useRef, useEffect, useCallback } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Package, DollarSign, User, LogOut, MapPin, Bell, CheckCheck, Navigation, MapPinCheck, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDriverTracking } from '@/contexts/DriverTrackingContext';
-import { useNotifications } from '@/hooks/useNotifications';
-import { useState, useRef, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import logoImg from '@/assets/logo.png';
@@ -24,15 +23,80 @@ const typeIcons: Record<string, string> = {
   status_changed: '🚚',
 };
 
+interface Notification {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  load_id: string | null;
+  driver_id: string | null;
+  is_read: boolean;
+  created_at: string;
+}
+
 export const DriverMobileLayout = ({ children }: { children: ReactNode }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut, profile } = useAuth();
-  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
   const { tracking, nearbyStop, confirmArrival, dismissArrival } = useDriverTracking();
   const [bellOpen, setBellOpen] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [driverId, setDriverId] = useState<string | null>(null);
+
+  // Fetch driver id from email
+  useEffect(() => {
+    if (!profile?.email) return;
+    supabase.from('drivers').select('id').eq('email', profile.email).maybeSingle().then(({ data }) => {
+      if (data) setDriverId(data.id);
+    });
+  }, [profile?.email]);
+
+  const fetchNotifications = useCallback(async (dId: string) => {
+    const { data } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('driver_id', dId)
+      .order('created_at', { ascending: false })
+      .limit(50);
+    if (data) {
+      setNotifications(data as any);
+      setUnreadCount((data as any).filter((n: any) => !n.is_read).length);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!driverId) return;
+    fetchNotifications(driverId);
+
+    const channel = supabase
+      .channel(`driver-notifications-${driverId}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, (payload) => {
+        const n = payload.new as any;
+        if (n.driver_id !== driverId) return;
+        setNotifications(prev => [n, ...prev].slice(0, 50));
+        setUnreadCount(prev => prev + 1);
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [driverId, fetchNotifications]);
+
+  const markAsRead = useCallback(async (id: string) => {
+    await supabase.from('notifications').update({ is_read: true } as any).eq('id', id);
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
+    setUnreadCount(prev => Math.max(0, prev - 1));
+  }, []);
+
+  const markAllAsRead = useCallback(async () => {
+    const unreadIds = notifications.filter(n => !n.is_read).map(n => n.id);
+    if (unreadIds.length === 0) return;
+    await supabase.from('notifications').update({ is_read: true } as any).in('id', unreadIds);
+    setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+    setUnreadCount(0);
+  }, [notifications]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
