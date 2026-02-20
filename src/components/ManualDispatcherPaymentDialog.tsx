@@ -398,6 +398,7 @@ export const ManualDispatcherPaymentDialog = ({ open, onOpenChange, onComplete }
                         <th className="text-left p-2 font-medium text-muted-foreground">Created</th>
                         <th className="text-left p-2 font-medium text-muted-foreground">Driver</th>
                         <th className="text-left p-2 font-medium text-muted-foreground">Broker</th>
+                        <th className="text-left p-2 font-medium text-muted-foreground">Service Type</th>
                         <th className="text-right p-2 font-medium text-muted-foreground">Rate</th>
                         <th className="text-right p-2 font-medium text-muted-foreground">%</th>
                         <th className="text-right p-2 font-medium text-muted-foreground">Amount</th>
@@ -416,6 +417,21 @@ export const ManualDispatcherPaymentDialog = ({ open, onOpenChange, onComplete }
                             <td className="p-2 text-muted-foreground">{formatDate(l.created_at)}</td>
                             <td className="p-2 text-muted-foreground">{getDriverName(l.driver_id)}</td>
                             <td className="p-2 text-muted-foreground">{l.broker_client || '—'}</td>
+                            <td className="p-2">
+                              {l.service_type ? (
+                                <span className={`inline-block text-xs px-1.5 py-0.5 rounded font-medium ${
+                                  l.service_type === 'dispatch_service'
+                                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
+                                    : l.service_type === 'owner_operator'
+                                    ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300'
+                                    : 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
+                                }`}>
+                                  {l.service_type === 'dispatch_service' ? 'DS' : l.service_type === 'owner_operator' ? 'OO' : 'CD'}
+                                </span>
+                              ) : (
+                                <span className="text-xs text-muted-foreground italic">legacy</span>
+                              )}
+                            </td>
                             <td className="p-2 text-right">${Number(l.total_rate).toLocaleString()}</td>
                             <td className="p-2 text-right">{pct}%</td>
                             <td className="p-2 text-right font-semibold">${amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
