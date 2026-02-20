@@ -401,6 +401,32 @@ const Tracking = () => {
         </Card>
       </div>
 
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative flex-1 min-w-[200px] max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search loads..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="pl-9 h-9"
+          />
+        </div>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-[180px] h-9">
+            <SelectValue placeholder="All Statuses" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Statuses</SelectItem>
+            <SelectItem value="dispatched">Dispatched</SelectItem>
+            <SelectItem value="in_transit">In Transit</SelectItem>
+            <SelectItem value="on_site_pickup">On Site Pickup</SelectItem>
+            <SelectItem value="picked_up">Picked Up</SelectItem>
+            <SelectItem value="on_site_delivery">On Site Delivery</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       {/* Main layout: Map + Side Panel */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Map */}
