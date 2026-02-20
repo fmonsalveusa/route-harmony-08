@@ -92,7 +92,7 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [] }: Props) => {
   }, []);
 
   const dayWidth = containerWidth > 0
-    ? Math.max(MIN_DAY_WIDTH, (containerWidth - DRIVER_COL_WIDTH - 16) / VISIBLE_DAYS)
+    ? Math.max(MIN_DAY_WIDTH, (containerWidth - DRIVER_COL_WIDTH) / VISIBLE_DAYS)
     : MIN_DAY_WIDTH;
 
   // Close popup on outside click
