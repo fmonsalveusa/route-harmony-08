@@ -85,11 +85,36 @@ function resizeForDetection(dataUrl: string, maxDim = 1024): Promise<string> {
   });
 }
 
+/** Resize large camera images for display/crop overlay (Android cameras can be 12MP+) */
+function resizeForCrop(dataUrl: string, maxDim = 2048): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      if (img.width <= maxDim && img.height <= maxDim) {
+        resolve(dataUrl);
+        return;
+      }
+      const scale = maxDim / Math.max(img.width, img.height);
+      const w = Math.round(img.width * scale);
+      const h = Math.round(img.height * scale);
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', 0.85));
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
+
 export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUpdate }: DocumentScannerProps) => {
   const [pages, setPages] = useState<ScannedPage[]>([]);
   const [selectedIndex, setSelectedIndex] = useState<number>(0);
   const [uploading, setUploading] = useState(false);
   const [enhancing, setEnhancing] = useState(false);
+  const [processing, setProcessing] = useState(false);
 
   // Edge detection state
   const [cropImage, setCropImage] = useState<string | null>(null);
@@ -129,18 +154,33 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
       const file = e.target.files?.[0];
       if (!file) return;
 
+      setProcessing(true);
+
       const reader = new FileReader();
       reader.onload = async () => {
-        const dataUrl = reader.result as string;
-        // Show crop overlay instead of adding directly
-        setCropImage(dataUrl);
-        setCropCorners({
-          topLeft: { x: 0.05, y: 0.05 },
-          topRight: { x: 0.95, y: 0.05 },
-          bottomRight: { x: 0.95, y: 0.95 },
-          bottomLeft: { x: 0.05, y: 0.95 },
-        });
-        detectEdges(dataUrl);
+        try {
+          const rawDataUrl = reader.result as string;
+          // Resize large Android camera images before showing crop overlay
+          const dataUrl = await resizeForCrop(rawDataUrl);
+          setCropImage(dataUrl);
+          setCropCorners({
+            topLeft: { x: 0.05, y: 0.05 },
+            topRight: { x: 0.95, y: 0.05 },
+            bottomRight: { x: 0.95, y: 0.95 },
+            bottomLeft: { x: 0.05, y: 0.95 },
+          });
+          detectEdges(dataUrl);
+        } catch (err) {
+          console.error('Error processing image:', err);
+          toast({ title: 'Error procesando imagen', variant: 'destructive' });
+        } finally {
+          setProcessing(false);
+        }
+      };
+      reader.onerror = () => {
+        console.error('FileReader error');
+        toast({ title: 'Error leyendo imagen', variant: 'destructive' });
+        setProcessing(false);
       };
       reader.readAsDataURL(file);
       e.target.value = '';
@@ -258,6 +298,16 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
   };
 
   if (!open) return null;
+
+  // Show processing overlay while reading/resizing image
+  if (processing) {
+    return (
+      <div className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center gap-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
+        <p className="text-white text-sm">Procesando imagen...</p>
+      </div>
+    );
+  }
 
   // Show crop overlay when in cropping mode
   if (cropImage) {
