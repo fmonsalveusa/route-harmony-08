@@ -55,18 +55,25 @@ export const PickupPicturesSection = ({ loadId }: { loadId: string }) => {
       .eq('load_id', loadId)
       .eq('stop_type', 'pickup');
 
-    if (!stops || stops.length === 0) { setLoading(false); return; }
-    setPickupStopId(stops[0].id);
+    const stopIds = (stops || []).map(s => s.id);
+    const stopMap = Object.fromEntries((stops || []).map(s => [s.id, s.address]));
+    if (stops && stops.length > 0) {
+      setPickupStopId(stops[0].id);
+    }
 
-    const stopIds = stops.map(s => s.id);
-    const stopMap = Object.fromEntries(stops.map(s => [s.id, s.address]));
-
-    const { data: podDocs } = await supabase
+    // Build query: include docs matching pickup stop IDs OR with null stop_id
+    let query = supabase
       .from('pod_documents')
       .select('*')
-      .eq('load_id', loadId)
-      .or(`stop_id.in.(${stopIds.join(',')}),stop_id.is.null`)
-      .order('created_at', { ascending: true });
+      .eq('load_id', loadId);
+
+    if (stopIds.length > 0) {
+      query = query.or(`stop_id.in.(${stopIds.join(',')}),stop_id.is.null`);
+    } else {
+      query = query.is('stop_id', null);
+    }
+
+    const { data: podDocs } = await query.order('created_at', { ascending: true });
 
     setDocs((podDocs || []).map((d: any) => ({
       id: d.id,
