@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import { X, Upload, RotateCcw, Contrast, ScanLine, Camera, ImageIcon } from 'lucide-react';
+import { X, Upload, RotateCcw, Contrast, ScanLine, Camera, ImageIcon, Zap, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { getTenantId } from '@/hooks/useTenantId';
@@ -7,7 +7,14 @@ import { createNotification } from '@/hooks/useNotifications';
 import { toast } from '@/hooks/use-toast';
 import { EdgeCropOverlay } from './EdgeCropOverlay';
 import { perspectiveTransform, type Corners } from '@/lib/perspectiveTransform';
-import { compressDataUrl } from '@/lib/imageCompression';
+import { compressImage, compressDataUrl } from '@/lib/imageCompression';
+import {
+  enhanceImage,
+  resizeForCrop,
+  resizeForDetection,
+  fileToDataUrl,
+  dataUrlToBlob,
+} from '@/lib/scannerImageUtils';
 
 interface ScannedPage {
   original: string;
@@ -29,118 +36,12 @@ interface DocumentScannerProps {
   onUpdate: () => void;
 }
 
-function enhanceImage(dataUrl: string): Promise<string> {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext('2d')!;
-      ctx.drawImage(img, 0, 0);
-
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const data = imageData.data;
-
-      for (let i = 0; i < data.length; i += 4) {
-        const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
-        const val = gray > 140 ? 255 : gray < 60 ? 0 : Math.round((gray - 60) * (255 / 80));
-        data[i] = val;
-        data[i + 1] = val;
-        data[i + 2] = val;
-      }
-
-      ctx.putImageData(imageData, 0, 0);
-      resolve(canvas.toDataURL('image/jpeg', 0.80));
-    };
-    img.src = dataUrl;
-  });
-}
-
-function dataUrlToBlob(dataUrl: string): Blob {
-  const parts = dataUrl.split(',');
-  const mime = parts[0].match(/:(.*?);/)![1];
-  const bstr = atob(parts[1]);
-  const u8arr = new Uint8Array(bstr.length);
-  for (let i = 0; i < bstr.length; i++) u8arr[i] = bstr.charCodeAt(i);
-  return new Blob([u8arr], { type: mime });
-}
-
-/** Resize image for AI detection to reduce payload size */
-function resizeForDetection(dataUrl: string, maxDim = 1024): Promise<string> {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => {
-      const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
-      const w = Math.round(img.width * scale);
-      const h = Math.round(img.height * scale);
-      const canvas = document.createElement('canvas');
-      canvas.width = w;
-      canvas.height = h;
-      const ctx = canvas.getContext('2d')!;
-      ctx.drawImage(img, 0, 0, w, h);
-      resolve(canvas.toDataURL('image/jpeg', 0.7));
-    };
-    img.src = dataUrl;
-  });
-}
-
-/** Convert ArrayBuffer to base64 in chunks to avoid call-stack limits on Android */
-function arrayBufferToBase64(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer);
-  const chunkSize = 8192;
-  let binary = '';
-  for (let i = 0; i < bytes.length; i += chunkSize) {
-    const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
-    for (let j = 0; j < chunk.length; j++) {
-      binary += String.fromCharCode(chunk[j]);
-    }
-  }
-  return btoa(binary);
-}
-
-/** Convert a File to a data-URL using ArrayBuffer (more reliable on Android than readAsDataURL) */
-function fileToDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        const buffer = reader.result as ArrayBuffer;
-        const base64 = arrayBufferToBase64(buffer);
-        const mime = file.type || 'image/jpeg';
-        resolve(`data:${mime};base64,${base64}`);
-      } catch (err) {
-        reject(err);
-      }
-    };
-    reader.onerror = () => reject(new Error('FileReader error'));
-    reader.readAsArrayBuffer(file);
-  });
-}
-
-/** Resize large camera images for display/crop overlay (Android cameras can be 12MP+) */
-function resizeForCrop(dataUrl: string, maxDim = 2048): Promise<string> {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => {
-      if (img.width <= maxDim && img.height <= maxDim) {
-        resolve(dataUrl);
-        return;
-      }
-      const scale = maxDim / Math.max(img.width, img.height);
-      const w = Math.round(img.width * scale);
-      const h = Math.round(img.height * scale);
-      const canvas = document.createElement('canvas');
-      canvas.width = w;
-      canvas.height = h;
-      const ctx = canvas.getContext('2d')!;
-      ctx.drawImage(img, 0, 0, w, h);
-      resolve(canvas.toDataURL('image/jpeg', 0.85));
-    };
-    img.onerror = () => resolve(dataUrl);
-    img.src = dataUrl;
-  });
-}
+const DEFAULT_CORNERS: Corners = {
+  topLeft: { x: 0.05, y: 0.05 },
+  topRight: { x: 0.95, y: 0.05 },
+  bottomRight: { x: 0.95, y: 0.95 },
+  bottomLeft: { x: 0.05, y: 0.95 },
+};
 
 export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUpdate }: DocumentScannerProps) => {
   const [pages, setPages] = useState<ScannedPage[]>([]);
@@ -151,19 +52,65 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
 
   // Edge detection state
   const [cropImage, setCropImage] = useState<string | null>(null);
-  const [cropCorners, setCropCorners] = useState<Corners>({
-    topLeft: { x: 0.05, y: 0.05 },
-    topRight: { x: 0.95, y: 0.05 },
-    bottomRight: { x: 0.95, y: 0.95 },
-    bottomLeft: { x: 0.05, y: 0.95 },
-  });
+  const [cropCorners, setCropCorners] = useState<Corners>(DEFAULT_CORNERS);
   const [detecting, setDetecting] = useState(false);
 
   const fileRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
+  const directRef = useRef<HTMLInputElement>(null);
 
   const docLabel = stop.stop_type === 'pickup' ? 'BOL' : 'POD';
 
+  // ─── Upload a single file directly (no processing) ───
+  const uploadFileDirect = useCallback(
+    async (file: File) => {
+      setUploading(true);
+      const tenant_id = await getTenantId();
+
+      try {
+        const compressed = await compressImage(file, { maxDimension: 1600, quality: 0.80 });
+        const fileName = `direct_${Date.now()}.jpg`;
+        const filePath = `pods/${stop.load_id}/${stop.id}_${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('driver-documents')
+          .upload(filePath, compressed, { contentType: 'image/jpeg' });
+
+        if (uploadError) {
+          toast({ title: 'Error', description: uploadError.message, variant: 'destructive' });
+          return;
+        }
+
+        await supabase.from('pod_documents').insert({
+          load_id: stop.load_id,
+          stop_id: stop.id,
+          file_name: fileName,
+          file_url: filePath,
+          file_type: 'image',
+          tenant_id,
+        } as any);
+
+        await createNotification({
+          type: 'pod_uploaded',
+          title: `${docLabel} subido`,
+          message: `${driverName} subió ${docLabel} directo en ${stop.address} (Load ${loadRef})`,
+          load_id: stop.load_id,
+        });
+
+        toast({ title: `${docLabel} subido correctamente` });
+        onUpdate();
+        onClose();
+      } catch (err) {
+        console.error('Direct upload failed:', err);
+        toast({ title: 'Error al subir', variant: 'destructive' });
+      } finally {
+        setUploading(false);
+      }
+    },
+    [stop, docLabel, driverName, loadRef, onUpdate, onClose]
+  );
+
+  // ─── Edge detection ───
   const detectEdges = useCallback(async (dataUrl: string) => {
     setDetecting(true);
     try {
@@ -171,7 +118,6 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
       const { data, error } = await supabase.functions.invoke('detect-document-edges', {
         body: { image: small },
       });
-
       if (!error && data?.corners) {
         setCropCorners(data.corners);
       }
@@ -182,41 +128,46 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
     }
   }, []);
 
+  // ─── Full pipeline capture (camera/gallery) ───
   const handleCapture = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file) return;
-
       setProcessing(true);
       e.target.value = '';
 
       try {
-        // Use ArrayBuffer-based conversion (more reliable on Android than readAsDataURL)
         const rawDataUrl = await fileToDataUrl(file);
-        // Resize large Android camera images before showing crop overlay
         const dataUrl = await resizeForCrop(rawDataUrl);
         setCropImage(dataUrl);
-        setCropCorners({
-          topLeft: { x: 0.05, y: 0.05 },
-          topRight: { x: 0.95, y: 0.05 },
-          bottomRight: { x: 0.95, y: 0.95 },
-          bottomLeft: { x: 0.05, y: 0.95 },
-        });
+        setCropCorners({ ...DEFAULT_CORNERS });
         setProcessing(false);
         detectEdges(dataUrl);
       } catch (err) {
         console.error('Error processing image:', err);
-        toast({ title: 'Error procesando imagen', variant: 'destructive' });
+        // Fallback: upload directly if pipeline fails
+        toast({ title: 'Pipeline falló, subiendo directo...', description: 'El procesamiento de imagen no funcionó en este dispositivo.' });
         setProcessing(false);
+        await uploadFileDirect(file);
       }
     },
-    [detectEdges]
+    [detectEdges, uploadFileDirect]
+  );
+
+  // ─── Direct upload handler ───
+  const handleDirectCapture = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      e.target.value = '';
+      await uploadFileDirect(file);
+    },
+    [uploadFileDirect]
   );
 
   const handleCropConfirm = useCallback(
     async (corners: Corners) => {
       if (!cropImage) return;
-      // Apply perspective transform then enhance
       const cropped = await perspectiveTransform(cropImage, corners);
       const enhanced = await enhanceImage(cropped);
       setPages((prev) => {
@@ -231,7 +182,6 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
 
   const handleCropSkip = useCallback(async () => {
     if (!cropImage) return;
-    // Use full image without cropping
     const enhanced = await enhanceImage(cropImage);
     setPages((prev) => {
       const next = [...prev, { original: cropImage, enhanced, showEnhanced: true }];
@@ -243,6 +193,7 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
 
   const triggerCamera = () => cameraRef.current?.click();
   const triggerGallery = () => fileRef.current?.click();
+  const triggerDirect = () => directRef.current?.click();
 
   const handleEnhance = async () => {
     if (pages.length === 0) return;
@@ -324,7 +275,7 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
 
   if (!open) return null;
 
-  // Show processing overlay while reading/resizing image
+  // Processing overlay
   if (processing) {
     return (
       <div className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center gap-4">
@@ -334,7 +285,17 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
     );
   }
 
-  // Show crop overlay when in cropping mode
+  // Uploading overlay
+  if (uploading && pages.length === 0) {
+    return (
+      <div className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center gap-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
+        <p className="text-white text-sm">Subiendo documento...</p>
+      </div>
+    );
+  }
+
+  // Crop overlay
   if (cropImage) {
     return (
       <EdgeCropOverlay
@@ -371,9 +332,15 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
         {currentSrc ? (
           <img src={currentSrc} alt={`Página ${selectedIndex + 1}`} className="max-w-full max-h-full object-contain" />
         ) : (
-          <div className="text-center text-white/50 space-y-4">
+          <div className="text-center text-white/50 space-y-4 px-6">
             <ScanLine className="h-16 w-16 mx-auto" />
-            <p className="text-sm">Toca el botón para escanear</p>
+            <p className="text-sm">Toca un botón para escanear o subir</p>
+            <div className="flex items-start gap-2 bg-white/5 rounded-lg p-3 text-left">
+              <Info className="h-4 w-4 mt-0.5 flex-shrink-0 text-primary" />
+              <p className="text-xs text-white/60">
+                <strong className="text-white/80">Tip:</strong> Para mejor calidad, escanea con tu app de cámara (Google, Samsung) o Adobe Scan, y luego usa <strong className="text-white/80">Galería</strong>. Si tienes problemas, usa <strong className="text-white/80">Subir directo</strong>.
+              </p>
+            </div>
           </div>
         )}
       </div>
@@ -402,47 +369,34 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
 
       {/* Actions */}
       <div className="flex flex-wrap gap-2 px-4 py-3 bg-black/90 justify-center">
-        {/* Camera button - opens camera directly on Android */}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={triggerCamera}
-          className="gap-1.5 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20"
-        >
+        <Button variant="outline" size="sm" onClick={triggerCamera}
+          className="gap-1.5 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20">
           <Camera className="h-4 w-4" />
           {pages.length === 0 ? 'Cámara' : '+ Cámara'}
         </Button>
 
-        {/* Gallery button - opens file picker */}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={triggerGallery}
-          className="gap-1.5 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20"
-        >
+        <Button variant="outline" size="sm" onClick={triggerGallery}
+          className="gap-1.5 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20">
           <ImageIcon className="h-4 w-4" />
           {pages.length === 0 ? 'Galería' : '+ Galería'}
         </Button>
 
+        {/* Direct upload - skips all processing */}
+        <Button variant="outline" size="sm" onClick={triggerDirect} disabled={uploading}
+          className="gap-1.5 text-xs bg-primary/20 border-primary/40 text-primary hover:bg-primary/30">
+          <Zap className="h-4 w-4" />
+          Subir directo
+        </Button>
+
         {currentPage && (
           <>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleEnhance}
-              disabled={enhancing}
-              className="gap-1.5 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20"
-            >
+            <Button variant="outline" size="sm" onClick={handleEnhance} disabled={enhancing}
+              className="gap-1.5 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20">
               <Contrast className="h-4 w-4" />
               {enhancing ? 'Mejorando...' : currentPage.showEnhanced ? 'Ver original' : 'Mejorar'}
             </Button>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRetake}
-              className="gap-1.5 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20"
-            >
+            <Button variant="outline" size="sm" onClick={handleRetake}
+              className="gap-1.5 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20">
               <RotateCcw className="h-4 w-4" /> Re-tomar
             </Button>
           </>
@@ -456,10 +410,12 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
         )}
       </div>
 
-      {/* Camera input - forces camera on Android */}
+      {/* Camera input */}
       <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleCapture} />
-      {/* Gallery input - opens file picker */}
+      {/* Gallery input */}
       <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleCapture} />
+      {/* Direct upload input */}
+      <input ref={directRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleDirectCapture} />
     </div>
   );
 };
