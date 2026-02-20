@@ -255,20 +255,6 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
           </Button>
         )}
 
-        {isArrived && stop.stop_type === 'pickup' && loadStatus !== 'picked_up' && loadStatus !== 'on_site_delivery' && loadStatus !== 'delivered' && loadStatus !== 'paid' && (
-          <Button size="sm" className="gap-1.5 text-xs bg-primary hover:bg-primary/90" onClick={handlePickedUp} disabled={changingStatus}>
-            <PackageCheck className="h-3.5 w-3.5" />
-            {changingStatus ? 'Updating...' : 'Picked Up'}
-          </Button>
-        )}
-
-        {isArrived && stop.stop_type === 'delivery' && isLastDelivery && loadStatus !== 'delivered' && loadStatus !== 'paid' && (
-          <Button size="sm" className="gap-1.5 text-xs bg-success hover:bg-success/90 text-success-foreground" onClick={handleDelivered} disabled={changingStatus}>
-            <CheckCircle2 className="h-3.5 w-3.5" />
-            {changingStatus ? 'Updating...' : 'Delivered'}
-          </Button>
-        )}
-
         {isArrived && (
           <>
             <label>
@@ -287,6 +273,24 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
           </>
         )}
       </div>
+
+      {isArrived && stop.stop_type === 'pickup' && loadStatus !== 'picked_up' && loadStatus !== 'on_site_delivery' && loadStatus !== 'delivered' && loadStatus !== 'paid' && (
+        <div className="flex justify-end">
+          <Button size="sm" className="gap-1.5 text-xs bg-primary hover:bg-primary/90" onClick={handlePickedUp} disabled={changingStatus}>
+            <PackageCheck className="h-3.5 w-3.5" />
+            {changingStatus ? 'Updating...' : 'Picked Up'}
+          </Button>
+        </div>
+      )}
+
+      {isArrived && stop.stop_type === 'delivery' && isLastDelivery && loadStatus !== 'delivered' && loadStatus !== 'paid' && (
+        <div className="flex justify-end">
+          <Button size="sm" className="gap-1.5 text-xs bg-success hover:bg-success/90 text-success-foreground" onClick={handleDelivered} disabled={changingStatus}>
+            <CheckCircle2 className="h-3.5 w-3.5" />
+            {changingStatus ? 'Updating...' : 'Delivered'}
+          </Button>
+        </div>
+      )}
 
       {stopPods.length > 0 && (
         <div className="flex flex-wrap gap-2 pt-1">
