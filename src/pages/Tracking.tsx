@@ -642,6 +642,16 @@ const Tracking = () => {
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-semibold truncate">{driver.name}</p>
                       </div>
+                      {(() => {
+                        const loc = driverLocations.find(dl => dl.driver_id === driver.id);
+                        const isGpsActive = loc && (Date.now() - new Date(loc.updated_at).getTime()) < 5 * 60 * 1000;
+                        return isGpsActive ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[hsl(152,60%,40%)]/15 text-[hsl(152,60%,40%)] text-[10px] font-semibold animate-pulse">
+                            <Navigation className="h-3 w-3" />
+                            GPS
+                          </span>
+                        ) : null;
+                      })()}
                       {driver.phone && (
                         <span className="text-xs text-muted-foreground whitespace-nowrap">{driver.phone}</span>
                       )}
