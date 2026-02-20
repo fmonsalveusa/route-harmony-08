@@ -78,13 +78,13 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [] }: Props) => {
   const [containerWidth, setContainerWidth] = useState(0);
   const cardRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const scrollWrapperRef = useRef<HTMLDivElement>(null);
 
-  // Measure available width from the card element itself
+  // Measure available width from the scroll wrapper (direct child of CardContent)
   useEffect(() => {
-    const el = cardRef.current;
+    const el = scrollWrapperRef.current;
     if (!el) return;
     const ro = new ResizeObserver(([entry]) => {
-      // Subtract card horizontal padding (CardContent has px-0 but card has default border)
       setContainerWidth(entry.contentRect.width);
     });
     ro.observe(el);
@@ -269,7 +269,7 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [] }: Props) => {
           </Button>
         </div>
 
-        <div className="w-full overflow-x-auto">
+        <div ref={scrollWrapperRef} className="overflow-x-auto">
           <div ref={containerRef} style={{ width: containerWidth > 0 ? `${DRIVER_COL_WIDTH + VISIBLE_DAYS * dayWidth}px` : '100%', minWidth: `${DRIVER_COL_WIDTH + VISIBLE_DAYS * MIN_DAY_WIDTH}px` }}>
             {/* Day + hour headers */}
             <div className="flex border-b border-border">
@@ -414,7 +414,7 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [] }: Props) => {
                 </div>
               );
               })}
-            </div>
+          </div>
           </div>
         </div>
 
