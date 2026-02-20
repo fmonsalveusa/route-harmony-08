@@ -1,20 +1,52 @@
 
-## Fix: Pickup Pictures not showing uploaded files
 
-### Root cause
-The `fetchDocs` query in `PickupPicturesSection.tsx` filters documents using `.in('stop_id', stopIds)` which only returns documents where `stop_id` matches a pickup stop. However, most existing documents in the database have `stop_id = NULL` (uploaded via the POD section or driver app). This means they are invisible to the pickup pictures section.
+# Indicador de GPS Tracking Activo en la App Web
 
-Additionally, there is a minor bug where the `setUploading(false)` in the `finally` block may not run correctly if the tenant check returns early.
+## Problema actual
+Aunque los conductores con tracking activo aparecen como marcadores en el mapa, no hay un indicador visual claro en el panel de **Drivers Available** ni en la página de **Drivers** que muestre si un conductor tiene el GPS encendido desde la app movil.
 
-### Fix details
+## Solucion propuesta
 
-**File: `src/components/PickupPicturesSection.tsx`**
+### 1. Indicador en el panel "Drivers Available" (Tracking page)
+- Agregar un badge pulsante verde junto al nombre del conductor cuando su `updated_at` en `driver_locations` sea menor a 5 minutos.
+- Mostrar texto "GPS ON" con icono de Navigation, similar al indicador que ya tiene la app movil.
+- Si el tracking esta inactivo (sin registro o `updated_at` mayor a 5 min), no mostrar nada.
 
-1. Change the `fetchDocs` query to use an `.or()` filter instead of `.in()` so it includes documents where `stop_id` is NULL or matches a pickup stop ID:
-   - Replace `.in('stop_id', stopIds)` with `.or(`stop_id.in.(${stopIds.join(',')}),stop_id.is.null`)` 
-   - This ensures documents uploaded without a stop_id (from the driver app or the existing POD upload) are also visible
+### 2. Indicador en la lista de conductores con cargas activas (mapa)
+- En el popup del marcador del conductor, ya existe "GPS Live". Se mantiene igual.
 
-2. Fix the early return when `tenantId` is null so that `setUploading(false)` is properly called (move the return to after the finally or restructure the flow)
+### 3. Indicador en la pagina de Drivers (tabla principal)
+- Agregar un pequeno icono de GPS junto al nombre del conductor en la tabla de Drivers cuando tenga tracking activo.
+- Utilizar los mismos datos de `driver_locations` que ya se obtienen via realtime en la pagina de Tracking.
 
-### What this means for you
-After this fix, any photos uploaded by the driver from the mobile app or by you via "Subir BOL" will appear in the Pick Up Pictures section, regardless of whether the `stop_id` was set during upload.
+## Detalles tecnicos
+
+### Logica de "tracking activo"
+Se considera que un conductor tiene tracking activo si:
+- Existe un registro en `driver_locations` para su `driver_id`
+- El campo `updated_at` es menor a 5 minutos respecto a `now()`
+
+### Cambios en archivos
+
+**`src/pages/Tracking.tsx`**
+- En el panel lateral "Drivers Available" (linea ~637), agregar junto al nombre del conductor un badge condicional:
+  - Buscar el `driver_id` en el array `driverLocations` (ya disponible en el componente)
+  - Si `updated_at` es reciente (< 5 min), mostrar un badge verde pulsante con icono Navigation y texto "GPS"
+  - Reutilizar el mismo estilo del indicador de la app movil (`bg-success/15 text-success animate-pulse`)
+
+**`src/pages/Drivers.tsx`**
+- Agregar un fetch ligero a `driver_locations` para obtener los IDs de conductores con tracking activo
+- En la tabla, junto al nombre del conductor, mostrar un pequeno icono verde de Navigation si esta activo
+- Suscribirse a realtime en `driver_locations` para actualizaciones en vivo
+
+### Resultado visual esperado
+
+En el panel de Drivers Available:
+```text
+[icono usuario] Juan Perez  [GPS pulsante verde]  555-1234
+```
+
+En la tabla de Drivers:
+```text
+Juan Perez [icono GPS verde]
+```
