@@ -58,6 +58,23 @@ function MapFlyTo({ center, zoom }: { center: [number, number]; zoom: number }) 
 const statusColors: Record<string, string> = {
   dispatched: 'hsl(270,60%,50%)',
   in_transit: '#5ee14c',
+  on_site_pickup: 'hsl(170,60%,40%)',
+  picked_up: 'hsl(200,70%,48%)',
+  on_site_delivery: 'hsl(230,60%,50%)',
+};
+
+const statusLabels: Record<string, string> = {
+  dispatched: 'Dispatched',
+  in_transit: 'In Transit',
+  on_site_pickup: 'On Site - Pickup',
+  picked_up: 'Picked Up',
+  on_site_delivery: 'On Site - Delivery',
+};
+
+const formatCityState = (location: string) => {
+  const parts = location.split(',').map(s => s.trim());
+  if (parts.length >= 2) return `${parts[0]}, ${parts[1]}`;
+  return location;
 };
 
 const createTruckIcon = (heading?: number | null) => {
@@ -456,7 +473,61 @@ const Tracking = () => {
                       <Polyline
                         positions={load.routeCoords}
                         pathOptions={{ color, weight: isSelected ? 5 : 3, opacity: isSelected ? 1 : 0.6 }}
-                      />
+                        eventHandlers={{ click: () => setSelectedLoadId(load.id) }}
+                      >
+                        <Popup>
+                          <div style={{ minWidth: 220, fontFamily: 'inherit' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                              <strong style={{ fontSize: 13 }}>Load #{load.reference_number}</strong>
+                              <span style={{ fontSize: 11, padding: '2px 6px', borderRadius: 4, backgroundColor: color, color: '#fff', fontWeight: 600 }}>
+                                {statusLabels[load.status] || load.status}
+                              </span>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 12px', fontSize: 12 }}>
+                              <div>
+                                <span style={{ color: '#888' }}>Driver</span>
+                                <p style={{ fontWeight: 600, margin: 0 }}>{driver?.name || '—'}</p>
+                              </div>
+                              <div>
+                                <span style={{ color: '#888' }}>Truck</span>
+                                <p style={{ fontWeight: 600, margin: 0 }}>
+                                  {load.truck_id ? `#${trucks.find(t => t.id === load.truck_id)?.unit_number || '—'}` : '—'}
+                                </p>
+                              </div>
+                              <div>
+                                <span style={{ color: '#888' }}>Rate</span>
+                                <p style={{ fontWeight: 600, margin: 0 }}>${load.total_rate.toLocaleString()}</p>
+                              </div>
+                              <div>
+                                <span style={{ color: '#888' }}>RPM</span>
+                                <p style={{ fontWeight: 600, margin: 0 }}>
+                                  {load.miles && load.miles > 0 ? `$${(load.total_rate / load.miles).toFixed(2)}` : 'N/A'}
+                                </p>
+                              </div>
+                              <div>
+                                <span style={{ color: '#888' }}>Miles</span>
+                                <p style={{ fontWeight: 600, margin: 0 }}>{load.miles ? load.miles.toLocaleString() : 'N/A'}</p>
+                              </div>
+                            </div>
+                            <div style={{ borderTop: '1px solid #e5e5e5', marginTop: 8, paddingTop: 8, fontSize: 12 }}>
+                              <div style={{ display: 'flex', gap: 6, marginBottom: 4 }}>
+                                <span style={{ color: '#16a34a', fontWeight: 700 }}>P</span>
+                                <div>
+                                  <p style={{ fontWeight: 600, margin: 0 }}>{formatCityState(load.origin)}</p>
+                                  <p style={{ color: '#888', margin: 0 }}>{load.pickup_date || '—'}</p>
+                                </div>
+                              </div>
+                              <div style={{ display: 'flex', gap: 6 }}>
+                                <span style={{ color: '#dc2626', fontWeight: 700 }}>D</span>
+                                <div>
+                                  <p style={{ fontWeight: 600, margin: 0 }}>{formatCityState(load.destination)}</p>
+                                  <p style={{ color: '#888', margin: 0 }}>{load.delivery_date || '—'}</p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </Popup>
+                      </Polyline>
                     )}
                     {/* Stop markers */}
                     {load.stops.filter(s => s.lat && s.lng).map(stop => (
