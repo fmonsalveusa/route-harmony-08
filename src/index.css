@@ -132,3 +132,10 @@
 .leaflet-bottom {
   z-index: 0 !important;
 }
+
+/* GPS Live marker pulse animation */
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.5); opacity: 0.2; }
+  100% { transform: scale(1); opacity: 0.6; }
+}

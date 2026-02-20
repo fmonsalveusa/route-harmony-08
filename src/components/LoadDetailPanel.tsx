@@ -605,6 +605,104 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [load.id, stopsLoading, dbStops.length]);
 
+  // === Driver GPS Live Marker ===
+  useEffect(() => {
+    if (!load.driver_id || !mapInstanceRef.current) return;
+
+    const driverId = load.driver_id;
+    let driverMarkerRef: any = null;
+    let isCancelled = false;
+
+    const FIVE_MINUTES = 5 * 60 * 1000;
+
+    const isActive = (updatedAt: string) =>
+      Date.now() - new Date(updatedAt).getTime() < FIVE_MINUTES;
+
+    const createOrUpdateMarker = async (loc: { lat: number; lng: number; speed: number | null; updated_at: string }) => {
+      if (isCancelled || !mapInstanceRef.current) return;
+      if (!isActive(loc.updated_at)) {
+        if (driverMarkerRef) {
+          mapInstanceRef.current.removeLayer(driverMarkerRef);
+          driverMarkerRef = null;
+        }
+        return;
+      }
+
+      const L = (await import('leaflet')).default;
+      const speedMph = loc.speed != null ? Math.round(loc.speed * 2.237) : null;
+      const ago = Math.round((Date.now() - new Date(loc.updated_at).getTime()) / 1000);
+      const agoText = ago < 60 ? `${ago}s ago` : `${Math.round(ago / 60)}m ago`;
+      const popupHtml = `<div style="text-align:center"><b style="color:hsl(215,70%,50%)">🛰 GPS Live</b><br/>${driver?.name || 'Driver'}<br/>${speedMph != null ? `${speedMph} mph` : ''}<br/><small>${agoText}</small></div>`;
+
+      if (driverMarkerRef) {
+        driverMarkerRef.setLatLng([loc.lat, loc.lng]);
+        driverMarkerRef.getPopup()?.setContent(popupHtml);
+      } else {
+        const driverIcon = L.divIcon({
+          html: `<div style="position:relative;display:flex;align-items:center;justify-content:center">
+            <div style="position:absolute;width:36px;height:36px;border-radius:50%;background:hsl(215,70%,50%,0.25);animation:pulse 2s infinite"></div>
+            <div style="width:24px;height:24px;border-radius:50%;background:hsl(215,70%,50%);color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,.4);position:relative;z-index:1">🚛</div>
+          </div>`,
+          className: '',
+          iconSize: [36, 36],
+          iconAnchor: [18, 18],
+        });
+        driverMarkerRef = L.marker([loc.lat, loc.lng], { icon: driverIcon, zIndexOffset: 1000 })
+          .addTo(mapInstanceRef.current)
+          .bindPopup(popupHtml);
+      }
+    };
+
+    // Initial fetch
+    const fetchInitial = async () => {
+      const { data } = await supabase
+        .from('driver_locations')
+        .select('lat, lng, speed, updated_at')
+        .eq('driver_id', driverId)
+        .maybeSingle();
+      if (data && !isCancelled) createOrUpdateMarker(data as any);
+    };
+    fetchInitial();
+
+    // Realtime subscription
+    const channel = supabase
+      .channel(`load-detail-driver-${load.id}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'driver_locations',
+        filter: `driver_id=eq.${driverId}`,
+      }, (payload: any) => {
+        if (payload.new) createOrUpdateMarker(payload.new);
+      })
+      .subscribe();
+
+    // Periodic check to remove stale marker
+    const staleCheck = setInterval(async () => {
+      if (driverMarkerRef && !isCancelled) {
+        const { data } = await supabase
+          .from('driver_locations')
+          .select('updated_at')
+          .eq('driver_id', driverId)
+          .maybeSingle();
+        if (data && !isActive((data as any).updated_at) && driverMarkerRef && mapInstanceRef.current) {
+          mapInstanceRef.current.removeLayer(driverMarkerRef);
+          driverMarkerRef = null;
+        }
+      }
+    }, 60000);
+
+    return () => {
+      isCancelled = true;
+      supabase.removeChannel(channel);
+      clearInterval(staleCheck);
+      if (driverMarkerRef && mapInstanceRef.current) {
+        try { mapInstanceRef.current.removeLayer(driverMarkerRef); } catch {}
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [load.id, load.driver_id]);
+
   return (
     <div className="p-4 bg-muted/30 border-t animate-in slide-in-from-top-2 duration-200">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
