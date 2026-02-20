@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { getTenantId } from '@/hooks/useTenantId';
+import { compressImage } from '@/lib/imageCompression';
 
 function extractDriverDocumentsPathFromSignedUrl(url: string): string | null {
   const match = url.match(/\/storage\/v1\/object\/sign\/driver-documents\/([^?]+)/);
@@ -52,11 +53,14 @@ export function usePodDocuments(loadId: string) {
   const uploadPod = useCallback(async (file: File, stopId?: string) => {
     setUploading(true);
     try {
-      const storagePath = `pods/${loadId}/${Date.now()}_${file.name}`;
+      const isImage = file.type.startsWith('image/');
+      const compressed = isImage ? await compressImage(file) : file;
+      const ext = isImage ? 'jpg' : file.name.split('.').pop();
+      const storagePath = `pods/${loadId}/${Date.now()}_${ext === 'jpg' ? file.name.replace(/\.[^.]+$/, '.jpg') : file.name}`;
 
       const { error: uploadError } = await supabase.storage
         .from('driver-documents')
-        .upload(storagePath, file);
+        .upload(storagePath, compressed, isImage ? { contentType: 'image/jpeg' } : undefined);
 
       if (uploadError) throw uploadError;
 

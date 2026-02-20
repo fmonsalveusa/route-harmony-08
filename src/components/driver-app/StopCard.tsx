@@ -8,6 +8,7 @@ import { getTenantId } from '@/hooks/useTenantId';
 import { createNotification } from '@/hooks/useNotifications';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { compressImage } from '@/lib/imageCompression';
 
 interface StopCardProps {
   stop: {
@@ -99,12 +100,14 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
     const tenant_id = await getTenantId();
 
     for (const file of Array.from(files)) {
-      const ext = file.name.split('.').pop();
+      const isImage = file.type.startsWith('image/');
+      const compressed = isImage ? await compressImage(file) : file;
+      const ext = isImage ? 'jpg' : file.name.split('.').pop();
       const filePath = `pods/${stop.load_id}/${stop.id}_${Date.now()}.${ext}`;
 
       const { error: uploadError } = await supabase.storage
         .from('driver-documents')
-        .upload(filePath, file);
+        .upload(filePath, compressed, isImage ? { contentType: 'image/jpeg' } : undefined);
 
       if (uploadError) {
         toast({ title: 'Upload error', description: uploadError.message, variant: 'destructive' });

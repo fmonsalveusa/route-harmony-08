@@ -7,6 +7,7 @@ import { createNotification } from '@/hooks/useNotifications';
 import { toast } from '@/hooks/use-toast';
 import { EdgeCropOverlay } from './EdgeCropOverlay';
 import { perspectiveTransform, type Corners } from '@/lib/perspectiveTransform';
+import { compressDataUrl } from '@/lib/imageCompression';
 
 interface ScannedPage {
   original: string;
@@ -50,7 +51,7 @@ function enhanceImage(dataUrl: string): Promise<string> {
       }
 
       ctx.putImageData(imageData, 0, 0);
-      resolve(canvas.toDataURL('image/jpeg', 0.92));
+      resolve(canvas.toDataURL('image/jpeg', 0.80));
     };
     img.src = dataUrl;
   });
@@ -207,7 +208,8 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
 
     for (let i = 0; i < pages.length; i++) {
       const page = pages[i];
-      const src = page.showEnhanced && page.enhanced ? page.enhanced : page.original;
+      const rawSrc = page.showEnhanced && page.enhanced ? page.enhanced : page.original;
+      const src = await compressDataUrl(rawSrc);
       const blob = dataUrlToBlob(src);
       const fileName = `scan_${Date.now()}_p${i + 1}.jpg`;
       const filePath = `pods/${stop.load_id}/${stop.id}_${fileName}`;
