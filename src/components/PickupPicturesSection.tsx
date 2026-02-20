@@ -1,9 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Camera, Image, FileText, Download, Trash2, Copy, CheckSquare, Square, Loader2 } from 'lucide-react';
+import { Camera, Image, FileText, Download, Trash2, Copy, CheckSquare, Square, Loader2, Upload } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { copyImageToClipboard } from '@/lib/clipboardUtils';
+import { compressImage } from '@/lib/imageCompression';
+import { getTenantId } from '@/hooks/useTenantId';
 import { toast } from '@/hooks/use-toast';
 
 interface PickupDoc {
@@ -40,6 +42,9 @@ export const PickupPicturesSection = ({ loadId }: { loadId: string }) => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [copyIndex, setCopyIndex] = useState(0);
   const [copying, setCopying] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [pickupStopId, setPickupStopId] = useState<string | null>(null);
 
   const imageDocs = docs.filter(d => d.file_type === 'image');
 
@@ -51,6 +56,7 @@ export const PickupPicturesSection = ({ loadId }: { loadId: string }) => {
       .eq('stop_type', 'pickup');
 
     if (!stops || stops.length === 0) { setLoading(false); return; }
+    setPickupStopId(stops[0].id);
 
     const stopIds = stops.map(s => s.id);
     const stopMap = Object.fromEntries(stops.map(s => [s.id, s.address]));
@@ -104,6 +110,47 @@ export const PickupPicturesSection = ({ loadId }: { loadId: string }) => {
     setSelectedIds(prev => { const n = new Set(prev); n.delete(id); return n; });
   };
 
+  const handleUpload = async (files: FileList | null) => {
+    if (!files || !pickupStopId) return;
+    setUploading(true);
+    try {
+      const tenantId = await getTenantId();
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const isImage = file.type.startsWith('image/');
+        const compressed = isImage ? await compressImage(file) : file;
+        const ext = isImage ? 'jpg' : file.name.split('.').pop();
+        const storagePath = `pods/${loadId}/${Date.now()}_${ext === 'jpg' ? file.name.replace(/\.[^.]+$/, '.jpg') : file.name}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('driver-documents')
+          .upload(storagePath, compressed, isImage ? { contentType: 'image/jpeg' } : undefined);
+        if (uploadError) throw uploadError;
+
+        const fileType = isImage ? 'image' : 'pdf';
+        const { error: insertError } = await supabase
+          .from('pod_documents')
+          .insert({
+            load_id: loadId,
+            stop_id: pickupStopId,
+            file_url: storagePath,
+            file_name: file.name,
+            file_type: fileType,
+            tenant_id: tenantId,
+          } as any);
+        if (insertError) throw insertError;
+
+        toast({ title: 'BOL subido', description: file.name });
+      }
+      await fetchDocs();
+    } catch (err: any) {
+      console.error('Error uploading BOL:', err);
+      toast({ title: 'Error al subir', description: err.message, variant: 'destructive' });
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const toggleSelect = (id: string) => {
     setSelectedIds(prev => {
       const n = new Set(prev);
@@ -152,16 +199,36 @@ export const PickupPicturesSection = ({ loadId }: { loadId: string }) => {
         <h5 className="font-semibold flex items-center gap-1.5">
           <Camera className="h-3.5 w-3.5 text-primary" /> Pick Up Pictures — BOL & Load
         </h5>
-        {imageDocs.length > 0 && (
-          <button
-            onClick={toggleSelectAll}
-            className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
-            type="button"
+        <div className="flex items-center gap-2">
+          {imageDocs.length > 0 && (
+            <button
+              onClick={toggleSelectAll}
+              className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+              type="button"
+            >
+              {selectedIds.size === imageDocs.length ? <CheckSquare className="h-3 w-3" /> : <Square className="h-3 w-3" />}
+              {selectedIds.size === imageDocs.length ? 'Deseleccionar' : 'Seleccionar todo'}
+            </button>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5 text-xs h-7"
+            disabled={uploading || !pickupStopId}
+            onClick={() => fileInputRef.current?.click()}
           >
-            {selectedIds.size === imageDocs.length ? <CheckSquare className="h-3 w-3" /> : <Square className="h-3 w-3" />}
-            {selectedIds.size === imageDocs.length ? 'Deseleccionar' : 'Seleccionar todo'}
-          </button>
-        )}
+            {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
+            Subir BOL
+          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*,.pdf"
+            multiple
+            className="hidden"
+            onChange={e => { handleUpload(e.target.files); e.target.value = ''; }}
+          />
+        </div>
       </div>
 
       {loading && <p className="text-xs text-muted-foreground">Cargando fotos...</p>}
