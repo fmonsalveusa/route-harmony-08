@@ -79,9 +79,9 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [] }: Props) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Measure container width dynamically
+  // Measure available width from the card's content area
   useEffect(() => {
-    const el = containerRef.current;
+    const el = cardRef.current;
     if (!el) return;
     const ro = new ResizeObserver(([entry]) => {
       setContainerWidth(entry.contentRect.width);
