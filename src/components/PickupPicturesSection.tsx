@@ -115,6 +115,10 @@ export const PickupPicturesSection = ({ loadId }: { loadId: string }) => {
     setUploading(true);
     try {
       const tenantId = await getTenantId();
+      if (!tenantId) {
+        toast({ title: 'Error', description: 'No se pudo obtener el tenant. Recarga la página.', variant: 'destructive' });
+        return;
+      }
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const isImage = file.type.startsWith('image/');
@@ -128,17 +132,21 @@ export const PickupPicturesSection = ({ loadId }: { loadId: string }) => {
         if (uploadError) throw uploadError;
 
         const fileType = isImage ? 'image' : 'pdf';
+        const insertPayload = {
+          load_id: loadId,
+          stop_id: pickupStopId,
+          file_url: storagePath,
+          file_name: file.name,
+          file_type: fileType,
+          tenant_id: tenantId,
+        };
         const { error: insertError } = await supabase
           .from('pod_documents')
-          .insert({
-            load_id: loadId,
-            stop_id: pickupStopId,
-            file_url: storagePath,
-            file_name: file.name,
-            file_type: fileType,
-            tenant_id: tenantId,
-          } as any);
-        if (insertError) throw insertError;
+          .insert(insertPayload as any);
+        if (insertError) {
+          console.error('pod_documents insert error:', insertError);
+          throw insertError;
+        }
 
         toast({ title: 'BOL subido', description: file.name });
       }
