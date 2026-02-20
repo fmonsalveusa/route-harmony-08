@@ -68,16 +68,31 @@ const barBorderColors: Record<string, string> = {
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
-const HOURS_PER_DAY = 24;
-const HOUR_WIDTH_PX = 8; // px per hour
-const DAY_WIDTH_PX = HOURS_PER_DAY * HOUR_WIDTH_PX; // 192px per day
 const VISIBLE_DAYS = 7;
 const DRIVER_COL_WIDTH = 140;
+const MIN_DAY_WIDTH = 120;
 
 export const DriversTimelineCard = ({ loads, drivers, trucks = [] }: Props) => {
   const [weekOffset, setWeekOffset] = useState(0);
   const [selectedLoad, setSelectedLoad] = useState<SelectedLoadInfo | null>(null);
+  const [containerWidth, setContainerWidth] = useState(0);
   const cardRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Measure container width dynamically
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([entry]) => {
+      setContainerWidth(entry.contentRect.width);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const dayWidth = containerWidth > 0
+    ? Math.max(MIN_DAY_WIDTH, (containerWidth - DRIVER_COL_WIDTH - 16) / VISIBLE_DAYS)
+    : MIN_DAY_WIDTH;
 
   // Close popup on outside click
   useEffect(() => {
@@ -167,7 +182,7 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [] }: Props) => {
     return { driverEntries: entries, weekStart: startOfWeek, weekEnd: endOfWeek, daysInView: days };
   }, [loads, drivers, trucks, weekOffset]);
 
-  const totalGridWidth = VISIBLE_DAYS * DAY_WIDTH_PX;
+  const totalGridWidth = VISIBLE_DAYS * dayWidth;
   const weekStartTs = weekStart.getTime();
   const totalMs = VISIBLE_DAYS * 86400000;
 
@@ -254,7 +269,7 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [] }: Props) => {
         </div>
 
         <ScrollArea className="w-full">
-          <div style={{ minWidth: `${DRIVER_COL_WIDTH + totalGridWidth + 16}px` }}>
+          <div ref={containerRef} style={{ minWidth: `${DRIVER_COL_WIDTH + VISIBLE_DAYS * MIN_DAY_WIDTH + 16}px` }}>
             {/* Day + hour headers */}
             <div className="flex border-b border-border">
               <div style={{ width: DRIVER_COL_WIDTH, minWidth: DRIVER_COL_WIDTH }} className="shrink-0" />
@@ -265,7 +280,7 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [] }: Props) => {
                   return (
                     <div
                       key={di}
-                      style={{ width: DAY_WIDTH_PX }}
+                      style={{ width: dayWidth }}
                       className={`border-l border-border ${isToday ? 'bg-primary/5' : ''}`}
                     >
                       <div className="text-[11px] font-semibold text-foreground px-1 py-0.5 border-b border-border/50">
@@ -275,7 +290,7 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [] }: Props) => {
                         {hourLabels.map((h) => (
                           <div
                             key={h}
-                            style={{ width: DAY_WIDTH_PX / 4 }}
+                            style={{ width: dayWidth / 4 }}
                             className="text-[9px] text-muted-foreground text-center border-r border-border/30 last:border-r-0"
                           >
                             {String(h).padStart(2, '0')}
@@ -317,14 +332,14 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [] }: Props) => {
                         <div
                           key={di}
                           className={`absolute top-0 bottom-0 border-l border-border/30 ${isToday ? 'bg-primary/5' : ''}`}
-                          style={{ left: di * DAY_WIDTH_PX, width: DAY_WIDTH_PX }}
+                          style={{ left: di * dayWidth, width: dayWidth }}
                         >
                           {/* Quarter-day grid lines */}
                           {[1, 2, 3].map((q) => (
                             <div
                               key={q}
                               className="absolute top-0 bottom-0 border-l border-border/15"
-                              style={{ left: q * (DAY_WIDTH_PX / 4) }}
+                              style={{ left: q * (dayWidth / 4) }}
                             />
                           ))}
                         </div>
