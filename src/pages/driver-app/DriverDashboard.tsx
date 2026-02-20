@@ -52,7 +52,7 @@ export default function DriverDashboard() {
   }
 
   return (
-    <div className="p-5 space-y-4 pb-24">
+    <div className="p-5 space-y-4 pb-[calc(72px+env(safe-area-inset-bottom,0px))]">
       <div>
         <h1 className="text-2xl font-bold">Hello, {profile?.full_name?.split(' ')[0]} 👋</h1>
         <p className="text-base text-muted-foreground">Here's your overview</p>

@@ -120,7 +120,7 @@ export const DriverMobileLayout = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-background">
+    <div className="flex flex-col h-[100dvh] bg-background">
       {/* Header */}
       <header className="flex items-center justify-between h-16 px-4 border-b bg-card shadow-sm">
         <div className="flex items-center gap-2">
