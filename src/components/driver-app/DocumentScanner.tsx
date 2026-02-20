@@ -85,6 +85,39 @@ function resizeForDetection(dataUrl: string, maxDim = 1024): Promise<string> {
   });
 }
 
+/** Convert ArrayBuffer to base64 in chunks to avoid call-stack limits on Android */
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 8192;
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
+    for (let j = 0; j < chunk.length; j++) {
+      binary += String.fromCharCode(chunk[j]);
+    }
+  }
+  return btoa(binary);
+}
+
+/** Convert a File to a data-URL using ArrayBuffer (more reliable on Android than readAsDataURL) */
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const buffer = reader.result as ArrayBuffer;
+        const base64 = arrayBufferToBase64(buffer);
+        const mime = file.type || 'image/jpeg';
+        resolve(`data:${mime};base64,${base64}`);
+      } catch (err) {
+        reject(err);
+      }
+    };
+    reader.onerror = () => reject(new Error('FileReader error'));
+    reader.readAsArrayBuffer(file);
+  });
+}
+
 /** Resize large camera images for display/crop overlay (Android cameras can be 12MP+) */
 function resizeForCrop(dataUrl: string, maxDim = 2048): Promise<string> {
   return new Promise((resolve) => {
@@ -150,40 +183,32 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
   }, []);
 
   const handleCapture = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file) return;
 
       setProcessing(true);
-
-      const reader = new FileReader();
-      reader.onload = async () => {
-        try {
-          const rawDataUrl = reader.result as string;
-          // Resize large Android camera images before showing crop overlay
-          const dataUrl = await resizeForCrop(rawDataUrl);
-          setCropImage(dataUrl);
-          setCropCorners({
-            topLeft: { x: 0.05, y: 0.05 },
-            topRight: { x: 0.95, y: 0.05 },
-            bottomRight: { x: 0.95, y: 0.95 },
-            bottomLeft: { x: 0.05, y: 0.95 },
-          });
-          detectEdges(dataUrl);
-        } catch (err) {
-          console.error('Error processing image:', err);
-          toast({ title: 'Error procesando imagen', variant: 'destructive' });
-        } finally {
-          setProcessing(false);
-        }
-      };
-      reader.onerror = () => {
-        console.error('FileReader error');
-        toast({ title: 'Error leyendo imagen', variant: 'destructive' });
-        setProcessing(false);
-      };
-      reader.readAsDataURL(file);
       e.target.value = '';
+
+      try {
+        // Use ArrayBuffer-based conversion (more reliable on Android than readAsDataURL)
+        const rawDataUrl = await fileToDataUrl(file);
+        // Resize large Android camera images before showing crop overlay
+        const dataUrl = await resizeForCrop(rawDataUrl);
+        setCropImage(dataUrl);
+        setCropCorners({
+          topLeft: { x: 0.05, y: 0.05 },
+          topRight: { x: 0.95, y: 0.05 },
+          bottomRight: { x: 0.95, y: 0.95 },
+          bottomLeft: { x: 0.05, y: 0.95 },
+        });
+        setProcessing(false);
+        detectEdges(dataUrl);
+      } catch (err) {
+        console.error('Error processing image:', err);
+        toast({ title: 'Error procesando imagen', variant: 'destructive' });
+        setProcessing(false);
+      }
     },
     [detectEdges]
   );
