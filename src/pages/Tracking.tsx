@@ -174,7 +174,7 @@ const Tracking = () => {
   }, []);
 
   // Fetch all stops for active loads
-  const activeStatuses = ['dispatched', 'in_transit'];
+  const activeStatuses = ['dispatched', 'in_transit', 'on_site_pickup', 'picked_up', 'on_site_delivery'];
   const activeLoads = useMemo(() => loads.filter(l => activeStatuses.includes(l.status)), [loads]);
 
   useEffect(() => {
