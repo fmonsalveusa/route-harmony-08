@@ -176,6 +176,17 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
     if (error) console.error('Location update error:', error);
   }, [driverId, checkGeofence]);
 
+  const startWatchPosition = useCallback((onPosition: (pos: GeolocationPosition) => void) => {
+    if (watchRef.current !== null) {
+      navigator.geolocation.clearWatch(watchRef.current);
+    }
+    watchRef.current = navigator.geolocation.watchPosition(
+      onPosition,
+      (err) => { console.error('GPS error:', err); },
+      { enableHighAccuracy: true, maximumAge: 10000 }
+    );
+  }, []);
+
   const startTracking = useCallback(() => {
     if (!('geolocation' in navigator)) {
       toast({ title: 'GPS not available', variant: 'destructive' });
@@ -187,16 +198,12 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
     dismissedStopsRef.current.clear();
     toast({ title: 'GPS Tracking started' });
 
-    watchRef.current = navigator.geolocation.watchPosition(
-      (pos) => { posRef.current = pos; sendPosition(pos); },
-      (err) => { console.error('GPS error:', err); toast({ title: 'GPS error', description: err.message, variant: 'destructive' }); },
-      { enableHighAccuracy: true, maximumAge: 10000 }
-    );
+    startWatchPosition((pos) => { posRef.current = pos; sendPosition(pos); });
 
     intervalRef.current = setInterval(() => {
       if (posRef.current) sendPosition(posRef.current);
     }, 30000);
-  }, [tracking, sendPosition]);
+  }, [tracking, sendPosition, startWatchPosition]);
 
   const stopTracking = useCallback(() => {
     if (watchRef.current !== null) navigator.geolocation.clearWatch(watchRef.current);
@@ -208,6 +215,28 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
     setActiveStops([]);
     toast({ title: 'GPS Tracking stopped' });
   }, []);
+
+  // Restore GPS watch when app comes back to foreground (Android PWA background freeze fix)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && tracking) {
+        // Restart the watch — Android may have killed it while backgrounded
+        startWatchPosition((pos) => { posRef.current = pos; sendPosition(pos); });
+
+        // Also restart the interval if it was killed
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        intervalRef.current = setInterval(() => {
+          if (posRef.current) sendPosition(posRef.current);
+        }, 30000);
+
+        // Immediately send last known position to confirm "still alive"
+        if (posRef.current) sendPosition(posRef.current);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [tracking, sendPosition, startWatchPosition]);
 
   useEffect(() => {
     return () => {
