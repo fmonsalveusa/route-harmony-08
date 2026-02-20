@@ -1,52 +1,28 @@
 
 
-# Indicador de GPS Tracking Activo en la App Web
+## Indicador de GPS del Driver en el Mapa de Detalle de Carga
 
-## Problema actual
-Aunque los conductores con tracking activo aparecen como marcadores en el mapa, no hay un indicador visual claro en el panel de **Drivers Available** ni en la página de **Drivers** que muestre si un conductor tiene el GPS encendido desde la app movil.
+### Que se hara
+Agregar un marcador en tiempo real de la posicion GPS del conductor directamente en el mapa de cada carga (LoadDetailPanel), cuando el driver tenga el tracking activo (actualizado en los ultimos 5 minutos).
 
-## Solucion propuesta
+### Cambios
 
-### 1. Indicador en el panel "Drivers Available" (Tracking page)
-- Agregar un badge pulsante verde junto al nombre del conductor cuando su `updated_at` en `driver_locations` sea menor a 5 minutos.
-- Mostrar texto "GPS ON" con icono de Navigation, similar al indicador que ya tiene la app movil.
-- Si el tracking esta inactivo (sin registro o `updated_at` mayor a 5 min), no mostrar nada.
+**Archivo: `src/components/LoadDetailPanel.tsx`**
 
-### 2. Indicador en la lista de conductores con cargas activas (mapa)
-- En el popup del marcador del conductor, ya existe "GPS Live". Se mantiene igual.
+1. Despues de inicializar el mapa y dibujar la ruta, consultar `driver_locations` para el `driver_id` de la carga
+2. Si existe un registro con `updated_at` menor a 5 minutos, agregar un marcador pulsante (icono azul con "D" o icono de camion) en las coordenadas del driver
+3. Suscribirse a cambios realtime en `driver_locations` filtrado por `driver_id` para mover el marcador en tiempo real cuando el driver se mueve
+4. Mostrar un badge informativo "GPS Live" en el popup del marcador con la velocidad y ultima actualizacion
+5. Limpiar la suscripcion realtime en el cleanup del useEffect
 
-### 3. Indicador en la pagina de Drivers (tabla principal)
-- Agregar un pequeno icono de GPS junto al nombre del conductor en la tabla de Drivers cuando tenga tracking activo.
-- Utilizar los mismos datos de `driver_locations` que ya se obtienen via realtime en la pagina de Tracking.
+### Detalles tecnicos
 
-## Detalles tecnicos
+- Se agregara un `useEffect` separado que depende de `load.driver_id` y `mapInstanceRef.current`
+- El marcador del driver usara un `divIcon` con estilo pulsante (similar al de Tracking page) para diferenciarse de los marcadores P/D
+- En cada actualizacion realtime, se mueve el marcador con `setLatLng()` en lugar de recrearlo
+- El marcador incluye un popup con: nombre del driver, velocidad actual, y timestamp de la ultima posicion
+- Si el tracking no esta activo (sin registro o > 5 min), no se muestra ningun marcador
 
-### Logica de "tracking activo"
-Se considera que un conductor tiene tracking activo si:
-- Existe un registro en `driver_locations` para su `driver_id`
-- El campo `updated_at` es menor a 5 minutos respecto a `now()`
+### Resultado visual
+En el mapa del detalle de carga, se vera un marcador azul pulsante con la posicion actual del conductor moviéndose en tiempo real, similar a como se ve en la pagina de Tracking pero integrado directamente en el mapa de la carga.
 
-### Cambios en archivos
-
-**`src/pages/Tracking.tsx`**
-- En el panel lateral "Drivers Available" (linea ~637), agregar junto al nombre del conductor un badge condicional:
-  - Buscar el `driver_id` en el array `driverLocations` (ya disponible en el componente)
-  - Si `updated_at` es reciente (< 5 min), mostrar un badge verde pulsante con icono Navigation y texto "GPS"
-  - Reutilizar el mismo estilo del indicador de la app movil (`bg-success/15 text-success animate-pulse`)
-
-**`src/pages/Drivers.tsx`**
-- Agregar un fetch ligero a `driver_locations` para obtener los IDs de conductores con tracking activo
-- En la tabla, junto al nombre del conductor, mostrar un pequeno icono verde de Navigation si esta activo
-- Suscribirse a realtime en `driver_locations` para actualizaciones en vivo
-
-### Resultado visual esperado
-
-En el panel de Drivers Available:
-```text
-[icono usuario] Juan Perez  [GPS pulsante verde]  555-1234
-```
-
-En la tabla de Drivers:
-```text
-Juan Perez [icono GPS verde]
-```
