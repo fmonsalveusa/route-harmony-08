@@ -39,7 +39,7 @@ export default function DriverProfile() {
   );
 
   return (
-    <div className="p-4 pb-20 space-y-4">
+    <div className="p-4 pb-[calc(72px+env(safe-area-inset-bottom,0px))] space-y-4">
       <h1 className="text-xl font-bold">My Profile</h1>
 
       <Card>

@@ -123,7 +123,7 @@ export default function DriverLoads() {
   };
 
   return (
-    <div className="p-4 pb-20">
+    <div className="p-4 pb-[calc(72px+env(safe-area-inset-bottom,0px))]">
       <h1 className="text-xl font-bold mb-3">My Loads</h1>
       <Tabs defaultValue="active">
         <TabsList className="w-full">
