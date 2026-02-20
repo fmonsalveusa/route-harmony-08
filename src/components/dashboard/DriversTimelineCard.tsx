@@ -79,9 +79,10 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [] }: Props) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Measure available width from the card's content area
+  // Measure available width from the scroll area's parent
+  const scrollWrapperRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const el = cardRef.current;
+    const el = scrollWrapperRef.current;
     if (!el) return;
     const ro = new ResizeObserver(([entry]) => {
       setContainerWidth(entry.contentRect.width);
@@ -268,8 +269,8 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [] }: Props) => {
           </Button>
         </div>
 
-        <ScrollArea className="w-full">
-          <div ref={containerRef} style={{ width: containerWidth > 0 ? `${DRIVER_COL_WIDTH + VISIBLE_DAYS * dayWidth + 16}px` : '100%', minWidth: `${DRIVER_COL_WIDTH + VISIBLE_DAYS * MIN_DAY_WIDTH + 16}px` }}>
+        <div ref={scrollWrapperRef} className="w-full overflow-x-auto">
+          <div ref={containerRef} style={{ width: '100%', minWidth: `${DRIVER_COL_WIDTH + VISIBLE_DAYS * MIN_DAY_WIDTH + 16}px` }}>
             {/* Day + hour headers */}
             <div className="flex border-b border-border">
               <div style={{ width: DRIVER_COL_WIDTH, minWidth: DRIVER_COL_WIDTH }} className="shrink-0" />
@@ -415,8 +416,7 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [] }: Props) => {
               })}
             </div>
           </div>
-          <ScrollBar orientation="horizontal" />
-        </ScrollArea>
+        </div>
 
         {/* Load Detail Popup */}
         {selectedLoad && (() => {
