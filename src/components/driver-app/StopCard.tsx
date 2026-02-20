@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { MapPin, Navigation, Camera, Check, Clock, Image, Loader2, Trash2 } from 'lucide-react';
+import { MapPin, Navigation, Camera, Check, Clock, Image, Loader2, Trash2, PackageCheck, CheckCircle2 } from 'lucide-react';
 import { DocumentScanner } from './DocumentScanner';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,9 +23,11 @@ interface StopCardProps {
   driverName: string;
   onUpdate: () => void;
   podDocuments: { id: string; file_name: string; file_url: string }[];
+  loadStatus?: string;
+  isLastDelivery?: boolean;
 }
 
-export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments }: StopCardProps) => {
+export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, loadStatus, isLastDelivery }: StopCardProps) => {
   const [arriving, setArriving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
@@ -42,6 +44,10 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments }: 
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } else {
+      // Update load status to on_site
+      const newStatus = stop.stop_type === 'pickup' ? 'on_site_pickup' : 'on_site_delivery';
+      await supabase.from('loads').update({ status: newStatus }).eq('id', stop.load_id);
+
       await createNotification({
         type: 'driver_arrived',
         title: `Driver arrived at ${stop.stop_type}`,
@@ -52,6 +58,37 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments }: 
       onUpdate();
     }
     setArriving(false);
+  };
+
+  const [changingStatus, setChangingStatus] = useState(false);
+
+  const handlePickedUp = async () => {
+    setChangingStatus(true);
+    await supabase.from('loads').update({ status: 'picked_up' }).eq('id', stop.load_id);
+    await createNotification({
+      type: 'status_changed',
+      title: 'Picked Up',
+      message: `${driverName} marked load ${loadRef} as Picked Up`,
+      load_id: stop.load_id,
+    });
+    toast({ title: 'Status: Picked Up' });
+    onUpdate();
+    setChangingStatus(false);
+  };
+
+  const handleDelivered = async () => {
+    setChangingStatus(true);
+    // Import and call generatePaymentsForLoad from parent context
+    await supabase.from('loads').update({ status: 'delivered' }).eq('id', stop.load_id);
+    await createNotification({
+      type: 'status_changed',
+      title: 'Load Delivered!',
+      message: `${driverName} marked load ${loadRef} as Delivered`,
+      load_id: stop.load_id,
+    });
+    toast({ title: 'Marked as Delivered!' });
+    onUpdate();
+    setChangingStatus(false);
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -215,6 +252,20 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments }: 
           <Button size="sm" className="gap-1.5 text-xs" onClick={handleArrived} disabled={arriving}>
             <MapPin className="h-3.5 w-3.5" />
             {arriving ? 'Marking...' : 'Arrived'}
+          </Button>
+        )}
+
+        {isArrived && stop.stop_type === 'pickup' && loadStatus !== 'picked_up' && loadStatus !== 'on_site_delivery' && loadStatus !== 'delivered' && loadStatus !== 'paid' && (
+          <Button size="sm" className="gap-1.5 text-xs bg-primary hover:bg-primary/90" onClick={handlePickedUp} disabled={changingStatus}>
+            <PackageCheck className="h-3.5 w-3.5" />
+            {changingStatus ? 'Updating...' : 'Picked Up'}
+          </Button>
+        )}
+
+        {isArrived && stop.stop_type === 'delivery' && isLastDelivery && loadStatus !== 'delivered' && loadStatus !== 'paid' && (
+          <Button size="sm" className="gap-1.5 text-xs bg-success hover:bg-success/90 text-success-foreground" onClick={handleDelivered} disabled={changingStatus}>
+            <CheckCircle2 className="h-3.5 w-3.5" />
+            {changingStatus ? 'Updating...' : 'Delivered'}
           </Button>
         )}
 

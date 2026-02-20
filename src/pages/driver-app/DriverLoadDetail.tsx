@@ -6,10 +6,9 @@ import { StopCard } from '@/components/driver-app/StopCard';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, Play, CheckCircle2, DollarSign, FileText } from 'lucide-react';
+import { ArrowLeft, Play, DollarSign, FileText } from 'lucide-react';
 import { createNotification } from '@/hooks/useNotifications';
 import { toast } from '@/hooks/use-toast';
-import { generatePaymentsForLoad } from '@/hooks/usePayments';
 
 export default function DriverLoadDetail() {
   const { loadId } = useParams<{ loadId: string }>();
@@ -58,36 +57,12 @@ export default function DriverLoadDetail() {
 
   const handleStartRoute = async () => handleChangeStatus('in_transit', 'In Transit');
 
-  const handleMarkDelivered = async () => {
-    await supabase.from('loads').update({ status: 'delivered' }).eq('id', loadId!);
-
-    if (driver && load) {
-      const { data: dispatcherData } = await supabase.from('dispatchers').select('*').eq('id', load.dispatcher_id).maybeSingle();
-      await generatePaymentsForLoad(
-        { id: load.id, reference_number: load.reference_number, total_rate: load.total_rate, driver_id: load.driver_id, dispatcher_id: load.dispatcher_id },
-        driver ? { id: driver.id, name: driver.name, pay_percentage: driver.pay_percentage, investor_pay_percentage: driver.investor_pay_percentage, investor_name: driver.investor_name, service_type: driver.service_type } : null,
-        dispatcherData ? { id: dispatcherData.id, name: dispatcherData.name, commission_percentage: dispatcherData.commission_percentage, dispatch_service_percentage: dispatcherData.dispatch_service_percentage } : null,
-      );
-    }
-
-    await createNotification({
-      type: 'status_changed',
-      title: 'Load delivered!',
-      message: `${profile?.full_name} marked load ${load?.reference_number} as delivered`,
-      load_id: loadId,
-    });
-    toast({ title: 'Marked as Delivered!' });
-    fetchAll();
-  };
-
   if (loading) return <div className="flex items-center justify-center h-40"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" /></div>;
   if (!load) return <div className="p-4 text-center text-muted-foreground">Load not found</div>;
 
   const deliveryStops = stops.filter(s => s.stop_type === 'delivery');
   const lastDelivery = deliveryStops[deliveryStops.length - 1];
-  const lastDeliveryArrived = lastDelivery?.arrived_at;
-  const hasPodsOnLastDelivery = lastDelivery ? podDocs.some(p => p.stop_id === lastDelivery.id) : false;
-  const canDeliver = (load.status === 'in_transit' || load.status === 'on_site_delivery') && lastDeliveryArrived && (hasPodsOnLastDelivery || podDocs.length > 0);
+  const lastDeliveryId = lastDelivery?.id;
 
   return (
     <div className="p-4 pb-24 space-y-4">
@@ -173,17 +148,13 @@ export default function DriverLoadDetail() {
               driverName={profile?.full_name || ''}
               onUpdate={fetchAll}
               podDocuments={podDocs}
+              loadStatus={load.status}
+              isLastDelivery={stop.id === lastDeliveryId}
             />
           ))}
         </div>
       </div>
 
-      {/* Mark Delivered */}
-      {canDeliver && (
-        <Button className="w-full gap-2 bg-success hover:bg-success/90" size="lg" onClick={handleMarkDelivered}>
-          <CheckCircle2 className="h-5 w-5" /> Mark as Delivered
-        </Button>
-      )}
 
       {/* Payments section */}
       {payments.length > 0 && (
