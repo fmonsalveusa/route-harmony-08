@@ -71,7 +71,6 @@ const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'Ju
 const VISIBLE_DAYS = 7;
 const DRIVER_COL_WIDTH = 140;
 const MIN_DAY_WIDTH = 120;
-const MAX_DAY_WIDTH = 280;
 
 export const DriversTimelineCard = ({ loads, drivers, trucks = [] }: Props) => {
   const [weekOffset, setWeekOffset] = useState(0);
@@ -92,7 +91,7 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [] }: Props) => {
   }, []);
 
   const dayWidth = containerWidth > 0
-    ? Math.min(MAX_DAY_WIDTH, Math.max(MIN_DAY_WIDTH, (containerWidth - DRIVER_COL_WIDTH - 16) / VISIBLE_DAYS))
+    ? Math.max(MIN_DAY_WIDTH, (containerWidth - DRIVER_COL_WIDTH - 16) / VISIBLE_DAYS)
     : MIN_DAY_WIDTH;
 
   // Close popup on outside click
