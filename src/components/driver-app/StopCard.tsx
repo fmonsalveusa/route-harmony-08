@@ -145,7 +145,10 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
   const [resolvingUrls, setResolvingUrls] = useState(false);
 
   const resolveUrls = useCallback(async () => {
-    if (stopPods.length === 0) return;
+    if (stopPods.length === 0) {
+      setResolvedUrls({});
+      return;
+    }
     setResolvingUrls(true);
     const urls: Record<string, string> = {};
     for (const doc of stopPods) {
@@ -171,7 +174,8 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
     }
     setResolvedUrls(urls);
     setResolvingUrls(false);
-  }, [stopPods.map(p => p.id).join(',')]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [podDocuments]);
 
   useEffect(() => {
     resolveUrls();
