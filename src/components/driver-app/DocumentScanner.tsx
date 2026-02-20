@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import { X, Plus, Upload, RotateCcw, Contrast, ScanLine } from 'lucide-react';
+import { X, Upload, RotateCcw, Contrast, ScanLine, Camera, ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { getTenantId } from '@/hooks/useTenantId';
@@ -102,6 +102,7 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
   const [detecting, setDetecting] = useState(false);
 
   const fileRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
 
   const docLabel = stop.stop_type === 'pickup' ? 'BOL' : 'POD';
 
@@ -175,7 +176,8 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
     setCropImage(null);
   }, [cropImage]);
 
-  const triggerCapture = () => fileRef.current?.click();
+  const triggerCamera = () => cameraRef.current?.click();
+  const triggerGallery = () => fileRef.current?.click();
 
   const handleEnhance = async () => {
     if (pages.length === 0) return;
@@ -193,7 +195,7 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
   const handleRetake = () => {
     setPages((prev) => prev.filter((_, i) => i !== selectedIndex));
     setSelectedIndex((i) => Math.max(0, i - 1));
-    triggerCapture();
+    triggerCamera();
   };
 
   const handleDeletePage = (idx: number) => {
@@ -325,21 +327,26 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
 
       {/* Actions */}
       <div className="flex flex-wrap gap-2 px-4 py-3 bg-black/90 justify-center">
+        {/* Camera button - opens camera directly on Android */}
         <Button
           variant="outline"
           size="sm"
-          onClick={triggerCapture}
+          onClick={triggerCamera}
           className="gap-1.5 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20"
         >
-          {pages.length === 0 ? (
-            <>
-              <ScanLine className="h-4 w-4" /> Escanear
-            </>
-          ) : (
-            <>
-              <Plus className="h-4 w-4" /> Agregar pág.
-            </>
-          )}
+          <Camera className="h-4 w-4" />
+          {pages.length === 0 ? 'Cámara' : '+ Cámara'}
+        </Button>
+
+        {/* Gallery button - opens file picker */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={triggerGallery}
+          className="gap-1.5 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20"
+        >
+          <ImageIcon className="h-4 w-4" />
+          {pages.length === 0 ? 'Galería' : '+ Galería'}
         </Button>
 
         {currentPage && (
@@ -374,6 +381,9 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
         )}
       </div>
 
+      {/* Camera input - forces camera on Android */}
+      <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleCapture} />
+      {/* Gallery input - opens file picker */}
       <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleCapture} />
     </div>
   );
