@@ -34,6 +34,7 @@ interface LoadOption {
   driver_id: string | null;
   origin: string;
   destination: string;
+  dispatcher_pay_amount: number | null;
 }
 
 interface DriverOption {
@@ -76,8 +77,9 @@ export const ManualDispatcherPaymentDialog = ({ open, onOpenChange, onComplete }
 
     const { data: loadsData } = await supabase
       .from('loads')
-      .select('id, reference_number, broker_client, total_rate, created_at, driver_id, origin, destination')
+      .select('id, reference_number, broker_client, total_rate, created_at, driver_id, origin, destination, dispatcher_pay_amount')
       .eq('dispatcher_id', dispatcherId)
+      .neq('status', 'cancelled')
       .order('created_at', { ascending: false });
 
     if (!loadsData || loadsData.length === 0) {
@@ -189,11 +191,8 @@ export const ManualDispatcherPaymentDialog = ({ open, onOpenChange, onComplete }
   const selectedTotal = filteredLoads
     .filter(l => selectedLoadIds.has(l.id))
     .reduce((sum, l) => {
-      const driverSvc = l.driver_id ? (driverServiceTypes[l.driver_id] || 'owner_operator') : 'owner_operator';
-      const pct = driverSvc === 'dispatch_service'
-        ? (dispatcher?.dispatch_service_percentage ?? 0)
-        : (dispatcher?.commission_percentage ?? 0);
-      return sum + (Number(l.total_rate) * pct / 100);
+      const amount = Number(l.dispatcher_pay_amount ?? 0);
+      return sum + amount;
     }, 0);
 
   const handleSubmit = async () => {
@@ -205,11 +204,9 @@ export const ManualDispatcherPaymentDialog = ({ open, onOpenChange, onComplete }
 
     // Build individual line items
     const lineItems = selectedLoads.map(l => {
-      const driverSvc = l.driver_id ? (driverServiceTypes[l.driver_id] || 'owner_operator') : 'owner_operator';
-      const pct = driverSvc === 'dispatch_service'
-        ? (dispatcher.dispatch_service_percentage ?? 0)
-        : (dispatcher.commission_percentage ?? 0);
-      const amount = Math.round(Number(l.total_rate) * pct / 100 * 100) / 100;
+      const amount = Math.round(Number(l.dispatcher_pay_amount ?? 0) * 100) / 100;
+      const rate = Number(l.total_rate);
+      const pct = rate > 0 ? Math.round((amount / rate) * 10000) / 100 : 0;
       return { load: l, pct, amount };
     });
 
@@ -375,11 +372,9 @@ export const ManualDispatcherPaymentDialog = ({ open, onOpenChange, onComplete }
                     </thead>
                     <tbody>
                       {filteredLoads.map(l => {
-                        const driverSvc = l.driver_id ? (driverServiceTypes[l.driver_id] || 'owner_operator') : 'owner_operator';
-                        const pct = driverSvc === 'dispatch_service'
-                          ? (dispatcher?.dispatch_service_percentage ?? 0)
-                          : (dispatcher?.commission_percentage ?? 0);
-                        const amount = Math.round(Number(l.total_rate) * pct / 100 * 100) / 100;
+                        const amount = Math.round(Number(l.dispatcher_pay_amount ?? 0) * 100) / 100;
+                        const rate = Number(l.total_rate);
+                        const pct = rate > 0 ? Math.round((amount / rate) * 10000) / 100 : 0;
 
                         return (
                           <tr key={l.id} className={`border-b last:border-0 hover:bg-muted/30 cursor-pointer ${selectedLoadIds.has(l.id) ? 'bg-primary/5' : ''}`} onClick={() => toggleLoad(l.id)}>
