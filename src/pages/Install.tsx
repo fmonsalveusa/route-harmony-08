@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Share, MoreVertical, Plus, Download, CheckCircle, Smartphone, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Share, MoreVertical, Plus, Download, CheckCircle, Smartphone, ChevronRight, ChevronLeft, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import logoImg from '@/assets/logo.png';
 
@@ -332,8 +332,37 @@ export default function Install() {
 
   return (
     <div className="min-h-[100dvh] bg-gradient-to-b from-primary/10 to-background flex flex-col">
+
+      {/* ⚠️ Banner: Why the app looks small */}
+      <motion.div
+        initial={{ opacity: 0, y: -12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="mx-4 mt-4 rounded-xl border border-warning/40 bg-warning/10 p-4 flex gap-3 items-start shadow-sm"
+      >
+        <div className="flex-shrink-0 w-9 h-9 rounded-full bg-warning/20 flex items-center justify-center mt-0.5">
+          <AlertTriangle className="w-5 h-5 text-warning" />
+        </div>
+        <div>
+          <p className="text-sm font-bold text-foreground">¿Se ve la app pequeña?</p>
+          <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+            Mientras uses la app desde el navegador (Chrome/Safari), la barra de URL roba espacio y el contenido se ve comprimido.{' '}
+            <span className="font-semibold text-foreground">Instálala siguiendo los pasos de abajo</span> y se verá en pantalla completa, como una app nativa.
+          </p>
+          <div className="mt-2 flex items-center gap-2">
+            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground bg-card border border-border rounded-full px-2.5 py-1">
+              <span>🌐</span> <span>Browser = pequeño</span>
+            </div>
+            <span className="text-muted-foreground text-xs">→</span>
+            <div className="flex items-center gap-1.5 text-[11px] text-foreground font-semibold bg-success/15 border border-success/30 rounded-full px-2.5 py-1">
+              <span>📱</span> <span>Instalada = pantalla completa</span>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
       {/* Header */}
-      <div className="flex flex-col items-center pt-10 pb-4 px-4">
+      <div className="flex flex-col items-center pt-6 pb-4 px-4">
         <motion.img
           src={logoImg}
           alt="Load Up Driver"
