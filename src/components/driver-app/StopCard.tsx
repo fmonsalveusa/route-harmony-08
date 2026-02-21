@@ -305,7 +305,7 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
             <div key={doc.id} className="relative group">
               <button onClick={() => handleOpenPod(doc)} type="button">
                 <div className="w-16 h-16 rounded-lg border overflow-hidden bg-muted flex items-center justify-center">
-                  {resolvedUrls[doc.id] && doc.file_name.match(/\.(jpg|jpeg|png|gif|webp)/i) ? (
+                  {resolvedUrls[doc.id] && (doc.file_name.match(/\.(jpg|jpeg|png|gif|webp)/i) || (doc as any).file_type === 'image') ? (
                     <img src={resolvedUrls[doc.id]} alt={doc.file_name} className="w-full h-full object-cover" />
                   ) : resolvingUrls ? (
                     <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
