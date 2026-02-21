@@ -4,9 +4,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Calendar } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 import { formatDate } from '@/lib/dateUtils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { LoadProgressBar } from '@/components/driver-app/LoadProgressBar';
 
 export default function DriverLoads() {
   const { profile } = useAuth();
@@ -50,6 +51,19 @@ export default function DriverLoads() {
     return labels[status] || status.replace('_', ' ');
   };
 
+  const statusBorderColor = (status: string) => {
+    const colors: Record<string, string> = {
+      dispatched: 'border-l-[hsl(80,60%,45%)]',
+      in_transit: 'border-l-[hsl(152,60%,40%)]',
+      on_site_pickup: 'border-l-[hsl(174,60%,42%)]',
+      picked_up: 'border-l-[hsl(217,78%,50%)]',
+      on_site_delivery: 'border-l-[hsl(245,58%,52%)]',
+      delivered: 'border-l-[hsl(270,50%,55%)]',
+      paid: 'border-l-[hsl(152,60%,40%)]',
+    };
+    return colors[status] || 'border-l-muted';
+  };
+
   const active = loads.filter(l => !['delivered', 'paid', 'tonu', 'cancelled'].includes(l.status));
   const completed = loads.filter(l => ['delivered', 'paid'].includes(l.status));
 
@@ -57,7 +71,6 @@ export default function DriverLoads() {
 
   const formatCityState = (location: string) => {
     if (!location) return '—';
-    // Try to extract city, state from full address
     const parts = location.split(',').map(p => p.trim());
     if (parts.length >= 2) return `${parts[0]}, ${parts[1]}`;
     return location;
@@ -70,53 +83,57 @@ export default function DriverLoads() {
   };
 
   const LoadCard = ({ load }: { load: any }) => {
-    const isActive = ['dispatched', 'in_transit'].includes(load.status);
-    const dateLabel = isActive ? 'Est. Delivery' : 'Delivered';
-    const dateValue = isActive ? load.delivery_date : load.delivery_date;
+    const isActive = !['delivered', 'paid', 'tonu', 'cancelled'].includes(load.status);
 
     return (
-      <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate(`/driver/loads/${load.id}`)}>
+      <Card className={`cursor-pointer hover:shadow-md transition-shadow border-l-[3px] ${statusBorderColor(load.status)}`} onClick={() => navigate(`/driver/loads/${load.id}`)}>
         <CardContent className="p-3 space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-base font-bold">Load #{load.reference_number}</span>
             <Badge className={statusBadge(load.status)}>{statusLabel(load.status)}</Badge>
           </div>
 
-            <div className="space-y-1">
-            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-              <MapPin className="h-3.5 w-3.5 shrink-0 text-success" />
-              <span className="truncate">{formatCityState(load.origin)}</span>
+          {/* Route Timeline */}
+          <div className="flex items-center gap-2">
+            <div className="flex flex-col items-center gap-0.5">
+              <div className="w-2.5 h-2.5 rounded-full bg-success" />
+              <div className="w-px h-4 border-l border-dashed border-muted-foreground/40" />
+              <div className="w-2.5 h-2.5 rounded-full bg-destructive" />
             </div>
-            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-              <MapPin className="h-3.5 w-3.5 shrink-0 text-destructive" />
-              <span className="truncate">{formatCityState(load.destination)}</span>
+            <div className="flex-1 space-y-1.5">
+              <p className="text-sm font-semibold leading-none">{formatCityState(load.origin)}</p>
+              <p className="text-sm font-semibold leading-none">{formatCityState(load.destination)}</p>
             </div>
           </div>
 
-          {load.broker_client && (
-            <div className="text-sm">
-              <span className="text-muted-foreground">Broker: </span>
-              <span className="font-medium">{load.broker_client}</span>
-            </div>
-          )}
-
-          <div className="flex items-center justify-between text-sm">
-            <div>
-              <span className="text-muted-foreground">Rate: </span>
+          {/* Data Grid */}
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Rate</span>
               <span className="font-semibold text-primary">${Number(load.total_rate).toLocaleString()}</span>
             </div>
-            <div>
-              <span className="text-muted-foreground">RPM: </span>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">RPM</span>
               <span className="font-semibold">{rpm(load)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Miles</span>
+              <span className="font-semibold">{Number(load.miles) > 0 ? Number(load.miles).toLocaleString() : '—'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Broker</span>
+              <span className="font-medium truncate max-w-[100px]">{load.broker_client || '—'}</span>
             </div>
           </div>
 
-          {dateValue && (
+          {load.delivery_date && (
             <div className="text-sm text-muted-foreground">
               <Calendar className="h-3.5 w-3.5 inline mr-1" />
-              {dateLabel}: <span className="font-medium text-foreground">{formatDate(dateValue)}</span>
+              {isActive ? 'Est. Delivery' : 'Delivered'}: <span className="font-medium text-foreground">{formatDate(load.delivery_date)}</span>
             </div>
           )}
+
+          {isActive && <LoadProgressBar status={load.status} />}
         </CardContent>
       </Card>
     );
