@@ -30,6 +30,7 @@ import NotFound from "./pages/NotFound";
 import DriverOnboarding from "./pages/DriverOnboarding";
 import Install from "./pages/Install";
 import Landing from "./pages/Landing";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 
 import DriverDashboard from "./pages/driver-app/DriverDashboard";
 import DriverLoads from "./pages/driver-app/DriverLoads";
@@ -119,6 +120,7 @@ const AppRoutes = () => {
       <Route path="/onboarding/:token" element={<DriverOnboarding />} />
       <Route path="/install" element={<Install />} />
       <Route path="/" element={user ? <Navigate to={getRedirectPath()} replace /> : <Landing />} />
+      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
 
       {/* Driver mobile routes */}
       <Route path="/driver" element={<DriverWrapper />}>
