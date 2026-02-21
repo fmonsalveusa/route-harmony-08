@@ -377,7 +377,6 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
                 type="file"
                 accept="image/*"
                 capture="environment"
-                multiple
                 className="hidden"
                 onChange={handleFileUpload}
                 disabled={uploading}
