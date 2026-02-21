@@ -1,53 +1,25 @@
 
 
-# Mejora Visual del Sistema de Fotos/Documentos por Parada (Estilo SmartHop)
+# Habilitar Botones de Escaneo BOL/POD en Android
 
 ## Resumen
-Redisenar la experiencia de carga de fotos y documentos dentro de cada StopCard para que sea mas visual, intuitiva y profesional. El sistema actual ya permite subir, ver y eliminar documentos por parada -- el objetivo es mejorar la presentacion y agregar funcionalidades de UX que faciliten el trabajo del conductor.
+Actualmente el boton de escaneo de documentos (con deteccion de bordes y recorte) solo aparece en iOS y Desktop. En Android se oculta debido a limitaciones historicas del navegador. El cambio es simple: **eliminar la restriccion `!isAndroid`** para que el boton de Scanner aparezca en todas las plataformas, igualando la experiencia entre iPhone y Android.
 
 ---
 
-## Cambios Propuestos
+## Cambio Propuesto
 
-### 1. Seccion de Documentos Expandida dentro del StopCard
-- Reemplazar la grilla de thumbnails pequenos (64x64px) por una grilla mas grande y clara (80x80px) con bordes redondeados y sombra sutil
-- Agregar un **contador de documentos** visible ("3 fotos") junto al titulo de la parada
-- Mostrar el **nombre del archivo** debajo de cada thumbnail (truncado a 8 caracteres)
+### Archivo a modificar: `src/components/driver-app/StopCard.tsx`
 
-### 2. Botones de Accion Mejorados
-- Reorganizar los botones de upload en un layout mas claro:
-  - Boton principal grande: "Tomar Foto" (camara) con icono destacado
-  - Boton secundario: "Galeria" para seleccionar de la galeria del telefono  
-  - Boton de scanner (solo iOS/Desktop) con icono de documento
-- Usar colores consistentes: azul para camara, gris para galeria, primario para scanner
-- Agregar animacion de carga (skeleton) mientras se sube un archivo
+1. **Eliminar la condicion `{!isAndroid && ...}`** que envuelve el boton de Scanner (linea 404)
+2. El boton "Scan BOL Document" / "Scan POD Document" aparecera en **todas las plataformas** (Android, iOS, Desktop)
+3. El `DocumentScanner` ya esta importado y funcional -- solo estaba oculto en Android
 
-### 3. Vista Previa Mejorada de Documentos
-- Al tocar un thumbnail, mostrar una vista previa mas grande inline (expandible) en lugar de abrir una nueva pestana
-- Agregar swipe/carousel horizontal cuando hay multiples fotos
-- Mostrar timestamp de cuando se subio cada foto
+### Que queda igual
+- Los botones de "Camera" y "Gallery" no cambian
+- La logica interna del DocumentScanner (deteccion de bordes, crop, enhance, upload) no cambia
+- No se requieren cambios en la base de datos ni en edge functions
 
-### 4. Indicador Visual de Completitud
-- Agregar un indicador de "documentos requeridos" por tipo de parada:
-  - Pickup: Icono de check cuando hay al menos 1 foto de BOL
-  - Delivery: Icono de check cuando hay al menos 1 POD
-- Borde verde en la seccion de documentos cuando esta completa, gris cuando falta
-
-### 5. Confirmacion de Eliminacion Mejorada
-- Reemplazar los botones flotantes pequenos por un dialogo de confirmacion deslizable (swipe-to-delete) mas intuitivo en movil
-- Mostrar el nombre del archivo en la confirmacion
-
----
-
-## Detalles Tecnicos
-
-### Archivos a Modificar
-1. **`src/components/driver-app/StopCard.tsx`** - Rediseno completo de la seccion de documentos: grilla mas grande, botones reorganizados, contador, indicador de completitud, vista previa mejorada
-2. **`src/pages/driver-app/DriverLoadDetail.tsx`** - Pasar conteo de documentos por parada al StopCard para el indicador visual
-
-### Sin Cambios de Base de Datos
-Toda la informacion necesaria ya existe en la tabla `pod_documents`. No se requieren migraciones.
-
-### Sin Nuevos Archivos
-Los cambios se concentran en el StopCard existente, manteniendo la logica de upload/delete/scanner actual.
+### Nota tecnica
+El DocumentScanner usa `createImageBitmap` y canvas para el procesamiento de imagenes, que ya es compatible con Chrome en Android. La deteccion de bordes se ejecuta en el servidor (edge function), asi que no depende del navegador del dispositivo.
 
