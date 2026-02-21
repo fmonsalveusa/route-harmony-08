@@ -224,7 +224,7 @@ export const AppLayout = ({ children }: {children: ReactNode;}) => {
 
       {/* Main */}
       <div className="flex flex-col flex-1 overflow-hidden">
-        <header className="flex items-center justify-between h-16 px-4 lg:px-6 border-b bg-card">
+        <header className="flex items-center justify-between min-h-[64px] px-4 lg:px-6 border-b bg-card safe-area-pt">
           <button className="lg:hidden p-2 rounded-md hover:bg-muted" onClick={() => setMobileOpen(true)}>
             <Menu className="h-5 w-5" />
           </button>
