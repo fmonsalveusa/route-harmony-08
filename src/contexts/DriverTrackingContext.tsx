@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { getTenantId } from '@/hooks/useTenantId';
 import { toast } from '@/hooks/use-toast';
+import { isNativePlatform, startNativeTracking, stopNativeTracking } from '@/lib/nativeTracking';
 
 interface ActiveStop {
   id: string;
@@ -45,8 +46,9 @@ function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: numbe
 
 const ACTIVE_LOAD_STATUSES = ['dispatched', 'in_transit', 'on_site_pickup', 'picked_up', 'on_site_delivery'];
 
-// --- Wake Lock helpers ---
+// --- Wake Lock helpers (web only) ---
 async function acquireWakeLock(ref: React.MutableRefObject<WakeLockSentinel | null>) {
+  if (isNativePlatform()) return; // Native plugin handles this
   try {
     if ('wakeLock' in navigator) {
       ref.current = await (navigator as any).wakeLock.request('screen');
@@ -78,8 +80,10 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
   const posRef = useRef<GeolocationPosition | null>(null);
   const dismissedStopsRef = useRef<Set<string>>(new Set());
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
+  const nativeCleanupRef = useRef<(() => void) | null>(null);
   const [refreshStops, setRefreshStops] = useState(0);
   const autoResumedRef = useRef(false);
+
   // Check GPS permission status
   useEffect(() => {
     if (!('permissions' in navigator)) {
@@ -92,7 +96,6 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
     }).catch(() => setPermissionStatus('unknown'));
   }, []);
 
-  
   useEffect(() => {
     if (!profile?.email) return;
     supabase.from('drivers').select('id').eq('email', profile.email).maybeSingle().then(({ data }) => {
@@ -217,6 +220,30 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
     if (error) console.error('Location update error:', error);
   }, [driverId, checkGeofence]);
 
+  // Send position from native tracking data (no GeolocationPosition object)
+  const sendNativePosition = useCallback(async (pos: { lat: number; lng: number; speed: number | null; heading: number | null; accuracy: number | null }) => {
+    if (!driverId) return;
+    const tenant_id = await getTenantId();
+    const payload = {
+      driver_id: driverId,
+      tenant_id,
+      lat: pos.lat,
+      lng: pos.lng,
+      speed: pos.speed,
+      heading: pos.heading,
+      accuracy: pos.accuracy,
+      updated_at: new Date().toISOString(),
+    };
+
+    setLastPosition({ lat: pos.lat, lng: pos.lng });
+    setSpeed(pos.speed);
+    setAccuracy(pos.accuracy);
+    checkGeofence(pos.lat, pos.lng);
+
+    const { error } = await supabase.from('driver_locations').upsert(payload as any, { onConflict: 'driver_id' });
+    if (error) console.error('Location update error:', error);
+  }, [driverId, checkGeofence]);
+
   const startWatchPosition = useCallback((onPosition: (pos: GeolocationPosition) => void) => {
     if (watchRef.current !== null) {
       navigator.geolocation.clearWatch(watchRef.current);
@@ -229,35 +256,61 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
   }, []);
 
   const startTracking = useCallback(() => {
+    if (tracking) return;
+
+    if (isNativePlatform()) {
+      // --- Native tracking via Capacitor plugin ---
+      setTracking(true);
+      localStorage.setItem(TRACKING_STORAGE_KEY, 'true');
+      dismissedStopsRef.current.clear();
+      toast({ title: 'GPS Tracking started' });
+
+      startNativeTracking((pos) => {
+        sendNativePosition(pos);
+      }).then((cleanup) => {
+        nativeCleanupRef.current = cleanup;
+      });
+      return;
+    }
+
+    // --- Web tracking ---
     if (!('geolocation' in navigator)) {
       toast({ title: 'GPS not available', variant: 'destructive' });
       return;
     }
-    if (tracking) return;
 
     setTracking(true);
     localStorage.setItem(TRACKING_STORAGE_KEY, 'true');
     dismissedStopsRef.current.clear();
     toast({ title: 'GPS Tracking started' });
 
-    // Acquire Wake Lock
     acquireWakeLock(wakeLockRef);
-
     startWatchPosition((pos) => { posRef.current = pos; sendPosition(pos); });
 
     intervalRef.current = setInterval(() => {
       if (posRef.current) sendPosition(posRef.current);
     }, 30000);
-  }, [tracking, sendPosition, startWatchPosition]);
+  }, [tracking, sendPosition, sendNativePosition, startWatchPosition]);
 
   const stopTracking = useCallback(() => {
-    if (watchRef.current !== null) navigator.geolocation.clearWatch(watchRef.current);
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    watchRef.current = null;
-    intervalRef.current = null;
+    if (isNativePlatform()) {
+      // --- Native stop ---
+      stopNativeTracking();
+      if (nativeCleanupRef.current) {
+        nativeCleanupRef.current();
+        nativeCleanupRef.current = null;
+      }
+    } else {
+      // --- Web stop ---
+      if (watchRef.current !== null) navigator.geolocation.clearWatch(watchRef.current);
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      watchRef.current = null;
+      intervalRef.current = null;
+      releaseWakeLock(wakeLockRef);
+    }
+
     setTracking(false);
     localStorage.removeItem(TRACKING_STORAGE_KEY);
-    releaseWakeLock(wakeLockRef);
     setNearbyStop(null);
     setActiveStops([]);
     toast({ title: 'GPS Tracking stopped' });
@@ -270,26 +323,24 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
     const wasTracking = localStorage.getItem(TRACKING_STORAGE_KEY) === 'true';
     if (wasTracking && !tracking) {
       autoResumedRef.current = true;
-      // Small delay to let context fully mount
       setTimeout(() => startTracking(), 500);
     }
   }, [driverId]); // intentionally only depend on driverId
 
-  // Restore GPS watch + Wake Lock when app comes back to foreground
+  // Restore GPS watch + Wake Lock when app comes back to foreground (web only)
   useEffect(() => {
+    if (isNativePlatform()) return; // Native plugin handles background by itself
+
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        // Check localStorage in case React state was lost
         const shouldTrack = localStorage.getItem(TRACKING_STORAGE_KEY) === 'true';
 
         if (shouldTrack && !tracking) {
-          // State was lost — restart everything
           startTracking();
           return;
         }
 
         if (tracking) {
-          // State is fine — just restart watch & interval (Android may have killed them)
           startWatchPosition((pos) => { posRef.current = pos; sendPosition(pos); });
 
           if (intervalRef.current) clearInterval(intervalRef.current);
@@ -297,10 +348,7 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
             if (posRef.current) sendPosition(posRef.current);
           }, 30000);
 
-          // Re-acquire Wake Lock (lost on visibility change)
           acquireWakeLock(wakeLockRef);
-
-          // Immediately send last known position
           if (posRef.current) sendPosition(posRef.current);
         }
       }
