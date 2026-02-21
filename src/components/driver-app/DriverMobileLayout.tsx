@@ -119,8 +119,10 @@ export const DriverMobileLayout = ({ children }: { children: ReactNode }) => {
     setConfirming(false);
   };
 
+  const isAndroid = /android/i.test(navigator.userAgent);
+
   return (
-    <div className="flex flex-col h-[100dvh] bg-background">
+    <div className={`flex flex-col h-[100dvh] bg-background ${isAndroid ? 'android-driver-app' : ''}`}>
       {/* Header */}
       <header className="flex items-center justify-between h-16 px-4 border-b bg-card shadow-sm">
         <div className="flex items-center gap-2">
