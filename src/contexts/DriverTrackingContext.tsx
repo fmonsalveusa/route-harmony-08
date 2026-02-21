@@ -27,6 +27,7 @@ interface DriverTrackingContextType {
 const DriverTrackingContext = createContext<DriverTrackingContextType | null>(null);
 
 const GEOFENCE_RADIUS_METERS = 300;
+const TRACKING_STORAGE_KEY = 'driver-tracking-active';
 
 function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371000;
@@ -39,6 +40,24 @@ function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: numbe
 
 const ACTIVE_LOAD_STATUSES = ['dispatched', 'in_transit', 'on_site_pickup', 'picked_up', 'on_site_delivery'];
 
+// --- Wake Lock helpers ---
+async function acquireWakeLock(ref: React.MutableRefObject<WakeLockSentinel | null>) {
+  try {
+    if ('wakeLock' in navigator) {
+      ref.current = await (navigator as any).wakeLock.request('screen');
+    }
+  } catch {
+    // Wake Lock denied or not supported — non-critical
+  }
+}
+
+function releaseWakeLock(ref: React.MutableRefObject<WakeLockSentinel | null>) {
+  if (ref.current) {
+    ref.current.release().catch(() => {});
+    ref.current = null;
+  }
+}
+
 export const DriverTrackingProvider = ({ children }: { children: ReactNode }) => {
   const { profile } = useAuth();
   const [tracking, setTracking] = useState(false);
@@ -50,8 +69,9 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const posRef = useRef<GeolocationPosition | null>(null);
   const dismissedStopsRef = useRef<Set<string>>(new Set());
-  const stopsRefreshTrigger = useRef(0);
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null);
   const [refreshStops, setRefreshStops] = useState(0);
+  const autoResumedRef = useRef(false);
 
   useEffect(() => {
     if (!profile?.email) return;
@@ -124,7 +144,6 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
       return;
     }
 
-    // Create notification for web app
     const tenant_id = await getTenantId();
     const { data: loadData } = await supabase
       .from('loads')
@@ -195,8 +214,12 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
     if (tracking) return;
 
     setTracking(true);
+    localStorage.setItem(TRACKING_STORAGE_KEY, 'true');
     dismissedStopsRef.current.clear();
     toast({ title: 'GPS Tracking started' });
+
+    // Acquire Wake Lock
+    acquireWakeLock(wakeLockRef);
 
     startWatchPosition((pos) => { posRef.current = pos; sendPosition(pos); });
 
@@ -211,37 +234,65 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
     watchRef.current = null;
     intervalRef.current = null;
     setTracking(false);
+    localStorage.removeItem(TRACKING_STORAGE_KEY);
+    releaseWakeLock(wakeLockRef);
     setNearbyStop(null);
     setActiveStops([]);
     toast({ title: 'GPS Tracking stopped' });
   }, []);
 
-  // Restore GPS watch when app comes back to foreground (Android PWA background freeze fix)
+  // Auto-resume tracking from localStorage on mount
+  useEffect(() => {
+    if (autoResumedRef.current) return;
+    if (!driverId) return;
+    const wasTracking = localStorage.getItem(TRACKING_STORAGE_KEY) === 'true';
+    if (wasTracking && !tracking) {
+      autoResumedRef.current = true;
+      // Small delay to let context fully mount
+      setTimeout(() => startTracking(), 500);
+    }
+  }, [driverId]); // intentionally only depend on driverId
+
+  // Restore GPS watch + Wake Lock when app comes back to foreground
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && tracking) {
-        // Restart the watch — Android may have killed it while backgrounded
-        startWatchPosition((pos) => { posRef.current = pos; sendPosition(pos); });
+      if (document.visibilityState === 'visible') {
+        // Check localStorage in case React state was lost
+        const shouldTrack = localStorage.getItem(TRACKING_STORAGE_KEY) === 'true';
 
-        // Also restart the interval if it was killed
-        if (intervalRef.current) clearInterval(intervalRef.current);
-        intervalRef.current = setInterval(() => {
+        if (shouldTrack && !tracking) {
+          // State was lost — restart everything
+          startTracking();
+          return;
+        }
+
+        if (tracking) {
+          // State is fine — just restart watch & interval (Android may have killed them)
+          startWatchPosition((pos) => { posRef.current = pos; sendPosition(pos); });
+
+          if (intervalRef.current) clearInterval(intervalRef.current);
+          intervalRef.current = setInterval(() => {
+            if (posRef.current) sendPosition(posRef.current);
+          }, 30000);
+
+          // Re-acquire Wake Lock (lost on visibility change)
+          acquireWakeLock(wakeLockRef);
+
+          // Immediately send last known position
           if (posRef.current) sendPosition(posRef.current);
-        }, 30000);
-
-        // Immediately send last known position to confirm "still alive"
-        if (posRef.current) sendPosition(posRef.current);
+        }
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [tracking, sendPosition, startWatchPosition]);
+  }, [tracking, sendPosition, startWatchPosition, startTracking]);
 
   useEffect(() => {
     return () => {
       if (watchRef.current !== null) navigator.geolocation.clearWatch(watchRef.current);
       if (intervalRef.current) clearInterval(intervalRef.current);
+      releaseWakeLock(wakeLockRef);
     };
   }, []);
 
