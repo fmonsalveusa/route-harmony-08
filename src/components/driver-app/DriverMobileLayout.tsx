@@ -147,7 +147,7 @@ export const DriverMobileLayout = ({ children }: { children: ReactNode }) => {
   return (
     <div className={`flex flex-col h-[100dvh] bg-background ${isAndroid ? 'android-driver-app' : ''}`}>
       {/* Header - Dark gradient style */}
-      <header className="flex items-center justify-between min-h-[64px] px-4 py-2 shadow-md safe-area-pt" style={{ background: 'linear-gradient(135deg, hsl(210, 52%, 24%), hsl(214, 52%, 20%))' }}>
+      <header className="flex items-center justify-between min-h-[64px] px-4 py-2 shadow-md" style={{ background: 'linear-gradient(135deg, hsl(210, 52%, 24%), hsl(214, 52%, 20%))', paddingTop: 'max(env(safe-area-inset-top, 0px), 8px)' }}>
         <div className="flex items-center gap-2">
           <img src={logoImg} alt="Logo" className="h-8 w-8 rounded" />
           <span className="text-base font-bold text-white">Load Up Driver</span>
