@@ -123,25 +123,25 @@ export const DriverMobileLayout = ({ children }: { children: ReactNode }) => {
 
   return (
     <div className={`flex flex-col h-[100dvh] bg-background ${isAndroid ? 'android-driver-app' : ''}`}>
-      {/* Header */}
-      <header className="flex items-center justify-between h-16 px-4 border-b bg-card shadow-sm">
+      {/* Header - Dark gradient style */}
+      <header className="flex items-center justify-between h-16 px-4 shadow-md" style={{ background: 'linear-gradient(135deg, hsl(210, 52%, 24%), hsl(214, 52%, 20%))' }}>
         <div className="flex items-center gap-2">
           <img src={logoImg} alt="Logo" className="h-8 w-8 rounded" />
-          <span className="text-base font-bold text-foreground">Load Up Driver</span>
+          <span className="text-base font-bold text-white">Load Up Driver</span>
         </div>
         <div className="flex items-center gap-2">
           {/* GPS Tracking Indicator */}
           {tracking && (
-            <Link to="/driver/tracking" className="flex items-center gap-1 px-2 py-1 rounded-full bg-success/15 text-success text-xs font-semibold animate-pulse">
+            <Link to="/driver/tracking" className="flex items-center gap-1 px-2 py-1 rounded-full bg-white/15 text-white text-xs font-semibold animate-pulse">
               <Navigation className="h-3.5 w-3.5" />
               GPS
             </Link>
           )}
           <div className="relative" ref={panelRef}>
-            <button onClick={() => setBellOpen(!bellOpen)} className="relative p-2 rounded-md text-muted-foreground hover:bg-muted">
+            <button onClick={() => setBellOpen(!bellOpen)} className="relative p-2 rounded-md text-white/80 hover:text-white hover:bg-white/10 transition-colors">
               <Bell className="h-6 w-6" />
               {unreadCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground animate-pulse">
+                <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-accent-foreground animate-pulse">
                   {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
               )}
@@ -172,7 +172,7 @@ export const DriverMobileLayout = ({ children }: { children: ReactNode }) => {
                               {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
                             </p>
                           </div>
-                          {!n.is_read && <div className="w-2 h-2 rounded-full bg-primary mt-1.5 flex-shrink-0" />}
+                          {!n.is_read && <div className="w-2 h-2 rounded-full bg-accent mt-1.5 flex-shrink-0" />}
                         </div>
                       </button>
                     ))}
@@ -181,7 +181,7 @@ export const DriverMobileLayout = ({ children }: { children: ReactNode }) => {
               </div>
             )}
           </div>
-          <button onClick={signOut} className="p-2 rounded-md text-muted-foreground hover:bg-muted">
+          <button onClick={signOut} className="p-2 rounded-md text-white/80 hover:text-white hover:bg-white/10 transition-colors">
             <LogOut className="h-5 w-5" />
           </button>
         </div>
@@ -217,20 +217,23 @@ export const DriverMobileLayout = ({ children }: { children: ReactNode }) => {
         {children}
       </main>
 
-      {/* Bottom Tab Bar */}
-      <nav className="flex items-center justify-around h-[72px] border-t bg-card shadow-[0_-2px_10px_rgba(0,0,0,0.05)] safe-area-pb">
+      {/* Bottom Tab Bar - Orange active indicator */}
+      <nav className="flex items-center justify-around h-[72px] border-t bg-card shadow-[0_-2px_10px_rgba(0,0,0,0.08)] safe-area-pb relative">
         {tabs.map(tab => {
           const active = location.pathname === tab.path || (tab.path !== '/driver' && location.pathname.startsWith(tab.path));
           return (
             <Link
               key={tab.path}
               to={tab.path}
-              className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg transition-colors ${
-                active ? 'text-primary' : 'text-muted-foreground'
+              className={`relative flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg transition-all duration-200 ${
+                active ? 'text-accent' : 'text-muted-foreground'
               }`}
             >
-              <tab.icon className={`h-6 w-6 ${active ? 'text-primary' : ''}`} />
-              <span className="text-xs font-medium">{tab.label}</span>
+              {active && (
+                <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-8 h-1 rounded-full bg-accent" />
+              )}
+              <tab.icon className={`h-6 w-6 transition-transform ${active ? 'scale-110' : ''}`} />
+              <span className={`text-xs ${active ? 'font-bold' : 'font-medium'}`}>{tab.label}</span>
             </Link>
           );
         })}

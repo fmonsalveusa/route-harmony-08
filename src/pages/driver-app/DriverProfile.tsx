@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { User, Phone, Mail, FileText, Truck, Calendar } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, differenceInDays } from 'date-fns';
 
 export default function DriverProfile() {
   const { profile } = useAuth();
@@ -28,38 +28,53 @@ export default function DriverProfile() {
 
   if (!driver) return <div className="flex items-center justify-center h-40"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" /></div>;
 
-  const InfoRow = ({ icon: Icon, label, value }: { icon: any; label: string; value: string }) => (
-    <div className="flex items-center gap-3 py-2">
+  const initials = driver.name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() || 'DR';
+
+  const ExpiryBadgeInline = ({ date }: { date: string | null }) => {
+    if (!date) return <span className="text-muted-foreground">—</span>;
+    const days = differenceInDays(new Date(date), new Date());
+    const formatted = format(new Date(date), 'MMM dd, yyyy');
+    if (days < 0) return <span className="text-destructive font-medium">{formatted} <Badge variant="destructive" className="ml-1 text-[10px]">Expired</Badge></span>;
+    if (days < 7) return <span className="text-destructive font-medium">{formatted} <Badge variant="destructive" className="ml-1 text-[10px]">{days}d left</Badge></span>;
+    if (days < 30) return <span className="text-warning font-medium">{formatted} <Badge className="ml-1 text-[10px] bg-warning text-warning-foreground">{days}d left</Badge></span>;
+    return <span className="font-medium">{formatted}</span>;
+  };
+
+  const InfoRow = ({ icon: Icon, label, value, children }: { icon: any; label: string; value?: string; children?: React.ReactNode }) => (
+    <div className="flex items-center gap-3 py-2.5">
       <Icon className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-      <div>
-        <p className="text-sm text-muted-foreground">{label}</p>
-        <p className="text-base font-medium">{value || '—'}</p>
+      <div className="flex-1">
+        <p className="text-xs text-muted-foreground">{label}</p>
+        {children || <p className="text-base font-medium">{value || '—'}</p>}
       </div>
     </div>
   );
 
   return (
-    <div className="p-4 pb-[calc(72px+env(safe-area-inset-bottom,0px))] space-y-4">
-      <h1 className="text-xl font-bold">My Profile</h1>
+    <div className="p-4 pb-[calc(72px+env(safe-area-inset-bottom,0px))] space-y-5">
+      {/* Avatar Header */}
+      <div className="flex flex-col items-center gap-2 pt-2">
+        <div className="w-20 h-20 rounded-full flex items-center justify-center text-2xl font-bold text-white" style={{ background: 'linear-gradient(135deg, hsl(214, 52%, 25%), hsl(210, 52%, 35%))' }}>
+          {initials}
+        </div>
+        <h1 className="text-xl font-bold">{driver.name}</h1>
+        <Badge variant="outline" className="text-xs">{driver.service_type?.replace('_', ' ')}</Badge>
+      </div>
 
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2"><User className="h-4 w-4" /> Personal Info</CardTitle>
         </CardHeader>
         <CardContent className="divide-y">
-          <InfoRow icon={User} label="Name" value={driver.name} />
           <InfoRow icon={Mail} label="Email" value={driver.email} />
           <InfoRow icon={Phone} label="Phone" value={driver.phone} />
           <InfoRow icon={FileText} label="License" value={driver.license} />
-          <InfoRow icon={Calendar} label="License Expires" value={driver.license_expiry ? format(new Date(driver.license_expiry), 'MMM dd, yyyy') : '—'} />
-          <InfoRow icon={Calendar} label="Medical Card Expires" value={driver.medical_card_expiry ? format(new Date(driver.medical_card_expiry), 'MMM dd, yyyy') : '—'} />
-          <div className="flex items-center gap-3 py-2">
-            <FileText className="h-4 w-4 text-muted-foreground" />
-            <div>
-              <p className="text-xs text-muted-foreground">Service Type</p>
-              <Badge variant="outline" className="text-xs">{driver.service_type?.replace('_', ' ')}</Badge>
-            </div>
-          </div>
+          <InfoRow icon={Calendar} label="License Expires">
+            <ExpiryBadgeInline date={driver.license_expiry} />
+          </InfoRow>
+          <InfoRow icon={Calendar} label="Medical Card Expires">
+            <ExpiryBadgeInline date={driver.medical_card_expiry} />
+          </InfoRow>
         </CardContent>
       </Card>
 

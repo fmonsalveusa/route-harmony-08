@@ -8,16 +8,13 @@ import { formatDate } from '@/lib/dateUtils';
 function shortLocation(address: string): string {
   if (!address) return '—';
   const parts = address.split(',').map(s => s.trim());
-  // Find the part containing a 2-letter state code
   for (let i = parts.length - 1; i >= 1; i--) {
     const match = parts[i].match(/\b([A-Z]{2})\b/);
     if (match) {
-      // The city is the part right before the state part
       const city = parts[i - 1] || parts[0];
       return `${city}, ${match[1]}`;
     }
   }
-  // Fallback: first two parts
   return parts.length >= 2 ? `${parts[0]}, ${parts[1]}` : parts[0];
 }
 
@@ -31,21 +28,17 @@ export default function DriverPayments() {
       <h1 className="text-xl font-bold">My Payments</h1>
 
       <div className="grid grid-cols-2 gap-3">
-        <Card>
-          <CardContent className="p-4 flex flex-col items-center gap-2">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 rounded-full bg-success/10"><TrendingUp className="h-5 w-5 text-success" /></div>
-              <p className="text-sm font-medium text-muted-foreground">Paid</p>
-            </div>
+        <Card className="overflow-hidden">
+          <CardContent className="p-4 flex flex-col items-center gap-2" style={{ background: 'linear-gradient(135deg, hsl(152, 60%, 40%, 0.08), hsl(152, 60%, 40%, 0.02))' }}>
+            <div className="p-2 rounded-full bg-success/10"><TrendingUp className="h-6 w-6 text-success" /></div>
+            <p className="text-xs font-medium text-muted-foreground">Paid</p>
             <p className="text-xl font-bold text-success">${totalPaid.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4 flex flex-col items-center gap-2">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 rounded-full bg-warning/10"><Clock className="h-5 w-5 text-warning" /></div>
-              <p className="text-sm font-medium text-muted-foreground">Pending</p>
-            </div>
+        <Card className="overflow-hidden">
+          <CardContent className="p-4 flex flex-col items-center gap-2" style={{ background: 'linear-gradient(135deg, hsl(38, 92%, 50%, 0.08), hsl(38, 92%, 50%, 0.02))' }}>
+            <div className="p-2 rounded-full bg-warning/10"><Clock className="h-6 w-6 text-warning" /></div>
+            <p className="text-xs font-medium text-muted-foreground">Pending</p>
             <p className="text-xl font-bold text-warning">${totalPending.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
           </CardContent>
         </Card>
@@ -58,7 +51,7 @@ export default function DriverPayments() {
           payments.map(p => {
             const adjAmount = p.total_adjustments ?? 0;
             return (
-              <Card key={p.id}>
+              <Card key={p.id} className={`border-l-[3px] ${p.status === 'paid' ? 'border-l-success' : 'border-l-warning'}`}>
                 <CardContent className="p-3 space-y-2">
                   {/* Header: Load # + Status */}
                   <div className="flex items-center justify-between">
