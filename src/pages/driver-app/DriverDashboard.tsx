@@ -61,21 +61,21 @@ export default function DriverDashboard() {
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3">
         <Card>
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 rounded-full bg-primary/10"><Package className="h-6 w-6 text-primary" /></div>
-            <div>
-              <p className="text-3xl font-bold">{stats.loadsMonth}</p>
-              <p className="text-sm text-muted-foreground">Loads this month</p>
+          <CardContent className="p-4 flex flex-col items-center gap-2">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-full bg-primary/10"><Package className="h-5 w-5 text-primary" /></div>
+              <p className="text-sm font-medium text-muted-foreground">Loads this month</p>
             </div>
+            <p className="text-2xl font-bold">{stats.loadsMonth}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 rounded-full bg-success/10"><DollarSign className="h-6 w-6 text-success" /></div>
-            <div>
-              <p className="text-3xl font-bold">${stats.earningsMonth.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
-              <p className="text-sm text-muted-foreground">Earnings this month</p>
+          <CardContent className="p-4 flex flex-col items-center gap-2">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-full bg-success/10"><DollarSign className="h-5 w-5 text-success" /></div>
+              <p className="text-sm font-medium text-muted-foreground">Earnings this month</p>
             </div>
+            <p className="text-2xl font-bold">${stats.earningsMonth.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
           </CardContent>
         </Card>
       </div>
