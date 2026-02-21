@@ -1,64 +1,24 @@
 
 
-# Plan: Solucion Robusta para Escaner en Android
+# Plan: Deshabilitar Escaner en Android, mantenerlo en iPhone
 
-## Problema
-El pipeline de escaneo (deteccion de bordes, recorte, mejora) no funciona en el Android de Jorge. Las correcciones anteriores (ArrayBuffer, resize, spinner) no resolvieron el problema. Es probable que las funciones de canvas (`new Image()`, `canvas.toDataURL()`) fallen silenciosamente en ciertos dispositivos Android.
+## Resumen
+Detectar si el dispositivo es Android usando `navigator.userAgent`. En Android, ocultar el boton "Scanear BOL/POD" para que los conductores solo usen el boton de camara/galeria nativo. En iPhone (iOS), el boton del escaner seguira visible y funcional como siempre.
 
-## Solucion (3 partes)
+## Cambios
 
-### 1. Modo "Escaneo Rapido" (fallback garantizado)
-Agregar un tercer boton **"Subir directo"** que salta todo el pipeline de procesamiento (sin deteccion de bordes, sin recorte, sin perspectiva) y solo aplica la mejora de contraste basica antes de subir. Esto garantiza que Jorge pueda subir documentos aunque el pipeline completo falle.
+### Archivo: `src/components/driver-app/StopCard.tsx`
 
-### 2. Reemplazar `new Image()` con `createImageBitmap`
-La funcion `new Image()` con data URLs grandes falla silenciosamente en muchos navegadores Android. `createImageBitmap()` es una API nativa del navegador mas robusta y asincrona que maneja mejor imagenes grandes. Se actualizaran las funciones `resizeForCrop`, `resizeForDetection`, y `enhanceImage` para usar esta API.
+1. Agregar una variable que detecte si el dispositivo es Android:
+   ```
+   const isAndroid = /android/i.test(navigator.userAgent);
+   ```
 
-### 3. Flujo de App Externa
-Agregar instrucciones claras en la interfaz para que Jorge pueda usar apps como Google Drive Scanner, Adobe Scan, o la app de camara nativa de Samsung/Google (que incluyen modo documento), y luego seleccionar la imagen ya escaneada con el boton "Galeria".
+2. Envolver el boton "Scanear BOL / Scanear POD" (linea ~276) en una condicion `{!isAndroid && (...)}` para que solo se muestre en dispositivos que NO son Android (es decir, iPhone/iPad/desktop).
 
----
+3. El componente `DocumentScanner` y su import pueden quedarse sin cambios ya que simplemente nunca se abrira en Android.
 
-## Detalles Tecnicos
+### Resultado
+- **Android**: Solo vera el boton de camara/galeria nativo para subir fotos directamente.
+- **iPhone/iPad/Desktop**: Vera el boton "Scanear BOL/POD" con el pipeline completo de escaneo (recorte, mejora de contraste, etc.).
 
-### Cambios en `src/components/driver-app/DocumentScanner.tsx`
-
-**a) Nueva funcion `createImageBitmapSafe`:**
-```text
-- Wrapper que usa createImageBitmap cuando esta disponible
-- Fallback a new Image() si no esta soportado
-- Convierte Blob directamente sin pasar por data URL cuando es posible
-```
-
-**b) Refactorizar funciones de canvas:**
-- `resizeForCrop()`: Usar `createImageBitmap` + `OffscreenCanvas` o canvas regular
-- `resizeForDetection()`: Mismo cambio
-- `enhanceImage()`: Mismo cambio
-- `fileToDataUrl()`: Agregar opcion de retornar Blob directamente para evitar conversion innecesaria a base64
-
-**c) Nuevo boton "Subir directo":**
-```text
-- Abre el picker de camara/galeria
-- Comprime la imagen con compressImage() existente
-- Sube directamente sin pasar por crop overlay ni edge detection
-- Muestra toast de confirmacion
-```
-
-**d) Mensaje informativo:**
-- Al abrir el escaner, mostrar un tip: "Para mejor calidad, escanea primero con tu app de camara y luego selecciona desde Galeria"
-
-### Flujo actualizado en Android
-
-```text
-Usuario abre "Scanear BOL"
-  |
-  +-- Opcion 1: "Camara" -> intenta pipeline completo (con createImageBitmap)
-  |     Si funciona -> crop overlay -> mejora -> subir
-  |     Si falla -> fallback automatico a subida directa
-  |
-  +-- Opcion 2: "Galeria" -> seleccionar imagen ya escaneada -> pipeline completo
-  |
-  +-- Opcion 3: "Subir directo" -> tomar/seleccionar foto -> comprimir -> subir sin procesamiento
-```
-
-### Archivos a modificar
-- `src/components/driver-app/DocumentScanner.tsx` - Logica principal, nuevo boton, createImageBitmap, fallback automatico
