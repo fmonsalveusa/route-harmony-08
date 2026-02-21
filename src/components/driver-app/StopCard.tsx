@@ -33,6 +33,7 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
   const [uploading, setUploading] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
 
+  const isAndroid = /android/i.test(navigator.userAgent);
   const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(stop.address)}`;
 
   const handleArrived = async () => {
@@ -273,10 +274,12 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
               </Button>
               <input type="file" accept="image/*,application/pdf" capture="environment" multiple className="hidden" onChange={handleFileUpload} />
             </label>
-            <Button variant="default" size="sm" className="gap-1.5 text-sm" onClick={() => setScannerOpen(true)}>
-              <Camera className="h-4 w-4" />
-              {stop.stop_type === 'pickup' ? 'Scanear BOL' : 'Scanear POD'}
-            </Button>
+            {!isAndroid && (
+              <Button variant="default" size="sm" className="gap-1.5 text-sm" onClick={() => setScannerOpen(true)}>
+                <Camera className="h-4 w-4" />
+                {stop.stop_type === 'pickup' ? 'Scanear BOL' : 'Scanear POD'}
+              </Button>
+            )}
           </>
         )}
       </div>
