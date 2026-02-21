@@ -1,36 +1,87 @@
 
 
-## Plan: Redisenar la pagina de Tracking con el estilo de Tracking UP
+# Rediseno Visual de la App del Conductor (Estilo SmartHop)
 
-### Que cambia
+## Resumen
+Redisenar visualmente toda la app movil del conductor inspirandose en el estilo limpio y profesional de SmartHop, e incorporar funcionalidades operativas relevantes para conductores (descartando busqueda/negociacion/booking de cargas).
 
-Se va a redisenar la pagina de GPS Tracking en la app movil para que tenga el mismo look y funcionalidad visual que tu app [Tracking UP](/projects/b245c5ca-fb60-40b4-9128-15101906c515), incluyendo:
+---
 
-- **Switch toggle** en lugar de un boton grande para activar/desactivar el rastreo
-- **Tarjeta de estado** con icono animado y descripcion del estado actual
-- **Alertas de permisos** que avisen si la ubicacion esta denegada o pendiente de autorizar
-- **Tarjeta de ubicacion actual** con cuadricula de latitud/longitud, velocimetro y precision GPS
-- **Barra de estado fija** en la parte inferior que muestre si esta conectado o desconectado
+## Cambios Visuales Globales
 
-Se mantiene toda la logica actual (Wake Lock, localStorage, geofencing, auto-resume) ya que es mas robusta que la de Tracking UP.
+### 1. Header y Bottom Tab Bar (DriverMobileLayout)
+- Fondo del header con degradado sutil azul oscuro (#1e3a5f) en lugar de blanco plano
+- Texto del header en blanco para contraste
+- Bottom tab bar con indicador naranja activo (linea superior o punto) en vez de solo color de texto
+- Iconos ligeramente mas grandes (h-7 w-7) con transicion suave
 
-### Detalles tecnicos
+### 2. Tarjetas de Carga Rediseñadas (SmartHop Trip Card Style)
+- **Origen/Destino como protagonistas**: ciudades en texto grande y bold, con una linea vertical punteada conectando pickup y delivery (estilo timeline visual)
+- **Grid de datos**: Rate, RPM, Miles y Broker en un grid 2x2 compacto con etiquetas en gris y valores en bold
+- **Status badge** con esquinas mas redondeadas y colores consistentes con el sistema arcoiris existente
+- **Borde izquierdo de color** segun status (linea de 3px a la izquierda de la card)
 
-**Archivo 1: `src/contexts/DriverTrackingContext.tsx`**
-- Ampliar la interfaz `DriverTrackingContextType` para exponer `speed`, `accuracy` y `permissionStatus`
-- Agregar estado `permissionStatus` (`prompt` | `granted` | `denied` | `unknown`) usando `navigator.permissions.query`
-- Exponer `speed` y `accuracy` junto con `lastPosition` (actualmente se envian al servidor pero no se exponen al UI)
+### 3. Dashboard del Conductor (DriverDashboard)
+- **Stat cards con iconos mas grandes** y fondo con gradiente sutil
+- **Agregar 2 stats adicionales**: "Miles this month" y "Avg RPM" (calculados de las cargas del mes)
+- **Seccion "Next Stop"**: card destacada que muestra el proximo stop pendiente con boton directo de navegacion a Google Maps (inspirado en el trip summary de SmartHop)
+- **Barra de progreso de la carga activa**: indicador visual de en que paso va la carga (Dispatched > In Transit > Pickup > Delivery)
 
-**Archivo 2: `src/pages/driver-app/DriverTracking.tsx`**
-- Reescribir la UI completa siguiendo el patron de Tracking UP:
-  - Card de "Estado de Rastreo" con Switch toggle + icono + texto descriptivo
-  - Card de alerta si `permissionStatus === 'denied'` (fondo rojo, icono de advertencia)
-  - Card de alerta si `permissionStatus === 'prompt'` (fondo amarillo, pedir permiso)
-  - Card de "Ubicacion Actual" (solo visible cuando tracking esta activo y hay coordenadas):
-    - Grid 2 columnas: Latitud / Longitud
-    - Velocimetro con icono
-    - Indicador de precision GPS con colores (verde < 10m, amarillo < 50m, rojo > 50m)
-  - Barra inferior fija con estado de conexion (verde = transmitiendo, gris = desconectado)
+### 4. Detalle de Carga (DriverLoadDetail)
+- **Header con fondo de color** segun status (sutil gradiente)
+- **Seccion de ruta visual**: timeline vertical con circulos de pickup (verde) y delivery (rojo) conectados por linea punteada, mostrando ciudad/estado y fecha
+- **Datos financieros en card con grid**: Rate, RPM, Miles, Driver Pay en un grid limpio similar a SmartHop
+- **Boton de Rate Confirmation** mas destacado con icono de PDF
 
-### Resultado esperado
-La pagina de tracking se vera y se sentira igual que la app Tracking UP pero manteniendo toda la logica avanzada de persistencia, Wake Lock y geofencing que ya tiene este proyecto.
+### 5. Pagina de Pagos (DriverPayments)
+- **Stat cards con gradiente** consistente con el dashboard
+- **Payment cards con linea lateral de color** (verde = paid, naranja = pending)
+- Agregar icono de descarga de recibo cuando el pago es "paid"
+
+### 6. Perfil del Conductor (DriverProfile)
+- **Avatar circular grande** en la parte superior con iniciales del nombre
+- **Cards agrupadas** con bordes mas suaves y espaciado mas generoso
+- **Badges de estado** para documentos proximos a vencer (amarillo/rojo)
+
+---
+
+## Funcionalidades Nuevas (Relevantes para Conductores)
+
+### 7. Seccion "Next Stop" en Dashboard
+- Muestra automaticamente el siguiente stop pendiente (sin arrived_at) de la carga activa
+- Incluye: direccion, tipo (Pickup/Delivery), boton "Navigate" directo
+- Se calcula desde las cargas activas y sus stops
+
+### 8. Barra de Progreso de Carga
+- Indicador horizontal con los pasos: Dispatched > In Transit > On Site > Picked Up/Delivered
+- Se muestra en el Dashboard (carga activa) y en el Load Detail
+- Cada paso completado se ilumina con el color del sistema
+
+### 9. Resumen de Millas del Mes
+- Calcula total de millas de las cargas completadas en el mes
+- Calcula RPM promedio del mes
+- Se muestra en el grid de stats del dashboard (4 cards en vez de 2)
+
+### 10. Indicador de Documentos por Vencer en el Perfil
+- Badges con countdown (dias restantes) para licencia y medical card
+- Color amarillo si quedan menos de 30 dias, rojo si quedan menos de 7
+
+---
+
+## Detalles Tecnicos
+
+### Archivos a Modificar
+1. **`src/components/driver-app/DriverMobileLayout.tsx`** - Header/tab bar con nuevo estilo
+2. **`src/pages/driver-app/DriverDashboard.tsx`** - Rediseno completo: stats grid 2x2, next stop, progress bar
+3. **`src/pages/driver-app/DriverLoads.tsx`** - Load cards con nuevo layout (timeline visual, borde de color, grid de datos)
+4. **`src/pages/driver-app/DriverLoadDetail.tsx`** - Header colorido, timeline de ruta, grid financiero, progress bar
+5. **`src/pages/driver-app/DriverPayments.tsx`** - Stat cards con gradiente, borde lateral en payment cards
+6. **`src/pages/driver-app/DriverProfile.tsx`** - Avatar, badges de expiracion, layout mas generoso
+7. **`src/components/driver-app/StopCard.tsx`** - Bordes mas suaves, iconos mas claros
+
+### Archivo Nuevo
+8. **`src/components/driver-app/LoadProgressBar.tsx`** - Componente reutilizable de barra de progreso de carga
+
+### No Requiere Cambios de Base de Datos
+Toda la informacion necesaria (millas, RPM, stops, expiraciones) ya existe en las tablas actuales. Solo se agregan calculos en el frontend.
+
