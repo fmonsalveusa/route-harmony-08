@@ -68,7 +68,7 @@ const ProtectedRoute = ({ children, masterOnly = false }: { children: React.Reac
 };
 
 const DriverWrapper = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, role, isMasterAdmin } = useAuth();
 
   if (loading) {
     return (
@@ -79,6 +79,12 @@ const DriverWrapper = () => {
   }
 
   if (!user) return <Navigate to="/auth" replace />;
+
+  // Non-drivers should not access the driver app
+  if (role && role !== 'driver') {
+    if (isMasterAdmin) return <Navigate to="/master" replace />;
+    return <Navigate to="/dashboard" replace />;
+  }
 
   return (
     <DriverTrackingProvider>
