@@ -1,14 +1,25 @@
 import { useState, useEffect, useCallback } from 'react';
-import { MapPin, Navigation, Camera, Check, Clock, Image, Loader2, Trash2, PackageCheck, CheckCircle2 } from 'lucide-react';
+import { MapPin, Navigation, Camera, Check, Clock, Image, Loader2, Trash2, PackageCheck, CheckCircle2, ImagePlus, ScanLine, ChevronLeft, ChevronRight, X, FileText } from 'lucide-react';
 import { DocumentScanner } from './DocumentScanner';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { getTenantId } from '@/hooks/useTenantId';
 import { createNotification } from '@/hooks/useNotifications';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { compressImage } from '@/lib/imageCompression';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface StopCardProps {
   stop: {
@@ -23,7 +34,7 @@ interface StopCardProps {
   loadRef: string;
   driverName: string;
   onUpdate: () => void;
-  podDocuments: { id: string; file_name: string; file_url: string }[];
+  podDocuments: { id: string; file_name: string; file_url: string; created_at?: string; file_type?: string }[];
   loadStatus?: string;
   isLastDelivery?: boolean;
 }
@@ -32,9 +43,56 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
   const [arriving, setArriving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
+  const [previewIndex, setPreviewIndex] = useState<number | null>(null);
+  const [deleteDoc, setDeleteDoc] = useState<{ id: string; file_url: string; file_name: string } | null>(null);
 
   const isAndroid = /android/i.test(navigator.userAgent);
   const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(stop.address)}`;
+
+  const isArrived = !!stop.arrived_at;
+  const stopPods = podDocuments.filter(p => (p as any).stop_id === stop.id);
+  const hasDocuments = stopPods.length > 0;
+  const isComplete = hasDocuments; // At least 1 doc = complete
+
+  // Resolve signed URLs for thumbnails
+  const [resolvedUrls, setResolvedUrls] = useState<Record<string, string>>({});
+  const [resolvingUrls, setResolvingUrls] = useState(false);
+
+  const resolveUrls = useCallback(async () => {
+    const currentStopPods = podDocuments.filter(p => (p as any).stop_id === stop.id);
+    if (currentStopPods.length === 0) {
+      setResolvedUrls({});
+      return;
+    }
+    setResolvingUrls(true);
+    const urls: Record<string, string> = {};
+    for (const doc of currentStopPods) {
+      try {
+        let path = doc.file_url;
+        if (path.startsWith('http')) {
+          const match = path.match(/\/storage\/v1\/object\/sign\/driver-documents\/([^?]+)/);
+          if (match?.[1]) {
+            path = decodeURIComponent(match[1]);
+          } else {
+            urls[doc.id] = path;
+            continue;
+          }
+        }
+        const { data } = await supabase.storage
+          .from('driver-documents')
+          .createSignedUrl(path, 3600);
+        if (data?.signedUrl) urls[doc.id] = data.signedUrl;
+      } catch {
+        // skip
+      }
+    }
+    setResolvedUrls(urls);
+    setResolvingUrls(false);
+  }, [podDocuments, stop.id]);
+
+  useEffect(() => {
+    resolveUrls();
+  }, [resolveUrls]);
 
   const handleArrived = async () => {
     setArriving(true);
@@ -46,10 +104,8 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } else {
-      // Update load status to on_site
       const newStatus = stop.stop_type === 'pickup' ? 'on_site_pickup' : 'on_site_delivery';
       await supabase.from('loads').update({ status: newStatus }).eq('id', stop.load_id);
-
       await createNotification({
         type: 'driver_arrived',
         title: `Driver arrived at ${stop.stop_type}`,
@@ -80,7 +136,6 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
 
   const handleDelivered = async () => {
     setChangingStatus(true);
-    // Import and call generatePaymentsForLoad from parent context
     await supabase.from('loads').update({ status: 'delivered' }).eq('id', stop.load_id);
     await createNotification({
       type: 'status_changed',
@@ -138,51 +193,7 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
     e.target.value = '';
   };
 
-  const isArrived = !!stop.arrived_at;
-  const stopPods = podDocuments.filter(p => (p as any).stop_id === stop.id);
-
-  // Resolve signed URLs for thumbnails
-  const [resolvedUrls, setResolvedUrls] = useState<Record<string, string>>({});
-  const [resolvingUrls, setResolvingUrls] = useState(false);
-
-  const resolveUrls = useCallback(async () => {
-    const currentStopPods = podDocuments.filter(p => (p as any).stop_id === stop.id);
-    if (currentStopPods.length === 0) {
-      setResolvedUrls({});
-      return;
-    }
-    setResolvingUrls(true);
-    const urls: Record<string, string> = {};
-    for (const doc of currentStopPods) {
-      try {
-        let path = doc.file_url;
-        if (path.startsWith('http')) {
-          const match = path.match(/\/storage\/v1\/object\/sign\/driver-documents\/([^?]+)/);
-          if (match?.[1]) {
-            path = decodeURIComponent(match[1]);
-          } else {
-            urls[doc.id] = path;
-            continue;
-          }
-        }
-        const { data } = await supabase.storage
-          .from('driver-documents')
-          .createSignedUrl(path, 3600);
-        if (data?.signedUrl) urls[doc.id] = data.signedUrl;
-      } catch {
-        // skip
-      }
-    }
-    setResolvedUrls(urls);
-    setResolvingUrls(false);
-  }, [podDocuments, stop.id]);
-
-  useEffect(() => {
-    resolveUrls();
-  }, [resolveUrls]);
-
   const handleDeletePod = async (doc: { id: string; file_url: string; file_name: string }) => {
-    // Delete storage file
     let path = doc.file_url;
     if (path.startsWith('http')) {
       const match = path.match(/\/storage\/v1\/object\/sign\/driver-documents\/([^?]+)/);
@@ -191,7 +202,6 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
     if (path && !path.startsWith('http')) {
       await supabase.storage.from('driver-documents').remove([path]);
     }
-    // Delete DB record
     const { error } = await supabase.from('pod_documents').delete().eq('id', doc.id);
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
@@ -201,10 +211,7 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
     }
   };
 
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-
   const handleOpenPod = async (doc: { id: string; file_url: string }) => {
-    // Open blank window synchronously to avoid popup blocker
     const win = window.open('', '_blank');
     let url = resolvedUrls[doc.id];
     if (!url) {
@@ -226,15 +233,42 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
     }
   };
 
+  const isImageDoc = (doc: any) =>
+    doc.file_name?.match(/\.(jpg|jpeg|png|gif|webp)/i) || doc.file_type === 'image';
+
+  const truncateName = (name: string, max = 10) => {
+    if (!name) return '';
+    const ext = name.includes('.') ? '.' + name.split('.').pop() : '';
+    const base = name.replace(ext, '');
+    if (base.length <= max) return name;
+    return base.substring(0, max) + '…' + ext;
+  };
+
   return (
     <div className={`rounded-xl border p-4 space-y-3 ${isArrived ? 'border-success/50 bg-success/5' : 'bg-card'}`}>
+      {/* Header with doc counter */}
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-start gap-2">
           <div className={`mt-0.5 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white ${stop.stop_type === 'pickup' ? 'bg-success' : 'bg-destructive'}`}>
             {stop.stop_type === 'pickup' ? 'P' : 'D'}
           </div>
           <div>
-            <p className="text-base font-semibold">{stop.stop_type === 'pickup' ? 'Pick Up' : 'Delivery'}</p>
+            <div className="flex items-center gap-2">
+              <p className="text-base font-semibold">{stop.stop_type === 'pickup' ? 'Pick Up' : 'Delivery'}</p>
+              {stopPods.length > 0 && (
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 gap-0.5">
+                  <Camera className="h-2.5 w-2.5" />
+                  {stopPods.length}
+                </Badge>
+              )}
+              {isArrived && (
+                isComplete ? (
+                  <CheckCircle2 className="h-4 w-4 text-success" />
+                ) : (
+                  <Clock className="h-4 w-4 text-warning" />
+                )
+              )}
+            </div>
             <p className="text-sm text-muted-foreground">{stop.address}</p>
             {stop.date && <p className="text-sm text-muted-foreground mt-0.5">{format(new Date(stop.date), 'MMM dd, yyyy')}</p>}
           </div>
@@ -248,6 +282,7 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
         )}
       </div>
 
+      {/* Action buttons */}
       <div className="flex flex-wrap gap-2">
         <a href={googleMapsUrl} target="_blank" rel="noopener noreferrer">
           <Button variant="outline" size="sm" className="gap-1.5 text-sm">
@@ -261,28 +296,127 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
             {arriving ? 'Marking...' : 'Arrived'}
           </Button>
         )}
-
-        {isArrived && (
-          <>
-            <label>
-              <Button variant="outline" size="sm" className="gap-1.5 text-sm" asChild disabled={uploading}>
-                <span>
-                  <Camera className="h-4 w-4" />
-                  {uploading ? 'Uploading...' : stop.stop_type === 'pickup' ? (isAndroid ? 'Load & BOL Pictures' : 'Load Pictures') : 'Upload POD'}
-                </span>
-              </Button>
-              <input type="file" accept="image/*,application/pdf" capture="environment" multiple className="hidden" onChange={handleFileUpload} />
-            </label>
-            {!isAndroid && (
-              <Button variant="default" size="sm" className="gap-1.5 text-sm" onClick={() => setScannerOpen(true)}>
-                <Camera className="h-4 w-4" />
-                {stop.stop_type === 'pickup' ? 'Scanear BOL' : 'Scanear POD'}
-              </Button>
-            )}
-          </>
-        )}
       </div>
 
+      {/* Upload buttons - reorganized SmartHop style */}
+      {isArrived && (
+        <div className={`rounded-lg border-2 p-3 space-y-3 transition-colors ${isComplete ? 'border-success/40 bg-success/5' : 'border-dashed border-muted-foreground/25'}`}>
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+              {stop.stop_type === 'pickup' ? 'BOL / Load Pictures' : 'Proof of Delivery'}
+            </p>
+            {isComplete && <CheckCircle2 className="h-4 w-4 text-success" />}
+          </div>
+
+          {/* Upload skeleton when uploading */}
+          {uploading && (
+            <div className="flex gap-2">
+              <Skeleton className="w-20 h-20 rounded-lg" />
+              <div className="space-y-2 flex-1">
+                <Skeleton className="h-3 w-24" />
+                <Skeleton className="h-3 w-16" />
+              </div>
+            </div>
+          )}
+
+          {/* Document thumbnails grid - 80x80 */}
+          {stopPods.length > 0 && (
+            <div className="grid grid-cols-4 gap-2">
+              {stopPods.map((doc, idx) => (
+                <div key={doc.id} className="relative group">
+                  <button
+                    onClick={() => setPreviewIndex(idx)}
+                    type="button"
+                    className="w-full"
+                  >
+                    <div className="w-full aspect-square rounded-lg border overflow-hidden bg-muted flex items-center justify-center shadow-sm hover:shadow-md transition-shadow">
+                      {resolvedUrls[doc.id] && isImageDoc(doc) ? (
+                        <img src={resolvedUrls[doc.id]} alt={doc.file_name} className="w-full h-full object-cover" />
+                      ) : resolvingUrls ? (
+                        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                      ) : (
+                        <FileText className="h-6 w-6 text-muted-foreground" />
+                      )}
+                    </div>
+                  </button>
+                  {/* File name */}
+                  <p className="text-[10px] text-muted-foreground text-center mt-1 truncate leading-tight">
+                    {truncateName(doc.file_name)}
+                  </p>
+                  {/* Timestamp */}
+                  {(doc as any).created_at && (
+                    <p className="text-[9px] text-muted-foreground/60 text-center leading-tight">
+                      {format(new Date((doc as any).created_at), 'h:mm a')}
+                    </p>
+                  )}
+                  {/* Delete button - visible on touch/hover */}
+                  <button
+                    type="button"
+                    className="absolute -top-1.5 -right-1.5 bg-destructive text-destructive-foreground rounded-full w-5 h-5 flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDeleteDoc(doc as any);
+                    }}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Upload action buttons */}
+          <div className="grid grid-cols-2 gap-2">
+            {/* Camera button */}
+            <label className="cursor-pointer">
+              <div className="flex items-center justify-center gap-1.5 h-10 rounded-lg bg-info/10 text-info border border-info/20 text-sm font-medium hover:bg-info/20 transition-colors">
+                <Camera className="h-4 w-4" />
+                <span>Camera</span>
+              </div>
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                multiple
+                className="hidden"
+                onChange={handleFileUpload}
+                disabled={uploading}
+              />
+            </label>
+
+            {/* Gallery button */}
+            <label className="cursor-pointer">
+              <div className="flex items-center justify-center gap-1.5 h-10 rounded-lg bg-muted text-muted-foreground border border-border text-sm font-medium hover:bg-muted/80 transition-colors">
+                <ImagePlus className="h-4 w-4" />
+                <span>Gallery</span>
+              </div>
+              <input
+                type="file"
+                accept="image/*,application/pdf"
+                multiple
+                className="hidden"
+                onChange={handleFileUpload}
+                disabled={uploading}
+              />
+            </label>
+          </div>
+
+          {/* Scanner button - iOS/Desktop only */}
+          {!isAndroid && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full gap-1.5 text-sm border-primary/30 text-primary hover:bg-primary/5"
+              onClick={() => setScannerOpen(true)}
+            >
+              <ScanLine className="h-4 w-4" />
+              {stop.stop_type === 'pickup' ? 'Scan BOL Document' : 'Scan POD Document'}
+            </Button>
+          )}
+        </div>
+      )}
+
+      {/* Status change buttons */}
       {isArrived && stop.stop_type === 'pickup' && loadStatus !== 'picked_up' && loadStatus !== 'on_site_delivery' && loadStatus !== 'delivered' && loadStatus !== 'paid' && (
         <div className="flex justify-end">
           <Button size="sm" className="gap-1.5 text-sm bg-primary hover:bg-primary/90" onClick={handlePickedUp} disabled={changingStatus}>
@@ -301,54 +435,94 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
         </div>
       )}
 
-      {stopPods.length > 0 && (
-        <div className="flex flex-wrap gap-2 pt-1">
-          {stopPods.map(doc => (
-            <div key={doc.id} className="relative group">
-              <button onClick={() => handleOpenPod(doc)} type="button">
-                <div className="w-16 h-16 rounded-lg border overflow-hidden bg-muted flex items-center justify-center">
-                  {resolvedUrls[doc.id] && (doc.file_name.match(/\.(jpg|jpeg|png|gif|webp)/i) || (doc as any).file_type === 'image') ? (
-                    <img src={resolvedUrls[doc.id]} alt={doc.file_name} className="w-full h-full object-cover" />
-                  ) : resolvingUrls ? (
-                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                  ) : (
-                    <Image className="h-5 w-5 text-muted-foreground" />
-                  )}
-                </div>
-              </button>
-              {deletingId === doc.id ? (
-                <div className="absolute -top-1 -right-1 flex gap-0.5">
-                  <button
-                    type="button"
-                    className="bg-destructive text-destructive-foreground rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold shadow"
-                    onClick={async () => {
-                      await handleDeletePod(doc as any);
-                      setDeletingId(null);
-                    }}
-                  >
-                    ✓
-                  </button>
-                  <button
-                    type="button"
-                    className="bg-muted text-muted-foreground rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold shadow border"
-                    onClick={() => setDeletingId(null)}
-                  >
-                    ✕
-                  </button>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full w-5 h-5 flex items-center justify-center shadow opacity-0 group-active:opacity-100 transition-opacity"
-                  onClick={() => setDeletingId(doc.id)}
+      {/* Inline Preview Overlay */}
+      {previewIndex !== null && stopPods[previewIndex] && (
+        <div className="fixed inset-0 z-50 bg-black/90 flex flex-col items-center justify-center" onClick={() => setPreviewIndex(null)}>
+          <button className="absolute top-4 right-4 text-white p-2" onClick={() => setPreviewIndex(null)}>
+            <X className="h-6 w-6" />
+          </button>
+
+          {/* Image */}
+          <div className="flex-1 flex items-center justify-center w-full px-4" onClick={e => e.stopPropagation()}>
+            {resolvedUrls[stopPods[previewIndex].id] && isImageDoc(stopPods[previewIndex]) ? (
+              <img
+                src={resolvedUrls[stopPods[previewIndex].id]}
+                alt={stopPods[previewIndex].file_name}
+                className="max-w-full max-h-[75vh] object-contain rounded-lg"
+              />
+            ) : (
+              <div className="text-white text-center space-y-2">
+                <FileText className="h-16 w-16 mx-auto opacity-60" />
+                <p className="text-sm">{stopPods[previewIndex].file_name}</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-white border-white/30"
+                  onClick={() => handleOpenPod(stopPods[previewIndex])}
                 >
-                  <Trash2 className="h-3 w-3" />
+                  Open File
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {/* Nav arrows */}
+          {stopPods.length > 1 && (
+            <>
+              {previewIndex > 0 && (
+                <button
+                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/20 backdrop-blur rounded-full p-2"
+                  onClick={e => { e.stopPropagation(); setPreviewIndex(previewIndex - 1); }}
+                >
+                  <ChevronLeft className="h-6 w-6 text-white" />
                 </button>
               )}
-            </div>
-          ))}
+              {previewIndex < stopPods.length - 1 && (
+                <button
+                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/20 backdrop-blur rounded-full p-2"
+                  onClick={e => { e.stopPropagation(); setPreviewIndex(previewIndex + 1); }}
+                >
+                  <ChevronRight className="h-6 w-6 text-white" />
+                </button>
+              )}
+            </>
+          )}
+
+          {/* Counter + timestamp */}
+          <div className="text-white text-center py-3 space-y-0.5">
+            <p className="text-sm font-medium">{previewIndex + 1} / {stopPods.length}</p>
+            {(stopPods[previewIndex] as any).created_at && (
+              <p className="text-xs text-white/60">{format(new Date((stopPods[previewIndex] as any).created_at), 'MMM dd, h:mm a')}</p>
+            )}
+          </div>
         </div>
       )}
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={!!deleteDoc} onOpenChange={(open) => { if (!open) setDeleteDoc(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete document?</AlertDialogTitle>
+            <AlertDialogDescription>
+              "{deleteDoc?.file_name}" will be permanently deleted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async () => {
+                if (deleteDoc) {
+                  await handleDeletePod(deleteDoc);
+                  setDeleteDoc(null);
+                }
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <DocumentScanner
         open={scannerOpen}

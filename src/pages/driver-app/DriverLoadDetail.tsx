@@ -17,7 +17,7 @@ export default function DriverLoadDetail() {
   const navigate = useNavigate();
   const [load, setLoad] = useState<any>(null);
   const [stops, setStops] = useState<any[]>([]);
-  const [podDocs, setPodDocs] = useState<any[]>([]);
+  const [podDocs, setPodDocs] = useState<{ id: string; file_name: string; file_url: string; stop_id: string | null; created_at: string; file_type: string }[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
   const [driver, setDriver] = useState<any>(null);
   const [loading, setLoading] = useState(true);
