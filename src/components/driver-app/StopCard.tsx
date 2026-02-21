@@ -146,16 +146,16 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
   const [resolvingUrls, setResolvingUrls] = useState(false);
 
   const resolveUrls = useCallback(async () => {
-    if (stopPods.length === 0) {
+    const currentStopPods = podDocuments.filter(p => (p as any).stop_id === stop.id);
+    if (currentStopPods.length === 0) {
       setResolvedUrls({});
       return;
     }
     setResolvingUrls(true);
     const urls: Record<string, string> = {};
-    for (const doc of stopPods) {
+    for (const doc of currentStopPods) {
       try {
         let path = doc.file_url;
-        // If it's already an http URL (legacy), extract the storage path
         if (path.startsWith('http')) {
           const match = path.match(/\/storage\/v1\/object\/sign\/driver-documents\/([^?]+)/);
           if (match?.[1]) {
@@ -175,8 +175,7 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
     }
     setResolvedUrls(urls);
     setResolvingUrls(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [podDocuments]);
+  }, [podDocuments, stop.id]);
 
   useEffect(() => {
     resolveUrls();
