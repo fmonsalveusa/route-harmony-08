@@ -14,9 +14,14 @@ interface ActiveStop {
   lng: number;
 }
 
+type PermissionStatus = 'prompt' | 'granted' | 'denied' | 'unknown';
+
 interface DriverTrackingContextType {
   tracking: boolean;
   lastPosition: { lat: number; lng: number } | null;
+  speed: number | null;
+  accuracy: number | null;
+  permissionStatus: PermissionStatus;
   startTracking: () => void;
   stopTracking: () => void;
   nearbyStop: ActiveStop | null;
@@ -62,6 +67,9 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
   const { profile } = useAuth();
   const [tracking, setTracking] = useState(false);
   const [lastPosition, setLastPosition] = useState<{ lat: number; lng: number } | null>(null);
+  const [speed, setSpeed] = useState<number | null>(null);
+  const [accuracy, setAccuracy] = useState<number | null>(null);
+  const [permissionStatus, setPermissionStatus] = useState<PermissionStatus>('unknown');
   const [driverId, setDriverId] = useState<string | null>(null);
   const [nearbyStop, setNearbyStop] = useState<ActiveStop | null>(null);
   const [activeStops, setActiveStops] = useState<ActiveStop[]>([]);
@@ -72,7 +80,19 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
   const [refreshStops, setRefreshStops] = useState(0);
   const autoResumedRef = useRef(false);
+  // Check GPS permission status
+  useEffect(() => {
+    if (!('permissions' in navigator)) {
+      setPermissionStatus('unknown');
+      return;
+    }
+    navigator.permissions.query({ name: 'geolocation' }).then((result) => {
+      setPermissionStatus(result.state as PermissionStatus);
+      result.onchange = () => setPermissionStatus(result.state as PermissionStatus);
+    }).catch(() => setPermissionStatus('unknown'));
+  }, []);
 
+  
   useEffect(() => {
     if (!profile?.email) return;
     supabase.from('drivers').select('id').eq('email', profile.email).maybeSingle().then(({ data }) => {
@@ -189,6 +209,8 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
     };
 
     setLastPosition({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+    setSpeed(pos.coords.speed);
+    setAccuracy(pos.coords.accuracy);
     checkGeofence(pos.coords.latitude, pos.coords.longitude);
 
     const { error } = await supabase.from('driver_locations').upsert(payload as any, { onConflict: 'driver_id' });
@@ -297,7 +319,7 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
   }, []);
 
   return (
-    <DriverTrackingContext.Provider value={{ tracking, lastPosition, startTracking, stopTracking, nearbyStop, confirmArrival, dismissArrival }}>
+    <DriverTrackingContext.Provider value={{ tracking, lastPosition, speed, accuracy, permissionStatus, startTracking, stopTracking, nearbyStop, confirmArrival, dismissArrival }}>
       {children}
     </DriverTrackingContext.Provider>
   );
