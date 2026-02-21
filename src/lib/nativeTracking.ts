@@ -1,4 +1,4 @@
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, registerPlugin } from '@capacitor/core';
 
 export function isNativePlatform(): boolean {
   return Capacitor.isNativePlatform();
@@ -12,20 +12,33 @@ interface PositionCallback {
   accuracy: number | null;
 }
 
+interface BackgroundGeolocationPlugin {
+  addWatcher(
+    options: Record<string, unknown>,
+    callback: (location?: any, error?: any) => void
+  ): Promise<string>;
+  removeWatcher(options: { id: string }): Promise<void>;
+}
+
 let watcherId: string | null = null;
+
+function getBackgroundGeolocation(): BackgroundGeolocationPlugin | null {
+  if (!isNativePlatform()) return null;
+  try {
+    return registerPlugin<BackgroundGeolocationPlugin>('BackgroundGeolocation');
+  } catch {
+    return null;
+  }
+}
 
 export async function startNativeTracking(
   onPosition: (pos: PositionCallback) => void
 ): Promise<() => void> {
-  if (!isNativePlatform()) {
-    return () => {};
-  }
+  const plugin = getBackgroundGeolocation();
+  if (!plugin) return () => {};
 
   try {
-    const mod = await import('@capacitor-community/background-geolocation');
-    const BackgroundGeolocation = mod.default as any;
-
-    watcherId = await BackgroundGeolocation.addWatcher(
+    watcherId = await plugin.addWatcher(
       {
         backgroundMessage: 'GPS tracking is active',
         backgroundTitle: 'Load Up Driver',
@@ -50,9 +63,7 @@ export async function startNativeTracking(
       }
     );
 
-    return () => {
-      stopNativeTracking();
-    };
+    return () => { stopNativeTracking(); };
   } catch (e) {
     console.error('Failed to start native tracking:', e);
     return () => {};
@@ -61,10 +72,10 @@ export async function startNativeTracking(
 
 export async function stopNativeTracking(): Promise<void> {
   if (!watcherId) return;
+  const plugin = getBackgroundGeolocation();
+  if (!plugin) return;
   try {
-    const mod = await import('@capacitor-community/background-geolocation');
-    const BackgroundGeolocation = mod.default as any;
-    await BackgroundGeolocation.removeWatcher({ id: watcherId });
+    await plugin.removeWatcher({ id: watcherId });
     watcherId = null;
   } catch (e) {
     console.error('Failed to stop native tracking:', e);
