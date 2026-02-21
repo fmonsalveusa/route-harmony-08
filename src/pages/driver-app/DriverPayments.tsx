@@ -32,21 +32,21 @@ export default function DriverPayments() {
 
       <div className="grid grid-cols-2 gap-3">
         <Card>
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 rounded-full bg-success/10"><TrendingUp className="h-6 w-6 text-success" /></div>
-            <div>
-              <p className="text-xl font-bold text-success">${totalPaid.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
-              <p className="text-sm text-muted-foreground">Paid</p>
+          <CardContent className="p-4 flex flex-col items-center gap-2">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-full bg-success/10"><TrendingUp className="h-5 w-5 text-success" /></div>
+              <p className="text-sm font-medium text-muted-foreground">Paid</p>
             </div>
+            <p className="text-xl font-bold text-success">${totalPaid.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 rounded-full bg-warning/10"><Clock className="h-6 w-6 text-warning" /></div>
-            <div>
-              <p className="text-xl font-bold text-warning">${totalPending.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
-              <p className="text-sm text-muted-foreground">Pending</p>
+          <CardContent className="p-4 flex flex-col items-center gap-2">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-full bg-warning/10"><Clock className="h-5 w-5 text-warning" /></div>
+              <p className="text-sm font-medium text-muted-foreground">Pending</p>
             </div>
+            <p className="text-xl font-bold text-warning">${totalPending.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
           </CardContent>
         </Card>
       </div>
