@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import logoImg from '@/assets/logo.png';
+import { isNativePlatform } from '@/lib/nativeTracking';
 
 const tabs = [
   { label: 'Home', icon: LayoutDashboard, path: '/driver' },
@@ -118,6 +119,28 @@ export const DriverMobileLayout = ({ children }: { children: ReactNode }) => {
     await confirmArrival(nearbyStop.id);
     setConfirming(false);
   };
+
+  // Configure native status bar + lifecycle when running in Capacitor
+  useEffect(() => {
+    if (!isNativePlatform()) return;
+
+    // Status bar styling
+    import('@capacitor/status-bar').then(({ StatusBar, Style }) => {
+      StatusBar.setStyle({ style: Style.Dark }).catch(() => {});
+      StatusBar.setBackgroundColor({ color: '#1e3a5f' }).catch(() => {});
+    }).catch(() => {});
+
+    // App lifecycle — re-sync GPS on foreground
+    import('@capacitor/app').then(({ App }) => {
+      const listener = App.addListener('appStateChange', ({ isActive }) => {
+        if (isActive && tracking) {
+          // GPS re-sync is handled by DriverTrackingContext's native plugin
+          // This is just a safety net for any UI state refresh
+        }
+      });
+      return () => { listener.then(l => l.remove()); };
+    }).catch(() => {});
+  }, [tracking]);
 
   const isAndroid = /android/i.test(navigator.userAgent);
 

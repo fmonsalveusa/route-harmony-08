@@ -10,6 +10,7 @@ import { createNotification } from '@/hooks/useNotifications';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { compressImage } from '@/lib/imageCompression';
+import { isNativeCamera, takeNativePhoto, pickFromGallery, dataUrlToFile } from '@/lib/nativeCamera';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -146,6 +147,58 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
     toast({ title: 'Marked as Delivered!' });
     onUpdate();
     setChangingStatus(false);
+  };
+
+  const uploadDataUrl = async (dataUrl: string, fileName: string) => {
+    setUploading(true);
+    const tenant_id = await getTenantId();
+    const file = dataUrlToFile(dataUrl, fileName);
+    const compressed = await compressImage(file);
+    const filePath = `pods/${stop.load_id}/${stop.id}_${Date.now()}.jpg`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('driver-documents')
+      .upload(filePath, compressed, { contentType: 'image/jpeg' });
+
+    if (uploadError) {
+      toast({ title: 'Upload error', description: uploadError.message, variant: 'destructive' });
+      setUploading(false);
+      return;
+    }
+
+    await supabase.from('pod_documents').insert({
+      load_id: stop.load_id,
+      stop_id: stop.id,
+      file_name: fileName,
+      file_url: filePath,
+      file_type: 'image',
+      tenant_id,
+    } as any);
+
+    await createNotification({
+      type: 'pod_uploaded',
+      title: 'POD uploaded',
+      message: `${driverName} uploaded a POD for ${stop.address} (Load ${loadRef})`,
+      load_id: stop.load_id,
+    });
+
+    toast({ title: 'Photo uploaded successfully' });
+    setUploading(false);
+    onUpdate();
+  };
+
+  const handleNativeCamera = async () => {
+    const dataUrl = await takeNativePhoto();
+    if (dataUrl) {
+      await uploadDataUrl(dataUrl, `camera_${Date.now()}.jpg`);
+    }
+  };
+
+  const handleNativeGallery = async () => {
+    const urls = await pickFromGallery();
+    for (const dataUrl of urls) {
+      await uploadDataUrl(dataUrl, `gallery_${Date.now()}.jpg`);
+    }
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -368,36 +421,54 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
           {/* Upload action buttons */}
           <div className="grid grid-cols-2 gap-2">
             {/* Camera button */}
-            <label className="cursor-pointer">
-              <div className="flex items-center justify-center gap-1.5 h-10 rounded-lg bg-info/10 text-info border border-info/20 text-sm font-medium hover:bg-info/20 transition-colors">
-                <Camera className="h-4 w-4" />
-                <span>Camera</span>
-              </div>
-              <input
-                type="file"
-                accept="image/*"
-                capture="environment"
-                className="hidden"
-                onChange={handleFileUpload}
-                disabled={uploading}
-              />
-            </label>
+            {isNativeCamera() ? (
+              <button onClick={handleNativeCamera} disabled={uploading} type="button">
+                <div className="flex items-center justify-center gap-1.5 h-10 rounded-lg bg-info/10 text-info border border-info/20 text-sm font-medium hover:bg-info/20 transition-colors">
+                  <Camera className="h-4 w-4" />
+                  <span>Camera</span>
+                </div>
+              </button>
+            ) : (
+              <label className="cursor-pointer">
+                <div className="flex items-center justify-center gap-1.5 h-10 rounded-lg bg-info/10 text-info border border-info/20 text-sm font-medium hover:bg-info/20 transition-colors">
+                  <Camera className="h-4 w-4" />
+                  <span>Camera</span>
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={handleFileUpload}
+                  disabled={uploading}
+                />
+              </label>
+            )}
 
             {/* Gallery button */}
-            <label className="cursor-pointer">
-              <div className="flex items-center justify-center gap-1.5 h-10 rounded-lg bg-muted text-muted-foreground border border-border text-sm font-medium hover:bg-muted/80 transition-colors">
-                <ImagePlus className="h-4 w-4" />
-                <span>Gallery</span>
-              </div>
-              <input
-                type="file"
-                accept="image/*,application/pdf"
-                multiple
-                className="hidden"
-                onChange={handleFileUpload}
-                disabled={uploading}
-              />
-            </label>
+            {isNativeCamera() ? (
+              <button onClick={handleNativeGallery} disabled={uploading} type="button">
+                <div className="flex items-center justify-center gap-1.5 h-10 rounded-lg bg-muted text-muted-foreground border border-border text-sm font-medium hover:bg-muted/80 transition-colors">
+                  <ImagePlus className="h-4 w-4" />
+                  <span>Gallery</span>
+                </div>
+              </button>
+            ) : (
+              <label className="cursor-pointer">
+                <div className="flex items-center justify-center gap-1.5 h-10 rounded-lg bg-muted text-muted-foreground border border-border text-sm font-medium hover:bg-muted/80 transition-colors">
+                  <ImagePlus className="h-4 w-4" />
+                  <span>Gallery</span>
+                </div>
+                <input
+                  type="file"
+                  accept="image/*,application/pdf"
+                  multiple
+                  className="hidden"
+                  onChange={handleFileUpload}
+                  disabled={uploading}
+                />
+              </label>
+            )}
           </div>
 
           {/* Scanner button - all platforms */}
