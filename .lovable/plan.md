@@ -1,42 +1,36 @@
 
 
-## Plan: Mantener GPS Tracking activo en segundo plano
+## Plan: Redisenar la pagina de Tracking con el estilo de Tracking UP
 
-### Problema
-Cuando el conductor cambia a otra app en Android, el sistema operativo suspende o mata el proceso del navegador. Al regresar, el estado de React se pierde (incluyendo `tracking = true`), por lo que el rastreo aparece como desactivado.
+### Que cambia
 
-### Solucion (3 mejoras combinadas)
+Se va a redisenar la pagina de GPS Tracking en la app movil para que tenga el mismo look y funcionalidad visual que tu app [Tracking UP](/projects/b245c5ca-fb60-40b4-9128-15101906c515), incluyendo:
 
-**1. Persistir estado de tracking en localStorage**
-- Al activar tracking, guardar `tracking: true` en `localStorage`
-- Al cargar la app (o al volver del background), leer localStorage y auto-reanudar el tracking si estaba activo
-- Al desactivar manualmente, limpiar localStorage
-- Esto resuelve el caso donde Android mata completamente la pagina y React pierde el estado
+- **Switch toggle** en lugar de un boton grande para activar/desactivar el rastreo
+- **Tarjeta de estado** con icono animado y descripcion del estado actual
+- **Alertas de permisos** que avisen si la ubicacion esta denegada o pendiente de autorizar
+- **Tarjeta de ubicacion actual** con cuadricula de latitud/longitud, velocimetro y precision GPS
+- **Barra de estado fija** en la parte inferior que muestre si esta conectado o desconectado
 
-**2. Agregar Wake Lock API**
-- Usar `navigator.wakeLock.request('screen')` para evitar que el dispositivo entre en suspension profunda mientras el tracking esta activo
-- Reacquirir el wake lock en el evento `visibilitychange` (se pierde al cambiar de app)
-- Es compatible con Chrome Android (la plataforma principal)
-
-**3. Mejorar la recuperacion en visibilitychange**
-- Ademas de reiniciar el GPS watch, verificar si el estado de tracking se perdio y restaurarlo desde localStorage
-- Enviar posicion inmediatamente al volver para minimizar el "hueco" de datos
+Se mantiene toda la logica actual (Wake Lock, localStorage, geofencing, auto-resume) ya que es mas robusta que la de Tracking UP.
 
 ### Detalles tecnicos
 
-**Archivo: `src/contexts/DriverTrackingContext.tsx`**
+**Archivo 1: `src/contexts/DriverTrackingContext.tsx`**
+- Ampliar la interfaz `DriverTrackingContextType` para exponer `speed`, `accuracy` y `permissionStatus`
+- Agregar estado `permissionStatus` (`prompt` | `granted` | `denied` | `unknown`) usando `navigator.permissions.query`
+- Exponer `speed` y `accuracy` junto con `lastPosition` (actualmente se envian al servidor pero no se exponen al UI)
 
-- Agregar constante `TRACKING_STORAGE_KEY = 'driver-tracking-active'`
-- En `startTracking`: guardar `localStorage.setItem(TRACKING_STORAGE_KEY, 'true')`
-- En `stopTracking`: hacer `localStorage.removeItem(TRACKING_STORAGE_KEY)`
-- Nuevo `useEffect` al montar: si `localStorage.getItem(TRACKING_STORAGE_KEY) === 'true'` y no esta tracking, llamar `startTracking()` automaticamente
-- Nuevo ref `wakeLockRef` para gestionar el Wake Lock:
-  - Adquirir en `startTracking`
-  - Liberar en `stopTracking`
-  - Re-adquirir en `visibilitychange` cuando vuelve a `visible`
+**Archivo 2: `src/pages/driver-app/DriverTracking.tsx`**
+- Reescribir la UI completa siguiendo el patron de Tracking UP:
+  - Card de "Estado de Rastreo" con Switch toggle + icono + texto descriptivo
+  - Card de alerta si `permissionStatus === 'denied'` (fondo rojo, icono de advertencia)
+  - Card de alerta si `permissionStatus === 'prompt'` (fondo amarillo, pedir permiso)
+  - Card de "Ubicacion Actual" (solo visible cuando tracking esta activo y hay coordenadas):
+    - Grid 2 columnas: Latitud / Longitud
+    - Velocimetro con icono
+    - Indicador de precision GPS con colores (verde < 10m, amarillo < 50m, rojo > 50m)
+  - Barra inferior fija con estado de conexion (verde = transmitiendo, gris = desconectado)
 
 ### Resultado esperado
-- Si Android mata la pagina: al reabrir la app, el tracking se reanuda automaticamente
-- Si Android suspende la pagina: el Wake Lock reduce la probabilidad de suspension, y el visibilitychange restaura todo al volver
-- El conductor no necesita volver a presionar "Start Tracking" manualmente
-
+La pagina de tracking se vera y se sentira igual que la app Tracking UP pero manteniendo toda la logica avanzada de persistencia, Wake Lock y geofencing que ya tiene este proyecto.
