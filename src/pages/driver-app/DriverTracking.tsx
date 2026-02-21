@@ -119,7 +119,7 @@ export default function DriverTracking() {
       )}
 
       {/* Connection Status Bar */}
-      <div className={`fixed bottom-[calc(72px+env(safe-area-inset-bottom,0px))] left-0 right-0 flex items-center justify-center gap-2 py-2 text-xs font-medium transition-colors ${tracking ? 'bg-success text-success-foreground' : 'bg-muted text-muted-foreground'}`}>
+      <div className={`fixed bottom-[calc(72px+env(safe-area-inset-bottom,0px))] left-0 right-0 flex items-center justify-center gap-2 py-2 text-xs font-medium transition-colors z-10 ${tracking ? 'bg-success text-success-foreground' : 'bg-muted text-muted-foreground'}`}>
         {tracking ? (
           <>
             <Wifi className="h-3.5 w-3.5" />

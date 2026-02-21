@@ -129,6 +129,9 @@ html, body {
   .safe-area-pb {
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
+  .safe-area-pt {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
 }
 
 /* Android driver app text scaling – reduce all text ~20% */

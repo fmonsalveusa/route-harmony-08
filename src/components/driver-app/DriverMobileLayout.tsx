@@ -147,7 +147,7 @@ export const DriverMobileLayout = ({ children }: { children: ReactNode }) => {
   return (
     <div className={`flex flex-col h-[100dvh] bg-background ${isAndroid ? 'android-driver-app' : ''}`}>
       {/* Header - Dark gradient style */}
-      <header className="flex items-center justify-between h-16 px-4 shadow-md" style={{ background: 'linear-gradient(135deg, hsl(210, 52%, 24%), hsl(214, 52%, 20%))' }}>
+      <header className="flex items-center justify-between h-16 px-4 shadow-md safe-area-pt" style={{ background: 'linear-gradient(135deg, hsl(210, 52%, 24%), hsl(214, 52%, 20%))' }}>
         <div className="flex items-center gap-2">
           <img src={logoImg} alt="Logo" className="h-8 w-8 rounded" />
           <span className="text-base font-bold text-white">Load Up Driver</span>
@@ -241,7 +241,7 @@ export const DriverMobileLayout = ({ children }: { children: ReactNode }) => {
       </main>
 
       {/* Bottom Tab Bar - Orange active indicator */}
-      <nav className="flex items-center justify-around h-[72px] border-t bg-card shadow-[0_-2px_10px_rgba(0,0,0,0.08)] safe-area-pb relative">
+      <nav className="flex items-center justify-around min-h-[72px] border-t bg-card shadow-[0_-2px_10px_rgba(0,0,0,0.08)] safe-area-pb relative">
         {tabs.map(tab => {
           const active = location.pathname === tab.path || (tab.path !== '/driver' && location.pathname.startsWith(tab.path));
           return (
