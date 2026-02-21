@@ -400,18 +400,16 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
             </label>
           </div>
 
-          {/* Scanner button - iOS/Desktop only */}
-          {!isAndroid && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full gap-1.5 text-sm border-primary/30 text-primary hover:bg-primary/5"
-              onClick={() => setScannerOpen(true)}
-            >
-              <ScanLine className="h-4 w-4" />
-              {stop.stop_type === 'pickup' ? 'Scan BOL Document' : 'Scan POD Document'}
-            </Button>
-          )}
+          {/* Scanner button - all platforms */}
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full gap-1.5 text-sm border-primary/30 text-primary hover:bg-primary/5"
+            onClick={() => setScannerOpen(true)}
+          >
+            <ScanLine className="h-4 w-4" />
+            {stop.stop_type === 'pickup' ? 'Scan BOL Document' : 'Scan POD Document'}
+          </Button>
         </div>
       )}
 
