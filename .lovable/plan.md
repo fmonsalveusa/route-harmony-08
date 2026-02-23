@@ -1,80 +1,19 @@
 
+# Actualizar nombre de la app movil a "Dispatch Up Driver"
 
-# Fix: Crash de la app Android al solicitar permisos de notificaciones
+## Cambios necesarios
 
-## Problema
-La app nativa Android se cierra inmediatamente despues de que el usuario acepta (o rechaza) el permiso de notificaciones push. El error "Dispatch Up closed because this app has a bug" indica un crash fatal en el codigo nativo.
+Se actualizaran las referencias al nombre de la app movil en 3 archivos para que coincidan con el nombre publicado en la tienda.
 
-**Causa raiz:** El plugin `@capacitor/push-notifications` llama a `PushNotifications.register()` que internamente requiere Firebase Cloud Messaging (FCM). Si el archivo `google-services.json` no esta presente o Firebase no esta configurado correctamente en el proyecto Android, esto provoca un crash fatal que no puede ser atrapado por el try-catch de JavaScript.
+### 1. `capacitor.config.ts`
+- Cambiar `appName: 'Dispatch Up'` a `appName: 'Dispatch Up Driver'`
 
-Ademas, una vez que la app crashea, al reabrirla el codigo vuelve a ejecutar la misma logica y vuelve a crashear en un ciclo infinito.
+### 2. `src/components/driver-app/DriverMobileLayout.tsx`
+- Cambiar el texto visible en el header de la app movil de `"Load Up Driver"` a `"Dispatch Up Driver"`
 
-## Solucion
+### 3. `src/lib/nativeTracking.ts`
+- Cambiar `backgroundTitle: 'Load Up Driver'` a `backgroundTitle: 'Dispatch Up Driver'` (titulo de la notificacion de GPS tracking)
 
-Hacer que la inicializacion de push notifications sea segura y no bloquee la app:
-
-### 1. Proteger `initPushNotifications` contra crashes
-- Agregar un retraso (setTimeout) para que la UI cargue completamente antes de intentar registrar push.
-- Verificar que el plugin este disponible antes de llamar a `register()`.
-- Si falla, marcar como "no disponible" y no intentar de nuevo.
-
-### 2. Evitar el ciclo de crash al reabrir
-- No marcar `initialized = true` antes de que el registro sea exitoso.
-- Si la primera llamada falla, no reintentar automaticamente.
-
----
-
-## Detalles tecnicos
-
-### Archivo: `src/lib/nativePushNotifications.ts`
-
-Cambios:
-- Envolver `PushNotifications.register()` en un bloque mas defensivo.
-- Agregar un `setTimeout` para diferir la inicializacion y no bloquear el arranque de la app.
-- No llamar `register()` si `requestPermissions()` falla o el permiso no fue concedido.
-- Mantener `initialized = true` solo despues de que todo haya sido exitoso, pero agregar un flag `attemptedInit` para evitar reintentos infinitos.
-
-```typescript
-let initialized = false;
-let attemptedInit = false;
-
-export async function initPushNotifications(driverId: string | null) {
-  if (!isNativePlatform() || initialized || attemptedInit || !driverId) return;
-  attemptedInit = true;
-
-  // Defer to let the app fully render first
-  setTimeout(async () => {
-    try {
-      const { PushNotifications } = await import('@capacitor/push-notifications');
-
-      const permResult = await PushNotifications.requestPermissions();
-      if (permResult.receive !== 'granted') {
-        console.log('[Push] Permission denied');
-        return;
-      }
-
-      // Add listeners BEFORE calling register
-      PushNotifications.addListener('registration', async (token) => { ... });
-      PushNotifications.addListener('registrationError', (err) => { ... });
-      PushNotifications.addListener('pushNotificationReceived', ...);
-      PushNotifications.addListener('pushNotificationActionPerformed', ...);
-
-      await PushNotifications.register();
-      initialized = true;
-    } catch (err) {
-      console.error('[Push] Init error:', err);
-    }
-  }, 2000);
-}
-```
-
-### Nota importante para el proyecto Android nativo
-
-Despues de aplicar este fix de codigo, necesitaras:
-1. Hacer `git pull` del proyecto.
-2. Ejecutar `npx cap sync android`.
-3. Verificar que `google-services.json` de Firebase este en `android/app/`.
-4. Si NO tienes `google-services.json`, deberas crear un proyecto en Firebase Console, registrar la app con el ID `com.dispatchup.driver`, descargar el archivo y colocarlo en `android/app/`.
-5. Reconstruir el APK/AAB desde Android Studio.
-
-Sin el archivo `google-services.json`, las push notifications no funcionaran, pero con este fix **la app ya no se cerrara** -- simplemente omitira el registro de push silenciosamente.
+## Notas
+- El TMS web (landing page, pagina de login, dashboard) mantendra el nombre "Load Up TMS" ya que es el producto web, no la app movil.
+- Despues de aplicar estos cambios, la proxima vez que compiles el APK deberas hacer `git pull` y `npx cap sync android` para que el `appName` en Capacitor se refleje en el build nativo.
