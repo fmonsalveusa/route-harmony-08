@@ -258,28 +258,34 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
     );
   }, []);
 
-  const startTracking = useCallback((silent = false) => {
+  const startTracking = useCallback(async (silent = false) => {
     if (tracking) return;
 
     if (isNativePlatform()) {
-      // --- Native tracking via Capacitor plugin ---
-      setTracking(true);
-      localStorage.setItem(TRACKING_STORAGE_KEY, 'true');
-      dismissedStopsRef.current.clear();
-      if (!silent) { toast({ title: 'GPS Tracking started' }); hapticFeedback('medium'); }
+      // Check plugin availability BEFORE changing state
+      const gpAvailable = await isBackgroundGeolocationAvailable();
+      if (gpAvailable) {
+        // --- Native tracking via Capacitor plugin ---
+        setTracking(true);
+        localStorage.setItem(TRACKING_STORAGE_KEY, 'true');
+        dismissedStopsRef.current.clear();
+        if (!silent) { toast({ title: 'GPS Tracking started' }); hapticFeedback('medium'); }
 
-      // If watcher already active (survived background), just update state
-      if (hasActiveWatcher()) {
-        console.log('[Tracking] Watcher still alive, reconnecting state');
+        // If watcher already active (survived background), just update state
+        if (hasActiveWatcher()) {
+          console.log('[Tracking] Watcher still alive, reconnecting state');
+          return;
+        }
+
+        startNativeTracking((pos) => {
+          sendNativePosition(pos);
+        }).then((cleanup) => {
+          nativeCleanupRef.current = cleanup;
+        });
         return;
       }
-
-      startNativeTracking((pos) => {
-        sendNativePosition(pos);
-      }).then((cleanup) => {
-        nativeCleanupRef.current = cleanup;
-      });
-      return;
+      // If native GPS not available, fall through to web tracking
+      console.log('[Tracking] Native GPS not available, using web fallback');
     }
 
     // --- Web tracking ---

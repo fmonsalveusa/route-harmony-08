@@ -20,6 +20,10 @@ interface BackgroundGeolocationPlugin {
   removeWatcher(options: { id: string }): Promise<void>;
 }
 
+// ⚠️ Set to true ONLY after verifying the BackgroundGeolocation plugin
+// is correctly installed in the native APK (via capacitor-community/background-geolocation)
+const NATIVE_GPS_ENABLED = false;
+
 let watcherId: string | null = null;
 let pluginInstance: BackgroundGeolocationPlugin | null = null;
 let pluginAvailable: boolean | null = null; // cached result
@@ -41,6 +45,10 @@ function getBackgroundGeolocation(): BackgroundGeolocationPlugin | null {
  * by attempting to register it. Returns cached result after first call.
  */
 export async function isBackgroundGeolocationAvailable(): Promise<boolean> {
+  if (!NATIVE_GPS_ENABLED) {
+    console.log('[NativeTracking] Native GPS is disabled (NATIVE_GPS_ENABLED=false)');
+    return false;
+  }
   if (!isNativePlatform()) return false;
   if (pluginAvailable !== null) return pluginAvailable;
 
