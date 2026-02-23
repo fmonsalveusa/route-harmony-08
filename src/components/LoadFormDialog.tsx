@@ -405,10 +405,13 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
     if (assignedDriverId && assignedDriverId !== previousDriverId) {
       const driverName = drivers.find(d => d.id === assignedDriverId)?.name || '';
       const refNum = payload.reference_number;
+      const miles = payload.miles || 0;
+      const rate = payload.total_rate || 0;
+      const rpm = miles > 0 ? (rate / miles).toFixed(2) : '—';
       createNotification({
         type: 'load_assigned',
-        title: 'Nueva carga asignada',
-        message: `Se te asignó la carga #${refNum} de ${origin} a ${destination}`,
+        title: `Load Assigned - ${driverName}`,
+        message: `${driverName} | #${refNum} | ${origin} → ${destination} | Miles: ${miles} | Rate: $${Number(rate).toLocaleString()} | RPM: $${rpm}`,
         load_id: loadId || undefined,
         driver_id: assignedDriverId,
       });

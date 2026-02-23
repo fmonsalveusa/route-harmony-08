@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
-import { X, MapPin, Camera, Truck, Bell, UserPlus, Wrench } from 'lucide-react';
+import { X, MapPin, Camera, Truck, Bell, UserPlus, Wrench, Package } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 interface LiveToast {
@@ -19,7 +19,9 @@ interface LiveToast {
 const typeIcons: Record<string, typeof Bell> = {
   driver_arrived: MapPin,
   pod_uploaded: Camera,
+  status_changed: Truck,
   status_change: Truck,
+  load_assigned: Package,
   new_driver_onboarded: UserPlus,
   maintenance: Wrench,
 };
@@ -27,7 +29,9 @@ const typeIcons: Record<string, typeof Bell> = {
 const typeColors: Record<string, string> = {
   driver_arrived: 'text-blue-500',
   pod_uploaded: 'text-emerald-500',
+  status_changed: 'text-amber-500',
   status_change: 'text-amber-500',
+  load_assigned: 'text-violet-500',
   new_driver_onboarded: 'text-green-500',
   maintenance: 'text-orange-500',
 };
@@ -142,7 +146,7 @@ export function LiveNotificationToasts() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-foreground leading-tight">{toast.title}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{toast.message}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5 line-clamp-3">{toast.message}</p>
                   <p className="text-[10px] text-muted-foreground/60 mt-1">
                     {formatDistanceToNow(new Date(toast.created_at), { addSuffix: true })}
                   </p>
