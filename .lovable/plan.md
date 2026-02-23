@@ -1,57 +1,57 @@
 
 
-# Agregar Nombre del Driver en Todas las Notificaciones
+# Fix: Real-time GPS Tracking on Individual Load Maps
 
-## Problema
-Algunas notificaciones no incluyen el nombre del driver en el titulo o mensaje, lo que dificulta identificar rapidamente a quien se refiere la alerta.
+## Problem
+The GPS live marker works on the Tracking page but NOT on individual load detail maps. The root cause is a **race condition** between two effects in `LoadDetailPanel.tsx`:
 
-## Cambios
+1. **Map init effect** (line 299): Async -- imports Leaflet, geocodes stops, draws routes. Takes several seconds.
+2. **GPS tracking effect** (line 609): Checks `if (!mapInstanceRef.current) return` -- but the map isn't ready yet because the init is async.
 
-### 1. `src/components/LoadFormDialog.tsx` - Load Assigned
-**Antes:**
-- Titulo: "Nueva carga asignada"  
-- Mensaje: "Se te asigno la carga #REF de ORIGIN a DESTINATION"
+Since `mapInstanceRef` is a React **ref** (not state), when it eventually gets populated, React does NOT re-run the GPS effect. The GPS subscription never starts.
 
-**Despues:**
-- Titulo: "Load Assigned - DRIVER_NAME"
-- Mensaje: "DRIVER_NAME | #REF | ORIGIN -> DESTINATION"
+## Solution
+Add a **state flag** `mapReady` that gets set to `true` after the map is fully initialized. Include this flag in the GPS effect's dependency array so it re-runs once the map is available.
 
-### 2. `src/pages/driver-app/DriverLoadDetail.tsx` - Start Route / Status Change
-**Antes:**
-- Titulo: "Status: In Transit"
-- Mensaje: "PROFILE changed load REF to In Transit"
+## File: `src/components/LoadDetailPanel.tsx`
 
-**Despues:**
-- Titulo: "In Transit - DRIVER_NAME"
-- Mensaje: "DRIVER_NAME | Load #REF | ORIGIN -> DESTINATION"
+### Change 1: Add `mapReady` state
+Near the other state declarations (around line 140), add:
+```typescript
+const [mapReady, setMapReady] = useState(false);
+```
 
-Se usara `driver?.name` (del record de driver ya cargado en el state) en lugar de `profile?.full_name` para consistencia.
+### Change 2: Reset `mapReady` on load change and set it after map init
+- At the beginning of the map init effect (line 300 area), reset: `setMapReady(false);`
+- After the map is fully initialized (both fast path and slow path complete), call `setMapReady(true);`
+- In the cleanup, set `setMapReady(false);`
 
-### 3. `src/components/driver-app/StopCard.tsx` - Arrived / Picked Up / Delivered / POD
-Estas notificaciones ya incluyen `driverName` en el mensaje, pero el titulo no lo muestra. Se actualizaran los titulos:
+### Change 3: Add `mapReady` to GPS effect dependencies
+Change the GPS effect guard and dependency array:
+```typescript
+// Before:
+useEffect(() => {
+  if (!load.driver_id || !mapInstanceRef.current) return;
+  // ...
+}, [load.id, load.driver_id]);
 
-**Arrived** - Titulo: "Arrived - DRIVER_NAME" (antes: "Driver arrived at pickup")
-**Picked Up** - Titulo: "Picked Up - DRIVER_NAME" (antes: "Picked Up")  
-**Delivered** - Titulo: "Delivered - DRIVER_NAME" (antes: "Load Delivered!")
-**POD uploaded** - Titulo: "POD Uploaded - DRIVER_NAME" (antes: "POD uploaded")
+// After:
+useEffect(() => {
+  if (!load.driver_id || !mapInstanceRef.current || !mapReady) return;
+  // ...
+}, [load.id, load.driver_id, mapReady]);
+```
 
-### 4. `src/components/driver-app/DocumentScanner.tsx` - Scanner BOL/POD
-**Antes:** Titulo: "BOL escaneado"
-**Despues:** Titulo: "BOL Scanned - DRIVER_NAME"
+This ensures the GPS subscription starts only after the map is ready, and reliably re-triggers when it becomes ready.
 
-### 5. `src/components/NotificationBell.tsx` - Mejora visual
-- Reemplazar emojis por iconos Lucide (MapPin, Camera, Truck, Package, UserPlus, Wrench) con colores por tipo
-- Cambiar `truncate` a `line-clamp-3` para que el mensaje con el nombre del driver sea visible completo
+## Technical Details
 
-### 6. `src/components/LiveNotificationToasts.tsx` - Toasts flotantes
-- Agregar tipo `load_assigned` al mapa de iconos (icono Package, color violeta)
-- Cambiar `line-clamp-2` a `line-clamp-3` para mostrar toda la info
+### Why this only affects the load detail panel (not Tracking page)
+The Tracking page (`src/pages/Tracking.tsx`) uses `react-leaflet` components (`MapContainer`, `Marker`) which handle the map lifecycle declaratively. The `LoadDetailPanel` uses imperative Leaflet (`L.map()`) inside a `useEffect`, creating the async timing issue.
 
-## Resumen de archivos a modificar
-1. `src/components/LoadFormDialog.tsx`
-2. `src/pages/driver-app/DriverLoadDetail.tsx`
-3. `src/components/driver-app/StopCard.tsx`
-4. `src/components/driver-app/DocumentScanner.tsx`
-5. `src/components/NotificationBell.tsx`
-6. `src/components/LiveNotificationToasts.tsx`
+### Files to modify
+1. `src/components/LoadDetailPanel.tsx` -- add `mapReady` state, set it after map init, include in GPS effect deps
+
+### No database changes required
+The realtime subscription and `driver_locations` table are already correctly configured.
 
