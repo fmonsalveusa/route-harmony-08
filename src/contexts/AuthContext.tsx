@@ -154,6 +154,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
+      // Token refresh should NOT reset loading or re-fetch data
+      // This prevents dialogs/forms from being unmounted when switching tabs
+      if (event === 'TOKEN_REFRESHED') {
+        setSession(session);
+        return;
+      }
+
       setSession(session);
       setUser(session?.user ?? null);
 
