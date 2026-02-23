@@ -110,8 +110,8 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
       await supabase.from('loads').update({ status: newStatus }).eq('id', stop.load_id);
       await createNotification({
         type: 'driver_arrived',
-        title: `Driver arrived at ${stop.stop_type}`,
-        message: `${driverName} arrived at ${stop.address} (Load ${loadRef})`,
+        title: `Arrived - ${driverName}`,
+        message: `${driverName} arrived at ${stop.stop_type}: ${stop.address} (Load #${loadRef})`,
         load_id: stop.load_id,
       });
       toast({ title: 'Arrived!' });
@@ -128,8 +128,8 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
     await supabase.from('loads').update({ status: 'picked_up' }).eq('id', stop.load_id);
     await createNotification({
       type: 'status_changed',
-      title: 'Picked Up',
-      message: `${driverName} marked load ${loadRef} as Picked Up`,
+      title: `Picked Up - ${driverName}`,
+      message: `${driverName} picked up at ${stop.address} (Load #${loadRef})`,
       load_id: stop.load_id,
     });
     toast({ title: 'Status: Picked Up' });
@@ -143,8 +143,8 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
     await supabase.from('loads').update({ status: 'delivered' }).eq('id', stop.load_id);
     await createNotification({
       type: 'status_changed',
-      title: 'Load Delivered!',
-      message: `${driverName} marked load ${loadRef} as Delivered`,
+      title: `Delivered - ${driverName}`,
+      message: `${driverName} delivered at ${stop.address} (Load #${loadRef})`,
       load_id: stop.load_id,
     });
     toast({ title: 'Marked as Delivered!' });
@@ -181,8 +181,8 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
 
     await createNotification({
       type: 'pod_uploaded',
-      title: 'POD uploaded',
-      message: `${driverName} uploaded a POD for ${stop.address} (Load ${loadRef})`,
+      title: `POD Uploaded - ${driverName}`,
+      message: `${driverName} uploaded ${stop.stop_type} doc at ${stop.address} (Load #${loadRef})`,
       load_id: stop.load_id,
     });
 
@@ -239,8 +239,8 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
 
       await createNotification({
         type: 'pod_uploaded',
-        title: 'POD uploaded',
-        message: `${driverName} uploaded a POD for ${stop.address} (Load ${loadRef})`,
+        title: `POD Uploaded - ${driverName}`,
+        message: `${driverName} uploaded ${stop.stop_type} doc at ${stop.address} (Load #${loadRef})`,
         load_id: stop.load_id,
       });
     }

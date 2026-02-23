@@ -229,8 +229,8 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
 
     await createNotification({
       type: 'pod_uploaded',
-      title: `${docLabel} escaneado`,
-      message: `${driverName} escaneó ${pages.length} pág(s) de ${docLabel} en ${stop.address} (Load ${loadRef})`,
+      title: `${docLabel} Scanned - ${driverName}`,
+      message: `${driverName} scanned ${pages.length} page(s) of ${docLabel} at ${stop.address} (Load #${loadRef})`,
       load_id: stop.load_id,
     });
 

@@ -46,10 +46,11 @@ export default function DriverLoadDetail() {
 
   const handleChangeStatus = async (newStatus: string, label: string) => {
     await supabase.from('loads').update({ status: newStatus }).eq('id', loadId!);
+    const dName = driver?.name || profile?.full_name || '';
     await createNotification({
       type: 'status_changed',
-      title: `Status: ${label}`,
-      message: `${profile?.full_name} changed load ${load?.reference_number} to ${label}`,
+      title: `${label} - ${dName}`,
+      message: `${dName} | Load #${load?.reference_number} | ${load?.origin} → ${load?.destination}`,
       load_id: loadId,
     });
     toast({ title: `Status: ${label}` });

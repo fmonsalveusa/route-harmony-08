@@ -1,16 +1,27 @@
 import { useState, useRef, useEffect } from 'react';
-import { Bell, CheckCheck, Package } from 'lucide-react';
+import { Bell, CheckCheck, MapPin, Camera, Truck, Package, UserPlus, Wrench } from 'lucide-react';
 import { useNotifications } from '@/hooks/useNotifications';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { formatDistanceToNow } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 
-const typeIcons: Record<string, string> = {
-  driver_arrived: '📍',
-  pod_uploaded: '📄',
-  status_changed: '🚚',
-  load_assigned: '📦',
+const typeIcons: Record<string, typeof Bell> = {
+  driver_arrived: MapPin,
+  pod_uploaded: Camera,
+  status_changed: Truck,
+  load_assigned: Package,
+  new_driver_onboarded: UserPlus,
+  maintenance: Wrench,
+};
+
+const typeColors: Record<string, string> = {
+  driver_arrived: 'text-blue-500',
+  pod_uploaded: 'text-emerald-500',
+  status_changed: 'text-amber-500',
+  load_assigned: 'text-violet-500',
+  new_driver_onboarded: 'text-green-500',
+  maintenance: 'text-orange-500',
 };
 
 export const NotificationBell = () => {
@@ -71,10 +82,10 @@ export const NotificationBell = () => {
                   className={`w-full text-left p-3 hover:bg-muted/50 transition-colors ${!n.is_read ? 'bg-primary/5' : ''}`}
                 >
                   <div className="flex gap-2">
-                    <span className="text-lg">{typeIcons[n.type] || '📢'}</span>
+                    {(() => { const Icon = typeIcons[n.type] || Bell; const color = typeColors[n.type] || 'text-muted-foreground'; return <Icon className={`h-4 w-4 mt-0.5 flex-shrink-0 ${color}`} />; })()}
                     <div className="flex-1 min-w-0">
                       <p className={`text-sm ${!n.is_read ? 'font-semibold' : ''}`}>{n.title}</p>
-                      <p className="text-xs text-muted-foreground truncate">{n.message}</p>
+                      <p className="text-xs text-muted-foreground line-clamp-3">{n.message}</p>
                       <p className="text-[10px] text-muted-foreground mt-0.5">
                         {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
                       </p>
