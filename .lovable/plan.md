@@ -1,51 +1,49 @@
 
 
-# Agrupar fotos por parada en la app web
+# Fix: App Android se cierra al segundo de cargar el Dashboard
 
-## Problema actual
-Cuando una carga tiene multiples paradas de delivery (o pickup), todas las fotos/escaneos se muestran mezcladas en una sola lista plana. Esto dificulta saber cual foto corresponde a cual parada, y complica el envio de fotos al broker por parada.
+## Causa del crash
 
-## Solucion
-Modificar los componentes `PodUploadSection` y `PickupPicturesSection` para que agrupen los documentos por parada, mostrando la direccion de cada parada como encabezado de grupo. Cada grupo tendra su propio boton de "Seleccionar todo" y "Copiar al Clipboard", permitiendo copiar las fotos de una parada especifica para enviarlas al broker.
+Despues de analizar el codigo, el crash ocurre porque **el GPS tracking se auto-inicia 500ms despues de que el dashboard carga**. El flujo es:
 
-## Cambios tecnicos
+1. Driver hace login, carga el Dashboard
+2. `DriverTrackingContext` detecta el `driverId` y revisa si tiene cargas activas
+3. Si tiene cargas activas (o tenia tracking activo antes), llama `startTracking(true)` a los 500ms
+4. Esto ejecuta `registerPlugin('BackgroundGeolocation')` y llama `addWatcher()` en el plugin nativo
+5. Si el plugin `BackgroundGeolocation` no esta correctamente instalado en el APK, o si el permiso de GPS no esta otorgado aun, **el crash ocurre a nivel nativo** (no es un error de JavaScript que el try/catch pueda atrapar)
 
-### 1. `PodUploadSection.tsx` (POD - Delivery)
-- Fetch los stops de delivery con su `address` y `stop_order` (no solo los IDs)
-- Agrupar los `deliveryPods` por `stop_id`, creando secciones visuales
-- Cada grupo muestra: etiqueta con numero de parada + direccion (ej: "Delivery #1 - 123 Main St, Dallas TX")
-- Los documentos sin `stop_id` (legacy/null) se muestran en un grupo "Sin parada asignada"
-- Cada grupo tiene su propio "Seleccionar todo" y "Copiar al Clipboard"
-- El boton "Subir POD" global sigue funcionando igual
+Adicionalmente, a los 2 segundos se intenta registrar las **push notifications** con Firebase, lo cual tambien puede causar un crash nativo si `google-services.json` no esta configurado.
 
-### 2. `PickupPicturesSection.tsx` (Pickup - BOL)
-- Mismo patron: fetch stops de pickup con address/order
-- Agrupar por `stop_id` con encabezado de parada
-- Cada grupo con seleccion y copia independiente
+## Cambios para solucionar
 
-### 3. Cargas con una sola parada
-- Si solo hay 1 parada de pickup y 1 de delivery (caso comun), la UI se ve exactamente igual que ahora (sin encabezados redundantes)
-- Los encabezados de grupo solo aparecen cuando hay 2+ paradas del mismo tipo
+### 1. `src/contexts/DriverTrackingContext.tsx` - Proteger el auto-start
 
-## Resultado visual
+- Aumentar el delay del auto-start de 500ms a 3000ms para dar tiempo al app de estabilizarse
+- Envolver todo el auto-start en un try/catch global extra
+- Verificar que el plugin existe antes de intentar usarlo (con un health-check previo)
+- Agregar un flag `isReady` que solo se activa cuando el componente lleva montado suficiente tiempo
 
-Para una carga con 2 deliveries:
+### 2. `src/lib/nativeTracking.ts` - Health check del plugin
 
-```text
-POD -- Proof of Delivery
-  [Subir POD]
+- Agregar una funcion `isBackgroundGeolocationAvailable()` que verifica si el plugin esta realmente disponible antes de intentar usarlo
+- Si el plugin no responde, retornar silenciosamente sin crashear
+- Agregar logs de diagnostico para futuro debugging
 
-  Delivery #1 - 456 Oak Ave, Houston TX
-    [Seleccionar todo]
-    [x] foto1.jpg  [x] foto2.jpg
-    [Copiar al Clipboard (2)]
+### 3. `src/lib/nativePushNotifications.ts` - Proteger el registro
 
-  Delivery #2 - 789 Pine St, Austin TX
-    [Seleccionar todo]
-    [ ] foto3.jpg  [ ] foto4.jpg
-```
+- Aumentar el delay de 2s a 5s
+- Agregar validacion extra antes de llamar `register()`
+- Envolver en doble try/catch para proteger contra crashes nativos
 
-## Notas
-- No requiere cambios en la base de datos -- el campo `stop_id` en `pod_documents` ya existe y el driver app ya lo guarda correctamente
-- La funcionalidad de copia secuencial se mantiene pero ahora opera por grupo de parada
-- Los documentos legacy (sin stop_id) siguen siendo visibles
+### 4. `src/components/driver-app/DriverMobileLayout.tsx` - Proteger StatusBar
+
+- Envolver la configuracion de StatusBar en verificacion mas robusta
+- Agregar catch mas defensivo para evitar crashes silenciosos
+
+## Resultado esperado
+
+- La app no se cierra al cargar el Dashboard
+- El GPS tracking se inicia solo cuando el plugin esta verificado como disponible
+- Las push notifications se registran de forma segura
+- Si algo falla, se muestra un log en consola (no un crash)
+
