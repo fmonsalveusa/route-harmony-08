@@ -39,6 +39,7 @@ import DriverPayments from "./pages/driver-app/DriverPayments";
 import DriverProfile from "./pages/driver-app/DriverProfile";
 import DriverTracking from "./pages/driver-app/DriverTracking";
 import { DriverTrackingProvider } from "./contexts/DriverTrackingContext";
+import { isNativePlatform } from "./lib/nativeTracking";
 
 const queryClient = new QueryClient();
 
@@ -119,7 +120,7 @@ const AppRoutes = () => {
       <Route path="/auth" element={user ? <Navigate to={getRedirectPath()} replace /> : <Auth />} />
       <Route path="/onboarding/:token" element={<DriverOnboarding />} />
       <Route path="/install" element={<Install />} />
-      <Route path="/" element={user ? <Navigate to={getRedirectPath()} replace /> : <Landing />} />
+      <Route path="/" element={user ? <Navigate to={getRedirectPath()} replace /> : isNativePlatform() ? <Navigate to="/auth" replace /> : <Landing />} />
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
 
       {/* Driver mobile routes */}
