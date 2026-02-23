@@ -127,23 +127,28 @@ export const DriverMobileLayout = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (!isNativePlatform()) return;
 
-    // Status bar styling synced with theme
-    import('@capacitor/status-bar').then(({ StatusBar, Style }) => {
-      const isDark = resolvedTheme === 'dark';
-      StatusBar.setStyle({ style: isDark ? Style.Dark : Style.Light }).catch(() => {});
-      StatusBar.setBackgroundColor({ color: isDark ? '#0f172a' : '#1e3a5f' }).catch(() => {});
-    }).catch(() => {});
+    // Status bar styling synced with theme — fully defensive
+    try {
+      import('@capacitor/status-bar').then(({ StatusBar, Style }) => {
+        try {
+          const isDark = resolvedTheme === 'dark';
+          StatusBar.setStyle({ style: isDark ? Style.Dark : Style.Light }).catch(() => {});
+          StatusBar.setBackgroundColor({ color: isDark ? '#0f172a' : '#1e3a5f' }).catch(() => {});
+        } catch { /* ignore */ }
+      }).catch(() => {});
+    } catch { /* ignore */ }
 
     // App lifecycle — re-sync GPS on foreground
-    import('@capacitor/app').then(({ App }) => {
-      const listener = App.addListener('appStateChange', ({ isActive }) => {
-        if (isActive && tracking) {
-          // GPS re-sync is handled by DriverTrackingContext's native plugin
-          // This is just a safety net for any UI state refresh
-        }
-      });
-      return () => { listener.then(l => l.remove()); };
-    }).catch(() => {});
+    try {
+      import('@capacitor/app').then(({ App }) => {
+        const listener = App.addListener('appStateChange', ({ isActive }) => {
+          if (isActive && tracking) {
+            // GPS re-sync is handled by DriverTrackingContext's native plugin
+          }
+        });
+        return () => { listener.then(l => l.remove()); };
+      }).catch(() => {});
+    } catch { /* ignore */ }
   }, [tracking, resolvedTheme]);
 
   // Initialize push notifications for native app

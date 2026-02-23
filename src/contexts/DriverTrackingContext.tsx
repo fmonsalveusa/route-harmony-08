@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { getTenantId } from '@/hooks/useTenantId';
 import { toast } from '@/hooks/use-toast';
-import { isNativePlatform, startNativeTracking, stopNativeTracking, hasActiveWatcher } from '@/lib/nativeTracking';
+import { isNativePlatform, startNativeTracking, stopNativeTracking, hasActiveWatcher, isBackgroundGeolocationAvailable } from '@/lib/nativeTracking';
 import { hapticFeedback } from '@/lib/haptics';
 import { App as CapApp } from '@capacitor/app';
 
@@ -329,10 +329,32 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
     if (autoResumedRef.current) return;
     if (!driverId) return;
 
+    const safeAutoStart = async () => {
+      // On native, verify the GPS plugin is actually available before starting
+      if (isNativePlatform()) {
+        try {
+          const available = await isBackgroundGeolocationAvailable();
+          if (!available) {
+            console.warn('[Tracking] Auto-start skipped: GPS plugin not available');
+            return;
+          }
+        } catch (e) {
+          console.warn('[Tracking] Auto-start plugin check failed:', e);
+          return;
+        }
+      }
+
+      try {
+        startTracking(true);
+      } catch (e) {
+        console.error('[Tracking] Auto-start failed:', e);
+      }
+    };
+
     const wasTracking = localStorage.getItem(TRACKING_STORAGE_KEY) === 'true';
     if (wasTracking && !tracking) {
       autoResumedRef.current = true;
-      setTimeout(() => startTracking(true), 500); // silent resume
+      setTimeout(() => safeAutoStart(), 3000); // increased delay for stability
       return;
     }
 
@@ -344,10 +366,14 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
         .eq('driver_id', driverId)
         .in('status', ACTIVE_LOAD_STATUSES)
         .limit(1)
-        .then(({ data }) => {
+        .then(({ data, error }) => {
+          if (error) {
+            console.error('[Tracking] Auto-start query failed:', error);
+            return;
+          }
           if (data && data.length > 0 && !autoResumedRef.current) {
             autoResumedRef.current = true;
-            setTimeout(() => startTracking(true), 500); // silent auto-start
+            setTimeout(() => safeAutoStart(), 3000); // increased delay for stability
           }
         });
     }
