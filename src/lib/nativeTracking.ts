@@ -22,6 +22,7 @@ interface BackgroundGeolocationPlugin {
 
 let watcherId: string | null = null;
 let pluginInstance: BackgroundGeolocationPlugin | null = null;
+let pluginAvailable: boolean | null = null; // cached result
 
 function getBackgroundGeolocation(): BackgroundGeolocationPlugin | null {
   if (!isNativePlatform()) return null;
@@ -29,8 +30,35 @@ function getBackgroundGeolocation(): BackgroundGeolocationPlugin | null {
   try {
     pluginInstance = registerPlugin<BackgroundGeolocationPlugin>('BackgroundGeolocation');
     return pluginInstance;
-  } catch {
+  } catch (e) {
+    console.warn('[NativeTracking] Failed to register plugin:', e);
     return null;
+  }
+}
+
+/**
+ * Health-check: verifies the BackgroundGeolocation plugin is truly available
+ * by attempting to register it. Returns cached result after first call.
+ */
+export async function isBackgroundGeolocationAvailable(): Promise<boolean> {
+  if (!isNativePlatform()) return false;
+  if (pluginAvailable !== null) return pluginAvailable;
+
+  try {
+    const plugin = getBackgroundGeolocation();
+    if (!plugin) {
+      pluginAvailable = false;
+      console.log('[NativeTracking] Plugin not available (registerPlugin returned null)');
+      return false;
+    }
+    // Plugin object exists — mark as available
+    pluginAvailable = true;
+    console.log('[NativeTracking] Plugin available ✓');
+    return true;
+  } catch (e) {
+    pluginAvailable = false;
+    console.warn('[NativeTracking] Plugin availability check failed:', e);
+    return false;
   }
 }
 
@@ -42,6 +70,13 @@ export function hasActiveWatcher(): boolean {
 export async function startNativeTracking(
   onPosition: (pos: PositionCallback) => void
 ): Promise<() => void> {
+  // Pre-check availability
+  const available = await isBackgroundGeolocationAvailable();
+  if (!available) {
+    console.warn('[NativeTracking] Skipping start — plugin not available');
+    return () => {};
+  }
+
   const plugin = getBackgroundGeolocation();
   if (!plugin) return () => {};
 
@@ -52,6 +87,7 @@ export async function startNativeTracking(
   }
 
   try {
+    console.log('[NativeTracking] Starting watcher...');
     watcherId = await plugin.addWatcher(
       {
         backgroundMessage: 'GPS tracking is active',
@@ -62,7 +98,7 @@ export async function startNativeTracking(
       },
       (location, error) => {
         if (error) {
-          console.error('Native GPS error:', error);
+          console.error('[NativeTracking] GPS error:', error);
           return;
         }
         if (location) {
@@ -77,9 +113,10 @@ export async function startNativeTracking(
       }
     );
 
+    console.log('[NativeTracking] Watcher started, id:', watcherId);
     return () => { stopNativeTracking(); };
   } catch (e) {
-    console.error('Failed to start native tracking:', e);
+    console.error('[NativeTracking] Failed to start watcher:', e);
     watcherId = null;
     return () => {};
   }
@@ -92,7 +129,8 @@ export async function stopNativeTracking(): Promise<void> {
   try {
     await plugin.removeWatcher({ id: watcherId });
     watcherId = null;
+    console.log('[NativeTracking] Watcher stopped');
   } catch (e) {
-    console.error('Failed to stop native tracking:', e);
+    console.error('[NativeTracking] Failed to stop watcher:', e);
   }
 }
