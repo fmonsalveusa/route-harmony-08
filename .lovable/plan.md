@@ -1,64 +1,80 @@
 
-# Corregir Recarga al Cambiar de Pestaña
+
+# Fix: Crash de la app Android al solicitar permisos de notificaciones
 
 ## Problema
-Cuando el usuario cambia a otra pestaña del navegador y regresa, la app se recarga y pierde el estado actual (dialogos abiertos, formularios en progreso, detalles desplegados).
+La app nativa Android se cierra inmediatamente despues de que el usuario acepta (o rechaza) el permiso de notificaciones push. El error "Dispatch Up closed because this app has a bug" indica un crash fatal en el codigo nativo.
 
-## Causas identificadas
+**Causa raiz:** El plugin `@capacitor/push-notifications` llama a `PushNotifications.register()` que internamente requiere Firebase Cloud Messaging (FCM). Si el archivo `google-services.json` no esta presente o Firebase no esta configurado correctamente en el proyecto Android, esto provoca un crash fatal que no puede ser atrapado por el try-catch de JavaScript.
 
-### 1. React Query refetch en foco
-`QueryClient` tiene `refetchOnWindowFocus: true` por defecto. Cada vez que la pestaña vuelve a estar activa, todas las queries se re-ejecutan, lo que causa que los componentes se re-rendericen y los dialogos/formularios se cierren.
-
-### 2. Service Worker auto-recarga
-En `main.tsx`, el service worker detecta actualizaciones y llama `updateSW(true)` automaticamente, lo que recarga toda la pagina. Ademas hay un `setInterval` cada 60 segundos que busca actualizaciones.
-
----
+Ademas, una vez que la app crashea, al reabrirla el codigo vuelve a ejecutar la misma logica y vuelve a crashear en un ciclo infinito.
 
 ## Solucion
 
-### Archivo: `src/App.tsx` (linea 45)
-Configurar `QueryClient` para desactivar el refetch automatico al cambiar de pestaña:
+Hacer que la inicializacion de push notifications sea segura y no bloquee la app:
 
-```typescript
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: false,
-      staleTime: 1000 * 60 * 5, // 5 minutos antes de considerar datos obsoletos
-    },
-  },
-});
-```
+### 1. Proteger `initPushNotifications` contra crashes
+- Agregar un retraso (setTimeout) para que la UI cargue completamente antes de intentar registrar push.
+- Verificar que el plugin este disponible antes de llamar a `register()`.
+- Si falla, marcar como "no disponible" y no intentar de nuevo.
 
-Esto evita que los datos se recarguen al regresar a la pestaña. Los datos se seguiran actualizando por Supabase Realtime (que ya esta implementado en la mayoria de los hooks) y por las acciones del usuario (crear, editar, eliminar).
-
-### Archivo: `src/main.tsx` (lineas 14-29)
-Cambiar la estrategia del service worker para no recargar la pagina automaticamente:
-
-```typescript
-const updateSW = registerSW({
-  onNeedRefresh() {
-    // Solo loguear; la actualizacion se aplicara en la proxima navegacion natural
-    console.log("New version available - will update on next reload");
-  },
-  onOfflineReady() {
-    console.log("App ready for offline use");
-  },
-  immediate: true,
-});
-
-// Reducir frecuencia de chequeo a cada 5 minutos (no cada 60 segundos)
-setInterval(() => {
-  updateSW();
-}, 5 * 60 * 1000);
-```
-
-Esto elimina la recarga forzada. La nueva version se aplicara la proxima vez que el usuario recargue manualmente o navegue.
+### 2. Evitar el ciclo de crash al reabrir
+- No marcar `initialized = true` antes de que el registro sea exitoso.
+- Si la primera llamada falla, no reintentar automaticamente.
 
 ---
 
-## Resultado esperado
-- Los dialogos y formularios abiertos se mantendran al cambiar de pestaña
-- Los datos no se recargaran agresivamente al volver
-- Los datos seguiran actualizandose via Realtime y acciones del usuario
-- Las actualizaciones del service worker se aplicaran de forma no intrusiva
+## Detalles tecnicos
+
+### Archivo: `src/lib/nativePushNotifications.ts`
+
+Cambios:
+- Envolver `PushNotifications.register()` en un bloque mas defensivo.
+- Agregar un `setTimeout` para diferir la inicializacion y no bloquear el arranque de la app.
+- No llamar `register()` si `requestPermissions()` falla o el permiso no fue concedido.
+- Mantener `initialized = true` solo despues de que todo haya sido exitoso, pero agregar un flag `attemptedInit` para evitar reintentos infinitos.
+
+```typescript
+let initialized = false;
+let attemptedInit = false;
+
+export async function initPushNotifications(driverId: string | null) {
+  if (!isNativePlatform() || initialized || attemptedInit || !driverId) return;
+  attemptedInit = true;
+
+  // Defer to let the app fully render first
+  setTimeout(async () => {
+    try {
+      const { PushNotifications } = await import('@capacitor/push-notifications');
+
+      const permResult = await PushNotifications.requestPermissions();
+      if (permResult.receive !== 'granted') {
+        console.log('[Push] Permission denied');
+        return;
+      }
+
+      // Add listeners BEFORE calling register
+      PushNotifications.addListener('registration', async (token) => { ... });
+      PushNotifications.addListener('registrationError', (err) => { ... });
+      PushNotifications.addListener('pushNotificationReceived', ...);
+      PushNotifications.addListener('pushNotificationActionPerformed', ...);
+
+      await PushNotifications.register();
+      initialized = true;
+    } catch (err) {
+      console.error('[Push] Init error:', err);
+    }
+  }, 2000);
+}
+```
+
+### Nota importante para el proyecto Android nativo
+
+Despues de aplicar este fix de codigo, necesitaras:
+1. Hacer `git pull` del proyecto.
+2. Ejecutar `npx cap sync android`.
+3. Verificar que `google-services.json` de Firebase este en `android/app/`.
+4. Si NO tienes `google-services.json`, deberas crear un proyecto en Firebase Console, registrar la app con el ID `com.dispatchup.driver`, descargar el archivo y colocarlo en `android/app/`.
+5. Reconstruir el APK/AAB desde Android Studio.
+
+Sin el archivo `google-services.json`, las push notifications no funcionaran, pero con este fix **la app ya no se cerrara** -- simplemente omitira el registro de push silenciosamente.
