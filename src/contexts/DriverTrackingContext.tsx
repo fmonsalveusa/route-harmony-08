@@ -354,28 +354,32 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
     const wasTracking = localStorage.getItem(TRACKING_STORAGE_KEY) === 'true';
     if (wasTracking && !tracking) {
       autoResumedRef.current = true;
-      setTimeout(() => safeAutoStart(), 3000); // increased delay for stability
+      setTimeout(() => safeAutoStart(), 6000); // 6s delay for full app stability
       return;
     }
 
     // Auto-start: check if driver has active loads and tracking is not on
     if (!tracking) {
-      supabase
-        .from('loads')
-        .select('id')
-        .eq('driver_id', driverId)
-        .in('status', ACTIVE_LOAD_STATUSES)
-        .limit(1)
-        .then(({ data, error }) => {
-          if (error) {
-            console.error('[Tracking] Auto-start query failed:', error);
-            return;
-          }
-          if (data && data.length > 0 && !autoResumedRef.current) {
-            autoResumedRef.current = true;
-            setTimeout(() => safeAutoStart(), 3000); // increased delay for stability
-          }
-        });
+      // Delay the query itself to avoid any early initialization issues
+      const queryTimer = setTimeout(() => {
+        supabase
+          .from('loads')
+          .select('id')
+          .eq('driver_id', driverId)
+          .in('status', ACTIVE_LOAD_STATUSES)
+          .limit(1)
+          .then(({ data, error }) => {
+            if (error) {
+              console.error('[Tracking] Auto-start query failed:', error);
+              return;
+            }
+            if (data && data.length > 0 && !autoResumedRef.current) {
+              autoResumedRef.current = true;
+              setTimeout(() => safeAutoStart(), 3000);
+            }
+          });
+      }, 5000); // wait 5s before even querying
+      return () => clearTimeout(queryTimer);
     }
   }, [driverId]); // intentionally only depend on driverId
 
