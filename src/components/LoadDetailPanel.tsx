@@ -623,30 +623,53 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
     const isActive = (updatedAt: string) =>
       Date.now() - new Date(updatedAt).getTime() < FIVE_MINUTES;
 
+    const formatAgo = (updatedAt: string) => {
+      const diffMs = Date.now() - new Date(updatedAt).getTime();
+      const diffSec = Math.round(diffMs / 1000);
+      if (diffSec < 60) return `${diffSec}s ago`;
+      const diffMin = Math.round(diffSec / 60);
+      if (diffMin < 60) return `${diffMin}m ago`;
+      const diffHr = Math.round(diffMin / 60);
+      return `${diffHr}h ago`;
+    };
+
     const createOrUpdateMarker = async (loc: { lat: number; lng: number; speed: number | null; updated_at: string }) => {
       if (isCancelled || !mapInstanceRef.current) return;
-      if (!isActive(loc.updated_at)) {
-        if (driverMarkerRef) {
-          mapInstanceRef.current.removeLayer(driverMarkerRef);
-          driverMarkerRef = null;
-        }
-        return;
-      }
+
+      const active = isActive(loc.updated_at);
+      setGpsStatus(active ? 'active' : 'stale');
 
       const L = (await import('leaflet')).default;
       const speedMph = loc.speed != null ? Math.round(loc.speed * 2.237) : null;
-      const ago = Math.round((Date.now() - new Date(loc.updated_at).getTime()) / 1000);
-      const agoText = ago < 60 ? `${ago}s ago` : `${Math.round(ago / 60)}m ago`;
-      const popupHtml = `<div style="text-align:center"><b style="color:hsl(215,70%,50%)">🛰 GPS Live</b><br/>${driver?.name || 'Driver'}<br/>${speedMph != null ? `${speedMph} mph` : ''}<br/><small>${agoText}</small></div>`;
+      const agoText = formatAgo(loc.updated_at);
+
+      const statusLabel = active ? '🛰 GPS Live' : '📍 Last Known';
+      const statusColor = active ? 'hsl(142,70%,40%)' : 'hsl(30,80%,50%)';
+      const markerBg = active ? 'hsl(215,70%,50%)' : 'hsl(30,80%,50%)';
+      const pulseBg = active ? 'hsl(215,70%,50%,0.25)' : 'hsl(30,80%,50%,0.15)';
+      const pulseAnim = active ? 'animation:pulse 2s infinite' : '';
+
+      const popupHtml = `<div style="text-align:center"><b style="color:${statusColor}">${statusLabel}</b><br/>${driver?.name || 'Driver'}<br/>${active && speedMph != null ? `${speedMph} mph<br/>` : ''}<small>${agoText}</small></div>`;
 
       if (driverMarkerRef) {
         driverMarkerRef.setLatLng([loc.lat, loc.lng]);
         driverMarkerRef.getPopup()?.setContent(popupHtml);
+        // Update icon style
+        const newIcon = L.divIcon({
+          html: `<div style="position:relative;display:flex;align-items:center;justify-content:center">
+            <div style="position:absolute;width:36px;height:36px;border-radius:50%;background:${pulseBg};${pulseAnim}"></div>
+            <div style="width:24px;height:24px;border-radius:50%;background:${markerBg};color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,.4);position:relative;z-index:1">🚛</div>
+          </div>`,
+          className: '',
+          iconSize: [36, 36],
+          iconAnchor: [18, 18],
+        });
+        driverMarkerRef.setIcon(newIcon);
       } else {
         const driverIcon = L.divIcon({
           html: `<div style="position:relative;display:flex;align-items:center;justify-content:center">
-            <div style="position:absolute;width:36px;height:36px;border-radius:50%;background:hsl(215,70%,50%,0.25);animation:pulse 2s infinite"></div>
-            <div style="width:24px;height:24px;border-radius:50%;background:hsl(215,70%,50%);color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,.4);position:relative;z-index:1">🚛</div>
+            <div style="position:absolute;width:36px;height:36px;border-radius:50%;background:${pulseBg};${pulseAnim}"></div>
+            <div style="width:24px;height:24px;border-radius:50%;background:${markerBg};color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,.4);position:relative;z-index:1">🚛</div>
           </div>`,
           className: '',
           iconSize: [36, 36],
@@ -665,7 +688,11 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
         .select('lat, lng, speed, updated_at')
         .eq('driver_id', driverId)
         .maybeSingle();
-      if (data && !isCancelled) createOrUpdateMarker(data as any);
+      if (data && !isCancelled) {
+        createOrUpdateMarker(data as any);
+      } else if (!isCancelled) {
+        setGpsStatus('none');
+      }
     };
     fetchInitial();
 
@@ -682,23 +709,21 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
       })
       .subscribe();
 
-    // Periodic check to remove stale marker
+    // Periodic check to update stale status and popup text
     const staleCheck = setInterval(async () => {
-      if (driverMarkerRef && !isCancelled) {
+      if (!isCancelled) {
         const { data } = await supabase
           .from('driver_locations')
-          .select('updated_at')
+          .select('lat, lng, speed, updated_at')
           .eq('driver_id', driverId)
           .maybeSingle();
-        if (data && !isActive((data as any).updated_at) && driverMarkerRef && mapInstanceRef.current) {
-          mapInstanceRef.current.removeLayer(driverMarkerRef);
-          driverMarkerRef = null;
-        }
+        if (data && !isCancelled) createOrUpdateMarker(data as any);
       }
     }, 60000);
 
     return () => {
       isCancelled = true;
+      setGpsStatus('none');
       supabase.removeChannel(channel);
       clearInterval(staleCheck);
       if (driverMarkerRef && mapInstanceRef.current) {
@@ -914,6 +939,26 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
         {/* Map */}
         <div className="rounded-lg overflow-hidden border bg-card relative h-full" style={{ minHeight: 350, zIndex: 0 }}>
           <div ref={mapRef} style={{ height: '100%', minHeight: 350, zIndex: 0 }} />
+          {gpsStatus !== 'none' && (
+            <div className="absolute top-2 right-2 z-[1000] pointer-events-none">
+              {gpsStatus === 'active' ? (
+                <div className="flex items-center gap-1.5 bg-green-600/90 text-white text-xs font-semibold px-2.5 py-1 rounded-full shadow-md backdrop-blur-sm">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                  </span>
+                  GPS Active
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 bg-orange-500/90 text-white text-xs font-semibold px-2.5 py-1 rounded-full shadow-md backdrop-blur-sm">
+                  <span className="relative flex h-2 w-2">
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-white/70"></span>
+                  </span>
+                  Last Location
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
