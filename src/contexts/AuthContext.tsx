@@ -156,14 +156,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
-      // Token refresh and initial session should NOT reset loading or re-fetch data
+      // Token refresh and repeated SIGNED_IN (tab switch) should NOT reset loading
       // This prevents dialogs/forms from being unmounted when switching tabs
-      if (event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
+      if (event === 'TOKEN_REFRESHED') {
         setSession(session);
         return;
       }
 
-      console.log('[AuthContext] Processing event:', event, '- will set loading=true');
+      // If user is already signed in and we get another SIGNED_IN event
+      // (happens when switching tabs), just update session silently
+      if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+        setSession(session);
+        setUser(session?.user ?? null);
+        // Only fetch data if we don't have a profile yet (first sign in)
+        if (!profile && session?.user) {
+          setLoading(true);
+          setTimeout(() => {
+            fetchUserData(session.user.id).finally(() => setLoading(false));
+          }, 0);
+        }
+        return;
+      }
+
+      // SIGNED_OUT or other events
       setSession(session);
       setUser(session?.user ?? null);
 
