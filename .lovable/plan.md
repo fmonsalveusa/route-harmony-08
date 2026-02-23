@@ -1,34 +1,35 @@
 
-# Mejoras Nativas para la App del Driver - COMPLETADO ✅
 
-## Implementaciones realizadas
+# Toggle de Tema Dark/Light (Web + Driver App)
 
-### 1. Pull-to-Refresh ✅
-- Componente `PullToRefresh.tsx` reutilizable
-- Integrado en: DriverDashboard, DriverLoads, DriverPayments, DriverProfile
+Agregar un boton/switch para cambiar entre modo claro y oscuro en ambas interfaces, manteniendo la opcion de seguir el tema del sistema como default.
 
-### 2. Haptic Feedback ✅
-- Helper `haptics.ts` con 3 patrones (success, alert, medium)
-- Integrado en: StopCard (arrived, picked up, delivered, upload), DriverTrackingContext (start/stop tracking, geofence)
+---
 
-### 3. Modo Oscuro Automático ✅
-- ThemeProvider de next-themes con defaultTheme="system"
-- Header del driver usa tokens semánticos en vez de colores inline
-- Dark mode variables ya definidas en index.css
+## Cambios
 
-### 4. Push Notifications Nativas ✅
-- Tabla `push_tokens` creada con RLS
-- Helper `nativePushNotifications.ts` para registro FCM
-- Edge Function `send-push-notification` para enviar via FCM
-- Inicialización automática en DriverMobileLayout
+### 1. Nuevo componente: `src/components/ThemeToggle.tsx`
+- Un boton simple que alterna entre light, dark, y system usando `useTheme()` de `next-themes`
+- Muestra un icono de sol (light), luna (dark), o monitor (system)
+- Click rota entre: system -> light -> dark -> system
 
-## Pasos del usuario
+### 2. App Web - `src/components/AppLayout.tsx`
+- Agregar el `ThemeToggle` en el header, junto al badge de rol y el boton de sign-out
+- Se vera como un icono pequeno mas en la barra superior
 
-1. `git pull`
-2. `npm install`
-3. Configurar Firebase Console → obtener Server Key FCM
-4. Agregar `google-services.json` al proyecto Android
-5. Agregar secret `FCM_SERVER_KEY` en el proyecto
-6. `npx cap sync android`
-7. Generar nuevo AAB en Android Studio (incrementar versionCode)
-8. Subir a Google Play Console
+### 3. Driver App - `src/pages/driver-app/DriverProfile.tsx`
+- Agregar una seccion "Appearance" con 3 opciones (System, Light, Dark) en la pagina de perfil del driver
+- Usar botones estilo radio/segmented para que sea facil de seleccionar
+
+### 4. Driver App - Status Bar sync
+- En `src/components/driver-app/DriverMobileLayout.tsx`, actualizar el color del status bar nativo segun el tema activo (dark = fondo oscuro, light = fondo claro)
+
+---
+
+## Seccion tecnica
+
+- `next-themes` ya esta instalado y el `ThemeProvider` ya tiene `defaultTheme="system"` y `enableSystem`
+- `useTheme()` da acceso a `theme`, `setTheme`, y `resolvedTheme`
+- La preferencia se guarda automaticamente en `localStorage` por `next-themes`
+- No se necesitan cambios en la base de datos ni CSS adicional (las variables dark ya estan definidas en `index.css`)
+
