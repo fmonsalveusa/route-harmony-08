@@ -506,8 +506,21 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
       {/* Inline Preview Overlay */}
       {previewIndex !== null && stopPods[previewIndex] && (
         <div className="fixed inset-0 z-50 bg-black/90 flex flex-col items-center justify-center" onClick={() => setPreviewIndex(null)}>
-          <button className="absolute top-4 right-4 text-white p-2" onClick={() => setPreviewIndex(null)}>
+          {/* Close button */}
+          <button className="absolute top-4 right-4 text-white p-2 z-10" onClick={() => setPreviewIndex(null)}>
             <X className="h-6 w-6" />
+          </button>
+
+          {/* Delete button in preview */}
+          <button
+            className="absolute top-4 left-4 text-white p-2 z-10 bg-destructive/80 rounded-full"
+            onClick={(e) => {
+              e.stopPropagation();
+              setDeleteDoc(stopPods[previewIndex] as any);
+              setPreviewIndex(null);
+            }}
+          >
+            <Trash2 className="h-5 w-5" />
           </button>
 
           {/* Image */}
@@ -518,8 +531,8 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
                 alt={stopPods[previewIndex].file_name}
                 className="max-w-full max-h-[75vh] object-contain rounded-lg"
               />
-            ) : (
-              <div className="text-white text-center space-y-2">
+            ) : resolvedUrls[stopPods[previewIndex].id] ? (
+              <div className="text-white text-center space-y-2" onClick={e => e.stopPropagation()}>
                 <FileText className="h-16 w-16 mx-auto opacity-60" />
                 <p className="text-sm">{stopPods[previewIndex].file_name}</p>
                 <Button
@@ -530,6 +543,11 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
                 >
                   Open File
                 </Button>
+              </div>
+            ) : (
+              <div className="text-white text-center space-y-2">
+                <Loader2 className="h-10 w-10 animate-spin mx-auto opacity-60" />
+                <p className="text-sm">Loading...</p>
               </div>
             )}
           </div>
