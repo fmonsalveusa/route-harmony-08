@@ -149,18 +149,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     // Then listen for future auth changes (sign in, sign out, token refresh)
     const { data: { subscription: authSub } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('[AuthContext] onAuthStateChange event:', event);
+
       // Skip the initial INITIAL_SESSION event since we handle it above
       if (!initialSessionHandled && event === 'INITIAL_SESSION') {
         return;
       }
 
-      // Token refresh should NOT reset loading or re-fetch data
+      // Token refresh and initial session should NOT reset loading or re-fetch data
       // This prevents dialogs/forms from being unmounted when switching tabs
-      if (event === 'TOKEN_REFRESHED') {
+      if (event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
         setSession(session);
         return;
       }
 
+      console.log('[AuthContext] Processing event:', event, '- will set loading=true');
       setSession(session);
       setUser(session?.user ?? null);
 
