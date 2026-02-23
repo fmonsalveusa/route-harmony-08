@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import logoImg from '@/assets/logo.png';
 import { isNativePlatform } from '@/lib/nativeTracking';
 import { initPushNotifications } from '@/lib/nativePushNotifications';
+import { useTheme } from 'next-themes';
 
 const tabs = [
   { label: 'Home', icon: LayoutDashboard, path: '/driver' },
@@ -41,6 +42,7 @@ export const DriverMobileLayout = ({ children }: { children: ReactNode }) => {
   const navigate = useNavigate();
   const { signOut, profile } = useAuth();
   const { tracking, nearbyStop, confirmArrival, dismissArrival } = useDriverTracking();
+  const { resolvedTheme } = useTheme();
   const [bellOpen, setBellOpen] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -125,10 +127,11 @@ export const DriverMobileLayout = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (!isNativePlatform()) return;
 
-    // Status bar styling
+    // Status bar styling synced with theme
     import('@capacitor/status-bar').then(({ StatusBar, Style }) => {
-      StatusBar.setStyle({ style: Style.Dark }).catch(() => {});
-      StatusBar.setBackgroundColor({ color: '#1e3a5f' }).catch(() => {});
+      const isDark = resolvedTheme === 'dark';
+      StatusBar.setStyle({ style: isDark ? Style.Dark : Style.Light }).catch(() => {});
+      StatusBar.setBackgroundColor({ color: isDark ? '#0f172a' : '#1e3a5f' }).catch(() => {});
     }).catch(() => {});
 
     // App lifecycle — re-sync GPS on foreground
@@ -141,7 +144,7 @@ export const DriverMobileLayout = ({ children }: { children: ReactNode }) => {
       });
       return () => { listener.then(l => l.remove()); };
     }).catch(() => {});
-  }, [tracking]);
+  }, [tracking, resolvedTheme]);
 
   // Initialize push notifications for native app
   useEffect(() => {
