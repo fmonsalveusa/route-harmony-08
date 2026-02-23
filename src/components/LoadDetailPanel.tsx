@@ -128,6 +128,7 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
   const { toast } = useToast();
   const { stops: dbStops, loading: stopsLoading, updateStopGeodata } = useLoadStops(load.id);
   const [mapReady, setMapReady] = useState(false);
+  const [gpsStatus, setGpsStatus] = useState<'active' | 'stale' | 'none'>('none');
 
   // Sync local state when load prop changes (after refetch)
   useEffect(() => {
