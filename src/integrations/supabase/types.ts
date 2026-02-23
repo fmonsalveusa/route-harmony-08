@@ -1259,6 +1259,41 @@ export type Database = {
           },
         ]
       }
+      push_tokens: {
+        Row: {
+          created_at: string
+          driver_id: string
+          id: string
+          platform: string
+          tenant_id: string | null
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          driver_id: string
+          id?: string
+          platform?: string
+          tenant_id?: string | null
+          token: string
+        }
+        Update: {
+          created_at?: string
+          driver_id?: string
+          id?: string
+          platform?: string
+          tenant_id?: string | null
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_tokens_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscription_payments: {
         Row: {
           amount: number

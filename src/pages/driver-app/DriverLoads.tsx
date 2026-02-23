@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -8,6 +8,7 @@ import { Calendar } from 'lucide-react';
 import { formatDate } from '@/lib/dateUtils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LoadProgressBar } from '@/components/driver-app/LoadProgressBar';
+import { PullToRefresh } from '@/components/driver-app/PullToRefresh';
 
 export default function DriverLoads() {
   const { profile } = useAuth();
@@ -15,17 +16,17 @@ export default function DriverLoads() {
   const [loads, setLoads] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const fetchLoads = useCallback(async () => {
     if (!profile?.email) return;
-    const fetch = async () => {
-      const { data: driver } = await supabase.from('drivers').select('id').eq('email', profile.email).maybeSingle();
-      if (!driver) { setLoading(false); return; }
-      const { data } = await supabase.from('loads').select('*').eq('driver_id', driver.id).order('pickup_date', { ascending: false });
-      setLoads(data || []);
-      setLoading(false);
-    };
-    fetch();
+    setLoading(true);
+    const { data: driver } = await supabase.from('drivers').select('id').eq('email', profile.email).maybeSingle();
+    if (!driver) { setLoading(false); return; }
+    const { data } = await supabase.from('loads').select('*').eq('driver_id', driver.id).order('pickup_date', { ascending: false });
+    setLoads(data || []);
+    setLoading(false);
   }, [profile?.email]);
+
+  useEffect(() => { fetchLoads(); }, [fetchLoads]);
 
   const statusBadge = (status: string) => {
     const styles: Record<string, string> = {
@@ -140,20 +141,22 @@ export default function DriverLoads() {
   };
 
   return (
-    <div className="p-4 pb-[calc(72px+env(safe-area-inset-bottom,0px))]">
-      <h1 className="text-xl font-bold mb-3">My Loads</h1>
-      <Tabs defaultValue="active">
-        <TabsList className="w-full">
-          <TabsTrigger value="active" className="flex-1">Active ({active.length})</TabsTrigger>
-          <TabsTrigger value="completed" className="flex-1">Completed ({completed.length})</TabsTrigger>
-        </TabsList>
-        <TabsContent value="active" className="space-y-2 mt-3">
-          {active.length === 0 ? <p className="text-sm text-muted-foreground text-center py-8">No active loads</p> : active.map(l => <LoadCard key={l.id} load={l} />)}
-        </TabsContent>
-        <TabsContent value="completed" className="space-y-2 mt-3">
-          {completed.length === 0 ? <p className="text-sm text-muted-foreground text-center py-8">No completed loads yet</p> : completed.map(l => <LoadCard key={l.id} load={l} />)}
-        </TabsContent>
-      </Tabs>
-    </div>
+    <PullToRefresh onRefresh={fetchLoads}>
+      <div className="p-4 pb-[calc(72px+env(safe-area-inset-bottom,0px))]">
+        <h1 className="text-xl font-bold mb-3">My Loads</h1>
+        <Tabs defaultValue="active">
+          <TabsList className="w-full">
+            <TabsTrigger value="active" className="flex-1">Active ({active.length})</TabsTrigger>
+            <TabsTrigger value="completed" className="flex-1">Completed ({completed.length})</TabsTrigger>
+          </TabsList>
+          <TabsContent value="active" className="space-y-2 mt-3">
+            {active.length === 0 ? <p className="text-sm text-muted-foreground text-center py-8">No active loads</p> : active.map(l => <LoadCard key={l.id} load={l} />)}
+          </TabsContent>
+          <TabsContent value="completed" className="space-y-2 mt-3">
+            {completed.length === 0 ? <p className="text-sm text-muted-foreground text-center py-8">No completed loads yet</p> : completed.map(l => <LoadCard key={l.id} load={l} />)}
+          </TabsContent>
+        </Tabs>
+      </div>
+    </PullToRefresh>
   );
 }
