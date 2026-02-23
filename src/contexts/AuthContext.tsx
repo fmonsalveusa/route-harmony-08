@@ -76,6 +76,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [tenant, setTenant] = useState<TenantInfo | null>(null);
   const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
   const [loading, setLoading] = useState(true);
+  const profileLoadedRef = React.useRef(false);
 
   const fetchUserData = async (userId: string) => {
     try {
@@ -87,6 +88,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .maybeSingle();
 
       if (!profileData) return;
+      profileLoadedRef.current = true;
       setProfile(profileData as Profile);
 
       // Fetch role
@@ -168,8 +170,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
         setSession(session);
         setUser(session?.user ?? null);
-        // Only fetch data if we don't have a profile yet (first sign in)
-        if (!profile && session?.user) {
+        // Only fetch data if we haven't loaded a profile yet (first sign in)
+        if (!profileLoadedRef.current && session?.user) {
           setLoading(true);
           setTimeout(() => {
             fetchUserData(session.user.id).finally(() => setLoading(false));
@@ -188,6 +190,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           fetchUserData(session.user.id).finally(() => setLoading(false));
         }, 0);
       } else {
+        profileLoadedRef.current = false;
         setProfile(null);
         setRole(null);
         setTenant(null);
