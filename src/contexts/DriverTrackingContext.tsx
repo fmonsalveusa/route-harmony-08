@@ -3,7 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { getTenantId } from '@/hooks/useTenantId';
 import { toast } from '@/hooks/use-toast';
-import { isNativePlatform, startNativeTracking, stopNativeTracking } from '@/lib/nativeTracking';
+import { isNativePlatform, startNativeTracking, stopNativeTracking, hasActiveWatcher } from '@/lib/nativeTracking';
+import { App as CapApp } from '@capacitor/app';
 
 interface ActiveStop {
   id: string;
@@ -48,7 +49,7 @@ const ACTIVE_LOAD_STATUSES = ['dispatched', 'in_transit', 'on_site_pickup', 'pic
 
 // --- Wake Lock helpers (web only) ---
 async function acquireWakeLock(ref: React.MutableRefObject<WakeLockSentinel | null>) {
-  if (isNativePlatform()) return; // Native plugin handles this
+  if (isNativePlatform()) return;
   try {
     if ('wakeLock' in navigator) {
       ref.current = await (navigator as any).wakeLock.request('screen');
@@ -255,7 +256,7 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
     );
   }, []);
 
-  const startTracking = useCallback(() => {
+  const startTracking = useCallback((silent = false) => {
     if (tracking) return;
 
     if (isNativePlatform()) {
@@ -263,7 +264,13 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
       setTracking(true);
       localStorage.setItem(TRACKING_STORAGE_KEY, 'true');
       dismissedStopsRef.current.clear();
-      toast({ title: 'GPS Tracking started' });
+      if (!silent) toast({ title: 'GPS Tracking started' });
+
+      // If watcher already active (survived background), just update state
+      if (hasActiveWatcher()) {
+        console.log('[Tracking] Watcher still alive, reconnecting state');
+        return;
+      }
 
       startNativeTracking((pos) => {
         sendNativePosition(pos);
@@ -282,7 +289,7 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
     setTracking(true);
     localStorage.setItem(TRACKING_STORAGE_KEY, 'true');
     dismissedStopsRef.current.clear();
-    toast({ title: 'GPS Tracking started' });
+    if (!silent) toast({ title: 'GPS Tracking started' });
 
     acquireWakeLock(wakeLockRef);
     startWatchPosition((pos) => { posRef.current = pos; sendPosition(pos); });
@@ -294,14 +301,12 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
 
   const stopTracking = useCallback(() => {
     if (isNativePlatform()) {
-      // --- Native stop ---
       stopNativeTracking();
       if (nativeCleanupRef.current) {
         nativeCleanupRef.current();
         nativeCleanupRef.current = null;
       }
     } else {
-      // --- Web stop ---
       if (watchRef.current !== null) navigator.geolocation.clearWatch(watchRef.current);
       if (intervalRef.current) clearInterval(intervalRef.current);
       watchRef.current = null;
@@ -323,20 +328,45 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
     const wasTracking = localStorage.getItem(TRACKING_STORAGE_KEY) === 'true';
     if (wasTracking && !tracking) {
       autoResumedRef.current = true;
-      setTimeout(() => startTracking(), 500);
+      setTimeout(() => startTracking(true), 500); // silent resume
     }
   }, [driverId]); // intentionally only depend on driverId
 
-  // Restore GPS watch + Wake Lock when app comes back to foreground (web only)
+  // Native: listen for app state changes to reconnect tracking
   useEffect(() => {
-    if (isNativePlatform()) return; // Native plugin handles background by itself
+    if (!isNativePlatform()) return;
+
+    const listener = CapApp.addListener('appStateChange', ({ isActive }) => {
+      if (!isActive) return; // going to background — native plugin handles it
+      const shouldTrack = localStorage.getItem(TRACKING_STORAGE_KEY) === 'true';
+      if (shouldTrack && !tracking) {
+        // WebView was destroyed and recreated — re-establish tracking state
+        startTracking(true);
+      } else if (shouldTrack && tracking && !hasActiveWatcher()) {
+        // Watcher was killed by OS — restart it
+        startNativeTracking((pos) => {
+          sendNativePosition(pos);
+        }).then((cleanup) => {
+          nativeCleanupRef.current = cleanup;
+        });
+      }
+    });
+
+    return () => {
+      listener.then(l => l.remove());
+    };
+  }, [tracking, sendNativePosition, startTracking]);
+
+  // Web: Restore GPS watch + Wake Lock when app comes back to foreground
+  useEffect(() => {
+    if (isNativePlatform()) return;
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         const shouldTrack = localStorage.getItem(TRACKING_STORAGE_KEY) === 'true';
 
         if (shouldTrack && !tracking) {
-          startTracking();
+          startTracking(true);
           return;
         }
 

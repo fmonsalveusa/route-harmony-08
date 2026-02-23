@@ -21,14 +21,22 @@ interface BackgroundGeolocationPlugin {
 }
 
 let watcherId: string | null = null;
+let pluginInstance: BackgroundGeolocationPlugin | null = null;
 
 function getBackgroundGeolocation(): BackgroundGeolocationPlugin | null {
   if (!isNativePlatform()) return null;
+  if (pluginInstance) return pluginInstance;
   try {
-    return registerPlugin<BackgroundGeolocationPlugin>('BackgroundGeolocation');
+    pluginInstance = registerPlugin<BackgroundGeolocationPlugin>('BackgroundGeolocation');
+    return pluginInstance;
   } catch {
     return null;
   }
+}
+
+/** Returns true if a native watcher is currently registered */
+export function hasActiveWatcher(): boolean {
+  return watcherId !== null;
 }
 
 export async function startNativeTracking(
@@ -36,6 +44,12 @@ export async function startNativeTracking(
 ): Promise<() => void> {
   const plugin = getBackgroundGeolocation();
   if (!plugin) return () => {};
+
+  // If a watcher already exists, don't create a duplicate
+  if (watcherId !== null) {
+    console.log('[NativeTracking] Watcher already active, skipping duplicate');
+    return () => { stopNativeTracking(); };
+  }
 
   try {
     watcherId = await plugin.addWatcher(
@@ -66,6 +80,7 @@ export async function startNativeTracking(
     return () => { stopNativeTracking(); };
   } catch (e) {
     console.error('Failed to start native tracking:', e);
+    watcherId = null;
     return () => {};
   }
 }
