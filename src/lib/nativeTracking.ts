@@ -55,7 +55,7 @@ export async function startNativeTracking(
     watcherId = await plugin.addWatcher(
       {
         backgroundMessage: 'GPS tracking is active',
-        backgroundTitle: 'Load Up Driver',
+        backgroundTitle: 'Dispatch Up Driver',
         requestPermissions: true,
         stale: false,
         distanceFilter: 10,
