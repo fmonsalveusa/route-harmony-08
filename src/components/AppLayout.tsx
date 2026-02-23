@@ -16,6 +16,7 @@ import { LoadFormDialog } from '@/components/LoadFormDialog';
 import { useLoads } from '@/hooks/useLoads';
 import { NotificationBell } from '@/components/NotificationBell';
 import { LiveNotificationToasts } from '@/components/LiveNotificationToasts';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { supabase } from '@/integrations/supabase/client';
 
 interface NavItem {
@@ -249,6 +250,7 @@ export const AppLayout = ({ children }: {children: ReactNode;}) => {
           }
 
           <div className="flex items-center gap-3">
+            <ThemeToggle />
             <NotificationBell />
             <Badge className={`text-xs ${roleBadgeStyles[role || 'admin']}`}>
               {roleLabels[role || 'admin']}

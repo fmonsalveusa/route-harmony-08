@@ -3,9 +3,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { User, Phone, Mail, FileText, Truck, Calendar } from 'lucide-react';
+import { User, Phone, Mail, FileText, Truck, Calendar, Sun, Moon, Monitor, Palette } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { PullToRefresh } from '@/components/driver-app/PullToRefresh';
+import { useTheme } from 'next-themes';
 
 export default function DriverProfile() {
   const { profile } = useAuth();
@@ -50,6 +51,14 @@ export default function DriverProfile() {
     </div>
   );
 
+  const { theme, setTheme } = useTheme();
+
+  const themeOptions = [
+    { value: 'system', label: 'System', icon: Monitor },
+    { value: 'light', label: 'Light', icon: Sun },
+    { value: 'dark', label: 'Dark', icon: Moon },
+  ] as const;
+
   return (
     <PullToRefresh onRefresh={fetchData}>
       <div className="p-4 pb-[calc(72px+env(safe-area-inset-bottom,0px))] space-y-5">
@@ -76,6 +85,32 @@ export default function DriverProfile() {
             <InfoRow icon={Calendar} label="Medical Card Expires">
               <ExpiryBadgeInline date={driver.medical_card_expiry} />
             </InfoRow>
+          </CardContent>
+        </Card>
+
+        {/* Appearance */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2"><Palette className="h-4 w-4" /> Appearance</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-2">
+              {themeOptions.map(opt => {
+                const active = (theme || 'system') === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    onClick={() => setTheme(opt.value)}
+                    className={`flex-1 flex flex-col items-center gap-1.5 py-3 rounded-lg border-2 transition-all ${
+                      active ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:border-primary/40'
+                    }`}
+                  >
+                    <opt.icon className="h-5 w-5" />
+                    <span className="text-xs font-medium">{opt.label}</span>
+                  </button>
+                );
+              })}
+            </div>
           </CardContent>
         </Card>
 
