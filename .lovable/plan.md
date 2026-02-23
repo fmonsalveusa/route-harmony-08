@@ -1,19 +1,38 @@
 
-# Actualizar nombre de la app movil a "Dispatch Up Driver"
 
-## Cambios necesarios
+# Actualizar el logo de Dispatch Up Driver
 
-Se actualizaran las referencias al nombre de la app movil en 3 archivos para que coincidan con el nombre publicado en la tienda.
+## Que se hara
 
-### 1. `capacitor.config.ts`
-- Cambiar `appName: 'Dispatch Up'` a `appName: 'Dispatch Up Driver'`
+Se reemplazara el logo actual (`src/assets/logo.png`) con la nueva imagen que subiste (la "D" azul/naranja) en todos los lugares donde aparece en la app.
 
-### 2. `src/components/driver-app/DriverMobileLayout.tsx`
-- Cambiar el texto visible en el header de la app movil de `"Load Up Driver"` a `"Dispatch Up Driver"`
+## Donde se usa el logo actualmente
 
-### 3. `src/lib/nativeTracking.ts`
-- Cambiar `backgroundTitle: 'Load Up Driver'` a `backgroundTitle: 'Dispatch Up Driver'` (titulo de la notificacion de GPS tracking)
+El archivo `src/assets/logo.png` se importa en **7 archivos**:
 
-## Notas
-- El TMS web (landing page, pagina de login, dashboard) mantendra el nombre "Load Up TMS" ya que es el producto web, no la app movil.
-- Despues de aplicar estos cambios, la proxima vez que compiles el APK deberas hacer `git pull` y `npx cap sync android` para que el `appName` en Capacitor se refleje en el build nativo.
+1. **DriverMobileLayout.tsx** - Header de la app movil (lo que ven los drivers)
+2. **AppLayout.tsx** - Sidebar del TMS web (admin/dispatcher)
+3. **Auth.tsx** - Pagina de login
+4. **DriverOnboarding.tsx** - Formulario de onboarding de drivers
+5. **Install.tsx** - Pagina de instalacion PWA
+6. **LandingNavbar.tsx** - Navbar del landing page
+7. **LandingFooter.tsx** - Footer del landing page
+
+Ademas existe `src/assets/dispatch-up-logo.png` que se usa en los PDFs de facturas de dispatch service.
+
+## Cambios
+
+### 1. Reemplazar `src/assets/logo.png`
+- Copiar la imagen subida a `src/assets/logo.png`
+- Esto actualizara automaticamente todos los 7 archivos que lo importan, sin necesidad de cambiar codigo
+
+### 2. Reemplazar `src/assets/dispatch-up-logo.png`
+- Copiar la misma imagen para que los PDFs de facturas tambien usen el nuevo logo
+
+### 3. Actualizar `public/pwa-icon.png` y `public/favicon.png`
+- Copiar la imagen como icono PWA y favicon para que el navegador y la pantalla de inicio muestren el nuevo logo
+
+## Nota importante
+- Los cambios web (header, login, landing) se veran automaticamente al hacer Update sin necesidad de nuevo APK
+- Para que el **icono de la app en el telefono** cambie, si necesitaras compilar un nuevo APK con los iconos nativos actualizados en `android/app/src/main/res/`
+
