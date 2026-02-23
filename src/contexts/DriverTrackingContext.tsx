@@ -277,15 +277,26 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
           return;
         }
 
-        startNativeTracking((pos) => {
-          sendNativePosition(pos);
-        }).then((cleanup) => {
+        try {
+          const cleanup = await startNativeTracking((pos) => {
+            sendNativePosition(pos);
+          });
           nativeCleanupRef.current = cleanup;
-        });
-        return;
+
+          // Verify watcher was actually created — if not, fall back to web
+          if (!hasActiveWatcher()) {
+            console.warn('[Tracking] Native watcher failed to start, falling through to web');
+            // Don't return — let it fall through to web tracking below
+          } else {
+            return; // Native tracking is working
+          }
+        } catch (e) {
+          console.error('[Tracking] Native startNativeTracking threw, falling to web:', e);
+          // Fall through to web tracking
+        }
+      } else {
+        console.log('[Tracking] Native GPS not available, using web fallback');
       }
-      // If native GPS not available, fall through to web tracking
-      console.log('[Tracking] Native GPS not available, using web fallback');
     }
 
     // --- Web tracking ---
