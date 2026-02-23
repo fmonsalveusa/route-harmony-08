@@ -1,35 +1,64 @@
 
+# Corregir Recarga al Cambiar de Pestaña
 
-# Toggle de Tema Dark/Light (Web + Driver App)
+## Problema
+Cuando el usuario cambia a otra pestaña del navegador y regresa, la app se recarga y pierde el estado actual (dialogos abiertos, formularios en progreso, detalles desplegados).
 
-Agregar un boton/switch para cambiar entre modo claro y oscuro en ambas interfaces, manteniendo la opcion de seguir el tema del sistema como default.
+## Causas identificadas
 
----
+### 1. React Query refetch en foco
+`QueryClient` tiene `refetchOnWindowFocus: true` por defecto. Cada vez que la pestaña vuelve a estar activa, todas las queries se re-ejecutan, lo que causa que los componentes se re-rendericen y los dialogos/formularios se cierren.
 
-## Cambios
-
-### 1. Nuevo componente: `src/components/ThemeToggle.tsx`
-- Un boton simple que alterna entre light, dark, y system usando `useTheme()` de `next-themes`
-- Muestra un icono de sol (light), luna (dark), o monitor (system)
-- Click rota entre: system -> light -> dark -> system
-
-### 2. App Web - `src/components/AppLayout.tsx`
-- Agregar el `ThemeToggle` en el header, junto al badge de rol y el boton de sign-out
-- Se vera como un icono pequeno mas en la barra superior
-
-### 3. Driver App - `src/pages/driver-app/DriverProfile.tsx`
-- Agregar una seccion "Appearance" con 3 opciones (System, Light, Dark) en la pagina de perfil del driver
-- Usar botones estilo radio/segmented para que sea facil de seleccionar
-
-### 4. Driver App - Status Bar sync
-- En `src/components/driver-app/DriverMobileLayout.tsx`, actualizar el color del status bar nativo segun el tema activo (dark = fondo oscuro, light = fondo claro)
+### 2. Service Worker auto-recarga
+En `main.tsx`, el service worker detecta actualizaciones y llama `updateSW(true)` automaticamente, lo que recarga toda la pagina. Ademas hay un `setInterval` cada 60 segundos que busca actualizaciones.
 
 ---
 
-## Seccion tecnica
+## Solucion
 
-- `next-themes` ya esta instalado y el `ThemeProvider` ya tiene `defaultTheme="system"` y `enableSystem`
-- `useTheme()` da acceso a `theme`, `setTheme`, y `resolvedTheme`
-- La preferencia se guarda automaticamente en `localStorage` por `next-themes`
-- No se necesitan cambios en la base de datos ni CSS adicional (las variables dark ya estan definidas en `index.css`)
+### Archivo: `src/App.tsx` (linea 45)
+Configurar `QueryClient` para desactivar el refetch automatico al cambiar de pestaña:
 
+```typescript
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      staleTime: 1000 * 60 * 5, // 5 minutos antes de considerar datos obsoletos
+    },
+  },
+});
+```
+
+Esto evita que los datos se recarguen al regresar a la pestaña. Los datos se seguiran actualizando por Supabase Realtime (que ya esta implementado en la mayoria de los hooks) y por las acciones del usuario (crear, editar, eliminar).
+
+### Archivo: `src/main.tsx` (lineas 14-29)
+Cambiar la estrategia del service worker para no recargar la pagina automaticamente:
+
+```typescript
+const updateSW = registerSW({
+  onNeedRefresh() {
+    // Solo loguear; la actualizacion se aplicara en la proxima navegacion natural
+    console.log("New version available - will update on next reload");
+  },
+  onOfflineReady() {
+    console.log("App ready for offline use");
+  },
+  immediate: true,
+});
+
+// Reducir frecuencia de chequeo a cada 5 minutos (no cada 60 segundos)
+setInterval(() => {
+  updateSW();
+}, 5 * 60 * 1000);
+```
+
+Esto elimina la recarga forzada. La nueva version se aplicara la proxima vez que el usuario recargue manualmente o navegue.
+
+---
+
+## Resultado esperado
+- Los dialogos y formularios abiertos se mantendran al cambiar de pestaña
+- Los datos no se recargaran agresivamente al volver
+- Los datos seguiran actualizandose via Realtime y acciones del usuario
+- Las actualizaciones del service worker se aplicaran de forma no intrusiva
