@@ -127,6 +127,7 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { stops: dbStops, loading: stopsLoading, updateStopGeodata } = useLoadStops(load.id);
+  const [mapReady, setMapReady] = useState(false);
 
   // Sync local state when load prop changes (after refetch)
   useEffect(() => {
@@ -512,6 +513,7 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
         // Calculate empty miles (deadhead) for this load
         if (!cancelled) await calculateEmptyMiles(L, map, resolved, bounds);
 
+        if (!cancelled) setMapReady(true);
         return;
       }
 
@@ -594,12 +596,14 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
 
         // Calculate empty miles for slow path
         await calculateEmptyMiles(L, map, resolved, bounds);
+        setMapReady(true);
       }
     };
 
     initMap();
     return () => {
       cancelled = true;
+      setMapReady(false);
       if (mapInstanceRef.current) { mapInstanceRef.current.remove(); mapInstanceRef.current = null; }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -607,7 +611,7 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
 
   // === Driver GPS Live Marker ===
   useEffect(() => {
-    if (!load.driver_id || !mapInstanceRef.current) return;
+    if (!load.driver_id || !mapInstanceRef.current || !mapReady) return;
 
     const driverId = load.driver_id;
     let driverMarkerRef: any = null;
@@ -701,7 +705,7 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
       }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [load.id, load.driver_id]);
+  }, [load.id, load.driver_id, mapReady]);
 
   return (
     <div className="p-4 bg-muted/30 border-t animate-in slide-in-from-top-2 duration-200">
