@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
+import { isNativeCamera, takeNativePhoto, pickFromGallery } from '@/lib/nativeCamera';
 import { X, Upload, RotateCcw, Contrast, ScanLine, Camera, ImageIcon, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
@@ -128,8 +129,47 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
     setCropImage(null);
   }, [cropImage]);
 
-  const triggerCamera = () => cameraRef.current?.click();
-  const triggerGallery = () => fileRef.current?.click();
+  const triggerCamera = async () => {
+    if (isNativeCamera()) {
+      const dataUrl = await takeNativePhoto();
+      if (!dataUrl) return;
+      setProcessing(true);
+      try {
+        const resized = await resizeForCrop(dataUrl);
+        setCropImage(resized);
+        setCropCorners({ ...DEFAULT_CORNERS });
+        setProcessing(false);
+        detectEdges(resized);
+      } catch (err) {
+        console.error('Error processing native camera image:', err);
+        toast({ title: 'Error procesando imagen', variant: 'destructive' });
+        setProcessing(false);
+      }
+      return;
+    }
+    cameraRef.current?.click();
+  };
+
+  const triggerGallery = async () => {
+    if (isNativeCamera()) {
+      const urls = await pickFromGallery();
+      if (urls.length === 0) return;
+      setProcessing(true);
+      try {
+        const resized = await resizeForCrop(urls[0]);
+        setCropImage(resized);
+        setCropCorners({ ...DEFAULT_CORNERS });
+        setProcessing(false);
+        detectEdges(resized);
+      } catch (err) {
+        console.error('Error processing native gallery image:', err);
+        toast({ title: 'Error procesando imagen', variant: 'destructive' });
+        setProcessing(false);
+      }
+      return;
+    }
+    fileRef.current?.click();
+  };
 
   const handleEnhance = async () => {
     if (pages.length === 0) return;

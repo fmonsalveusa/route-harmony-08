@@ -321,14 +321,32 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
     toast({ title: 'GPS Tracking stopped' });
   }, []);
 
-  // Auto-resume tracking from localStorage on mount
+  // Auto-resume tracking from localStorage OR auto-start when driver has active loads
   useEffect(() => {
     if (autoResumedRef.current) return;
     if (!driverId) return;
+
     const wasTracking = localStorage.getItem(TRACKING_STORAGE_KEY) === 'true';
     if (wasTracking && !tracking) {
       autoResumedRef.current = true;
       setTimeout(() => startTracking(true), 500); // silent resume
+      return;
+    }
+
+    // Auto-start: check if driver has active loads and tracking is not on
+    if (!tracking) {
+      supabase
+        .from('loads')
+        .select('id')
+        .eq('driver_id', driverId)
+        .in('status', ACTIVE_LOAD_STATUSES)
+        .limit(1)
+        .then(({ data }) => {
+          if (data && data.length > 0 && !autoResumedRef.current) {
+            autoResumedRef.current = true;
+            setTimeout(() => startTracking(true), 500); // silent auto-start
+          }
+        });
     }
   }, [driverId]); // intentionally only depend on driverId
 
