@@ -8,6 +8,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import logoImg from '@/assets/logo.png';
 import { isNativePlatform } from '@/lib/nativeTracking';
+import { initPushNotifications } from '@/lib/nativePushNotifications';
 
 const tabs = [
   { label: 'Home', icon: LayoutDashboard, path: '/driver' },
@@ -142,12 +143,19 @@ export const DriverMobileLayout = ({ children }: { children: ReactNode }) => {
     }).catch(() => {});
   }, [tracking]);
 
+  // Initialize push notifications for native app
+  useEffect(() => {
+    if (driverId) {
+      initPushNotifications(driverId);
+    }
+  }, [driverId]);
+
   const isAndroid = /android/i.test(navigator.userAgent);
 
   return (
     <div className={`flex flex-col h-[100dvh] bg-background ${isAndroid ? 'android-driver-app' : ''}`}>
       {/* Header - Dark gradient style */}
-      <header className="flex items-center justify-between min-h-[64px] px-4 py-2 shadow-md" style={{ background: 'linear-gradient(135deg, hsl(210, 52%, 24%), hsl(214, 52%, 20%))', paddingTop: 'max(env(safe-area-inset-top, 0px), 8px)' }}>
+      <header className="flex items-center justify-between min-h-[64px] px-4 py-2 shadow-md bg-sidebar text-sidebar-foreground" style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 8px)' }}>
         <div className="flex items-center gap-2">
           <img src={logoImg} alt="Logo" className="h-8 w-8 rounded" />
           <span className="text-base font-bold text-white">Load Up Driver</span>

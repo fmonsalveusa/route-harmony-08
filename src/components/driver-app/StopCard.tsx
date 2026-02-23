@@ -10,6 +10,7 @@ import { createNotification } from '@/hooks/useNotifications';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { compressImage } from '@/lib/imageCompression';
+import { hapticFeedback } from '@/lib/haptics';
 import { isNativeCamera, takeNativePhoto, pickFromGallery, dataUrlToFile } from '@/lib/nativeCamera';
 import {
   AlertDialog,
@@ -114,6 +115,7 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
         load_id: stop.load_id,
       });
       toast({ title: 'Arrived!' });
+      hapticFeedback('success');
       onUpdate();
     }
     setArriving(false);
@@ -131,6 +133,7 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
       load_id: stop.load_id,
     });
     toast({ title: 'Status: Picked Up' });
+    hapticFeedback('success');
     onUpdate();
     setChangingStatus(false);
   };
@@ -145,6 +148,7 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
       load_id: stop.load_id,
     });
     toast({ title: 'Marked as Delivered!' });
+    hapticFeedback('success');
     onUpdate();
     setChangingStatus(false);
   };
@@ -183,6 +187,7 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
     });
 
     toast({ title: 'Photo uploaded successfully' });
+    hapticFeedback('success');
     setUploading(false);
     onUpdate();
   };

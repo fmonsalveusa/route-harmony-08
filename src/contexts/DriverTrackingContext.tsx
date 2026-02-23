@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getTenantId } from '@/hooks/useTenantId';
 import { toast } from '@/hooks/use-toast';
 import { isNativePlatform, startNativeTracking, stopNativeTracking, hasActiveWatcher } from '@/lib/nativeTracking';
+import { hapticFeedback } from '@/lib/haptics';
 import { App as CapApp } from '@capacitor/app';
 
 interface ActiveStop {
@@ -149,6 +150,7 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
       const distance = haversineDistance(lat, lng, stop.lat, stop.lng);
       if (distance <= GEOFENCE_RADIUS_METERS) {
         setNearbyStop(stop);
+        hapticFeedback('alert');
         return;
       }
     }
@@ -264,7 +266,7 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
       setTracking(true);
       localStorage.setItem(TRACKING_STORAGE_KEY, 'true');
       dismissedStopsRef.current.clear();
-      if (!silent) toast({ title: 'GPS Tracking started' });
+      if (!silent) { toast({ title: 'GPS Tracking started' }); hapticFeedback('medium'); }
 
       // If watcher already active (survived background), just update state
       if (hasActiveWatcher()) {
@@ -289,7 +291,7 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
     setTracking(true);
     localStorage.setItem(TRACKING_STORAGE_KEY, 'true');
     dismissedStopsRef.current.clear();
-    if (!silent) toast({ title: 'GPS Tracking started' });
+    if (!silent) { toast({ title: 'GPS Tracking started' }); hapticFeedback('medium'); }
 
     acquireWakeLock(wakeLockRef);
     startWatchPosition((pos) => { posRef.current = pos; sendPosition(pos); });
@@ -318,6 +320,7 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
     localStorage.removeItem(TRACKING_STORAGE_KEY);
     setNearbyStop(null);
     setActiveStops([]);
+    hapticFeedback('medium');
     toast({ title: 'GPS Tracking stopped' });
   }, []);
 
