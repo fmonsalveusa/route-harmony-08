@@ -88,8 +88,8 @@ const Auth = () => {
       <div className="flex-1 flex items-center justify-center p-6">
         <div className="w-full max-w-md">
           <div className="lg:hidden flex items-center justify-center mb-8">
-            <img src={logoImg} alt="Load Up TMS" className="h-10 w-10 rounded-lg mr-3 flex-shrink-0 object-cover" />
-            <h1 className="text-2xl font-bold text-foreground">Load Up TMS</h1>
+            <img src={logoImg} alt="Dispatch Up Driver" className="h-10 w-10 rounded-lg mr-3 flex-shrink-0 object-cover" />
+            <h1 className="text-2xl font-bold text-foreground">Dispatch Up Driver</h1>
           </div>
 
           {signUpSuccess ? (
