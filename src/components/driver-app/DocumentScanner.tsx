@@ -334,7 +334,7 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
       )}
 
       {/* Actions */}
-      <div className="flex flex-wrap gap-2 px-4 py-3 bg-black/90 justify-center">
+      <div className="flex flex-wrap gap-2 px-4 pt-3 pb-6 bg-black/90 justify-center safe-area-pb" style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 24px), 24px)' }}>
         <Button variant="outline" size="sm" onClick={triggerCamera}
           className="gap-1.5 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20">
           <Camera className="h-4 w-4" />
