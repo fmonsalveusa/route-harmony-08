@@ -42,7 +42,14 @@ import DriverTracking from "./pages/driver-app/DriverTracking";
 import { DriverTrackingProvider } from "./contexts/DriverTrackingContext";
 import { isNativePlatform } from "./lib/nativeTracking";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      staleTime: 1000 * 60 * 5,
+    },
+  },
+});
 
 const ProtectedRoute = ({ children, masterOnly = false }: { children: React.ReactNode; masterOnly?: boolean }) => {
   const { user, loading, isMasterAdmin, profile, role } = useAuth();
