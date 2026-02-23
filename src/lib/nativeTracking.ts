@@ -42,7 +42,9 @@ function getBackgroundGeolocation(): BackgroundGeolocationPlugin | null {
 
 /**
  * Health-check: verifies the BackgroundGeolocation plugin is truly available
- * by attempting to register it. Returns cached result after first call.
+ * by attempting a real call. Returns cached result after first call.
+ * NOTE: registerPlugin always returns a proxy on native, so we must attempt
+ * an actual operation to know if the real plugin is installed in the APK.
  */
 export async function isBackgroundGeolocationAvailable(): Promise<boolean> {
   if (!NATIVE_GPS_ENABLED) {
@@ -59,13 +61,23 @@ export async function isBackgroundGeolocationAvailable(): Promise<boolean> {
       console.log('[NativeTracking] Plugin not available (registerPlugin returned null)');
       return false;
     }
-    // Plugin object exists — mark as available
+    // Attempt a real call — addWatcher will fail fast if plugin isn't in the APK
+    // We start a watcher and immediately remove it to test availability
+    const testId = await Promise.race([
+      plugin.addWatcher(
+        { backgroundMessage: 'test', backgroundTitle: 'test', requestPermissions: false, stale: true, distanceFilter: 99999 },
+        () => {}
+      ),
+      new Promise<string>((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000))
+    ]);
+    // If we got here, the plugin is truly available — clean up the test watcher
+    await plugin.removeWatcher({ id: testId }).catch(() => {});
     pluginAvailable = true;
-    console.log('[NativeTracking] Plugin available ✓');
+    console.log('[NativeTracking] Plugin available ✓ (verified with test watcher)');
     return true;
   } catch (e) {
     pluginAvailable = false;
-    console.warn('[NativeTracking] Plugin availability check failed:', e);
+    console.warn('[NativeTracking] Plugin NOT available (real check failed):', e);
     return false;
   }
 }
