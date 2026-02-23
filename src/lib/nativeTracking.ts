@@ -22,7 +22,7 @@ interface BackgroundGeolocationPlugin {
 
 // ⚠️ Set to true ONLY after verifying the BackgroundGeolocation plugin
 // is correctly installed in the native APK (via capacitor-community/background-geolocation)
-const NATIVE_GPS_ENABLED = false;
+const NATIVE_GPS_ENABLED = true;
 
 let watcherId: string | null = null;
 let pluginInstance: BackgroundGeolocationPlugin | null = null;
