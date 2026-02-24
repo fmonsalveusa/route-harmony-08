@@ -85,7 +85,7 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
         leasing: !!driver.leasing_agreement_url,
         service: !!driver.service_agreement_url,
       },
-      date: format(new Date(), 'MM/dd/yyyy'),
+      date: driver.hire_date ? format(new Date(driver.hire_date + 'T00:00:00'), 'MM/dd/yyyy') : format(new Date(), 'MM/dd/yyyy'),
     });
 
     const url = URL.createObjectURL(blob);
