@@ -14,7 +14,7 @@ html, body {
 
 @layer base {
   :root {
-    --background: 215 25% 97%;
+    --background: 215 20% 90%;
     --foreground: 220 35% 12%;
 
     --card: 0 0% 100%;
@@ -254,6 +254,43 @@ html, body {
   }
   .safe-area-pt {
     padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  /* ── Top Navigation (Chase-style) ── */
+  .top-header {
+    background: hsl(214, 52%, 25%);
+    color: white;
+  }
+  .dark .top-header {
+    background: hsl(214, 52%, 18%);
+  }
+
+  .top-nav {
+    @apply bg-card border-b border-border;
+  }
+  .top-nav-item {
+    @apply px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap;
+    color: hsl(214, 52%, 25%);
+    border-bottom: 3px solid transparent;
+  }
+  .top-nav-item:hover {
+    color: hsl(214, 52%, 35%);
+    background: hsl(215, 20%, 96%);
+  }
+  .top-nav-item-active {
+    border-bottom-color: hsl(214, 52%, 25%);
+    font-weight: 600;
+  }
+  .dark .top-nav-item {
+    color: hsl(215, 20%, 78%);
+  }
+  .dark .top-nav-item:hover {
+    color: hsl(215, 20%, 95%);
+    background: hsl(220, 28%, 16%);
+  }
+  .dark .top-nav-item-active {
+    color: hsl(217, 78%, 60%);
+    border-bottom-color: hsl(217, 78%, 50%);
   }
 }
 
