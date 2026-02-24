@@ -161,12 +161,12 @@ const Drivers = () => {
     const totalPages = Math.max(1, Math.ceil(driversList.length / pageSize));
     const paged = driversList.slice((page - 1) * pageSize, page * pageSize);
     return (
-    <Card>
-      <CardContent className="p-0">
+    <div className="glass-card">
+      <div className="p-0">
         <div className="overflow-x-auto">
           <table className="w-full text-[15px]">
             <thead>
-              <tr className="border-b bg-muted/50">
+              <tr className="border-b glass-table-header">
                 <th className="w-8 p-3"></th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Driver</th>
                 <th className="w-[60px] p-3"></th>
@@ -184,7 +184,7 @@ const Drivers = () => {
                 const dispatcher = dispatchers.find(d => d.id === driver.dispatcher_id);
                 return (
                   <>{/* Fragment needed for expand row */}
-                    <tr key={driver.id} className={cn("border-b hover:bg-muted/30 cursor-pointer transition-colors", driver.status === 'pending' && "bg-yellow-50/50", isExpanded && "bg-muted/20")} onClick={() => setExpandedId(isExpanded ? null : driver.id)}>
+                    <tr key={driver.id} className={cn("border-b glass-row cursor-pointer", driver.status === 'pending' && "bg-yellow-50/50", isExpanded && "glass-row-expanded")} onClick={() => setExpandedId(isExpanded ? null : driver.id)}>
                       <td className="p-3 text-muted-foreground">
                         {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                       </td>
@@ -208,7 +208,7 @@ const Drivers = () => {
                         </div>
                       </td>
                       <td className="p-3 pl-0" onClick={e => e.stopPropagation()}>
-                        <Button variant="outline" size="sm" className="h-6 px-2 text-[11px] border-sky-400 bg-white text-sky-600 hover:bg-sky-50 hover:text-sky-700 gap-1" onClick={() => copyDriverInfo(driver)} title="Copy">
+                        <Button variant="ghost" size="sm" className="glass-action-btn tint-blue" onClick={() => copyDriverInfo(driver)} title="Copy">
                           <Copy className="h-3 w-3" /> Copy
                         </Button>
                       </td>
@@ -239,15 +239,15 @@ const Drivers = () => {
                       </td>
                       <td className="p-3" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-1.5">
-                          <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-emerald-400 bg-white text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 gap-1" onClick={() => setDetailDriver(driver)} title="Detail">
+                          <Button variant="ghost" size="sm" className="glass-action-btn tint-green" onClick={() => setDetailDriver(driver)} title="Detail">
                             <Eye className="h-4 w-4" /> Detail
                           </Button>
                           {!isDispatcher && (
                             <>
-                              <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-amber-400 bg-white text-amber-600 hover:bg-amber-50 hover:text-amber-700 gap-1" onClick={() => { setEditingDriver(driver); setFormOpen(true); }} title="Edit">
+                              <Button variant="ghost" size="sm" className="glass-action-btn tint-amber" onClick={() => { setEditingDriver(driver); setFormOpen(true); }} title="Edit">
                                 <Pencil className="h-4 w-4" /> Edit
                               </Button>
-                              <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-red-400 bg-white text-red-600 hover:bg-red-50 hover:text-red-700 gap-1" onClick={async () => { if (window.confirm(`Delete driver ${driver.name}? This action is permanent.`)) { await deleteDriver(driver.id); } }} title="Delete">
+                              <Button variant="ghost" size="sm" className="glass-action-btn tint-red" onClick={async () => { if (window.confirm(`Delete driver ${driver.name}? This action is permanent.`)) { await deleteDriver(driver.id); } }} title="Delete">
                                 <Trash2 className="h-4 w-4" /> Delete
                               </Button>
                             </>
@@ -288,8 +288,8 @@ const Drivers = () => {
             </div>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
     );
   };
 

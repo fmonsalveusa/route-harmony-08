@@ -322,11 +322,11 @@ const Loads = () => {
       </div>
 
       {/* Table */}
-      <Card>
-        <CardContent className="p-0">
+      <div className="glass-card">
+        <div className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-[15px]">
-              <thead><tr className="border-b bg-muted/50">
+              <thead><tr className="border-b glass-table-header">
                 <th className="w-8 p-3"></th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Load #</th>
                 <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Driver/Truck</th>
@@ -354,7 +354,7 @@ const Loads = () => {
                     <>
                       <tr
                         key={load.id}
-                        className={`border-b last:border-0 hover:bg-muted/30 cursor-pointer transition-colors ${isExpanded ? 'bg-muted/20' : ''}`}
+                        className={`border-b last:border-0 glass-row cursor-pointer ${isExpanded ? 'glass-row-expanded' : ''}`}
                         onClick={() => setExpandedId(isExpanded ? null : load.id)}
                       >
                         <td className="p-3 text-muted-foreground">
@@ -472,23 +472,23 @@ const Loads = () => {
                         </td>
                         <td className="p-3 text-right" onClick={e => e.stopPropagation()}>
                           <div className="flex justify-end gap-1.5">
-                            <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-purple-400 bg-white text-purple-600 hover:bg-purple-50 hover:text-purple-700 gap-1" onClick={() => { inputRefMap.current[load.id]?.click(); }} title="POD">
+                            <Button variant="ghost" size="sm" className="glass-action-btn tint-purple" onClick={() => { inputRefMap.current[load.id]?.click(); }} title="POD">
                               <Upload className="h-4 w-4" /> POD
                             </Button>
                             {load.pdf_url && (
-                              <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-sky-400 bg-white text-sky-600 hover:bg-sky-50 hover:text-sky-700 gap-1" asChild title="PDF">
+                              <Button variant="ghost" size="sm" className="glass-action-btn tint-blue" asChild title="PDF">
                                 <a href={load.pdf_url} target="_blank" rel="noopener noreferrer">
                                   <ExternalLink className="h-4 w-4" /> PDF
                                 </a>
                               </Button>
                             )}
-                            <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-emerald-400 bg-white text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 gap-1" onClick={() => handleGenerateInvoice(load)} title="Invoice">
+                            <Button variant="ghost" size="sm" className="glass-action-btn tint-green" onClick={() => handleGenerateInvoice(load)} title="Invoice">
                               <FileText className="h-4 w-4" /> Invoice
                             </Button>
-                            <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-amber-400 bg-white text-amber-600 hover:bg-amber-50 hover:text-amber-700 gap-1" onClick={() => { setEditLoad(load); setShowForm(true); }} title="Edit">
+                            <Button variant="ghost" size="sm" className="glass-action-btn tint-amber" onClick={() => { setEditLoad(load); setShowForm(true); }} title="Edit">
                               <Pencil className="h-4 w-4" /> Edit
                             </Button>
-                            <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-red-400 bg-white text-red-600 hover:bg-red-50 hover:text-red-700 gap-1" onClick={async (e) => { e.stopPropagation(); e.preventDefault(); if (window.confirm(`¿Eliminar carga ${load.reference_number}? Esta acción es permanente.`)) { await deleteLoad(load.id); } }} title="Delete">
+                            <Button variant="ghost" size="sm" className="glass-action-btn tint-red" onClick={async (e) => { e.stopPropagation(); e.preventDefault(); if (window.confirm(`¿Eliminar carga ${load.reference_number}? Esta acción es permanente.`)) { await deleteLoad(load.id); } }} title="Delete">
                               <Trash2 className="h-4 w-4" /> Delete
                             </Button>
                           </div>
@@ -546,8 +546,8 @@ const Loads = () => {
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Form Dialog */}
       <LoadFormDialog
