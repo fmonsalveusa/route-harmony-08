@@ -567,13 +567,13 @@ export interface OnboardingSummaryData {
     state: string | null; license_expiry: string | null; medical_card_expiry: string | null;
   };
   truckData: {
-    unit_number: string; truck_type: string; make: string; model: string;
-    year: number; vin: string; license_plate: string;
-    max_payload_lbs: number | null;
-    insurance_expiry: string | null; registration_expiry: string | null;
-    cargo_length_ft: number | null; cargo_width_in: number | null; cargo_height_in: number | null;
-    rear_door_width_in: number | null; rear_door_height_in: number | null;
-    trailer_length_ft: number | null; mega_ramp: string | null;
+    unit_number: string; truck_type: string; make?: string | null; model?: string | null;
+    year?: number | null; vin?: string | null; license_plate?: string | null;
+    max_payload_lbs?: number | null;
+    insurance_expiry?: string | null; registration_expiry?: string | null;
+    cargo_length_ft?: number | null; cargo_width_in?: number | null; cargo_height_in?: number | null;
+    rear_door_width_in?: number | null; rear_door_height_in?: number | null;
+    trailer_length_ft?: number | null; mega_ramp?: string | null;
   };
   driverDocs: string[];
   truckDocs: string[];
