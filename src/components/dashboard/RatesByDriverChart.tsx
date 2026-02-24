@@ -53,11 +53,11 @@ export function RatesByDriverChart({ loads, drivers, year, month, week }: Props)
   };
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base">Drivers Performance</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <div className="glass-card p-0 overflow-hidden">
+      <div className="px-6 pt-5 pb-2">
+        <h3 className="text-base font-semibold leading-none tracking-tight">Drivers Performance</h3>
+      </div>
+      <div className="px-6 pb-6">
         {data.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-10">Sin datos para los filtros seleccionados</p>
         ) : (
@@ -74,7 +74,7 @@ export function RatesByDriverChart({ loads, drivers, year, month, week }: Props)
             </BarChart>
           </ResponsiveContainer>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

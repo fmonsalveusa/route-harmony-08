@@ -40,8 +40,8 @@ const Dispatchers = () => {
   const renderDispatcherCard = (d: DbDispatcher) => {
     const initials = d.name.split(' ').map(n => n[0]).join('');
     return (
-      <Card key={d.id} className="hover:shadow-md transition-shadow animate-fade-in">
-        <CardContent className="p-5">
+      <div key={d.id} className="glass-card hover:shadow-xl transition-shadow animate-fade-in overflow-hidden">
+        <div className="p-5">
           <div className="flex items-start gap-4">
             <Avatar className="h-12 w-12">
               <AvatarFallback className="bg-info/15 text-info font-semibold">{initials}</AvatarFallback>
@@ -80,15 +80,15 @@ const Dispatchers = () => {
           </div>
 
           <div className="mt-3 pt-3 border-t flex justify-end gap-1.5">
-            <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-amber-400 bg-white text-amber-600 hover:bg-amber-50 hover:text-amber-700 gap-1" onClick={() => { setEditingDispatcher(d); setFormOpen(true); }} title="Edit">
+            <button className="glass-action-btn tint-amber inline-flex items-center" onClick={() => { setEditingDispatcher(d); setFormOpen(true); }} title="Edit">
               <Pencil className="h-4 w-4" /> Edit
-            </Button>
-            <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-red-400 bg-white text-red-600 hover:bg-red-50 hover:text-red-700 gap-1" onClick={async () => { if (window.confirm(`Delete dispatcher ${d.name}? This action is permanent.`)) { await deleteDispatcher(d.id); } }} title="Delete">
+            </button>
+            <button className="glass-action-btn tint-red inline-flex items-center" onClick={async () => { if (window.confirm(`Delete dispatcher ${d.name}? This action is permanent.`)) { await deleteDispatcher(d.id); } }} title="Delete">
               <Trash2 className="h-4 w-4" /> Delete
-            </Button>
+            </button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     );
   };
 

@@ -277,12 +277,12 @@ const Expenses = () => {
       )}
 
       {/* Table */}
-      <Card>
-        <CardContent className="p-0">
+      <div className="glass-card overflow-hidden">
+        <div className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b bg-muted/50">
+                <tr className="border-b glass-table-header">
                   <th className="p-3 w-10">
                     <Checkbox checked={paged.length > 0 && selectedIds.size === paged.length}
                       onCheckedChange={toggleAll} />
@@ -315,7 +315,7 @@ const Expenses = () => {
                 ) : paged.map(expense => {
                   const truck = trucks.find(t => t.id === expense.truck_id);
                   return (
-                    <tr key={expense.id} className="border-b hover:bg-muted/30 transition-colors">
+                    <tr key={expense.id} className="border-b glass-row">
                       <td className="p-3">
                         <Checkbox checked={selectedIds.has(expense.id)}
                           onCheckedChange={() => toggleSelect(expense.id)} />
@@ -355,14 +355,14 @@ const Expenses = () => {
                       </td>
                       <td className="p-3 text-right">
                         <div className="flex items-center justify-end gap-1.5">
-                          <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-amber-400 bg-white text-amber-600 hover:bg-amber-50 hover:text-amber-700 gap-1"
+                          <button className="glass-action-btn tint-amber inline-flex items-center"
                             onClick={() => { setEditExpense(expense); setFormOpen(true); }}>
                             <Pencil className="h-3.5 w-3.5" /> Edit
-                          </Button>
-                          <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-red-400 bg-white text-red-600 hover:bg-red-50 hover:text-red-700 gap-1"
+                          </button>
+                          <button className="glass-action-btn tint-red inline-flex items-center"
                             onClick={() => setDeleteTarget(expense)}>
                             <Trash2 className="h-3.5 w-3.5" /> Delete
-                          </Button>
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -392,8 +392,8 @@ const Expenses = () => {
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Dialogs */}
       <ExpenseFormDialog

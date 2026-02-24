@@ -66,12 +66,12 @@ const Fleet = () => {
     const totalPages = Math.max(1, Math.ceil(trucksList.length / pageSize));
     const paged = trucksList.slice((page - 1) * pageSize, page * pageSize);
     return (
-    <Card>
-      <CardContent className="p-0">
+    <div className="glass-card overflow-hidden">
+      <div className="p-0">
         <div className="overflow-x-auto">
           <table className="w-full text-[15px]">
             <thead>
-              <tr className="border-b bg-muted/50">
+              <tr className="border-b glass-table-header">
                 <th className="w-8 p-3"></th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Unit #</th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Type</th>
@@ -86,7 +86,7 @@ const Fleet = () => {
                 const driverName = getDriverName(truck.id);
                 return (
                   <>
-                    <tr key={truck.id} className={`border-b hover:bg-muted/30 cursor-pointer transition-colors ${isExpanded ? 'bg-muted/20' : ''}`} onClick={() => setExpandedId(isExpanded ? null : truck.id)}>
+                    <tr key={truck.id} className={`border-b glass-row cursor-pointer ${isExpanded ? 'glass-row-expanded' : ''}`} onClick={() => setExpandedId(isExpanded ? null : truck.id)}>
                       <td className="p-3 text-muted-foreground">
                         {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                       </td>
@@ -128,15 +128,15 @@ const Fleet = () => {
                       </td>
                       <td className="p-3" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-1.5">
-                          <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-emerald-400 bg-white text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 gap-1" onClick={() => setDetailTruck(truck)} title="Detail">
+                          <button className="glass-action-btn tint-green inline-flex items-center" onClick={() => setDetailTruck(truck)} title="Detail">
                             <Eye className="h-4 w-4" /> Detail
-                          </Button>
-                          <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-amber-400 bg-white text-amber-600 hover:bg-amber-50 hover:text-amber-700 gap-1" onClick={() => openEdit(truck)} title="Edit">
+                          </button>
+                          <button className="glass-action-btn tint-amber inline-flex items-center" onClick={() => openEdit(truck)} title="Edit">
                             <Pencil className="h-4 w-4" /> Edit
-                          </Button>
-                          <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-red-400 bg-white text-red-600 hover:bg-red-50 hover:text-red-700 gap-1" onClick={async () => { if (window.confirm(`Delete truck Unit #${truck.unit_number}? This action is permanent.`)) { await deleteTruck(truck.id); } }} title="Delete">
+                          </button>
+                          <button className="glass-action-btn tint-red inline-flex items-center" onClick={async () => { if (window.confirm(`Delete truck Unit #${truck.unit_number}? This action is permanent.`)) { await deleteTruck(truck.id); } }} title="Delete">
                             <Trash2 className="h-4 w-4" /> Delete
-                          </Button>
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -173,8 +173,8 @@ const Fleet = () => {
             </div>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
     );
   };
 

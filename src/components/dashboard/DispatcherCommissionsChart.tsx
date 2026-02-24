@@ -68,11 +68,11 @@ export function DispatcherCommissionsChart({ loads, dispatchers, drivers, year, 
   }, [loads, dispatchers, drivers, year, month, week]);
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base">Weekly Dispatcher Commissions</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <div className="glass-card p-0 overflow-hidden">
+      <div className="px-6 pt-5 pb-2">
+        <h3 className="text-base font-semibold leading-none tracking-tight">Weekly Dispatcher Commissions</h3>
+      </div>
+      <div className="px-6 pb-6">
         {data.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-10">No data for selected filters</p>
         ) : (
@@ -89,7 +89,7 @@ export function DispatcherCommissionsChart({ loads, dispatchers, drivers, year, 
             </BarChart>
           </ResponsiveContainer>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

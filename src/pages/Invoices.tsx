@@ -177,11 +177,11 @@ const Invoices = () => {
       </div>
 
       {/* Table */}
-      <Card>
-        <CardContent className="p-0">
+      <div className="glass-card overflow-hidden">
+        <div className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-[15px]">
-              <thead><tr className="border-b bg-muted/50">
+              <thead><tr className="border-b glass-table-header">
                 <th className="text-left p-3 font-medium text-muted-foreground">Invoice #</th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Broker</th>
                 <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Company</th>
@@ -197,7 +197,7 @@ const Invoices = () => {
                   </td></tr>
                 )}
                 {filtered.map(inv => (
-                  <tr key={inv.id} className="border-b last:border-0 hover:bg-muted/30">
+                  <tr key={inv.id} className="border-b last:border-0 glass-row">
                     <td className="p-3 font-medium text-primary">{inv.invoice_number}</td>
                     <td className="p-3">{inv.broker_name}</td>
                     <td className="p-3 hidden md:table-cell text-muted-foreground">{inv.company_name || '—'}</td>
@@ -217,28 +217,26 @@ const Invoices = () => {
                     <td className="p-3 hidden lg:table-cell text-muted-foreground">{formatDate(inv.created_at)}</td>
                     <td className="p-3 text-right">
                       <div className="flex justify-end gap-1.5">
-                        <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-emerald-400 bg-white text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 gap-1" onClick={() => handleDownloadPdf(inv)} title="PDF">
+                        <button className="glass-action-btn tint-green inline-flex items-center" onClick={() => handleDownloadPdf(inv)} title="PDF">
                           <Download className="h-4 w-4" /> PDF
-                        </Button>
+                        </button>
                         {loadDataMap[inv.load_id]?.pdf_url && (
-                          <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-sky-400 bg-white text-sky-600 hover:bg-sky-50 hover:text-sky-700 gap-1" asChild title="Rate Conf.">
-                            <a href={loadDataMap[inv.load_id].pdf_url} target="_blank" rel="noopener noreferrer">
-                              <FileText className="h-4 w-4" /> Rate
-                            </a>
-                          </Button>
+                          <a className="glass-action-btn tint-blue inline-flex items-center" href={loadDataMap[inv.load_id].pdf_url} target="_blank" rel="noopener noreferrer" title="Rate Conf.">
+                            <FileText className="h-4 w-4" /> Rate
+                          </a>
                         )}
-                        <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-purple-400 bg-white text-purple-600 hover:bg-purple-50 hover:text-purple-700 gap-1" onClick={() => openPodViewer(inv.load_id)} title="PODs">
+                        <button className="glass-action-btn tint-purple inline-flex items-center" onClick={() => openPodViewer(inv.load_id)} title="PODs">
                           <Image className="h-4 w-4" /> POD
-                        </Button>
-                        <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-blue-400 bg-white text-blue-600 hover:bg-blue-50 hover:text-blue-700 gap-1" onClick={() => { setEmailInvoice(inv); setBrokerEmail(''); }} title="Enviar por Email">
+                        </button>
+                        <button className="glass-action-btn tint-blue inline-flex items-center" onClick={() => { setEmailInvoice(inv); setBrokerEmail(''); }} title="Enviar por Email">
                           <Mail className="h-4 w-4" /> Mail
-                        </Button>
-                        <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-amber-400 bg-white text-amber-600 hover:bg-amber-50 hover:text-amber-700 gap-1" onClick={() => openEdit(inv)} title="Edit">
+                        </button>
+                        <button className="glass-action-btn tint-amber inline-flex items-center" onClick={() => openEdit(inv)} title="Edit">
                           <Pencil className="h-4 w-4" /> Edit
-                        </Button>
-                        <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-red-400 bg-white text-red-600 hover:bg-red-50 hover:text-red-700 gap-1" onClick={async () => { if (window.confirm(`¿Eliminar factura ${inv.invoice_number}? Esta acción es permanente.`)) { await deleteInvoice(inv.id); } }} title="Delete">
+                        </button>
+                        <button className="glass-action-btn tint-red inline-flex items-center" onClick={async () => { if (window.confirm(`¿Eliminar factura ${inv.invoice_number}? Esta acción es permanente.`)) { await deleteInvoice(inv.id); } }} title="Delete">
                           <Trash2 className="h-4 w-4" /> Delete
-                        </Button>
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -246,8 +244,8 @@ const Invoices = () => {
               </tbody>
             </table>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* POD Viewer Dialog */}
       <Dialog open={!!podViewLoadId} onOpenChange={() => setPodViewLoadId(null)}>
