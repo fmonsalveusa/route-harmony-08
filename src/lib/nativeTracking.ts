@@ -23,6 +23,7 @@ interface BackgroundGeolocationPlugin {
 const NATIVE_GPS_ENABLED = true;
 const WATCHER_ID_KEY = 'native_bg_watcher_id';
 const PLUGIN_AVAILABLE_KEY = 'native_gps_plugin_available';
+const BATTERY_SAVER_KEY = 'gps_battery_saver';
 
 let pluginInstance: BackgroundGeolocationPlugin | null = null;
 let currentWatcherId: string | null = null;
@@ -39,6 +40,16 @@ function getBackgroundGeolocation(): BackgroundGeolocationPlugin | null {
   }
 }
 
+/** Check if battery saver mode is enabled */
+export function isBatterySaverEnabled(): boolean {
+  return localStorage.getItem(BATTERY_SAVER_KEY) === 'true';
+}
+
+/** Toggle battery saver mode */
+export function setBatterySaver(enabled: boolean): void {
+  localStorage.setItem(BATTERY_SAVER_KEY, enabled ? 'true' : 'false');
+}
+
 /**
  * Health-check: verifies the BackgroundGeolocation plugin is truly available.
  * Uses localStorage cache to avoid repeated test-watcher calls that can crash.
@@ -47,12 +58,10 @@ export async function isBackgroundGeolocationAvailable(): Promise<boolean> {
   if (!NATIVE_GPS_ENABLED) return false;
   if (!isNativePlatform()) return false;
 
-  // Use cached result to avoid crash-prone test watcher
   const cached = localStorage.getItem(PLUGIN_AVAILABLE_KEY);
   if (cached === 'true') return true;
   if (cached === 'false') return false;
 
-  // First-time check — do a safe test
   try {
     const plugin = getBackgroundGeolocation();
     if (!plugin) {
@@ -111,8 +120,11 @@ export async function startNativeTracking(
     return () => {};
   }
 
-  // Cleanup orphans first
   await cleanupOrphanedWatcher().catch(() => {});
+
+  const batterySaver = isBatterySaverEnabled();
+  const distanceFilter = batterySaver ? 200 : 50;
+  console.log('[NativeTracking] Starting watcher, distanceFilter:', distanceFilter, 'batterySaver:', batterySaver);
 
   try {
     console.log('[NativeTracking] Starting new watcher...');
@@ -122,7 +134,7 @@ export async function startNativeTracking(
         backgroundTitle: 'Dispatch Up Driver',
         requestPermissions,
         stale: false,
-        distanceFilter: 10,
+        distanceFilter,
       },
       (location, error) => {
         if (error) {
@@ -143,7 +155,6 @@ export async function startNativeTracking(
 
     currentWatcherId = id;
     localStorage.setItem(WATCHER_ID_KEY, id);
-    // Mark plugin as confirmed working
     localStorage.setItem(PLUGIN_AVAILABLE_KEY, 'true');
     console.log('[NativeTracking] Watcher started, id:', id);
     return () => { stopNativeTracking(); };

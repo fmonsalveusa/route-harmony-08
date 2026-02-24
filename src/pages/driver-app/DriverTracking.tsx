@@ -2,7 +2,7 @@ import { useDriverTracking } from '@/contexts/DriverTrackingContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Navigation, MapPin, Gauge, Crosshair, Wifi, WifiOff, AlertTriangle, ShieldAlert } from 'lucide-react';
+import { Navigation, MapPin, Gauge, Crosshair, Wifi, WifiOff, AlertTriangle, ShieldAlert, BatteryMedium, Pause } from 'lucide-react';
 
 function getAccuracyColor(accuracy: number | null) {
   if (accuracy === null) return 'text-muted-foreground';
@@ -19,7 +19,7 @@ function getAccuracyLabel(accuracy: number | null) {
 }
 
 export default function DriverTracking() {
-  const { tracking, lastPosition, speed, accuracy, permissionStatus, startTracking, stopTracking } = useDriverTracking();
+  const { tracking, lastPosition, speed, accuracy, permissionStatus, startTracking, stopTracking, paused, batterySaver, toggleBatterySaver } = useDriverTracking();
 
   const speedKmh = speed !== null && speed > 0 ? (speed * 3.6).toFixed(0) : '0';
   const speedMph = speed !== null && speed > 0 ? (speed * 2.237).toFixed(0) : '0';
@@ -54,13 +54,19 @@ export default function DriverTracking() {
         <CardContent className="p-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${tracking ? 'bg-success/20' : 'bg-muted'}`}>
-                <Navigation className={`h-6 w-6 transition-colors ${tracking ? 'text-success animate-pulse' : 'text-muted-foreground'}`} />
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${tracking ? (paused ? 'bg-warning/20' : 'bg-success/20') : 'bg-muted'}`}>
+                {paused ? (
+                  <Pause className="h-6 w-6 text-warning" />
+                ) : (
+                  <Navigation className={`h-6 w-6 transition-colors ${tracking ? 'text-success animate-pulse' : 'text-muted-foreground'}`} />
+                )}
               </div>
               <div>
-                <p className="font-semibold text-base">{tracking ? 'Rastreo Activo' : 'Rastreo Inactivo'}</p>
+                <p className="font-semibold text-base">
+                  {paused ? 'Pausado (detenido)' : tracking ? 'Rastreo Activo' : 'Rastreo Inactivo'}
+                </p>
                 <p className="text-sm text-muted-foreground">
-                  {tracking ? 'Transmitiendo ubicación' : 'Activa para empezar a rastrear'}
+                  {paused ? 'Se reanuda al moverte' : tracking ? 'Transmitiendo ubicación' : 'Activa para empezar a rastrear'}
                 </p>
               </div>
             </div>
@@ -73,6 +79,26 @@ export default function DriverTracking() {
         </CardContent>
       </Card>
 
+      {/* Battery Saver Card */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${batterySaver ? 'bg-success/20' : 'bg-muted'}`}>
+                <BatteryMedium className={`h-5 w-5 ${batterySaver ? 'text-success' : 'text-muted-foreground'}`} />
+              </div>
+              <div>
+                <p className="font-medium text-sm">Modo ahorro de batería</p>
+                <p className="text-xs text-muted-foreground">
+                  {batterySaver ? 'Menor precisión, más batería' : 'Precisión máxima'}
+                </p>
+              </div>
+            </div>
+            <Switch checked={batterySaver} onCheckedChange={toggleBatterySaver} />
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Location Card — only when tracking & has position */}
       {tracking && lastPosition && (
         <Card>
@@ -80,6 +106,9 @@ export default function DriverTracking() {
             <div className="flex items-center gap-2">
               <MapPin className="h-4 w-4 text-primary" />
               <p className="font-semibold text-sm">Ubicación Actual</p>
+              {paused && (
+                <span className="text-xs bg-warning/20 text-warning px-2 py-0.5 rounded-full font-medium">Pausado</span>
+              )}
             </div>
 
             {/* Lat / Lng grid */}
@@ -119,11 +148,19 @@ export default function DriverTracking() {
       )}
 
       {/* Connection Status Bar */}
-      <div className={`fixed bottom-[calc(72px+env(safe-area-inset-bottom,0px))] left-0 right-0 flex items-center justify-center gap-2 py-2 text-xs font-medium transition-colors z-10 ${tracking ? 'bg-success text-success-foreground' : 'bg-muted text-muted-foreground'}`}>
-        {tracking ? (
+      <div className={`fixed bottom-[calc(72px+env(safe-area-inset-bottom,0px))] left-0 right-0 flex items-center justify-center gap-2 py-2 text-xs font-medium transition-colors z-10 ${
+        paused ? 'bg-warning text-warning-foreground' :
+        tracking ? 'bg-success text-success-foreground' : 'bg-muted text-muted-foreground'
+      }`}>
+        {paused ? (
+          <>
+            <Pause className="h-3.5 w-3.5" />
+            Pausado — Detenido 5+ min
+          </>
+        ) : tracking ? (
           <>
             <Wifi className="h-3.5 w-3.5" />
-            Conectado — Transmitiendo
+            Conectado — Transmitiendo{batterySaver ? ' (ahorro)' : ''}
           </>
         ) : (
           <>
