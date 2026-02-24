@@ -62,9 +62,11 @@ const handleGenerateReceipt = async (p: DbPayment) => {
 interface PaymentsSectionProps {
   type: 'driver' | 'investor' | 'dispatcher';
   refreshKey?: number;
+  onCreateManual?: () => void;
+  createLabel?: string;
 }
 
-const PaymentsSection = ({ type, refreshKey }: PaymentsSectionProps) => {
+const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Create Manual Payment' }: PaymentsSectionProps) => {
   const { payments: allPayments, loading, updatePaymentStatus, refetch } = usePayments();
   const [statusFilter, setStatusFilter] = useState('pending');
   const [editPayment, setEditPayment] = useState<DbPayment | null>(null);
@@ -288,12 +290,19 @@ const PaymentsSection = ({ type, refreshKey }: PaymentsSectionProps) => {
     <div className="space-y-6">
 
       <Tabs value={statusFilter} onValueChange={setStatusFilter}>
-        <TabsList>
-          <TabsTrigger value="pending">Pending ({pendingCount})</TabsTrigger>
-          <TabsTrigger value="in_process">In Process ({inProcessCount})</TabsTrigger>
-          <TabsTrigger value="paid">Paid ({paidCount})</TabsTrigger>
-          <TabsTrigger value="all">All ({allTypePayments.length})</TabsTrigger>
-        </TabsList>
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <TabsList>
+            <TabsTrigger value="pending">Pending ({pendingCount})</TabsTrigger>
+            <TabsTrigger value="in_process">In Process ({inProcessCount})</TabsTrigger>
+            <TabsTrigger value="paid">Paid ({paidCount})</TabsTrigger>
+            <TabsTrigger value="all">All ({allTypePayments.length})</TabsTrigger>
+          </TabsList>
+          {onCreateManual && (
+            <Button size="sm" className="gap-1.5" onClick={onCreateManual}>
+              <PlusCircle className="h-4 w-4" /> {createLabel}
+            </Button>
+          )}
+        </div>
       </Tabs>
 
       {/* Search & Filters */}
@@ -550,28 +559,13 @@ const Payments = () => {
           <TabsTrigger value="dispatchers">Dispatchers <span className={`ml-1.5 inline-flex items-center justify-center rounded-full text-[11px] font-semibold min-w-[20px] h-5 px-1.5 ${pendingDispatchers > 0 ? 'bg-destructive text-destructive-foreground' : 'bg-primary text-primary-foreground'}`}>{pendingDispatchers > 0 ? pendingDispatchers : totalDispatchers}</span></TabsTrigger>
         </TabsList>
         <TabsContent value="drivers">
-          <div className="mb-4">
-            <Button size="sm" className="gap-1.5" onClick={() => setManualDriverDialogOpen(true)}>
-              <PlusCircle className="h-4 w-4" /> Create Manual Payment
-            </Button>
-          </div>
-          <PaymentsSection key={`driver-${refreshKey}`} type="driver" refreshKey={refreshKey} />
+          <PaymentsSection key={`driver-${refreshKey}`} type="driver" refreshKey={refreshKey} onCreateManual={() => setManualDriverDialogOpen(true)} />
         </TabsContent>
         <TabsContent value="investors">
-          <div className="mb-4">
-            <Button size="sm" className="gap-1.5" onClick={() => setManualInvestorDialogOpen(true)}>
-              <PlusCircle className="h-4 w-4" /> Create Manual Payment
-            </Button>
-          </div>
-          <PaymentsSection key={`investor-${refreshKey}`} type="investor" refreshKey={refreshKey} />
+          <PaymentsSection key={`investor-${refreshKey}`} type="investor" refreshKey={refreshKey} onCreateManual={() => setManualInvestorDialogOpen(true)} />
         </TabsContent>
         <TabsContent value="dispatchers">
-          <div className="mb-4">
-            <Button size="sm" className="gap-1.5" onClick={() => setManualDialogOpen(true)}>
-              <PlusCircle className="h-4 w-4" /> Generate Manual Payment
-            </Button>
-          </div>
-          <PaymentsSection key={`dispatcher-${refreshKey}`} type="dispatcher" refreshKey={refreshKey} />
+          <PaymentsSection key={`dispatcher-${refreshKey}`} type="dispatcher" refreshKey={refreshKey} onCreateManual={() => setManualDialogOpen(true)} createLabel="Generate Manual Payment" />
         </TabsContent>
       </Tabs>
 
