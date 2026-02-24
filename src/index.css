@@ -129,25 +129,17 @@ html, body {
 
   /* ── Glassmorphism utilities ── */
   .glass-card {
-    @apply rounded-lg shadow-lg;
-    background: hsla(var(--card), 0.75);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid hsla(0, 0%, 100%, 0.18);
+    @apply rounded-lg shadow-sm bg-card border;
   }
   .dark .glass-card {
-    background: hsla(var(--card), 0.6);
-    border-color: hsla(0, 0%, 100%, 0.08);
-    box-shadow: 0 8px 32px -8px rgba(0, 0, 0, 0.45);
+    @apply bg-card border;
   }
 
   .glass-table-header {
-    background: hsla(var(--muted), 0.55);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    @apply bg-muted/80;
   }
   .dark .glass-table-header {
-    background: hsla(var(--muted), 0.35);
+    @apply bg-muted/50;
   }
 
   .glass-row {
@@ -168,22 +160,16 @@ html, body {
   }
 
   .glass-action-btn {
-    @apply h-8 px-2 text-xs gap-1 font-medium rounded-md transition-all duration-200;
-    background: hsla(0, 0%, 100%, 0.7);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    border: 1px solid hsla(0, 0%, 0%, 0.08);
+    @apply h-8 px-2 text-xs gap-1 font-medium rounded-md transition-all duration-200 bg-card border;
   }
   .glass-action-btn:hover {
-    background: hsla(0, 0%, 100%, 0.9);
-    box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.12);
+    @apply bg-muted shadow-sm;
   }
   .dark .glass-action-btn {
-    background: hsla(var(--secondary), 0.5);
-    border-color: hsla(0, 0%, 100%, 0.1);
+    @apply bg-secondary border-border;
   }
   .dark .glass-action-btn:hover {
-    background: hsla(var(--secondary), 0.7);
+    @apply bg-secondary/80;
   }
 
   /* Semantic tints for glass action buttons */
@@ -213,14 +199,10 @@ html, body {
   }
 
   .glass-header {
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    background: hsla(var(--card), 0.8);
-    border-bottom: 1px solid hsla(0, 0%, 0%, 0.06);
+    @apply bg-card border-b border-border;
   }
   .dark .glass-header {
-    background: hsla(var(--card), 0.65);
-    border-bottom-color: hsla(0, 0%, 100%, 0.06);
+    @apply bg-card border-border;
   }
 
   .nav-item-active {
@@ -231,22 +213,15 @@ html, body {
     background: hsla(var(--sidebar-accent), 0.1);
   }
 
-  /* Glass dialog overlay & content */
+  /* Dialog overlay & content - solid */
   .glass-dialog-overlay {
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
+    @apply bg-black/50;
   }
   .glass-dialog-content {
-    background: hsla(var(--card), 0.92);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid hsla(0, 0%, 100%, 0.12);
-    box-shadow: 0 16px 48px -12px rgba(0, 0, 0, 0.25);
+    @apply bg-card border shadow-lg;
   }
   .dark .glass-dialog-content {
-    background: hsla(var(--card), 0.85);
-    border-color: hsla(0, 0%, 100%, 0.06);
-    box-shadow: 0 16px 48px -12px rgba(0, 0, 0, 0.55);
+    @apply bg-card border-border;
   }
 
   .safe-area-pb {
