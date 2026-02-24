@@ -20,7 +20,7 @@ interface BackgroundGeolocationPlugin {
   removeWatcher(options: { id: string }): Promise<void>;
 }
 
-const NATIVE_GPS_ENABLED = true;
+const NATIVE_GPS_ENABLED = false; // Stability mode: keep native GPS off until Android native setup is fully verified
 const WATCHER_ID_KEY = 'native_bg_watcher_id';
 const PLUGIN_AVAILABLE_KEY = 'native_gps_plugin_available';
 const BATTERY_SAVER_KEY = 'gps_battery_saver';
@@ -29,8 +29,8 @@ let pluginInstance: BackgroundGeolocationPlugin | null = null;
 let currentWatcherId: string | null = null;
 
 function getBackgroundGeolocation(): BackgroundGeolocationPlugin | null {
+  if (!NATIVE_GPS_ENABLED) return null;
   if (!isNativePlatform()) return null;
-  if (pluginInstance) return pluginInstance;
 
   // If we already know the plugin is not available, don't even try
   const cached = localStorage.getItem(PLUGIN_AVAILABLE_KEY);
@@ -123,6 +123,11 @@ export async function startNativeTracking(
   onPosition: (pos: PositionCallback) => void,
   requestPermissions = true
 ): Promise<() => void> {
+  if (!NATIVE_GPS_ENABLED) {
+    console.warn('[NativeTracking] Native GPS disabled, skipping native watcher');
+    return () => {};
+  }
+
   const plugin = getBackgroundGeolocation();
   if (!plugin) {
     console.warn('[NativeTracking] No plugin instance');
@@ -176,11 +181,15 @@ export async function startNativeTracking(
 }
 
 export async function stopNativeTracking(): Promise<void> {
-  const plugin = getBackgroundGeolocation();
-  if (!plugin) return;
-
   const idToRemove = currentWatcherId || localStorage.getItem(WATCHER_ID_KEY);
   if (!idToRemove) return;
+
+  const plugin = getBackgroundGeolocation();
+  if (!plugin) {
+    currentWatcherId = null;
+    localStorage.removeItem(WATCHER_ID_KEY);
+    return;
+  }
 
   try {
     await plugin.removeWatcher({ id: idToRemove });
