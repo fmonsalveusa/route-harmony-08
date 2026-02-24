@@ -93,6 +93,8 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
   const nativeCleanupRef = useRef<(() => void) | null>(null);
   const [refreshStops, setRefreshStops] = useState(0);
   const autoResumedRef = useRef(false);
+  const startingRef = useRef(false); // concurrency guard for startTracking
+
 
   // --- Idle pause state ---
   const [paused, setPaused] = useState(false);
@@ -265,56 +267,63 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
   // ============================================================
   const startTracking = useCallback(async (silent = false) => {
     if (tracking) return;
-    console.log('[Tracking] startTracking called, silent:', silent, 'native:', isNativePlatform());
-    lastMovementRef.current = Date.now();
-    setPaused(false);
+    if (startingRef.current) { console.log('[Tracking] startTracking already in progress, skipping'); return; }
+    startingRef.current = true;
 
-    if (isNativePlatform()) {
-      try {
-        let gpAvailable = true;
-        if (!silent) {
-          gpAvailable = await isBackgroundGeolocationAvailable();
-        }
+    try {
+      console.log('[Tracking] startTracking called, silent:', silent, 'native:', isNativePlatform());
+      lastMovementRef.current = Date.now();
+      setPaused(false);
 
-        if (gpAvailable) {
-          console.log('[Tracking] Attempting NATIVE background geolocation, silent:', silent);
-          try {
-            const cleanup = await startNativeTracking((pos) => sendNativePosition(pos), !silent);
-            nativeCleanupRef.current = cleanup;
-            setTracking(true);
-            localStorage.setItem(TRACKING_STORAGE_KEY, 'true');
-            dismissedStopsRef.current.clear();
-            if (!silent) { toast({ title: 'GPS Tracking started' }); hapticFeedback('medium'); }
-            console.log('[Tracking] Native watcher established');
-            return;
-          } catch (e) {
-            console.error('[Tracking] Native start failed, falling to web:', e);
+      if (isNativePlatform()) {
+        try {
+          let gpAvailable = true;
+          if (!silent) {
+            gpAvailable = await isBackgroundGeolocationAvailable();
           }
-        } else {
-          console.log('[Tracking] Native GPS not available, using web fallback');
+
+          if (gpAvailable) {
+            console.log('[Tracking] Attempting NATIVE background geolocation, silent:', silent);
+            try {
+              const cleanup = await startNativeTracking((pos) => sendNativePosition(pos), !silent);
+              nativeCleanupRef.current = cleanup;
+              setTracking(true);
+              localStorage.setItem(TRACKING_STORAGE_KEY, 'true');
+              dismissedStopsRef.current.clear();
+              if (!silent) { toast({ title: 'GPS Tracking started' }); hapticFeedback('medium'); }
+              console.log('[Tracking] Native watcher established');
+              return;
+            } catch (e) {
+              console.error('[Tracking] Native start failed, falling to web:', e);
+            }
+          } else {
+            console.log('[Tracking] Native GPS not available, using web fallback');
+          }
+        } catch (e) {
+          console.error('[Tracking] Native tracking crashed, falling to web:', e);
         }
-      } catch (e) {
-        console.error('[Tracking] Native tracking crashed, falling to web:', e);
       }
-    }
 
-    // --- Web tracking fallback ---
-    if (!('geolocation' in navigator)) {
-      if (!silent) toast({ title: 'GPS not available', variant: 'destructive' });
-      return;
-    }
-    console.log('[Tracking] Using WEB geolocation');
-    setTracking(true);
-    localStorage.setItem(TRACKING_STORAGE_KEY, 'true');
-    dismissedStopsRef.current.clear();
-    if (!silent) { toast({ title: 'GPS Tracking started' }); hapticFeedback('medium'); }
+      // --- Web tracking fallback ---
+      if (!('geolocation' in navigator)) {
+        if (!silent) toast({ title: 'GPS not available', variant: 'destructive' });
+        return;
+      }
+      console.log('[Tracking] Using WEB geolocation');
+      setTracking(true);
+      localStorage.setItem(TRACKING_STORAGE_KEY, 'true');
+      dismissedStopsRef.current.clear();
+      if (!silent) { toast({ title: 'GPS Tracking started' }); hapticFeedback('medium'); }
 
-    acquireWakeLock(wakeLockRef);
-    const updateInterval = batterySaver ? 60000 : 30000;
-    startWatchPosition((pos) => { posRef.current = pos; sendPosition(pos); });
-    intervalRef.current = setInterval(() => {
-      if (posRef.current) sendPosition(posRef.current);
-    }, updateInterval);
+      acquireWakeLock(wakeLockRef);
+      const updateInterval = batterySaver ? 60000 : 30000;
+      startWatchPosition((pos) => { posRef.current = pos; sendPosition(pos); });
+      intervalRef.current = setInterval(() => {
+        if (posRef.current) sendPosition(posRef.current);
+      }, updateInterval);
+    } finally {
+      startingRef.current = false;
+    }
   }, [tracking, sendPosition, sendNativePosition, startWatchPosition, batterySaver]);
 
   // ============================================================
@@ -364,8 +373,10 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
   // ============================================================
   useEffect(() => {
     if (autoResumedRef.current || !driverId) return;
+    let isMounted = true;
 
     const safeAutoStart = async () => {
+      if (!isMounted) return;
       try {
         console.log('[Tracking] safeAutoStart executing...');
         await startTracking(true);
@@ -377,24 +388,25 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
     const wasTracking = localStorage.getItem(TRACKING_STORAGE_KEY) === 'true';
     if (wasTracking && !tracking) {
       autoResumedRef.current = true;
-      console.log('[Tracking] Auto-resuming from localStorage flag');
-      const timer = setTimeout(() => safeAutoStart(), 8000);
-      return () => clearTimeout(timer);
+      console.log('[Tracking] Auto-resuming from localStorage flag (12s delay)');
+      const timer = setTimeout(() => safeAutoStart(), 12000);
+      return () => { isMounted = false; clearTimeout(timer); };
     }
 
     if (!tracking) {
       const queryTimer = setTimeout(() => {
+        if (!isMounted) return;
         supabase.from('loads').select('id').eq('driver_id', driverId).in('status', ACTIVE_LOAD_STATUSES).limit(1)
           .then(({ data, error }) => {
-            if (error) { console.error('[Tracking] Auto-start query failed:', error); return; }
+            if (error || !isMounted) { return; }
             if (data && data.length > 0 && !autoResumedRef.current) {
               autoResumedRef.current = true;
-              console.log('[Tracking] Auto-starting: driver has active loads');
-              setTimeout(() => safeAutoStart(), 5000);
+              console.log('[Tracking] Auto-starting: driver has active loads (12s delay)');
+              setTimeout(() => safeAutoStart(), 6000);
             }
           });
       }, 6000);
-      return () => clearTimeout(queryTimer);
+      return () => { isMounted = false; clearTimeout(queryTimer); };
     }
   }, [driverId]); // intentionally only driverId
 

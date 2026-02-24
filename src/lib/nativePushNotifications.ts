@@ -14,7 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { getTenantId } from '@/hooks/useTenantId';
 
 // ⚠️ Set to true ONLY after Firebase is properly configured in the native project
-const PUSH_ENABLED = true;
+const PUSH_ENABLED = false;
 
 let initialized = false;
 let attemptedInit = false;
