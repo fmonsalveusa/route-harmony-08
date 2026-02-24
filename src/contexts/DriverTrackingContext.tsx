@@ -214,33 +214,38 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
   // ============================================================
   const startTracking = useCallback(async (silent = false) => {
     if (tracking) return;
-    console.log('[Tracking] startTracking called, native:', isNativePlatform());
+    console.log('[Tracking] startTracking called, silent:', silent, 'native:', isNativePlatform());
 
     if (isNativePlatform()) {
-      const gpAvailable = await isBackgroundGeolocationAvailable();
-      if (gpAvailable) {
-        console.log('[Tracking] Using NATIVE background geolocation');
-        setTracking(true);
-        localStorage.setItem(TRACKING_STORAGE_KEY, 'true');
-        dismissedStopsRef.current.clear();
-        if (!silent) { toast({ title: 'GPS Tracking started' }); hapticFeedback('medium'); }
+      try {
+        const gpAvailable = await isBackgroundGeolocationAvailable();
+        if (gpAvailable) {
+          console.log('[Tracking] Using NATIVE background geolocation');
+          setTracking(true);
+          localStorage.setItem(TRACKING_STORAGE_KEY, 'true');
+          dismissedStopsRef.current.clear();
+          if (!silent) { toast({ title: 'GPS Tracking started' }); hapticFeedback('medium'); }
 
-        try {
-          const cleanup = await startNativeTracking((pos) => sendNativePosition(pos));
-          nativeCleanupRef.current = cleanup;
-          console.log('[Tracking] Native watcher established');
-          return; // Done — native is active
-        } catch (e) {
-          console.error('[Tracking] Native start failed, falling to web:', e);
+          try {
+            // For silent (auto) starts, don't request permissions — avoid system dialog crash
+            const cleanup = await startNativeTracking((pos) => sendNativePosition(pos), !silent);
+            nativeCleanupRef.current = cleanup;
+            console.log('[Tracking] Native watcher established');
+            return;
+          } catch (e) {
+            console.error('[Tracking] Native start failed, falling to web:', e);
+          }
+        } else {
+          console.log('[Tracking] Native GPS not available, using web fallback');
         }
-      } else {
-        console.log('[Tracking] Native GPS not available, using web fallback');
+      } catch (e) {
+        console.error('[Tracking] Native availability check crashed:', e);
       }
     }
 
     // --- Web tracking fallback ---
     if (!('geolocation' in navigator)) {
-      toast({ title: 'GPS not available', variant: 'destructive' });
+      if (!silent) toast({ title: 'GPS not available', variant: 'destructive' });
       return;
     }
     console.log('[Tracking] Using WEB geolocation');

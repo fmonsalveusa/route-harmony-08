@@ -102,7 +102,8 @@ async function cleanupOrphanedWatcher(): Promise<void> {
 }
 
 export async function startNativeTracking(
-  onPosition: (pos: PositionCallback) => void
+  onPosition: (pos: PositionCallback) => void,
+  requestPermissions = true
 ): Promise<() => void> {
   const plugin = getBackgroundGeolocation();
   if (!plugin) {
@@ -119,7 +120,7 @@ export async function startNativeTracking(
       {
         backgroundMessage: 'Tracking location',
         backgroundTitle: 'Dispatch Up Driver',
-        requestPermissions: true,
+        requestPermissions,
         stale: false,
         distanceFilter: 10,
       },
