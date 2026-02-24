@@ -31,11 +31,20 @@ let currentWatcherId: string | null = null;
 function getBackgroundGeolocation(): BackgroundGeolocationPlugin | null {
   if (!isNativePlatform()) return null;
   if (pluginInstance) return pluginInstance;
+
+  // If we already know the plugin is not available, don't even try
+  const cached = localStorage.getItem(PLUGIN_AVAILABLE_KEY);
+  if (cached === 'false') {
+    console.log('[NativeTracking] Plugin previously marked unavailable, skipping registerPlugin');
+    return null;
+  }
+
   try {
     pluginInstance = registerPlugin<BackgroundGeolocationPlugin>('BackgroundGeolocation');
     return pluginInstance;
   } catch (e) {
     console.warn('[NativeTracking] Failed to register plugin:', e);
+    localStorage.setItem(PLUGIN_AVAILABLE_KEY, 'false');
     return null;
   }
 }
@@ -73,7 +82,7 @@ export async function isBackgroundGeolocationAvailable(): Promise<boolean> {
         { backgroundMessage: 'test', backgroundTitle: 'test', requestPermissions: false, stale: true, distanceFilter: 99999 },
         () => {}
       ),
-      new Promise<string>((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000))
+      new Promise<string>((_, reject) => setTimeout(() => reject(new Error('timeout')), 2000))
     ]);
     await plugin.removeWatcher({ id: testId }).catch(() => {});
     localStorage.setItem(PLUGIN_AVAILABLE_KEY, 'true');
