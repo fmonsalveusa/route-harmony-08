@@ -297,11 +297,12 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
             <TabsTrigger value="paid">Paid ({paidCount})</TabsTrigger>
             <TabsTrigger value="all">All ({allTypePayments.length})</TabsTrigger>
           </TabsList>
-          <div className="flex-1" />
           {onCreateManual && (
-            <Button size="sm" className="gap-1.5" onClick={onCreateManual}>
-              <PlusCircle className="h-4 w-4" /> {createLabel}
-            </Button>
+            <div className="ml-16">
+              <Button size="sm" className="gap-1.5" onClick={onCreateManual}>
+                <PlusCircle className="h-4 w-4" /> {createLabel}
+              </Button>
+            </div>
           )}
         </div>
       </Tabs>
