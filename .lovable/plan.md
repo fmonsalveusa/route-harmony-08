@@ -1,57 +1,107 @@
 
 
-# Fix: Real-time GPS Tracking on Individual Load Maps
+# Corregir GPS en Segundo Plano para Android
 
-## Problem
-The GPS live marker works on the Tracking page but NOT on individual load detail maps. The root cause is a **race condition** between two effects in `LoadDetailPanel.tsx`:
+## Problema
 
-1. **Map init effect** (line 299): Async -- imports Leaflet, geocodes stops, draws routes. Takes several seconds.
-2. **GPS tracking effect** (line 609): Checks `if (!mapInstanceRef.current) return` -- but the map isn't ready yet because the init is async.
+El plugin `@capacitor-community/background-geolocation` SI crea un servicio nativo en Android que sobrevive al background. Sin embargo, hay 3 problemas que causan que parezca que no funciona:
 
-Since `mapInstanceRef` is a React **ref** (not state), when it eventually gets populated, React does NOT re-run the GPS effect. The GPS subscription never starts.
+1. **Falta configuracion critica en Capacitor**: El plugin requiere `android.useLegacyBridge: true` en la configuracion de Capacitor. Sin esto, las actualizaciones de ubicacion en background no llegan al WebView.
 
-## Solution
-Add a **state flag** `mapReady` that gets set to `true` after the map is fully initialized. Include this flag in the GPS effect's dependency array so it re-runs once the map is available.
+2. **El watcher ID se pierde al destruir el WebView**: Android destruye el WebView cuando la app va al background. Al regresar, React se reinicializa y el `watcherId` en memoria es `null`, aunque el watcher nativo sigue corriendo. Esto causa watchers "huerfanos" y duplicados.
 
-## File: `src/components/LoadDetailPanel.tsx`
+3. **El callback de JavaScript muere**: Aunque el plugin nativo sigue generando posiciones, el callback JS que envia datos a la base de datos muere con el WebView. Al reconectar, se necesita crear un nuevo watcher con un nuevo callback.
 
-### Change 1: Add `mapReady` state
-Near the other state declarations (around line 140), add:
+## Cambios
+
+### 1. `capacitor.config.ts` -- Agregar configuracion requerida por el plugin
+
+Agregar `android.useLegacyBridge: true` en la configuracion. Esto es un **requisito documentado** del plugin para que las actualizaciones en background lleguen correctamente.
+
 ```typescript
-const [mapReady, setMapReady] = useState(false);
+const config: CapacitorConfig = {
+  // ...existing...
+  android: {
+    useLegacyBridge: true,
+  },
+  // ...existing...
+};
 ```
 
-### Change 2: Reset `mapReady` on load change and set it after map init
-- At the beginning of the map init effect (line 300 area), reset: `setMapReady(false);`
-- After the map is fully initialized (both fast path and slow path complete), call `setMapReady(true);`
-- In the cleanup, set `setMapReady(false);`
+### 2. `src/lib/nativeTracking.ts` -- Persistir watcher ID y limpiar huerfanos
 
-### Change 3: Add `mapReady` to GPS effect dependencies
-Change the GPS effect guard and dependency array:
-```typescript
-// Before:
-useEffect(() => {
-  if (!load.driver_id || !mapInstanceRef.current) return;
-  // ...
-}, [load.id, load.driver_id]);
+- Guardar el `watcherId` en `localStorage` al crear un watcher
+- Al iniciar, leer el ID guardado y limpiar watchers huerfanos antes de crear uno nuevo
+- Modificar `stopNativeTracking` para tambien limpiar el ID de localStorage
+- Agregar logging detallado para diagnostico
 
-// After:
-useEffect(() => {
-  if (!load.driver_id || !mapInstanceRef.current || !mapReady) return;
-  // ...
-}, [load.id, load.driver_id, mapReady]);
+Flujo corregido:
+
+```text
+startNativeTracking()
+  1. Leer watcherId guardado en localStorage
+  2. Si existe, intentar removeWatcher(oldId) -- limpieza
+  3. Crear nuevo watcher con addWatcher()
+  4. Guardar nuevo watcherId en localStorage
+  5. Retornar cleanup function
+
+stopNativeTracking()
+  1. Leer watcherId de memoria O de localStorage
+  2. removeWatcher(id)
+  3. Limpiar localStorage
 ```
 
-This ensures the GPS subscription starts only after the map is ready, and reliably re-triggers when it becomes ready.
+### 3. `src/contexts/DriverTrackingContext.tsx` -- Reconexion robusta tras background
 
-## Technical Details
+- En el listener `appStateChange`: siempre limpiar watcher anterior (via ID persistido) y crear uno nuevo con callback fresco
+- Eliminar la condicion `hasActiveWatcher()` que impide re-crear el callback (el watcher nativo puede estar vivo pero su callback JS esta muerto)
+- En plataforma nativa, NO ejecutar el watcher web (`navigator.geolocation`) ni los listeners de `visibilitychange`
+- Agregar logging detallado en cada punto critico del flujo
 
-### Why this only affects the load detail panel (not Tracking page)
-The Tracking page (`src/pages/Tracking.tsx`) uses `react-leaflet` components (`MapContainer`, `Marker`) which handle the map lifecycle declaratively. The `LoadDetailPanel` uses imperative Leaflet (`L.map()`) inside a `useEffect`, creating the async timing issue.
+Cambios clave:
+- `appStateChange` siempre fuerza un nuevo watcher nativo (con cleanup del anterior)
+- Auto-resume siempre limpia antes de re-crear
+- Web fallback solo se activa si el plugin nativo verdaderamente no esta en el APK
 
-### Files to modify
-1. `src/components/LoadDetailPanel.tsx` -- add `mapReady` state, set it after map init, include in GPS effect deps
+### 4. Instrucciones post-implementacion (para ti, el usuario)
 
-### No database changes required
-The realtime subscription and `driver_locations` table are already correctly configured.
+Despues de que se implementen estos cambios, necesitas reconstruir el APK:
+
+```
+git pull
+npm install
+npx cap sync android
+```
+
+En el `AndroidManifest.xml` de tu proyecto Android (archivo `android/app/src/main/AndroidManifest.xml`), verificar que existan estos permisos:
+
+```xml
+<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+<uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+```
+
+Y que el servicio del plugin este declarado:
+
+```xml
+<service
+    android:name="com.equimaps.capacitor_background_geolocation.BackgroundGeolocationService"
+    android:enabled="true"
+    android:exported="false"
+    android:foregroundServiceType="location"
+    android:stopWithTask="false" />
+```
+
+Luego reconstruir y generar nuevo APK/Bundle con Android Studio.
+
+## Archivos a modificar
+
+| Archivo | Cambio |
+|---|---|
+| `capacitor.config.ts` | Agregar `android.useLegacyBridge: true` |
+| `src/lib/nativeTracking.ts` | Persistir watcherId en localStorage, cleanup huerfanos, logging |
+| `src/contexts/DriverTrackingContext.tsx` | Reconexion robusta, separar flujo nativo vs web, logging |
 
