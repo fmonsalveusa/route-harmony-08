@@ -275,7 +275,7 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
       lastMovementRef.current = Date.now();
       setPaused(false);
 
-      if (isNativePlatform()) {
+      if (isNativePlatform() && !silent) {
         try {
           let gpAvailable = true;
           if (!silent) {
@@ -419,22 +419,19 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
     const listener = CapApp.addListener('appStateChange', async ({ isActive }) => {
       if (!isActive) return;
       const shouldTrack = localStorage.getItem(TRACKING_STORAGE_KEY) === 'true';
-      if (!shouldTrack) return;
+      if (!shouldTrack || tracking) return;
 
-      console.log('[Tracking] App resumed, re-establishing native watcher with fresh callback');
+      console.log('[Tracking] App resumed, restoring tracking state via safe start');
 
       try {
-        const cleanup = await startNativeTracking((pos) => sendNativePosition(pos));
-        nativeCleanupRef.current = cleanup;
-        setTracking(true);
-        console.log('[Tracking] Native watcher re-established after resume');
+        await startTracking(true);
       } catch (e) {
-        console.error('[Tracking] Failed to re-establish watcher on resume:', e);
+        console.error('[Tracking] Failed to restore tracking on resume:', e);
       }
     });
 
     return () => { listener.then(l => l.remove()); };
-  }, [sendNativePosition]);
+  }, [tracking, startTracking]);
 
   // ============================================================
   // WEB ONLY: Restore GPS watch on visibility change
