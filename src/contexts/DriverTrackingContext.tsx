@@ -218,18 +218,22 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
 
     if (isNativePlatform()) {
       try {
-        const gpAvailable = await isBackgroundGeolocationAvailable();
-        if (gpAvailable) {
-          console.log('[Tracking] Using NATIVE background geolocation');
-          setTracking(true);
-          localStorage.setItem(TRACKING_STORAGE_KEY, 'true');
-          dismissedStopsRef.current.clear();
-          if (!silent) { toast({ title: 'GPS Tracking started' }); hapticFeedback('medium'); }
+        // For silent (auto) starts, skip the health-check entirely — it can crash the native process.
+        // Just try to create the watcher directly; if the plugin isn't in the APK it will throw.
+        let gpAvailable = true;
+        if (!silent) {
+          gpAvailable = await isBackgroundGeolocationAvailable();
+        }
 
+        if (gpAvailable) {
+          console.log('[Tracking] Attempting NATIVE background geolocation, silent:', silent);
           try {
-            // For silent (auto) starts, don't request permissions — avoid system dialog crash
             const cleanup = await startNativeTracking((pos) => sendNativePosition(pos), !silent);
             nativeCleanupRef.current = cleanup;
+            setTracking(true);
+            localStorage.setItem(TRACKING_STORAGE_KEY, 'true');
+            dismissedStopsRef.current.clear();
+            if (!silent) { toast({ title: 'GPS Tracking started' }); hapticFeedback('medium'); }
             console.log('[Tracking] Native watcher established');
             return;
           } catch (e) {
@@ -239,7 +243,7 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
           console.log('[Tracking] Native GPS not available, using web fallback');
         }
       } catch (e) {
-        console.error('[Tracking] Native availability check crashed:', e);
+        console.error('[Tracking] Native tracking crashed, falling to web:', e);
       }
     }
 
