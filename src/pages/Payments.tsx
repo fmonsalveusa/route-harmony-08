@@ -290,13 +290,14 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
     <div className="space-y-6">
 
       <Tabs value={statusFilter} onValueChange={setStatusFilter}>
-        <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-4 flex-wrap">
           <TabsList>
             <TabsTrigger value="pending">Pending ({pendingCount})</TabsTrigger>
             <TabsTrigger value="in_process">In Process ({inProcessCount})</TabsTrigger>
             <TabsTrigger value="paid">Paid ({paidCount})</TabsTrigger>
             <TabsTrigger value="all">All ({allTypePayments.length})</TabsTrigger>
           </TabsList>
+          <div className="flex-1" />
           {onCreateManual && (
             <Button size="sm" className="gap-1.5" onClick={onCreateManual}>
               <PlusCircle className="h-4 w-4" /> {createLabel}
