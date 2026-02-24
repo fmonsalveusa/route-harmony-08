@@ -5,13 +5,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Upload, FileCheck, CheckCircle2, Truck, User, Send } from 'lucide-react';
+import { Upload, FileCheck, CheckCircle2, Truck, User, Send, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import logoImg from '@/assets/logo.png';
 import { US_STATES } from '@/lib/usStates';
 import DocumentSigningStep, { SignedDocs } from '@/components/onboarding/DocumentSigningStep';
+import { generateOnboardingSummaryPdf } from '@/lib/onboardingDocPdf';
+import { format } from 'date-fns';
 
 const TRUCK_TYPES = ['Box Truck', 'Hotshot', 'Flatbed', 'Dry Van'];
 
@@ -40,6 +42,7 @@ export default function DriverOnboarding() {
   const [tokenData, setTokenData] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
   const [completed, setCompleted] = useState(false);
+  const [summaryPdfBlob, setSummaryPdfBlob] = useState<Blob | null>(null);
 
   // Driver form
   const [driver, setDriver] = useState({
@@ -148,6 +151,23 @@ export default function DriverOnboarding() {
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || 'Submission failed');
 
+      // Generate summary PDF before clearing state
+      try {
+        const driverDocNames = DRIVER_DOC_FIELDS.filter(d => driverFiles[d.key]).map(d => d.label);
+        const truckDocNames = TRUCK_DOC_FIELDS.filter(d => truckFiles[d.key]).map(d => d.label);
+        const blob = generateOnboardingSummaryPdf({
+          driverData: driver,
+          truckData: truck,
+          driverDocs: driverDocNames,
+          truckDocs: truckDocNames,
+          signedDocs: { w9: !!signedDocs.w9, leasing: !!signedDocs.leasing, service: !!signedDocs.service },
+          date: format(new Date(), 'MM/dd/yyyy'),
+        });
+        setSummaryPdfBlob(blob);
+      } catch (e) {
+        console.error('PDF generation error:', e);
+      }
+
       setCompleted(true);
       toast.success('Onboarding completed successfully!');
     } catch (err: any) {
@@ -181,6 +201,18 @@ export default function DriverOnboarding() {
     );
   }
 
+  const handleDownloadSummary = () => {
+    if (!summaryPdfBlob) return;
+    const url = URL.createObjectURL(summaryPdfBlob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `onboarding-summary-${driver.name.replace(/\s+/g, '-').toLowerCase() || 'driver'}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   if (completed) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
@@ -191,6 +223,11 @@ export default function DriverOnboarding() {
             <p className="text-muted-foreground text-sm">
               Your information has been submitted successfully. Your dispatcher will review and get back to you.
             </p>
+            {summaryPdfBlob && (
+              <Button onClick={handleDownloadSummary} variant="outline" className="gap-2">
+                <Download className="h-4 w-4" /> Download Summary PDF
+              </Button>
+            )}
           </CardContent>
         </Card>
       </div>

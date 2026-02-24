@@ -559,3 +559,147 @@ export function generateServiceAgreementPdf(data: {
 
   return doc.output('blob');
 }
+
+// ─── ONBOARDING SUMMARY PDF ───
+export interface OnboardingSummaryData {
+  driverData: {
+    name: string; email: string; phone: string; license: string;
+    state: string | null; license_expiry: string | null; medical_card_expiry: string | null;
+  };
+  truckData: {
+    unit_number: string; truck_type: string; make: string; model: string;
+    year: number; vin: string; license_plate: string;
+    max_payload_lbs: number | null;
+    insurance_expiry: string | null; registration_expiry: string | null;
+    cargo_length_ft: number | null; cargo_width_in: number | null; cargo_height_in: number | null;
+    rear_door_width_in: number | null; rear_door_height_in: number | null;
+    trailer_length_ft: number | null; mega_ramp: string | null;
+  };
+  driverDocs: string[];
+  truckDocs: string[];
+  signedDocs: { w9: boolean; leasing: boolean; service: boolean };
+  date: string;
+}
+
+export function generateOnboardingSummaryPdf(data: OnboardingSummaryData): Blob {
+  const doc = new jsPDF();
+  const m = 20;
+  const w = 170;
+  let y = 20;
+
+  // Header
+  doc.setFontSize(16);
+  doc.setFont('helvetica', 'bold');
+  doc.text('DRIVER ONBOARDING SUMMARY', 105, y, { align: 'center' });
+  y += 8;
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Date: ${data.date}`, 105, y, { align: 'center' });
+  y += 4;
+  doc.setDrawColor(0);
+  doc.line(m, y, 190, y);
+  y += 8;
+
+  const field = (label: string, value: string | number | null | undefined, yRef: { y: number }) => {
+    if (!value && value !== 0) return;
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.text(label, m, yRef.y);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text(String(value), m + 45, yRef.y);
+    yRef.y += 6;
+    if (yRef.y > 275) { doc.addPage(); yRef.y = 20; }
+  };
+
+  const yRef = { y };
+
+  // DRIVER INFORMATION
+  yRef.y = writeHeading(doc, 'DRIVER INFORMATION', m, yRef.y, 11);
+  yRef.y += 2;
+  field('Name:', data.driverData.name, yRef);
+  field('Email:', data.driverData.email, yRef);
+  field('Phone:', data.driverData.phone, yRef);
+  field('License #:', data.driverData.license, yRef);
+  field('State:', data.driverData.state, yRef);
+  field('License Exp:', data.driverData.license_expiry, yRef);
+  field('Medical Exp:', data.driverData.medical_card_expiry, yRef);
+
+  if (data.driverDocs.length > 0) {
+    yRef.y += 2;
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Documents:', m, yRef.y);
+    yRef.y += 5;
+    for (const docName of data.driverDocs) {
+      doc.text(`  ✓ ${docName}`, m + 5, yRef.y);
+      yRef.y += 5;
+      if (yRef.y > 275) { doc.addPage(); yRef.y = 20; }
+    }
+  }
+
+  yRef.y += 4;
+  doc.line(m, yRef.y, 190, yRef.y);
+  yRef.y += 8;
+
+  // TRUCK INFORMATION
+  yRef.y = writeHeading(doc, 'TRUCK INFORMATION', m, yRef.y, 11);
+  yRef.y += 2;
+  field('Unit #:', data.truckData.unit_number, yRef);
+  field('Type:', data.truckData.truck_type, yRef);
+  field('Make:', data.truckData.make, yRef);
+  field('Model:', data.truckData.model, yRef);
+  field('Year:', data.truckData.year, yRef);
+  field('VIN:', data.truckData.vin, yRef);
+  field('License Plate:', data.truckData.license_plate, yRef);
+  if (data.truckData.max_payload_lbs) {
+    field('Max Payload:', `${data.truckData.max_payload_lbs.toLocaleString()} lbs`, yRef);
+  }
+  field('Insurance Exp:', data.truckData.insurance_expiry, yRef);
+  field('Registration Exp:', data.truckData.registration_expiry, yRef);
+
+  // Dimensions
+  const dims: string[] = [];
+  if (data.truckData.cargo_length_ft) dims.push(`Cargo: ${data.truckData.cargo_length_ft}ft L`);
+  if (data.truckData.cargo_width_in) dims.push(`${data.truckData.cargo_width_in}in W`);
+  if (data.truckData.cargo_height_in) dims.push(`${data.truckData.cargo_height_in}in H`);
+  if (data.truckData.rear_door_width_in) dims.push(`Door: ${data.truckData.rear_door_width_in}in W`);
+  if (data.truckData.rear_door_height_in) dims.push(`${data.truckData.rear_door_height_in}in H`);
+  if (data.truckData.trailer_length_ft) dims.push(`Trailer: ${data.truckData.trailer_length_ft}ft`);
+  if (dims.length) field('Dimensions:', dims.join(' × '), yRef);
+  if (data.truckData.mega_ramp) field('Mega Ramp:', data.truckData.mega_ramp, yRef);
+
+  if (data.truckDocs.length > 0) {
+    yRef.y += 2;
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Documents:', m, yRef.y);
+    yRef.y += 5;
+    for (const docName of data.truckDocs) {
+      doc.text(`  ✓ ${docName}`, m + 5, yRef.y);
+      yRef.y += 5;
+      if (yRef.y > 275) { doc.addPage(); yRef.y = 20; }
+    }
+  }
+
+  yRef.y += 4;
+  doc.line(m, yRef.y, 190, yRef.y);
+  yRef.y += 8;
+
+  // SIGNED DOCUMENTS
+  yRef.y = writeHeading(doc, 'SIGNED DOCUMENTS', m, yRef.y, 11);
+  yRef.y += 2;
+  const signedItems = [
+    { label: 'W-9 Form', signed: data.signedDocs.w9 },
+    { label: 'Leasing Agreement', signed: data.signedDocs.leasing },
+    { label: 'Service Agreement', signed: data.signedDocs.service },
+  ];
+  for (const item of signedItems) {
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`${item.signed ? '✓' : '✗'} ${item.label}`, m + 5, yRef.y);
+    yRef.y += 6;
+  }
+
+  return doc.output('blob');
+}
