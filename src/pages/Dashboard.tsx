@@ -74,7 +74,7 @@ const AdminDashboard = () => {
 
   const totalRevenue = filteredLoads.filter(l => l.status !== 'cancelled').reduce((s, l) => s + l.total_rate, 0);
   const pendingPayments = payments.filter(p => p.status === 'pending').reduce((s, p) => s + p.amount, 0);
-  const activeLoads = filteredLoads.filter(l => ['in_transit', 'pending'].includes(l.status)).length;
+  const activeLoads = loads.filter(l => !['delivered', 'paid', 'tonu', 'cancelled'].includes(l.status)).length;
   const trucksWithActiveLoad = new Set(
     loads.filter(l => ['pending', 'planned', 'dispatched', 'in_transit'].includes(l.status) && l.truck_id).map(l => l.truck_id)
   );
@@ -195,7 +195,7 @@ const DispatcherDashboard = () => {
 
   const totalRevenue = filteredLoads.filter(l => l.status !== 'cancelled').reduce((s, l) => s + l.total_rate, 0);
   const pendingPayments = payments.filter(p => p.status === 'pending').reduce((s, p) => s + p.amount, 0);
-  const activeLoads = filteredLoads.filter(l => ['in_transit', 'pending'].includes(l.status)).length;
+  const activeLoads = loads.filter(l => !['delivered', 'paid', 'tonu', 'cancelled'].includes(l.status)).length;
   const deliveredLoads = filteredLoads.filter(l => l.status === 'delivered').length;
 
   const now = new Date();
