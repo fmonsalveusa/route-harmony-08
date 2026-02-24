@@ -41,7 +41,7 @@ export function RatesByDriverChart({ loads, drivers, year, month, week }: Props)
       <text
         x={x + width / 2}
         y={y - 8}
-        fill="#1e3a5f"
+        fill="hsl(var(--muted-foreground))"
         textAnchor="middle"
         dominantBaseline="auto"
         fontSize={12}
