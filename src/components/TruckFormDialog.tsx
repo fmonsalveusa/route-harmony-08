@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Upload, FileCheck } from 'lucide-react';
+import { Upload, FileCheck, X } from 'lucide-react';
 
 import type { DbTruck, TruckInput } from '@/hooks/useTrucks';
 import { toast } from 'sonner';
@@ -39,11 +39,13 @@ export function TruckFormDialog({ open, onOpenChange, truck, onSave }: Props) {
     trailer_length_ft: null, mega_ramp: null,
   });
   const [files, setFiles] = useState<Record<string, File>>({});
+  const [deletedDocs, setDeletedDocs] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (open) {
       setFiles({});
+      setDeletedDocs(new Set());
       if (truck) {
         setForm({
           unit_number: truck.unit_number, truck_type: truck.truck_type, make: truck.make || '',
@@ -77,7 +79,16 @@ export function TruckFormDialog({ open, onOpenChange, truck, onSave }: Props) {
       return;
     }
     setSaving(true);
-    const ok = await onSave(form, files);
+    // Include deleted doc URLs as null in form
+    const deletedUpdates: Record<string, null> = {};
+    deletedDocs.forEach(urlKey => {
+      const docField = DOC_FIELDS.find(d => d.urlKey === urlKey);
+      if (docField && !files[docField.key]) {
+        deletedUpdates[urlKey] = null;
+      }
+    });
+    const finalForm = { ...form, ...deletedUpdates } as any;
+    const ok = await onSave(finalForm, files);
     setSaving(false);
     if (ok) onOpenChange(false);
   };
@@ -197,9 +208,15 @@ export function TruckFormDialog({ open, onOpenChange, truck, onSave }: Props) {
               <FileUploadField
                 key={doc.key}
                 label={doc.label}
-                existingUrl={truck?.[doc.urlKey] as string | null}
+                existingUrl={deletedDocs.has(doc.urlKey) ? null : (truck?.[doc.urlKey] as string | null)}
                 file={files[doc.key]}
-                onFileChange={f => setFiles(prev => ({ ...prev, [doc.key]: f }))}
+                onFileChange={f => {
+                  setFiles(prev => ({ ...prev, [doc.key]: f }));
+                  setDeletedDocs(prev => { const n = new Set(prev); n.delete(doc.urlKey); return n; });
+                }}
+                onDelete={() => setDeletedDocs(prev => new Set(prev).add(doc.urlKey))}
+                isDeleted={deletedDocs.has(doc.urlKey) && !files[doc.key]}
+                onUndoDelete={() => setDeletedDocs(prev => { const n = new Set(prev); n.delete(doc.urlKey); return n; })}
               />
             ))}
           </div>
@@ -225,8 +242,9 @@ function DateField({ label, value, onChange }: { label: string; value: string | 
   );
 }
 
-function FileUploadField({ label, existingUrl, file, onFileChange }: {
+function FileUploadField({ label, existingUrl, file, onFileChange, onDelete, isDeleted, onUndoDelete }: {
   label: string; existingUrl: string | null | undefined; file?: File; onFileChange: (f: File) => void;
+  onDelete?: () => void; isDeleted?: boolean; onUndoDelete?: () => void;
 }) {
   const ref = useRef<HTMLInputElement>(null);
   const hasFile = !!file || !!existingUrl;
@@ -234,10 +252,22 @@ function FileUploadField({ label, existingUrl, file, onFileChange }: {
     <div className="space-y-1">
       <Label className="text-xs">{label}</Label>
       <input ref={ref} type="file" accept="image/*,.pdf" className="hidden" onChange={e => { if (e.target.files?.[0]) onFileChange(e.target.files[0]); }} />
-      <Button type="button" variant="outline" size="sm" className="w-full justify-start gap-2 text-xs" onClick={() => ref.current?.click()}>
-        {hasFile ? <FileCheck className="h-3.5 w-3.5 text-primary" /> : <Upload className="h-3.5 w-3.5" />}
-        {file ? file.name : existingUrl ? 'Document uploaded ✓' : 'Upload file'}
-      </Button>
+      <div className="flex items-center gap-1">
+        <Button type="button" variant="outline" size="sm" className="flex-1 justify-start gap-2 text-xs" onClick={() => ref.current?.click()}>
+          {hasFile ? <FileCheck className="h-3.5 w-3.5 text-primary" /> : <Upload className="h-3.5 w-3.5" />}
+          {file ? file.name : isDeleted ? 'Marked for deletion' : existingUrl ? 'Document uploaded ✓' : 'Upload file'}
+        </Button>
+        {existingUrl && !file && !isDeleted && onDelete && (
+          <Button type="button" variant="ghost" size="sm" className="text-destructive hover:text-destructive h-8 px-2 shrink-0" onClick={onDelete}>
+            <X className="h-3.5 w-3.5" />
+          </Button>
+        )}
+        {isDeleted && onUndoDelete && (
+          <Button type="button" variant="ghost" size="sm" className="text-muted-foreground h-8 px-2 text-xs shrink-0" onClick={onUndoDelete}>
+            Undo
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

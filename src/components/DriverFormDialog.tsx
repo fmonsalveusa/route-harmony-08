@@ -45,6 +45,7 @@ const docFields: { key: DocKey; label: string; urlKey: string }[] = [
 export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks, dispatchers }: DriverFormDialogProps) {
   const [form, setForm] = useState<DriverInput>(emptyForm);
   const [files, setFiles] = useState<Record<string, File | null>>({});
+  const [deletedDocs, setDeletedDocs] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
@@ -65,6 +66,7 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
       setForm(emptyForm);
     }
     setFiles({});
+    setDeletedDocs(new Set());
   }, [driver, open]);
 
   const set = (key: string, value: any) => setForm(prev => ({ ...prev, [key]: value }));
@@ -81,7 +83,23 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
     }
     setSaving(true);
     try {
-      await onSubmit(form, files);
+      // Build files with deleted docs set to null
+      const finalFiles = { ...files };
+      deletedDocs.forEach(urlKey => {
+        const docField = docFields.find(d => d.urlKey === urlKey);
+        if (docField && !finalFiles[docField.key]) {
+          finalFiles[docField.key] = null;
+        }
+      });
+      // Pass deleted doc URLs as null in form data
+      const deletedUpdates: Record<string, null> = {};
+      deletedDocs.forEach(urlKey => {
+        const docField = docFields.find(d => d.urlKey === urlKey);
+        if (docField && !files[docField.key]) {
+          deletedUpdates[urlKey] = null;
+        }
+      });
+      await onSubmit({ ...form, ...deletedUpdates } as any, finalFiles);
     } catch (err) {
       console.error('Error submitting driver:', err);
     } finally {
@@ -209,6 +227,8 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
           {docFields.map(doc => {
             const existingUrl = driver ? (driver as any)[doc.urlKey] : null;
             const selectedFile = files[doc.key];
+            const isDeleted = deletedDocs.has(doc.urlKey);
+            const showExisting = existingUrl && !isDeleted;
             return (
               <div key={doc.key} className="flex items-center gap-3 p-3 border rounded-md">
                 <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -219,10 +239,10 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
                       <span className="truncate max-w-[150px]">{selectedFile.name}</span>
                       <button onClick={() => setFiles(prev => ({ ...prev, [doc.key]: null }))}><X className="h-3 w-3" /></button>
                     </div>
-                  ) : existingUrl ? (
+                  ) : showExisting ? (
                     <a href={existingUrl} target="_blank" rel="noopener" className="text-xs text-primary underline truncate max-w-[150px]">View file</a>
                   ) : (
-                    <span className="text-xs text-muted-foreground">No file</span>
+                    <span className="text-xs text-muted-foreground">{isDeleted ? 'Marked for deletion' : 'No file'}</span>
                   )}
                 </div>
                 <input
@@ -233,11 +253,24 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
                   onChange={e => {
                     const f = e.target.files?.[0] || null;
                     setFiles(prev => ({ ...prev, [doc.key]: f }));
+                    if (f) setDeletedDocs(prev => { const n = new Set(prev); n.delete(doc.urlKey); return n; });
                   }}
                 />
-                <Button size="sm" variant="outline" onClick={() => fileRefs.current[doc.key]?.click()}>
-                  <Upload className="h-3.5 w-3.5 mr-1" /> Upload
-                </Button>
+                <div className="flex items-center gap-1">
+                  {showExisting && !selectedFile && (
+                    <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive h-8 px-2" onClick={() => setDeletedDocs(prev => new Set(prev).add(doc.urlKey))}>
+                      <X className="h-3.5 w-3.5 mr-0.5" /> Delete
+                    </Button>
+                  )}
+                  {isDeleted && !selectedFile && (
+                    <Button size="sm" variant="ghost" className="text-muted-foreground h-8 px-2 text-xs" onClick={() => setDeletedDocs(prev => { const n = new Set(prev); n.delete(doc.urlKey); return n; })}>
+                      Undo
+                    </Button>
+                  )}
+                  <Button size="sm" variant="outline" onClick={() => fileRefs.current[doc.key]?.click()}>
+                    <Upload className="h-3.5 w-3.5 mr-1" /> Upload
+                  </Button>
+                </div>
               </div>
             );
           })}
