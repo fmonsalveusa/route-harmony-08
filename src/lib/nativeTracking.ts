@@ -22,9 +22,9 @@ interface BackgroundGeolocationPlugin {
 
 const NATIVE_GPS_ENABLED = true;
 const WATCHER_ID_KEY = 'native_bg_watcher_id';
+const PLUGIN_AVAILABLE_KEY = 'native_gps_plugin_available';
 
 let pluginInstance: BackgroundGeolocationPlugin | null = null;
-let pluginAvailable: boolean | null = null;
 let currentWatcherId: string | null = null;
 
 function getBackgroundGeolocation(): BackgroundGeolocationPlugin | null {
@@ -41,19 +41,22 @@ function getBackgroundGeolocation(): BackgroundGeolocationPlugin | null {
 
 /**
  * Health-check: verifies the BackgroundGeolocation plugin is truly available.
+ * Uses localStorage cache to avoid repeated test-watcher calls that can crash.
  */
 export async function isBackgroundGeolocationAvailable(): Promise<boolean> {
-  if (!NATIVE_GPS_ENABLED) {
-    console.log('[NativeTracking] Native GPS is disabled (NATIVE_GPS_ENABLED=false)');
-    return false;
-  }
+  if (!NATIVE_GPS_ENABLED) return false;
   if (!isNativePlatform()) return false;
-  if (pluginAvailable !== null) return pluginAvailable;
 
+  // Use cached result to avoid crash-prone test watcher
+  const cached = localStorage.getItem(PLUGIN_AVAILABLE_KEY);
+  if (cached === 'true') return true;
+  if (cached === 'false') return false;
+
+  // First-time check — do a safe test
   try {
     const plugin = getBackgroundGeolocation();
     if (!plugin) {
-      pluginAvailable = false;
+      localStorage.setItem(PLUGIN_AVAILABLE_KEY, 'false');
       return false;
     }
     const testId = await Promise.race([
@@ -64,11 +67,11 @@ export async function isBackgroundGeolocationAvailable(): Promise<boolean> {
       new Promise<string>((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000))
     ]);
     await plugin.removeWatcher({ id: testId }).catch(() => {});
-    pluginAvailable = true;
+    localStorage.setItem(PLUGIN_AVAILABLE_KEY, 'true');
     console.log('[NativeTracking] Plugin available ✓');
     return true;
   } catch (e) {
-    pluginAvailable = false;
+    localStorage.setItem(PLUGIN_AVAILABLE_KEY, 'false');
     console.warn('[NativeTracking] Plugin NOT available:', e);
     return false;
   }
@@ -84,14 +87,12 @@ async function cleanupOrphanedWatcher(): Promise<void> {
   const plugin = getBackgroundGeolocation();
   if (!plugin) return;
 
-  // Clean in-memory watcher first
   if (currentWatcherId) {
     console.log('[NativeTracking] Removing current in-memory watcher:', currentWatcherId);
     await plugin.removeWatcher({ id: currentWatcherId }).catch(() => {});
     currentWatcherId = null;
   }
 
-  // Clean persisted watcher (orphan from destroyed WebView)
   const savedId = localStorage.getItem(WATCHER_ID_KEY);
   if (savedId) {
     console.log('[NativeTracking] Removing orphaned watcher from localStorage:', savedId);
@@ -103,17 +104,14 @@ async function cleanupOrphanedWatcher(): Promise<void> {
 export async function startNativeTracking(
   onPosition: (pos: PositionCallback) => void
 ): Promise<() => void> {
-  const available = await isBackgroundGeolocationAvailable();
-  if (!available) {
-    console.warn('[NativeTracking] Skipping start — plugin not available');
+  const plugin = getBackgroundGeolocation();
+  if (!plugin) {
+    console.warn('[NativeTracking] No plugin instance');
     return () => {};
   }
 
-  const plugin = getBackgroundGeolocation();
-  if (!plugin) return () => {};
-
-  // Always cleanup before creating a new watcher
-  await cleanupOrphanedWatcher();
+  // Cleanup orphans first
+  await cleanupOrphanedWatcher().catch(() => {});
 
   try {
     console.log('[NativeTracking] Starting new watcher...');
@@ -144,6 +142,8 @@ export async function startNativeTracking(
 
     currentWatcherId = id;
     localStorage.setItem(WATCHER_ID_KEY, id);
+    // Mark plugin as confirmed working
+    localStorage.setItem(PLUGIN_AVAILABLE_KEY, 'true');
     console.log('[NativeTracking] Watcher started, id:', id);
     return () => { stopNativeTracking(); };
   } catch (e) {

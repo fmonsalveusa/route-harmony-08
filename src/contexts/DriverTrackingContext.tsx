@@ -280,27 +280,26 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
   }, []);
 
   // ============================================================
-  // AUTO-RESUME on mount
+  // AUTO-RESUME on mount (very defensive — wrapped in try-catch)
   // ============================================================
   useEffect(() => {
     if (autoResumedRef.current || !driverId) return;
 
     const safeAutoStart = async () => {
-      if (isNativePlatform()) {
-        try {
-          const available = await isBackgroundGeolocationAvailable();
-          if (!available) { console.warn('[Tracking] Auto-start skipped: GPS plugin not available'); return; }
-        } catch (e) { console.warn('[Tracking] Auto-start plugin check failed:', e); return; }
+      try {
+        console.log('[Tracking] safeAutoStart executing...');
+        await startTracking(true);
+      } catch (e) {
+        console.error('[Tracking] Auto-start failed (caught):', e);
       }
-      try { startTracking(true); } catch (e) { console.error('[Tracking] Auto-start failed:', e); }
     };
 
     const wasTracking = localStorage.getItem(TRACKING_STORAGE_KEY) === 'true';
     if (wasTracking && !tracking) {
       autoResumedRef.current = true;
       console.log('[Tracking] Auto-resuming from localStorage flag');
-      setTimeout(() => safeAutoStart(), 6000);
-      return;
+      const timer = setTimeout(() => safeAutoStart(), 8000);
+      return () => clearTimeout(timer);
     }
 
     if (!tracking) {
@@ -311,10 +310,10 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
             if (data && data.length > 0 && !autoResumedRef.current) {
               autoResumedRef.current = true;
               console.log('[Tracking] Auto-starting: driver has active loads');
-              setTimeout(() => safeAutoStart(), 3000);
+              setTimeout(() => safeAutoStart(), 5000);
             }
           });
-      }, 5000);
+      }, 6000);
       return () => clearTimeout(queryTimer);
     }
   }, [driverId]); // intentionally only driverId
