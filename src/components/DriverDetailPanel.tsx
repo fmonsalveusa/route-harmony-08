@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import { DbDriver } from '@/hooks/useDrivers';
-import { FileText, ExternalLink, Loader2 } from 'lucide-react';
+import { FileText, ExternalLink, Loader2, Download } from 'lucide-react';
 import { formatDate } from '@/lib/dateUtils';
 import { ExpiryBadge } from '@/components/ExpiryBadge';
+import { generateOnboardingSummaryPdf } from '@/lib/onboardingDocPdf';
+import { Button } from '@/components/ui/button';
+import { format } from 'date-fns';
 
 function Info({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -26,10 +29,72 @@ interface Props {
   truckLabel: string | null;
   dispatcherName: string | null;
   getDocSignedUrl?: (storedUrl: string) => Promise<string | null>;
+  truck?: any;
 }
 
-export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSignedUrl }: Props) {
+export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSignedUrl, truck }: Props) {
   const [loadingDoc, setLoadingDoc] = useState<string | null>(null);
+
+  const handleDownloadPdf = () => {
+    const driverDocs: string[] = [];
+    if (driver.license_photo_url) driverDocs.push('License Photo');
+    if (driver.medical_card_photo_url) driverDocs.push('Medical Card Photo');
+
+    const truckDocs: string[] = [];
+    if (truck?.registration_photo_url) truckDocs.push('Registration');
+    if (truck?.insurance_photo_url) truckDocs.push('Insurance');
+    if (truck?.license_photo_url) truckDocs.push('License Plate Photo');
+    if (truck?.truck_side_photo_url) truckDocs.push('Truck Side Photo');
+    if (truck?.rear_truck_photo_url) truckDocs.push('Rear Photo');
+    if (truck?.cargo_area_photo_url) truckDocs.push('Cargo Area Photo');
+    if (truck?.truck_plate_photo_url) truckDocs.push('Plate Photo');
+
+    const blob = generateOnboardingSummaryPdf({
+      driverData: {
+        name: driver.name,
+        email: driver.email,
+        phone: driver.phone,
+        license: driver.license,
+        state: driver.state,
+        license_expiry: driver.license_expiry,
+        medical_card_expiry: driver.medical_card_expiry,
+      },
+      truckData: truck ? {
+        unit_number: truck.unit_number,
+        truck_type: truck.truck_type,
+        make: truck.make,
+        model: truck.model,
+        year: truck.year,
+        vin: truck.vin,
+        license_plate: truck.license_plate,
+        max_payload_lbs: truck.max_payload_lbs,
+        insurance_expiry: truck.insurance_expiry,
+        registration_expiry: truck.registration_expiry,
+        cargo_length_ft: truck.cargo_length_ft,
+        cargo_width_in: truck.cargo_width_in,
+        cargo_height_in: truck.cargo_height_in,
+        rear_door_width_in: truck.rear_door_width_in,
+        rear_door_height_in: truck.rear_door_height_in,
+        trailer_length_ft: truck.trailer_length_ft,
+        mega_ramp: truck.mega_ramp,
+      } : { unit_number: '', truck_type: '' },
+      driverDocs,
+      truckDocs,
+      signedDocs: {
+        w9: !!driver.form_w9_url,
+        leasing: !!driver.leasing_agreement_url,
+        service: !!driver.service_agreement_url,
+      },
+      date: format(new Date(), 'MM/dd/yyyy'),
+    });
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${driver.name.replace(/\s+/g, '_')}_Summary.pdf`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const handleViewDoc = async (url: string, key: string) => {
     // Open window synchronously to avoid popup blocker
@@ -90,7 +155,12 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
 
       {/* Documents */}
       <div className="border-t pt-3">
-        <p className="text-xs font-semibold text-muted-foreground mb-2">Documents</p>
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-xs font-semibold text-muted-foreground">Documents</p>
+          <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={e => { e.stopPropagation(); handleDownloadPdf(); }}>
+            <Download className="h-3.5 w-3.5" /> Download PDF
+          </Button>
+        </div>
         <div className="flex flex-wrap gap-2">
           {docFields.map(doc => {
             const url = (driver as any)[doc.key];
