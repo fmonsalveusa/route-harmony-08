@@ -1,86 +1,126 @@
 
 
-# Mejora Visual: Glassmorphism Moderno en Tablas y Listas
+# Mejora Visual Completa: Glassmorphism en toda la App
 
-## Diagnostico actual
+Este es un plan grande que cubre las 4 areas solicitadas. Recomiendo implementarlo en fases para mantener la estabilidad. Aqui va la fase completa:
 
-Las tablas de Loads, Drivers, Fleet, Payments, etc. usan un estilo funcional pero basico: `Card` con borde solido, header `bg-muted/50`, filas planas con `hover:bg-muted/30`, y botones de accion con colores inline hardcodeados (border-sky-400, border-emerald-400, etc.). No hay profundidad visual ni efecto de cristal.
+## Fase 1: Sidebar y Header con Glassmorphism
 
-## Cambios propuestos
+### `src/components/AppLayout.tsx`
+- **Sidebar**: Cambiar fondo solido por gradiente sutil con backdrop-blur. Agregar borde interior translucido.
+- **Header**: Agregar `backdrop-blur-xl` y fondo semitransparente en lugar de `bg-card` solido.
+- **Nav items activos**: Agregar borde izquierdo de acento (2px) en el item activo + fondo glass sutil.
+- **Logo area**: Separador inferior con gradiente en lugar de borde solido.
+- **Hover en nav**: Transicion suave con efecto de brillo sutil.
+- **Collapse button**: Estilo glass con hover.
 
-### 1. CSS global -- nuevas utilidades glassmorphism (`src/index.css`)
+### CSS nuevos en `src/index.css`
+- `.glass-sidebar` -- sidebar con gradiente + blur
+- `.glass-header` -- header translucido con blur
+- `.nav-item-active` -- borde izquierdo de acento + fondo glass
 
-Agregar clases reutilizables al layer `@components`:
+## Fase 2: Dashboard y Graficas
 
-- `.glass-card` -- fondo semitransparente con backdrop-blur, borde sutil blanco/oscuro, sombra difusa
-- `.glass-table-header` -- header de tabla con efecto de cristal y texto mas definido
-- `.glass-row` -- filas con hover translucido y transicion suave
-- `.glass-row-expanded` -- fila expandida con fondo cristal mas marcado
-- `.glass-action-btn` -- botones de accion con efecto vidrio (reemplaza los colores hardcodeados)
-- Variantes para dark mode automaticas
+### `src/components/dashboard/RatesByDriverChart.tsx`
+- Envolver en `glass-card` en lugar de `Card` plano
+- Agregar gradiente sutil al fondo de las barras
+- Labels de valores con mejor contraste (adaptacion dark/light)
+- Bordes redondeados en las barras (`radius` prop)
 
-Ejemplo visual del efecto:
-```text
-┌─────────────────────────────────────────────────┐
-│  ░░░░ backdrop-blur ░░░░░░░░░░░░░░░░░░░░░░░░░░ │
-│  ┌─────────────────────────────────────────────┐ │
-│  │ Load #   Driver    Origin    Status   Rate  │ │  ← header cristal
-│  ├─────────────────────────────────────────────┤ │
-│  │ L-001    John S.   Dallas    ●Active  $2.4k │ │  ← fila con hover cristal
-│  │ L-002    Maria L.  Houston   ●Transit $1.8k │ │
-│  └─────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────┘
-```
+### `src/components/dashboard/WeeklyRatesChart.tsx`
+- `glass-card` como contenedor
+- Area con gradiente translucido
+- Grid lines mas sutiles (opacidad reducida)
+- Tooltip con efecto glass
 
-### 2. Tablas de Loads (`src/pages/Loads.tsx`)
+### `src/components/dashboard/DispatcherCommissionsChart.tsx`
+- Mismo tratamiento glass-card
+- Barras con bordes redondeados
 
-- Cambiar el `<Card>` que envuelve la tabla por la clase `glass-card`
-- Header de tabla (`<thead>`) usa `glass-table-header` en lugar de `bg-muted/50`
-- Filas (`<tr>`) usan `glass-row` con hover con efecto de brillo sutil
-- Fila expandida usa `glass-row-expanded`
-- Botones de accion (Edit, Delete, POD, Invoice) reemplazar los colores hardcodeados por `glass-action-btn` con variantes semanticas
-- Tabs de filtro (Active/Delivered/Cancelled/All) con efecto cristal en el tab activo
-- Barra de filtros con fondo glass sutil
+### `src/components/dashboard/MarketAnalysisCard.tsx`
+- Glass-card como contenedor
 
-### 3. Tabla de Drivers (`src/pages/Drivers.tsx`)
+### `src/components/dashboard/DashboardFilters.tsx`
+- Barra de filtros con fondo glass sutil y borde translucido
 
-- Mismos cambios que Loads: `glass-card`, `glass-table-header`, `glass-row`
-- Botones Copy/Detail/Edit/Delete con `glass-action-btn` en lugar de colores hardcodeados
-- Badge de "pending" con efecto glow sutil
-- Tabs Active/Inactive/All con estilo glass
+## Fase 3: Formularios y Dialogs
 
-### 4. StatCard upgrade (`src/components/StatCard.tsx`)
+### `src/components/ui/dialog.tsx`
+- Overlay con mayor blur (de default a `backdrop-blur-md`)
+- Dialog content con efecto glass: fondo semitransparente, borde sutil
+- Sombra difusa mas pronunciada
 
-- Agregar efecto glassmorphism al contenedor: backdrop-blur, borde translucido
-- Icono con fondo glass en lugar de color solido plano
-- Hover con brillo sutil que se desplaza
+### `src/components/ui/input.tsx`
+- Focus ring con glow sutil del color de accent
+- Bordes con transicion mas suave
 
-### 5. StatusBadge upgrade (`src/components/StatusBadge.tsx`)
+### `src/components/ui/select.tsx`
+- Dropdown con efecto glass en el contenido desplegable
 
-- Agregar backdrop-blur sutil a los badges de status
-- Borde translucido blanco para efecto "flotante"
-- Sombra glow sutil del color del status
+## Fase 4: Paginas Restantes (Fleet, Payments, Expenses, Dispatchers, Invoices, Companies, Users)
 
-### 6. Card base (`src/components/ui/card.tsx`)
+### `src/pages/Fleet.tsx`
+- Tabla envuelta en `glass-card`
+- Header con `glass-table-header`
+- Filas con `glass-row`
+- Botones de accion con `glass-action-btn` + tints semanticos
 
-- No modificar el componente base para no romper nada existente
-- En su lugar, todas las mejoras van en las clases CSS utilitarias nuevas que se aplican encima
+### `src/pages/Payments.tsx`
+- Misma transformacion: `glass-card`, `glass-table-header`, `glass-row`
+- Botones de receipt/edit/delete con glass-action-btn
+- Stat cards ya usan glass (no requieren cambio)
 
-## Archivos a modificar
+### `src/pages/Expenses.tsx`
+- Tabla con glass-card y glass-row
+- Botones con glass-action-btn
 
-| Archivo | Cambio |
+### `src/pages/Dispatchers.tsx`
+- Cards de dispatchers con `glass-card` en lugar de `Card`
+- Botones con glass-action-btn
+
+### `src/pages/Invoices.tsx`
+- Tabla con glass-card, glass-table-header, glass-row
+- Botones de accion con glass-action-btn
+
+### `src/pages/Companies.tsx`
+- Aplicar glass-card a las tarjetas/tabla
+
+### `src/pages/UsersPage.tsx`
+- Aplicar glass-card y glass-row
+
+### `src/pages/Maintenance.tsx`
+- Cards de mantenimiento ya usan animacion; agregar glass-card
+
+### `src/pages/Performance.tsx`
+- Cards y graficas con glass-card
+
+## Archivos a modificar (resumen)
+
+| Archivo | Cambio principal |
 |---|---|
-| `src/index.css` | Nuevas clases `.glass-*` con soporte light/dark |
-| `src/pages/Loads.tsx` | Aplicar clases glass a tabla, header, filas, botones, tabs |
-| `src/pages/Drivers.tsx` | Aplicar clases glass a tabla, header, filas, botones |
-| `src/components/StatCard.tsx` | Efecto glassmorphism en card e icono |
-| `src/components/StatusBadge.tsx` | Backdrop-blur y glow sutil en badges |
+| `src/index.css` | Clases `.glass-sidebar`, `.glass-header`, `.nav-item-active`, mejoras a dialog glass |
+| `src/components/AppLayout.tsx` | Sidebar y header con glass + nav items mejorados |
+| `src/components/ui/dialog.tsx` | Overlay con blur + content con glass |
+| `src/components/dashboard/RatesByDriverChart.tsx` | glass-card + barras redondeadas |
+| `src/components/dashboard/WeeklyRatesChart.tsx` | glass-card + area con gradiente |
+| `src/components/dashboard/DispatcherCommissionsChart.tsx` | glass-card |
+| `src/components/dashboard/MarketAnalysisCard.tsx` | glass-card |
+| `src/components/dashboard/DashboardFilters.tsx` | Fondo glass en barra de filtros |
+| `src/pages/Fleet.tsx` | glass-card, glass-table-header, glass-row, glass-action-btn |
+| `src/pages/Payments.tsx` | glass-card, glass-table-header, glass-row, glass-action-btn |
+| `src/pages/Expenses.tsx` | glass-card, glass-row, glass-action-btn |
+| `src/pages/Dispatchers.tsx` | glass-card en dispatcher cards |
+| `src/pages/Invoices.tsx` | glass-card, glass-table-header, glass-row, glass-action-btn |
+| `src/pages/Companies.tsx` | glass-card |
+| `src/pages/UsersPage.tsx` | glass-card, glass-row |
+| `src/pages/Maintenance.tsx` | glass-card en maintenance cards |
+| `src/pages/Performance.tsx` | glass-card |
 
 ## Detalles tecnicos
 
-- Todo se logra con CSS puro (Tailwind + `@apply` + propiedades CSS como `backdrop-filter`, `box-shadow`, `border-color` con alpha)
-- No se agregan dependencias
-- Dark mode automatico usando el selector `.dark` ya existente
-- Las clases son aditivas: se aplican encima de los componentes existentes sin romper funcionalidad
-- Los colores de los botones de accion se simplifican a variantes glass con tinte semantico (verde para positivo, rojo para destructivo, azul para info)
+- Todo con CSS puro + Tailwind, sin nuevas dependencias
+- Reutiliza las clases `.glass-*` ya definidas en index.css; solo se agregan 3 nuevas (sidebar, header, nav-item)
+- Compatible con dark mode automaticamente
+- Los charts de Recharts se envuelven en divs glass en lugar de modificar los componentes de Recharts directamente
+- Los dialogs se mejoran sin romper la API existente de Radix
 
