@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { getTenantId } from '@/hooks/useTenantId';
 import { toast } from '@/hooks/use-toast';
-import { isNativePlatform, startNativeTracking, stopNativeTracking, isBackgroundGeolocationAvailable } from '@/lib/nativeTracking';
+import { isNativePlatform, startNativeTracking, stopNativeTracking, isBackgroundGeolocationAvailable, isBatterySaverEnabled, setBatterySaver } from '@/lib/nativeTracking';
 import { hapticFeedback } from '@/lib/haptics';
 import { App as CapApp } from '@capacitor/app';
 
@@ -32,6 +32,9 @@ interface DriverTrackingContextType {
   nearbyStop: ActiveStop | null;
   confirmArrival: (stopId: string) => Promise<void>;
   dismissArrival: () => void;
+  paused: boolean;
+  batterySaver: boolean;
+  toggleBatterySaver: () => void;
 }
 
 const DriverTrackingContext = createContext<DriverTrackingContextType | null>(null);
@@ -41,6 +44,7 @@ const DriverTrackingContext = createContext<DriverTrackingContextType | null>(nu
 const GEOFENCE_RADIUS_METERS = 300;
 const TRACKING_STORAGE_KEY = 'driver-tracking-active';
 const ACTIVE_LOAD_STATUSES = ['dispatched', 'in_transit', 'on_site_pickup', 'picked_up', 'on_site_delivery'];
+const IDLE_PAUSE_MS = 5 * 60 * 1000; // 5 minutes
 
 // --- Helpers ---
 
@@ -89,6 +93,21 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
   const nativeCleanupRef = useRef<(() => void) | null>(null);
   const [refreshStops, setRefreshStops] = useState(0);
   const autoResumedRef = useRef(false);
+
+  // --- Idle pause state ---
+  const [paused, setPaused] = useState(false);
+  const lastMovementRef = useRef<number>(Date.now());
+  const idleTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // --- Battery saver state ---
+  const [batterySaver, setBatterySaverState] = useState(isBatterySaverEnabled());
+
+  const toggleBatterySaver = useCallback(() => {
+    const newVal = !batterySaver;
+    setBatterySaverState(newVal);
+    setBatterySaver(newVal);
+    toast({ title: newVal ? 'Modo ahorro activado 🔋' : 'Modo ahorro desactivado' });
+  }, [batterySaver]);
 
   // --- Permission check ---
   useEffect(() => {
@@ -163,9 +182,40 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
     setNearbyStop(null);
   }, [nearbyStop]);
 
+  // ============================================================
+  // IDLE DETECTION — auto-pause when speed is 0 for 5 minutes
+  // ============================================================
+  const handleIdleCheck = useCallback((currentSpeed: number | null) => {
+    const isMoving = currentSpeed !== null && currentSpeed > 0.5; // > 0.5 m/s ≈ walking
+
+    if (isMoving) {
+      lastMovementRef.current = Date.now();
+      if (paused) {
+        console.log('[Tracking] Movement detected, resuming from idle pause');
+        setPaused(false);
+      }
+      return;
+    }
+
+    // Not moving — check if idle long enough
+    if (!paused && (Date.now() - lastMovementRef.current) >= IDLE_PAUSE_MS) {
+      console.log('[Tracking] Idle for 5+ min, pausing DB updates');
+      setPaused(true);
+    }
+  }, [paused]);
+
   // --- Send position (web GeolocationPosition) ---
   const sendPosition = useCallback(async (pos: GeolocationPosition) => {
     if (!driverId) return;
+    setLastPosition({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+    setSpeed(pos.coords.speed);
+    setAccuracy(pos.coords.accuracy);
+    checkGeofence(pos.coords.latitude, pos.coords.longitude);
+    handleIdleCheck(pos.coords.speed);
+
+    // Skip DB write if idle-paused
+    if (paused) return;
+
     const tenant_id = await getTenantId();
     const payload = {
       driver_id: driverId, tenant_id,
@@ -173,17 +223,22 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
       speed: pos.coords.speed, heading: pos.coords.heading,
       accuracy: pos.coords.accuracy, updated_at: new Date().toISOString(),
     };
-    setLastPosition({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-    setSpeed(pos.coords.speed);
-    setAccuracy(pos.coords.accuracy);
-    checkGeofence(pos.coords.latitude, pos.coords.longitude);
     const { error } = await supabase.from('driver_locations').upsert(payload as any, { onConflict: 'driver_id' });
     if (error) console.error('Location update error:', error);
-  }, [driverId, checkGeofence]);
+  }, [driverId, checkGeofence, handleIdleCheck, paused]);
 
   // --- Send position (native format) ---
   const sendNativePosition = useCallback(async (pos: { lat: number; lng: number; speed: number | null; heading: number | null; accuracy: number | null }) => {
     if (!driverId) return;
+    setLastPosition({ lat: pos.lat, lng: pos.lng });
+    setSpeed(pos.speed);
+    setAccuracy(pos.accuracy);
+    checkGeofence(pos.lat, pos.lng);
+    handleIdleCheck(pos.speed);
+
+    // Skip DB write if idle-paused
+    if (paused) return;
+
     const tenant_id = await getTenantId();
     const payload = {
       driver_id: driverId, tenant_id,
@@ -191,13 +246,9 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
       speed: pos.speed, heading: pos.heading,
       accuracy: pos.accuracy, updated_at: new Date().toISOString(),
     };
-    setLastPosition({ lat: pos.lat, lng: pos.lng });
-    setSpeed(pos.speed);
-    setAccuracy(pos.accuracy);
-    checkGeofence(pos.lat, pos.lng);
     const { error } = await supabase.from('driver_locations').upsert(payload as any, { onConflict: 'driver_id' });
     if (error) console.error('Location update error:', error);
-  }, [driverId, checkGeofence]);
+  }, [driverId, checkGeofence, handleIdleCheck, paused]);
 
   // --- Web watcher helper ---
   const startWatchPosition = useCallback((onPosition: (pos: GeolocationPosition) => void) => {
@@ -205,9 +256,9 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
     watchRef.current = navigator.geolocation.watchPosition(
       onPosition,
       (err) => { console.error('GPS error:', err); },
-      { enableHighAccuracy: true, maximumAge: 10000 }
+      { enableHighAccuracy: !batterySaver, maximumAge: batterySaver ? 30000 : 10000 }
     );
-  }, []);
+  }, [batterySaver]);
 
   // ============================================================
   // START TRACKING
@@ -215,11 +266,11 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
   const startTracking = useCallback(async (silent = false) => {
     if (tracking) return;
     console.log('[Tracking] startTracking called, silent:', silent, 'native:', isNativePlatform());
+    lastMovementRef.current = Date.now();
+    setPaused(false);
 
     if (isNativePlatform()) {
       try {
-        // For silent (auto) starts, skip the health-check entirely — it can crash the native process.
-        // Just try to create the watcher directly; if the plugin isn't in the APK it will throw.
         let gpAvailable = true;
         if (!silent) {
           gpAvailable = await isBackgroundGeolocationAvailable();
@@ -259,11 +310,12 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
     if (!silent) { toast({ title: 'GPS Tracking started' }); hapticFeedback('medium'); }
 
     acquireWakeLock(wakeLockRef);
+    const updateInterval = batterySaver ? 60000 : 30000;
     startWatchPosition((pos) => { posRef.current = pos; sendPosition(pos); });
     intervalRef.current = setInterval(() => {
       if (posRef.current) sendPosition(posRef.current);
-    }, 30000);
-  }, [tracking, sendPosition, sendNativePosition, startWatchPosition]);
+    }, updateInterval);
+  }, [tracking, sendPosition, sendNativePosition, startWatchPosition, batterySaver]);
 
   // ============================================================
   // STOP TRACKING
@@ -280,13 +332,32 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
       intervalRef.current = null;
       releaseWakeLock(wakeLockRef);
     }
+    if (idleTimerRef.current) { clearInterval(idleTimerRef.current); idleTimerRef.current = null; }
     setTracking(false);
+    setPaused(false);
     localStorage.removeItem(TRACKING_STORAGE_KEY);
     setNearbyStop(null);
     setActiveStops([]);
     hapticFeedback('medium');
     toast({ title: 'GPS Tracking stopped' });
   }, []);
+
+  // ============================================================
+  // AUTO-STOP when no active loads
+  // ============================================================
+  useEffect(() => {
+    if (!driverId || !tracking) return;
+
+    const checkInterval = setInterval(async () => {
+      const { data } = await supabase.from('loads').select('id').eq('driver_id', driverId).in('status', ACTIVE_LOAD_STATUSES).limit(1);
+      if (!data || data.length === 0) {
+        console.log('[Tracking] No active loads, stopping tracking');
+        stopTracking();
+      }
+    }, 60000); // Check every minute
+
+    return () => clearInterval(checkInterval);
+  }, [driverId, tracking, stopTracking]);
 
   // ============================================================
   // AUTO-RESUME on mount (very defensive — wrapped in try-catch)
@@ -340,7 +411,6 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
 
       console.log('[Tracking] App resumed, re-establishing native watcher with fresh callback');
 
-      // Always create a fresh watcher — the old JS callback is dead after WebView recreation
       try {
         const cleanup = await startNativeTracking((pos) => sendNativePosition(pos));
         nativeCleanupRef.current = cleanup;
@@ -358,7 +428,7 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
   // WEB ONLY: Restore GPS watch on visibility change
   // ============================================================
   useEffect(() => {
-    if (isNativePlatform()) return; // Skip entirely on native
+    if (isNativePlatform()) return;
 
     const handleVisibilityChange = () => {
       if (document.visibilityState !== 'visible') return;
@@ -369,7 +439,8 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
       if (tracking) {
         startWatchPosition((pos) => { posRef.current = pos; sendPosition(pos); });
         if (intervalRef.current) clearInterval(intervalRef.current);
-        intervalRef.current = setInterval(() => { if (posRef.current) sendPosition(posRef.current); }, 30000);
+        const updateInterval = batterySaver ? 60000 : 30000;
+        intervalRef.current = setInterval(() => { if (posRef.current) sendPosition(posRef.current); }, updateInterval);
         acquireWakeLock(wakeLockRef);
         if (posRef.current) sendPosition(posRef.current);
       }
@@ -377,19 +448,20 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [tracking, sendPosition, startWatchPosition, startTracking]);
+  }, [tracking, sendPosition, startWatchPosition, startTracking, batterySaver]);
 
   // --- Cleanup on unmount ---
   useEffect(() => {
     return () => {
       if (watchRef.current !== null) navigator.geolocation.clearWatch(watchRef.current);
       if (intervalRef.current) clearInterval(intervalRef.current);
+      if (idleTimerRef.current) clearInterval(idleTimerRef.current);
       releaseWakeLock(wakeLockRef);
     };
   }, []);
 
   return (
-    <DriverTrackingContext.Provider value={{ tracking, lastPosition, speed, accuracy, permissionStatus, startTracking, stopTracking, nearbyStop, confirmArrival, dismissArrival }}>
+    <DriverTrackingContext.Provider value={{ tracking, lastPosition, speed, accuracy, permissionStatus, startTracking, stopTracking, nearbyStop, confirmArrival, dismissArrival, paused, batterySaver, toggleBatterySaver }}>
       {children}
     </DriverTrackingContext.Provider>
   );
