@@ -134,7 +134,7 @@ const Maintenance = () => {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <Card>
+            <div className="glass-card overflow-hidden">
               <div className="px-5 py-3 border-b bg-muted/30">
                 <h3 className="font-semibold text-sm">{getTruckLabel(truckId)}</h3>
               </div>
@@ -150,7 +150,7 @@ const Maintenance = () => {
                   />
                 ))}
               </CardContent>
-            </Card>
+            </div>
           </motion.div>
         ))
       )}

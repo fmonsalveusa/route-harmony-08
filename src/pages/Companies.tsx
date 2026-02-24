@@ -66,11 +66,11 @@ const Companies = () => {
         <StatCard title="Total Companies" value={companies.length} icon={Building2} />
       </div>
 
-      <Card>
-        <CardContent className="p-0">
+      <div className="glass-card overflow-hidden">
+        <div className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-[15px]">
-              <thead><tr className="border-b bg-muted/50">
+              <thead><tr className="border-b glass-table-header">
                 <th className="text-left p-3 font-medium text-muted-foreground">Company</th>
                 <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">MC#</th>
                 <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">DOT#</th>
@@ -84,7 +84,7 @@ const Companies = () => {
                   <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">No companies configured. Add one to include it in your invoices.</td></tr>
                 )}
                 {companies.map(c => (
-                  <tr key={c.id} className="border-b last:border-0 hover:bg-muted/30">
+                  <tr key={c.id} className="border-b last:border-0 glass-row">
                     <td className="p-3">
                       <div className="font-medium">{c.name}</div>
                       {c.legal_name && <div className="text-xs text-muted-foreground">{c.legal_name}</div>}
@@ -96,12 +96,12 @@ const Companies = () => {
                     <td className="p-3 hidden lg:table-cell text-muted-foreground">{c.email || '—'}</td>
                     <td className="p-3 text-right">
                       <div className="flex justify-end gap-1.5">
-                        <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-amber-400 bg-white text-amber-600 hover:bg-amber-50 hover:text-amber-700 gap-1" onClick={() => openEdit(c)} title="Edit">
+                        <button className="glass-action-btn tint-amber inline-flex items-center" onClick={() => openEdit(c)} title="Edit">
                           <Pencil className="h-4 w-4" /> Edit
-                        </Button>
-                        <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-red-400 bg-white text-red-600 hover:bg-red-50 hover:text-red-700 gap-1" onClick={async () => { if (window.confirm(`Delete company ${c.name}? This action is permanent.`)) { await deleteCompany(c.id); } }} title="Delete">
+                        </button>
+                        <button className="glass-action-btn tint-red inline-flex items-center" onClick={async () => { if (window.confirm(`Delete company ${c.name}? This action is permanent.`)) { await deleteCompany(c.id); } }} title="Delete">
                           <Trash2 className="h-4 w-4" /> Delete
-                        </Button>
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -109,8 +109,8 @@ const Companies = () => {
               </tbody>
             </table>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Form Dialog */}
       <Dialog open={showForm} onOpenChange={setShowForm}>

@@ -193,6 +193,62 @@ html, body {
   .glass-action-btn.tint-red { @apply text-[hsl(0,72%,51%)]; }
   .glass-action-btn.tint-purple { @apply text-[hsl(270,55%,50%)]; }
 
+  /* ── Sidebar & Header glassmorphism ── */
+  .glass-sidebar {
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    background: linear-gradient(
+      180deg,
+      hsla(var(--sidebar-background), 0.92) 0%,
+      hsla(var(--sidebar-background), 0.85) 100%
+    );
+    border-right: 1px solid hsla(0, 0%, 100%, 0.06);
+  }
+  .dark .glass-sidebar {
+    background: linear-gradient(
+      180deg,
+      hsla(var(--sidebar-background), 0.95) 0%,
+      hsla(var(--sidebar-background), 0.88) 100%
+    );
+  }
+
+  .glass-header {
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    background: hsla(var(--card), 0.8);
+    border-bottom: 1px solid hsla(0, 0%, 0%, 0.06);
+  }
+  .dark .glass-header {
+    background: hsla(var(--card), 0.65);
+    border-bottom-color: hsla(0, 0%, 100%, 0.06);
+  }
+
+  .nav-item-active {
+    border-left: 2px solid hsl(var(--sidebar-primary));
+    background: hsla(var(--sidebar-accent), 0.15);
+  }
+  .dark .nav-item-active {
+    background: hsla(var(--sidebar-accent), 0.1);
+  }
+
+  /* Glass dialog overlay & content */
+  .glass-dialog-overlay {
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+  .glass-dialog-content {
+    background: hsla(var(--card), 0.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid hsla(0, 0%, 100%, 0.12);
+    box-shadow: 0 16px 48px -12px rgba(0, 0, 0, 0.25);
+  }
+  .dark .glass-dialog-content {
+    background: hsla(var(--card), 0.85);
+    border-color: hsla(0, 0%, 100%, 0.06);
+    box-shadow: 0 16px 48px -12px rgba(0, 0, 0, 0.55);
+  }
+
   .safe-area-pb {
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }

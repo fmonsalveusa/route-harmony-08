@@ -105,9 +105,9 @@ export const AppLayout = ({ children }: {children: ReactNode;}) => {
   const initials = profile.full_name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
 
   const isMasterRoute = location.pathname.startsWith('/master');
-  const sidebarBg = isMasterAdmin && isMasterRoute ? 'bg-[hsl(270,40%,15%)]' : 'bg-sidebar';
+  const sidebarBg = isMasterAdmin && isMasterRoute ? 'bg-[hsl(270,40%,15%)]' : '';
   const sidebarBorder = isMasterAdmin && isMasterRoute ? 'border-[hsl(270,30%,25%)]' : 'border-sidebar-border';
-  const sidebarAccent = isMasterAdmin && isMasterRoute ? 'bg-[hsl(270,30%,22%)]' : 'bg-sidebar-accent';
+  const sidebarAccent = isMasterAdmin && isMasterRoute ? 'bg-[hsl(270,30%,22%)]' : '';
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
@@ -116,7 +116,7 @@ export const AppLayout = ({ children }: {children: ReactNode;}) => {
       }
 
       <aside className={`
-        fixed lg:static inset-y-0 left-0 z-50 flex flex-col ${sidebarBg} border-r ${sidebarBorder}
+        fixed lg:static inset-y-0 left-0 z-50 flex flex-col glass-sidebar ${sidebarBg} border-r ${sidebarBorder}
         transition-all duration-300
         ${collapsed ? 'w-16' : 'w-60'}
         ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
@@ -149,10 +149,10 @@ export const AppLayout = ({ children }: {children: ReactNode;}) => {
                 key={item.path}
                 to={item.path}
                 onClick={() => setMobileOpen(false)}
-                className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors
+                className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-all duration-200
                   ${active ?
-                `${sidebarAccent} ${isMasterAdmin && isMasterRoute ? 'text-purple-300' : 'text-sidebar-primary'}` :
-                'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'}
+                `nav-item-active ${sidebarAccent} ${isMasterAdmin && isMasterRoute ? 'text-purple-300' : 'text-sidebar-primary'}` :
+                'text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground'}
                 `
                 }>
 
@@ -225,7 +225,7 @@ export const AppLayout = ({ children }: {children: ReactNode;}) => {
 
       {/* Main */}
       <div className="flex flex-col flex-1 overflow-hidden">
-        <header className="flex items-center justify-between min-h-[64px] px-4 lg:px-6 border-b bg-card safe-area-pt">
+        <header className="flex items-center justify-between min-h-[64px] px-4 lg:px-6 glass-header safe-area-pt">
           <button className="lg:hidden p-2 rounded-md hover:bg-muted" onClick={() => setMobileOpen(true)}>
             <Menu className="h-5 w-5" />
           </button>

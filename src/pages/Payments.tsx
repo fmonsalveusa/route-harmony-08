@@ -405,11 +405,11 @@ const PaymentsSection = ({ type, refreshKey }: PaymentsSectionProps) => {
         </div>
       )}
 
-      <Card>
-        <CardContent className="p-0">
+      <div className="glass-card overflow-hidden">
+        <div className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-[15px]">
-              <thead><tr className="border-b bg-muted/50">
+              <thead><tr className="border-b glass-table-header">
                 <th className="p-3 w-10">
                   <Checkbox
                     checked={payments.length > 0 && selectedIds.size === payments.length}
@@ -433,7 +433,7 @@ const PaymentsSection = ({ type, refreshKey }: PaymentsSectionProps) => {
                   <tr><td colSpan={12} className="p-6 text-center text-muted-foreground">No payments recorded</td></tr>
                 )}
                 {payments.map(p => (
-                  <tr key={p.id} className={`border-b last:border-0 hover:bg-muted/30 ${selectedIds.has(p.id) ? 'bg-primary/5' : ''}`}>
+                  <tr key={p.id} className={`border-b last:border-0 glass-row ${selectedIds.has(p.id) ? 'bg-primary/5' : ''}`}>
                     <td className="p-3">
                       <Checkbox checked={selectedIds.has(p.id)} onCheckedChange={() => toggleSelect(p.id)} />
                     </td>
@@ -466,15 +466,15 @@ const PaymentsSection = ({ type, refreshKey }: PaymentsSectionProps) => {
                     <td className="p-3 text-muted-foreground">{p.payment_date ? formatDate(p.payment_date) : formatDate(p.created_at)}</td>
                     <td className="p-3 text-right">
                       <div className="flex items-center justify-end gap-1.5">
-                        <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-amber-400 bg-white text-amber-600 hover:bg-amber-50 hover:text-amber-700 gap-1" onClick={(e) => { e.stopPropagation(); setEditPayment(p); }} title="Edit">
+                        <button className="glass-action-btn tint-amber inline-flex items-center" onClick={(e) => { e.stopPropagation(); setEditPayment(p); }} title="Edit">
                           <Pencil className="h-4 w-4" /> Edit
-                        </Button>
-                        <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-emerald-400 bg-white text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 gap-1" onClick={(e) => { e.stopPropagation(); handleGenerateReceipt(p); }} title="Receipt">
+                        </button>
+                        <button className="glass-action-btn tint-green inline-flex items-center" onClick={(e) => { e.stopPropagation(); handleGenerateReceipt(p); }} title="Receipt">
                           <FileText className="h-4 w-4" /> Receipt
-                        </Button>
-                        <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-red-400 bg-white text-red-600 hover:bg-red-50 hover:text-red-700 gap-1" onClick={(e) => { e.stopPropagation(); setDeletePaymentId(p.id); }} title="Delete">
+                        </button>
+                        <button className="glass-action-btn tint-red inline-flex items-center" onClick={(e) => { e.stopPropagation(); setDeletePaymentId(p.id); }} title="Delete">
                           <Trash2 className="h-4 w-4" /> Delete
-                        </Button>
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -482,8 +482,8 @@ const PaymentsSection = ({ type, refreshKey }: PaymentsSectionProps) => {
               </tbody>
             </table>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {editPayment && (
         <PaymentEditDialog payment={editPayment} open={!!editPayment} onOpenChange={(o) => { if (!o) { setEditPayment(null); fetchAdjustments(); } }} />

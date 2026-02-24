@@ -62,14 +62,14 @@ export function MarketAnalysisCard({ loads, trucks }: Props) {
   }, [loads, trucks]);
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
+    <div className="glass-card p-0 overflow-hidden">
+      <div className="px-6 pt-5 pb-2">
         <div className="flex items-center gap-2">
           <Target className="h-4 w-4 text-primary" />
-          <CardTitle className="text-base">Market Analysis · RPM by Truck Type</CardTitle>
+          <h3 className="text-base font-semibold leading-none tracking-tight">Market Analysis · RPM by Truck Type</h3>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-5">
+      </div>
+      <div className="px-6 pb-6 space-y-5">
         {rpmByType.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-6">No RPM data available. Make sure loads have miles and an assigned truck.</p>
         ) : (
@@ -119,7 +119,7 @@ export function MarketAnalysisCard({ loads, trucks }: Props) {
             );
           })
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

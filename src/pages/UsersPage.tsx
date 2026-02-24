@@ -105,8 +105,8 @@ const UsersPage = () => {
         </Button>
       </div>
 
-      <Card>
-        <CardContent className="p-0">
+      <div className="glass-card overflow-hidden">
+        <div className="p-0">
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -115,7 +115,7 @@ const UsersPage = () => {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b bg-muted/50">
+                  <tr className="border-b glass-table-header">
                     <th className="text-left p-3 font-medium text-muted-foreground">User</th>
                     <th className="text-left p-3 font-medium text-muted-foreground">Email</th>
                     <th className="text-left p-3 font-medium text-muted-foreground">Phone</th>
@@ -131,7 +131,7 @@ const UsersPage = () => {
                     const initials = u.full_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
                     const RoleIcon = roleIcons[u.role] || Shield;
                     return (
-                      <tr key={u.id} className="border-b last:border-0 hover:bg-muted/30">
+                      <tr key={u.id} className="border-b last:border-0 glass-row">
                         <td className="p-3">
                           <div className="flex items-center gap-3">
                             <Avatar className="h-8 w-8">
@@ -150,13 +150,13 @@ const UsersPage = () => {
                         <td className="p-3"><StatusBadge status={u.is_active ? 'active' : 'inactive'} /></td>
                         <td className="p-3 text-right">
                           <div className="flex items-center justify-end gap-1">
-                            <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-amber-400 bg-white text-amber-600 hover:bg-amber-50 hover:text-amber-700 gap-1" onClick={() => handleEdit(u)} title="Edit">
+                            <button className="glass-action-btn tint-amber inline-flex items-center" onClick={() => handleEdit(u)} title="Edit">
                               <Pencil className="h-4 w-4" /> Edit
-                            </Button>
+                            </button>
                             {u.id !== profile?.id && (
-                              <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-destructive/40 bg-white text-destructive hover:bg-destructive/10 gap-1" onClick={() => setDeletingUser(u)} title="Delete">
+                              <button className="glass-action-btn tint-red inline-flex items-center" onClick={() => setDeletingUser(u)} title="Delete">
                                 <Trash2 className="h-4 w-4" />
-                              </Button>
+                              </button>
                             )}
                           </div>
                         </td>
@@ -167,8 +167,8 @@ const UsersPage = () => {
               </table>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       <UserFormDialog open={dialogOpen} onOpenChange={setDialogOpen} user={editingUser} onSuccess={fetchUsers} />
 

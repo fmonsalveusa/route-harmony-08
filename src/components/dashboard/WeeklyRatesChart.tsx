@@ -47,14 +47,14 @@ export function WeeklyRatesChart({ loads }: Props) {
   }, [loads]);
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
+    <div className="glass-card p-0 overflow-hidden">
+      <div className="px-6 pt-5 pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base">Weekly Production</CardTitle>
+          <h3 className="text-base font-semibold leading-none tracking-tight">Weekly Production</h3>
           <span className="text-xs text-muted-foreground">No filters · All weeks</span>
         </div>
-      </CardHeader>
-      <CardContent>
+      </div>
+      <div className="px-6 pb-6">
         {data.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-10">No data</p>
         ) : (
@@ -116,7 +116,7 @@ export function WeeklyRatesChart({ loads }: Props) {
             </AreaChart>
           </ResponsiveContainer>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
