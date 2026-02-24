@@ -1,126 +1,61 @@
 
 
-# Mejora Visual Completa: Glassmorphism en toda la App
+# Rediseño de Layout: Navegacion Superior estilo Chase Business
 
-Este es un plan grande que cubre las 4 areas solicitadas. Recomiendo implementarlo en fases para mantener la estabilidad. Aqui va la fase completa:
+## Concepto
+Transformar el layout actual (sidebar lateral izquierdo) a un layout con navegacion horizontal superior, inspirado en Chase Business:
 
-## Fase 1: Sidebar y Header con Glassmorphism
+```text
+┌─────────────────────────────────────────────────────┐
+│  LOGO  Dispatch Up          🔔 ROLE  User  [LogOut] │  ← Header azul oscuro, texto blanco
+├─────────────────────────────────────────────────────┤
+│  Dashboard  Loads  Fleet  Drivers  Payments  ...    │  ← Nav bar: fondo blanco, texto azul
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│   Fondo gris mas oscuro (~#e8ebef)                  │
+│                                                     │
+│   ┌──────────┐ ┌──────────┐ ┌──────────┐           │
+│   │ Card     │ │ Card     │ │ Card     │  ← Cards  │
+│   │ blanca   │ │ blanca   │ │ blanca   │    blancas │
+│   └──────────┘ └──────────┘ └──────────┘           │
+│                                                     │
+└─────────────────────────────────────────────────────┘
+```
 
-### `src/components/AppLayout.tsx`
-- **Sidebar**: Cambiar fondo solido por gradiente sutil con backdrop-blur. Agregar borde interior translucido.
-- **Header**: Agregar `backdrop-blur-xl` y fondo semitransparente en lugar de `bg-card` solido.
-- **Nav items activos**: Agregar borde izquierdo de acento (2px) en el item activo + fondo glass sutil.
-- **Logo area**: Separador inferior con gradiente en lugar de borde solido.
-- **Hover en nav**: Transicion suave con efecto de brillo sutil.
-- **Collapse button**: Estilo glass con hover.
+## Cambios Principales
 
-### CSS nuevos en `src/index.css`
-- `.glass-sidebar` -- sidebar con gradiente + blur
-- `.glass-header` -- header translucido con blur
-- `.nav-item-active` -- borde izquierdo de acento + fondo glass
+### 1. `src/index.css` - Ajustar colores base
+- **Background** mas oscuro: cambiar `--background` de `215 25% 97%` (~#f2f4f7) a `215 20% 90%` (~#dee3ea) para mayor contraste con cards blancas
+- **Card** se mantiene blanco puro `0 0% 100%`
+- Agregar nuevas clases CSS para el top-nav
 
-## Fase 2: Dashboard y Graficas
+### 2. `src/components/AppLayout.tsx` - Restructuracion completa del layout
+**Eliminar sidebar lateral** y reemplazar con:
 
-### `src/components/dashboard/RatesByDriverChart.tsx`
-- Envolver en `glass-card` en lugar de `Card` plano
-- Agregar gradiente sutil al fondo de las barras
-- Labels de valores con mejor contraste (adaptacion dark/light)
-- Bordes redondeados en las barras (`radius` prop)
+- **Header superior** (fila 1): Fondo azul oscuro (`bg-[hsl(214,52%,25%)]`), logo + nombre "Dispatch Up" a la izquierda, acciones del usuario a la derecha (ThemeToggle, NotificationBell, role badge, avatar, logout) - todo en texto blanco
+- **Barra de navegacion** (fila 2): Fondo blanco, botones de navegacion con texto azul, item activo con borde inferior azul (como la pestaña "Accounts" en Chase)
+- **Contenido**: Se mantiene igual pero con el fondo mas oscuro
 
-### `src/components/dashboard/WeeklyRatesChart.tsx`
-- `glass-card` como contenedor
-- Area con gradiente translucido
-- Grid lines mas sutiles (opacidad reducida)
-- Tooltip con efecto glass
+**Mobile**: El menu hamburguesa abrira un dropdown/sheet con los nav items en vez del sidebar lateral
 
-### `src/components/dashboard/DispatcherCommissionsChart.tsx`
-- Mismo tratamiento glass-card
-- Barras con bordes redondeados
+### 3. `src/components/StatCard.tsx` - Asegurar cards blancas
+- Mantener `glass-card` o cambiar a fondo blanco solido para maximo contraste contra el fondo gris
 
-### `src/components/dashboard/MarketAnalysisCard.tsx`
-- Glass-card como contenedor
+## Archivos a modificar
 
-### `src/components/dashboard/DashboardFilters.tsx`
-- Barra de filtros con fondo glass sutil y borde translucido
-
-## Fase 3: Formularios y Dialogs
-
-### `src/components/ui/dialog.tsx`
-- Overlay con mayor blur (de default a `backdrop-blur-md`)
-- Dialog content con efecto glass: fondo semitransparente, borde sutil
-- Sombra difusa mas pronunciada
-
-### `src/components/ui/input.tsx`
-- Focus ring con glow sutil del color de accent
-- Bordes con transicion mas suave
-
-### `src/components/ui/select.tsx`
-- Dropdown con efecto glass en el contenido desplegable
-
-## Fase 4: Paginas Restantes (Fleet, Payments, Expenses, Dispatchers, Invoices, Companies, Users)
-
-### `src/pages/Fleet.tsx`
-- Tabla envuelta en `glass-card`
-- Header con `glass-table-header`
-- Filas con `glass-row`
-- Botones de accion con `glass-action-btn` + tints semanticos
-
-### `src/pages/Payments.tsx`
-- Misma transformacion: `glass-card`, `glass-table-header`, `glass-row`
-- Botones de receipt/edit/delete con glass-action-btn
-- Stat cards ya usan glass (no requieren cambio)
-
-### `src/pages/Expenses.tsx`
-- Tabla con glass-card y glass-row
-- Botones con glass-action-btn
-
-### `src/pages/Dispatchers.tsx`
-- Cards de dispatchers con `glass-card` en lugar de `Card`
-- Botones con glass-action-btn
-
-### `src/pages/Invoices.tsx`
-- Tabla con glass-card, glass-table-header, glass-row
-- Botones de accion con glass-action-btn
-
-### `src/pages/Companies.tsx`
-- Aplicar glass-card a las tarjetas/tabla
-
-### `src/pages/UsersPage.tsx`
-- Aplicar glass-card y glass-row
-
-### `src/pages/Maintenance.tsx`
-- Cards de mantenimiento ya usan animacion; agregar glass-card
-
-### `src/pages/Performance.tsx`
-- Cards y graficas con glass-card
-
-## Archivos a modificar (resumen)
-
-| Archivo | Cambio principal |
+| Archivo | Cambio |
 |---|---|
-| `src/index.css` | Clases `.glass-sidebar`, `.glass-header`, `.nav-item-active`, mejoras a dialog glass |
-| `src/components/AppLayout.tsx` | Sidebar y header con glass + nav items mejorados |
-| `src/components/ui/dialog.tsx` | Overlay con blur + content con glass |
-| `src/components/dashboard/RatesByDriverChart.tsx` | glass-card + barras redondeadas |
-| `src/components/dashboard/WeeklyRatesChart.tsx` | glass-card + area con gradiente |
-| `src/components/dashboard/DispatcherCommissionsChart.tsx` | glass-card |
-| `src/components/dashboard/MarketAnalysisCard.tsx` | glass-card |
-| `src/components/dashboard/DashboardFilters.tsx` | Fondo glass en barra de filtros |
-| `src/pages/Fleet.tsx` | glass-card, glass-table-header, glass-row, glass-action-btn |
-| `src/pages/Payments.tsx` | glass-card, glass-table-header, glass-row, glass-action-btn |
-| `src/pages/Expenses.tsx` | glass-card, glass-row, glass-action-btn |
-| `src/pages/Dispatchers.tsx` | glass-card en dispatcher cards |
-| `src/pages/Invoices.tsx` | glass-card, glass-table-header, glass-row, glass-action-btn |
-| `src/pages/Companies.tsx` | glass-card |
-| `src/pages/UsersPage.tsx` | glass-card, glass-row |
-| `src/pages/Maintenance.tsx` | glass-card en maintenance cards |
-| `src/pages/Performance.tsx` | glass-card |
+| `src/index.css` | `--background` mas oscuro, nuevas clases `.top-nav`, `.top-nav-item`, `.top-nav-item-active` |
+| `src/components/AppLayout.tsx` | Eliminar sidebar, crear header azul + nav bar blanca horizontal |
 
 ## Detalles tecnicos
 
-- Todo con CSS puro + Tailwind, sin nuevas dependencias
-- Reutiliza las clases `.glass-*` ya definidas en index.css; solo se agregan 3 nuevas (sidebar, header, nav-item)
-- Compatible con dark mode automaticamente
-- Los charts de Recharts se envuelven en divs glass en lugar de modificar los componentes de Recharts directamente
-- Los dialogs se mejoran sin romper la API existente de Radix
+- El sidebar se elimina completamente (no coexiste con el top nav)
+- Los nav items se renderizan horizontalmente con overflow scroll en mobile
+- El item activo lleva un `border-bottom: 3px solid` azul, similar a Chase
+- El header azul usa el color `--primary` existente (`214 52% 25%`) que ya es un azul oscuro
+- En mobile: hamburger menu abre un Sheet/dropdown con los items verticales
+- El widget de plan/subscription del sidebar se omite del top nav (se puede mover a un dropdown del avatar)
+- El boton "Master Panel" / "Go to App" para master_admin se coloca en el header
+- Compatible con dark mode: el header mantiene azul oscuro, la nav bar se adapta
 
