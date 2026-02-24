@@ -1,81 +1,86 @@
 
 
-# PDF Resumen de Onboarding (Driver + Truck)
+# Mejora Visual: Glassmorphism Moderno en Tablas y Listas
 
-## Objetivo
+## Diagnostico actual
 
-Crear una funcion `generateOnboardingSummaryPdf` que genere un PDF profesional con toda la informacion del driver y del truck capturada durante el onboarding. El PDF se descargara automaticamente al completar el onboarding y tambien estara disponible como boton de descarga en la pantalla de exito.
+Las tablas de Loads, Drivers, Fleet, Payments, etc. usan un estilo funcional pero basico: `Card` con borde solido, header `bg-muted/50`, filas planas con `hover:bg-muted/30`, y botones de accion con colores inline hardcodeados (border-sky-400, border-emerald-400, etc.). No hay profundidad visual ni efecto de cristal.
 
-## Ubicacion
+## Cambios propuestos
 
-El codigo de generacion del PDF ira en `src/lib/onboardingDocPdf.ts` donde ya existen las funciones de generacion de W-9, Leasing y Service Agreement. Se reutilizaran los helpers existentes (`writeBlock`, `writeHeading`).
+### 1. CSS global -- nuevas utilidades glassmorphism (`src/index.css`)
 
-## Contenido del PDF
+Agregar clases reutilizables al layer `@components`:
 
+- `.glass-card` -- fondo semitransparente con backdrop-blur, borde sutil blanco/oscuro, sombra difusa
+- `.glass-table-header` -- header de tabla con efecto de cristal y texto mas definido
+- `.glass-row` -- filas con hover translucido y transicion suave
+- `.glass-row-expanded` -- fila expandida con fondo cristal mas marcado
+- `.glass-action-btn` -- botones de accion con efecto vidrio (reemplaza los colores hardcodeados)
+- Variantes para dark mode automaticas
+
+Ejemplo visual del efecto:
 ```text
-┌─────────────────────────────────────────┐
-│  [Logo]  DRIVER ONBOARDING SUMMARY      │
-│  Date: MM/DD/YYYY                       │
-├─────────────────────────────────────────┤
-│  DRIVER INFORMATION                     │
-│  ─────────────────                      │
-│  Name:           John Smith             │
-│  Email:          john@example.com       │
-│  Phone:          555-0000               │
-│  License #:      CDL-A-12345            │
-│  State:          TX                     │
-│  License Exp:    12/31/2025             │
-│  Medical Exp:    06/30/2025             │
-│  Documents:      License Photo ✓        │
-│                  Medical Card ✓         │
-├─────────────────────────────────────────┤
-│  TRUCK INFORMATION                      │
-│  ─────────────────                      │
-│  Unit #:         101                    │
-│  Type:           Box Truck              │
-│  Make/Model:     Freightliner Cascadia  │
-│  Year:           2022                   │
-│  VIN:            1FUJG...               │
-│  License Plate:  TX-4521               │
-│  Max Payload:    26,000 lbs            │
-│  Insurance Exp:  12/31/2025            │
-│  Registration:   06/30/2025            │
-│  [Dimensions si aplica]                │
-│  Documents:      Registration ✓         │
-│                  Insurance ✓            │
-│                  ...                    │
-├─────────────────────────────────────────┤
-│  SIGNED DOCUMENTS                       │
-│  ─────────────────                      │
-│  ✓ W-9 Form                            │
-│  ✓ Leasing Agreement                   │
-│  ✓ Service Agreement                   │
-└─────────────────────────────────────────┘
+┌─────────────────────────────────────────────────┐
+│  ░░░░ backdrop-blur ░░░░░░░░░░░░░░░░░░░░░░░░░░ │
+│  ┌─────────────────────────────────────────────┐ │
+│  │ Load #   Driver    Origin    Status   Rate  │ │  ← header cristal
+│  ├─────────────────────────────────────────────┤ │
+│  │ L-001    John S.   Dallas    ●Active  $2.4k │ │  ← fila con hover cristal
+│  │ L-002    Maria L.  Houston   ●Transit $1.8k │ │
+│  └─────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────┘
 ```
 
-## Cambios por archivo
+### 2. Tablas de Loads (`src/pages/Loads.tsx`)
 
-### 1. `src/lib/onboardingDocPdf.ts`
-Agregar funcion `generateOnboardingSummaryPdf(data)` al final del archivo. Recibe:
-- `driverData`: name, email, phone, license, state, license_expiry, medical_card_expiry
-- `truckData`: unit_number, truck_type, make, model, year, vin, license_plate, max_payload_lbs, insurance_expiry, registration_expiry, cargo dimensions, mega_ramp
-- `driverDocs`: lista de nombres de archivos subidos
-- `truckDocs`: lista de nombres de archivos subidos  
-- `signedDocs`: { w9: boolean, leasing: boolean, service: boolean }
-- `date`: fecha de completado
+- Cambiar el `<Card>` que envuelve la tabla por la clase `glass-card`
+- Header de tabla (`<thead>`) usa `glass-table-header` en lugar de `bg-muted/50`
+- Filas (`<tr>`) usan `glass-row` con hover con efecto de brillo sutil
+- Fila expandida usa `glass-row-expanded`
+- Botones de accion (Edit, Delete, POD, Invoice) reemplazar los colores hardcodeados por `glass-action-btn` con variantes semanticas
+- Tabs de filtro (Active/Delivered/Cancelled/All) con efecto cristal en el tab activo
+- Barra de filtros con fondo glass sutil
 
-Usa los helpers existentes (`writeBlock`, `writeHeading`) para consistencia con los demas PDFs.
+### 3. Tabla de Drivers (`src/pages/Drivers.tsx`)
 
-### 2. `src/pages/DriverOnboarding.tsx`
-- Importar `generateOnboardingSummaryPdf` desde `onboardingDocPdf.ts`
-- En `handleSubmit`, despues de recibir respuesta exitosa, generar el PDF y guardarlo en una variable de estado (`summaryPdfBlob`)
-- En la pantalla de "Onboarding Complete", agregar un boton "Download Summary PDF" que descargue el blob guardado
-- El PDF se genera del lado del cliente con los datos que ya estan en memoria (no requiere llamada al backend)
+- Mismos cambios que Loads: `glass-card`, `glass-table-header`, `glass-row`
+- Botones Copy/Detail/Edit/Delete con `glass-action-btn` en lugar de colores hardcodeados
+- Badge de "pending" con efecto glow sutil
+- Tabs Active/Inactive/All con estilo glass
+
+### 4. StatCard upgrade (`src/components/StatCard.tsx`)
+
+- Agregar efecto glassmorphism al contenedor: backdrop-blur, borde translucido
+- Icono con fondo glass en lugar de color solido plano
+- Hover con brillo sutil que se desplaza
+
+### 5. StatusBadge upgrade (`src/components/StatusBadge.tsx`)
+
+- Agregar backdrop-blur sutil a los badges de status
+- Borde translucido blanco para efecto "flotante"
+- Sombra glow sutil del color del status
+
+### 6. Card base (`src/components/ui/card.tsx`)
+
+- No modificar el componente base para no romper nada existente
+- En su lugar, todas las mejoras van en las clases CSS utilitarias nuevas que se aplican encima
+
+## Archivos a modificar
+
+| Archivo | Cambio |
+|---|---|
+| `src/index.css` | Nuevas clases `.glass-*` con soporte light/dark |
+| `src/pages/Loads.tsx` | Aplicar clases glass a tabla, header, filas, botones, tabs |
+| `src/pages/Drivers.tsx` | Aplicar clases glass a tabla, header, filas, botones |
+| `src/components/StatCard.tsx` | Efecto glassmorphism en card e icono |
+| `src/components/StatusBadge.tsx` | Backdrop-blur y glow sutil en badges |
 
 ## Detalles tecnicos
 
-- Se usa `jsPDF` que ya esta instalado en el proyecto
-- No requiere cambios en el backend ni en la base de datos
-- El PDF se genera localmente con los datos del formulario antes de limpiar el estado
-- El boton de descarga usa `URL.createObjectURL` + un `<a>` temporal para disparar la descarga
+- Todo se logra con CSS puro (Tailwind + `@apply` + propiedades CSS como `backdrop-filter`, `box-shadow`, `border-color` con alpha)
+- No se agregan dependencias
+- Dark mode automatico usando el selector `.dark` ya existente
+- Las clases son aditivas: se aplican encima de los componentes existentes sin romper funcionalidad
+- Los colores de los botones de accion se simplifican a variantes glass con tinte semantico (verde para positivo, rojo para destructivo, azul para info)
 
