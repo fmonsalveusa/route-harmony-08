@@ -126,6 +126,73 @@ html, body {
   .table-container {
     @apply rounded-lg border bg-card overflow-hidden;
   }
+
+  /* ── Glassmorphism utilities ── */
+  .glass-card {
+    @apply rounded-lg shadow-lg;
+    background: hsla(var(--card), 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid hsla(0, 0%, 100%, 0.18);
+  }
+  .dark .glass-card {
+    background: hsla(var(--card), 0.6);
+    border-color: hsla(0, 0%, 100%, 0.08);
+    box-shadow: 0 8px 32px -8px rgba(0, 0, 0, 0.45);
+  }
+
+  .glass-table-header {
+    background: hsla(var(--muted), 0.55);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  .dark .glass-table-header {
+    background: hsla(var(--muted), 0.35);
+  }
+
+  .glass-row {
+    @apply transition-all duration-200;
+  }
+  .glass-row:hover {
+    background: hsla(var(--muted), 0.35);
+  }
+  .dark .glass-row:hover {
+    background: hsla(var(--muted), 0.25);
+  }
+
+  .glass-row-expanded {
+    background: hsla(var(--muted), 0.25);
+  }
+  .dark .glass-row-expanded {
+    background: hsla(var(--muted), 0.18);
+  }
+
+  .glass-action-btn {
+    @apply h-8 px-2 text-xs gap-1 font-medium rounded-md transition-all duration-200;
+    background: hsla(0, 0%, 100%, 0.7);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: 1px solid hsla(0, 0%, 0%, 0.08);
+  }
+  .glass-action-btn:hover {
+    background: hsla(0, 0%, 100%, 0.9);
+    box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.12);
+  }
+  .dark .glass-action-btn {
+    background: hsla(var(--secondary), 0.5);
+    border-color: hsla(0, 0%, 100%, 0.1);
+  }
+  .dark .glass-action-btn:hover {
+    background: hsla(var(--secondary), 0.7);
+  }
+
+  /* Semantic tints for glass action buttons */
+  .glass-action-btn.tint-blue { @apply text-[hsl(205,85%,50%)]; }
+  .glass-action-btn.tint-green { @apply text-[hsl(152,60%,40%)]; }
+  .glass-action-btn.tint-amber { @apply text-[hsl(38,92%,50%)]; }
+  .glass-action-btn.tint-red { @apply text-[hsl(0,72%,51%)]; }
+  .glass-action-btn.tint-purple { @apply text-[hsl(270,55%,50%)]; }
+
   .safe-area-pb {
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
