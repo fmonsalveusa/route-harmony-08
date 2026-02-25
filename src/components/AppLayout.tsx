@@ -106,7 +106,7 @@ export const AppLayout = ({ children }: {children: ReactNode;}) => {
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-background">
       {/* ── Row 1: Blue header ── */}
-      <header className="top-header flex items-center justify-between h-14 px-4 lg:px-6 safe-area-pt shrink-0">
+      <header className="top-header flex items-center justify-between min-h-14 px-4 lg:px-6 shrink-0" style={{ paddingTop: 'max(0.5rem, env(safe-area-inset-top, 0.5rem))' }}>
         {/* Left: logo + name */}
         <div className="flex items-center gap-3">
           <button className="lg:hidden p-1.5 rounded-md hover:bg-white/10" onClick={() => setMobileMenuOpen(true)}>
