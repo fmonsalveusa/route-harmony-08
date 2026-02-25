@@ -317,75 +317,12 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
 
       // Helper: calculate empty miles (deadhead) from previous load's last delivery
       const calculateEmptyMiles = async (L: any, map: any, resolved: ResolvedStop[], bounds: [number, number][]) => {
-        // Manual location override always has priority (even if empty miles are cached)
-        if (load.driver_id && load.pickup_date) {
-          const { data: driverData } = await supabase
-            .from('drivers' as any)
-            .select('manual_location_address, manual_location_lat, manual_location_lng')
-            .eq('id', load.driver_id)
-            .maybeSingle();
+        // Keep cached value only for terminal loads; active loads are recalculated to avoid stale origins
+        const terminalStatuses = new Set(['delivered', 'paid', 'tonu', 'cancelled']);
+        const hasCachedEmptyMiles = Number((load as any).empty_miles) > 0 || Boolean((load as any).empty_miles_origin);
+        const isTerminalLoad = terminalStatuses.has(String(load.status || '').toLowerCase());
 
-          const manualLoc = driverData as any;
-          if (manualLoc?.manual_location_address) {
-            const firstPickup = resolved.find(s => s.type === 'pickup' && s.coords);
-            if (!firstPickup?.coords) return;
-
-            let prevCoords: [number, number] | null = null;
-            const hasManualCoords =
-              manualLoc?.manual_location_lat != null &&
-              manualLoc?.manual_location_lng != null &&
-              Number.isFinite(Number(manualLoc.manual_location_lat)) &&
-              Number.isFinite(Number(manualLoc.manual_location_lng));
-
-            if (hasManualCoords) {
-              prevCoords = [Number(manualLoc.manual_location_lat), Number(manualLoc.manual_location_lng)];
-            } else {
-              // Fallback: geocode manual address if coords are missing
-              prevCoords = await geocode(manualLoc.manual_location_address);
-            }
-
-            if (!prevCoords) return;
-
-            const dist = await drivingDistance(prevCoords[0], prevCoords[1], firstPickup.coords[0], firstPickup.coords[1]);
-            if (dist === null) return;
-
-            const roundedDist = Math.round(dist);
-            setEmptyMiles(roundedDist);
-            setEmptyMilesOrigin(manualLoc.manual_location_address);
-
-            await supabase.from('loads').update({
-              empty_miles: roundedDist,
-              empty_miles_origin: manualLoc.manual_location_address,
-            } as any).eq('id', load.id);
-            onLoadDataUpdated?.();
-
-            // Draw on map
-            const deadheadIcon = L.divIcon({
-              html: '<div style="background:hsl(38,92%,50%);color:white;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:10px;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,.3)">E</div>',
-              className: '', iconSize: [24, 24], iconAnchor: [12, 12],
-            });
-            L.marker(prevCoords, { icon: deadheadIcon }).addTo(map).bindPopup(`<b>Empty Miles Origin (Manual)</b><br/>${manualLoc.manual_location_address}`);
-            const deadheadRoute = await drivingRoute([prevCoords, firstPickup.coords]);
-            if (deadheadRoute) {
-              L.polyline(deadheadRoute, { color: 'hsl(38,92%,50%)', weight: 3, dashArray: '8 6', opacity: 0.8 }).addTo(map);
-            } else {
-              L.polyline([prevCoords, firstPickup.coords], { color: 'hsl(38,92%,50%)', weight: 3, dashArray: '8 6', opacity: 0.8 }).addTo(map);
-            }
-            bounds.push(prevCoords);
-            map.fitBounds(bounds, { padding: [40, 40] });
-
-            // Clear manual location after use
-            await supabase.from('drivers' as any).update({
-              manual_location_address: null,
-              manual_location_lat: null,
-              manual_location_lng: null,
-            } as any).eq('id', load.driver_id);
-            return;
-          }
-        }
-
-        // Skip if already cached
-        if (Number((load as any).empty_miles) > 0 || (load as any).empty_miles_origin) {
+        if (hasCachedEmptyMiles && isTerminalLoad) {
           setEmptyMiles(Number((load as any).empty_miles));
           setEmptyMilesOrigin((load as any).empty_miles_origin || null);
           // Draw dashed line from empty_miles_origin to first pickup if we have coords
@@ -411,18 +348,19 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
           return;
         }
 
-        // Need driver and pickup date to find previous load
+        // Need driver and pickup date to find previous delivered load
         if (!load.driver_id || !load.pickup_date) return;
 
-        // Find the driver's previous load
+        // Find the driver's previous delivered load (payment status is ignored)
         const { data: prevLoads } = await supabase
           .from('loads')
-          .select('id, delivery_date')
+          .select('id, delivery_date, created_at')
           .eq('driver_id', load.driver_id)
           .neq('id', load.id)
+          .eq('status', 'delivered')
           .lte('delivery_date', load.pickup_date)
-          .in('status', ['delivered', 'paid', 'tonu'])
           .order('delivery_date', { ascending: false })
+          .order('created_at', { ascending: false })
           .limit(1);
 
         if (!prevLoads || prevLoads.length === 0) return;
