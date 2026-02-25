@@ -1,61 +1,61 @@
 
 
-# Rediseño de Layout: Navegacion Superior estilo Chase Business
+## Diagnóstico del Bug
 
-## Concepto
-Transformar el layout actual (sidebar lateral izquierdo) a un layout con navegacion horizontal superior, inspirado en Chase Business:
+El cálculo de millas vacías (empty miles / DH-O) tiene un bug en `src/components/LoadDetailPanel.tsx`, línea 407.
 
-```text
-┌─────────────────────────────────────────────────────┐
-│  LOGO  Dispatch Up          🔔 ROLE  User  [LogOut] │  ← Header azul oscuro, texto blanco
-├─────────────────────────────────────────────────────┤
-│  Dashboard  Loads  Fleet  Drivers  Payments  ...    │  ← Nav bar: fondo blanco, texto azul
-├─────────────────────────────────────────────────────┤
-│                                                     │
-│   Fondo gris mas oscuro (~#e8ebef)                  │
-│                                                     │
-│   ┌──────────┐ ┌──────────┐ ┌──────────┐           │
-│   │ Card     │ │ Card     │ │ Card     │  ← Cards  │
-│   │ blanca   │ │ blanca   │ │ blanca   │    blancas │
-│   └──────────┘ └──────────┘ └──────────┘           │
-│                                                     │
-└─────────────────────────────────────────────────────┘
+### Causa raíz
+
+Cuando el sistema busca la carga anterior de un driver para determinar dónde fue su última entrega, filtra por status:
+
+```
+.in('status', ['delivered', 'tonu'])
 ```
 
-## Cambios Principales
+**El problema**: no incluye el status `'paid'`. Cuando una carga anterior ya fue pagada (status = `paid`), el sistema no la encuentra como "carga anterior". Entonces:
+- O encuentra una carga más vieja (con status `delivered`) que tiene una dirección de entrega diferente
+- O no encuentra ninguna, y no calcula millas vacías
 
-### 1. `src/index.css` - Ajustar colores base
-- **Background** mas oscuro: cambiar `--background` de `215 25% 97%` (~#f2f4f7) a `215 20% 90%` (~#dee3ea) para mayor contraste con cards blancas
-- **Card** se mantiene blanco puro `0 0% 100%`
-- Agregar nuevas clases CSS para el top-nav
+Esto explica exactamente lo que reportas con Julio Rodriguez: su última carga ya fue marcada como `paid`, así que el sistema ignoró esa entrega y tomó una dirección incorrecta.
 
-### 2. `src/components/AppLayout.tsx` - Restructuracion completa del layout
-**Eliminar sidebar lateral** y reemplazar con:
+### Segundo problema menor
 
-- **Header superior** (fila 1): Fondo azul oscuro (`bg-[hsl(214,52%,25%)]`), logo + nombre "Dispatch Up" a la izquierda, acciones del usuario a la derecha (ThemeToggle, NotificationBell, role badge, avatar, logout) - todo en texto blanco
-- **Barra de navegacion** (fila 2): Fondo blanco, botones de navegacion con texto azul, item activo con borde inferior azul (como la pestaña "Accounts" en Chase)
-- **Contenido**: Se mantiene igual pero con el fondo mas oscuro
+En la línea 406, la query usa `lt('delivery_date', load.pickup_date)` — compara estrictamente "menor que". Si la carga anterior tiene la misma `delivery_date` que la `pickup_date` de la nueva carga (lo cual es común en operaciones diarias), tampoco la encontrará.
 
-**Mobile**: El menu hamburguesa abrira un dropdown/sheet con los nav items en vez del sidebar lateral
+---
 
-### 3. `src/components/StatCard.tsx` - Asegurar cards blancas
-- Mantener `glass-card` o cambiar a fondo blanco solido para maximo contraste contra el fondo gris
+## Plan de Corrección
 
-## Archivos a modificar
+### Archivo: `src/components/LoadDetailPanel.tsx`
 
-| Archivo | Cambio |
-|---|---|
-| `src/index.css` | `--background` mas oscuro, nuevas clases `.top-nav`, `.top-nav-item`, `.top-nav-item-active` |
-| `src/components/AppLayout.tsx` | Eliminar sidebar, crear header azul + nav bar blanca horizontal |
+**Cambio 1** (línea 407): Agregar `'paid'` al filtro de status:
+```typescript
+.in('status', ['delivered', 'paid', 'tonu'])
+```
 
-## Detalles tecnicos
+**Cambio 2** (línea 406): Cambiar `lt` a `lte` para incluir cargas con la misma fecha de entrega:
+```typescript
+.lte('delivery_date', load.pickup_date)
+```
 
-- El sidebar se elimina completamente (no coexiste con el top nav)
-- Los nav items se renderizan horizontalmente con overflow scroll en mobile
-- El item activo lleva un `border-bottom: 3px solid` azul, similar a Chase
-- El header azul usa el color `--primary` existente (`214 52% 25%`) que ya es un azul oscuro
-- En mobile: hamburger menu abre un Sheet/dropdown con los items verticales
-- El widget de plan/subscription del sidebar se omite del top nav (se puede mover a un dropdown del avatar)
-- El boton "Master Panel" / "Go to App" para master_admin se coloca en el header
-- Compatible con dark mode: el header mantiene azul oscuro, la nav bar se adapta
+Y agregar `.neq('id', load.id)` para excluir la carga actual de los resultados (ya que ahora usamos `lte`):
+```typescript
+.neq('id', load.id)
+```
+
+### Resultado final de la query (líneas 402-409):
+```typescript
+const { data: prevLoads } = await supabase
+  .from('loads')
+  .select('id, delivery_date')
+  .eq('driver_id', load.driver_id)
+  .neq('id', load.id)
+  .lte('delivery_date', load.pickup_date)
+  .in('status', ['delivered', 'paid', 'tonu'])
+  .order('delivery_date', { ascending: false })
+  .limit(1);
+```
+
+### Nota importante
+Las cargas que ya tienen `empty_miles` calculadas incorrectamente NO se recalcularán automáticamente (línea 321 las salta). Para forzar el recálculo en cargas existentes como la de Julio Rodriguez, el usuario puede editar manualmente el campo "Empty Miles Origin" desde el panel de detalle de la carga.
 
