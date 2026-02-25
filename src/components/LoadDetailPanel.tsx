@@ -315,9 +315,88 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
     const initMap = async () => {
       const L = (await import('leaflet')).default;
 
-      // Helper: calculate empty miles (deadhead) from previous load's last delivery
+      // Helper: calculate empty miles (deadhead) from manual location or previous delivered load
       const calculateEmptyMiles = async (L: any, map: any, resolved: ResolvedStop[], bounds: [number, number][]) => {
-        // Keep cached value only for terminal loads; active loads are recalculated to avoid stale origins
+        const isMapUsable = () => !cancelled && mapInstanceRef.current === map && Boolean(map?.getPanes?.()?.overlayPane);
+        const firstPickup = resolved.find(s => s.type === 'pickup' && s.coords);
+        if (!firstPickup?.coords) return;
+
+        const drawDeadhead = async (originCoords: [number, number], originAddress: string, label = 'Empty Miles Origin') => {
+          if (!isMapUsable()) return;
+
+          const deadheadIcon = L.divIcon({
+            html: '<div style="background:hsl(38,92%,50%);color:white;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:10px;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,.3)">E</div>',
+            className: '', iconSize: [24, 24], iconAnchor: [12, 12],
+          });
+          L.marker(originCoords, { icon: deadheadIcon }).addTo(map).bindPopup(`<b>${label}</b><br/>${originAddress}`);
+
+          const deadheadRoute = await drivingRoute([originCoords, firstPickup.coords!]);
+          if (!isMapUsable()) return;
+
+          if (deadheadRoute) {
+            L.polyline(deadheadRoute, { color: 'hsl(38,92%,50%)', weight: 3, dashArray: '8 6', opacity: 0.8 }).addTo(map);
+          } else {
+            L.polyline([originCoords, firstPickup.coords!], { color: 'hsl(38,92%,50%)', weight: 3, dashArray: '8 6', opacity: 0.8 }).addTo(map);
+          }
+
+          bounds.push(originCoords);
+          map.fitBounds(bounds, { padding: [40, 40] });
+        };
+
+        const applyAndPersistDeadhead = async (originCoords: [number, number], originAddress: string, mapLabel?: string) => {
+          const dist = await drivingDistance(originCoords[0], originCoords[1], firstPickup.coords![0], firstPickup.coords![1]);
+          if (dist === null) return false;
+
+          const roundedDist = Math.round(dist);
+          setEmptyMiles(roundedDist);
+          setEmptyMilesOrigin(originAddress);
+
+          await supabase.from('loads').update({
+            empty_miles: roundedDist,
+            empty_miles_origin: originAddress,
+          } as any).eq('id', load.id);
+          onLoadDataUpdated?.();
+
+          await drawDeadhead(originCoords, originAddress, mapLabel || 'Empty Miles Origin');
+          return true;
+        };
+
+        // 1) Manual location has top priority (where driver starts empty)
+        if (load.driver_id && load.pickup_date) {
+          const { data: driverData } = await supabase
+            .from('drivers' as any)
+            .select('manual_location_address, manual_location_lat, manual_location_lng')
+            .eq('id', load.driver_id)
+            .maybeSingle();
+
+          const manualLoc = driverData as any;
+          if (manualLoc?.manual_location_address) {
+            let manualCoords: [number, number] | null = null;
+            const hasManualCoords =
+              manualLoc?.manual_location_lat != null &&
+              manualLoc?.manual_location_lng != null &&
+              Number.isFinite(Number(manualLoc.manual_location_lat)) &&
+              Number.isFinite(Number(manualLoc.manual_location_lng));
+
+            if (hasManualCoords) {
+              manualCoords = [Number(manualLoc.manual_location_lat), Number(manualLoc.manual_location_lng)];
+            } else {
+              manualCoords = await geocode(manualLoc.manual_location_address);
+            }
+
+            if (manualCoords) {
+              await applyAndPersistDeadhead(manualCoords, manualLoc.manual_location_address, 'Empty Miles Origin (Manual)');
+              await supabase.from('drivers' as any).update({
+                manual_location_address: null,
+                manual_location_lat: null,
+                manual_location_lng: null,
+              } as any).eq('id', load.driver_id);
+              return;
+            }
+          }
+        }
+
+        // 2) For terminal loads, keep cached deadhead if present
         const terminalStatuses = new Set(['delivered', 'paid', 'tonu', 'cancelled']);
         const hasCachedEmptyMiles = Number((load as any).empty_miles) > 0 || Boolean((load as any).empty_miles_origin);
         const isTerminalLoad = terminalStatuses.has(String(load.status || '').toLowerCase());
@@ -325,33 +404,19 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
         if (hasCachedEmptyMiles && isTerminalLoad) {
           setEmptyMiles(Number((load as any).empty_miles));
           setEmptyMilesOrigin((load as any).empty_miles_origin || null);
-          // Draw dashed line from empty_miles_origin to first pickup if we have coords
-          const firstPickup = resolved.find(s => s.type === 'pickup' && s.coords);
-          if (firstPickup?.coords && (load as any).empty_miles_origin) {
-            const prevCoords = await geocode((load as any).empty_miles_origin);
-            if (prevCoords) {
-              const deadheadIcon = L.divIcon({
-                html: '<div style="background:hsl(38,92%,50%);color:white;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:10px;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,.3)">E</div>',
-                className: '', iconSize: [24, 24], iconAnchor: [12, 12],
-              });
-              L.marker(prevCoords, { icon: deadheadIcon }).addTo(map).bindPopup(`<b>Empty Miles Origin</b><br/>${(load as any).empty_miles_origin}`);
-              const deadheadRoute = await drivingRoute([prevCoords, firstPickup.coords]);
-              if (deadheadRoute) {
-                L.polyline(deadheadRoute, { color: 'hsl(38,92%,50%)', weight: 3, dashArray: '8 6', opacity: 0.8 }).addTo(map);
-              } else {
-                L.polyline([prevCoords, firstPickup.coords], { color: 'hsl(38,92%,50%)', weight: 3, dashArray: '8 6', opacity: 0.8 }).addTo(map);
-              }
-              bounds.push(prevCoords);
-              map.fitBounds(bounds, { padding: [40, 40] });
+
+          if ((load as any).empty_miles_origin) {
+            const cachedCoords = await geocode((load as any).empty_miles_origin);
+            if (cachedCoords) {
+              await drawDeadhead(cachedCoords, (load as any).empty_miles_origin);
             }
           }
           return;
         }
 
-        // Need driver and pickup date to find previous delivered load
+        // 3) Otherwise use the last delivery stop from previous DELIVERED load
         if (!load.driver_id || !load.pickup_date) return;
 
-        // Find the driver's previous delivered load (payment status is ignored)
         const { data: prevLoads } = await supabase
           .from('loads')
           .select('id, delivery_date, created_at')
@@ -365,7 +430,6 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
 
         if (!prevLoads || prevLoads.length === 0) return;
 
-        // Get the last delivery stop of the previous load
         const { data: prevStops } = await supabase
           .from('load_stops')
           .select('*')
@@ -377,47 +441,13 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
         if (!prevStops || prevStops.length === 0) return;
 
         const prevStop = prevStops[0];
-        let prevCoords: [number, number] | null = null;
-        if (prevStop.lat != null && prevStop.lng != null) {
-          prevCoords = [prevStop.lat, prevStop.lng];
-        } else {
-          prevCoords = await geocode(prevStop.address);
-        }
+        const prevCoords = (prevStop.lat != null && prevStop.lng != null)
+          ? [prevStop.lat, prevStop.lng] as [number, number]
+          : await geocode(prevStop.address);
 
         if (!prevCoords) return;
 
-        const firstPickup = resolved.find(s => s.type === 'pickup' && s.coords);
-        if (!firstPickup?.coords) return;
-
-        const dist = await drivingDistance(prevCoords[0], prevCoords[1], firstPickup.coords[0], firstPickup.coords[1]);
-        if (dist === null) return;
-
-        const roundedDist = Math.round(dist);
-        setEmptyMiles(roundedDist);
-        setEmptyMilesOrigin(prevStop.address);
-
-        // Persist to database
-        await supabase.from('loads').update({
-          empty_miles: roundedDist,
-          empty_miles_origin: prevStop.address,
-        } as any).eq('id', load.id);
-        onLoadDataUpdated?.();
-
-        // Draw dashed line on map
-        const deadheadIcon = L.divIcon({
-          html: '<div style="background:hsl(38,92%,50%);color:white;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:10px;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,.3)">E</div>',
-          className: '', iconSize: [24, 24], iconAnchor: [12, 12],
-        });
-        L.marker(prevCoords, { icon: deadheadIcon }).addTo(map).bindPopup(`<b>Empty Miles Origin</b><br/>${prevStop.address}`);
-
-        const deadheadRoute = await drivingRoute([prevCoords, firstPickup.coords]);
-        if (deadheadRoute) {
-          L.polyline(deadheadRoute, { color: 'hsl(38,92%,50%)', weight: 3, dashArray: '8 6', opacity: 0.8 }).addTo(map);
-        } else {
-          L.polyline([prevCoords, firstPickup.coords], { color: 'hsl(38,92%,50%)', weight: 3, dashArray: '8 6', opacity: 0.8 }).addTo(map);
-        }
-        bounds.push(prevCoords);
-        map.fitBounds(bounds, { padding: [40, 40] });
+        await applyAndPersistDeadhead(prevCoords, prevStop.address);
       };
 
       delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -467,7 +497,13 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
         if (bounds.length >= 2) map.fitBounds(bounds, { padding: [40, 40] });
 
         // Calculate empty miles (deadhead) for this load
-        if (!cancelled) await calculateEmptyMiles(L, map, resolved, bounds);
+        if (!cancelled) {
+          try {
+            await calculateEmptyMiles(L, map, resolved, bounds);
+          } catch (error) {
+            console.error('[MAP] Empty miles calculation failed (fast path):', error);
+          }
+        }
 
         if (!cancelled) setMapReady(true);
         return;
@@ -551,7 +587,11 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
         }
 
         // Calculate empty miles for slow path
-        await calculateEmptyMiles(L, map, resolved, bounds);
+        try {
+          await calculateEmptyMiles(L, map, resolved, bounds);
+        } catch (error) {
+          console.error('[MAP] Empty miles calculation failed (slow path):', error);
+        }
         setMapReady(true);
       }
     };
