@@ -403,8 +403,9 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
           .from('loads')
           .select('id, delivery_date')
           .eq('driver_id', load.driver_id)
-          .lt('delivery_date', load.pickup_date)
-          .in('status', ['delivered', 'tonu'])
+          .neq('id', load.id)
+          .lte('delivery_date', load.pickup_date)
+          .in('status', ['delivered', 'paid', 'tonu'])
           .order('delivery_date', { ascending: false })
           .limit(1);
 
