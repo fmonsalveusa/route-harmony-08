@@ -476,6 +476,7 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
       // FAST PATH: All geodata cached — no API calls needed
       if (allStopsCached && hasCachedRoute && hasCachedMiles) {
         console.log('[MAP] Using fully cached data');
+        const isMapUsableFast = () => !cancelled && mapInstanceRef.current === map && Boolean(map?.getPanes?.()?.overlayPane);
         const cachedRoute = load.route_geometry as [number, number][];
         const resolved: ResolvedStop[] = stopSources.map(s => ({
           type: s.type, address: s.address,
@@ -485,6 +486,8 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
 
         setResolvedStops(resolved);
         setTotalMiles(Number(load.miles));
+
+        if (!isMapUsableFast()) return;
 
         const bounds: [number, number][] = [];
         resolved.forEach(stop => {
@@ -497,7 +500,7 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
         if (bounds.length >= 2) map.fitBounds(bounds, { padding: [40, 40] });
 
         // Calculate empty miles (deadhead) for this load
-        if (!cancelled) {
+        if (isMapUsableFast()) {
           try {
             await calculateEmptyMiles(L, map, resolved, bounds);
           } catch (error) {
@@ -509,6 +512,8 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
         return;
       }
 
+      const isMapUsable = () => !cancelled && mapInstanceRef.current === map && Boolean(map?.getPanes?.()?.overlayPane);
+
       // SLOW PATH: Calculate from scratch
       console.log('[MAP] Calculating from scratch');
       const coords = await Promise.all(
@@ -518,7 +523,7 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
             : geocode(s.address)
         )
       );
-      if (cancelled) return;
+      if (!isMapUsable()) return;
 
       const resolved: ResolvedStop[] = stopSources.map((s, i) => ({
         type: s.type, address: s.address, coords: coords[i],
@@ -535,7 +540,7 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
             accumulatedMiles += Number(stopSources[i].cachedDist);
           } else {
             const dist = await drivingDistance(prev[0], prev[1], curr[0], curr[1]);
-            if (cancelled) return;
+            if (!isMapUsable()) return;
             if (dist !== null) {
               resolved[i].distanceFromPrev = Math.round(dist);
               accumulatedMiles += dist;
@@ -543,6 +548,8 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
           }
         }
       }
+
+      if (!isMapUsable()) return;
 
       const bounds: [number, number][] = [];
       resolved.forEach(stop => {
@@ -557,7 +564,8 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
         routeCoords = hasCachedRoute
           ? (load.route_geometry as [number, number][])
           : await drivingRoute(bounds);
-        if (routeCoords && !cancelled) {
+        if (!isMapUsable()) return;
+        if (routeCoords) {
           L.polyline(routeCoords, { color: 'hsl(215,70%,50%)', weight: 3 }).addTo(map);
         } else {
           L.polyline(bounds, { color: 'hsl(215,70%,50%)', weight: 3, dashArray: '8 4' }).addTo(map);
@@ -567,7 +575,7 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
         map.setView(bounds[0], 10);
       }
 
-      if (!cancelled) {
+      if (isMapUsable()) {
         setResolvedStops(resolved);
         const rounded = Math.round(accumulatedMiles);
         if (rounded > 0) setTotalMiles(rounded);
@@ -587,10 +595,12 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
         }
 
         // Calculate empty miles for slow path
-        try {
-          await calculateEmptyMiles(L, map, resolved, bounds);
-        } catch (error) {
-          console.error('[MAP] Empty miles calculation failed (slow path):', error);
+        if (isMapUsable()) {
+          try {
+            await calculateEmptyMiles(L, map, resolved, bounds);
+          } catch (error) {
+            console.error('[MAP] Empty miles calculation failed (slow path):', error);
+          }
         }
         setMapReady(true);
       }
