@@ -433,6 +433,7 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
               empty_miles: roundedDist,
               empty_miles_origin: originAddress,
             } as any).eq('id', load.id);
+            queryClient.invalidateQueries({ queryKey: ['loads'] });
           }
 
           await drawDeadhead(originCoords, originAddress, mapLabel || 'Empty Miles Origin');
