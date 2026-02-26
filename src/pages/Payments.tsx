@@ -394,6 +394,42 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
             <X className="h-3.5 w-3.5" /> Clear
           </Button>
         )}
+        <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs ml-auto" onClick={() => {
+          if (payments.length === 0) {
+            toast({ title: 'No data to export', variant: 'destructive' });
+            return;
+          }
+          const headers = ['Reference', 'Beneficiary', 'Type', 'Rate', '%', 'Base Amount', 'Adjustment', 'Total', 'Status', 'Delivered Date', 'Paid Date'];
+          const rows = payments.map(p => {
+            const adj = adjMap[p.id] || 0;
+            const total = Number(p.amount) + adj;
+            const deliveredDate = paymentDateMap[p.id] ? format(parseISO(paymentDateMap[p.id]), 'yyyy-MM-dd') : '';
+            return [
+              p.load_reference,
+              p.recipient_name,
+              p.recipient_type,
+              Number(p.total_rate).toFixed(2),
+              p.percentage_applied,
+              Number(p.amount).toFixed(2),
+              adj.toFixed(2),
+              total.toFixed(2),
+              p.status,
+              deliveredDate,
+              p.payment_date || '',
+            ].map(v => `"${v}"`).join(',');
+          });
+          const csv = [headers.join(','), ...rows].join('\n');
+          const blob = new Blob([csv], { type: 'text/csv' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `payments_${type}_${new Date().toISOString().split('T')[0]}.csv`;
+          a.click();
+          URL.revokeObjectURL(url);
+          toast({ title: `${payments.length} payment(s) exported` });
+        }}>
+          <Download className="h-3.5 w-3.5" /> Export CSV
+        </Button>
       </div>
 
       {selectedIds.size > 0 && (
@@ -538,7 +574,7 @@ const Payments = () => {
           <h1 className="page-header">Payments</h1>
           <p className="page-description">Manage payments to drivers, investors, and dispatchers</p>
         </div>
-        <Button variant="outline" size="sm" className="gap-2"><Download className="h-4 w-4" /> Export</Button>
+        
       </div>
 
 
