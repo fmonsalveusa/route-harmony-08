@@ -1,61 +1,36 @@
 
 
-## Diagnóstico del Bug
+## Plan: Mover generacion de pagos al cambio de Factoring a "Ready"
 
-El cálculo de millas vacías (empty miles / DH-O) tiene un bug en `src/components/LoadDetailPanel.tsx`, línea 407.
+### Problema actual
+Los pagos de driver/investor se generan cuando el status de la carga cambia a `delivered`. El usuario quiere que se generen cuando el campo `factoring` se pone en `ready`.
 
-### Causa raíz
+### Cambios en `src/pages/Loads.tsx`
 
-Cuando el sistema busca la carga anterior de un driver para determinar dónde fue su última entrega, filtra por status:
+1. **Remover generacion de pagos del cambio de status a "delivered"** (lineas 419-423): Quitar la llamada a `generatePaymentsForLoad` cuando `val === 'delivered'`. Mantener el `setPodUploadLoadId` y la logica de `delivery_date`/`factoring` defaults.
+
+2. **Agregar generacion de pagos al cambio de factoring a "ready"** (lineas 454-456): Cuando `val === 'ready'`, buscar el driver y dispatcher correspondientes y llamar a `generatePaymentsForLoad`. Tambien considerar: si el factoring se cambia DE "ready" a otro valor, llamar `deletePaymentsForLoad` para revertir.
+
+3. **Mantener la logica de `deletePaymentsForLoad`** cuando el status cambia desde "delivered" a otro valor (ya que si se revierte el delivered, tampoco deberian existir pagos).
+
+### Logica final
 
 ```
-.in('status', ['delivered', 'tonu'])
+// Status change handler:
+if (val === 'delivered') {
+  // Set delivery_date, factoring default, open POD dialog
+  // NO payment generation here
+}
+if (prevStatus === 'delivered' && val !== 'tonu') {
+  deletePaymentsForLoad(load.id);
+}
+
+// Factoring change handler:
+if (val === 'ready') {
+  generatePaymentsForLoad(load, driverData, dispatcherData);
+}
 ```
 
-**El problema**: no incluye el status `'paid'`. Cuando una carga anterior ya fue pagada (status = `paid`), el sistema no la encuentra como "carga anterior". Entonces:
-- O encuentra una carga más vieja (con status `delivered`) que tiene una dirección de entrega diferente
-- O no encuentra ninguna, y no calcula millas vacías
-
-Esto explica exactamente lo que reportas con Julio Rodriguez: su última carga ya fue marcada como `paid`, así que el sistema ignoró esa entrega y tomó una dirección incorrecta.
-
-### Segundo problema menor
-
-En la línea 406, la query usa `lt('delivery_date', load.pickup_date)` — compara estrictamente "menor que". Si la carga anterior tiene la misma `delivery_date` que la `pickup_date` de la nueva carga (lo cual es común en operaciones diarias), tampoco la encontrará.
-
----
-
-## Plan de Corrección
-
-### Archivo: `src/components/LoadDetailPanel.tsx`
-
-**Cambio 1** (línea 407): Agregar `'paid'` al filtro de status:
-```typescript
-.in('status', ['delivered', 'paid', 'tonu'])
-```
-
-**Cambio 2** (línea 406): Cambiar `lt` a `lte` para incluir cargas con la misma fecha de entrega:
-```typescript
-.lte('delivery_date', load.pickup_date)
-```
-
-Y agregar `.neq('id', load.id)` para excluir la carga actual de los resultados (ya que ahora usamos `lte`):
-```typescript
-.neq('id', load.id)
-```
-
-### Resultado final de la query (líneas 402-409):
-```typescript
-const { data: prevLoads } = await supabase
-  .from('loads')
-  .select('id, delivery_date')
-  .eq('driver_id', load.driver_id)
-  .neq('id', load.id)
-  .lte('delivery_date', load.pickup_date)
-  .in('status', ['delivered', 'paid', 'tonu'])
-  .order('delivery_date', { ascending: false })
-  .limit(1);
-```
-
-### Nota importante
-Las cargas que ya tienen `empty_miles` calculadas incorrectamente NO se recalcularán automáticamente (línea 321 las salta). Para forzar el recálculo en cargas existentes como la de Julio Rodriguez, el usuario puede editar manualmente el campo "Empty Miles Origin" desde el panel de detalle de la carga.
+### Archivos a modificar
+- `src/pages/Loads.tsx` — mover trigger de pagos del status change al factoring change
 
