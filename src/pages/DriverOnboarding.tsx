@@ -50,6 +50,9 @@ export default function DriverOnboarding() {
     state: null as string | null,
     license_expiry: null as string | null,
     medical_card_expiry: null as string | null,
+    address: '', city: '', zip: '',
+    birthday: null as string | null,
+    emergency_contact_name: '', emergency_phone: '',
   });
   const [driverFiles, setDriverFiles] = useState<Record<string, File>>({});
 
@@ -105,6 +108,8 @@ export default function DriverOnboarding() {
     if (!driver.email.trim()) missing.push('Email');
     if (!driver.phone.trim()) missing.push('Phone');
     if (!driver.license.trim()) missing.push('Driver License #');
+    if (!driver.license_expiry) missing.push('License Expiry');
+    if (!driver.medical_card_expiry) missing.push('Medical Card Expiry');
     if (missing.length) {
       toast.error(`Required fields: ${missing.join(', ')}`);
       return false;
@@ -298,8 +303,53 @@ export default function DriverOnboarding() {
                     </SelectContent>
                   </Select>
                 </div>
-                <OnboardingDateField label="License Expiry" value={driver.license_expiry} onChange={v => setDriver(d => ({ ...d, license_expiry: v }))} />
-                <OnboardingDateField label="Medical Card Expiry" value={driver.medical_card_expiry} onChange={v => setDriver(d => ({ ...d, medical_card_expiry: v }))} />
+                <OnboardingDateField label="License Expiry *" value={driver.license_expiry} onChange={v => setDriver(d => ({ ...d, license_expiry: v }))} />
+                <OnboardingDateField label="Medical Card Expiry *" value={driver.medical_card_expiry} onChange={v => setDriver(d => ({ ...d, medical_card_expiry: v }))} />
+              </div>
+
+              {/* Address section */}
+              <div className="border-t pt-4">
+                <Label className="text-base font-semibold">Address</Label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label>Street Address</Label>
+                    <Input value={driver.address} onChange={e => setDriver(d => ({ ...d, address: e.target.value }))} placeholder="123 Main St" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>City</Label>
+                    <Input value={driver.city} onChange={e => setDriver(d => ({ ...d, city: e.target.value }))} placeholder="Houston" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>State</Label>
+                    <Select value={driver.state || 'none'} onValueChange={v => setDriver(d => ({ ...d, state: v === 'none' ? null : v }))}>
+                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">— Select —</SelectItem>
+                        {US_STATES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Zip Code</Label>
+                    <Input value={driver.zip} onChange={e => setDriver(d => ({ ...d, zip: e.target.value }))} placeholder="77001" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Additional info */}
+              <div className="border-t pt-4">
+                <Label className="text-base font-semibold">Additional Information</Label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
+                  <OnboardingDateField label="Birthday" value={driver.birthday} onChange={v => setDriver(d => ({ ...d, birthday: v }))} />
+                  <div className="space-y-2">
+                    <Label>Emergency Contact Name</Label>
+                    <Input value={driver.emergency_contact_name} onChange={e => setDriver(d => ({ ...d, emergency_contact_name: e.target.value }))} placeholder="Jane Doe" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Emergency Phone</Label>
+                    <Input value={driver.emergency_phone} onChange={e => setDriver(d => ({ ...d, emergency_phone: e.target.value }))} placeholder="555-1234" />
+                  </div>
+                </div>
               </div>
 
               <div className="border-t pt-4">
@@ -462,6 +512,10 @@ export default function DriverOnboarding() {
                   {driver.state && <div><span className="text-muted-foreground">State:</span> {driver.state}</div>}
                   {driver.license_expiry && <div><span className="text-muted-foreground">License Exp:</span> {driver.license_expiry}</div>}
                   {driver.medical_card_expiry && <div><span className="text-muted-foreground">Medical Card Exp:</span> {driver.medical_card_expiry}</div>}
+                  {driver.address && <div className="col-span-2"><span className="text-muted-foreground">Address:</span> {[driver.address, driver.city, driver.state, driver.zip].filter(Boolean).join(', ')}</div>}
+                  {driver.birthday && <div><span className="text-muted-foreground">Birthday:</span> {driver.birthday}</div>}
+                  {driver.emergency_contact_name && <div><span className="text-muted-foreground">Emergency Contact:</span> {driver.emergency_contact_name}</div>}
+                  {driver.emergency_phone && <div><span className="text-muted-foreground">Emergency Phone:</span> {driver.emergency_phone}</div>}
                   <div className="col-span-2"><span className="text-muted-foreground">Documents:</span> {Object.keys(driverFiles).length} file(s)</div>
                 </div>
               </div>

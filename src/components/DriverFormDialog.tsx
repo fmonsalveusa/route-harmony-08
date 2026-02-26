@@ -30,6 +30,9 @@ const emptyForm: DriverInput = {
   factoring_percentage: 2,
   hire_date: todayET(),
   state: null,
+  address: null, city: null, zip: null,
+  birthday: null,
+  emergency_contact_name: null, emergency_phone: null,
 };
 
 type DocKey = 'license_photo' | 'medical_card_photo' | 'form_w9' | 'leasing_agreement' | 'service_agreement';
@@ -61,6 +64,10 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
         investor_pay_percentage: driver.investor_pay_percentage,
         factoring_percentage: driver.factoring_percentage ?? 2,
         hire_date: driver.hire_date,
+        address: driver.address, city: driver.city, zip: driver.zip,
+        birthday: driver.birthday,
+        emergency_contact_name: driver.emergency_contact_name,
+        emergency_phone: driver.emergency_phone,
       });
     } else {
       setForm(emptyForm);
@@ -77,6 +84,8 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
     if (!form.email.trim()) missing.push('Email');
     if (!form.phone.trim()) missing.push('Phone');
     if (!form.license.trim()) missing.push('Driver License #');
+    if (!form.license_expiry) missing.push('License Expiry');
+    if (!form.medical_card_expiry) missing.push('Medical Card Expiry');
     if (missing.length > 0) {
       toast.error(`Required fields: ${missing.join(', ')}`);
       return;
@@ -132,6 +141,14 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
             <Input value={form.license} onChange={e => set('license', e.target.value)} placeholder="CDL-A-XXXXX" />
           </div>
           <div className="space-y-2">
+            <Label>Address</Label>
+            <Input value={form.address || ''} onChange={e => set('address', e.target.value)} placeholder="123 Main St" />
+          </div>
+          <div className="space-y-2">
+            <Label>City</Label>
+            <Input value={form.city || ''} onChange={e => set('city', e.target.value)} placeholder="Houston" />
+          </div>
+          <div className="space-y-2">
             <Label>State</Label>
             <Select value={form.state || 'none'} onValueChange={v => set('state', v === 'none' ? null : v)}>
               <SelectTrigger><SelectValue placeholder="Select state" /></SelectTrigger>
@@ -141,9 +158,24 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
               </SelectContent>
             </Select>
           </div>
+          <div className="space-y-2">
+            <Label>Zip Code</Label>
+            <Input value={form.zip || ''} onChange={e => set('zip', e.target.value)} placeholder="77001" />
+          </div>
 
-          <DatePickerField label="License Expiry" value={form.license_expiry} onChange={v => set('license_expiry', v)} />
-          <DatePickerField label="Medical Card Expiry" value={form.medical_card_expiry} onChange={v => set('medical_card_expiry', v)} />
+          <DatePickerField label="Birthday" value={form.birthday} onChange={v => set('birthday', v)} />
+
+          <DatePickerField label="License Expiry *" value={form.license_expiry} onChange={v => set('license_expiry', v)} />
+          <DatePickerField label="Medical Card Expiry *" value={form.medical_card_expiry} onChange={v => set('medical_card_expiry', v)} />
+
+          <div className="space-y-2">
+            <Label>Emergency Contact Name</Label>
+            <Input value={form.emergency_contact_name || ''} onChange={e => set('emergency_contact_name', e.target.value)} placeholder="Jane Doe" />
+          </div>
+          <div className="space-y-2">
+            <Label>Emergency Phone</Label>
+            <Input value={form.emergency_phone || ''} onChange={e => set('emergency_phone', e.target.value)} placeholder="555-1234" />
+          </div>
 
           <div className="space-y-2">
             <Label>Status</Label>

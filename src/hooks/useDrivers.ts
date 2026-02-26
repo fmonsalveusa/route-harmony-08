@@ -29,6 +29,12 @@ export interface DbDriver {
   service_type: string;
   dispatch_service_percentage: number;
   state: string | null;
+  address: string | null;
+  city: string | null;
+  zip: string | null;
+  birthday: string | null;
+  emergency_contact_name: string | null;
+  emergency_phone: string | null;
   manual_location_address: string | null;
   manual_location_lat: number | null;
   manual_location_lng: number | null;
@@ -54,6 +60,12 @@ export interface DriverInput {
   dispatch_service_percentage?: number;
   hire_date: string;
   state?: string | null;
+  address?: string | null;
+  city?: string | null;
+  zip?: string | null;
+  birthday?: string | null;
+  emergency_contact_name?: string | null;
+  emergency_phone?: string | null;
 }
 
 export function useDrivers() {

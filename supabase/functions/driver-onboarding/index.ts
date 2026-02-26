@@ -185,6 +185,13 @@ Deno.serve(async (req) => {
         dispatcher_id: tokenRecord.dispatcher_id || null,
         truck_id: truckId,
         hire_date: new Date().toISOString().split("T")[0],
+        state: driverData.state || null,
+        address: driverData.address || null,
+        city: driverData.city || null,
+        zip: driverData.zip || null,
+        birthday: driverData.birthday || null,
+        emergency_contact_name: driverData.emergency_contact_name || null,
+        emergency_phone: driverData.emergency_phone || null,
       })
       .select("id")
       .single();
