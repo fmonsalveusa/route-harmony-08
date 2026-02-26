@@ -351,11 +351,16 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
           setEmptyMiles(roundedDist);
           setEmptyMilesOrigin(originAddress);
 
-          await supabase.from('loads').update({
-            empty_miles: roundedDist,
-            empty_miles_origin: originAddress,
-          } as any).eq('id', load.id);
-          onLoadDataUpdated?.();
+          const currentEmptyMiles = Number((load as any).empty_miles) || 0;
+          const currentOrigin = (load as any).empty_miles_origin || null;
+          const changed = roundedDist !== currentEmptyMiles || originAddress !== currentOrigin;
+
+          if (changed) {
+            await supabase.from('loads').update({
+              empty_miles: roundedDist,
+              empty_miles_origin: originAddress,
+            } as any).eq('id', load.id);
+          }
 
           await drawDeadhead(originCoords, originAddress, mapLabel || 'Empty Miles Origin');
           return true;

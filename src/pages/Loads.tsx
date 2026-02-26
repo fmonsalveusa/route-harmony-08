@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo, Fragment } from 'react';
 
 import { formatDate, todayET } from '@/lib/dateUtils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -88,7 +88,6 @@ const Loads = () => {
   const [editLoad, setEditLoad] = useState<DbLoad | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<DbLoad | null>(null);
-  const [detailKey, setDetailKey] = useState(0);
   const [podUploadLoadId, setPodUploadLoadId] = useState<string | null>(null);
   const [showImportWizard, setShowImportWizard] = useState(false);
   const [page, setPage] = useState(1);
@@ -369,177 +368,175 @@ const Loads = () => {
                   const driver = drivers.find(d => d.id === load.driver_id);
                   const dispatcher = dispatchers.find(d => d.id === load.dispatcher_id);
                   const isExpanded = expandedId === load.id;
-                  return (
-                    <>
-                      <tr
-                        key={load.id}
-                        className={`border-b last:border-0 glass-row cursor-pointer ${isExpanded ? 'glass-row-expanded' : ''}`}
-                        onClick={() => setExpandedId(isExpanded ? null : load.id)}
-                      >
-                        <td className="p-3 text-muted-foreground">
-                          {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                        </td>
-                        <td className="p-3 font-medium text-primary">{load.reference_number}</td>
-                        <td className="p-3 hidden md:table-cell">
-                          <div className="text-base font-bold text-foreground">{driver?.name || <span className="text-muted-foreground italic font-normal">Sin asignar</span>}</div>
-                          <div className="text-muted-foreground text-xs">{trucks.find(t => t.id === load.truck_id)?.unit_number ? `Unit #${trucks.find(t => t.id === load.truck_id)!.unit_number}` : '—'}</div>
-                        </td>
-                        <td className="p-3 text-foreground">{load.broker_client || '—'}</td>
-                        <td className="p-3 hidden md:table-cell">
-                          {(() => { const { city, state } = extractCityState(load.origin); return (
-                            <div className="flex items-center gap-1.5">
-                              <MapPin className="h-3.5 w-3.5 text-green-600 flex-shrink-0" />
-                              <div><div className="font-medium text-foreground uppercase text-xs">{city}</div>{state && <div className="text-muted-foreground text-[11px]">{state}</div>}</div>
-                            </div>
-                          ); })()}
-                        </td>
-                        <td className="p-3 hidden md:table-cell">
-                          {(() => { const { city, state } = extractCityState(load.destination); return (
-                            <div className="flex items-center gap-1.5">
-                              <MapPin className="h-3.5 w-3.5 text-red-500 flex-shrink-0" />
-                              <div><div className="font-medium text-foreground uppercase text-xs">{city}</div>{state && <div className="text-muted-foreground text-[11px]">{state}</div>}</div>
-                            </div>
-                          ); })()}
-                        </td>
-                        <td className="p-3 hidden lg:table-cell text-muted-foreground">{formatDate(load.pickup_date)}</td>
-                        <td className="p-3 hidden lg:table-cell text-muted-foreground">{formatDate(load.delivery_date)}</td>
-                        <td className="p-3 text-right font-semibold">${Number(load.total_rate).toLocaleString()}</td>
-                        <td className="p-3 text-right hidden md:table-cell text-muted-foreground">{load.empty_miles && Number(load.empty_miles) > 0 ? Number(load.empty_miles).toLocaleString() : '—'}</td>
-                        <td className="p-3 text-right hidden md:table-cell text-muted-foreground">{load.miles && Number(load.miles) > 0 ? Number(load.miles).toLocaleString() : '—'}</td>
-                        <td className="p-3 text-right hidden md:table-cell">
-                          {(() => {
-                            if (!load.miles || Number(load.miles) <= 0) return <span className="text-muted-foreground">—</span>;
-                            const rpm = Number(load.total_rate) / Number(load.miles);
-                            const truck = trucks.find(t => t.id === load.truck_id);
-                            const truckType = (truck?.truck_type || '').toLowerCase();
-                            const isHotshot = truckType.includes('hotshot');
-                            let colorClass = 'text-red-600'; // default red
-                            if (isHotshot) {
-                              if (rpm >= 1.90) colorClass = 'text-green-600';
-                              else if (rpm >= 1.60) colorClass = 'text-amber-500';
-                            } else {
-                              // Box Truck / default
-                              if (rpm >= 1.70) colorClass = 'text-green-600';
-                              else if (rpm >= 1.40) colorClass = 'text-amber-500';
-                            }
-                            return <span className={`font-semibold ${colorClass}`}>${rpm.toFixed(2)}</span>;
-                          })()}
-                        </td>
-                        <td className="p-3 hidden lg:table-cell">{dispatcher?.name || '—'}</td>
-                        <td className="p-3" onClick={e => e.stopPropagation()}>
-                          <Select value={load.status} onValueChange={async (val) => {
-                            const prevStatus = load.status;
-                            const updates: any = { status: val };
-                            if (val === 'delivered') {
-                              if (!load.delivery_date) updates.delivery_date = todayET();
-                              if (!load.factoring) updates.factoring = 'pending';
-                            }
-                            await updateLoad(load.id, updates);
-                            if (val === 'delivered') {
-                              setPodUploadLoadId(load.id);
-                            } else if (prevStatus === 'delivered' && val !== 'tonu') {
-                              await deletePaymentsForLoad(load.id);
-                            }
-                          }}>
-                            <SelectTrigger className="h-8 w-[140px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:ml-1">
-                              <StatusBadge status={load.status} className="text-sm px-3 py-1" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {[
-                                { value: 'planned', label: 'Planned' },
-                                { value: 'dispatched', label: 'Dispatched' },
-                                { value: 'in_transit', label: 'In Transit' },
-                                { value: 'on_site_pickup', label: 'On Site - Pickup' },
-                                { value: 'picked_up', label: 'Picked Up' },
-                                { value: 'on_site_delivery', label: 'On Site - Delivery' },
-                                { value: 'delivered', label: 'Delivered' },
-                                { value: 'tonu', label: 'TONU' },
-                                { value: 'cancelled', label: 'Canceled' },
-                              ].map(s => (
-                                <SelectItem key={s.value} value={s.value}>
-                                  <StatusBadge status={s.value} />
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </td>
-                        <td className="p-3 hidden lg:table-cell text-muted-foreground">
-                          {load.status === 'delivered' ? formatDate(load.delivery_date) : '—'}
-                        </td>
-                        <td className="p-3 hidden lg:table-cell" onClick={e => e.stopPropagation()}>
-                          <Select value={load.factoring || ''} onValueChange={async (val) => {
-                            const prevFactoring = load.factoring;
-                            await updateLoad(load.id, { factoring: val });
-                            if (val === 'ready' && prevFactoring !== 'ready') {
-                              const driverData = drivers.find(d => d.id === load.driver_id) || null;
-                              const dispatcherData = dispatchers.find(d => d.id === load.dispatcher_id) || null;
-                              await generatePaymentsForLoad(load, driverData, dispatcherData);
-                            } else if (prevFactoring === 'ready' && val !== 'ready') {
-                              await deletePaymentsForLoad(load.id);
-                            }
-                          }}>
-                            <SelectTrigger className="h-8 w-[130px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:ml-1">
-                              {load.factoring ? <StatusBadge status={`${load.factoring}_factoring`} className="text-sm px-3 py-1" /> : <span className="text-muted-foreground">—</span>}
-                            </SelectTrigger>
-                            <SelectContent>
-                              {[
-                                { value: 'pending', label: 'Pending' },
-                                { value: 'in_progress', label: 'In Progress' },
-                                { value: 'ready', label: 'Ready' },
-                              ].map(s => (
-                                <SelectItem key={s.value} value={s.value}>
-                                  <StatusBadge status={`${s.value}_factoring`} />
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </td>
-                        <td className="p-3 text-right" onClick={e => e.stopPropagation()}>
-                          <div className="flex justify-end gap-1.5">
-                            <Button variant="ghost" size="sm" className="glass-action-btn tint-purple" onClick={() => { inputRefMap.current[load.id]?.click(); }} title="POD">
-                              <Upload className="h-4 w-4" /> POD
-                            </Button>
-                            {load.pdf_url && (
-                              <Button variant="ghost" size="sm" className="glass-action-btn tint-blue" asChild title="PDF">
-                                <a href={load.pdf_url} target="_blank" rel="noopener noreferrer">
-                                  <ExternalLink className="h-4 w-4" /> PDF
-                                </a>
+                    return (
+                      <Fragment key={load.id}>
+                        <tr
+                          className={`border-b last:border-0 glass-row cursor-pointer ${isExpanded ? 'glass-row-expanded' : ''}`}
+                          onClick={() => setExpandedId(isExpanded ? null : load.id)}
+                        >
+                          <td className="p-3 text-muted-foreground">
+                            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                          </td>
+                          <td className="p-3 font-medium text-primary">{load.reference_number}</td>
+                          <td className="p-3 hidden md:table-cell">
+                            <div className="text-base font-bold text-foreground">{driver?.name || <span className="text-muted-foreground italic font-normal">Sin asignar</span>}</div>
+                            <div className="text-muted-foreground text-xs">{trucks.find(t => t.id === load.truck_id)?.unit_number ? `Unit #${trucks.find(t => t.id === load.truck_id)!.unit_number}` : '—'}</div>
+                          </td>
+                          <td className="p-3 text-foreground">{load.broker_client || '—'}</td>
+                          <td className="p-3 hidden md:table-cell">
+                            {(() => { const { city, state } = extractCityState(load.origin); return (
+                              <div className="flex items-center gap-1.5">
+                                <MapPin className="h-3.5 w-3.5 text-green-600 flex-shrink-0" />
+                                <div><div className="font-medium text-foreground uppercase text-xs">{city}</div>{state && <div className="text-muted-foreground text-[11px]">{state}</div>}</div>
+                              </div>
+                            ); })()}
+                          </td>
+                          <td className="p-3 hidden md:table-cell">
+                            {(() => { const { city, state } = extractCityState(load.destination); return (
+                              <div className="flex items-center gap-1.5">
+                                <MapPin className="h-3.5 w-3.5 text-red-500 flex-shrink-0" />
+                                <div><div className="font-medium text-foreground uppercase text-xs">{city}</div>{state && <div className="text-muted-foreground text-[11px]">{state}</div>}</div>
+                              </div>
+                            ); })()}
+                          </td>
+                          <td className="p-3 hidden lg:table-cell text-muted-foreground">{formatDate(load.pickup_date)}</td>
+                          <td className="p-3 hidden lg:table-cell text-muted-foreground">{formatDate(load.delivery_date)}</td>
+                          <td className="p-3 text-right font-semibold">${Number(load.total_rate).toLocaleString()}</td>
+                          <td className="p-3 text-right hidden md:table-cell text-muted-foreground">{load.empty_miles && Number(load.empty_miles) > 0 ? Number(load.empty_miles).toLocaleString() : '—'}</td>
+                          <td className="p-3 text-right hidden md:table-cell text-muted-foreground">{load.miles && Number(load.miles) > 0 ? Number(load.miles).toLocaleString() : '—'}</td>
+                          <td className="p-3 text-right hidden md:table-cell">
+                            {(() => {
+                              if (!load.miles || Number(load.miles) <= 0) return <span className="text-muted-foreground">—</span>;
+                              const rpm = Number(load.total_rate) / Number(load.miles);
+                              const truck = trucks.find(t => t.id === load.truck_id);
+                              const truckType = (truck?.truck_type || '').toLowerCase();
+                              const isHotshot = truckType.includes('hotshot');
+                              let colorClass = 'text-red-600'; // default red
+                              if (isHotshot) {
+                                if (rpm >= 1.90) colorClass = 'text-green-600';
+                                else if (rpm >= 1.60) colorClass = 'text-amber-500';
+                              } else {
+                                // Box Truck / default
+                                if (rpm >= 1.70) colorClass = 'text-green-600';
+                                else if (rpm >= 1.40) colorClass = 'text-amber-500';
+                              }
+                              return <span className={`font-semibold ${colorClass}`}>${rpm.toFixed(2)}</span>;
+                            })()}
+                          </td>
+                          <td className="p-3 hidden lg:table-cell">{dispatcher?.name || '—'}</td>
+                          <td className="p-3" onClick={e => e.stopPropagation()}>
+                            <Select value={load.status} onValueChange={async (val) => {
+                              const prevStatus = load.status;
+                              const updates: any = { status: val };
+                              if (val === 'delivered') {
+                                if (!load.delivery_date) updates.delivery_date = todayET();
+                                if (!load.factoring) updates.factoring = 'pending';
+                              }
+                              await updateLoad(load.id, updates);
+                              if (val === 'delivered') {
+                                setPodUploadLoadId(load.id);
+                              } else if (prevStatus === 'delivered' && val !== 'tonu') {
+                                await deletePaymentsForLoad(load.id);
+                              }
+                            }}>
+                              <SelectTrigger className="h-8 w-[140px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:ml-1">
+                                <StatusBadge status={load.status} className="text-sm px-3 py-1" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {[
+                                  { value: 'planned', label: 'Planned' },
+                                  { value: 'dispatched', label: 'Dispatched' },
+                                  { value: 'in_transit', label: 'In Transit' },
+                                  { value: 'on_site_pickup', label: 'On Site - Pickup' },
+                                  { value: 'picked_up', label: 'Picked Up' },
+                                  { value: 'on_site_delivery', label: 'On Site - Delivery' },
+                                  { value: 'delivered', label: 'Delivered' },
+                                  { value: 'tonu', label: 'TONU' },
+                                  { value: 'cancelled', label: 'Canceled' },
+                                ].map(s => (
+                                  <SelectItem key={s.value} value={s.value}>
+                                    <StatusBadge status={s.value} />
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </td>
+                          <td className="p-3 hidden lg:table-cell text-muted-foreground">
+                            {load.status === 'delivered' ? formatDate(load.delivery_date) : '—'}
+                          </td>
+                          <td className="p-3 hidden lg:table-cell" onClick={e => e.stopPropagation()}>
+                            <Select value={load.factoring || ''} onValueChange={async (val) => {
+                              const prevFactoring = load.factoring;
+                              await updateLoad(load.id, { factoring: val });
+                              if (val === 'ready' && prevFactoring !== 'ready') {
+                                const driverData = drivers.find(d => d.id === load.driver_id) || null;
+                                const dispatcherData = dispatchers.find(d => d.id === load.dispatcher_id) || null;
+                                await generatePaymentsForLoad(load, driverData, dispatcherData);
+                              } else if (prevFactoring === 'ready' && val !== 'ready') {
+                                await deletePaymentsForLoad(load.id);
+                              }
+                            }}>
+                              <SelectTrigger className="h-8 w-[130px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:ml-1">
+                                {load.factoring ? <StatusBadge status={`${load.factoring}_factoring`} className="text-sm px-3 py-1" /> : <span className="text-muted-foreground">—</span>}
+                              </SelectTrigger>
+                              <SelectContent>
+                                {[
+                                  { value: 'pending', label: 'Pending' },
+                                  { value: 'in_progress', label: 'In Progress' },
+                                  { value: 'ready', label: 'Ready' },
+                                ].map(s => (
+                                  <SelectItem key={s.value} value={s.value}>
+                                    <StatusBadge status={`${s.value}_factoring`} />
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </td>
+                          <td className="p-3 text-right" onClick={e => e.stopPropagation()}>
+                            <div className="flex justify-end gap-1.5">
+                              <Button variant="ghost" size="sm" className="glass-action-btn tint-purple" onClick={() => { inputRefMap.current[load.id]?.click(); }} title="POD">
+                                <Upload className="h-4 w-4" /> POD
                               </Button>
-                            )}
-                            <Button variant="ghost" size="sm" className="glass-action-btn tint-green" onClick={() => handleGenerateInvoice(load)} title="Invoice">
-                              <FileText className="h-4 w-4" /> Invoice
-                            </Button>
-                            <Button variant="ghost" size="sm" className="glass-action-btn tint-amber" onClick={() => { setEditLoad(load); setShowForm(true); }} title="Edit">
-                              <Pencil className="h-4 w-4" /> Edit
-                            </Button>
-                            <Button variant="ghost" size="sm" className="glass-action-btn tint-red" onClick={async (e) => { e.stopPropagation(); e.preventDefault(); if (window.confirm(`¿Eliminar carga ${load.reference_number}? Esta acción es permanente.`)) { await deleteLoad(load.id); } }} title="Delete">
-                              <Trash2 className="h-4 w-4" /> Delete
-                            </Button>
-                          </div>
-                          <InlinePodInput loadId={load.id} inputRefMap={inputRefMap} />
-                        </td>
-                      </tr>
-                      {isExpanded && (
-                        <tr key={`${load.id}-detail-${detailKey}`}>
-                          <td colSpan={17} className="p-0">
-                            <LoadDetailPanel
-                              key={`detail-${load.id}-${detailKey}`}
-                              load={load}
-                              onMilesCalculated={async (loadId, miles, routeGeometry) => {
-                                const updateData: any = { miles };
-                                if (routeGeometry) {
-                                  updateData.route_geometry = routeGeometry;
-                                }
-                                await supabase.from('loads').update(updateData).eq('id', loadId);
-                                await fetchLoads();
-                              }}
-                              onLoadDataUpdated={async () => { await fetchLoads(); }}
-                            />
+                              {load.pdf_url && (
+                                <Button variant="ghost" size="sm" className="glass-action-btn tint-blue" asChild title="PDF">
+                                  <a href={load.pdf_url} target="_blank" rel="noopener noreferrer">
+                                    <ExternalLink className="h-4 w-4" /> PDF
+                                  </a>
+                                </Button>
+                              )}
+                              <Button variant="ghost" size="sm" className="glass-action-btn tint-green" onClick={() => handleGenerateInvoice(load)} title="Invoice">
+                                <FileText className="h-4 w-4" /> Invoice
+                              </Button>
+                              <Button variant="ghost" size="sm" className="glass-action-btn tint-amber" onClick={() => { setEditLoad(load); setShowForm(true); }} title="Edit">
+                                <Pencil className="h-4 w-4" /> Edit
+                              </Button>
+                              <Button variant="ghost" size="sm" className="glass-action-btn tint-red" onClick={async (e) => { e.stopPropagation(); e.preventDefault(); if (window.confirm(`¿Eliminar carga ${load.reference_number}? Esta acción es permanente.`)) { await deleteLoad(load.id); } }} title="Delete">
+                                <Trash2 className="h-4 w-4" /> Delete
+                              </Button>
+                            </div>
+                            <InlinePodInput loadId={load.id} inputRefMap={inputRefMap} />
                           </td>
                         </tr>
-                      )}
-                    </>
-                  );
+                        {isExpanded && (
+                          <tr>
+                            <td colSpan={17} className="p-0">
+                              <LoadDetailPanel
+                                load={load}
+                                onMilesCalculated={async (loadId, miles, routeGeometry) => {
+                                  const updateData: any = { miles };
+                                  if (routeGeometry) {
+                                    updateData.route_geometry = routeGeometry;
+                                  }
+                                  await supabase.from('loads').update(updateData).eq('id', loadId);
+                                  await fetchLoads();
+                                }}
+                                onLoadDataUpdated={async () => { await fetchLoads(); }}
+                              />
+                            </td>
+                          </tr>
+                        )}
+                      </Fragment>
+                    );
                 })}
               </tbody>
             </table>
@@ -576,7 +573,7 @@ const Loads = () => {
       {/* Form Dialog */}
       <LoadFormDialog
         open={showForm}
-        onOpenChange={(open) => { setShowForm(open); if (!open) { setEditLoad(null); setDetailKey(k => k + 1); fetchLoads(); } }}
+        onOpenChange={(open) => { setShowForm(open); if (!open) { setEditLoad(null); fetchLoads(); } }}
         editLoad={editLoad}
         dispatcherId={(user as any)?.dispatcher_id || undefined}
         onSubmit={async (input) => {
