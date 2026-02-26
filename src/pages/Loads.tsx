@@ -183,8 +183,26 @@ const Loads = () => {
           <p className="page-description">Manage all loads and assignments</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="gap-2" onClick={() => setShowImportWizard(true)}>
-            <Upload className="h-4 w-4" /> Import CSV
+          <Button variant="outline" size="sm" className="gap-2" onClick={() => {
+            const data = activeTab === 'all' ? baseLoads : activeTab === 'active' ? activeLoads : activeTab === 'delivered' ? deliveredLoads : cancelledLoads;
+            if (data.length === 0) { toast.error('No data to export'); return; }
+            const headers = ['Reference', 'Driver', 'Truck', 'Broker', 'Origin', 'Destination', 'Pickup Date', 'Delivery Date', 'Rate', 'DH-O', 'Miles', 'RPM', 'Dispatcher', 'Status', 'Factoring', 'Notes'];
+            const rows = data.map(l => {
+              const drv = drivers.find(d => d.id === l.driver_id);
+              const trk = trucks.find(t => t.id === l.truck_id);
+              const dsp = dispatchers.find(d => d.id === l.dispatcher_id);
+              const mi = Number(l.miles) || 0;
+              const rpm = mi > 0 ? (Number(l.total_rate) / mi).toFixed(2) : '';
+              return [l.reference_number, drv?.name || '', trk ? `Unit #${trk.unit_number}` : '', l.broker_client || '', l.origin, l.destination, l.pickup_date || '', l.delivery_date || '', Number(l.total_rate).toFixed(2), l.empty_miles || '', l.miles || '', rpm, dsp?.name || '', l.status, l.factoring || '', (l.notes || '').replace(/"/g, '""')].map(v => `"${v}"`).join(',');
+            });
+            const csv = [headers.join(','), ...rows].join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = `loads_${activeTab}_${new Date().toISOString().split('T')[0]}.csv`; a.click();
+            URL.revokeObjectURL(url);
+            toast.success(`${data.length} load(s) exported`);
+          }}>
+            <Download className="h-4 w-4" /> Export CSV
           </Button>
           <Button size="sm" className="gap-2" onClick={() => { setEditLoad(null); setShowForm(true); }}>
             <Plus className="h-4 w-4" /> New Load
@@ -295,50 +313,7 @@ const Loads = () => {
               Clear filters
             </Button>
           )}
-          <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs ml-auto" onClick={() => {
-            const data = activeTab === 'all' ? baseLoads : activeTab === 'active' ? activeLoads : activeTab === 'delivered' ? deliveredLoads : cancelledLoads;
-            if (data.length === 0) {
-              toast.error('No data to export');
-              return;
-            }
-            const headers = ['Reference', 'Driver', 'Truck', 'Broker', 'Origin', 'Destination', 'Pickup Date', 'Delivery Date', 'Rate', 'DH-O', 'Miles', 'RPM', 'Dispatcher', 'Status', 'Factoring', 'Notes'];
-            const rows = data.map(l => {
-              const driver = drivers.find(d => d.id === l.driver_id);
-              const truck = trucks.find(t => t.id === l.truck_id);
-              const dispatcher = dispatchers.find(d => d.id === l.dispatcher_id);
-              const miles = Number(l.miles) || 0;
-              const rpm = miles > 0 ? (Number(l.total_rate) / miles).toFixed(2) : '';
-              return [
-                l.reference_number,
-                driver?.name || '',
-                truck ? `Unit #${truck.unit_number}` : '',
-                l.broker_client || '',
-                l.origin,
-                l.destination,
-                l.pickup_date || '',
-                l.delivery_date || '',
-                Number(l.total_rate).toFixed(2),
-                l.empty_miles || '',
-                l.miles || '',
-                rpm,
-                dispatcher?.name || '',
-                l.status,
-                l.factoring || '',
-                (l.notes || '').replace(/"/g, '""'),
-              ].map(v => `"${v}"`).join(',');
-            });
-            const csv = [headers.join(','), ...rows].join('\n');
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `loads_${activeTab}_${new Date().toISOString().split('T')[0]}.csv`;
-            a.click();
-            URL.revokeObjectURL(url);
-            toast.success(`${data.length} load(s) exported`);
-          }}>
-            <Download className="h-3.5 w-3.5" /> Export CSV
-          </Button>
+      
       </div>
 
       <div className="flex gap-2 border-b">
