@@ -125,16 +125,16 @@ export const AppLayout = ({ children }: {children: ReactNode;}) => {
               Master Panel
             </Badge>
           }
-        </div>
-
-        {/* Right: actions */}
-        <div className="flex items-center gap-2 sm:gap-3">
           {hasPermission('loads') &&
           <Button size="sm" variant="secondary" onClick={() => setLoadDialogOpen(true)} className="gap-1 h-8 text-xs">
               <Plus className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">New Load</span>
             </Button>
           }
+        </div>
+
+        {/* Right: actions */}
+        <div className="flex items-center gap-2 sm:gap-3">
 
           {isMasterAdmin &&
           <Link
