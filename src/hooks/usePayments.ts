@@ -112,13 +112,17 @@ export async function generatePaymentsForLoad(load: {
 
   if (paymentsToInsert.length === 0) return;
 
-  // Check if payments already exist for this load
+  // Check if driver/investor payments already exist for this load
+  // (dispatcher payments are created separately and should not block this)
   const { data: existing } = await supabase
     .from('payments')
-    .select('id')
+    .select('id, recipient_type')
     .eq('load_id', load.id);
 
-  if (existing && existing.length > 0) return; // already generated
+  const nonDispatcherExisting = (existing || []).filter(
+    (p: any) => p.recipient_type !== 'dispatcher'
+  );
+  if (nonDispatcherExisting.length > 0) return; // driver/investor payments already generated
 
   const tenant_id = await getTenantId();
   const withTenant = paymentsToInsert.map(p => ({ ...p, tenant_id }));
