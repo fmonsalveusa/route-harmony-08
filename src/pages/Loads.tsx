@@ -418,9 +418,6 @@ const Loads = () => {
                             await updateLoad(load.id, updates);
                             if (val === 'delivered') {
                               setPodUploadLoadId(load.id);
-                              const driverData = drivers.find(d => d.id === load.driver_id) || null;
-                              const dispatcherData = dispatchers.find(d => d.id === load.dispatcher_id) || null;
-                              await generatePaymentsForLoad(load, driverData, dispatcherData);
                             } else if (prevStatus === 'delivered' && val !== 'tonu') {
                               await deletePaymentsForLoad(load.id);
                             }
@@ -452,7 +449,15 @@ const Loads = () => {
                         </td>
                         <td className="p-3 hidden lg:table-cell" onClick={e => e.stopPropagation()}>
                           <Select value={load.factoring || ''} onValueChange={async (val) => {
+                            const prevFactoring = load.factoring;
                             await updateLoad(load.id, { factoring: val });
+                            if (val === 'ready' && prevFactoring !== 'ready') {
+                              const driverData = drivers.find(d => d.id === load.driver_id) || null;
+                              const dispatcherData = dispatchers.find(d => d.id === load.dispatcher_id) || null;
+                              await generatePaymentsForLoad(load, driverData, dispatcherData);
+                            } else if (prevFactoring === 'ready' && val !== 'ready') {
+                              await deletePaymentsForLoad(load.id);
+                            }
                           }}>
                             <SelectTrigger className="h-8 w-[130px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:ml-1">
                               {load.factoring ? <StatusBadge status={`${load.factoring}_factoring`} className="text-sm px-3 py-1" /> : <span className="text-muted-foreground">—</span>}
