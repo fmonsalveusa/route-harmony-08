@@ -28,6 +28,11 @@ async function geocode(place: string): Promise<[number, number] | null> {
   if (parts.length >= 2) {
     attempts.push(parts.slice(-2).join(', ')); // e.g. "Middletown, PA 17057"
   }
+  // For addresses without commas, try extracting city+state+zip pattern at end
+  if (parts.length === 1) {
+    const m = place.match(/([A-Za-z\s]+)\s+([A-Z]{2})\s+(\d{5})/);
+    if (m) attempts.push(`${m[1].trim()}, ${m[2]} ${m[3]}`);
+  }
 
   for (const query of attempts) {
     try {
@@ -487,7 +492,7 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
           return;
         }
 
-        // 3) Otherwise use the last delivery stop from previous DELIVERED load
+        // 3) Otherwise use the last delivery stop from previous DELIVERED/PAID load
         if (!load.driver_id || !load.pickup_date) return;
 
         const { data: prevLoads } = await supabase
@@ -495,7 +500,7 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
           .select('id, delivery_date, created_at')
           .eq('driver_id', load.driver_id)
           .neq('id', load.id)
-          .eq('status', 'delivered')
+          .in('status', ['delivered', 'paid'])
           .lte('delivery_date', load.pickup_date)
           .order('delivery_date', { ascending: false })
           .order('created_at', { ascending: false })
