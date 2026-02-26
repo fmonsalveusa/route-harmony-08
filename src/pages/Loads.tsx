@@ -533,7 +533,7 @@ const Loads = () => {
                                 await supabase.from('loads').update(updateData).eq('id', loadId);
                                 await fetchLoads();
                               }}
-                              onLoadDataUpdated={async () => { await fetchLoads(); setDetailKey(k => k + 1); }}
+                              onLoadDataUpdated={async () => { await fetchLoads(); }}
                             />
                           </td>
                         </tr>
