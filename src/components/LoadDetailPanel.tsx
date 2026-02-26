@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { formatDate } from '@/lib/dateUtils';
 import { MapPin, Calendar, Weight, DollarSign, User, Truck, Route, Navigation, FileText, Download, ExternalLink, Pencil, Loader2, Copy, Check } from 'lucide-react';
@@ -73,6 +73,22 @@ async function drivingRoute(coords: [number, number][]): Promise<[number, number
   return null;
 }
 
+function normalizeRouteGeometry(input: unknown): [number, number][] | null {
+  if (!Array.isArray(input)) return null;
+  const normalized = input
+    .map((point) => {
+      if (!Array.isArray(point) || point.length < 2) return null;
+      const lat = Number(point[0]);
+      const lng = Number(point[1]);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+      if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
+      return [lat, lng] as [number, number];
+    })
+    .filter((point): point is [number, number] => point !== null);
+
+  return normalized.length >= 2 ? normalized : null;
+}
+
 interface ResolvedStop {
   type: 'pickup' | 'delivery';
   address: string;
@@ -130,7 +146,8 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
   const [mapReady, setMapReady] = useState(false);
   const [gpsStatus, setGpsStatus] = useState<'active' | 'stale' | 'none'>('none');
   const [cachedRouteGeometry, setCachedRouteGeometry] = useState<[number, number][] | null>(null);
-  const routeGeometryFetchedRef = useRef<string | null>(null);
+  const [routeGeometryLoading, setRouteGeometryLoading] = useState(false);
+  const routeFetchKeyRef = useRef<string | null>(null);
 
   // Sync local state when load prop changes (after refetch)
   useEffect(() => {
@@ -141,14 +158,33 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
 
   // Fetch route_geometry separately (not in main loads query to keep it light)
   useEffect(() => {
-    if (routeGeometryFetchedRef.current === load.id) return;
-    routeGeometryFetchedRef.current = load.id;
+    let active = true;
+    const requestKey = `${load.id}:${Date.now()}`;
+    routeFetchKeyRef.current = requestKey;
+    setCachedRouteGeometry(null);
+    setRouteGeometryLoading(true);
+
     (async () => {
-      const { data } = await supabase.from('loads').select('route_geometry').eq('id', load.id).maybeSingle();
-      if (data?.route_geometry && Array.isArray(data.route_geometry) && data.route_geometry.length > 0) {
-        setCachedRouteGeometry(data.route_geometry as [number, number][]);
+      const { data, error } = await supabase
+        .from('loads')
+        .select('route_geometry')
+        .eq('id', load.id)
+        .maybeSingle();
+
+      if (!active || routeFetchKeyRef.current !== requestKey) return;
+
+      if (error) {
+        console.error('[MAP] Error fetching route_geometry:', error);
+        setCachedRouteGeometry(null);
+      } else {
+        setCachedRouteGeometry(normalizeRouteGeometry(data?.route_geometry ?? null));
       }
+      setRouteGeometryLoading(false);
     })();
+
+    return () => {
+      active = false;
+    };
   }, [load.id]);
 
   const { drivers } = useDrivers();
@@ -306,16 +342,32 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
       window.open(url, '_blank', 'noopener,noreferrer');
     }
   };
-  const hasCachedRoute = (cachedRouteGeometry && cachedRouteGeometry.length > 0) || (load.route_geometry && Array.isArray(load.route_geometry) && load.route_geometry.length > 0);
-  const effectiveRouteGeometry = cachedRouteGeometry || (load.route_geometry as [number, number][] | undefined);
-  const hasCachedMiles = load.miles && Number(load.miles) > 0;
+  const normalizedLoadRouteGeometry = useMemo(
+    () => normalizeRouteGeometry(load.route_geometry),
+    [load.route_geometry]
+  );
+  const effectiveRouteGeometry = cachedRouteGeometry || normalizedLoadRouteGeometry;
+  const hasCachedRoute = Boolean(effectiveRouteGeometry && effectiveRouteGeometry.length >= 2);
+
+  const stopSignature = useMemo(
+    () => dbStops
+      .map((s) => `${s.id}|${s.stop_order}|${s.stop_type}|${s.address}|${s.lat ?? 'n'}|${s.lng ?? 'n'}|${s.distance_from_prev ?? 'n'}`)
+      .join(','),
+    [dbStops]
+  );
+  const routeSignature = useMemo(() => {
+    if (!effectiveRouteGeometry || effectiveRouteGeometry.length < 2) return 'none';
+    const first = effectiveRouteGeometry[0];
+    const last = effectiveRouteGeometry[effectiveRouteGeometry.length - 1];
+    return `${effectiveRouteGeometry.length}:${first[0]},${first[1]}:${last[0]},${last[1]}`;
+  }, [effectiveRouteGeometry]);
 
   // Check if all stops have cached geodata
   const allStopsCached = dbStops.length > 0 && dbStops.every(s => s.lat != null && s.lng != null);
 
   useEffect(() => {
     persistedRef.current = false;
-    if (stopsLoading) return;
+    if (stopsLoading || routeGeometryLoading) return;
     // Wait for route_geometry fetch to complete (or proceed without it)
     // We use a small flag check - if cachedRouteGeometry is still loading, we wait
     let cancelled = false;
@@ -494,32 +546,45 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
         className: '', iconSize: [28, 28], iconAnchor: [14, 14],
       });
 
-      // FAST PATH: All geodata cached — no API calls needed
-      if (allStopsCached && hasCachedRoute && hasCachedMiles) {
-        console.log('[MAP] Using fully cached data');
+      // FAST PATH: all stop geodata cached + route geometry cached
+      if (allStopsCached && hasCachedRoute) {
+        console.log('[MAP] Using cached stop + route geometry');
         const cachedRoute = effectiveRouteGeometry!;
         const resolved: ResolvedStop[] = stopSources.map(s => ({
-          type: s.type, address: s.address,
-          coords: [s.cachedLat!, s.cachedLng!] as [number, number],
+          type: s.type,
+          address: s.address,
+          coords: [Number(s.cachedLat), Number(s.cachedLng)] as [number, number],
           distanceFromPrev: s.cachedDist != null ? Math.round(Number(s.cachedDist)) : undefined,
         }));
 
         setResolvedStops(resolved);
-        setTotalMiles(Number(load.miles));
+        setTotalMiles(Number(load.miles) > 0 ? Number(load.miles) : 0);
 
         if (cancelled) return;
 
         const bounds: [number, number][] = [];
+        resolved.forEach(stop => {
+          if (!stop.coords) return;
+          const [lat, lng] = stop.coords;
+          if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+          const icon = stop.type === 'pickup' ? pickupIcon : deliveryIcon;
+          L.marker([lat, lng], { icon })
+            .addTo(map)
+            .bindPopup(`<b>${stop.type === 'pickup' ? 'Pick Up' : 'Delivery'}</b><br/>${stop.address}`);
+          bounds.push([lat, lng]);
+        });
+
         try {
-          resolved.forEach(stop => {
-            if (!stop.coords) return;
-            const icon = stop.type === 'pickup' ? pickupIcon : deliveryIcon;
-            L.marker(stop.coords, { icon }).addTo(map).bindPopup(`<b>${stop.type === 'pickup' ? 'Pick Up' : 'Delivery'}</b><br/>${stop.address}`);
-            bounds.push(stop.coords);
-          });
           L.polyline(cachedRoute, { color: 'hsl(215,70%,50%)', weight: 3 }).addTo(map);
-          if (bounds.length >= 2) map.fitBounds(bounds, { padding: [40, 40] });
-        } catch (e) { console.warn('[MAP] Error adding cached layers:', e); }
+        } catch (e) {
+          console.warn('[MAP] Cached polyline failed, using straight segments fallback:', e);
+          if (bounds.length >= 2) {
+            L.polyline(bounds, { color: 'hsl(215,70%,50%)', weight: 3, dashArray: '8 4' }).addTo(map);
+          }
+        }
+
+        if (bounds.length >= 2) map.fitBounds(bounds, { padding: [40, 40] });
+        else if (bounds.length === 1) map.setView(bounds[0], 10);
 
         if (!cancelled) {
           try {
@@ -527,9 +592,8 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
           } catch (error) {
             console.error('[MAP] Empty miles calculation failed (fast path):', error);
           }
+          setMapReady(true);
         }
-
-        if (!cancelled) setMapReady(true);
         return;
       }
 
@@ -606,12 +670,12 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
         for (let i = 0; i < resolved.length; i++) {
           const s = stopSources[i];
           const r = resolved[i];
-          if (s.id && r.coords && s.cachedLat == null) {
+          if (s.id && r.coords && (s.cachedLat == null || s.cachedLng == null || (s.cachedDist == null && r.distanceFromPrev != null))) {
             updateStopGeodata(s.id, r.coords[0], r.coords[1], r.distanceFromPrev);
           }
         }
 
-        if (rounded > 0 && onMilesCalculated && !persistedRef.current) {
+        if ((rounded > 0 || routeCoords) && onMilesCalculated && !persistedRef.current) {
           persistedRef.current = true;
           onMilesCalculated(load.id, rounded, routeCoords || undefined);
         }
@@ -632,7 +696,7 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
       if (mapInstanceRef.current) { mapInstanceRef.current.remove(); mapInstanceRef.current = null; }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [load.id, stopsLoading, dbStops.map(s => s.id).join(',')]);
+  }, [load.id, load.origin, load.destination, stopsLoading, routeGeometryLoading, stopSignature, routeSignature]);
 
   // === Driver GPS Live Marker ===
   useEffect(() => {
