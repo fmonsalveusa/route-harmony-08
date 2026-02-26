@@ -298,11 +298,16 @@ export type Database = {
       }
       drivers: {
         Row: {
+          address: string | null
+          birthday: string | null
+          city: string | null
           created_at: string
           dispatch_service_percentage: number
           dispatcher_id: string | null
           earnings_this_month: number | null
           email: string
+          emergency_contact_name: string | null
+          emergency_phone: string | null
           factoring_percentage: number
           form_w9_url: string | null
           hire_date: string
@@ -329,13 +334,19 @@ export type Database = {
           tenant_id: string | null
           truck_id: string | null
           updated_at: string
+          zip: string | null
         }
         Insert: {
+          address?: string | null
+          birthday?: string | null
+          city?: string | null
           created_at?: string
           dispatch_service_percentage?: number
           dispatcher_id?: string | null
           earnings_this_month?: number | null
           email: string
+          emergency_contact_name?: string | null
+          emergency_phone?: string | null
           factoring_percentage?: number
           form_w9_url?: string | null
           hire_date?: string
@@ -362,13 +373,19 @@ export type Database = {
           tenant_id?: string | null
           truck_id?: string | null
           updated_at?: string
+          zip?: string | null
         }
         Update: {
+          address?: string | null
+          birthday?: string | null
+          city?: string | null
           created_at?: string
           dispatch_service_percentage?: number
           dispatcher_id?: string | null
           earnings_this_month?: number | null
           email?: string
+          emergency_contact_name?: string | null
+          emergency_phone?: string | null
           factoring_percentage?: number
           form_w9_url?: string | null
           hire_date?: string
@@ -395,6 +412,7 @@ export type Database = {
           tenant_id?: string | null
           truck_id?: string | null
           updated_at?: string
+          zip?: string | null
         }
         Relationships: [
           {
