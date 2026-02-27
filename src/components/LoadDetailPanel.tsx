@@ -6,12 +6,14 @@ import { Button } from '@/components/ui/button';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useDispatchers } from '@/hooks/useDispatchers';
 import { useTrucks } from '@/hooks/useTrucks';
+import { useCompanies } from '@/hooks/useCompanies';
 import type { DbLoad } from '@/hooks/useLoads';
 import { useLoadStops } from '@/hooks/useLoadStops';
 import { supabase } from '@/integrations/supabase/client';
 import { PodUploadSection } from '@/components/PodUploadSection';
 import { LoadAdjustmentsSection } from '@/components/LoadAdjustmentsSection';
 import { PickupPicturesSection } from '@/components/PickupPicturesSection';
+import { BolFormDialog } from '@/components/BolFormDialog';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { useToast } from '@/hooks/use-toast';
@@ -145,9 +147,11 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
   const [editingEmptyOrigin, setEditingEmptyOrigin] = useState(false);
   const [customOriginInput, setCustomOriginInput] = useState('');
   const [recalculating, setRecalculating] = useState(false);
+  const [bolDialogOpen, setBolDialogOpen] = useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { stops: dbStops, loading: stopsLoading, updateStopGeodata } = useLoadStops(load.id);
+  const { companies } = useCompanies();
   const [mapReady, setMapReady] = useState(false);
   const [gpsStatus, setGpsStatus] = useState<'active' | 'stale' | 'none'>('none');
   const [cachedRouteGeometry, setCachedRouteGeometry] = useState<[number, number][] | null>(null);
@@ -992,7 +996,28 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
             )}
           </div>
 
-          {/* PDF Document */}
+          {/* BOL Generator */}
+          <div className="p-3 rounded-lg bg-card border text-sm">
+            <h5 className="font-semibold mb-2 flex items-center gap-1.5">
+              <FileText className="h-3.5 w-3.5 text-primary" /> Bill of Lading (BOL)
+            </h5>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 text-xs"
+              onClick={() => setBolDialogOpen(true)}
+            >
+              <Download className="h-3.5 w-3.5" /> Generar BOL
+            </Button>
+          </div>
+          <BolFormDialog
+            open={bolDialogOpen}
+            onOpenChange={setBolDialogOpen}
+            load={load}
+            stops={dbStops.map(s => ({ id: s.id, stop_type: s.stop_type, address: s.address, stop_order: s.stop_order }))}
+            company={companies.length > 0 ? companies[0] : null}
+          />
+
           {load.pdf_url && (
             <div className="p-3 rounded-lg bg-card border text-sm">
               <h5 className="font-semibold mb-2 flex items-center gap-1.5">

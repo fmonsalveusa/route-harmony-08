@@ -1,6 +1,13 @@
 import jsPDF from 'jspdf';
 import type { Company } from '@/hooks/useCompanies';
 
+export interface BolLineItem {
+  quantity: string;
+  description: string;
+  weight_lb: string;
+  weight_kg: string;
+}
+
 interface BolData {
   bolNumber: string;
   date: string | null;
@@ -8,6 +15,7 @@ interface BolData {
   consigneeAddress: string;
   carrierName: string;
   company: Company | null;
+  items?: BolLineItem[];
 }
 
 /** Parse a full address string into street, city, state/province, zip, phone */
@@ -132,8 +140,9 @@ export function generateBolPdf(data: BolData) {
   });
   doc.setTextColor(0, 0, 0);
 
-  // Empty rows for content (5 rows)
-  for (let r = 0; r < 5; r++) {
+  // Data rows (items or empty)
+  const rowCount = Math.max(5, (data.items || []).length);
+  for (let r = 0; r < rowCount; r++) {
     const ry = y + tableH + r * 8;
     doc.setDrawColor(180);
     doc.rect(margin, ry, contentW, 8);
@@ -142,8 +151,24 @@ export function generateBolPdf(data: BolData) {
       doc.line(rx, ry, rx, ry + 8);
       rx += w;
     });
+    // Fill in item data if available
+    const item = data.items?.[r];
+    if (item) {
+      doc.setFontSize(7);
+      doc.setFont('helvetica', 'normal');
+      let ix = margin;
+      doc.text(item.quantity || '', ix + 2, ry + 5.5);
+      ix += colWidths[0]; // Class/HM - skip
+      ix += colWidths[1];
+      doc.text(item.description || '', ix + 2, ry + 5.5);
+      ix += colWidths[2]; // NMFC - skip
+      ix += colWidths[3];
+      doc.text(item.weight_lb || '', ix + 2, ry + 5.5);
+      ix += colWidths[4];
+      doc.text(item.weight_kg || '', ix + 2, ry + 5.5);
+    }
   }
-  y += tableH + 5 * 8 + 6;
+  y += tableH + rowCount * 8 + 6;
 
   // ═══════════════════════════════════════════════
   // COD SECTION
