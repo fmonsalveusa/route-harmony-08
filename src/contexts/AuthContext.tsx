@@ -78,50 +78,59 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const profileLoadedRef = React.useRef(false);
 
-  const fetchUserData = async (userId: string) => {
-    try {
-      // Fetch profile
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
-
-      if (!profileData) return;
-      profileLoadedRef.current = true;
-      setProfile(profileData as Profile);
-
-      // Fetch role
-      const { data: roleData } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId)
-        .maybeSingle();
-
-      const userRole = (roleData?.role as AppRole) || (profileData.is_master_admin ? 'master_admin' : 'admin');
-      setRole(userRole);
-
-      // Fetch tenant info if user has a tenant
-      if (profileData.tenant_id) {
-        const { data: tenantData } = await supabase
-          .from('tenants')
-          .select('id, name, logo_url, is_active')
-          .eq('id', profileData.tenant_id)
+  const fetchUserData = async (userId: string, retries = 3): Promise<void> => {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        // Fetch profile
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
           .maybeSingle();
 
-        if (tenantData) setTenant(tenantData as TenantInfo);
+        if (profileError) throw profileError;
+        if (!profileData) return;
+        profileLoadedRef.current = true;
+        setProfile(profileData as Profile);
 
-        // Fetch subscription
-        const { data: subData } = await supabase
-          .from('subscriptions')
-          .select('plan, status, max_users, max_trucks, price_monthly, next_payment_date')
-          .eq('tenant_id', profileData.tenant_id)
+        // Fetch role
+        const { data: roleData } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', userId)
           .maybeSingle();
 
-        if (subData) setSubscription(subData as SubscriptionInfo);
+        const userRole = (roleData?.role as AppRole) || (profileData.is_master_admin ? 'master_admin' : 'admin');
+        setRole(userRole);
+
+        // Fetch tenant info if user has a tenant
+        if (profileData.tenant_id) {
+          const { data: tenantData } = await supabase
+            .from('tenants')
+            .select('id, name, logo_url, is_active')
+            .eq('id', profileData.tenant_id)
+            .maybeSingle();
+
+          if (tenantData) setTenant(tenantData as TenantInfo);
+
+          // Fetch subscription
+          const { data: subData } = await supabase
+            .from('subscriptions')
+            .select('plan, status, max_users, max_trucks, price_monthly, next_payment_date')
+            .eq('tenant_id', profileData.tenant_id)
+            .maybeSingle();
+
+          if (subData) setSubscription(subData as SubscriptionInfo);
+        }
+        return; // success – exit loop
+      } catch (err) {
+        console.warn(`[AuthContext] fetchUserData attempt ${attempt}/${retries} failed:`, err);
+        if (attempt < retries) {
+          await new Promise(r => setTimeout(r, 2000 * attempt)); // backoff 2s, 4s
+        } else {
+          console.error('[AuthContext] All retry attempts exhausted');
+        }
       }
-    } catch (err) {
-      console.error('Error fetching user data:', err);
     }
   };
 
@@ -139,7 +148,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(session?.user ?? null);
       if (session?.user) {
         const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Auth timeout')), 10000)
+          setTimeout(() => reject(new Error('Auth timeout')), 30000)
         );
         Promise.race([fetchUserData(session.user.id), timeoutPromise])
           .catch((err) => console.warn('Auth init:', err.message))
