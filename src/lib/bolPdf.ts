@@ -242,10 +242,6 @@ export function generateBolPdf(data: BolData) {
   doc.setFontSize(7);
   doc.setFont('helvetica', 'bold');
   doc.text('CARRIER', margin + 2, r3 + 4);
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'bold');
-  const carrierDisplayName = data.carrierName || data.company?.name || '';
-  doc.text(carrierDisplayName, margin + carrierW / 2, r3 + 11, { align: 'center' });
   doc.setFontSize(8);
   doc.setFont('helvetica', 'bold');
   doc.text('DATE', margin + carrierW + 2, r3 + 4);
