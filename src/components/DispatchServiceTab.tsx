@@ -54,9 +54,11 @@ export function DispatchServiceTab() {
   const invoicedLoadIds = useMemo(() => {
     const ids = new Set<string>();
     invoices.forEach(inv => {
-      if (Array.isArray(inv.loads)) {
-        inv.loads.forEach((l: any) => ids.add(l.id || l.load_id));
-      }
+      const loadsList = Array.isArray(inv.loads) ? inv.loads : [];
+      loadsList.forEach((l: any) => {
+        if (l.id) ids.add(String(l.id));
+        if (l.load_id) ids.add(String(l.load_id));
+      });
     });
     return ids;
   }, [invoices]);
@@ -96,7 +98,7 @@ export function DispatchServiceTab() {
       .eq('status', 'delivered')
       .order('delivery_date', { ascending: false })
       .then(({ data }) => {
-        const allLoads = ((data as any) || []).filter((l: LoadForDS) => !invoicedLoadIds.has(l.id));
+        const allLoads = ((data as any) || []).filter((l: LoadForDS) => !invoicedLoadIds.has(String(l.id)));
         const map: Record<string, LoadForDS[]> = {};
         driverIds.forEach(id => { map[id] = []; });
         allLoads.forEach((l: LoadForDS) => {
