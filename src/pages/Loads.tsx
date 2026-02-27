@@ -13,6 +13,7 @@ import { useCompanies } from '@/hooks/useCompanies';
 import { useInvoices } from '@/hooks/useInvoices';
 import { generatePaymentsForLoad, deletePaymentsForLoad } from '@/hooks/usePayments';
 import { generateInvoicePdf } from '@/lib/invoicePdf';
+import { generateBolPdf } from '@/lib/bolPdf';
 import { supabase } from '@/integrations/supabase/client';
 import { LoadFormDialog } from '@/components/LoadFormDialog';
 import { LoadDetailPanel } from '@/components/LoadDetailPanel';
@@ -513,8 +514,21 @@ const Loads = () => {
                                 </Button>
                               )}
                               <Button variant="ghost" size="sm" className="glass-action-btn tint-green" onClick={() => handleGenerateInvoice(load)} title="Invoice">
-                                <FileText className="h-4 w-4" /> Invoice
-                              </Button>
+                                 <FileText className="h-4 w-4" /> Invoice
+                               </Button>
+                               <Button variant="ghost" size="sm" className="glass-action-btn tint-blue" onClick={() => {
+                                 const company = companies.length > 0 ? companies[0] : null;
+                                 generateBolPdf({
+                                   bolNumber: load.reference_number,
+                                   date: load.pickup_date,
+                                   shipperAddress: load.origin,
+                                   consigneeAddress: load.destination,
+                                   carrierName: company?.name || '',
+                                   company,
+                                 });
+                               }} title="BOL">
+                                 <Download className="h-4 w-4" /> BOL
+                               </Button>
                               <Button variant="ghost" size="sm" className="glass-action-btn tint-amber" onClick={() => { setEditLoad(load); setShowForm(true); }} title="Edit">
                                 <Pencil className="h-4 w-4" /> Edit
                               </Button>
