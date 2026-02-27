@@ -91,7 +91,17 @@ export const AppLayout = ({ children }: {children: ReactNode;}) => {
     return () => {supabase.removeChannel(channel);};
   }, [profile?.tenant_id]);
 
-  if (!profile) return null;
+  if (!profile) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        <p className="text-sm text-muted-foreground">Connecting…</p>
+        <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
+          Retry
+        </Button>
+      </div>
+    );
+  }
 
   const handleCreateLoad = async (input: any) => {
     const result = await createLoad(input);
