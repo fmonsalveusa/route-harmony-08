@@ -468,7 +468,9 @@ const Loads = () => {
                             <Select value={load.factoring || ''} onValueChange={async (val) => {
                               const prevFactoring = load.factoring;
                               await updateLoad(load.id, { factoring: val });
-                              if (val === 'ready' && prevFactoring !== 'ready') {
+                              if (val === 'ready') {
+                                // Always attempt to generate — generatePaymentsForLoad already
+                                // checks for existing driver/investor payments and skips if found
                                 const driverData = drivers.find(d => d.id === load.driver_id) || null;
                                 const dispatcherData = dispatchers.find(d => d.id === load.dispatcher_id) || null;
                                 await generatePaymentsForLoad(load, driverData, dispatcherData);
