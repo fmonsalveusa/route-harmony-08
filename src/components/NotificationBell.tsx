@@ -63,7 +63,7 @@ export const NotificationBell = () => {
       {open && (
         <div className="absolute right-0 top-full mt-2 w-80 max-h-96 overflow-y-auto rounded-lg border bg-card shadow-lg z-50">
           <div className="flex items-center justify-between p-3 border-b">
-            <h3 className="text-sm font-semibold">Notifications</h3>
+            <h3 className="text-sm font-semibold text-foreground">Notifications</h3>
             {unreadCount > 0 && (
               <Button variant="ghost" size="sm" className="text-xs gap-1 h-7" onClick={markAllAsRead}>
                 <CheckCheck className="h-3.5 w-3.5" /> Mark all read
