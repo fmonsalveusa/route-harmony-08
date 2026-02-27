@@ -21,31 +21,43 @@ interface BolData {
   deliveryDate?: string | null;
 }
 
-/** Parse a full address string into street, city, state/province, zip, phone */
-function parseAddress(address: string): { street: string; city: string; state: string; zip: string } {
-  if (!address) return { street: '', city: '', state: '', zip: '' };
+function parseAddress(address: string): { name: string; street: string; cityStateZip: string } {
+  if (!address) return { name: '', street: '', cityStateZip: '' };
   const parts = address.split(',').map(p => p.trim()).filter(Boolean);
   if (parts.length >= 3) {
-    const street = parts.slice(0, parts.length - 2).join(', ');
-    const city = parts[parts.length - 2];
-    const lastPart = parts[parts.length - 1];
-    const zipMatch = lastPart.match(/(\d{5}(-\d{4})?)/);
-    const zip = zipMatch ? zipMatch[1] : '';
-    const state = lastPart.replace(/\d{5}(-\d{4})?/, '').trim();
-    return { street, city, state, zip };
+    return {
+      name: '',
+      street: parts.slice(0, parts.length - 2).join(', '),
+      cityStateZip: parts.slice(parts.length - 2).join(', '),
+    };
   }
   if (parts.length === 2) {
-    return { street: parts[0], city: parts[1], state: '', zip: '' };
+    return { name: '', street: parts[0], cityStateZip: parts[1] };
   }
-  return { street: address, city: '', state: '', zip: '' };
+  return { name: '', street: address, cityStateZip: '' };
+}
+
+function fmtDate(d: string | null | undefined): string {
+  if (!d) return '';
+  return new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
+}
+
+/* ───────── helpers ───────── */
+function drawLabelValue(doc: jsPDF, label: string, value: string, x: number, y: number, maxW?: number) {
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7);
+  doc.text(label, x, y);
+  const labelW = doc.getTextWidth(label);
+  doc.setFont('helvetica', 'normal');
+  doc.text(value, x + labelW + 1, y);
 }
 
 export function generateBolPdf(data: BolData) {
   const doc = new jsPDF();
   const pageW = doc.internal.pageSize.getWidth();
-  const pageH = doc.internal.pageSize.getHeight();
-  const margin = 15;
+  const margin = 12;
   const contentW = pageW - margin * 2;
+  const halfW = contentW / 2;
   let y = margin;
 
   // ═══════════════════════════════════════════════
@@ -55,245 +67,379 @@ export function generateBolPdf(data: BolData) {
   doc.setFont('helvetica', 'bold');
   doc.text('STRAIGHT BILL OF LADING', pageW / 2, y + 6, { align: 'center' });
   y += 10;
-  doc.setFontSize(9);
+  doc.setFontSize(8);
   doc.setFont('helvetica', 'normal');
-  doc.text('ORIGINAL - NOT NEGOTIABLE', pageW / 2, y + 4, { align: 'center' });
-
-  // BOL # and Date (top-right)
-  doc.setFontSize(10);
+  doc.text('ORIGINAL - NOT NEGOTIABLE', pageW / 2, y + 3, { align: 'center' });
+  doc.setFontSize(8);
   doc.setFont('helvetica', 'bold');
-  doc.text(`BOL #:  ${data.bolNumber}`, pageW - margin, margin + 6, { align: 'right' });
-  const dateStr = data.date
-    ? new Date(data.date + 'T00:00:00').toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' })
-    : '';
-  doc.text(`Date:  ${dateStr}`, pageW - margin, margin + 14, { align: 'right' });
-
-  y += 14;
-
-  // ═══════════════════════════════════════════════
-  // SHIPPER (FROM)
-  // ═══════════════════════════════════════════════
-  const boxH = 38;
-  const halfW = contentW / 2 - 3;
-
-  // Shipper box
-  doc.setDrawColor(0);
-  doc.setLineWidth(0.5);
-  doc.rect(margin, y, halfW, boxH);
-
-  doc.setFillColor(30, 64, 120);
-  doc.rect(margin, y, halfW, 8, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'bold');
-  doc.text('SHIPPER (FROM)', margin + 3, y + 6);
-  doc.setTextColor(0, 0, 0);
+  doc.text('Page 1 of    1', pageW - margin, y + 3, { align: 'right' });
+  y += 7;
 
   const shipper = parseAddress(data.shipperAddress);
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'normal');
-  let sy = y + 14;
-  doc.text(`STREET: ${shipper.street}`, margin + 3, sy); sy += 6;
-  doc.text(`CITY: ${shipper.city}`, margin + 3, sy);
-  doc.text(`STATE: ${shipper.state}`, margin + halfW / 2, sy); sy += 6;
-  doc.text(`ZIP: ${shipper.zip}`, margin + 3, sy);
-
-  // ═══════════════════════════════════════════════
-  // CONSIGNEE (TO)
-  // ═══════════════════════════════════════════════
-  const consX = margin + halfW + 6;
-  doc.rect(consX, y, halfW, boxH);
-
-  doc.setFillColor(30, 64, 120);
-  doc.rect(consX, y, halfW, 8, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'bold');
-  doc.text('CONSIGNEE (TO)', consX + 3, y + 6);
-  doc.setTextColor(0, 0, 0);
-
   const consignee = parseAddress(data.consigneeAddress);
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'normal');
-  let cy2 = y + 14;
-  doc.text(`STREET: ${consignee.street}`, consX + 3, cy2); cy2 += 6;
-  doc.text(`CITY: ${consignee.city}`, consX + 3, cy2);
-  doc.text(`STATE: ${consignee.state}`, consX + halfW / 2, cy2); cy2 += 6;
-  doc.text(`ZIP: ${consignee.zip}`, consX + 3, cy2);
-
-  y += boxH + 8;
+  const rowH = 7;
 
   // ═══════════════════════════════════════════════
-  // ITEMS TABLE
+  // SHIP FROM (left) + BOL# / Carrier info (right)
   // ═══════════════════════════════════════════════
-  const tableHeaders = ['Quantity', 'Class/HM', 'Description of Articles', 'NMFC No.', 'Lb', 'Kg'];
-  const colWidths = [22, 20, contentW - 22 - 20 - 22 - 18 - 18, 22, 18, 18];
-  const tableH = 8;
+  const shipFromY = y;
+  const shipFromH = rowH * 5; // 5 rows
 
-  // Header row
-  doc.setFillColor(30, 64, 120);
-  doc.rect(margin, y, contentW, tableH, 'F');
+  // Ship From header
+  doc.setFillColor(0, 0, 0);
+  doc.rect(margin, y, halfW, rowH, 'F');
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(7);
   doc.setFont('helvetica', 'bold');
-  let tx = margin;
-  tableHeaders.forEach((h, i) => {
-    doc.text(h, tx + 2, y + 5.5);
-    tx += colWidths[i];
-  });
+  doc.text('SHIP FROM', margin + 2, y + 5);
   doc.setTextColor(0, 0, 0);
 
-  // Data rows (items or empty)
-  const rowCount = Math.max(5, (data.items || []).length);
-  for (let r = 0; r < rowCount; r++) {
-    const ry = y + tableH + r * 8;
-    doc.setDrawColor(180);
-    doc.rect(margin, ry, contentW, 8);
-    let rx = margin;
-    colWidths.forEach((w) => {
-      doc.line(rx, ry, rx, ry + 8);
-      rx += w;
-    });
-    // Fill in item data if available
-    const item = data.items?.[r];
-    if (item) {
-      doc.setFontSize(7);
-      doc.setFont('helvetica', 'normal');
-      let ix = margin;
-      doc.text(item.quantity || '', ix + 2, ry + 5.5);
-      ix += colWidths[0]; // Class/HM - skip
-      ix += colWidths[1];
-      doc.text(item.description || '', ix + 2, ry + 5.5);
-      ix += colWidths[2]; // NMFC - skip
-      ix += colWidths[3];
-      doc.text(item.weight_lb || '', ix + 2, ry + 5.5);
-      ix += colWidths[4];
-      doc.text(item.weight_kg || '', ix + 2, ry + 5.5);
-    }
-  }
-  y += tableH + rowCount * 8 + 6;
+  // Ship From rows
+  const sfX = margin;
+  let ry = y + rowH;
+  doc.rect(sfX, ry, halfW, rowH); drawLabelValue(doc, 'Name:', shipper.name || shipper.street, sfX + 2, ry + 5); ry += rowH;
+  doc.rect(sfX, ry, halfW, rowH); drawLabelValue(doc, 'Address:', shipper.street, sfX + 2, ry + 5); ry += rowH;
+  doc.rect(sfX, ry, halfW, rowH); drawLabelValue(doc, 'City/State/Zip:', shipper.cityStateZip, sfX + 2, ry + 5); ry += rowH;
+  doc.rect(sfX, ry, halfW, rowH);
+  drawLabelValue(doc, 'SID#:', '', sfX + 2, ry + 5);
+  doc.text('FOB: □', sfX + halfW - 18, ry + 5);
+
+  // Right side: Bill of Lading Number + barcode space
+  const rX = margin + halfW;
+  ry = shipFromY;
+  const rightBlockH = shipFromH + rowH;
+  doc.rect(rX, ry, halfW, rowH * 2);
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Bill of Lading Number:', rX + 2, ry + 5);
+  doc.setFont('helvetica', 'normal');
+  doc.text(data.bolNumber, rX + 42, ry + 5);
+  // Barcode space label
+  doc.setFontSize(7);
+  doc.setTextColor(180, 180, 180);
+  doc.text('B A R  C O D E  S P A C E', rX + halfW / 2, ry + 12, { align: 'center' });
+  doc.setTextColor(0, 0, 0);
+
+  ry = shipFromY + rowH * 2;
+  // remaining right rows aligned with SHIP FROM
+  const remainRightH = shipFromH + rowH - rowH * 2;
+  doc.rect(rX, ry, halfW, remainRightH);
+  // empty space for now
+
+  y = shipFromY + shipFromH + rowH;
 
   // ═══════════════════════════════════════════════
-  // COD SECTION
+  // SHIP TO (left) + CARRIER NAME info (right)
   // ═══════════════════════════════════════════════
-  doc.setFontSize(9);
+  const shipToY = y;
+
+  // Ship To header
+  doc.setFillColor(0, 0, 0);
+  doc.rect(margin, y, halfW, rowH, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(7);
   doc.setFont('helvetica', 'bold');
-  doc.text('COD AMOUNT: $______________', margin, y);
-  y += 6;
+  doc.text('SHIP TO', margin + 2, y + 5);
+  doc.setTextColor(0, 0, 0);
+
+  ry = y + rowH;
+  doc.rect(sfX, ry, halfW, rowH); drawLabelValue(doc, 'Name:', consignee.name || consignee.street, sfX + 2, ry + 5); ry += rowH;
+  doc.rect(sfX, ry, halfW, rowH); drawLabelValue(doc, 'Address:', consignee.street, sfX + 2, ry + 5); ry += rowH;
+  doc.rect(sfX, ry, halfW, rowH); drawLabelValue(doc, 'City/State/Zip:', consignee.cityStateZip, sfX + 2, ry + 5); ry += rowH;
+  doc.rect(sfX, ry, halfW, rowH);
+  drawLabelValue(doc, 'CID#:', '', sfX + 2, ry + 5);
+  doc.text('FOB: □', sfX + halfW - 18, ry + 5);
+
+  // Right side: Carrier info
+  ry = shipToY;
+  doc.rect(rX, ry, halfW, rowH); drawLabelValue(doc, 'CARRIER NAME:', data.carrierName, rX + 2, ry + 5); ry += rowH;
+  doc.rect(rX, ry, halfW, rowH); drawLabelValue(doc, 'Trailer number:', '', rX + 2, ry + 5); ry += rowH;
+  doc.rect(rX, ry, halfW, rowH); drawLabelValue(doc, 'Seal number(s):', '', rX + 2, ry + 5); ry += rowH;
+  doc.rect(rX, ry, halfW, rowH); drawLabelValue(doc, 'SCAC:', '', rX + 2, ry + 5); ry += rowH;
+  doc.rect(rX, ry, halfW, rowH); drawLabelValue(doc, 'Pro number:', '', rX + 2, ry + 5);
+
+  y = shipToY + rowH * 5 + rowH;
+
+  // ═══════════════════════════════════════════════
+  // THIRD PARTY FREIGHT CHARGES BILL TO (left) + Freight terms (right)
+  // ═══════════════════════════════════════════════
+  const tpY = y;
+  const tpH = rowH * 4;
+
+  doc.setFontSize(6.5);
+  doc.setFont('helvetica', 'bold');
+  doc.rect(margin, y, halfW, rowH);
+  doc.text('THIRD PARTY FREIGHT CHARGES BILL TO:', margin + 2, y + 5);
+  ry = y + rowH;
+  doc.rect(margin, ry, halfW, rowH); drawLabelValue(doc, 'Name:', '', margin + 2, ry + 5); ry += rowH;
+  doc.rect(margin, ry, halfW, rowH); drawLabelValue(doc, 'Address:', '', margin + 2, ry + 5); ry += rowH;
+  doc.rect(margin, ry, halfW, rowH); drawLabelValue(doc, 'City/State/Zip:', '', margin + 2, ry + 5);
+
+  // Right: Freight charge terms
+  doc.rect(rX, tpY, halfW, rowH);
+  doc.setTextColor(180, 180, 180);
+  doc.setFontSize(7);
+  doc.text('B A R  C O D E  S P A C E', rX + halfW / 2, tpY + 5, { align: 'center' });
+  doc.setTextColor(0, 0, 0);
+  doc.rect(rX, tpY + rowH, halfW, rowH);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7);
+  doc.text('Freight Charge Terms:', rX + 2, tpY + rowH + 5);
+  // Prepaid / Collect / 3rd Party
+  doc.rect(rX, tpY + rowH * 2, halfW, rowH * 2);
+  doc.setFontSize(6.5);
   doc.setFont('helvetica', 'normal');
-  doc.text('REMIT COD TO: ____________________________', margin, y);
+  doc.text('Prepaid ___   Collect ___   3rd Party ___', rX + 2, tpY + rowH * 2 + 5);
+  doc.text('□  Master Bill of Lading: with attached underlying Bills of Lading', rX + 2, tpY + rowH * 3 + 4);
+
+  y = tpY + tpH;
+
+  // ═══════════════════════════════════════════════
+  // SPECIAL INSTRUCTIONS
+  // ═══════════════════════════════════════════════
+  doc.rect(margin, y, contentW, rowH);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7);
+  doc.text('SPECIAL INSTRUCTIONS:', margin + 2, y + 5);
+  y += rowH;
+
+  // ═══════════════════════════════════════════════
+  // CARRIER INFORMATION TABLE
+  // ═══════════════════════════════════════════════
+  doc.setFillColor(0, 0, 0);
+  doc.rect(margin, y, contentW, rowH, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(7);
+  doc.setFont('helvetica', 'bold');
+  doc.text('CARRIER INFORMATION', margin + contentW / 2, y + 5, { align: 'center' });
+  doc.setTextColor(0, 0, 0);
+  y += rowH;
+
+  // Table headers
+  const cols = {
+    huQty: 18,
+    huType: 18,
+    pkgQty: 18,
+    pkgType: 18,
+    weight: 22,
+    hm: 12,
+    desc: contentW - 18 - 18 - 18 - 18 - 22 - 12 - 22 - 18,
+    nmfc: 22,
+    cls: 18,
+  };
+
+  // Header row
+  const hdrH = 12;
+  doc.setFontSize(5.5);
+  doc.setFont('helvetica', 'bold');
+
+  let cx = margin;
+  // HANDLING UNIT
+  doc.rect(cx, y, cols.huQty + cols.huType, hdrH);
+  doc.text('HANDLING UNIT', cx + 2, y + 3.5);
+  doc.text('QTY', cx + 2, y + 8.5);
+  doc.line(cx + cols.huQty, y + 4, cx + cols.huQty, y + hdrH);
+  doc.text('TYPE', cx + cols.huQty + 2, y + 8.5);
+  cx += cols.huQty + cols.huType;
+
+  // PACKAGE
+  doc.rect(cx, y, cols.pkgQty + cols.pkgType, hdrH);
+  doc.text('PACKAGE', cx + 2, y + 3.5);
+  doc.text('QTY', cx + 2, y + 8.5);
+  doc.line(cx + cols.pkgQty, y + 4, cx + cols.pkgQty, y + hdrH);
+  doc.text('TYPE', cx + cols.pkgQty + 2, y + 8.5);
+  cx += cols.pkgQty + cols.pkgType;
+
+  // WEIGHT
+  doc.rect(cx, y, cols.weight, hdrH);
+  doc.text('WEIGHT', cx + 2, y + 8.5);
+  cx += cols.weight;
+
+  // H.M.
+  doc.rect(cx, y, cols.hm, hdrH);
+  doc.text('H.M.', cx + 1, y + 3.5);
+  doc.text('(X)', cx + 2, y + 8.5);
+  cx += cols.hm;
+
+  // COMMODITY DESCRIPTION
+  doc.rect(cx, y, cols.desc, hdrH);
+  doc.text('COMMODITY DESCRIPTION', cx + 2, y + 3.5);
+  doc.setFontSize(4);
+  doc.setFont('helvetica', 'normal');
+  const descNote = 'Commodities requiring special or additional care or attention in handling or stowing must be so marked and packaged';
+  doc.text(descNote, cx + 2, y + 7.5);
+  doc.text('as to ensure safe transportation with ordinary care.', cx + 2, y + 10.5);
+  cx += cols.desc;
+
+  // LTL ONLY
+  doc.setFontSize(5.5);
+  doc.setFont('helvetica', 'bold');
+  doc.rect(cx, y, cols.nmfc + cols.cls, hdrH);
+  doc.text('LTL ONLY', cx + 2, y + 3.5);
+  doc.text('NMFC #', cx + 2, y + 8.5);
+  doc.line(cx + cols.nmfc, y + 4, cx + cols.nmfc, y + hdrH);
+  doc.text('CLASS', cx + cols.nmfc + 1, y + 8.5);
+
+  y += hdrH;
+
+  // Data rows
+  const dataRowH = 8;
+  const numRows = Math.max(8, (data.items || []).length);
+
+  for (let r = 0; r < numRows; r++) {
+    cx = margin;
+    doc.setDrawColor(0);
+    const item = data.items?.[r];
+
+    // Draw cells
+    doc.rect(cx, y, cols.huQty, dataRowH); cx += cols.huQty;
+    doc.rect(cx, y, cols.huType, dataRowH); cx += cols.huType;
+    doc.rect(cx, y, cols.pkgQty, dataRowH);
+    if (item) {
+      doc.setFontSize(6.5);
+      doc.setFont('helvetica', 'normal');
+      doc.text(item.quantity || '', margin + 2, y + 5.5);
+    }
+    cx += cols.pkgQty;
+    doc.rect(cx, y, cols.pkgType, dataRowH); cx += cols.pkgType;
+    doc.rect(cx, y, cols.weight, dataRowH);
+    if (item) {
+      doc.setFontSize(6.5);
+      doc.setFont('helvetica', 'normal');
+      doc.text(item.weight_lb || '', cx + 2, y + 5.5);
+    }
+    cx += cols.weight;
+    doc.rect(cx, y, cols.hm, dataRowH); cx += cols.hm;
+    doc.rect(cx, y, cols.desc, dataRowH);
+    if (item) {
+      doc.setFontSize(6.5);
+      doc.setFont('helvetica', 'normal');
+      doc.text(item.description || '', cx + 2, y + 5.5);
+    }
+    cx += cols.desc;
+    doc.rect(cx, y, cols.nmfc, dataRowH); cx += cols.nmfc;
+    doc.rect(cx, y, cols.cls, dataRowH);
+
+    y += dataRowH;
+  }
+
+  // GRAND TOTAL row
+  cx = margin;
+  doc.setFillColor(220, 220, 220);
+  doc.rect(cx, y, cols.huQty + cols.huType + cols.pkgQty + cols.pkgType, dataRowH, 'FD');
+  cx += cols.huQty + cols.huType + cols.pkgQty + cols.pkgType;
+  doc.setFillColor(255, 255, 255);
+  doc.rect(cx, y, cols.weight, dataRowH);
+  cx += cols.weight;
+  doc.setFillColor(220, 220, 220);
+  doc.rect(cx, y, cols.hm, dataRowH, 'FD');
+  cx += cols.hm;
+  doc.setFillColor(255, 255, 255);
+  doc.rect(cx, y, cols.desc, dataRowH);
+  doc.setFontSize(7);
+  doc.setFont('helvetica', 'bold');
+  doc.text('GRAND TOTAL', cx + 2, y + 5.5);
+  cx += cols.desc;
+  doc.setFillColor(220, 220, 220);
+  doc.rect(cx, y, cols.nmfc + cols.cls, dataRowH, 'FD');
+  y += dataRowH + 2;
+
+  // ═══════════════════════════════════════════════
+  // VALUE DECLARATION + COD
+  // ═══════════════════════════════════════════════
+  doc.setFontSize(5.5);
+  doc.setFont('helvetica', 'normal');
+  const valText = 'Where the rate is dependent on value, shippers are required to state specifically in writing the agreed or declared value of the property as follows:';
+  doc.text(valText, margin, y + 3);
+  y += 5;
+  doc.text('"The agreed or declared value of the property is specifically stated by the shipper to be not exceeding ___________ per ___________."', margin, y + 3);
+
+  doc.setFontSize(7);
+  doc.setFont('helvetica', 'bold');
+  doc.text('COD Amount: $______________', margin + halfW, y - 2);
+  doc.setFontSize(6);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Fee Terms:   Collect: □    Prepaid: □', margin + halfW, y + 3);
+  doc.text('Customer check acceptable: □', margin + halfW, y + 7);
   y += 10;
 
   // ═══════════════════════════════════════════════
-  // LIABILITY SECTION (condensed)
+  // SIGNATURE SECTION (4 rows)
   // ═══════════════════════════════════════════════
-  doc.setFontSize(6.5);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Carrier liability with shipment originating within the United States:', margin, y);
-  y += 4;
-  doc.setFont('helvetica', 'normal');
-  const liabilityText = "Carrier's liability shall be based on actual NMFC class of the shipment and is limited between $1.00 and $25.00 per pound. Carrier's highest level of liability is $25.00 per pound per individual lost or damaged piece within the shipment, subject to $150,000.00 maximum total liability per shipment.";
-  const lines = doc.splitTextToSize(liabilityText, contentW);
-  doc.text(lines, margin, y);
-  y += lines.length * 3.5 + 4;
-
-  doc.setFont('helvetica', 'bold');
-  doc.text('Carrier liability with shipment originating within Canada:', margin, y);
-  y += 4;
-  doc.setFont('helvetica', 'normal');
-  const canadaText = "Unless the Shipper completes the Special Agreement below, Carrier's maximum liability is CAN$2.00 per pound (CAN$4.41 per kilogram) per individual lost or damaged piece within the shipment, subject to a maximum total liability per shipment of CAN$20,000.00.";
-  const lines2 = doc.splitTextToSize(canadaText, contentW);
-  doc.text(lines2, margin, y);
-  y += lines2.length * 3.5 + 8;
-
-  // ═══════════════════════════════════════════════
-  // SIGNATURES
-  // ═══════════════════════════════════════════════
-  const rowH = 10;
-  const sigY = Math.max(y, pageH - 52);
+  const sigRowH = 10;
 
   // Row 1: SHIPPER | RECEIVER SIGNATURE
   doc.setDrawColor(0);
-  doc.setLineWidth(0.3);
-  doc.rect(margin, sigY, contentW / 2, rowH);
-  doc.rect(margin + contentW / 2, sigY, contentW / 2, rowH);
-  doc.setFontSize(8);
+  doc.setLineWidth(0.4);
+  doc.rect(margin, y, halfW, sigRowH);
+  doc.rect(margin + halfW, y, halfW, sigRowH);
+  doc.setFontSize(7);
   doc.setFont('helvetica', 'bold');
-  doc.text('SHIPPER', margin + 2, sigY + 4);
-  // Pickup date in SHIPPER box
+  doc.text('SHIPPER', margin + 2, y + 4);
   if (data.pickupDate) {
-    const pickupStr = new Date(data.pickupDate + 'T00:00:00').toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
-    doc.setFontSize(8);
+    doc.setFontSize(7);
     doc.setFont('helvetica', 'normal');
-    doc.text(pickupStr, margin + contentW / 2 - 3, sigY + 4, { align: 'right' });
+    doc.text(fmtDate(data.pickupDate), margin + halfW - 3, y + 4, { align: 'right' });
   }
-  doc.setFontSize(8);
+  doc.setFontSize(7);
   doc.setFont('helvetica', 'bold');
-  doc.text('RECEIVER SIGNATURE', margin + contentW / 2 + 2, sigY + 4);
-  // Delivery date in CONSIGNEE/RECEIVER box
+  doc.text('RECEIVER SIGNATURE', margin + halfW + 2, y + 4);
   if (data.deliveryDate) {
-    const deliveryStr = new Date(data.deliveryDate + 'T00:00:00').toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
-    doc.setFontSize(8);
+    doc.setFontSize(7);
     doc.setFont('helvetica', 'normal');
-    doc.text(deliveryStr, margin + contentW - 3, sigY + 4, { align: 'right' });
+    doc.text(fmtDate(data.deliveryDate), margin + contentW - 3, y + 4, { align: 'right' });
   }
+  y += sigRowH;
 
   // Row 2: AUTHORIZED SIGNATURE | PRINT NAME
-  const r2 = sigY + rowH;
-  doc.rect(margin, r2, contentW / 2, rowH);
-  doc.rect(margin + contentW / 2, r2, contentW / 2, rowH);
+  doc.rect(margin, y, halfW, sigRowH);
+  doc.rect(margin + halfW, y, halfW, sigRowH);
   doc.setFontSize(7);
   doc.setFont('helvetica', 'bold');
-  doc.text('AUTHORIZED  SIGNATURE', margin + 2, r2 + 4);
-  doc.line(margin + 38, r2 + 4.5, margin + contentW / 2 - 3, r2 + 4.5);
-  doc.text('PRINT NAME', margin + contentW / 2 + 2, r2 + 4);
-  doc.line(margin + contentW / 2 + 25, r2 + 4.5, margin + contentW - 3, r2 + 4.5);
+  doc.text('AUTHORIZED SIGNATURE', margin + 2, y + 4);
+  doc.text('PRINT NAME', margin + halfW + 2, y + 4);
+  y += sigRowH;
 
-  // Row 3: DRIVER NAME (with name as signature) | DATE (pickup date) | TIME
-  const r3 = r2 + rowH;
-  const carrierW = contentW * 0.5;
+  // Row 3: DRIVER NAME | DATE | TIME
+  const driverW = halfW;
   const dateW = contentW * 0.3;
-  const timeW = contentW * 0.2;
-  doc.rect(margin, r3, carrierW, rowH * 1.4);
-  doc.rect(margin + carrierW, r3, dateW, rowH * 1.4);
-  doc.rect(margin + carrierW + dateW, r3, timeW, rowH * 1.4);
-
+  const timeW = contentW - driverW - dateW;
+  doc.rect(margin, y, driverW, sigRowH * 1.3);
+  doc.rect(margin + driverW, y, dateW, sigRowH * 1.3);
+  doc.rect(margin + driverW + dateW, y, timeW, sigRowH * 1.3);
   doc.setFontSize(7);
   doc.setFont('helvetica', 'bold');
-  doc.text('DRIVER NAME', margin + 2, r3 + 4);
-  // Driver name as signature style
+  doc.text('DRIVER NAME', margin + 2, y + 4);
   if (data.driverName) {
     doc.setFontSize(12);
     doc.setFont('courier', 'bolditalic');
-    doc.text(data.driverName, margin + carrierW / 2, r3 + 11, { align: 'center' });
+    doc.text(data.driverName, margin + driverW / 2, y + 11, { align: 'center' });
   }
-  doc.setFontSize(8);
-  doc.setFont('helvetica', 'bold');
-  doc.text('DATE', margin + carrierW + 2, r3 + 4);
-  // Pickup date in DATE box
-  if (data.pickupDate) {
-    const pickupStr2 = new Date(data.pickupDate + 'T00:00:00').toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.text(pickupStr2, margin + carrierW + dateW / 2, r3 + 11, { align: 'center' });
-  }
-  doc.setFontSize(8);
-  doc.setFont('helvetica', 'bold');
-  doc.text('TIME', margin + carrierW + dateW + 2, r3 + 4);
-
-  // Row 4: AUTHORIZED SIGNATURE | DATE | OBSERVATIONS
-  const r4 = r3 + rowH * 1.4;
-  const authSigW = contentW * 0.3;
-  const authDateW = contentW * 0.2;
-  const obsW = contentW * 0.5;
-  doc.rect(margin, r4, authSigW, rowH);
-  doc.rect(margin + authSigW, r4, authDateW, rowH);
-  doc.rect(margin + authSigW + authDateW, r4, obsW, rowH);
   doc.setFontSize(7);
   doc.setFont('helvetica', 'bold');
-  doc.text('AUTHORIZED  SIGNATURE', margin + 2, r4 + 4);
-  doc.text('DATE', margin + authSigW + 2, r4 + 4);
-  doc.text('OBSERVATIONS', margin + authSigW + authDateW + 2, r4 + 4);
+  doc.text('DATE', margin + driverW + 2, y + 4);
+  if (data.pickupDate) {
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text(fmtDate(data.pickupDate), margin + driverW + dateW / 2, y + 11, { align: 'center' });
+  }
+  doc.setFontSize(7);
+  doc.setFont('helvetica', 'bold');
+  doc.text('TIME', margin + driverW + dateW + 2, y + 4);
+  y += sigRowH * 1.3;
+
+  // Row 4: AUTHORIZED SIGNATURE | DATE | OBSERVATIONS
+  const authW = contentW * 0.3;
+  const authDateW = contentW * 0.2;
+  const obsW = contentW - authW - authDateW;
+  doc.rect(margin, y, authW, sigRowH);
+  doc.rect(margin + authW, y, authDateW, sigRowH);
+  doc.rect(margin + authW + authDateW, y, obsW, sigRowH);
+  doc.setFontSize(7);
+  doc.setFont('helvetica', 'bold');
+  doc.text('AUTHORIZED SIGNATURE', margin + 2, y + 4);
+  doc.text('DATE', margin + authW + 2, y + 4);
+  doc.text('OBSERVATIONS', margin + authW + authDateW + 2, y + 4);
 
   doc.save(`BOL_${data.bolNumber}.pdf`);
 }
