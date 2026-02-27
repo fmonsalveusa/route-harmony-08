@@ -78,7 +78,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const profileLoadedRef = React.useRef(false);
 
-  const fetchUserData = async (userId: string, retries = 3): Promise<void> => {
+  const clearUserState = () => {
+    profileLoadedRef.current = false;
+    setProfile(null);
+    setRole(null);
+    setTenant(null);
+    setSubscription(null);
+  };
+
+  const fetchUserData = async (userId: string, retries = 3): Promise<boolean> => {
     for (let attempt = 1; attempt <= retries; attempt++) {
       try {
         // Fetch profile
@@ -89,7 +97,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           .maybeSingle();
 
         if (profileError) throw profileError;
-        if (!profileData) return;
+
+        // If auth user exists but profile does not, stop infinite "Connecting" loop
+        if (!profileData) {
+          console.error('[AuthContext] Profile not found for authenticated user');
+          clearUserState();
+          setUser(null);
+          setSession(null);
+          await supabase.auth.signOut();
+          return false;
+        }
+
         profileLoadedRef.current = true;
         setProfile(profileData as Profile);
 
@@ -122,7 +140,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
           if (subData) setSubscription(subData as SubscriptionInfo);
         }
-        return; // success – exit loop
+
+        return true; // success – exit loop
       } catch (err) {
         console.warn(`[AuthContext] fetchUserData attempt ${attempt}/${retries} failed:`, err);
         if (attempt < retries) {
@@ -132,6 +151,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       }
     }
+
+    // Hard fail fallback: avoid getting stuck on AppLayout "Connecting..."
+    clearUserState();
+    setUser(null);
+    setSession(null);
+    await supabase.auth.signOut();
+    return false;
   };
 
   const refreshProfile = async () => {
