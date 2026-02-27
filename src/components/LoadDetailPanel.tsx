@@ -996,19 +996,33 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
             )}
           </div>
 
-          {/* BOL Generator */}
-          <div className="p-3 rounded-lg bg-card border text-sm">
-            <h5 className="font-semibold mb-2 flex items-center gap-1.5">
-              <FileText className="h-3.5 w-3.5 text-primary" /> Bill of Lading (BOL)
-            </h5>
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1.5 text-xs"
-              onClick={() => setBolDialogOpen(true)}
-            >
-              <Download className="h-3.5 w-3.5" /> Generar BOL
-            </Button>
+          {/* PDF + BOL side by side */}
+          <div className="grid grid-cols-2 gap-3">
+            {load.pdf_url ? (
+              <div className="p-2.5 rounded-lg bg-card border text-sm">
+                <h5 className="font-semibold mb-1.5 flex items-center gap-1.5 text-xs">
+                  <FileText className="h-3 w-3 text-primary" /> Documento Original (PDF)
+                </h5>
+                <div className="flex gap-1.5">
+                  <Button variant="outline" size="sm" className="gap-1 text-[11px] h-7 px-2" onClick={() => { void openOriginalPdf(); }}>
+                    <ExternalLink className="h-3 w-3" /> Ver
+                  </Button>
+                  <Button variant="outline" size="sm" className="gap-1 text-[11px] h-7 px-2" onClick={() => { void downloadOriginalPdf(); }}>
+                    <Download className="h-3 w-3" /> Descargar
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div />
+            )}
+            <div className="p-2.5 rounded-lg bg-card border text-sm">
+              <h5 className="font-semibold mb-1.5 flex items-center gap-1.5 text-xs">
+                <FileText className="h-3 w-3 text-primary" /> Bill of Lading (BOL)
+              </h5>
+              <Button variant="outline" size="sm" className="gap-1 text-[11px] h-7 px-2" onClick={() => setBolDialogOpen(true)}>
+                <Download className="h-3 w-3" /> Generar BOL
+              </Button>
+            </div>
           </div>
           <BolFormDialog
             open={bolDialogOpen}
@@ -1017,36 +1031,6 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
             stops={dbStops.map(s => ({ id: s.id, stop_type: s.stop_type, address: s.address, stop_order: s.stop_order }))}
             company={companies.length > 0 ? companies[0] : null}
           />
-
-          {load.pdf_url && (
-            <div className="p-3 rounded-lg bg-card border text-sm">
-              <h5 className="font-semibold mb-2 flex items-center gap-1.5">
-                <FileText className="h-3.5 w-3.5 text-primary" /> Documento Original (PDF)
-              </h5>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-1.5 text-xs"
-                  onClick={() => {
-                    void openOriginalPdf();
-                  }}
-                >
-                  <ExternalLink className="h-3.5 w-3.5" /> Ver PDF
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-1.5 text-xs"
-                  onClick={() => {
-                    void downloadOriginalPdf();
-                  }}
-                >
-                  <Download className="h-3.5 w-3.5" /> Descargar
-                </Button>
-              </div>
-            </div>
-          )}
 
           {/* Pick Up Pictures */}
           <PickupPicturesSection loadId={load.id} />
