@@ -26,8 +26,8 @@ function parseAddress(address: string): { name: string; street: string; cityStat
   const parts = address.split(',').map(p => p.trim()).filter(Boolean);
   if (parts.length >= 3) {
     return {
-      name: parts[0],
-      street: parts.slice(1, parts.length - 2).join(', '),
+      name: '',
+      street: parts.slice(0, parts.length - 2).join(', '),
       cityStateZip: parts.slice(parts.length - 2).join(', '),
     };
   }
@@ -97,7 +97,7 @@ export function generateBolPdf(data: BolData) {
   // Ship From rows
   const sfX = margin;
   let ry = y + rowH;
-  doc.rect(sfX, ry, halfW, rowH); drawLabelValue(doc, 'Name:', shipper.name || shipper.street, sfX + 2, ry + 5); ry += rowH;
+  doc.rect(sfX, ry, halfW, rowH); drawLabelValue(doc, 'Name:', '', sfX + 2, ry + 5); ry += rowH;
   doc.rect(sfX, ry, halfW, rowH); drawLabelValue(doc, 'Address:', shipper.street, sfX + 2, ry + 5); ry += rowH;
   doc.rect(sfX, ry, halfW, rowH); drawLabelValue(doc, 'City/State/Zip:', shipper.cityStateZip, sfX + 2, ry + 5); ry += rowH;
   doc.rect(sfX, ry, halfW, rowH);
@@ -143,7 +143,7 @@ export function generateBolPdf(data: BolData) {
   doc.setTextColor(0, 0, 0);
 
   ry = y + rowH;
-  doc.rect(sfX, ry, halfW, rowH); drawLabelValue(doc, 'Name:', consignee.name || consignee.street, sfX + 2, ry + 5); ry += rowH;
+  doc.rect(sfX, ry, halfW, rowH); drawLabelValue(doc, 'Name:', '', sfX + 2, ry + 5); ry += rowH;
   doc.rect(sfX, ry, halfW, rowH); drawLabelValue(doc, 'Address:', consignee.street, sfX + 2, ry + 5); ry += rowH;
   doc.rect(sfX, ry, halfW, rowH); drawLabelValue(doc, 'City/State/Zip:', consignee.cityStateZip, sfX + 2, ry + 5); ry += rowH;
   doc.rect(sfX, ry, halfW, rowH);
@@ -346,7 +346,7 @@ export function generateBolPdf(data: BolData) {
 
   // Row 1: SHIPPER | RECEIVER SIGNATURE
   doc.setDrawColor(0);
-  doc.setLineWidth(0.4);
+  doc.setLineWidth(0.2);
   doc.rect(margin, y, halfW, sigRowH);
   doc.rect(margin + halfW, y, halfW, sigRowH);
   doc.setFontSize(7);
