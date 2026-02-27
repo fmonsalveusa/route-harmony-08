@@ -84,7 +84,7 @@ export const NotificationBell = () => {
                   <div className="flex gap-2">
                     {(() => { const Icon = typeIcons[n.type] || Bell; const color = typeColors[n.type] || 'text-muted-foreground'; return <Icon className={`h-4 w-4 mt-0.5 flex-shrink-0 ${color}`} />; })()}
                     <div className="flex-1 min-w-0">
-                      <p className={`text-sm ${!n.is_read ? 'font-semibold' : ''}`}>{n.title}</p>
+                      <p className={`text-sm text-foreground ${!n.is_read ? 'font-semibold' : ''}`}>{n.title}</p>
                       <p className="text-xs text-muted-foreground line-clamp-3">{n.message}</p>
                       <p className="text-[10px] text-muted-foreground mt-0.5">
                         {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
