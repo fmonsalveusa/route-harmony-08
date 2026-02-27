@@ -439,8 +439,11 @@ const Loads = () => {
                                 await deletePaymentsForLoad(load.id);
                               }
                             }}>
-                              <SelectTrigger className="h-8 w-[140px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:ml-1">
-                                <StatusBadge status={load.status} className="text-sm px-3 py-1" />
+                              <SelectTrigger className="h-8 w-[155px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:hidden">
+                                <span className="flex items-center gap-1">
+                                  <StatusBadge status={load.status} className="text-[11px] px-3 py-1.5" />
+                                  <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                                </span>
                               </SelectTrigger>
                               <SelectContent>
                                 {[
@@ -478,8 +481,11 @@ const Loads = () => {
                                 await deletePaymentsForLoad(load.id);
                               }
                             }}>
-                              <SelectTrigger className="h-8 w-[130px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:ml-1">
-                                {load.factoring ? <StatusBadge status={`${load.factoring}_factoring`} className="text-sm px-3 py-1" /> : <span className="text-muted-foreground">—</span>}
+                              <SelectTrigger className="h-8 w-[145px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:hidden">
+                                <span className="flex items-center gap-1">
+                                  {load.factoring ? <StatusBadge status={`${load.factoring}_factoring`} className="text-[11px] px-3 py-1.5" /> : <span className="text-muted-foreground">—</span>}
+                                  <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                                </span>
                               </SelectTrigger>
                               <SelectContent>
                                 {[

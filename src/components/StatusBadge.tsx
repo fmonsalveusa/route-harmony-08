@@ -35,5 +35,5 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 
 export const StatusBadge = ({ status, className: extraClass }: { status: string; className?: string }) => {
   const config = statusConfig[status] || { label: status, className: 'bg-muted text-muted-foreground' };
-  return <span className={`status-badge backdrop-blur-sm border border-white/20 shadow-sm ${config.className} ${extraClass || ''}`}>{config.label}</span>;
+  return <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide shadow-sm ${config.className} ${extraClass || ''}`}>{config.label}</span>;
 };
