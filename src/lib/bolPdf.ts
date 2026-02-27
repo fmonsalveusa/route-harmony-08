@@ -112,8 +112,9 @@ export function generateBolPdf(data: BolData) {
   doc.setFontSize(8);
   doc.setFont('helvetica', 'bold');
   doc.text('Bill of Lading Number:', rX + 2, ry + 5);
-  doc.setFont('helvetica', 'normal');
-  doc.text(data.bolNumber, rX + 42, ry + 5);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(12);
+  doc.text(data.bolNumber, rX + 42, ry + 6);
   // Barcode space label
   doc.setFontSize(7);
   doc.setTextColor(180, 180, 180);
