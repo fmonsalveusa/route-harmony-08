@@ -439,10 +439,10 @@ const Loads = () => {
                                 await deletePaymentsForLoad(load.id);
                               }
                             }}>
-                              <SelectTrigger className="h-8 w-[155px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:hidden">
+                              <SelectTrigger className="h-8 w-[155px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:hidden bg-transparent">
                                 <span className="flex items-center gap-1">
                                   <StatusBadge status={load.status} className="text-[11px] px-3 py-1.5" />
-                                  <ChevronDown className="h-3.5 w-3.5 text-foreground" />
+                                  <ChevronDown className="h-4 w-4 shrink-0" style={{ color: '#222' }} />
                                 </span>
                               </SelectTrigger>
                               <SelectContent>
@@ -481,10 +481,10 @@ const Loads = () => {
                                 await deletePaymentsForLoad(load.id);
                               }
                             }}>
-                              <SelectTrigger className="h-8 w-[145px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:hidden">
+                              <SelectTrigger className="h-8 w-[145px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:hidden bg-transparent">
                                 <span className="flex items-center gap-1">
                                   {load.factoring ? <StatusBadge status={`${load.factoring}_factoring`} className="text-[11px] px-3 py-1.5" /> : <span className="text-muted-foreground">—</span>}
-                                  <ChevronDown className="h-3.5 w-3.5 text-foreground" />
+                                  <ChevronDown className="h-4 w-4 shrink-0" style={{ color: '#222' }} />
                                 </span>
                               </SelectTrigger>
                               <SelectContent>
