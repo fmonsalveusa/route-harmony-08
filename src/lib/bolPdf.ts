@@ -181,55 +181,64 @@ export function generateBolPdf(data: BolData) {
   // ═══════════════════════════════════════════════
   // SIGNATURES
   // ═══════════════════════════════════════════════
-  const sigY = Math.max(y, pageH - 55);
-  const sigW = contentW / 2 - 3;
+  const rowH = 10;
+  const sigY = Math.max(y, pageH - 52);
 
-  // Shipper signature box
+  // Row 1: SHIPPER | RECEIVER SIGNATURE
   doc.setDrawColor(0);
-  doc.setLineWidth(0.5);
-  doc.rect(margin, sigY, sigW, 30);
-  doc.setFillColor(30, 64, 120);
-  doc.rect(margin, sigY, sigW, 7, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'bold');
-  doc.text('SHIPPER', margin + 3, sigY + 5);
-  doc.setTextColor(0, 0, 0);
-  doc.setFontSize(7);
-  doc.setFont('helvetica', 'normal');
-  doc.text('AUTHORIZED SIGNATURE:', margin + 3, sigY + 14);
-  doc.line(margin + 40, sigY + 14.5, margin + sigW - 3, sigY + 14.5);
-  doc.text('PRINT NAME:', margin + 3, sigY + 22);
-  doc.line(margin + 30, sigY + 22.5, margin + sigW - 3, sigY + 22.5);
-
-  // Carrier signature box
-  const cSigX = margin + sigW + 6;
-  doc.rect(cSigX, sigY, sigW, 30);
-  doc.setFillColor(30, 64, 120);
-  doc.rect(cSigX, sigY, sigW, 7, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'bold');
-  doc.text('CARRIER', cSigX + 3, sigY + 5);
-  doc.setTextColor(0, 0, 0);
+  doc.setLineWidth(0.3);
+  doc.rect(margin, sigY, contentW / 2, rowH);
+  doc.rect(margin + contentW / 2, sigY, contentW / 2, rowH);
   doc.setFontSize(8);
   doc.setFont('helvetica', 'bold');
-  doc.text(data.carrierName || data.company?.name || '', cSigX + 3, sigY + 13);
-  doc.setFontSize(7);
-  doc.setFont('helvetica', 'normal');
-  doc.text('AUTHORIZED SIGNATURE:', cSigX + 3, sigY + 20);
-  doc.line(cSigX + 40, sigY + 20.5, cSigX + sigW - 3, sigY + 20.5);
-  doc.text('DATE:', cSigX + 3, sigY + 26);
-  doc.line(cSigX + 15, sigY + 26.5, cSigX + sigW / 2 - 5, sigY + 26.5);
+  doc.text('SHIPPER', margin + 2, sigY + 4);
+  doc.text('RECEIVER SIGNATURE', margin + contentW / 2 + 2, sigY + 4);
 
-  // Receiver signature at bottom
-  const recY = sigY + 34;
+  // Row 2: AUTHORIZED SIGNATURE | PRINT NAME
+  const r2 = sigY + rowH;
+  doc.rect(margin, r2, contentW / 2, rowH);
+  doc.rect(margin + contentW / 2, r2, contentW / 2, rowH);
   doc.setFontSize(7);
-  doc.setFont('helvetica', 'normal');
-  doc.text('RECEIVER SIGNATURE:', margin, recY);
-  doc.line(margin + 35, recY + 0.5, margin + sigW, recY + 0.5);
-  doc.text('DATE:', margin + sigW + 10, recY);
-  doc.line(margin + sigW + 22, recY + 0.5, pageW - margin, recY + 0.5);
+  doc.setFont('helvetica', 'bold');
+  doc.text('AUTHORIZED  SIGNATURE', margin + 2, r2 + 4);
+  doc.line(margin + 38, r2 + 4.5, margin + contentW / 2 - 3, r2 + 4.5);
+  doc.text('PRINT NAME', margin + contentW / 2 + 2, r2 + 4);
+  doc.line(margin + contentW / 2 + 25, r2 + 4.5, margin + contentW - 3, r2 + 4.5);
+
+  // Row 3: CARRIER (with company name) | DATE | TIME
+  const r3 = r2 + rowH;
+  const carrierW = contentW * 0.5;
+  const dateW = contentW * 0.3;
+  const timeW = contentW * 0.2;
+  doc.rect(margin, r3, carrierW, rowH * 1.4);
+  doc.rect(margin + carrierW, r3, dateW, rowH * 1.4);
+  doc.rect(margin + carrierW + dateW, r3, timeW, rowH * 1.4);
+
+  doc.setFontSize(7);
+  doc.setFont('helvetica', 'bold');
+  doc.text('CARRIER', margin + 2, r3 + 4);
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  const carrierDisplayName = data.carrierName || data.company?.name || '';
+  doc.text(carrierDisplayName, margin + carrierW / 2, r3 + 11, { align: 'center' });
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'bold');
+  doc.text('DATE', margin + carrierW + 2, r3 + 4);
+  doc.text('TIME', margin + carrierW + dateW + 2, r3 + 4);
+
+  // Row 4: AUTHORIZED SIGNATURE | DATE | OBSERVATIONS
+  const r4 = r3 + rowH * 1.4;
+  const authSigW = contentW * 0.3;
+  const authDateW = contentW * 0.2;
+  const obsW = contentW * 0.5;
+  doc.rect(margin, r4, authSigW, rowH);
+  doc.rect(margin + authSigW, r4, authDateW, rowH);
+  doc.rect(margin + authSigW + authDateW, r4, obsW, rowH);
+  doc.setFontSize(7);
+  doc.setFont('helvetica', 'bold');
+  doc.text('AUTHORIZED  SIGNATURE', margin + 2, r4 + 4);
+  doc.text('DATE', margin + authSigW + 2, r4 + 4);
+  doc.text('OBSERVATIONS', margin + authSigW + authDateW + 2, r4 + 4);
 
   doc.save(`BOL_${data.bolNumber}.pdf`);
 }
