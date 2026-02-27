@@ -1030,6 +1030,7 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
             load={load}
             stops={dbStops.map(s => ({ id: s.id, stop_type: s.stop_type, address: s.address, stop_order: s.stop_order }))}
             company={companies.length > 0 ? companies[0] : null}
+            driverName={driver?.name}
           />
 
           {/* Pick Up Pictures */}

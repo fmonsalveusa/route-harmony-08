@@ -29,11 +29,12 @@ interface BolFormDialogProps {
   load: DbLoad;
   stops: LoadStop[];
   company: Company | null;
+  driverName?: string;
 }
 
 const emptyItem = (): BolLineItem => ({ quantity: '', description: '', weight_lb: '', weight_kg: '' });
 
-export const BolFormDialog = ({ open, onOpenChange, load, stops, company }: BolFormDialogProps) => {
+export const BolFormDialog = ({ open, onOpenChange, load, stops, company, driverName }: BolFormDialogProps) => {
   const [items, setItems] = useState<BolLineItem[]>([emptyItem()]);
   const [selectedOrigin, setSelectedOrigin] = useState<string>('default');
   const [selectedDestination, setSelectedDestination] = useState<string>('default');
@@ -65,6 +66,9 @@ export const BolFormDialog = ({ open, onOpenChange, load, stops, company }: BolF
       carrierName: company?.name || '',
       company,
       items: items.filter(i => i.quantity || i.description || i.weight_lb),
+      driverName: driverName || '',
+      pickupDate: load.pickup_date,
+      deliveryDate: load.delivery_date,
     });
     onOpenChange(false);
   };

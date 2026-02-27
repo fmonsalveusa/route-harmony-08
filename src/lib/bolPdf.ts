@@ -16,6 +16,9 @@ interface BolData {
   carrierName: string;
   company: Company | null;
   items?: BolLineItem[];
+  driverName?: string;
+  pickupDate?: string | null;
+  deliveryDate?: string | null;
 }
 
 /** Parse a full address string into street, city, state/province, zip, phone */
@@ -217,7 +220,23 @@ export function generateBolPdf(data: BolData) {
   doc.setFontSize(8);
   doc.setFont('helvetica', 'bold');
   doc.text('SHIPPER', margin + 2, sigY + 4);
+  // Pickup date in SHIPPER box
+  if (data.pickupDate) {
+    const pickupStr = new Date(data.pickupDate + 'T00:00:00').toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.text(pickupStr, margin + contentW / 2 - 3, sigY + 4, { align: 'right' });
+  }
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'bold');
   doc.text('RECEIVER SIGNATURE', margin + contentW / 2 + 2, sigY + 4);
+  // Delivery date in CONSIGNEE/RECEIVER box
+  if (data.deliveryDate) {
+    const deliveryStr = new Date(data.deliveryDate + 'T00:00:00').toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.text(deliveryStr, margin + contentW - 3, sigY + 4, { align: 'right' });
+  }
 
   // Row 2: AUTHORIZED SIGNATURE | PRINT NAME
   const r2 = sigY + rowH;
@@ -230,7 +249,7 @@ export function generateBolPdf(data: BolData) {
   doc.text('PRINT NAME', margin + contentW / 2 + 2, r2 + 4);
   doc.line(margin + contentW / 2 + 25, r2 + 4.5, margin + contentW - 3, r2 + 4.5);
 
-  // Row 3: CARRIER (with company name) | DATE | TIME
+  // Row 3: DRIVER NAME (with name as signature) | DATE (pickup date) | TIME
   const r3 = r2 + rowH;
   const carrierW = contentW * 0.5;
   const dateW = contentW * 0.3;
@@ -241,10 +260,25 @@ export function generateBolPdf(data: BolData) {
 
   doc.setFontSize(7);
   doc.setFont('helvetica', 'bold');
-  doc.text('CARRIER', margin + 2, r3 + 4);
+  doc.text('DRIVER NAME', margin + 2, r3 + 4);
+  // Driver name as signature style
+  if (data.driverName) {
+    doc.setFontSize(12);
+    doc.setFont('courier', 'bolditalic');
+    doc.text(data.driverName, margin + carrierW / 2, r3 + 11, { align: 'center' });
+  }
   doc.setFontSize(8);
   doc.setFont('helvetica', 'bold');
   doc.text('DATE', margin + carrierW + 2, r3 + 4);
+  // Pickup date in DATE box
+  if (data.pickupDate) {
+    const pickupStr2 = new Date(data.pickupDate + 'T00:00:00').toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text(pickupStr2, margin + carrierW + dateW / 2, r3 + 11, { align: 'center' });
+  }
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'bold');
   doc.text('TIME', margin + carrierW + dateW + 2, r3 + 4);
 
   // Row 4: AUTHORIZED SIGNATURE | DATE | OBSERVATIONS
