@@ -262,12 +262,7 @@ export function generateBolPdf(data: BolData) {
 
   // COMMODITY DESCRIPTION
   doc.rect(cx, y, cols.desc, hdrH);
-  doc.text('COMMODITY DESCRIPTION', cx + 2, y + 3.5);
-  doc.setFontSize(4);
-  doc.setFont('helvetica', 'normal');
-  const descNote = 'Commodities requiring special or additional care or attention in handling or stowing must be so marked and packaged';
-  doc.text(descNote, cx + 2, y + 7.5);
-  doc.text('as to ensure safe transportation with ordinary care.', cx + 2, y + 10.5);
+  doc.text('COMMODITY DESCRIPTION', cx + 2, y + 7);
   cx += cols.desc;
 
   // LTL ONLY
