@@ -352,19 +352,9 @@ export function generateBolPdf(data: BolData) {
   doc.setFontSize(7);
   doc.setFont('helvetica', 'bold');
   doc.text('SHIPPER', margin + 2, y + 4);
-  if (data.pickupDate) {
-    doc.setFontSize(7);
-    doc.setFont('helvetica', 'normal');
-    doc.text(fmtDate(data.pickupDate), margin + halfW - 3, y + 4, { align: 'right' });
-  }
   doc.setFontSize(7);
   doc.setFont('helvetica', 'bold');
   doc.text('RECEIVER SIGNATURE', margin + halfW + 2, y + 4);
-  if (data.deliveryDate) {
-    doc.setFontSize(7);
-    doc.setFont('helvetica', 'normal');
-    doc.text(fmtDate(data.deliveryDate), margin + contentW - 3, y + 4, { align: 'right' });
-  }
   y += sigRowH;
 
   // Row 2: AUTHORIZED SIGNATURE | PRINT NAME
