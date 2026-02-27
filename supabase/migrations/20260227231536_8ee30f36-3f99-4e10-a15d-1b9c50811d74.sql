@@ -1,0 +1,1 @@
+ALTER TABLE public.loads ADD COLUMN IF NOT EXISTS bol_url text DEFAULT NULL;

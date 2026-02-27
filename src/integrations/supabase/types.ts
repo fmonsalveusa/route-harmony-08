@@ -739,6 +739,7 @@ export type Database = {
       }
       loads: {
         Row: {
+          bol_url: string | null
           broker_client: string | null
           cargo_type: string | null
           company_profit: number | null
@@ -770,6 +771,7 @@ export type Database = {
           weight: number | null
         }
         Insert: {
+          bol_url?: string | null
           broker_client?: string | null
           cargo_type?: string | null
           company_profit?: number | null
@@ -801,6 +803,7 @@ export type Database = {
           weight?: number | null
         }
         Update: {
+          bol_url?: string | null
           broker_client?: string | null
           cargo_type?: string | null
           company_profit?: number | null

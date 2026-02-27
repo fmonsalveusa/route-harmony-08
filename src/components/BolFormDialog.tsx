@@ -4,8 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Trash2, Download } from 'lucide-react';
+import { Plus, Trash2, Download, Loader2 } from 'lucide-react';
 import { generateBolPdf } from '@/lib/bolPdf';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 import type { DbLoad } from '@/hooks/useLoads';
 import type { Company } from '@/hooks/useCompanies';
 
@@ -30,14 +32,16 @@ interface BolFormDialogProps {
   stops: LoadStop[];
   company: Company | null;
   driverName?: string;
+  onBolSaved?: () => void;
 }
 
 const emptyItem = (): BolLineItem => ({ quantity: '', description: '', weight_lb: '', weight_kg: '' });
 
-export const BolFormDialog = ({ open, onOpenChange, load, stops, company, driverName }: BolFormDialogProps) => {
+export const BolFormDialog = ({ open, onOpenChange, load, stops, company, driverName, onBolSaved }: BolFormDialogProps) => {
   const [items, setItems] = useState<BolLineItem[]>([emptyItem()]);
   const [selectedOrigin, setSelectedOrigin] = useState<string>('default');
   const [selectedDestination, setSelectedDestination] = useState<string>('default');
+  const [saving, setSaving] = useState(false);
 
   const pickupStops = useMemo(() => stops.filter(s => s.stop_type === 'pickup'), [stops]);
   const deliveryStops = useMemo(() => stops.filter(s => s.stop_type === 'delivery'), [stops]);
@@ -57,20 +61,55 @@ export const BolFormDialog = ({ open, onOpenChange, load, stops, company, driver
     ? load.destination
     : stops.find(s => s.id === selectedDestination)?.address || load.destination;
 
-  const handleGenerate = () => {
-    generateBolPdf({
-      bolNumber: load.reference_number,
-      date: load.pickup_date,
-      shipperAddress: originAddress,
-      consigneeAddress: destinationAddress,
-      carrierName: '',
-      company,
-      items: items.filter(i => i.quantity || i.description || i.weight_lb),
-      driverName: driverName || '',
-      pickupDate: load.pickup_date,
-      deliveryDate: load.delivery_date,
-    });
-    onOpenChange(false);
+  const handleGenerate = async () => {
+    setSaving(true);
+    try {
+      const blob = generateBolPdf({
+        bolNumber: load.reference_number,
+        date: load.pickup_date,
+        shipperAddress: originAddress,
+        consigneeAddress: destinationAddress,
+        carrierName: '',
+        company,
+        items: items.filter(i => i.quantity || i.description || i.weight_lb),
+        driverName: driverName || '',
+        pickupDate: load.pickup_date,
+        deliveryDate: load.delivery_date,
+      });
+
+      // Upload to storage
+      const filePath = `bols/${load.id}/BOL_${load.reference_number}.pdf`;
+      const { error: uploadError } = await supabase.storage
+        .from('driver-documents')
+        .upload(filePath, blob, { contentType: 'application/pdf', upsert: true });
+
+      if (uploadError) {
+        console.error('Error uploading BOL:', uploadError);
+        toast({ title: 'BOL generado pero no se pudo guardar', description: uploadError.message, variant: 'destructive' });
+      } else {
+        // Save path in loads table
+        await supabase.from('loads').update({ bol_url: filePath } as any).eq('id', load.id);
+        toast({ title: 'BOL generado y guardado exitosamente' });
+        onBolSaved?.();
+      }
+
+      // Also download locally
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `BOL_${load.reference_number}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      onOpenChange(false);
+    } catch (e) {
+      console.error('Error generating BOL:', e);
+      toast({ title: 'Error al generar BOL', variant: 'destructive' });
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -193,8 +232,9 @@ export const BolFormDialog = ({ open, onOpenChange, load, stops, company, driver
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={handleGenerate} className="gap-1.5">
-            <Download className="h-4 w-4" /> Generar BOL PDF
+          <Button onClick={handleGenerate} className="gap-1.5" disabled={saving}>
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+            {saving ? 'Guardando...' : 'Generar BOL PDF'}
           </Button>
         </DialogFooter>
       </DialogContent>
