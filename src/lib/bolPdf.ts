@@ -222,9 +222,7 @@ export function generateBolPdf(data: BolData) {
     pkgType: 18,
     weight: 22,
     hm: 12,
-    desc: contentW - 18 - 18 - 18 - 18 - 22 - 12 - 22 - 18,
-    nmfc: 22,
-    cls: 18,
+    desc: contentW - 18 - 18 - 18 - 18 - 22 - 12,
   };
 
   // Header row
@@ -263,16 +261,6 @@ export function generateBolPdf(data: BolData) {
   // COMMODITY DESCRIPTION
   doc.rect(cx, y, cols.desc, hdrH);
   doc.text('COMMODITY DESCRIPTION', cx + 2, y + 7);
-  cx += cols.desc;
-
-  // LTL ONLY
-  doc.setFontSize(5.5);
-  doc.setFont('helvetica', 'bold');
-  doc.rect(cx, y, cols.nmfc + cols.cls, hdrH);
-  doc.text('LTL ONLY', cx + 2, y + 3.5);
-  doc.text('NMFC #', cx + 2, y + 8.5);
-  doc.line(cx + cols.nmfc, y + 4, cx + cols.nmfc, y + hdrH);
-  doc.text('CLASS', cx + cols.nmfc + 1, y + 8.5);
 
   y += hdrH;
 
@@ -311,8 +299,6 @@ export function generateBolPdf(data: BolData) {
       doc.text(item.description || '', cx + 2, y + 5.5);
     }
     cx += cols.desc;
-    doc.rect(cx, y, cols.nmfc, dataRowH); cx += cols.nmfc;
-    doc.rect(cx, y, cols.cls, dataRowH);
 
     y += dataRowH;
   }
@@ -334,8 +320,6 @@ export function generateBolPdf(data: BolData) {
   doc.setFont('helvetica', 'bold');
   doc.text('GRAND TOTAL', cx + 2, y + 5.5);
   cx += cols.desc;
-  doc.setFillColor(220, 220, 220);
-  doc.rect(cx, y, cols.nmfc + cols.cls, dataRowH, 'FD');
   y += dataRowH + 2;
 
 
