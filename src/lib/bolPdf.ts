@@ -26,8 +26,8 @@ function parseAddress(address: string): { name: string; street: string; cityStat
   const parts = address.split(',').map(p => p.trim()).filter(Boolean);
   if (parts.length >= 3) {
     return {
-      name: '',
-      street: parts.slice(0, parts.length - 2).join(', '),
+      name: parts[0],
+      street: parts.slice(1, parts.length - 2).join(', '),
       cityStateZip: parts.slice(parts.length - 2).join(', '),
     };
   }
@@ -190,7 +190,6 @@ export function generateBolPdf(data: BolData) {
   doc.setFontSize(6.5);
   doc.setFont('helvetica', 'normal');
   doc.text('Prepaid ___   Collect ___   3rd Party ___', rX + 2, tpY + rowH * 2 + 5);
-  doc.text('□  Master Bill of Lading: with attached underlying Bills of Lading', rX + 2, tpY + rowH * 3 + 4);
 
   y = tpY + tpH;
 
@@ -344,24 +343,6 @@ export function generateBolPdf(data: BolData) {
   doc.rect(cx, y, cols.nmfc + cols.cls, dataRowH, 'FD');
   y += dataRowH + 2;
 
-  // ═══════════════════════════════════════════════
-  // VALUE DECLARATION + COD
-  // ═══════════════════════════════════════════════
-  doc.setFontSize(5.5);
-  doc.setFont('helvetica', 'normal');
-  const valText = 'Where the rate is dependent on value, shippers are required to state specifically in writing the agreed or declared value of the property as follows:';
-  doc.text(valText, margin, y + 3);
-  y += 5;
-  doc.text('"The agreed or declared value of the property is specifically stated by the shipper to be not exceeding ___________ per ___________."', margin, y + 3);
-
-  doc.setFontSize(7);
-  doc.setFont('helvetica', 'bold');
-  doc.text('COD Amount: $______________', margin + halfW, y - 2);
-  doc.setFontSize(6);
-  doc.setFont('helvetica', 'normal');
-  doc.text('Fee Terms:   Collect: □    Prepaid: □', margin + halfW, y + 3);
-  doc.text('Customer check acceptable: □', margin + halfW, y + 7);
-  y += 10;
 
   // ═══════════════════════════════════════════════
   // SIGNATURE SECTION (4 rows)
