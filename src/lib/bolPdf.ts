@@ -52,7 +52,7 @@ function drawLabelValue(doc: jsPDF, label: string, value: string, x: number, y: 
   doc.text(value, x + labelW + 1, y);
 }
 
-export function generateBolPdf(data: BolData): Blob {
+export function generateBolPdf(data: BolData) {
   const doc = new jsPDF();
   const pageW = doc.internal.pageSize.getWidth();
   const margin = 12;
@@ -395,5 +395,4 @@ export function generateBolPdf(data: BolData): Blob {
   doc.text('OBSERVATIONS', margin + authW + authDateW + 2, y + 4);
 
   doc.save(`BOL_${data.bolNumber}.pdf`);
-  return doc.output('blob');
 }

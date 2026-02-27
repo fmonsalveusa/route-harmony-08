@@ -1019,35 +1019,9 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
               <h5 className="font-semibold mb-1.5 flex items-center gap-1.5 text-xs">
                 <FileText className="h-3 w-3 text-primary" /> Bill of Lading (BOL)
               </h5>
-              <div className="flex items-center gap-2">
-                {(load as any).bol_url && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-1 text-[11px] h-7 px-2"
-                    onClick={async () => {
-                      const win = window.open('', '_blank');
-                      try {
-                        const { data } = await supabase.storage.from('driver-documents').createSignedUrl((load as any).bol_url, 3600);
-                        if (data?.signedUrl && win) {
-                          win.location.href = data.signedUrl;
-                        } else {
-                          win?.close();
-                          toast({ title: 'No se pudo abrir el BOL', variant: 'destructive' });
-                        }
-                      } catch {
-                        win?.close();
-                        toast({ title: 'Error al abrir el BOL', variant: 'destructive' });
-                      }
-                    }}
-                  >
-                    <ExternalLink className="h-3 w-3" /> Ver BOL
-                  </Button>
-                )}
-                <Button variant="outline" size="sm" className="gap-1 text-[11px] h-7 px-2" onClick={() => setBolDialogOpen(true)}>
-                  <Download className="h-3 w-3" /> {(load as any).bol_url ? 'Regenerar BOL' : 'Generar BOL'}
-                </Button>
-              </div>
+              <Button variant="outline" size="sm" className="gap-1 text-[11px] h-7 px-2" onClick={() => setBolDialogOpen(true)}>
+                <Download className="h-3 w-3" /> Generar BOL
+              </Button>
             </div>
           </div>
           <BolFormDialog
@@ -1057,7 +1031,6 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
             stops={dbStops.map(s => ({ id: s.id, stop_type: s.stop_type, address: s.address, stop_order: s.stop_order }))}
             company={companies.length > 0 ? companies[0] : null}
             driverName={driver?.name}
-            onBolSaved={() => queryClient.invalidateQueries({ queryKey: ['loads'] })}
           />
 
           {/* Pick Up Pictures */}
