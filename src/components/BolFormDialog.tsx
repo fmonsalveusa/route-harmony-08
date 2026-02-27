@@ -63,7 +63,7 @@ export const BolFormDialog = ({ open, onOpenChange, load, stops, company, driver
       date: load.pickup_date,
       shipperAddress: originAddress,
       consigneeAddress: destinationAddress,
-      carrierName: company?.name || '',
+      carrierName: '',
       company,
       items: items.filter(i => i.quantity || i.description || i.weight_lb),
       driverName: driverName || '',
