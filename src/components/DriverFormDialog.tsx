@@ -136,6 +136,7 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
             <Label>Phone *</Label>
             <Input value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="555-0000" />
           </div>
+          <DatePickerField label="Birthday" value={form.birthday} onChange={v => set('birthday', v)} />
           <div className="space-y-2">
             <Label>Driver License # *</Label>
             <Input value={form.license} onChange={e => set('license', e.target.value)} placeholder="CDL-A-XXXXX" />
@@ -162,8 +163,6 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
             <Label>Zip Code</Label>
             <Input value={form.zip || ''} onChange={e => set('zip', e.target.value)} placeholder="77001" />
           </div>
-
-          <DatePickerField label="Birthday" value={form.birthday} onChange={v => set('birthday', v)} />
 
           <DatePickerField label="License Expiry *" value={form.license_expiry} onChange={v => set('license_expiry', v)} />
           <DatePickerField label="Medical Card Expiry *" value={form.medical_card_expiry} onChange={v => set('medical_card_expiry', v)} />

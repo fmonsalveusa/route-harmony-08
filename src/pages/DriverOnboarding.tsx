@@ -289,6 +289,7 @@ export default function DriverOnboarding() {
                   <Label>Phone *</Label>
                   <Input value={driver.phone} onChange={e => setDriver(d => ({ ...d, phone: e.target.value }))} placeholder="555-0000" />
                 </div>
+                <OnboardingDateField label="Birthday" value={driver.birthday} onChange={v => setDriver(d => ({ ...d, birthday: v }))} />
                 <div className="space-y-2">
                   <Label>Driver License # *</Label>
                   <Input value={driver.license} onChange={e => setDriver(d => ({ ...d, license: e.target.value }))} placeholder="CDL-A-XXXXX" />
@@ -340,7 +341,6 @@ export default function DriverOnboarding() {
               <div className="border-t pt-4">
                 <Label className="text-base font-semibold">Additional Information</Label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
-                  <OnboardingDateField label="Birthday" value={driver.birthday} onChange={v => setDriver(d => ({ ...d, birthday: v }))} />
                   <div className="space-y-2">
                     <Label>Emergency Contact Name</Label>
                     <Input value={driver.emergency_contact_name} onChange={e => setDriver(d => ({ ...d, emergency_contact_name: e.target.value }))} placeholder="Jane Doe" />
