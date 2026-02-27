@@ -384,11 +384,6 @@ export function generateBolPdf(data: BolData) {
   doc.setFontSize(7);
   doc.setFont('helvetica', 'bold');
   doc.text('DATE', margin + driverW + 2, y + 4);
-  if (data.pickupDate) {
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.text(fmtDate(data.pickupDate), margin + driverW + dateW / 2, y + 11, { align: 'center' });
-  }
   doc.setFontSize(7);
   doc.setFont('helvetica', 'bold');
   doc.text('TIME', margin + driverW + dateW + 2, y + 4);
@@ -405,6 +400,13 @@ export function generateBolPdf(data: BolData) {
   doc.setFont('helvetica', 'bold');
   doc.text('AUTHORIZED SIGNATURE', margin + 2, y + 4);
   doc.text('DATE', margin + authW + 2, y + 4);
+  if (data.pickupDate) {
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text(fmtDate(data.pickupDate), margin + authW + authDateW / 2, y + 7, { align: 'center' });
+  }
+  doc.setFontSize(7);
+  doc.setFont('helvetica', 'bold');
   doc.text('OBSERVATIONS', margin + authW + authDateW + 2, y + 4);
 
   doc.save(`BOL_${data.bolNumber}.pdf`);
