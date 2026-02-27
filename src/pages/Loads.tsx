@@ -440,9 +440,11 @@ const Loads = () => {
                               }
                             }}>
                               <SelectTrigger className="h-8 w-[155px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:hidden bg-transparent">
-                                <span className="flex items-center gap-1">
+                                <span className="flex items-center gap-1.5">
                                   <StatusBadge status={load.status} className="text-[11px] px-3 py-1.5" />
-                                  <ChevronDown className="h-4 w-4 shrink-0 text-foreground/80" />
+                                  <span className="inline-flex h-5 w-5 items-center justify-center rounded border border-border bg-muted/40 text-muted-foreground">
+                                    <ChevronDown className="h-3 w-3 shrink-0" />
+                                  </span>
                                 </span>
                               </SelectTrigger>
                               <SelectContent>
@@ -482,9 +484,11 @@ const Loads = () => {
                               }
                             }}>
                               <SelectTrigger className="h-8 w-[145px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:hidden bg-transparent">
-                                <span className="flex items-center gap-1">
+                                <span className="flex items-center gap-1.5">
                                   {load.factoring ? <StatusBadge status={`${load.factoring}_factoring`} className="text-[11px] px-3 py-1.5" /> : <span className="text-muted-foreground">—</span>}
-                                  <ChevronDown className="h-4 w-4 shrink-0 text-foreground/80" />
+                                  <span className="inline-flex h-5 w-5 items-center justify-center rounded border border-border bg-muted/40 text-muted-foreground">
+                                    <ChevronDown className="h-3 w-3 shrink-0" />
+                                  </span>
                                 </span>
                               </SelectTrigger>
                               <SelectContent>
