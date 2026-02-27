@@ -442,7 +442,7 @@ const Loads = () => {
                               <SelectTrigger className="h-8 w-[155px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:hidden">
                                 <span className="flex items-center gap-1">
                                   <StatusBadge status={load.status} className="text-[11px] px-3 py-1.5" />
-                                  <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                                  <ChevronDown className="h-3.5 w-3.5 text-foreground" />
                                 </span>
                               </SelectTrigger>
                               <SelectContent>
@@ -484,7 +484,7 @@ const Loads = () => {
                               <SelectTrigger className="h-8 w-[145px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:hidden">
                                 <span className="flex items-center gap-1">
                                   {load.factoring ? <StatusBadge status={`${load.factoring}_factoring`} className="text-[11px] px-3 py-1.5" /> : <span className="text-muted-foreground">—</span>}
-                                  <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                                  <ChevronDown className="h-3.5 w-3.5 text-foreground" />
                                 </span>
                               </SelectTrigger>
                               <SelectContent>
