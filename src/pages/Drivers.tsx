@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import { StatusBadge } from '@/components/StatusBadge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -223,15 +224,20 @@ const Drivers = () => {
                       </td>
                       <td className="p-3" onClick={e => e.stopPropagation()}>
                         <Select value={driver.status} onValueChange={v => updateDriver(driver.id, { status: v })}>
-                          <SelectTrigger className={`w-auto h-7 text-xs font-semibold text-white border-0 rounded-full px-3 gap-1 ${driverStatusColor(driver.status)}`}>
-                            <SelectValue />
+                          <SelectTrigger className="h-8 w-[155px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:hidden bg-transparent">
+                            <span className="flex items-center justify-between w-full gap-1">
+                              <StatusBadge status={driver.status} className="text-[11px] px-3 py-1.5" />
+                              <span className="inline-flex h-5 w-5 items-center justify-center rounded border border-border bg-muted/40 text-muted-foreground ml-auto">
+                                <ChevronDown className="h-3 w-3 shrink-0" />
+                              </span>
+                            </span>
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="pending">Pending</SelectItem>
-                            <SelectItem value="available">Available</SelectItem>
-                            <SelectItem value="assigned">Assigned</SelectItem>
-                            <SelectItem value="resting">Resting</SelectItem>
-                            <SelectItem value="inactive">Inactive</SelectItem>
+                            <SelectItem value="pending"><StatusBadge status="pending" /></SelectItem>
+                            <SelectItem value="available"><StatusBadge status="available" /></SelectItem>
+                            <SelectItem value="assigned"><StatusBadge status="assigned" /></SelectItem>
+                            <SelectItem value="resting"><StatusBadge status="resting" /></SelectItem>
+                            <SelectItem value="inactive"><StatusBadge status="inactive" /></SelectItem>
                           </SelectContent>
                         </Select>
                       </td>
