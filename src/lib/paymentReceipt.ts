@@ -5,25 +5,23 @@ import { ADJUSTMENT_REASONS } from '@/hooks/usePaymentAdjustments';
 
 const reasonLabel = (r: string) => ADJUSTMENT_REASONS.find(a => a.value === r)?.label || r;
 
-/** Extract "City, ST" from a full address like "123 Main St, Springfield, IL 62701" */
+/** Extract "City, ST" from a full address */
 const extractCityState = (address: string): string => {
   if (!address) return '—';
-  // Split by comma, trim parts, try to find city + state
   const parts = address.split(',').map(p => p.trim());
-  if (parts.length >= 3) {
-    // Typical: "street, city, ST ZIP" or "street, city, ST, ZIP"
-    const city = parts[parts.length - 2];
-    const stateZip = parts[parts.length - 1];
-    // Extract just the state abbreviation (first word of last part)
-    const stateMatch = stateZip.match(/^([A-Z]{2})/);
-    if (stateMatch) return `${city}, ${stateMatch[1]}`;
-    // If no match, return city + last part trimmed
-    return `${city}, ${stateZip}`;
+
+  // Walk backwards to find the state abbreviation (2-letter uppercase)
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const stateMatch = parts[i].match(/\b([A-Z]{2})\b/);
+    if (stateMatch && i > 0) {
+      // The part before the state is the city
+      const city = parts[i - 1];
+      return `${city}, ${stateMatch[1]}`;
+    }
   }
-  if (parts.length === 2) {
-    return `${parts[0]}, ${parts[1]}`;
-  }
-  return address;
+
+  // Fallback
+  return parts.length >= 2 ? `${parts[0]}, ${parts[1]}` : address;
 };
 
 export interface DispatcherLoadItem {
