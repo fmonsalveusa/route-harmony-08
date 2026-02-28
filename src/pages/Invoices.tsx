@@ -142,19 +142,9 @@ const Invoices = () => {
       </div>
 
       <Tabs defaultValue="broker" className="w-full">
-        <TabsList className="inline-flex gap-2 border-b mb-6 bg-transparent border-none rounded-none p-0">
-          {([
-            { key: 'broker', label: 'Broker Invoices' },
-            { key: 'dispatch_service', label: 'Dispatch Service' },
-          ]).map(tab => (
-            <TabsTrigger
-              key={tab.key}
-              value={tab.key}
-              className="px-4 py-2.5 text-sm font-medium uppercase border-b-2 transition-colors rounded-none bg-transparent shadow-none data-[state=active]:border-primary data-[state=active]:text-primary data-[state=inactive]:border-transparent data-[state=inactive]:text-muted-foreground hover:text-foreground"
-            >
-              {tab.label}
-            </TabsTrigger>
-          ))}
+        <TabsList>
+          <TabsTrigger value="broker">Broker Invoices</TabsTrigger>
+          <TabsTrigger value="dispatch_service">Dispatch Service</TabsTrigger>
         </TabsList>
 
         <TabsContent value="broker">
@@ -175,28 +165,13 @@ const Invoices = () => {
         </div>
       </div>
 
-      <div className="flex gap-2 border-b">
-        {([
-          { key: 'pending' as const, label: 'Pending', count: pending.length },
-          { key: 'paid' as const, label: 'Paid', count: paid.length },
-          { key: 'all' as const, label: 'All', count: invoices.length },
-        ]).map(tab => (
-          <button
-            key={tab.key}
-            onClick={() => setStatusFilter(tab.key)}
-            className={`px-4 py-2.5 text-sm font-medium uppercase border-b-2 transition-colors flex items-center gap-2 ${
-              statusFilter === tab.key
-                ? 'border-primary text-primary'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {tab.label}
-            <span className={`text-xs rounded-full px-2 py-0.5 font-semibold ${
-              statusFilter === tab.key ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-            }`}>{tab.count}</span>
-          </button>
-        ))}
-      </div>
+      <Tabs value={statusFilter} onValueChange={setStatusFilter}>
+        <TabsList>
+          <TabsTrigger value="pending">Pending ({pending.length})</TabsTrigger>
+          <TabsTrigger value="paid">Paid ({paid.length})</TabsTrigger>
+          <TabsTrigger value="all">All ({invoices.length})</TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       {/* Table */}
       <div className="glass-card overflow-hidden">
