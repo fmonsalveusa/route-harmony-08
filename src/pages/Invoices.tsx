@@ -22,7 +22,7 @@ import type { PodDocument } from '@/hooks/usePodDocuments';
 const Invoices = () => {
   const { invoices, loading, updateInvoice, deleteInvoice } = useInvoices();
   const { companies } = useCompanies();
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('pending');
   const [search, setSearch] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [editInvoice, setEditInvoice] = useState<Invoice | null>(null);
@@ -163,17 +163,29 @@ const Invoices = () => {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Search by number, broker or company..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
         </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[150px]">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="sent">Sent</SelectItem>
-            <SelectItem value="paid">Paid</SelectItem>
-          </SelectContent>
-        </Select>
+      </div>
+
+      <div className="flex gap-2 border-b">
+        {([
+          { key: 'pending' as const, label: 'Pending', count: pending.length },
+          { key: 'paid' as const, label: 'Paid', count: paid.length },
+          { key: 'all' as const, label: 'All', count: invoices.length },
+        ]).map(tab => (
+          <button
+            key={tab.key}
+            onClick={() => setStatusFilter(tab.key)}
+            className={`px-4 py-2.5 text-sm font-medium uppercase border-b-2 transition-colors flex items-center gap-2 ${
+              statusFilter === tab.key
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {tab.label}
+            <span className={`text-xs rounded-full px-2 py-0.5 font-semibold ${
+              statusFilter === tab.key ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+            }`}>{tab.count}</span>
+          </button>
+        ))}
       </div>
 
       {/* Table */}
