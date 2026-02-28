@@ -41,6 +41,8 @@ export function generatePaymentReceipt(
   totalAdjustment: number,
   finalAmount: number,
   dispatcherLoadItems?: DispatcherLoadItem[],
+  loadOrigin?: string,
+  loadDestination?: string,
 ) {
   const doc = new jsPDF();
   const date = payment.payment_date || new Date().toISOString().split('T')[0];
@@ -91,6 +93,39 @@ export function generatePaymentReceipt(
     doc.text(value, margin + 60, y);
     y += 7;
   });
+
+  // Single-load details for driver/investor
+  if (!dispatcherLoadItems && (loadOrigin || loadDestination)) {
+    y += 6;
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(55, 65, 81);
+    doc.text('Load Details', margin, y);
+    y += 3;
+    doc.setDrawColor(37, 99, 235);
+    doc.setLineWidth(0.5);
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 10;
+
+    doc.setFontSize(10);
+    const loadRows = [
+      ['Origin', extractCityState(loadOrigin || '')],
+      ['Destination', extractCityState(loadDestination || '')],
+      ['Total Rate', `$${Number(payment.total_rate).toLocaleString('en-US', { minimumFractionDigits: 2 })}`],
+      ['Percentage', `${payment.percentage_applied}%`],
+      ['Amount Payable', `$${finalAmount.toFixed(2)}`],
+    ];
+
+    loadRows.forEach(([label, value]) => {
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(107, 114, 128);
+      doc.text(label, margin, y);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(55, 65, 81);
+      doc.text(value, margin + 60, y);
+      y += 7;
+    });
+  }
 
   // Dispatcher consolidated load details
   if (dispatcherLoadItems && dispatcherLoadItems.length > 0) {
