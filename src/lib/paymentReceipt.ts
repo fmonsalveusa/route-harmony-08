@@ -147,23 +147,6 @@ export function generatePaymentReceipt(
     doc.setTextColor(55, 65, 81);
     doc.text(fmtDate(deliveryDate), margin + 60, y);
     y += 10;
-
-    // Rate details
-    const rateRows = [
-      ['Total Rate', `$${Number(payment.total_rate).toLocaleString('en-US', { minimumFractionDigits: 2 })}`],
-      ['Percentage', `${payment.percentage_applied}%`],
-      ['Amount Payable', `$${finalAmount.toFixed(2)}`],
-    ];
-
-    rateRows.forEach(([label, value]) => {
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(107, 114, 128);
-      doc.text(label, margin, y);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(55, 65, 81);
-      doc.text(value, margin + 60, y);
-      y += 7;
-    });
   }
 
   // Dispatcher consolidated load details
