@@ -28,6 +28,9 @@ const handleGenerateReceipt = async (p: DbPayment) => {
 
   // For dispatcher payments, fetch load item details
   let dispatcherItems: DispatcherLoadItem[] | undefined;
+  let loadOrigin: string | undefined;
+  let loadDestination: string | undefined;
+
   if (p.recipient_type === 'dispatcher') {
     const { data: items } = await supabase
       .from('dispatcher_payment_items')
@@ -35,7 +38,6 @@ const handleGenerateReceipt = async (p: DbPayment) => {
       .eq('payment_id', p.id);
 
     if (items && items.length > 0) {
-      // Fetch origin/destination from loads
       const loadIds = (items as any[]).map((i: any) => i.load_id);
       const { data: loads } = await supabase
         .from('loads')
@@ -54,9 +56,20 @@ const handleGenerateReceipt = async (p: DbPayment) => {
         amount: i.amount,
       }));
     }
+  } else {
+    // For driver/investor payments, fetch origin/destination from the load
+    const { data: load } = await supabase
+      .from('loads')
+      .select('origin, destination')
+      .eq('id', p.load_id)
+      .maybeSingle();
+    if (load) {
+      loadOrigin = (load as any).origin;
+      loadDestination = (load as any).destination;
+    }
   }
 
-  generatePaymentReceipt(p, adjustments, totalAdj, Number(p.amount) + totalAdj, dispatcherItems);
+  generatePaymentReceipt(p, adjustments, totalAdj, Number(p.amount) + totalAdj, dispatcherItems, loadOrigin, loadDestination);
 };
 
 interface PaymentsSectionProps {
