@@ -142,10 +142,20 @@ const Invoices = () => {
       </div>
 
       <Tabs defaultValue="broker" className="w-full">
-        <TabsList>
-          <TabsTrigger value="broker">Broker Invoices</TabsTrigger>
-          <TabsTrigger value="dispatch_service">Dispatch Service</TabsTrigger>
-        </TabsList>
+        <div className="flex gap-2 border-b mb-6">
+          {([
+            { key: 'broker', label: 'Broker Invoices' },
+            { key: 'dispatch_service', label: 'Dispatch Service' },
+          ]).map(tab => (
+            <TabsTrigger
+              key={tab.key}
+              value={tab.key}
+              className="px-4 py-2.5 text-sm font-medium uppercase border-b-2 transition-colors rounded-none bg-transparent shadow-none data-[state=active]:border-primary data-[state=active]:text-primary data-[state=inactive]:border-transparent data-[state=inactive]:text-muted-foreground hover:text-foreground"
+            >
+              {tab.label}
+            </TabsTrigger>
+          ))}
+        </div>
 
         <TabsContent value="broker">
         <div className="space-y-6">
