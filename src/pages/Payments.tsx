@@ -57,19 +57,21 @@ const handleGenerateReceipt = async (p: DbPayment) => {
       }));
     }
   } else {
-    // For driver/investor payments, fetch origin/destination from the load
+    // For driver/investor payments, fetch origin/destination + dates from the load
     const { data: load } = await supabase
       .from('loads')
-      .select('origin, destination')
+      .select('origin, destination, pickup_date, delivery_date')
       .eq('id', p.load_id)
       .maybeSingle();
     if (load) {
       loadOrigin = (load as any).origin;
       loadDestination = (load as any).destination;
     }
+    generatePaymentReceipt(p, adjustments, totalAdj, Number(p.amount) + totalAdj, dispatcherItems, loadOrigin, loadDestination, (load as any)?.pickup_date, (load as any)?.delivery_date);
+    return;
   }
 
-  generatePaymentReceipt(p, adjustments, totalAdj, Number(p.amount) + totalAdj, dispatcherItems, loadOrigin, loadDestination);
+  generatePaymentReceipt(p, adjustments, totalAdj, Number(p.amount) + totalAdj, dispatcherItems);
 };
 
 interface PaymentsSectionProps {
