@@ -113,12 +113,12 @@ export function generatePaymentReceipt(
     const fmtDate = (d: string | null | undefined) => {
       if (!d) return '';
       const [y, m, day] = d.split('-');
-      return ` (${m}/${day}/${y})`;
+      return `${m}/${day}/${y}`;
     };
 
     const loadRows = [
-      ['Origin', extractCityState(loadOrigin || '') + fmtDate(pickupDate)],
-      ['Destination', extractCityState(loadDestination || '') + fmtDate(deliveryDate)],
+      ['Origin', extractCityState(loadOrigin || '') + (pickupDate ? ` — Pickup: ${fmtDate(pickupDate)}` : '')],
+      ['Destination', extractCityState(loadDestination || '') + (deliveryDate ? ` — Delivery: ${fmtDate(deliveryDate)}` : '')],
       ['Total Rate', `$${Number(payment.total_rate).toLocaleString('en-US', { minimumFractionDigits: 2 })}`],
       ['Percentage', `${payment.percentage_applied}%`],
       ['Amount Payable', `$${finalAmount.toFixed(2)}`],
