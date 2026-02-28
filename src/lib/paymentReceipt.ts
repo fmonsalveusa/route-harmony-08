@@ -111,20 +111,51 @@ export function generatePaymentReceipt(
 
     doc.setFontSize(10);
     const fmtDate = (d: string | null | undefined) => {
-      if (!d) return '';
-      const [y, m, day] = d.split('-');
-      return `${m}/${day}/${y}`;
+      if (!d) return '—';
+      const [yr, m, day] = d.split('-');
+      return `${m}/${day}/${yr}`;
     };
 
-    const loadRows = [
-      ['Origin', extractCityState(loadOrigin || '') + (pickupDate ? ` — Pickup: ${fmtDate(pickupDate)}` : '')],
-      ['Destination', extractCityState(loadDestination || '') + (deliveryDate ? ` — Delivery: ${fmtDate(deliveryDate)}` : '')],
+    // Origin + Pickup
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(107, 114, 128);
+    doc.text('Origin:', margin, y);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(55, 65, 81);
+    doc.text(extractCityState(loadOrigin || ''), margin + 60, y);
+    y += 7;
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(107, 114, 128);
+    doc.text('Pick up:', margin, y);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(55, 65, 81);
+    doc.text(fmtDate(pickupDate), margin + 60, y);
+    y += 10;
+
+    // Destination + Delivery
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(107, 114, 128);
+    doc.text('Destination:', margin, y);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(55, 65, 81);
+    doc.text(extractCityState(loadDestination || ''), margin + 60, y);
+    y += 7;
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(107, 114, 128);
+    doc.text('Delivered:', margin, y);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(55, 65, 81);
+    doc.text(fmtDate(deliveryDate), margin + 60, y);
+    y += 10;
+
+    // Rate details
+    const rateRows = [
       ['Total Rate', `$${Number(payment.total_rate).toLocaleString('en-US', { minimumFractionDigits: 2 })}`],
       ['Percentage', `${payment.percentage_applied}%`],
       ['Amount Payable', `$${finalAmount.toFixed(2)}`],
     ];
 
-    loadRows.forEach(([label, value]) => {
+    rateRows.forEach(([label, value]) => {
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(107, 114, 128);
       doc.text(label, margin, y);
