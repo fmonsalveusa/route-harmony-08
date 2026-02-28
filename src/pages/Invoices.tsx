@@ -16,7 +16,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { DispatchServiceTab } from '@/components/DispatchServiceTab';
 import { toast } from 'sonner';
 
-import { FileText, DollarSign, AlertTriangle, CheckCircle, Search, Trash2, Pencil, Download, Send, Image, ExternalLink, Mail, Loader2 } from 'lucide-react';
+import { FileText, DollarSign, AlertTriangle, CheckCircle, Search, Trash2, Pencil, Download, Send, Image, ExternalLink, Mail, Loader2, ChevronDown } from 'lucide-react';
 import type { PodDocument } from '@/hooks/usePodDocuments';
 
 const Invoices = () => {
@@ -204,8 +204,13 @@ const Invoices = () => {
                     <td className="p-3 text-right font-semibold">${Number(inv.amount).toLocaleString()}</td>
                     <td className="p-3">
                       <Select value={inv.status} onValueChange={val => updateInvoice(inv.id, { status: val })}>
-                        <SelectTrigger className="h-8 w-[120px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:ml-1">
-                          <StatusBadge status={`invoice_${inv.status}`} className="text-sm px-3 py-1" />
+                        <SelectTrigger className="h-8 w-[155px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:hidden bg-transparent">
+                          <span className="flex items-center justify-between w-full gap-1">
+                            <StatusBadge status={`invoice_${inv.status}`} className="text-[11px] px-3 py-1.5" />
+                            <span className="inline-flex h-5 w-5 items-center justify-center rounded border border-border bg-muted/40 text-muted-foreground ml-auto">
+                              <ChevronDown className="h-3 w-3 shrink-0" />
+                            </span>
+                          </span>
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="pending"><StatusBadge status="invoice_pending" /></SelectItem>

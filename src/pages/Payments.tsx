@@ -12,7 +12,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { PaymentEditDialog } from '@/components/PaymentEditDialog';
 import { Input } from '@/components/ui/input';
-import { DollarSign, CheckCircle, Clock, Download, Pencil, Trash2, FileText, CheckCheck, X, PlusCircle, Search } from 'lucide-react';
+import { DollarSign, CheckCircle, Clock, Download, Pencil, Trash2, FileText, CheckCheck, X, PlusCircle, Search, ChevronDown } from 'lucide-react';
 import { generatePaymentReceipt, type DispatcherLoadItem } from '@/lib/paymentReceipt';
 import { generateBatchPaymentReceipt } from '@/lib/batchPaymentReceipt';
 import { supabase } from '@/integrations/supabase/client';
@@ -500,8 +500,13 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
                     <td className="p-3 text-right font-semibold">${(Number(p.amount) + (adjMap[p.id] || 0)).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
                     <td className="p-3" onClick={e => e.stopPropagation()}>
                       <Select value={p.status} onValueChange={(val) => updatePaymentStatus(p.id, val)}>
-                        <SelectTrigger className="h-8 w-[130px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:ml-1">
-                          <StatusBadge status={p.status} className="text-sm px-3 py-1" />
+                        <SelectTrigger className="h-8 w-[155px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:hidden bg-transparent">
+                          <span className="flex items-center justify-between w-full gap-1">
+                            <StatusBadge status={p.status} className="text-[11px] px-3 py-1.5" />
+                            <span className="inline-flex h-5 w-5 items-center justify-center rounded border border-border bg-muted/40 text-muted-foreground ml-auto">
+                              <ChevronDown className="h-3 w-3 shrink-0" />
+                            </span>
+                          </span>
                         </SelectTrigger>
                         <SelectContent className="bg-popover z-50">
                           <SelectItem value="pending"><StatusBadge status="pending" /></SelectItem>

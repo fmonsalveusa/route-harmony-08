@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTrucks, DbTruck, TruckInput } from '@/hooks/useTrucks';
 import { useDrivers } from '@/hooks/useDrivers';
+import { StatusBadge } from '@/components/StatusBadge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { TruckFormDialog } from '@/components/TruckFormDialog';
 import { TruckDetailDialog } from '@/components/TruckDetailDialog';
@@ -116,12 +117,17 @@ const Fleet = () => {
                       </td>
                       <td className="p-3" onClick={e => e.stopPropagation()}>
                         <Select value={truck.status} onValueChange={v => updateTruck(truck.id, { status: v })}>
-                          <SelectTrigger className={`w-auto h-7 text-xs gap-1 px-2.5 border-0 rounded-full ${getStatusStyle(truck.status)}`}>
-                            <SelectValue />
+                          <SelectTrigger className="h-8 w-[155px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:hidden bg-transparent">
+                            <span className="flex items-center justify-between w-full gap-1">
+                              <StatusBadge status={truck.status} className="text-[11px] px-3 py-1.5" />
+                              <span className="inline-flex h-5 w-5 items-center justify-center rounded border border-border bg-muted/40 text-muted-foreground ml-auto">
+                                <ChevronDown className="h-3 w-3 shrink-0" />
+                              </span>
+                            </span>
                           </SelectTrigger>
                           <SelectContent className="bg-popover z-50">
                             {STATUS_OPTIONS.map(s => (
-                              <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                              <SelectItem key={s.value} value={s.value}><StatusBadge status={s.value} /></SelectItem>
                             ))}
                           </SelectContent>
                         </Select>

@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { useDispatchers, DbDispatcher, DispatcherInput } from '@/hooks/useDispatchers';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { DispatcherFormDialog } from '@/components/DispatcherFormDialog';
+import { StatusBadge } from '@/components/StatusBadge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Plus, Phone, Mail, Percent, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Phone, Mail, Percent, Pencil, Trash2, ChevronDown } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const dispatcherStatusColor = (status: string) => {
@@ -50,12 +51,17 @@ const Dispatchers = () => {
               <h3 className="font-semibold truncate">{d.name}</h3>
             </div>
             <Select value={d.status} onValueChange={v => updateDispatcher(d.id, { status: v })}>
-              <SelectTrigger className={`w-auto h-7 text-xs font-semibold text-white border-0 rounded-full px-3 gap-1 ${dispatcherStatusColor(d.status)}`}>
-                <SelectValue />
+              <SelectTrigger className="h-8 w-[140px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:hidden bg-transparent">
+                <span className="flex items-center justify-between w-full gap-1">
+                  <StatusBadge status={d.status} className="text-[11px] px-3 py-1.5" />
+                  <span className="inline-flex h-5 w-5 items-center justify-center rounded border border-border bg-muted/40 text-muted-foreground ml-auto">
+                    <ChevronDown className="h-3 w-3 shrink-0" />
+                  </span>
+                </span>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
+                <SelectItem value="active"><StatusBadge status="active" /></SelectItem>
+                <SelectItem value="inactive"><StatusBadge status="inactive" /></SelectItem>
               </SelectContent>
             </Select>
           </div>

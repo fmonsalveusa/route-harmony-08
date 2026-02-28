@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Plus, Shield, Calculator, Headphones, Truck as TruckIcon, Loader2, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Shield, Calculator, Headphones, Truck as TruckIcon, Loader2, Pencil, Trash2, ChevronDown } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 
 const roleIcons: Record<string, any> = {
@@ -147,7 +148,26 @@ const UsersPage = () => {
                             <RoleIcon className="h-3 w-3" /> {roleLabels[u.role] || u.role}
                           </Badge>
                         </td>
-                        <td className="p-3"><StatusBadge status={u.is_active ? 'active' : 'inactive'} /></td>
+                        <td className="p-3" onClick={e => e.stopPropagation()}>
+                          <Select value={u.is_active ? 'active' : 'inactive'} onValueChange={async (val) => {
+                            const newActive = val === 'active';
+                            await supabase.from('profiles').update({ is_active: newActive }).eq('id', u.id);
+                            fetchUsers();
+                          }}>
+                            <SelectTrigger className="h-8 w-[140px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:hidden bg-transparent">
+                              <span className="flex items-center justify-between w-full gap-1">
+                                <StatusBadge status={u.is_active ? 'active' : 'inactive'} className="text-[11px] px-3 py-1.5" />
+                                <span className="inline-flex h-5 w-5 items-center justify-center rounded border border-border bg-muted/40 text-muted-foreground ml-auto">
+                                  <ChevronDown className="h-3 w-3 shrink-0" />
+                                </span>
+                              </span>
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="active"><StatusBadge status="active" /></SelectItem>
+                              <SelectItem value="inactive"><StatusBadge status="inactive" /></SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </td>
                         <td className="p-3 text-right">
                           <div className="flex items-center justify-end gap-1">
                             <button className="glass-action-btn tint-amber inline-flex items-center" onClick={() => handleEdit(u)} title="Edit">
