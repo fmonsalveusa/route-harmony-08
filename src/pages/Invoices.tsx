@@ -142,7 +142,7 @@ const Invoices = () => {
       </div>
 
       <Tabs defaultValue="broker" className="w-full">
-        <div className="flex gap-2 border-b mb-6">
+        <TabsList className="inline-flex gap-2 border-b mb-6 bg-transparent border-none rounded-none p-0">
           {([
             { key: 'broker', label: 'Broker Invoices' },
             { key: 'dispatch_service', label: 'Dispatch Service' },
@@ -155,7 +155,7 @@ const Invoices = () => {
               {tab.label}
             </TabsTrigger>
           ))}
-        </div>
+        </TabsList>
 
         <TabsContent value="broker">
         <div className="space-y-6">
