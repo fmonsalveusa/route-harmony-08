@@ -12,6 +12,7 @@ window.addEventListener("unhandledrejection", (event) => {
 // Register service worker only outside Lovable preview
 const isLovablePreview =
   window.location.hostname.includes("lovableproject.com") ||
+  window.location.hostname.includes("lovable.app") ||
   window.location.search.includes("__lovable_token");
 
 if (isLovablePreview) {
