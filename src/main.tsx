@@ -16,11 +16,21 @@ const isLovablePreview =
   window.location.search.includes("__lovable_token");
 
 if (isLovablePreview) {
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.getRegistrations().then((registrations) => {
-      registrations.forEach((registration) => registration.unregister());
-    });
-  }
+  void (async () => {
+    try {
+      if ("serviceWorker" in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.map((registration) => registration.unregister()));
+      }
+
+      if ("caches" in window) {
+        const cacheKeys = await caches.keys();
+        await Promise.all(cacheKeys.map((key) => caches.delete(key)));
+      }
+    } catch (error) {
+      console.warn("Preview cache cleanup failed:", error);
+    }
+  })();
 } else {
   const updateSW = registerSW({
     onNeedRefresh() {
