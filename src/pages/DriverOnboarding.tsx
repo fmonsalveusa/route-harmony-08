@@ -25,7 +25,6 @@ const DRIVER_DOC_FIELDS = [
 const TRUCK_DOC_FIELDS = [
   { key: 'registration_photo', label: 'Registration Photo' },
   { key: 'insurance_photo', label: 'Insurance Photo' },
-  { key: 'license_photo', label: 'License Photo' },
   { key: 'rear_truck_photo', label: 'Rear Truck Photo' },
   { key: 'truck_side_photo', label: 'Truck Side Photo' },
   { key: 'truck_plate_photo', label: 'Truck Plate Photo' },

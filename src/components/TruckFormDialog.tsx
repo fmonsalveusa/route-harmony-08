@@ -15,7 +15,6 @@ const STATUSES = ['active', 'inactive', 'maintenance'];
 const DOC_FIELDS: { key: string; label: string; urlKey: keyof DbTruck }[] = [
   { key: 'registration_photo', label: 'Registration Photo', urlKey: 'registration_photo_url' },
   { key: 'insurance_photo', label: 'Insurance Photo', urlKey: 'insurance_photo_url' },
-  { key: 'license_photo', label: 'License Photo', urlKey: 'license_photo_url' },
   { key: 'rear_truck_photo', label: 'Rear Truck Photo', urlKey: 'rear_truck_photo_url' },
   { key: 'truck_side_photo', label: 'Truck Side Photo', urlKey: 'truck_side_photo_url' },
   { key: 'truck_plate_photo', label: 'Truck Plate Photo', urlKey: 'truck_plate_photo_url' },
