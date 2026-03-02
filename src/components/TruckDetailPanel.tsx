@@ -21,7 +21,6 @@ function Info({ label, children }: { label: string; children: React.ReactNode })
 const DOC_LABELS: { key: keyof DbTruck; label: string }[] = [
   { key: 'registration_photo_url', label: 'Registration' },
   { key: 'insurance_photo_url', label: 'Insurance' },
-  { key: 'license_photo_url', label: 'License' },
   { key: 'rear_truck_photo_url', label: 'Rear Photo' },
   { key: 'truck_side_photo_url', label: 'Side Photo' },
   { key: 'truck_plate_photo_url', label: 'Plate Photo' },

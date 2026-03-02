@@ -9,7 +9,6 @@ import { formatDate } from '@/lib/dateUtils';
 const DOC_LABELS: { key: keyof DbTruck; label: string }[] = [
   { key: 'registration_photo_url', label: 'Registration Photo' },
   { key: 'insurance_photo_url', label: 'Insurance Photo' },
-  { key: 'license_photo_url', label: 'License Photo' },
   { key: 'rear_truck_photo_url', label: 'Rear Truck Photo' },
   { key: 'truck_side_photo_url', label: 'Truck Side Photo' },
   { key: 'truck_plate_photo_url', label: 'Truck Plate Photo' },
