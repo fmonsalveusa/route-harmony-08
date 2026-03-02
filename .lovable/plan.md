@@ -1,31 +1,29 @@
 
 
-## Plan: Mejorar calidad de escaneo en iPhone — modo color
+## Problema Identificado
 
-### Problema
-La función `enhanceImage` convierte las imágenes a escala de grises con un contraste agresivo (umbral binario), lo que degrada la calidad visual de documentos BOL/POD, especialmente en iPhone donde la cámara ya captura buena calidad.
+El código en `src/main.tsx` que desactiva el Service Worker en preview verifica si el hostname contiene `"lovableproject.com"`, pero la URL real del preview es `id-preview--*.lovable.app`. Como resultado, **el Service Worker sigue activo en preview** y sirve archivos cacheados de una versión anterior (con el layout de sidebar vertical y branding antiguo).
 
-### Cambios
+## Plan de Corrección
 
-**1. `src/lib/scannerImageUtils.ts` — Nueva función `enhanceImageColor`**
-- Crear una función alternativa que mejore contraste y nitidez **sin convertir a blanco y negro**.
-- Aplicar ajuste de brillo/contraste suave (curva S) y ligero aumento de saturación.
-- Mantener la función `enhanceImage` original (B&W) como opción secundaria.
+### 1. Corregir la detección del entorno preview en `src/main.tsx`
 
-**2. `src/components/driver-app/DocumentScanner.tsx` — Toggle Color/B&W**
-- Cambiar el comportamiento por defecto: al capturar, ya **no se aplica enhance automático** — se guarda la imagen original a color como vista principal.
-- El botón "Mejorar" ahora cicla entre 3 estados: **Original → Color mejorado → Blanco y Negro**.
-- Esto permite al conductor elegir la versión que mejor se vea según el documento.
+Actualizar la condición `isLovablePreview` para que también detecte el dominio correcto del preview:
 
-**3. `src/lib/nativeCamera.ts` — Subir calidad en iPhone**
-- Aumentar `quality` de 85 a 92 para capturas nativas, preservando más detalle en iOS.
+```typescript
+const isLovablePreview =
+  window.location.hostname.includes("lovableproject.com") ||
+  window.location.hostname.includes("lovable.app") ||
+  window.location.search.includes("__lovable_token");
+```
 
-### Detalle técnico
+Esto hará que en **cualquier** entorno de Lovable (preview o publicado con `.lovable.app`) se limpien los Service Workers antiguos y no se registren nuevos, asegurando que siempre se cargue la versión más reciente.
 
-La nueva función `enhanceImageColor` aplicará:
-- Ajuste de contraste con curva S suave (preserva tonos medios)
-- Ligero incremento de saturación (+10%)
-- Sin conversión a grises
+### 2. Limpiar `src/App.css` (opcional)
 
-El estado de cada `ScannedPage` cambiará de `{ original, enhanced, showEnhanced }` a `{ original, colorEnhanced, bwEnhanced, displayMode: 'original' | 'color' | 'bw' }`.
+El archivo `App.css` contiene estilos del template de Vite por defecto (`#root { max-width: 1280px; ... }`) que no se usan (no está importado), pero debería eliminarse para evitar confusión futura.
+
+### Resultado Esperado
+
+Tras este cambio, al recargar el preview, el Service Worker antiguo se desregistrará automáticamente y la app cargará con el layout horizontal actual (top-nav) y el branding correcto (Load Up TMS con el logo nuevo).
 
