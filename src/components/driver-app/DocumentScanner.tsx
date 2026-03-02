@@ -11,16 +11,20 @@ import { perspectiveTransform, type Corners } from '@/lib/perspectiveTransform';
 import { compressDataUrl } from '@/lib/imageCompression';
 import {
   enhanceImage,
+  enhanceImageColor,
   resizeForCrop,
   resizeForDetection,
   fileToDataUrl,
   dataUrlToBlob,
 } from '@/lib/scannerImageUtils';
 
+type DisplayMode = 'original' | 'color' | 'bw';
+
 interface ScannedPage {
   original: string;
-  enhanced: string | null;
-  showEnhanced: boolean;
+  colorEnhanced: string | null;
+  bwEnhanced: string | null;
+  displayMode: DisplayMode;
 }
 
 interface DocumentScannerProps {
@@ -43,6 +47,18 @@ const DEFAULT_CORNERS: Corners = {
   bottomRight: { x: 0.95, y: 0.95 },
   bottomLeft: { x: 0.05, y: 0.95 },
 };
+
+const MODE_LABELS: Record<DisplayMode, string> = {
+  original: 'Original',
+  color: 'Color HD',
+  bw: 'B&N',
+};
+
+function getPageSrc(page: ScannedPage): string {
+  if (page.displayMode === 'color' && page.colorEnhanced) return page.colorEnhanced;
+  if (page.displayMode === 'bw' && page.bwEnhanced) return page.bwEnhanced;
+  return page.original;
+}
 
 export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUpdate }: DocumentScannerProps) => {
   const [pages, setPages] = useState<ScannedPage[]>([]);
@@ -79,6 +95,15 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
     }
   }, []);
 
+  // ─── Add a page (original only, no auto-enhance) ───
+  const addPage = useCallback((imageDataUrl: string) => {
+    setPages((prev) => {
+      const next = [...prev, { original: imageDataUrl, colorEnhanced: null, bwEnhanced: null, displayMode: 'original' as DisplayMode }];
+      setSelectedIndex(next.length - 1);
+      return next;
+    });
+  }, []);
+
   // ─── Full pipeline capture (camera/gallery) ───
   const handleCapture = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -107,27 +132,17 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
     async (corners: Corners) => {
       if (!cropImage) return;
       const cropped = await perspectiveTransform(cropImage, corners);
-      const enhanced = await enhanceImage(cropped);
-      setPages((prev) => {
-        const next = [...prev, { original: cropped, enhanced, showEnhanced: true }];
-        setSelectedIndex(next.length - 1);
-        return next;
-      });
+      addPage(cropped);
       setCropImage(null);
     },
-    [cropImage]
+    [cropImage, addPage]
   );
 
   const handleCropSkip = useCallback(async () => {
     if (!cropImage) return;
-    const enhanced = await enhanceImage(cropImage);
-    setPages((prev) => {
-      const next = [...prev, { original: cropImage, enhanced, showEnhanced: true }];
-      setSelectedIndex(next.length - 1);
-      return next;
-    });
+    addPage(cropImage);
     setCropImage(null);
-  }, [cropImage]);
+  }, [cropImage, addPage]);
 
   const triggerCamera = async () => {
     if (isNativeCamera()) {
@@ -171,17 +186,35 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
     fileRef.current?.click();
   };
 
-  const handleEnhance = async () => {
+  // ─── Cycle: Original → Color → B&W ───
+  const handleEnhanceCycle = async () => {
     if (pages.length === 0) return;
     const page = pages[selectedIndex];
-    if (page.enhanced) {
-      setPages((prev) => prev.map((p, i) => (i === selectedIndex ? { ...p, showEnhanced: !p.showEnhanced } : p)));
-      return;
+
+    if (page.displayMode === 'original') {
+      // Generate color enhanced if needed
+      if (!page.colorEnhanced) {
+        setEnhancing(true);
+        const colorEnhanced = await enhanceImageColor(page.original);
+        setPages((prev) => prev.map((p, i) => (i === selectedIndex ? { ...p, colorEnhanced, displayMode: 'color' } : p)));
+        setEnhancing(false);
+      } else {
+        setPages((prev) => prev.map((p, i) => (i === selectedIndex ? { ...p, displayMode: 'color' } : p)));
+      }
+    } else if (page.displayMode === 'color') {
+      // Generate B&W if needed
+      if (!page.bwEnhanced) {
+        setEnhancing(true);
+        const bwEnhanced = await enhanceImage(page.original);
+        setPages((prev) => prev.map((p, i) => (i === selectedIndex ? { ...p, bwEnhanced, displayMode: 'bw' } : p)));
+        setEnhancing(false);
+      } else {
+        setPages((prev) => prev.map((p, i) => (i === selectedIndex ? { ...p, displayMode: 'bw' } : p)));
+      }
+    } else {
+      // Back to original
+      setPages((prev) => prev.map((p, i) => (i === selectedIndex ? { ...p, displayMode: 'original' } : p)));
     }
-    setEnhancing(true);
-    const enhanced = await enhanceImage(page.original);
-    setPages((prev) => prev.map((p, i) => (i === selectedIndex ? { ...p, enhanced, showEnhanced: true } : p)));
-    setEnhancing(false);
   };
 
   const handleRetake = () => {
@@ -202,7 +235,7 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
 
     for (let i = 0; i < pages.length; i++) {
       const page = pages[i];
-      const rawSrc = page.showEnhanced && page.enhanced ? page.enhanced : page.original;
+      const rawSrc = getPageSrc(page);
       const src = await compressDataUrl(rawSrc);
       const blob = dataUrlToBlob(src);
       const fileName = `scan_${Date.now()}_p${i + 1}.jpg`;
@@ -275,11 +308,12 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
   }
 
   const currentPage = pages[selectedIndex];
-  const currentSrc = currentPage
-    ? currentPage.showEnhanced && currentPage.enhanced
-      ? currentPage.enhanced
-      : currentPage.original
-    : null;
+  const currentSrc = currentPage ? getPageSrc(currentPage) : null;
+  const nextModeLabel = currentPage
+    ? currentPage.displayMode === 'original' ? 'Color HD'
+    : currentPage.displayMode === 'color' ? 'B&N'
+    : 'Original'
+    : '';
 
   return (
     <div className="fixed inset-0 z-[100] bg-black flex flex-col">
@@ -292,6 +326,15 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
           <X className="h-5 w-5" />
         </button>
       </div>
+
+      {/* Mode badge */}
+      {currentPage && (
+        <div className="flex justify-center py-1 bg-black/90">
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-white/70">
+            {MODE_LABELS[currentPage.displayMode]}
+          </span>
+        </div>
+      )}
 
       {/* Preview area */}
       <div className="flex-1 flex items-center justify-center overflow-hidden bg-black">
@@ -320,7 +363,7 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
                 onClick={() => setSelectedIndex(i)}
                 className={`w-14 h-14 rounded-lg overflow-hidden border-2 ${i === selectedIndex ? 'border-primary' : 'border-white/20'}`}
               >
-                <img src={p.showEnhanced && p.enhanced ? p.enhanced : p.original} className="w-full h-full object-cover" />
+                <img src={getPageSrc(p)} className="w-full h-full object-cover" />
               </button>
               <button
                 onClick={() => handleDeletePage(i)}
@@ -349,10 +392,10 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
 
         {currentPage && (
           <>
-            <Button variant="outline" size="sm" onClick={handleEnhance} disabled={enhancing}
+            <Button variant="outline" size="sm" onClick={handleEnhanceCycle} disabled={enhancing}
               className="gap-1.5 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20">
               <Contrast className="h-4 w-4" />
-              {enhancing ? 'Mejorando...' : currentPage.showEnhanced ? 'Ver original' : 'Mejorar'}
+              {enhancing ? 'Mejorando...' : nextModeLabel}
             </Button>
             <Button variant="outline" size="sm" onClick={handleRetake}
               className="gap-1.5 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20">

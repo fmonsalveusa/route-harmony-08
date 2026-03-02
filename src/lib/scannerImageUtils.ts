@@ -101,7 +101,7 @@ async function loadAndDraw(
   });
 }
 
-/** Enhance image contrast (document scanner style) */
+/** Enhance image contrast (document scanner style — B&W) */
 export async function enhanceImage(dataUrl: string): Promise<string> {
   return loadAndDraw(dataUrl, undefined, undefined, (ctx, w, h) => {
     const imageData = ctx.getImageData(0, 0, w, h);
@@ -115,6 +115,41 @@ export async function enhanceImage(dataUrl: string): Promise<string> {
     }
     ctx.putImageData(imageData, 0, 0);
   }, 0.80);
+}
+
+/** S-curve function for smooth contrast */
+function sCurve(v: number): number {
+  // Normalize 0-255 to 0-1, apply sigmoid-like curve, back to 0-255
+  const x = v / 255;
+  const s = x * x * (3 - 2 * x); // smoothstep
+  return Math.round(s * 255);
+}
+
+/** Enhance image preserving color — soft contrast + saturation boost */
+export async function enhanceImageColor(dataUrl: string): Promise<string> {
+  return loadAndDraw(dataUrl, undefined, undefined, (ctx, w, h) => {
+    const imageData = ctx.getImageData(0, 0, w, h);
+    const data = imageData.data;
+    const satBoost = 1.1; // +10% saturation
+
+    for (let i = 0; i < data.length; i += 4) {
+      // Apply S-curve contrast per channel
+      let r = sCurve(data[i]);
+      let g = sCurve(data[i + 1]);
+      let b = sCurve(data[i + 2]);
+
+      // Boost saturation: move each channel away from luminance
+      const lum = r * 0.299 + g * 0.587 + b * 0.114;
+      r = Math.min(255, Math.max(0, Math.round(lum + (r - lum) * satBoost)));
+      g = Math.min(255, Math.max(0, Math.round(lum + (g - lum) * satBoost)));
+      b = Math.min(255, Math.max(0, Math.round(lum + (b - lum) * satBoost)));
+
+      data[i] = r;
+      data[i + 1] = g;
+      data[i + 2] = b;
+    }
+    ctx.putImageData(imageData, 0, 0);
+  }, 0.90);
 }
 
 /** Resize image for AI edge detection (small payload) */
