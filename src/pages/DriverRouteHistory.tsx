@@ -125,6 +125,7 @@ const DriverRouteHistory = () => {
         .from('loads')
         .select('id, reference_number, total_rate, miles, pickup_date, delivery_date, route_geometry')
         .eq('driver_id', selectedDriverId)
+        .neq('status', 'cancelled')
         .gte('pickup_date', from)
         .lte('pickup_date', to)
         .order('pickup_date');
