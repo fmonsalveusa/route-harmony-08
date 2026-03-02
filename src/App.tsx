@@ -53,15 +53,18 @@ const queryClient = new QueryClient({
   },
 });
 
+const LoadingScreen = () => (
+  <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-background text-foreground">
+    <div className="animate-spin rounded-full h-8 w-8 border-2 border-muted border-t-foreground" />
+    <p className="text-sm text-muted-foreground">Conectando...</p>
+  </div>
+);
+
 const ProtectedRoute = ({ children, masterOnly = false }: { children: React.ReactNode; masterOnly?: boolean }) => {
   const { user, loading, isMasterAdmin, profile, role } = useAuth();
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   if (!user) return <Navigate to="/auth" replace />;
@@ -83,11 +86,7 @@ const DriverWrapper = () => {
   const { user, loading, role, isMasterAdmin } = useAuth();
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   if (!user) return <Navigate to="/auth" replace />;
@@ -111,11 +110,7 @@ const AppRoutes = () => {
   const { user, loading, isMasterAdmin, role } = useAuth();
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   // Determine redirect path after login
@@ -153,7 +148,7 @@ const AppRoutes = () => {
       <Route path="/invoices" element={<ProtectedRoute><Invoices /></ProtectedRoute>} />
       <Route path="/companies" element={<ProtectedRoute><Companies /></ProtectedRoute>} />
       <Route path="/tracking" element={<ProtectedRoute><Tracking /></ProtectedRoute>} />
-      <Route path="/driver-route-history" element={<ProtectedRoute><Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-background"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}><DriverRouteHistory /></Suspense></ProtectedRoute>} />
+      <Route path="/driver-route-history" element={<ProtectedRoute><Suspense fallback={<LoadingScreen />}><DriverRouteHistory /></Suspense></ProtectedRoute>} />
       
       <Route path="/expenses" element={<ProtectedRoute><Expenses /></ProtectedRoute>} />
       <Route path="/performance" element={<ProtectedRoute><Performance /></ProtectedRoute>} />
