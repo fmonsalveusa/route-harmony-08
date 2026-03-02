@@ -71,6 +71,7 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
   const [cropImage, setCropImage] = useState<string | null>(null);
   const [cropCorners, setCropCorners] = useState<Corners>(DEFAULT_CORNERS);
   const [detecting, setDetecting] = useState(false);
+  const [showAddMore, setShowAddMore] = useState(false);
 
   const fileRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
@@ -134,6 +135,7 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
       const cropped = await perspectiveTransform(cropImage, corners);
       addPage(cropped);
       setCropImage(null);
+      setShowAddMore(true);
     },
     [cropImage, addPage]
   );
@@ -142,7 +144,21 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
     if (!cropImage) return;
     addPage(cropImage);
     setCropImage(null);
+    setShowAddMore(true);
   }, [cropImage, addPage]);
+
+  const handleAddMoreYes = useCallback((source: 'camera' | 'gallery') => {
+    setShowAddMore(false);
+    if (source === 'camera') {
+      setTimeout(() => triggerCamera(), 150);
+    } else {
+      setTimeout(() => triggerGallery(), 150);
+    }
+  }, []);
+
+  const handleAddMoreNo = useCallback(() => {
+    setShowAddMore(false);
+  }, []);
 
   const triggerCamera = async () => {
     if (isNativeCamera()) {
@@ -304,6 +320,56 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
         onConfirm={handleCropConfirm}
         onSkip={handleCropSkip}
       />
+    );
+  }
+
+  // Add-more prompt after crop
+  if (showAddMore) {
+    return (
+      <div className="fixed inset-0 z-[100] bg-black flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 bg-black/90">
+          <h2 className="text-white font-semibold text-sm">
+            Escanear {docLabel} ({pages.length} pág.)
+          </h2>
+          <button onClick={handleClose} className="text-white/70 hover:text-white">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* Last scanned preview */}
+        <div className="flex-1 flex flex-col items-center justify-center gap-6 px-6">
+          {pages.length > 0 && (
+            <img src={getPageSrc(pages[pages.length - 1])} alt={`Página ${pages.length}`} className="max-w-[60%] max-h-[40vh] object-contain rounded-lg border-2 border-primary/50" />
+          )}
+          <div className="text-center space-y-2">
+            <p className="text-white font-medium text-base">Página {pages.length} escaneada ✓</p>
+            <p className="text-white/70 text-sm">¿Deseas escanear otra página?</p>
+          </div>
+          <div className="flex flex-col gap-3 w-full max-w-xs">
+            <Button onClick={() => handleAddMoreYes('camera')} className="gap-2 w-full" size="lg">
+              <Camera className="h-5 w-5" /> Escanear otra (Cámara)
+            </Button>
+            <Button onClick={() => handleAddMoreYes('gallery')} variant="outline" className="gap-2 w-full bg-white/10 border-white/20 text-white hover:bg-white/20" size="lg">
+              <ImageIcon className="h-5 w-5" /> Agregar desde Galería
+            </Button>
+            <Button onClick={handleAddMoreNo} variant="ghost" className="gap-2 w-full text-white/70 hover:text-white hover:bg-white/10" size="lg">
+              Listo, revisar páginas
+            </Button>
+          </div>
+        </div>
+
+        {/* Thumbnail strip */}
+        {pages.length > 1 && (
+          <div className="flex gap-2 px-4 py-3 bg-black/90 overflow-x-auto justify-center">
+            {pages.map((p, i) => (
+              <div key={i} className="w-12 h-12 rounded-lg overflow-hidden border-2 border-white/20 flex-shrink-0">
+                <img src={getPageSrc(p)} className="w-full h-full object-cover" />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     );
   }
 
