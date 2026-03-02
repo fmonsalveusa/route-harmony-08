@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Check, SkipForward, Loader2 } from 'lucide-react';
 import type { Corners, Point } from '@/lib/perspectiveTransform';
@@ -20,12 +20,18 @@ export const EdgeCropOverlay = ({
 }: EdgeCropOverlayProps) => {
   const [corners, setCorners] = useState<Corners>(initialCorners);
   const [dragging, setDragging] = useState<keyof Corners | null>(null);
+  const [imgLoaded, setImgLoaded] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
 
   useEffect(() => {
     setCorners(initialCorners);
   }, [initialCorners]);
+
+  // Reset imgLoaded when imageUrl changes
+  useEffect(() => {
+    setImgLoaded(false);
+  }, [imageUrl]);
 
   const getRelativePos = useCallback(
     (clientX: number, clientY: number): Point | null => {
@@ -98,6 +104,7 @@ export const EdgeCropOverlay = ({
           alt="Documento"
           className="max-w-full max-h-full object-contain"
           draggable={false}
+          onLoad={() => setImgLoaded(true)}
         />
 
         {detecting && (
@@ -109,7 +116,7 @@ export const EdgeCropOverlay = ({
           </div>
         )}
 
-        {!detecting && imgRef.current && (
+        {!detecting && imgLoaded && imgRef.current && (
           <svg
             className="absolute pointer-events-none"
             style={{
@@ -146,6 +153,7 @@ export const EdgeCropOverlay = ({
 
         {/* Draggable corner handles */}
         {!detecting &&
+          imgLoaded &&
           imgRef.current &&
           cornerKeys.map((key) => {
             const c = corners[key];
