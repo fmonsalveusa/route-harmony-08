@@ -29,6 +29,7 @@ const tenantNavItems: NavItem[] = [
 { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', permission: 'dashboard' },
 { label: 'Loads', icon: Package, path: '/loads', permission: 'loads' },
 { label: 'Tracking', icon: MapPin, path: '/tracking', permission: 'tracking' },
+{ label: 'Route History', icon: MapPin, path: '/driver-route-history', permission: 'tracking' },
 { label: 'Fleet', icon: Truck, path: '/fleet', permission: 'fleet' },
 { label: 'Drivers', icon: Users, path: '/drivers', permission: 'drivers' },
 { label: 'Dispatchers', icon: Headphones, path: '/dispatchers', permission: 'dispatchers' },
