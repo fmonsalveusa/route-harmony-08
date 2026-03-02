@@ -16,7 +16,7 @@ export async function takeNativePhoto(): Promise<string | null> {
     );
 
     const photo = await Camera.getPhoto({
-      quality: 85,
+      quality: 92,
       resultType: CameraResultType.DataUrl,
       source: CameraSource.Camera,
       correctOrientation: true,
@@ -46,7 +46,7 @@ export async function pickFromGallery(): Promise<string[]> {
 
     // Single pick via getPhoto (multi-pick not well supported across platforms)
     const photo = await Camera.getPhoto({
-      quality: 85,
+      quality: 92,
       resultType: CameraResultType.DataUrl,
       source: CameraSource.Photos,
       correctOrientation: true,
