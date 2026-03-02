@@ -1,0 +1,1 @@
+UPDATE tenants SET email = 'agartransportation1@gmail.com' WHERE id = '7b4e906b-3d75-44ba-a8b0-64bc923a3c36';
