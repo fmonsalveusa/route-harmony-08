@@ -17,6 +17,7 @@ import Payments from "./pages/Payments";
 import Invoices from "./pages/Invoices";
 import Companies from "./pages/Companies";
 import Tracking from "./pages/Tracking";
+import DriverRouteHistory from "./pages/DriverRouteHistory";
 
 import UsersPage from "./pages/UsersPage";
 import Expenses from "./pages/Expenses";
@@ -151,6 +152,7 @@ const AppRoutes = () => {
       <Route path="/invoices" element={<ProtectedRoute><Invoices /></ProtectedRoute>} />
       <Route path="/companies" element={<ProtectedRoute><Companies /></ProtectedRoute>} />
       <Route path="/tracking" element={<ProtectedRoute><Tracking /></ProtectedRoute>} />
+      <Route path="/driver-route-history" element={<ProtectedRoute><DriverRouteHistory /></ProtectedRoute>} />
       
       <Route path="/expenses" element={<ProtectedRoute><Expenses /></ProtectedRoute>} />
       <Route path="/performance" element={<ProtectedRoute><Performance /></ProtectedRoute>} />
