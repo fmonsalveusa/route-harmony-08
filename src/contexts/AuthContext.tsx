@@ -180,18 +180,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     let initialSessionHandled = false;
 
+    const fetchWithTimeout = async (userId: string) => {
+      const result = await Promise.race<boolean>([
+        fetchUserData(userId),
+        new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 10000)),
+      ]);
+
+      if (!result) {
+        console.warn('[AuthContext] fetchWithTimeout expired, cleaning session');
+        clearUserState();
+        setUser(null);
+        setSession(null);
+        await supabase.auth.signOut();
+      }
+
+      return result;
+    };
+
     // First, get the initial session synchronously
     supabase.auth.getSession().then(({ data: { session } }) => {
       initialSessionHandled = true;
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Auth timeout')), 30000)
-        );
-        Promise.race([fetchUserData(session.user.id), timeoutPromise])
-          .catch((err) => console.warn('Auth init:', err.message))
-          .finally(() => setLoading(false));
+        fetchWithTimeout(session.user.id).finally(() => setLoading(false));
       } else {
         setLoading(false);
       }
@@ -222,7 +234,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (!profileLoadedRef.current && session?.user) {
           setLoading(true);
           setTimeout(() => {
-            fetchUserData(session.user.id).finally(() => setLoading(false));
+            fetchWithTimeout(session.user.id).finally(() => setLoading(false));
           }, 0);
         }
         return;
@@ -235,7 +247,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (session?.user) {
         setLoading(true);
         setTimeout(() => {
-          fetchUserData(session.user.id).finally(() => setLoading(false));
+          fetchWithTimeout(session.user.id).finally(() => setLoading(false));
         }, 0);
       } else {
         profileLoadedRef.current = false;

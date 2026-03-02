@@ -67,7 +67,7 @@ const ProtectedRoute = ({ children, masterOnly = false }: { children: React.Reac
     return <LoadingScreen />;
   }
 
-  if (!user) return <Navigate to="/auth" replace />;
+  if (!user || !profile) return <Navigate to="/auth" replace />;
 
   // Drivers should always use the mobile app
   if (role === 'driver') return <Navigate to="/driver" replace />;
