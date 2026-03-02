@@ -29,7 +29,6 @@ const tenantNavItems: NavItem[] = [
 { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', permission: 'dashboard' },
 { label: 'Loads', icon: Package, path: '/loads', permission: 'loads' },
 { label: 'Tracking', icon: MapPin, path: '/tracking', permission: 'tracking' },
-{ label: 'Route History', icon: MapPin, path: '/driver-route-history', permission: 'tracking' },
 { label: 'Fleet', icon: Truck, path: '/fleet', permission: 'fleet' },
 { label: 'Drivers', icon: Users, path: '/drivers', permission: 'drivers' },
 { label: 'Dispatchers', icon: Headphones, path: '/dispatchers', permission: 'dispatchers' },
@@ -38,6 +37,7 @@ const tenantNavItems: NavItem[] = [
 { label: 'Maintenance', icon: Wrench, path: '/maintenance', permission: 'fleet' },
 { label: 'Performance', icon: Trophy, path: '/performance', permission: 'performance' },
 { label: 'Invoices', icon: FileText, path: '/invoices', permission: 'invoices' },
+{ label: 'Route History', icon: MapPin, path: '/driver-route-history', permission: 'tracking' },
 { label: 'Companies', icon: Building2, path: '/companies', permission: 'companies' },
 { label: 'Users', icon: UserCog, path: '/users', permission: 'users' }];
 
