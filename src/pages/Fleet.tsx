@@ -111,7 +111,7 @@ const Fleet = () => {
                           {driverName ? (
                             <><User className="h-3 w-3 text-primary" />{driverName}</>
                           ) : (
-                            <span className="text-muted-foreground italic">Unassigned</span>
+                            <span className="text-destructive font-medium">Unassigned</span>
                           )}
                         </span>
                       </td>
