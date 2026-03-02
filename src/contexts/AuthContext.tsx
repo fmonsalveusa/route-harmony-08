@@ -86,7 +86,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.warn('[AuthContext] Loading fallback triggered');
         return false;
       });
-    }, 12000);
+    }, 8000);
 
     return () => clearTimeout(fallbackTimer);
   }, []);
