@@ -1,4 +1,4 @@
-import { Suspense, lazy } from "react";
+import { Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -18,7 +18,7 @@ import Payments from "./pages/Payments";
 import Invoices from "./pages/Invoices";
 import Companies from "./pages/Companies";
 import Tracking from "./pages/Tracking";
-const DriverRouteHistory = lazy(() => import("./pages/DriverRouteHistory"));
+import DriverRouteHistory from "./pages/DriverRouteHistory";
 
 import UsersPage from "./pages/UsersPage";
 import Expenses from "./pages/Expenses";
