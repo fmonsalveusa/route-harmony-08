@@ -1,3 +1,4 @@
+import { Suspense, lazy } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -17,7 +18,7 @@ import Payments from "./pages/Payments";
 import Invoices from "./pages/Invoices";
 import Companies from "./pages/Companies";
 import Tracking from "./pages/Tracking";
-import DriverRouteHistory from "./pages/DriverRouteHistory";
+const DriverRouteHistory = lazy(() => import("./pages/DriverRouteHistory"));
 
 import UsersPage from "./pages/UsersPage";
 import Expenses from "./pages/Expenses";
@@ -152,7 +153,7 @@ const AppRoutes = () => {
       <Route path="/invoices" element={<ProtectedRoute><Invoices /></ProtectedRoute>} />
       <Route path="/companies" element={<ProtectedRoute><Companies /></ProtectedRoute>} />
       <Route path="/tracking" element={<ProtectedRoute><Tracking /></ProtectedRoute>} />
-      <Route path="/driver-route-history" element={<ProtectedRoute><DriverRouteHistory /></ProtectedRoute>} />
+      <Route path="/driver-route-history" element={<ProtectedRoute><Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-background"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}><DriverRouteHistory /></Suspense></ProtectedRoute>} />
       
       <Route path="/expenses" element={<ProtectedRoute><Expenses /></ProtectedRoute>} />
       <Route path="/performance" element={<ProtectedRoute><Performance /></ProtectedRoute>} />
