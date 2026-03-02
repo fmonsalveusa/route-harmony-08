@@ -78,6 +78,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const profileLoadedRef = React.useRef(false);
 
+  // Failsafe: avoid permanent blank screen if auth initialization gets stuck
+  useEffect(() => {
+    const fallbackTimer = setTimeout(() => {
+      setLoading((prev) => {
+        if (!prev) return prev;
+        console.warn('[AuthContext] Loading fallback triggered');
+        return false;
+      });
+    }, 12000);
+
+    return () => clearTimeout(fallbackTimer);
+  }, []);
+
   const clearUserState = () => {
     profileLoadedRef.current = false;
     setProfile(null);
