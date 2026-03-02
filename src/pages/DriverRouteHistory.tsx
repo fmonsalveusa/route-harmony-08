@@ -86,6 +86,7 @@ interface LoadRow {
   total_rate: number;
   miles: number | null;
   pickup_date: string | null;
+  delivery_date: string | null;
   route_geometry: unknown;
 }
 
@@ -122,7 +123,7 @@ const DriverRouteHistory = () => {
       setMapLoading(true);
       const { data: loadData } = await supabase
         .from('loads')
-        .select('id, reference_number, total_rate, miles, pickup_date, route_geometry')
+        .select('id, reference_number, total_rate, miles, pickup_date, delivery_date, route_geometry')
         .eq('driver_id', selectedDriverId)
         .gte('pickup_date', from)
         .lte('pickup_date', to)
@@ -179,10 +180,14 @@ const DriverRouteHistory = () => {
       const allBounds: L.LatLngExpression[] = [];
       let globalStopIndex = 1;
 
-      // Sort loads by pickup_date
-      const sortedLoads = [...loads].sort((a, b) =>
-        (a.pickup_date || '').localeCompare(b.pickup_date || '')
-      );
+      // Sort loads by pickup_date, then delivery_date as tiebreaker
+      const sortedLoads = [...loads].sort((a, b) => {
+        const cmp = (a.pickup_date || '').localeCompare(b.pickup_date || '');
+        if (cmp !== 0) return cmp;
+        return (a.delivery_date || '').localeCompare(b.delivery_date || '');
+      });
+
+      let prevLastCoords: [number, number] | null = null;
 
       for (let li = 0; li < sortedLoads.length; li++) {
         if (cancelled) return;
@@ -206,6 +211,17 @@ const DriverRouteHistory = () => {
             resolvedStops.push({ stop, coords });
             allBounds.push(coords);
           }
+        }
+
+        // Draw deadhead connector from previous load's last stop
+        if (prevLastCoords && resolvedStops.length > 0) {
+          const firstCoords = resolvedStops[0].coords;
+          L.polyline([prevLastCoords, firstCoords], {
+            color: '#9ca3af',
+            weight: 2,
+            opacity: 0.5,
+            dashArray: '8 6',
+          }).addTo(map).bindPopup('<span style="color:#666">Deadhead / Empty</span>');
         }
 
         // Draw route polyline
@@ -247,6 +263,11 @@ const DriverRouteHistory = () => {
             </div>`
           );
           globalStopIndex++;
+        }
+
+        // Track last stop coords for next deadhead connector
+        if (resolvedStops.length > 0) {
+          prevLastCoords = resolvedStops[resolvedStops.length - 1].coords;
         }
       }
 
