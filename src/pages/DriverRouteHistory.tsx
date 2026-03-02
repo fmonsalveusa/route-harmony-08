@@ -3,7 +3,7 @@ import { useDrivers } from '@/hooks/useDrivers';
 import { supabase } from '@/integrations/supabase/client';
 import { StatCard } from '@/components/StatCard';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DollarSign, TrendingUp, Route } from 'lucide-react';
+import { DollarSign, TrendingUp, MapPin } from 'lucide-react';
 import {
   startOfWeek, endOfWeek, subWeeks,
   startOfMonth, endOfMonth, subMonths, format
@@ -310,7 +310,7 @@ const DriverRouteHistory = () => {
           <StatCard
             title="Total Loaded Miles"
             value={totalMiles.toLocaleString()}
-            icon={Route}
+            icon={MapPin}
             subtitle="miles"
           />
           <StatCard
