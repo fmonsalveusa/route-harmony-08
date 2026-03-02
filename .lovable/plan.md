@@ -1,39 +1,20 @@
 
 
-## Driver Route History Map — Plan
+## Diagnóstico
 
-A new page that lets the user select a driver and a time period, then renders a Leaflet map with the complete route for that period, numbered stop markers, and summary KPIs.
+El código actual **sí** usa `pickup_date` tanto para filtrar como para ordenar las cargas. Sin embargo, el problema de continuidad visual se debe a que **cada carga se dibuja como una polilínea independiente** sin conexión entre ellas. No hay una línea que una la última parada de la carga N con la primera parada de la carga N+1, lo que rompe la percepción de un recorrido continuo.
 
-### Components
+Además, cuando una carga tiene múltiples paradas con fechas distintas (ej: pickup el lunes, delivery el miércoles), el orden cronológico real debería considerar las **fechas de las paradas individuales** (`load_stops.date`), no solo el `pickup_date` de la carga.
 
-**1. New page: `src/pages/DriverRouteHistory.tsx`**
+## Plan de corrección
 
-Top controls:
-- Driver selector (from `useDrivers`)
-- Period selector: This Week / Last Week / This Month / Last Month
+**Archivo: `src/pages/DriverRouteHistory.tsx`**
 
-Summary KPI cards (3 `StatCard`-style cards):
-- **Total Revenue**: sum of `total_rate` for all loads in the period
-- **Total Loaded Miles**: sum of `miles` for all loads in the period
-- **RPM**: Total Revenue / Total Loaded Miles
+1. **Ordenar cargas por `pickup_date` y como desempate por `delivery_date`** para que cargas con el mismo pickup se ordenen correctamente.
 
-Full-width Leaflet map:
-- Each load gets a distinct colored polyline (6-8 color palette)
-- Numbered circle markers (`L.DivIcon`) at each stop, sequenced chronologically across all loads
-- Popup on markers: load reference, stop type, address, date
-- Auto `fitBounds` to show all routes
+2. **Dibujar líneas de conexión entre cargas**: Una polilínea punteada gris/tenue que conecte la última parada de la carga anterior con la primera parada de la carga siguiente, mostrando el "deadhead" o recorrido vacío entre cargas.
 
-**2. Data flow**
-- Filter loads by `driver_id` + date range (using `pickup_date`)
-- Batch query `load_stops` for matching load IDs
-- Use cached `route_geometry` from loads; fall back to OSRM for missing routes
-- Compute totals from filtered loads: `sum(total_rate)`, `sum(miles)`, derived RPM
+3. **Mantener la numeración global secuencial** de paradas a través de todas las cargas para reflejar el orden cronológico real del conductor.
 
-**3. Route and nav integration**
-- Add route `/driver-route-history` in `App.tsx` (protected)
-- Add nav item in `AppLayout.tsx` with `MapPin` or `Route` icon, permission `tracking`
-
-### Files
-- **Create**: `src/pages/DriverRouteHistory.tsx`
-- **Edit**: `src/App.tsx` (add route), `src/components/AppLayout.tsx` (add nav link)
+Esto dará la sensación visual de un recorrido continuo donde se ve claramente: carga 1 (color A) → conexión punteada → carga 2 (color B) → conexión punteada → carga 3 (color C), etc.
 
