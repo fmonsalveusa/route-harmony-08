@@ -411,6 +411,45 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
   }, [driverId]); // intentionally only driverId
 
   // ============================================================
+  // REALTIME: Auto-start tracking when a load is assigned
+  // ============================================================
+  useEffect(() => {
+    if (!driverId) return;
+
+    const channel = supabase
+      .channel(`driver-loads-${driverId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'loads',
+          filter: `driver_id=eq.${driverId}`,
+        },
+        async (payload) => {
+          const newRecord = payload.new as any;
+          if (!newRecord) return;
+
+          const isActive = ACTIVE_LOAD_STATUSES.includes(newRecord.status);
+
+          if (isActive && !tracking) {
+            console.log('[Tracking] Realtime: new active load detected, auto-starting tracking');
+            try {
+              await startTracking(true);
+            } catch (e) {
+              console.error('[Tracking] Realtime auto-start failed:', e);
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [driverId, tracking, startTracking]);
+
+  // ============================================================
   // NATIVE: Reconnect on app resume (appStateChange)
   // ============================================================
   useEffect(() => {
