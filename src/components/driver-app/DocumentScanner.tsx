@@ -8,15 +8,14 @@ import { createNotification } from '@/hooks/useNotifications';
 import { toast } from '@/hooks/use-toast';
 import { EdgeCropOverlay } from './EdgeCropOverlay';
 import { perspectiveTransform, type Corners } from '@/lib/perspectiveTransform';
-import { compressDataUrl } from '@/lib/imageCompression';
 import {
   enhanceImage,
   enhanceImageColor,
   resizeForCrop,
   resizeForDetection,
   fileToDataUrl,
-  dataUrlToBlob,
 } from '@/lib/scannerImageUtils';
+import { scanToPdf } from '@/lib/scanToPdf';
 
 type DisplayMode = 'original' | 'color' | 'bw';
 
@@ -247,23 +246,25 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
   const handleUploadAll = async () => {
     if (pages.length === 0) return;
     setUploading(true);
-    const tenant_id = await getTenantId();
+    try {
+      const tenant_id = await getTenantId();
 
-    for (let i = 0; i < pages.length; i++) {
-      const page = pages[i];
-      const rawSrc = getPageSrc(page);
-      const src = await compressDataUrl(rawSrc);
-      const blob = dataUrlToBlob(src);
-      const fileName = `scan_${Date.now()}_p${i + 1}.jpg`;
+      // Collect all page images (respecting display mode)
+      const imageDataUrls = pages.map((p) => getPageSrc(p));
+
+      // Generate single PDF from all pages
+      const pdfBlob = await scanToPdf(imageDataUrls);
+      const fileName = `scan_${Date.now()}_${pages.length}p.pdf`;
       const filePath = `pods/${stop.load_id}/${stop.id}_${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('driver-documents')
-        .upload(filePath, blob, { contentType: 'image/jpeg' });
+        .upload(filePath, pdfBlob, { contentType: 'application/pdf' });
 
       if (uploadError) {
         toast({ title: 'Error', description: uploadError.message, variant: 'destructive' });
-        continue;
+        setUploading(false);
+        return;
       }
 
       await supabase.from('pod_documents').insert({
@@ -271,24 +272,28 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
         stop_id: stop.id,
         file_name: fileName,
         file_url: filePath,
-        file_type: 'image',
+        file_type: 'pdf',
         tenant_id,
       } as any);
+
+      await createNotification({
+        type: 'pod_uploaded',
+        title: `${docLabel} Scanned - ${driverName}`,
+        message: `${driverName} scanned ${pages.length} page(s) of ${docLabel} at ${stop.address} (Load #${loadRef})`,
+        load_id: stop.load_id,
+      });
+
+      toast({ title: `PDF de ${pages.length} página(s) subido ✓` });
+      setPages([]);
+      setSelectedIndex(0);
+      onUpdate();
+      onClose();
+    } catch (err) {
+      console.error('Error generating/uploading PDF:', err);
+      toast({ title: 'Error generando PDF', variant: 'destructive' });
+    } finally {
+      setUploading(false);
     }
-
-    await createNotification({
-      type: 'pod_uploaded',
-      title: `${docLabel} Scanned - ${driverName}`,
-      message: `${driverName} scanned ${pages.length} page(s) of ${docLabel} at ${stop.address} (Load #${loadRef})`,
-      load_id: stop.load_id,
-    });
-
-    toast({ title: `${pages.length} página(s) subida(s)` });
-    setPages([]);
-    setSelectedIndex(0);
-    setUploading(false);
-    onUpdate();
-    onClose();
   };
 
   const handleClose = () => {
