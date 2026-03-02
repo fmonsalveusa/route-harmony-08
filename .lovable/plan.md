@@ -1,36 +1,39 @@
 
 
-## Plan: Mover generacion de pagos al cambio de Factoring a "Ready"
+## Driver Route History Map — Plan
 
-### Problema actual
-Los pagos de driver/investor se generan cuando el status de la carga cambia a `delivered`. El usuario quiere que se generen cuando el campo `factoring` se pone en `ready`.
+A new page that lets the user select a driver and a time period, then renders a Leaflet map with the complete route for that period, numbered stop markers, and summary KPIs.
 
-### Cambios en `src/pages/Loads.tsx`
+### Components
 
-1. **Remover generacion de pagos del cambio de status a "delivered"** (lineas 419-423): Quitar la llamada a `generatePaymentsForLoad` cuando `val === 'delivered'`. Mantener el `setPodUploadLoadId` y la logica de `delivery_date`/`factoring` defaults.
+**1. New page: `src/pages/DriverRouteHistory.tsx`**
 
-2. **Agregar generacion de pagos al cambio de factoring a "ready"** (lineas 454-456): Cuando `val === 'ready'`, buscar el driver y dispatcher correspondientes y llamar a `generatePaymentsForLoad`. Tambien considerar: si el factoring se cambia DE "ready" a otro valor, llamar `deletePaymentsForLoad` para revertir.
+Top controls:
+- Driver selector (from `useDrivers`)
+- Period selector: This Week / Last Week / This Month / Last Month
 
-3. **Mantener la logica de `deletePaymentsForLoad`** cuando el status cambia desde "delivered" a otro valor (ya que si se revierte el delivered, tampoco deberian existir pagos).
+Summary KPI cards (3 `StatCard`-style cards):
+- **Total Revenue**: sum of `total_rate` for all loads in the period
+- **Total Loaded Miles**: sum of `miles` for all loads in the period
+- **RPM**: Total Revenue / Total Loaded Miles
 
-### Logica final
+Full-width Leaflet map:
+- Each load gets a distinct colored polyline (6-8 color palette)
+- Numbered circle markers (`L.DivIcon`) at each stop, sequenced chronologically across all loads
+- Popup on markers: load reference, stop type, address, date
+- Auto `fitBounds` to show all routes
 
-```
-// Status change handler:
-if (val === 'delivered') {
-  // Set delivery_date, factoring default, open POD dialog
-  // NO payment generation here
-}
-if (prevStatus === 'delivered' && val !== 'tonu') {
-  deletePaymentsForLoad(load.id);
-}
+**2. Data flow**
+- Filter loads by `driver_id` + date range (using `pickup_date`)
+- Batch query `load_stops` for matching load IDs
+- Use cached `route_geometry` from loads; fall back to OSRM for missing routes
+- Compute totals from filtered loads: `sum(total_rate)`, `sum(miles)`, derived RPM
 
-// Factoring change handler:
-if (val === 'ready') {
-  generatePaymentsForLoad(load, driverData, dispatcherData);
-}
-```
+**3. Route and nav integration**
+- Add route `/driver-route-history` in `App.tsx` (protected)
+- Add nav item in `AppLayout.tsx` with `MapPin` or `Route` icon, permission `tracking`
 
-### Archivos a modificar
-- `src/pages/Loads.tsx` — mover trigger de pagos del status change al factoring change
+### Files
+- **Create**: `src/pages/DriverRouteHistory.tsx`
+- **Edit**: `src/App.tsx` (add route), `src/components/AppLayout.tsx` (add nav link)
 
