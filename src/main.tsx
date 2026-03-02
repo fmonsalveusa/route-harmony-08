@@ -9,20 +9,31 @@ window.addEventListener("unhandledrejection", (event) => {
   event.preventDefault();
 });
 
-// Register service worker with auto-update strategy
-// When a new version is detected, it updates automatically and reloads the page
-const updateSW = registerSW({
-  onNeedRefresh() {
-    console.log("New version available - will update on next reload");
-  },
-  onOfflineReady() {
-    console.log("App ready for offline use");
-  },
-  immediate: true,
-});
+// Register service worker only outside Lovable preview
+const isLovablePreview =
+  window.location.hostname.includes("lovableproject.com") ||
+  window.location.search.includes("__lovable_token");
 
-setInterval(() => {
-  updateSW();
-}, 5 * 60 * 1000);
+if (isLovablePreview) {
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.getRegistrations().then((registrations) => {
+      registrations.forEach((registration) => registration.unregister());
+    });
+  }
+} else {
+  const updateSW = registerSW({
+    onNeedRefresh() {
+      console.log("New version available - will update on next reload");
+    },
+    onOfflineReady() {
+      console.log("App ready for offline use");
+    },
+    immediate: true,
+  });
+
+  setInterval(() => {
+    updateSW();
+  }, 5 * 60 * 1000);
+}
 
 createRoot(document.getElementById("root")!).render(<App />);
