@@ -20,6 +20,8 @@ import { toast } from '@/hooks/use-toast';
 
 import { ManualDispatcherPaymentDialog } from '@/components/ManualDispatcherPaymentDialog';
 import { ManualPaymentDialog } from '@/components/ManualPaymentDialog';
+import { RecurringDeductionDialog } from '@/components/RecurringDeductionDialog';
+import { RefreshCw } from 'lucide-react';
 
 const handleGenerateReceipt = async (p: DbPayment) => {
   const { data } = await supabase.from('payment_adjustments').select('*').eq('payment_id', p.id).order('created_at', { ascending: true });
@@ -583,6 +585,7 @@ const Payments = () => {
   const [manualDialogOpen, setManualDialogOpen] = useState(false);
   const [manualDriverDialogOpen, setManualDriverDialogOpen] = useState(false);
   const [manualInvestorDialogOpen, setManualInvestorDialogOpen] = useState(false);
+  const [recurringOpen, setRecurringOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const handleManualComplete = () => { refetch(); setRefreshKey(k => k + 1); };
@@ -594,7 +597,9 @@ const Payments = () => {
           <h1 className="page-header">Payments</h1>
           <p className="page-description">Manage payments to drivers, investors, and dispatchers</p>
         </div>
-        
+        <Button variant="outline" size="sm" onClick={() => setRecurringOpen(true)}>
+          <RefreshCw className="h-4 w-4 mr-1.5" /> Recurring Deductions
+        </Button>
       </div>
 
 
@@ -644,6 +649,7 @@ const Payments = () => {
         recipientType="investor"
         onComplete={handleManualComplete}
       />
+      <RecurringDeductionDialog open={recurringOpen} onOpenChange={setRecurringOpen} />
     </div>
   );
 };

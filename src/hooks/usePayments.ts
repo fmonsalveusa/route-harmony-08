@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { getTenantId } from '@/hooks/useTenantId';
+import { getISOWeek } from '@/lib/dateUtils';
 
 export interface DbPayment {
   id: string;
@@ -177,6 +178,87 @@ export async function generatePaymentsForLoad(load: {
           }
         }
       }
+
+      // ─── Auto-apply recurring deductions ───
+      await applyRecurringDeductions(createdPayments as any[], tenant_id);
+    }
+  }
+}
+
+/** Apply recurring deductions for each payment recipient */
+async function applyRecurringDeductions(payments: any[], tenant_id: string | null) {
+  if (!payments || payments.length === 0) return;
+
+  // Get unique recipient ids
+  const recipientIds = [...new Set(payments.map((p: any) => p.recipient_id))];
+
+  const { data: allDeductions } = await supabase
+    .from('recurring_deductions' as any)
+    .select('*')
+    .eq('is_active', true)
+    .in('recipient_id', recipientIds);
+
+  if (!allDeductions || allDeductions.length === 0) return;
+
+  const now = new Date();
+  const currentWeek = getISOWeek(now);
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth();
+
+  const adjsToInsert: any[] = [];
+
+  for (const payment of payments) {
+    const deductions = (allDeductions as any[]).filter(
+      (d: any) => d.recipient_id === payment.recipient_id && d.recipient_type === payment.recipient_type
+    );
+
+    for (const ded of deductions) {
+      if (ded.frequency === 'per_load') {
+        // Always apply
+        adjsToInsert.push({
+          payment_id: payment.id,
+          adjustment_type: 'deduction',
+          reason: ded.reason,
+          description: ded.description,
+          amount: ded.amount,
+          recurring_deduction_id: ded.id,
+          tenant_id,
+        });
+      } else {
+        // weekly or monthly — check if already applied in this period
+        const { data: existing } = await supabase
+          .from('payment_adjustments' as any)
+          .select('id, created_at')
+          .eq('recurring_deduction_id', ded.id);
+
+        const alreadyApplied = (existing || []).some((adj: any) => {
+          const adjDate = new Date(adj.created_at);
+          if (ded.frequency === 'weekly') {
+            return getISOWeek(adjDate) === currentWeek && adjDate.getFullYear() === currentYear;
+          }
+          // monthly
+          return adjDate.getMonth() === currentMonth && adjDate.getFullYear() === currentYear;
+        });
+
+        if (!alreadyApplied) {
+          adjsToInsert.push({
+            payment_id: payment.id,
+            adjustment_type: 'deduction',
+            reason: ded.reason,
+            description: ded.description,
+            amount: ded.amount,
+            recurring_deduction_id: ded.id,
+            tenant_id,
+          });
+        }
+      }
+    }
+  }
+
+  if (adjsToInsert.length > 0) {
+    const { error } = await supabase.from('payment_adjustments').insert(adjsToInsert as any);
+    if (error) {
+      console.error('Error applying recurring deductions:', error);
     }
   }
 }
