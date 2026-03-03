@@ -1064,6 +1064,7 @@ export type Database = {
           load_adjustment_id: string | null
           payment_id: string
           reason: string
+          recurring_deduction_id: string | null
           tenant_id: string | null
         }
         Insert: {
@@ -1075,6 +1076,7 @@ export type Database = {
           load_adjustment_id?: string | null
           payment_id: string
           reason?: string
+          recurring_deduction_id?: string | null
           tenant_id?: string | null
         }
         Update: {
@@ -1086,6 +1088,7 @@ export type Database = {
           load_adjustment_id?: string | null
           payment_id?: string
           reason?: string
+          recurring_deduction_id?: string | null
           tenant_id?: string | null
         }
         Relationships: [
@@ -1101,6 +1104,13 @@ export type Database = {
             columns: ["payment_id"]
             isOneToOne: false
             referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_adjustments_recurring_deduction_id_fkey"
+            columns: ["recurring_deduction_id"]
+            isOneToOne: false
+            referencedRelation: "recurring_deductions"
             referencedColumns: ["id"]
           },
           {
@@ -1308,6 +1318,59 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "push_tokens_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recurring_deductions: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string
+          frequency: string
+          id: string
+          is_active: boolean
+          reason: string
+          recipient_id: string
+          recipient_name: string
+          recipient_type: string
+          tenant_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          description: string
+          frequency?: string
+          id?: string
+          is_active?: boolean
+          reason?: string
+          recipient_id: string
+          recipient_name: string
+          recipient_type?: string
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string
+          frequency?: string
+          id?: string
+          is_active?: boolean
+          reason?: string
+          recipient_id?: string
+          recipient_name?: string
+          recipient_type?: string
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_deductions_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
