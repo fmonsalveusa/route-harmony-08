@@ -1,35 +1,53 @@
 
 
-## Plan: Generar PDF desde páginas escaneadas en el Document Scanner
+## Recurring Deductions for Drivers & Investors
 
-### Problema actual
-Cuando el conductor escanea un BOL/POD (una o varias páginas), cada página se sube como imagen JPEG individual. En la web, se ven como archivos de imagen separados, no como un documento PDF unificado.
+### Problem
+Some drivers and investors have periodic deductions (insurance, ELD, bank fees, etc.) that need to be applied automatically every time a payment is generated. Currently, these must be added manually as payment adjustments each time.
 
-### Solución
+### Solution
+Create a **Recurring Deductions** configuration system, similar to how `truck_fixed_costs` works, but tied to drivers/investors. When payments are auto-generated via `generatePaymentsForLoad`, the system will look up active recurring deductions for that recipient and automatically insert them as `payment_adjustments`.
 
-Modificar `handleUploadAll` en `DocumentScanner.tsx` para que, en lugar de subir cada página como imagen individual, combine todas las páginas escaneadas en un único archivo PDF usando `jsPDF` (ya instalado en el proyecto) y suba ese PDF como un solo `pod_document`.
+### Database Changes
 
-### Cambios
+**New table: `recurring_deductions`**
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid | PK |
+| recipient_id | text | Driver ID |
+| recipient_type | text | 'driver' or 'investor' |
+| recipient_name | text | Display name |
+| description | text | e.g. "Weekly Insurance", "ELD" |
+| amount | numeric | Deduction amount |
+| frequency | text | 'per_load', 'weekly', 'monthly' |
+| reason | text | Maps to existing ADJUSTMENT_REASONS |
+| is_active | boolean | Default true |
+| tenant_id | uuid | Multi-tenant |
+| created_at / updated_at | timestamptz | Standard |
 
-#### 1. Crear utilidad `src/lib/scanToPdf.ts`
-Nueva función que recibe un array de data URLs (imágenes) y devuelve un `Blob` de PDF:
-- Usa `jsPDF` para crear un documento
-- Cada imagen se agrega como una página completa (A4, orientación auto-detectada)
-- Retorna el blob del PDF resultante
+RLS policies: standard tenant-based (select, insert, update, delete).
 
-#### 2. Modificar `src/components/driver-app/DocumentScanner.tsx`
-En `handleUploadAll`:
-- Importar la nueva utilidad
-- Recopilar todas las páginas (con su modo de visualización actual) en data URLs
-- Llamar a `scanToPdf(dataUrls)` para generar el blob PDF
-- Subir **un solo archivo** PDF al storage (`pods/{load_id}/{stop_id}_scan_{timestamp}.pdf`)
-- Insertar **un solo registro** en `pod_documents` con `file_type: 'pdf'`
+### Frequency Logic
+- **per_load**: Applied to every payment generated for this recipient.
+- **weekly**: Applied once per calendar week. Before inserting, check if this deduction was already applied to any payment created in the same ISO week.
+- **monthly**: Applied once per calendar month. Same duplicate check but by month.
 
-#### 3. Sin cambios en la web
-`usePodDocuments` y `StopDocumentGroup`/`PodUploadSection` ya manejan archivos PDF correctamente (los abren con `window.open` via signed URL). El navegador mostrará el PDF nativo con todas las páginas.
+### Code Changes
 
-### Resultado
-- El conductor escanea 1 o N páginas → se genera 1 PDF
-- En la web, el administrador ve un archivo PDF que puede abrir/descargar con todas las páginas del BOL/POD
-- Compatible con el flujo de envío de facturas por email (que ya adjunta PODs)
+1. **New hook `useRecurringDeductions.ts`**: CRUD operations for the new table, following the `useTruckFixedCosts` pattern (React Query).
+
+2. **New dialog `RecurringDeductionDialog.tsx`**: Configure recurring deductions per driver/investor. Fields: description, amount, frequency, reason. Accessible from the Payments page (new button or per-recipient action).
+
+3. **Update `generatePaymentsForLoad` in `usePayments.ts`**: After creating payments and propagating load adjustments, query `recurring_deductions` for each recipient. For 'per_load' items, always insert. For 'weekly'/'monthly', check existing `payment_adjustments` with matching `recurring_deduction_id` in the current period before inserting.
+
+4. **Add `recurring_deduction_id` column to `payment_adjustments`**: Optional FK to track which recurring deduction generated the adjustment (prevents duplicates and enables audit).
+
+5. **UI in Payments page**: Add a "Recurring Deductions" management section or button. Show configured deductions per driver/investor with ability to add, edit, toggle active, and delete.
+
+### Implementation Order
+1. Create `recurring_deductions` table + add `recurring_deduction_id` to `payment_adjustments`
+2. Build `useRecurringDeductions` hook
+3. Build `RecurringDeductionDialog` component
+4. Integrate into Payments page UI
+5. Update `generatePaymentsForLoad` to auto-apply recurring deductions
 
