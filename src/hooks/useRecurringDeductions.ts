@@ -15,6 +15,7 @@ export interface DbRecurringDeduction {
   reason: string;
   is_active: boolean;
   tenant_id: string | null;
+  effective_from: string;
   created_at: string;
   updated_at: string;
 }
@@ -28,6 +29,7 @@ export interface RecurringDeductionInput {
   frequency: string;
   reason: string;
   is_active?: boolean;
+  effective_from?: string;
 }
 
 const QUERY_KEY = ['recurring_deductions'];

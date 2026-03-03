@@ -214,6 +214,8 @@ async function applyRecurringDeductions(payments: any[], tenant_id: string | nul
 
     for (const ded of deductions) {
       if (ded.frequency === 'per_load') {
+        // Check effective_from date
+        if (ded.effective_from && new Date(ded.effective_from + 'T00:00:00') > now) continue;
         // Always apply
         adjsToInsert.push({
           payment_id: payment.id,
@@ -225,7 +227,8 @@ async function applyRecurringDeductions(payments: any[], tenant_id: string | nul
           tenant_id,
         });
       } else {
-        // weekly or monthly — check if already applied in this period
+        // weekly or monthly — check effective_from and if already applied in this period
+        if (ded.effective_from && new Date(ded.effective_from + 'T00:00:00') > now) continue;
         const { data: existing } = await supabase
           .from('payment_adjustments' as any)
           .select('id, created_at')

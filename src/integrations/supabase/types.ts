@@ -1330,6 +1330,7 @@ export type Database = {
           amount: number
           created_at: string
           description: string
+          effective_from: string
           frequency: string
           id: string
           is_active: boolean
@@ -1344,6 +1345,7 @@ export type Database = {
           amount?: number
           created_at?: string
           description: string
+          effective_from?: string
           frequency?: string
           id?: string
           is_active?: boolean
@@ -1358,6 +1360,7 @@ export type Database = {
           amount?: number
           created_at?: string
           description?: string
+          effective_from?: string
           frequency?: string
           id?: string
           is_active?: boolean

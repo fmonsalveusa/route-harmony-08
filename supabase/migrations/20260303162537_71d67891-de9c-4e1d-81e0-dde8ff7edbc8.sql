@@ -1,0 +1,1 @@
+ALTER TABLE public.recurring_deductions ADD COLUMN effective_from date NOT NULL DEFAULT CURRENT_DATE;
