@@ -7,8 +7,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { PlusCircle, Pencil, Trash2, RefreshCw } from 'lucide-react';
+import { PlusCircle, Pencil, Trash2, RefreshCw, CalendarIcon } from 'lucide-react';
 import { useRecurringDeductions, type DbRecurringDeduction } from '@/hooks/useRecurringDeductions';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 import { ADJUSTMENT_REASONS } from '@/hooks/usePaymentAdjustments';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -41,6 +45,7 @@ export function RecurringDeductionDialog({ open, onOpenChange }: Props) {
   const [amount, setAmount] = useState('');
   const [frequency, setFrequency] = useState('per_load');
   const [reason, setReason] = useState('other');
+  const [effectiveFrom, setEffectiveFrom] = useState<Date>(new Date());
 
   useEffect(() => {
     if (!open) return;
@@ -63,6 +68,7 @@ export function RecurringDeductionDialog({ open, onOpenChange }: Props) {
     setAmount('');
     setFrequency('per_load');
     setReason('other');
+    setEffectiveFrom(new Date());
     setEditingId(null);
     setShowForm(false);
   };
@@ -73,6 +79,7 @@ export function RecurringDeductionDialog({ open, onOpenChange }: Props) {
     setAmount(String(d.amount));
     setFrequency(d.frequency);
     setReason(d.reason);
+    setEffectiveFrom(d.effective_from ? new Date(d.effective_from + 'T00:00:00') : new Date());
     setEditingId(d.id);
     setShowForm(true);
   };
@@ -92,6 +99,7 @@ export function RecurringDeductionDialog({ open, onOpenChange }: Props) {
       amount: Number(amount),
       frequency,
       reason,
+      effective_from: effectiveFrom.toISOString().split('T')[0],
     };
 
     const ok = editingId
@@ -164,6 +172,20 @@ export function RecurringDeductionDialog({ open, onOpenChange }: Props) {
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="space-y-1">
+                  <Label>Effective From</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !effectiveFrom && "text-muted-foreground")}>
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {effectiveFrom ? format(effectiveFrom, 'MM/dd/yyyy') : 'Pick a date'}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar mode="single" selected={effectiveFrom} onSelect={(d) => d && setEffectiveFrom(d)} initialFocus className={cn("p-3 pointer-events-auto")} />
+                    </PopoverContent>
+                  </Popover>
+                </div>
               </div>
               <div className="flex gap-2 justify-end">
                 <Button variant="outline" size="sm" onClick={resetForm}>Cancel</Button>
@@ -188,6 +210,7 @@ export function RecurringDeductionDialog({ open, onOpenChange }: Props) {
                       <Switch checked={d.is_active} onCheckedChange={(v) => toggleActive(d.id, v)} className="scale-75" />
                       <span className="flex-1 font-medium">{d.description}</span>
                       <Badge variant="outline" className="text-xs">{FREQUENCIES.find(f => f.value === d.frequency)?.label}</Badge>
+                      {d.effective_from && <span className="text-xs text-muted-foreground">from {d.effective_from}</span>}
                       <span className="font-semibold text-destructive">-${Number(d.amount).toFixed(2)}</span>
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEdit(d)}><Pencil className="h-3.5 w-3.5" /></Button>
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteDeduction(d.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
