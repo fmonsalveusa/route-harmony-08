@@ -1,46 +1,31 @@
 
 
-## Termination Letter Generation & Storage for Drivers
+## Add Signature to Termination Letter
 
-### What the document contains
-A bilingual (English pages 1-2, Spanish pages 3-4) **Lease Agreement Termination Letter** from the tenant company to the driver, including:
-- Driver name
-- Vehicle info (Year, Make, Model, VIN, License Plate)
-- Five sections: Termination notice, Prohibition on use of company info, Removal of markings, Legal consequences, Acknowledgment
-- Company representative signature block with date
+### Problem
+The termination letter currently shows a blank line (`_______________________________`) where the authorized representative's signature should be. The original document had the representative's signature printed on it.
 
-### Plan
+### Solution
+Add a **SignaturePad** canvas to the `TerminationLetterDialog` so the representative can draw their signature before generating the PDF. The signature data URL is then embedded into the PDF using the existing `addSignatureImage` helper — replacing the blank line in both the English and Spanish signature blocks.
 
-#### 1. Database: Add `termination_letter_url` column to `drivers`
-- New nullable `text` column to store the storage path of the generated/uploaded PDF.
+### Changes
 
-#### 2. PDF Generation: New function `generateTerminationLetterPdf` in `src/lib/onboardingDocPdf.ts`
-- Accepts: driver name, vehicle details (year, make, model, VIN, license plate), company/tenant name, authorized representative name, and date.
-- Generates a 4-page PDF (2 English + 2 Spanish) replicating the uploaded template using the existing `writeBlock`/`writeHeading` helpers.
-- Dynamically fills driver name, vehicle fields, company name (from tenant), and issuance date.
-- Returns a `Blob`.
+**1. `src/components/TerminationLetterDialog.tsx`**
+- Import the existing `SignaturePad` component
+- Add state for `signature: string | null`
+- Render the SignaturePad below the representative name input
+- Require signature before allowing generation
+- Pass `signature` to `generateTerminationLetterPdf`
 
-#### 3. New Component: `TerminationLetterDialog` 
-- A dialog accessible from the driver's actions (Drivers page table row).
-- Shows a confirmation with pre-filled driver/truck data.
-- On "Generate": calls `generateTerminationLetterPdf`, uploads the PDF to `driver-documents` storage, saves the path to `drivers.termination_letter_url`, and shows a success toast.
+**2. `src/lib/onboardingDocPdf.ts` — `generateTerminationLetterPdf`**
+- Add `signature?: string` to the data parameter
+- In the English signature block (around line 808-817): if `signature` is provided, call `addSignatureImage(doc, signature, m, y, 50, 15)` instead of the blank underline
+- Same for the Spanish signature block (around line 907-916)
 
-#### 4. UI Integration in `DriverDetailPanel`
-- Add a "Termination Letter" entry in the documents section.
-- If `termination_letter_url` exists: show "View" link (signed URL) + "Delete" button to clear the field.
-- Add a button to generate/regenerate the letter (opens `TerminationLetterDialog`).
-
-#### 5. UI Integration in Drivers page
-- Add a "Termination Letter" action button in the actions column (or as a dropdown option) for each driver row, visible to admin/accounting roles.
-
-#### 6. Update `DbDriver` interface
-- Add `termination_letter_url: string | null` to the type definition.
-
-### Files to create/modify
-- **Migration SQL**: Add `termination_letter_url` column
-- **`src/lib/onboardingDocPdf.ts`**: Add `generateTerminationLetterPdf` function
-- **`src/components/TerminationLetterDialog.tsx`**: New dialog component
-- **`src/components/DriverDetailPanel.tsx`**: Add termination letter to documents section with view/delete/generate
-- **`src/pages/Drivers.tsx`**: Wire the dialog trigger
-- **`src/hooks/useDrivers.ts`**: Add field to `DbDriver` interface
+### UX Flow
+1. User opens Termination Letter dialog
+2. Enters representative name
+3. Signs on the canvas pad (same component used in onboarding documents)
+4. Clicks "Generate & Save"
+5. PDF is created with the drawn signature embedded in both English and Spanish pages
 
