@@ -19,15 +19,26 @@ interface Props {
   onSuccess: (driverId: string, url: string) => void;
 }
 
-export function TerminationLetterDialog({ open, onOpenChange, driver, truck, companyName, onSuccess }: Props) {
+export function TerminationLetterDialog({ open, onOpenChange, driver, truck: truckProp, companyName, onSuccess }: Props) {
   const [loading, setLoading] = useState(false);
   const [representative, setRepresentative] = useState('');
+  const [fetchedTruck, setFetchedTruck] = useState<any>(null);
 
   useEffect(() => {
-    if (open) setRepresentative('');
-  }, [open]);
+    if (open) {
+      setRepresentative('');
+      setFetchedTruck(null);
+      // Always fetch the truck directly from DB using the driver's truck_id
+      if (driver?.truck_id) {
+        supabase.from('trucks' as any).select('*').eq('id', driver.truck_id).maybeSingle()
+          .then(({ data }) => { if (data) setFetchedTruck(data); });
+      }
+    }
+  }, [open, driver?.truck_id]);
 
   if (!driver) return null;
+
+  const truck = fetchedTruck || truckProp;
 
   const handleGenerate = async () => {
     if (!representative.trim()) {
