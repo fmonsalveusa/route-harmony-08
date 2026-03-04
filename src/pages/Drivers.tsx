@@ -36,7 +36,7 @@ const PAGE_SIZES = [25, 50, 100];
 
 const Drivers = () => {
   const { role, profile } = useAuth();
-  const { drivers, loading, createDriver, updateDriver, deleteDriver, uploadDocument, getDocSignedUrl } = useDrivers();
+  const { drivers, loading, createDriver, updateDriver, deleteDriver, uploadDocument, getDocSignedUrl, refetch } = useDrivers();
   const { trucks } = useTrucks();
   const { dispatchers } = useDispatchers();
   const [search, setSearch] = useState('');
@@ -392,7 +392,7 @@ const Drivers = () => {
         driver={terminationDriver}
         truck={terminationDriver ? getTruck(terminationDriver.truck_id) : null}
         companyName={tenantName}
-        onSuccess={() => { setTerminationDriver(null); }}
+        onSuccess={() => { refetch(); setTerminationDriver(null); }}
       />
     </div>
   );
