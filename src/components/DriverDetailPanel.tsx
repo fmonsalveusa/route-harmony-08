@@ -22,6 +22,7 @@ const docFields = [
   { key: 'form_w9_url', label: 'Form W9' },
   { key: 'leasing_agreement_url', label: 'Leasing Agreement' },
   { key: 'service_agreement_url', label: 'Service Agreement' },
+  { key: 'termination_letter_url', label: 'Termination Letter' },
 ];
 
 interface Props {
