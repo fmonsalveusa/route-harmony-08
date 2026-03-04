@@ -332,6 +332,7 @@ export type Database = {
           state: string | null
           status: string
           tenant_id: string | null
+          termination_letter_url: string | null
           truck_id: string | null
           updated_at: string
           zip: string | null
@@ -371,6 +372,7 @@ export type Database = {
           state?: string | null
           status?: string
           tenant_id?: string | null
+          termination_letter_url?: string | null
           truck_id?: string | null
           updated_at?: string
           zip?: string | null
@@ -410,6 +412,7 @@ export type Database = {
           state?: string | null
           status?: string
           tenant_id?: string | null
+          termination_letter_url?: string | null
           truck_id?: string | null
           updated_at?: string
           zip?: string | null

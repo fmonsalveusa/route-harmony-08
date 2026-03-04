@@ -38,6 +38,7 @@ export interface DbDriver {
   manual_location_address: string | null;
   manual_location_lat: number | null;
   manual_location_lng: number | null;
+  termination_letter_url: string | null;
   created_at: string;
   updated_at: string;
 }

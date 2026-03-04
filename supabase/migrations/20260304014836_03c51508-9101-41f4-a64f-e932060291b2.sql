@@ -1,0 +1,1 @@
+ALTER TABLE public.drivers ADD COLUMN termination_letter_url text;

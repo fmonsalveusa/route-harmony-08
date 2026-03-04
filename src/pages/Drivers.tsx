@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Plus, Search, Phone, Truck as TruckIcon, Pencil, Trash2, Eye, Copy, Link2, ChevronDown, ChevronUp, Navigation } from 'lucide-react';
+import { Plus, Search, Phone, Truck as TruckIcon, Pencil, Trash2, Eye, Copy, Link2, ChevronDown, ChevronUp, Navigation, FileText } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useDrivers, DbDriver, DriverInput } from '@/hooks/useDrivers';
 import { useTrucks } from '@/hooks/useTrucks';
@@ -16,6 +16,7 @@ import { DriverFormDialog } from '@/components/DriverFormDialog';
 import { DriverDetailDialog } from '@/components/DriverDetailDialog';
 import { DriverDetailPanel } from '@/components/DriverDetailPanel';
 import { GenerateOnboardingLinkDialog } from '@/components/GenerateOnboardingLinkDialog';
+import { TerminationLetterDialog } from '@/components/TerminationLetterDialog';
 import { toast } from '@/hooks/use-toast';
 import { ExpiryIndicators } from '@/components/ExpiryIndicators';
 import { supabase } from '@/integrations/supabase/client';
@@ -50,6 +51,17 @@ const Drivers = () => {
   const [pageSize, setPageSize] = useState(25);
   const [dispatcherFilter, setDispatcherFilter] = useState<string>('all');
   const [activeDriverIds, setActiveDriverIds] = useState<Set<string>>(new Set());
+  const [terminationDriver, setTerminationDriver] = useState<DbDriver | null>(null);
+  const [tenantName, setTenantName] = useState('');
+
+  // Fetch tenant name for termination letter
+  useEffect(() => {
+    const fetchTenant = async () => {
+      const { data } = await supabase.from('tenants').select('name').limit(1).single();
+      if (data) setTenantName((data as any).name);
+    };
+    fetchTenant();
+  }, []);
 
   // Fetch driver_locations for GPS active indicator
   useEffect(() => {
@@ -251,6 +263,9 @@ const Drivers = () => {
                               <Button variant="ghost" size="sm" className="glass-action-btn tint-amber" onClick={() => { setEditingDriver(driver); setFormOpen(true); }} title="Edit">
                                 <Pencil className="h-4 w-4" /> Edit
                               </Button>
+                              <Button variant="ghost" size="sm" className="glass-action-btn" onClick={() => setTerminationDriver(driver)} title="Termination Letter">
+                                <FileText className="h-4 w-4" /> Termination
+                              </Button>
                               <Button variant="ghost" size="sm" className="glass-action-btn tint-red" onClick={async () => { if (window.confirm(`Delete driver ${driver.name}? This action is permanent.`)) { await deleteDriver(driver.id); } }} title="Delete">
                                 <Trash2 className="h-4 w-4" /> Delete
                               </Button>
@@ -371,6 +386,14 @@ const Drivers = () => {
       <DriverFormDialog open={formOpen} onOpenChange={setFormOpen} driver={editingDriver} onSubmit={handleSubmit} trucks={trucks} dispatchers={dispatchers} />
       <DriverDetailDialog open={!!detailDriver} onOpenChange={open => !open && setDetailDriver(null)} driver={detailDriver} truckLabel={detailDriver ? getTruckLabel(detailDriver.truck_id) : null} dispatcherName={detailDriver ? dispatchers.find(d => d.id === detailDriver.dispatcher_id)?.name || null : null} getDocSignedUrl={getDocSignedUrl} />
       <GenerateOnboardingLinkDialog open={onboardingOpen} onOpenChange={setOnboardingOpen} dispatchers={dispatchers} />
+      <TerminationLetterDialog
+        open={!!terminationDriver}
+        onOpenChange={open => !open && setTerminationDriver(null)}
+        driver={terminationDriver}
+        truck={terminationDriver ? getTruck(terminationDriver.truck_id) : null}
+        companyName={tenantName}
+        onSuccess={() => { setTerminationDriver(null); }}
+      />
     </div>
   );
 };
