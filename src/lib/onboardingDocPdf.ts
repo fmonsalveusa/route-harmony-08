@@ -718,39 +718,39 @@ export function generateTerminationLetterPdf(data: {
   signature?: string;
 }): Blob {
   const doc = new jsPDF();
-  const m = 15;
-  const w = 180;
-  let y = 14;
-  const fs = 7.5;
-  const ls = 3.2;
+  const m = 20;
+  const w = 170;
+  let y = 22;
+  const fs = 9;
+  const ls = 4.2;
 
   const co = data.companyName || 'Company';
 
-  doc.setFontSize(10);
+  doc.setFontSize(13);
   doc.setFont('helvetica', 'bold');
   doc.text(co.toUpperCase(), 105, y, { align: 'center' });
-  y += 9;
+  y += 14;
 
   doc.setFontSize(fs);
   doc.setFont('helvetica', 'normal');
   doc.text(`Date: ${data.date}`, m, y);
-  y += 5;
+  y += 7;
 
   doc.text('To:', m, y);
-  y += 4;
+  y += 5;
   doc.setFont('helvetica', 'bold');
   doc.text(`Driver Name: ${data.driverName}`, m, y);
   doc.setFont('helvetica', 'normal');
-  y += 6;
+  y += 8;
 
   doc.text('Dear Sir/Madam,', m, y);
-  y += 5;
+  y += 7;
 
   y = writeBlock(doc, `By means of this letter, ${co} hereby formally notifies you of the immediate and irrevocable termination of the lease agreement previously entered into between you and our company. This termination is effective upon receipt of this communication, and it carries with it a series of obligations that you are legally required to fulfill without delay.`, m, y, fs, w, false, ls);
-  y += 3;
+  y += 5;
 
   y = writeBlock(doc, 'The vehicle covered under the terminated lease agreement is identified as follows:', m, y, fs, w, false, ls);
-  y += 2;
+  y += 3;
 
   // Vehicle table
   const vehicleFields = [
@@ -765,38 +765,38 @@ export function generateTerminationLetterPdf(data: {
     doc.setFontSize(fs);
     doc.text(label, m, y);
     doc.setFont('helvetica', 'normal');
-    doc.text(val || '______________________________', m + 25, y);
-    y += 4;
+    doc.text(val || '______________________________', m + 30, y);
+    y += 5.5;
   }
-  y += 2;
+  y += 4;
 
   y = writeBlock(doc, `From this moment forward, and under no circumstance or for any reason whatsoever, you are strictly prohibited from using, displaying, reproducing, distributing, or referencing any information belonging to ${co}. This includes, but is not limited to, our company's trade name, operating authority numbers (MC/DOT), logos, seals, letterheads, dispatch documentation, bills of lading, or any other material bearing our company's identity — in any medium, format, or context. This prohibition is absolute, unconditional, and permanent.`, m, y, fs, w, false, ls);
-  y += 3;
+  y += 5;
 
   y = writeBlock(doc, `Furthermore, you are required to immediately remove, at your own expense, all markings, decals, placards, magnetic signs, DOT numbers, MC numbers, and any other identification belonging to ${co} from the above-referenced commercial vehicle. This removal must be completed within Twelve (12) hours of receiving this letter. Continued display of our company's information on your vehicle after this period will be treated as unauthorized use of our identity and operating authority.`, m, y, fs, w, false, ls);
-  y += 3;
+  y += 5;
 
   y = writeBlock(doc, `Please be advised that failure to comply with any of the obligations set forth in this letter will leave ${co} no choice but to pursue all legal remedies available under federal and state law. This includes, but is not limited to, the filing of formal complaints before the Federal Motor Carrier Safety Administration (FMCSA), which may result in the suspension or revocation of your Commercial Driver's License (CDL) and operating privileges; civil litigation seeking compensatory and punitive damages; criminal complaints for identity fraud and unauthorized use of commercial operating authority; and any other direct legal action against you that may be deemed necessary. ${co} will not hesitate to act swiftly and decisively to protect its rights, identity, and business interests.`, m, y, fs, w, false, ls);
-  y += 3;
+  y += 5;
 
   y = writeBlock(doc, 'We trust that you will attend to these matters promptly and in full compliance with the terms outlined herein. Ignorance of this notice will not constitute a valid defense in any legal proceeding arising from non-compliance.', m, y, fs, w, false, ls);
-  y += 6;
+  y += 8;
 
   doc.text('Respectfully,', m, y);
-  y += 4;
+  y += 5;
   if (data.signature) {
-    addSignatureImage(doc, data.signature, m, y - 2, 40, 12);
-    y += 13;
+    addSignatureImage(doc, data.signature, m, y - 2, 50, 15);
+    y += 16;
   } else {
     doc.text('_______________________________', m, y);
-    y += 5;
+    y += 6;
   }
   doc.setFont('helvetica', 'bold');
   doc.text(data.representativeName, m, y);
-  y += 4;
+  y += 5;
   doc.setFont('helvetica', 'normal');
   doc.text('Authorized Representative', m, y);
-  y += 4;
+  y += 5;
   doc.text(co, m, y);
 
   return doc.output('blob');
