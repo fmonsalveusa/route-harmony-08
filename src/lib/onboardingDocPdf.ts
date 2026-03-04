@@ -729,7 +729,12 @@ export function generateTerminationLetterPdf(data: {
   doc.setFontSize(13);
   doc.setFont('helvetica', 'bold');
   doc.text(co.toUpperCase(), 105, y, { align: 'center' });
-  y += 14;
+  y += 7;
+  doc.text('TERMINATION LETTER', 105, y, { align: 'center' });
+  y += 4;
+  doc.setLineWidth(0.5);
+  doc.line(m, y, m + w, y);
+  y += 10;
 
   doc.setFontSize(fs);
   doc.setFont('helvetica', 'normal');
