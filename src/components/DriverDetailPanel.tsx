@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { DbDriver } from '@/hooks/useDrivers';
-import { FileText, ExternalLink, Loader2, Download } from 'lucide-react';
+import { FileText, ExternalLink, Loader2, Download, Trash2 } from 'lucide-react';
 import { formatDate } from '@/lib/dateUtils';
 import { ExpiryBadge } from '@/components/ExpiryBadge';
 import { generateOnboardingSummaryPdf } from '@/lib/onboardingDocPdf';
 import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 
 function Info({ label, children }: { label: string; children: React.ReactNode }) {
@@ -35,6 +37,27 @@ interface Props {
 
 export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSignedUrl, truck }: Props) {
   const [loadingDoc, setLoadingDoc] = useState<string | null>(null);
+  const [deletingTermination, setDeletingTermination] = useState(false);
+  const [termLetterDeleted, setTermLetterDeleted] = useState(false);
+
+  const handleDeleteTerminationLetter = async () => {
+    if (!confirm('Are you sure you want to delete the termination letter?')) return;
+    setDeletingTermination(true);
+    try {
+      // Remove file from storage if it's a path
+      const url = driver.termination_letter_url;
+      if (url && !url.startsWith('http')) {
+        await supabase.storage.from('driver-documents').remove([url]);
+      }
+      await supabase.from('drivers' as any).update({ termination_letter_url: null } as any).eq('id', driver.id);
+      setTermLetterDeleted(true);
+      toast({ title: 'Termination letter deleted' });
+    } catch (err: any) {
+      toast({ title: 'Error deleting', description: err.message, variant: 'destructive' });
+    } finally {
+      setDeletingTermination(false);
+    }
+  };
 
   const handleDownloadPdf = () => {
     const driverDocs: string[] = [];
@@ -164,19 +187,32 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
         </div>
         <div className="flex flex-wrap gap-2">
           {docFields.map(doc => {
-            const url = (driver as any)[doc.key];
+            const isTermination = doc.key === 'termination_letter_url';
+            const url = isTermination && termLetterDeleted ? null : (driver as any)[doc.key];
             return (
               <div key={doc.key} className="flex items-center gap-1.5 px-2.5 py-1.5 border rounded-md text-xs bg-background">
                 <FileText className="h-3.5 w-3.5 text-muted-foreground" />
                 <span className="font-medium">{doc.label}</span>
                 {url ? (
-                  <button
-                    onClick={e => { e.stopPropagation(); handleViewDoc(url, doc.key); }}
-                    className="text-primary underline flex items-center gap-0.5 hover:text-primary/80"
-                    disabled={loadingDoc === doc.key}
-                  >
-                    {loadingDoc === doc.key ? <Loader2 className="h-3 w-3 animate-spin" /> : <>View <ExternalLink className="h-3 w-3" /></>}
-                  </button>
+                  <>
+                    <button
+                      onClick={e => { e.stopPropagation(); handleViewDoc(url, doc.key); }}
+                      className="text-primary underline flex items-center gap-0.5 hover:text-primary/80"
+                      disabled={loadingDoc === doc.key}
+                    >
+                      {loadingDoc === doc.key ? <Loader2 className="h-3 w-3 animate-spin" /> : <>View <ExternalLink className="h-3 w-3" /></>}
+                    </button>
+                    {isTermination && (
+                      <button
+                        onClick={e => { e.stopPropagation(); handleDeleteTerminationLetter(); }}
+                        className="text-destructive hover:text-destructive/80 ml-1"
+                        disabled={deletingTermination}
+                        title="Delete termination letter"
+                      >
+                        {deletingTermination ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                      </button>
+                    )}
+                  </>
                 ) : (
                   <span className="text-muted-foreground">—</span>
                 )}
