@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Loader2, FileText } from 'lucide-react';
 import { DbDriver } from '@/hooks/useDrivers';
 import { generateTerminationLetterPdf } from '@/lib/onboardingDocPdf';
+import SignaturePad from '@/components/onboarding/SignaturePad';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -22,11 +23,13 @@ interface Props {
 export function TerminationLetterDialog({ open, onOpenChange, driver, truck: truckProp, companyName, onSuccess }: Props) {
   const [loading, setLoading] = useState(false);
   const [representative, setRepresentative] = useState('');
+  const [signature, setSignature] = useState<string | null>(null);
   const [fetchedTruck, setFetchedTruck] = useState<any>(null);
 
   useEffect(() => {
     if (open) {
       setRepresentative('');
+      setSignature(null);
       setFetchedTruck(null);
       // Always fetch the truck directly from DB using the driver's truck_id
       if (driver?.truck_id) {
@@ -45,6 +48,10 @@ export function TerminationLetterDialog({ open, onOpenChange, driver, truck: tru
       toast({ title: 'Please enter the representative name', variant: 'destructive' });
       return;
     }
+    if (!signature) {
+      toast({ title: 'Please sign before generating', variant: 'destructive' });
+      return;
+    }
 
     setLoading(true);
     try {
@@ -59,6 +66,7 @@ export function TerminationLetterDialog({ open, onOpenChange, driver, truck: tru
         licensePlate: truck?.license_plate || '',
         representativeName: representative,
         date: dateStr,
+        signature: signature || undefined,
       });
 
       const path = `${driver.id}/termination_letter_${Date.now()}.pdf`;
@@ -107,6 +115,11 @@ export function TerminationLetterDialog({ open, onOpenChange, driver, truck: tru
           <div className="border-t pt-3">
             <Label htmlFor="representative">Authorized Representative Name</Label>
             <Input id="representative" value={representative} onChange={e => setRepresentative(e.target.value)} placeholder="e.g. Francisco Monsalve" className="mt-1" />
+          </div>
+
+          <div className="border-t pt-3">
+            <Label>Signature</Label>
+            <SignaturePad onSignatureChange={setSignature} height={120} />
           </div>
         </div>
 

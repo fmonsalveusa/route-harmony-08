@@ -715,6 +715,7 @@ export function generateTerminationLetterPdf(data: {
   licensePlate: string;
   representativeName: string;
   date: string;
+  signature?: string;
 }): Blob {
   const doc = new jsPDF();
   const m = 20;
@@ -806,9 +807,15 @@ export function generateTerminationLetterPdf(data: {
   y += 6;
 
   doc.text('Respectfully,', m, y);
-  y += 10;
-  doc.text('_______________________________', m, y);
-  y += 5;
+  y += 4;
+  if (data.signature) {
+    addSignatureImage(doc, data.signature, m, y - 2, 50, 15);
+    y += 16;
+  } else {
+    y += 6;
+    doc.text('_______________________________', m, y);
+    y += 5;
+  }
   doc.setFont('helvetica', 'bold');
   doc.text(data.representativeName, m, y);
   y += 5;
@@ -905,9 +912,15 @@ export function generateTerminationLetterPdf(data: {
   y += 6;
 
   doc.text('Atentamente,', m, y);
-  y += 10;
-  doc.text('_______________________________', m, y);
-  y += 5;
+  y += 4;
+  if (data.signature) {
+    addSignatureImage(doc, data.signature, m, y - 2, 50, 15);
+    y += 16;
+  } else {
+    y += 6;
+    doc.text('_______________________________', m, y);
+    y += 5;
+  }
   doc.setFont('helvetica', 'bold');
   doc.text(data.representativeName, m, y);
   y += 5;
