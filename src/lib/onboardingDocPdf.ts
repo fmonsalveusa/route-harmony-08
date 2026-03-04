@@ -704,7 +704,7 @@ export function generateOnboardingSummaryPdf(data: OnboardingSummaryData): Blob 
   return doc.output('blob');
 }
 
-// ─── TERMINATION LETTER PDF (BILINGUAL EN/ES) ───
+// ─── TERMINATION LETTER PDF (V1.2 — EN only) ───
 export function generateTerminationLetterPdf(data: {
   driverName: string;
   companyName: string;
@@ -722,36 +722,36 @@ export function generateTerminationLetterPdf(data: {
   const w = 170;
   let y = 20;
 
-  // ═══ PAGE 1: ENGLISH ═══
-  doc.setFontSize(11);
-  doc.setFont('helvetica', 'bold');
-  doc.text(data.companyName.toUpperCase(), 105, y, { align: 'center' });
-  y += 10;
+  const co = data.companyName || 'Company';
 
+  // ═══ PAGE 1 ═══
   doc.setFontSize(12);
-  doc.text('NOTICE OF LEASE AGREEMENT TERMINATION AND', 105, y, { align: 'center' });
-  y += 6;
-  doc.text('REVOCATION OF COMPANY INFORMATION AUTHORIZATION', 105, y, { align: 'center' });
-  y += 10;
+  doc.setFont('helvetica', 'bold');
+  doc.text(co.toUpperCase(), 105, y, { align: 'center' });
+  y += 12;
 
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
-  doc.text('TO:', m, y);
+  doc.text(`Date: ${data.date}`, m, y);
+  y += 8;
+
+  doc.text('To:', m, y);
   y += 6;
   doc.setFont('helvetica', 'bold');
   doc.text(`Driver Name: ${data.driverName}`, m, y);
   doc.setFont('helvetica', 'normal');
   y += 8;
+
   doc.text('Dear Sir/Madam,', m, y);
   y += 8;
 
-  // I. NOTICE OF LEASE AGREEMENT TERMINATION
-  y = writeHeading(doc, 'I. NOTICE OF LEASE AGREEMENT TERMINATION', m, y, 10);
-  y = writeBlock(doc, `By means of this formal notice, and in accordance with the terms and conditions set forth in the lease agreement previously executed between the parties, ${data.companyName} hereby notifies you that, effective immediately upon receipt of this document, the lease agreement entered into between you and ${data.companyName} is formally and irrevocably TERMINATED.`, m, y, 8, w);
-  y += 3;
-  y = writeBlock(doc, 'The vehicle subject to this termination is identified as follows:', m, y, 8, w);
-  y += 3;
+  y = writeBlock(doc, `By means of this letter, ${co} hereby formally notifies you of the immediate and irrevocable termination of the lease agreement previously entered into between you and our company. This termination is effective upon receipt of this communication, and it carries with it a series of obligations that you are legally required to fulfill without delay.`, m, y, 8, w);
+  y += 4;
 
+  y = writeBlock(doc, 'The vehicle covered under the terminated lease agreement is identified as follows:', m, y, 8, w);
+  y += 4;
+
+  // Vehicle table
   const vehicleFields = [
     ['Year:', data.year],
     ['Make:', data.make],
@@ -764,170 +764,45 @@ export function generateTerminationLetterPdf(data: {
     doc.setFontSize(9);
     doc.text(label, m, y);
     doc.setFont('helvetica', 'normal');
-    doc.text(val || '_______________', m + 30, y);
-    y += 5;
+    doc.text(val || '______________________________', m + 30, y);
+    y += 5.5;
   }
-  y += 3;
-
-  // II. PROHIBITION ON USE OF COMPANY INFORMATION
-  y = writeHeading(doc, 'II. PROHIBITION ON USE OF COMPANY INFORMATION', m, y, 10);
-  y = writeBlock(doc, `Effective immediately and without exception, you are hereby STRICTLY PROHIBITED from using, displaying, reproducing, distributing, sharing, or making reference to any information belonging to ${data.companyName}, including but not limited to: trade name, operating authority (MC/DOT numbers), logos, seals, identification markings, letterheads, dispatch documentation, bills of lading, or any other materials bearing the identity of ${data.companyName}, in any medium, format, or context whatsoever.`, m, y, 8, w);
-  y += 2;
-  y = writeBlock(doc, `This prohibition issued by ${data.companyName} is absolute, unconditional, and permanent. No verbal agreement, prior custom, or course of dealing shall be construed as an exception to this prohibition.`, m, y, 8, w);
-  y += 3;
-
-  // III. REMOVAL OF COMPANY MARKINGS FROM VEHICLE
-  y = writeHeading(doc, 'III. REMOVAL OF COMPANY MARKINGS FROM VEHICLE', m, y, 10);
-  y = writeBlock(doc, `You are hereby directed and required to immediately remove, at your own expense, all markings, decals, placards, signage, magnetic signs, DOT numbers, MC numbers, company name, logos, or any other identification belonging to ${data.companyName} from the above-referenced commercial vehicle. This removal must be completed within twenty-four (24) hours of receipt of this notice.`, m, y, 8, w);
-  y += 2;
-  y = writeBlock(doc, `Failure to comply with this directive will constitute unauthorized use of the identity and operating authority of ${data.companyName}, which may result in the filing of formal complaints with the Federal Motor Carrier Safety Administration (FMCSA) and any other applicable regulatory bodies.`, m, y, 8, w);
-  y += 3;
-
-  // IV. LEGAL CONSEQUENCES FOR NON-COMPLIANCE
-  y = writeHeading(doc, 'IV. LEGAL CONSEQUENCES FOR NON-COMPLIANCE', m, y, 10);
-  y = writeBlock(doc, 'Be advised that failure to comply with any of the provisions set forth in this notice will result in immediate and decisive legal action, including but not limited to:', m, y, 8, w);
-  y += 2;
-
-  const legalItems = [
-    `1. Filing of a formal complaint before the Federal Motor Carrier Safety Administration (FMCSA) for unauthorized use of ${data.companyName}'s operating authority and identification, which may result in the suspension or revocation of your Commercial Driver's License (CDL) and operating privileges.`,
-    `2. Civil litigation for damages, including compensatory and punitive damages, arising from unauthorized use of ${data.companyName}'s identity, trade name, and operating authority.`,
-    '3. Filing of criminal complaints for identity fraud, unauthorized use of commercial operating authority, and any other applicable criminal charges under federal and state law.',
-    `4. Any and all additional legal actions deemed necessary to protect the rights, reputation, and business interests of ${data.companyName}.`,
-  ];
-  for (const item of legalItems) {
-    y = writeBlock(doc, item, m, y, 8, w);
-    y += 2;
-  }
-  y = writeBlock(doc, `${data.companyName} will not hesitate to pursue all available legal remedies to the fullest extent permitted by applicable federal and state law.`, m, y, 8, w);
-  y += 3;
-
-  // V. ACKNOWLEDGMENT OF RECEIPT
-  y = writeHeading(doc, 'V. ACKNOWLEDGMENT OF RECEIPT', m, y, 10);
-  y = writeBlock(doc, 'Ignorance of this notice shall not constitute a valid defense against any legal action arising from non-compliance.', m, y, 8, w);
-  y += 6;
-
-  doc.text('Respectfully,', m, y);
   y += 4;
-  if (data.signature) {
-    addSignatureImage(doc, data.signature, m, y - 2, 50, 15);
-    y += 16;
-  } else {
-    y += 6;
-    doc.text('_______________________________', m, y);
-    y += 5;
-  }
-  doc.setFont('helvetica', 'bold');
-  doc.text(data.representativeName, m, y);
-  y += 5;
-  doc.setFont('helvetica', 'normal');
-  doc.text(`Authorized Representative — ${data.companyName}`, m, y);
-  y += 6;
-  doc.text(`Date: ${data.date}`, m, y);
 
-  // ═══ PAGE 3: SPANISH ═══
+  y = writeBlock(doc, `From this moment forward, and under no circumstance or for any reason whatsoever, you are strictly prohibited from using, displaying, reproducing, distributing, or referencing any information belonging to ${co}. This includes, but is not limited to, our company's trade name, operating authority numbers (MC/DOT), logos, seals, letterheads, dispatch documentation, bills of lading, or any other material bearing our company's identity — in any medium, format, or context. This prohibition is absolute, unconditional, and permanent.`, m, y, 8, w);
+  y += 4;
+
+  y = writeBlock(doc, `Furthermore, you are required to immediately remove, at your own expense, all markings, decals, placards, magnetic signs, DOT numbers, MC numbers, and any other identification belonging to ${co} from the above-referenced commercial vehicle. This removal must be completed within Twelve (12) hours of receiving this letter. Continued display of our company's information on your vehicle after this period will be treated as unauthorized use of our identity and operating authority.`, m, y, 8, w);
+  y += 4;
+
+  y = writeBlock(doc, `Please be advised that failure to comply with any of the obligations set forth in this letter will leave ${co} no choice but to pursue all legal remedies available under federal and state law. This includes, but is not limited to, the filing of formal complaints before the Federal Motor Carrier Safety Administration (FMCSA), which may result in the suspension or revocation of your Commercial Driver's License (CDL) and operating privileges; civil litigation seeking`, m, y, 8, w);
+
+  // ═══ PAGE 2 ═══
   doc.addPage();
   y = 20;
 
-  doc.setFontSize(11);
-  doc.setFont('helvetica', 'bold');
-  doc.text(data.companyName.toUpperCase(), 105, y, { align: 'center' });
-  y += 10;
-
-  doc.setFontSize(12);
-  doc.text('AVISO DE TERMINACION DE CONTRATO DE ARRENDAMIENTO Y', 105, y, { align: 'center' });
-  y += 6;
-  doc.text('REVOCACION DE AUTORIZACION DE USO DE INFORMACION EMPRESARIAL', 105, y, { align: 'center' });
-  y += 10;
-
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'normal');
-  doc.text('PARA:', m, y);
-  y += 6;
-  doc.setFont('helvetica', 'bold');
-  doc.text(`Nombre del Driver: ${data.driverName}`, m, y);
-  doc.setFont('helvetica', 'normal');
-  y += 8;
-  doc.text('Estimado(a) Sr./Sra.:', m, y);
-  y += 8;
-
-  // I. AVISO DE TERMINACION
-  y = writeHeading(doc, 'I. AVISO DE TERMINACION DEL CONTRATO DE ARRENDAMIENTO', m, y, 10);
-  y = writeBlock(doc, `Por medio del presente documento formal, y de conformidad con los terminos y condiciones establecidos en el contrato de arrendamiento previamente suscrito entre las partes, le notificamos que, con efecto inmediato a partir de la recepcion del presente documento, el contrato de arrendamiento celebrado entre usted y ${data.companyName} queda formal e irrevocablemente TERMINADO.`, m, y, 8, w);
-  y += 3;
-  y = writeBlock(doc, 'El vehiculo objeto de esta terminacion se identifica de la siguiente manera:', m, y, 8, w);
-  y += 3;
-
-  const vehicleFieldsEs = [
-    ['Ano (Year):', data.year],
-    ['Marca (Make):', data.make],
-    ['Modelo (Model):', data.model],
-    ['Numero VIN:', data.vin],
-    ['Placa / Matricula:', data.licensePlate],
-  ];
-  for (const [label, val] of vehicleFieldsEs) {
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9);
-    doc.text(label, m, y);
-    doc.setFont('helvetica', 'normal');
-    doc.text(val || '_______________', m + 35, y);
-    y += 5;
-  }
-  y += 3;
-
-  // II. PROHIBICION
-  y = writeHeading(doc, 'II. PROHIBICION DE USO DE INFORMACION EMPRESARIAL', m, y, 10);
-  y = writeBlock(doc, `Con efecto inmediato y sin excepcion alguna, queda usted ESTRICTAMENTE PROHIBIDO de usar, exhibir, reproducir, distribuir, compartir o hacer referencia a cualquier informacion perteneciente a nuestra empresa, incluyendo pero no limitandose a: nombre comercial, autoridad operativa (numeros MC/DOT), logotipos, sellos, marcas de identificacion, membretes, documentacion de despacho, conocimientos de embarque (bills of lading), o cualquier otro material que lleve la identidad de ${data.companyName}, en cualquier medio, formato o contexto.`, m, y, 8, w);
-  y += 2;
-  y = writeBlock(doc, `Esta prohibicion emitida por ${data.companyName} es absoluta, incondicional y permanente. Ningun acuerdo verbal, practica anterior ni curso de negociacion previo podra interpretarse como una excepcion a la presente prohibicion.`, m, y, 8, w);
-  y += 3;
-
-  // III. RETIRO
-  y = writeHeading(doc, 'III. RETIRO DE IDENTIFICACION EMPRESARIAL DEL VEHICULO', m, y, 10);
-  y = writeBlock(doc, `Por medio del presente se le ordena y exige que retire de manera inmediata, y a su propio costo, todas las marcas, calcomanias, placards, senalizaciones, letreros magneticos, numeros DOT, numeros MC, nombre comercial, logotipos o cualquier otra identificacion perteneciente a nuestra empresa del vehiculo comercial referenciado anteriormente. Dicho retiro debera completarse dentro de las veinticuatro (24) horas siguientes a la recepcion del presente aviso.`, m, y, 8, w);
-  y += 2;
-  y = writeBlock(doc, `El incumplimiento de esta directiva constituira uso no autorizado de la identidad y autoridad operativa de ${data.companyName}, lo cual podra resultar en la presentacion de quejas formales ante la Administracion Federal de Seguridad de Transportistas Motorizados (FMCSA) y cualquier otro organismo regulatorio aplicable.`, m, y, 8, w);
-  y += 3;
-
-  // IV. CONSECUENCIAS LEGALES
-  y = writeHeading(doc, 'IV. CONSECUENCIAS LEGALES POR INCUMPLIMIENTO', m, y, 10);
-  y = writeBlock(doc, 'Tenga en cuenta que el incumplimiento de cualquiera de las disposiciones establecidas en el presente aviso resultara en acciones legales inmediatas y decisivas, que incluyen pero no se limitan a:', m, y, 8, w);
-  y += 2;
-
-  const legalItemsEs = [
-    '1. Presentacion de una queja formal ante la Administracion Federal de Seguridad de Transportistas Motorizados (FMCSA) por uso no autorizado de la autoridad operativa e identificacion de nuestra empresa, lo cual podra resultar en la suspension o revocacion de su Licencia de Conducir Comercial (CDL) y sus privilegios operativos.',
-    '2. Litigio civil por danos y perjuicios, incluyendo danos compensatorios y punitivos, derivados del uso no autorizado de la identidad comercial, nombre comercial y autoridad operativa de nuestra empresa.',
-    '3. Presentacion de denuncias penales por fraude de identidad, uso no autorizado de autoridad operativa comercial y cualquier otro cargo penal aplicable bajo la legislacion federal y estatal.',
-    '4. Cualquier otra accion legal adicional que se considere necesaria para proteger los derechos, la reputacion y los intereses comerciales de nuestra empresa.',
-  ];
-  for (const item of legalItemsEs) {
-    y = writeBlock(doc, item, m, y, 8, w);
-    y += 2;
-  }
-  y = writeBlock(doc, `${data.companyName} no dudara en ejercer todos los recursos legales disponibles en la maxima medida permitida por la legislacion federal y estatal aplicable.`, m, y, 8, w);
-  y += 3;
-
-  // V. ACUSE DE RECIBO
-  y = writeHeading(doc, 'V. ACUSE DE RECIBO', m, y, 10);
-  y = writeBlock(doc, 'El desconocimiento del presente aviso no constituira defensa valida ante ninguna accion legal derivada del incumplimiento.', m, y, 8, w);
-  y += 6;
-
-  doc.text('Atentamente,', m, y);
+  y = writeBlock(doc, `compensatory and punitive damages; criminal complaints for identity fraud and unauthorized use of commercial operating authority; and any other direct legal action against you that may be deemed necessary. ${co} will not hesitate to act swiftly and decisively to protect its rights, identity, and business interests.`, m, y, 8, w);
   y += 4;
+
+  y = writeBlock(doc, 'We trust that you will attend to these matters promptly and in full compliance with the terms outlined herein. Ignorance of this notice will not constitute a valid defense in any legal proceeding arising from non-compliance.', m, y, 8, w);
+  y += 8;
+
+  doc.text('Respectfully,', m, y);
+  y += 6;
   if (data.signature) {
     addSignatureImage(doc, data.signature, m, y - 2, 50, 15);
     y += 16;
   } else {
-    y += 6;
     doc.text('_______________________________', m, y);
-    y += 5;
+    y += 6;
   }
   doc.setFont('helvetica', 'bold');
   doc.text(data.representativeName, m, y);
   y += 5;
   doc.setFont('helvetica', 'normal');
-  doc.text('Representante Autorizado', m, y);
-  y += 6;
-  doc.text(`Fecha: ${data.date}`, m, y);
+  doc.text('Authorized Representative', m, y);
+  y += 5;
+  doc.text(co, m, y);
 
   return doc.output('blob');
 }
