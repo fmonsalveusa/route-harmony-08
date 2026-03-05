@@ -9,6 +9,9 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
+    headers: {
+      'Cache-Control': 'no-store, no-cache, must-revalidate',
+    },
     hmr: {
       overlay: false,
     },
