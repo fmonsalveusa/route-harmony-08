@@ -664,6 +664,17 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
             </div>
           )}
           <div className="space-y-2">
+            <Label>Empresa</Label>
+            <Select value={selectedCompany} onValueChange={setSelectedCompany}>
+              <SelectTrigger><SelectValue placeholder="Seleccionar empresa" /></SelectTrigger>
+              <SelectContent>
+                {companies.map(c => (
+                  <SelectItem key={c.id} value={c.id}>{c.name}{c.mc_number ? ` (MC# ${c.mc_number})` : ''}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
             <Label>Service Type</Label>
             <Select value={selectedServiceType} onValueChange={setSelectedServiceType}>
               <SelectTrigger><SelectValue placeholder="Tipo de servicio" /></SelectTrigger>
