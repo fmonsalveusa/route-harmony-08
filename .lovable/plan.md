@@ -1,29 +1,46 @@
 
 
-## Problema
+## Asociar Cargas con Empresas
 
-El preview de Lovable carga desde un iframe que puede mantener módulos JS en caché del navegador (no solo Service Worker). La limpieza actual en `main.tsx` solo elimina Service Workers y Cache API, pero el **caché HTTP del navegador** (disk cache) sigue sirviendo versiones antiguas de los chunks JS que contienen la función `generateTerminationLetterPdf`.
+### Problema
+Actualmente las cargas no tienen un campo que indique con cuál de las empresas registradas se tomó la carga. La contadora necesita ver esta información claramente al abrir el detalle.
 
-Esto explica por qué la app publicada siempre muestra el formato correcto (deploy fresco) pero el preview a veces muestra el formato anterior.
+### Solución
 
-## Solución
+**1. Base de datos** — Agregar columna `company_id` a la tabla `loads`
+```sql
+ALTER TABLE loads ADD COLUMN company_id uuid REFERENCES companies(id) ON DELETE SET NULL;
+```
 
-No hay una solución de código que resuelva esto permanentemente desde el lado de la app — es un comportamiento del navegador en el entorno de preview. Sin embargo, podemos mitigar el problema:
+**2. Formulario de carga (`LoadFormDialog.tsx`)**
+- Agregar un selector de empresa (dropdown) usando las companies del hook `useCompanies`
+- Guardar el `company_id` seleccionado al crear/editar la carga
 
-1. **Agregar headers de no-cache para el preview** en `vite.config.ts`: Configurar headers del servidor de desarrollo para evitar que el navegador cachee los módulos JS.
+**3. Detalle de carga (`LoadDetailPanel.tsx`)**
+- Mostrar un badge/banner prominente con el logo (si existe) y nombre de la empresa asociada, justo arriba de la información del load
+- Estilo: un bloque visual con icono de `Building2`, nombre de la empresa en bold, y MC/DOT number como subtexto — fondo con color sutil para que destaque sin ser invasivo
 
-   En `server` config, agregar:
-   ```ts
-   headers: {
-     'Cache-Control': 'no-store, no-cache, must-revalidate',
-   }
-   ```
+**4. Hook `useLoads.ts`**
+- Incluir `company_id` en el select query y en las interfaces `DbLoad` y `CreateLoadInput`
 
-2. **Forzar limpieza más agresiva en preview**: Además de limpiar SW y Cache API, intentar forzar una recarga sin caché si se detecta que es la primera carga después de un cambio.
+**5. Tabla de cargas (`Loads.tsx`)**
+- Opcionalmente mostrar el nombre de la empresa en una columna o como badge en la fila
 
-Esto debería reducir significativamente el problema de ver formatos antiguos en el preview.
+### Diseño visual del badge en el detalle
 
-## Archivos a modificar
+```text
+┌─────────────────────────────────────────┐
+│ 🏢  DISPATCH UP LLC                     │
+│      MC# 123456  •  DOT# 789012        │
+└─────────────────────────────────────────┘
+```
 
-- `vite.config.ts` — agregar `headers` con `Cache-Control: no-store` en la config de `server`
+Un bloque con borde izquierdo de color primary, fondo `bg-primary/5`, icono `Building2`, nombre en negrita y datos de la empresa en texto pequeño.
+
+### Archivos a modificar
+- **Migración SQL**: agregar `company_id` a `loads`
+- `src/hooks/useLoads.ts`: agregar `company_id` a interfaces y query
+- `src/components/LoadFormDialog.tsx`: agregar selector de empresa
+- `src/components/LoadDetailPanel.tsx`: mostrar empresa asociada con diseño profesional
+- `src/pages/Loads.tsx`: mostrar nombre de empresa en la tabla (opcional)
 
