@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useTrucks } from '@/hooks/useTrucks';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useDispatchers } from '@/hooks/useDispatchers';
+import { useCompanies } from '@/hooks/useCompanies';
 import { useLoadStops } from '@/hooks/useLoadStops';
 import type { DbLoad, CreateLoadInput } from '@/hooks/useLoads';
 import { createNotification } from '@/hooks/useNotifications';
@@ -54,6 +55,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
   const { trucks } = useTrucks();
   const { drivers } = useDrivers();
   const { dispatchers } = useDispatchers();
+  const { companies } = useCompanies();
   const { stops: existingStops, fetchStops, saveStops } = useLoadStops(editLoad?.id);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState<LoadFormData>(emptyForm);
@@ -63,6 +65,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
   const [selectedStatus, setSelectedStatus] = useState('planned');
   const [selectedServiceType, setSelectedServiceType] = useState('');
   const [selectedCommissionType, setSelectedCommissionType] = useState<'commission_1' | 'commission_2'>('commission_1');
+  const [selectedCompany, setSelectedCompany] = useState('');
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractionStatus, setExtractionStatus] = useState<'idle' | 'uploading' | 'processing' | 'done' | 'error'>('idle');
   const [pdfFileName, setPdfFileName] = useState('');
@@ -96,6 +99,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       setSelectedDispatcher(editLoad.dispatcher_id || '');
       setSelectedStatus(editLoad.status);
       setSelectedServiceType((editLoad as any).service_type || '');
+      setSelectedCompany((editLoad as any).company_id || '');
       setPdfPreviewUrl(editLoad.pdf_url || null);
       setUploadedPdfPath(null);
       setUploadedPdfSignedUrl(editLoad.pdf_url || null);
@@ -106,6 +110,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       setSelectedDispatcher('');
       setSelectedStatus('planned');
       setSelectedServiceType('');
+      setSelectedCompany('');
       setExtractionStatus('idle');
       setPdfFileName('');
       setPdfFile(null);
@@ -378,6 +383,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       notes: formData.notes || undefined,
       status: selectedStatus,
       service_type: selectedServiceType || undefined,
+      company_id: selectedCompany || undefined,
     } as any;
 
     const result = await onSubmit(payload);
