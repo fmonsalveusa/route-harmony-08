@@ -745,6 +745,7 @@ export type Database = {
           bol_url: string | null
           broker_client: string | null
           cargo_type: string | null
+          company_id: string | null
           company_profit: number | null
           created_at: string
           delivery_date: string | null
@@ -777,6 +778,7 @@ export type Database = {
           bol_url?: string | null
           broker_client?: string | null
           cargo_type?: string | null
+          company_id?: string | null
           company_profit?: number | null
           created_at?: string
           delivery_date?: string | null
@@ -809,6 +811,7 @@ export type Database = {
           bol_url?: string | null
           broker_client?: string | null
           cargo_type?: string | null
+          company_id?: string | null
           company_profit?: number | null
           created_at?: string
           delivery_date?: string | null
@@ -838,6 +841,13 @@ export type Database = {
           weight?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "loads_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "loads_tenant_id_fkey"
             columns: ["tenant_id"]

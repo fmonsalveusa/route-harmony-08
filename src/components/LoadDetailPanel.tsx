@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { formatDate } from '@/lib/dateUtils';
-import { MapPin, Calendar, Weight, DollarSign, User, Truck, Route, Navigation, FileText, Download, ExternalLink, Pencil, Loader2, Copy, Check } from 'lucide-react';
+import { MapPin, Calendar, Weight, DollarSign, User, Truck, Route, Navigation, FileText, Download, ExternalLink, Pencil, Loader2, Copy, Check, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useDispatchers } from '@/hooks/useDispatchers';
@@ -833,6 +833,21 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
 
   return (
     <div className="p-4 bg-muted/30 border-t animate-in slide-in-from-top-2 duration-200">
+      {/* Company Banner */}
+      {(() => {
+        const company = companies.find(c => c.id === (load as any).company_id);
+        return company ? (
+          <div className="flex items-start gap-3 p-3 mb-4 bg-primary/5 border-l-4 border-primary rounded-r-lg">
+            <Building2 className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+            <div className="min-w-0">
+              <h3 className="font-bold text-sm uppercase text-foreground tracking-wide">{company.name}</h3>
+              <p className="text-xs text-muted-foreground">
+                {[company.mc_number && `MC# ${company.mc_number}`, company.dot_number && `DOT# ${company.dot_number}`].filter(Boolean).join('  •  ') || 'Sin MC/DOT registrado'}
+              </p>
+            </div>
+          </div>
+        ) : null;
+      })()}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Info */}
           <div className="space-y-3">
