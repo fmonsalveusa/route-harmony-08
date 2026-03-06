@@ -43,6 +43,7 @@ export function generatePaymentReceipt(
   loadDestination?: string,
   pickupDate?: string | null,
   deliveryDate?: string | null,
+  companyName?: string,
 ) {
   const doc = new jsPDF();
   const date = payment.payment_date || new Date().toISOString().split('T')[0];
@@ -64,6 +65,17 @@ export function generatePaymentReceipt(
   doc.text(`Type: ${payment.recipient_type.charAt(0).toUpperCase() + payment.recipient_type.slice(1)}`, pageWidth - margin, 32, { align: 'right' });
 
   y = 50;
+
+  // Company banner
+  if (companyName) {
+    doc.setFillColor(243, 244, 246);
+    doc.roundedRect(margin, y - 4, pageWidth - margin * 2, 12, 2, 2, 'F');
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(55, 65, 81);
+    doc.text(`Company: ${companyName}`, margin + 6, y + 4);
+    y += 16;
+  }
   doc.setTextColor(55, 65, 81);
 
   doc.setFontSize(12);

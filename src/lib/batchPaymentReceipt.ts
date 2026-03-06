@@ -11,6 +11,7 @@ export function generateBatchPaymentReceipt(
   recipientName: string,
   recipientType: string,
   items: BatchPaymentItem[],
+  companyName?: string,
 ) {
   const doc = new jsPDF();
   const date = new Date().toISOString().split('T')[0];
@@ -32,6 +33,17 @@ export function generateBatchPaymentReceipt(
 
   y = 50;
   doc.setTextColor(55, 65, 81);
+
+  // Company banner
+  if (companyName) {
+    doc.setFillColor(243, 244, 246);
+    doc.roundedRect(margin, y - 4, pageWidth - margin * 2, 12, 2, 2, 'F');
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(55, 65, 81);
+    doc.text(`Company: ${companyName}`, margin + 6, y + 4);
+    y += 16;
+  }
 
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');

@@ -49,7 +49,7 @@ const Invoices = () => {
   useEffect(() => {
     const loadIds = [...new Set(invoices.map(i => i.load_id))];
     if (loadIds.length === 0) return;
-    supabase.from('loads').select('id, reference_number, origin, destination, pickup_date, delivery_date, miles, total_rate, broker_client, pdf_url').in('id', loadIds).then(({ data }) => {
+    supabase.from('loads').select('id, reference_number, origin, destination, pickup_date, delivery_date, miles, total_rate, broker_client, pdf_url, company_id').in('id', loadIds).then(({ data }) => {
       if (data) {
         const map: Record<string, any> = {};
         data.forEach(l => { map[l.id] = l; });
@@ -76,7 +76,8 @@ const Invoices = () => {
 
   const handleDownloadPdf = (inv: Invoice) => {
     const load = loadDataMap[inv.load_id];
-    const company = companies.length > 0 ? (inv.company_id ? companies.find(c => c.id === inv.company_id) || companies[0] : companies[0]) : null;
+    const companyId = inv.company_id || load?.company_id;
+    const company = companies.length > 0 ? (companyId ? companies.find(c => c.id === companyId) || companies[0] : companies[0]) : null;
     generateInvoicePdf({
       invoiceNumber: inv.invoice_number,
       brokerName: inv.broker_name,
