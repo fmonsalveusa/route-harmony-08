@@ -32,6 +32,7 @@ const handleGenerateReceipt = async (p: DbPayment) => {
   let dispatcherItems: DispatcherLoadItem[] | undefined;
   let loadOrigin: string | undefined;
   let loadDestination: string | undefined;
+  let companyName: string | undefined;
 
   if (p.recipient_type === 'dispatcher') {
     const { data: items } = await supabase
@@ -43,11 +44,18 @@ const handleGenerateReceipt = async (p: DbPayment) => {
       const loadIds = (items as any[]).map((i: any) => i.load_id);
       const { data: loads } = await supabase
         .from('loads')
-        .select('id, origin, destination')
+        .select('id, origin, destination, company_id')
         .in('id', loadIds);
 
       const loadMap: Record<string, { origin: string; destination: string }> = {};
       (loads as any[] || []).forEach((l: any) => { loadMap[l.id] = { origin: l.origin, destination: l.destination }; });
+
+      // Get company from first load with a company_id
+      const firstCompanyId = (loads as any[] || []).find((l: any) => l.company_id)?.company_id;
+      if (firstCompanyId) {
+        const { data: comp } = await supabase.from('companies').select('name').eq('id', firstCompanyId).maybeSingle();
+        if (comp) companyName = (comp as any).name;
+      }
 
       dispatcherItems = (items as any[]).map((i: any) => ({
         load_reference: i.load_reference,
@@ -62,18 +70,22 @@ const handleGenerateReceipt = async (p: DbPayment) => {
     // For driver/investor payments, fetch origin/destination + dates from the load
     const { data: load } = await supabase
       .from('loads')
-      .select('origin, destination, pickup_date, delivery_date')
+      .select('origin, destination, pickup_date, delivery_date, company_id')
       .eq('id', p.load_id)
       .maybeSingle();
     if (load) {
       loadOrigin = (load as any).origin;
       loadDestination = (load as any).destination;
+      if ((load as any).company_id) {
+        const { data: comp } = await supabase.from('companies').select('name').eq('id', (load as any).company_id).maybeSingle();
+        if (comp) companyName = (comp as any).name;
+      }
     }
-    generatePaymentReceipt(p, adjustments, totalAdj, Number(p.amount) + totalAdj, dispatcherItems, loadOrigin, loadDestination, (load as any)?.pickup_date, (load as any)?.delivery_date);
+    generatePaymentReceipt(p, adjustments, totalAdj, Number(p.amount) + totalAdj, dispatcherItems, loadOrigin, loadDestination, (load as any)?.pickup_date, (load as any)?.delivery_date, companyName);
     return;
   }
 
-  generatePaymentReceipt(p, adjustments, totalAdj, Number(p.amount) + totalAdj, dispatcherItems);
+  generatePaymentReceipt(p, adjustments, totalAdj, Number(p.amount) + totalAdj, dispatcherItems, undefined, undefined, undefined, undefined, companyName);
 };
 
 interface PaymentsSectionProps {
