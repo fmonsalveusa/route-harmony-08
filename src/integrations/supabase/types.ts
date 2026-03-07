@@ -14,6 +14,50 @@ export type Database = {
   }
   public: {
     Tables: {
+      broker_credit_scores: {
+        Row: {
+          broker_name: string
+          created_at: string | null
+          days_to_pay: number | null
+          id: string
+          notes: string | null
+          rating: string | null
+          score: number | null
+          tenant_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          broker_name: string
+          created_at?: string | null
+          days_to_pay?: number | null
+          id?: string
+          notes?: string | null
+          rating?: string | null
+          score?: number | null
+          tenant_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          broker_name?: string
+          created_at?: string | null
+          days_to_pay?: number | null
+          id?: string
+          notes?: string | null
+          rating?: string | null
+          score?: number | null
+          tenant_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "broker_credit_scores_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       companies: {
         Row: {
           address: string | null
