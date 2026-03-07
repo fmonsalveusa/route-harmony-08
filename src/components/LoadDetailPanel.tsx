@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { formatDate } from '@/lib/dateUtils';
-import { MapPin, Calendar, Weight, DollarSign, User, Truck, Route, Navigation, FileText, Download, ExternalLink, Pencil, Loader2, Copy, Check, Building2, Plus } from 'lucide-react';
+import { MapPin, Calendar, Weight, DollarSign, User, Truck, Route, Navigation, FileText, Download, ExternalLink, Pencil, Loader2, Copy, Check, Building2, Plus, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useDispatchers } from '@/hooks/useDispatchers';
@@ -138,7 +138,7 @@ function CopyLoadInfoButton({ load, totalMiles, emptyMiles, rpm, driver, dispatc
 }
 
 function BrokerScoreRow({ brokerName }: { brokerName: string | null | undefined }) {
-  const { getScoreForBroker, upsertScore } = useBrokerScores();
+  const { getScoreForBroker, upsertScore, lookupMc } = useBrokerScores();
   const [adding, setAdding] = useState(false);
   const [letterInput, setLetterInput] = useState('');
   const [daysInput, setDaysInput] = useState('');
@@ -163,9 +163,23 @@ function BrokerScoreRow({ brokerName }: { brokerName: string | null | undefined 
       days_to_pay: daysInput ? parseInt(daysInput) : undefined,
       rating: letter,
     }, {
-      onSuccess: () => { setAdding(false); setLetterInput(''); setDaysInput(''); },
+      onSuccess: () => {
+        setAdding(false); setLetterInput(''); setDaysInput('');
+        // Auto-lookup MC# if not already present
+        if (!existing?.mc_number && brokerName) {
+          lookupMc.mutate(brokerName.trim());
+        }
+      },
     });
   };
+
+  // Auto-lookup MC# when broker has a score but no mc_number
+  useEffect(() => {
+    if (existing && !existing.mc_number && brokerName && !lookupMc.isPending) {
+      lookupMc.mutate(brokerName.trim());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [existing?.id]);
 
   return (
     <div className="flex items-start gap-2 col-span-2">
@@ -174,6 +188,14 @@ function BrokerScoreRow({ brokerName }: { brokerName: string | null | undefined 
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-muted-foreground">Broker:</span>
           <span className="font-medium">{brokerName || '—'}</span>
+          {existing?.mc_number && (
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-600/10 text-blue-600 border border-blue-600/20">
+              MC# {existing.mc_number}
+            </span>
+          )}
+          {lookupMc.isPending && (
+            <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+          )}
           {existing?.rating && (() => {
             const l = existing.rating.toUpperCase();
             const colors = letterColor(l);
@@ -190,6 +212,15 @@ function BrokerScoreRow({ brokerName }: { brokerName: string | null | undefined 
               </span>
             );
           })()}
+          {existing && !existing.mc_number && !lookupMc.isPending && brokerName && (
+            <button
+              onClick={() => lookupMc.mutate(brokerName.trim())}
+              className="p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
+              title="Buscar MC# en FMCSA"
+            >
+              <RefreshCw className="h-3 w-3" />
+            </button>
+          )}
           {!existing && brokerName && !adding && (
             <button
               onClick={() => setAdding(true)}
