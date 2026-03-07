@@ -86,11 +86,41 @@ export function useBrokerScores() {
         return { mc_number: null, dot_number: null, legal_name: null };
       }
       
-      const first = carriers[0]?.carrier || carriers[0];
-      const mcNumber = first.mcNumber || first.mc_number || first.mcNum || null;
-      const dotNumber = first.dotNumber || first.dot_number || first.dotNum || null;
-      const legalName = first.legalName || first.legal_name || null;
-      
+      const firstItem = carriers[0];
+      const firstCarrier = firstItem?.carrier || firstItem;
+
+      let mcNumber = firstCarrier?.mcNumber || firstCarrier?.mc_number || firstCarrier?.mcNum || null;
+      const dotNumber = firstCarrier?.dotNumber || firstCarrier?.dot_number || firstCarrier?.dotNum || null;
+      const legalName = firstCarrier?.legalName || firstCarrier?.legal_name || null;
+
+      // FMCSA often exposes MC only via docket-numbers endpoint
+      if (!mcNumber && firstItem?._links?.['docket numbers']?.href) {
+        try {
+          const docketRes = await fetch(firstItem._links['docket numbers'].href);
+          if (docketRes.ok) {
+            const docketData = await docketRes.json();
+            const dockets = Array.isArray(docketData?.content)
+              ? docketData.content
+              : Array.isArray(docketData)
+                ? docketData
+                : [];
+
+            const mcEntry = dockets.find((d: any) => {
+              const value = String(d?.docketNumber ?? d?.docket_number ?? '').toUpperCase();
+              return value.startsWith('MC') || value.startsWith('FF') || value.startsWith('MX');
+            });
+
+            if (mcEntry) {
+              mcNumber = String(mcEntry.docketNumber ?? mcEntry.docket_number)
+                .replace(/^(MC|FF|MX)[-\s]*/i, '')
+                .trim();
+            }
+          }
+        } catch (e) {
+          console.error('FMCSA docket lookup failed:', e);
+        }
+      }
+
       return {
         mc_number: mcNumber ? String(mcNumber) : null,
         dot_number: dotNumber ? String(dotNumber) : null,
