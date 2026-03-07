@@ -15,22 +15,40 @@ const isLovablePreview =
   window.location.hostname.includes("lovable.app") ||
   window.location.search.includes("__lovable_token");
 
-if (isLovablePreview) {
-  void (async () => {
-    try {
-      if ("serviceWorker" in navigator) {
-        const registrations = await navigator.serviceWorker.getRegistrations();
-        await Promise.all(registrations.map((registration) => registration.unregister()));
-      }
+let shouldRenderApp = true;
 
-      if ("caches" in window) {
-        const cacheKeys = await caches.keys();
-        await Promise.all(cacheKeys.map((key) => caches.delete(key)));
+if (isLovablePreview) {
+  const url = new URL(window.location.href);
+
+  // Force a one-time cache-busted URL in preview to avoid stale JS chunks from disk cache
+  if (!url.searchParams.has("__lcv")) {
+    url.searchParams.set("__lcv", Date.now().toString(36));
+    shouldRenderApp = false;
+    window.location.replace(url.toString());
+  } else {
+    void (async () => {
+      try {
+        if ("serviceWorker" in navigator) {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(registrations.map((registration) => registration.unregister()));
+        }
+
+        if ("caches" in window) {
+          const cacheKeys = await caches.keys();
+          await Promise.all(cacheKeys.map((key) => caches.delete(key)));
+        }
+
+        // One hard reload per tab after cleanup to guarantee fresh module graph in preview
+        const previewReloadKey = "__lovable_preview_force_reload_v1";
+        if (!sessionStorage.getItem(previewReloadKey)) {
+          sessionStorage.setItem(previewReloadKey, "1");
+          window.location.reload();
+        }
+      } catch (error) {
+        console.warn("Preview cache cleanup failed:", error);
       }
-    } catch (error) {
-      console.warn("Preview cache cleanup failed:", error);
-    }
-  })();
+    })();
+  }
 } else {
   const updateSW = registerSW({
     onNeedRefresh() {
@@ -47,4 +65,6 @@ if (isLovablePreview) {
   }, 5 * 60 * 1000);
 }
 
-createRoot(document.getElementById("root")!).render(<App />);
+if (shouldRenderApp) {
+  createRoot(document.getElementById("root")!).render(<App />);
+}
