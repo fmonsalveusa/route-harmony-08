@@ -943,67 +943,78 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
           </div>
 
           {/* Structured table layout */}
-          <div className="rounded-lg border bg-card overflow-hidden text-sm">
+          <table className="w-full rounded-lg border bg-card overflow-hidden text-sm border-collapse">
+            <colgroup>
+              <col className="w-[7rem]" />
+              <col />
+              <col className="w-[7rem]" />
+              <col className="w-[8rem]" />
+            </colgroup>
+            <tbody>
             {/* Broker row - full width */}
-            <div className="grid grid-cols-[7rem_1fr] border-b">
-              <div className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Broker:</div>
-              <div className="px-3 py-2">
+            <tr className="border-b">
+              <td className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Broker:</td>
+              <td colSpan={3} className="px-3 py-2">
                 <BrokerScoreRow brokerName={load.broker_client} />
-              </div>
-            </div>
+              </td>
+            </tr>
 
             {/* Pick Up row */}
-            <div className="grid grid-cols-[7rem_1fr_7rem_auto] border-b">
-              <div className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Pick Up:</div>
-              <div className="px-3 py-2 font-medium flex items-center gap-1 border-r">
-                {(() => {
-                  const pickupStop = resolvedStops.find(s => s.type === 'pickup') || null;
-                  const addr = pickupStop?.address || load.origin;
-                  return (
-                    <>
-                      <span className="truncate">{addr}</span>
-                      <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(addr)}`} target="_blank" rel="noopener noreferrer" className="flex-shrink-0 p-0.5 rounded hover:bg-muted text-primary"><Navigation className="h-3 w-3" /></a>
-                    </>
-                  );
-                })()}
-              </div>
-              <div className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Pickup:</div>
-              <div className="px-3 py-2 font-medium">{formatDate(load.pickup_date)}</div>
-            </div>
+            <tr className="border-b">
+              <td className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Pick Up:</td>
+              <td className="px-3 py-2 font-medium border-r">
+                <div className="flex items-center gap-1">
+                  {(() => {
+                    const pickupStop = resolvedStops.find(s => s.type === 'pickup') || null;
+                    const addr = pickupStop?.address || load.origin;
+                    return (
+                      <>
+                        <span className="truncate">{addr}</span>
+                        <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(addr)}`} target="_blank" rel="noopener noreferrer" className="flex-shrink-0 p-0.5 rounded hover:bg-muted text-primary"><Navigation className="h-3 w-3" /></a>
+                      </>
+                    );
+                  })()}
+                </div>
+              </td>
+              <td className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Pickup:</td>
+              <td className="px-3 py-2 font-medium">{formatDate(load.pickup_date)}</td>
+            </tr>
 
             {/* Delivery row */}
-            <div className="grid grid-cols-[7rem_1fr_7rem_auto] border-b">
-              <div className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Delivery:</div>
-              <div className="px-3 py-2 font-medium flex items-center gap-1 border-r">
-                {(() => {
-                  const deliveryStop = resolvedStops.filter(s => s.type === 'delivery').pop() || null;
-                  const addr = deliveryStop?.address || load.destination;
-                  return (
-                    <>
-                      <span className="truncate">{addr}</span>
-                      <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(addr)}`} target="_blank" rel="noopener noreferrer" className="flex-shrink-0 p-0.5 rounded hover:bg-muted text-primary"><Navigation className="h-3 w-3" /></a>
-                    </>
-                  );
-                })()}
-              </div>
-              <div className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Delivery:</div>
-              <div className="px-3 py-2 font-medium">{formatDate(load.delivery_date)}</div>
-            </div>
+            <tr className="border-b">
+              <td className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Delivery:</td>
+              <td className="px-3 py-2 font-medium border-r">
+                <div className="flex items-center gap-1">
+                  {(() => {
+                    const deliveryStop = resolvedStops.filter(s => s.type === 'delivery').pop() || null;
+                    const addr = deliveryStop?.address || load.destination;
+                    return (
+                      <>
+                        <span className="truncate">{addr}</span>
+                        <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(addr)}`} target="_blank" rel="noopener noreferrer" className="flex-shrink-0 p-0.5 rounded hover:bg-muted text-primary"><Navigation className="h-3 w-3" /></a>
+                      </>
+                    );
+                  })()}
+                </div>
+              </td>
+              <td className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Delivery:</td>
+              <td className="px-3 py-2 font-medium">{formatDate(load.delivery_date)}</td>
+            </tr>
 
             {/* Weight / Type row */}
-            <div className="grid grid-cols-[7rem_1fr_7rem_auto] border-b">
-              <div className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Weight:</div>
-              <div className="px-3 py-2 font-medium border-r">{load.weight ? `${load.weight.toLocaleString()} lbs` : '—'}</div>
-              <div className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Type:</div>
-              <div className="px-3 py-2 font-medium">{truck?.truck_type || '—'}</div>
-            </div>
+            <tr className="border-b">
+              <td className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Weight:</td>
+              <td className="px-3 py-2 font-medium border-r">{load.weight ? `${load.weight.toLocaleString()} lbs` : '—'}</td>
+              <td className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Type:</td>
+              <td className="px-3 py-2 font-medium">{truck?.truck_type || '—'}</td>
+            </tr>
 
             {/* Miles / Empty Miles row */}
-            <div className="grid grid-cols-[7rem_1fr_7rem_auto] border-b">
-              <div className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Miles:</div>
-              <div className="px-3 py-2 font-bold text-primary border-r">{totalMiles > 0 ? totalMiles.toLocaleString() : '—'}</div>
-              <div className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Empty Miles:</div>
-              <div className="px-3 py-2">
+            <tr className="border-b">
+              <td className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Miles:</td>
+              <td className="px-3 py-2 font-bold text-primary border-r">{totalMiles > 0 ? totalMiles.toLocaleString() : '—'}</td>
+              <td className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Empty Miles:</td>
+              <td className="px-3 py-2">
                 <div className="flex items-center gap-1">
                   <span className="font-bold text-amber-500">{emptyMiles > 0 ? emptyMiles.toLocaleString() : '—'}</span>
                   <Popover open={editingEmptyOrigin} onOpenChange={(open) => {
@@ -1040,25 +1051,26 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
                   </Popover>
                 </div>
                 {emptyMilesOrigin && <div className="text-[10px] text-muted-foreground truncate max-w-[200px]">desde {emptyMilesOrigin}</div>}
-              </div>
-            </div>
+              </td>
+            </tr>
 
             {/* Driver / RPM row */}
-            <div className="grid grid-cols-[7rem_1fr_7rem_auto] border-b">
-              <div className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Driver:</div>
-              <div className="px-3 py-2 font-medium border-r">{driver?.name || 'Sin asignar'}</div>
-              <div className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">$ RPM:</div>
-              <div className={`px-3 py-2 font-bold ${rpmColorClass}`}>{rpm > 0 ? `$${rpm.toFixed(2)}` : '—'}</div>
-            </div>
+            <tr className="border-b">
+              <td className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Driver:</td>
+              <td className="px-3 py-2 font-medium border-r">{driver?.name || 'Sin asignar'}</td>
+              <td className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">$ RPM:</td>
+              <td className={`px-3 py-2 font-bold ${rpmColorClass}`}>{rpm > 0 ? `$${rpm.toFixed(2)}` : '—'}</td>
+            </tr>
 
             {/* Dispatcher / Rate row */}
-            <div className="grid grid-cols-[7rem_1fr_7rem_auto]">
-              <div className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Dispatcher:</div>
-              <div className="px-3 py-2 font-medium border-r">{dispatcher?.name || '—'}</div>
-              <div className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">$ Rate:</div>
-              <div className="px-3 py-2 font-bold text-primary">${Number(load.total_rate).toLocaleString()}</div>
-            </div>
-          </div>
+            <tr>
+              <td className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Dispatcher:</td>
+              <td className="px-3 py-2 font-medium border-r">{dispatcher?.name || '—'}</td>
+              <td className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">$ Rate:</td>
+              <td className="px-3 py-2 font-bold text-primary">${Number(load.total_rate).toLocaleString()}</td>
+            </tr>
+            </tbody>
+          </table>
 
           {/* Load Adjustments */}
           {(['in_transit', 'delivered', 'tonu'].includes(load.status)) && (
