@@ -4,6 +4,14 @@ import { User, Session } from '@supabase/supabase-js';
 
 export type AppRole = 'master_admin' | 'admin' | 'accounting' | 'dispatcher' | 'driver';
 
+const isLovablePreview =
+  typeof window !== 'undefined' &&
+  (window.location.hostname.includes('lovableproject.com') ||
+    window.location.hostname.includes('lovable.app') ||
+    window.location.search.includes('__lovable_token'));
+
+const PREVIEW_LOGIN_RELOAD_KEY = 'lovable_preview_login_reload_done';
+
 export interface Profile {
   id: string;
   full_name: string;
@@ -97,6 +105,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setRole(null);
     setTenant(null);
     setSubscription(null);
+  };
+
+  const forcePreviewHardReloadAfterLogin = () => {
+    if (!isLovablePreview) return false;
+
+    try {
+      if (sessionStorage.getItem(PREVIEW_LOGIN_RELOAD_KEY) === '1') return false;
+      sessionStorage.setItem(PREVIEW_LOGIN_RELOAD_KEY, '1');
+
+      const url = new URL(window.location.href);
+      url.searchParams.set('__preview_nocache', String(Date.now()));
+      window.location.replace(url.toString());
+      return true;
+    } catch (error) {
+      console.warn('[AuthContext] Preview hard reload fallback:', error);
+      window.location.reload();
+      return true;
+    }
   };
 
   const fetchUserData = async (userId: string, retries = 3): Promise<boolean> => {
@@ -203,6 +229,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
+        if (forcePreviewHardReloadAfterLogin()) return;
         fetchWithTimeout(session.user.id).finally(() => setLoading(false));
       } else {
         setLoading(false);
@@ -228,6 +255,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // If user is already signed in and we get another SIGNED_IN event
       // (happens when switching tabs), just update session silently
       if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+        if (event === 'SIGNED_IN' && session?.user && forcePreviewHardReloadAfterLogin()) {
+          return;
+        }
+
         setSession(session);
         setUser(session?.user ?? null);
         // Only fetch data if we haven't loaded a profile yet (first sign in)
@@ -280,6 +311,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
+    if (isLovablePreview) {
+      sessionStorage.removeItem(PREVIEW_LOGIN_RELOAD_KEY);
+    }
     await supabase.auth.signOut();
   };
 
