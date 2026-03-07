@@ -255,6 +255,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // If user is already signed in and we get another SIGNED_IN event
       // (happens when switching tabs), just update session silently
       if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+        if (event === 'SIGNED_IN' && session?.user && forcePreviewHardReloadAfterLogin()) {
+          return;
+        }
+
         setSession(session);
         setUser(session?.user ?? null);
         // Only fetch data if we haven't loaded a profile yet (first sign in)
