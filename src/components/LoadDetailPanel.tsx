@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { formatDate } from '@/lib/dateUtils';
-import { MapPin, Calendar, Weight, DollarSign, User, Truck, Route, Navigation, FileText, Download, ExternalLink, Pencil, Loader2, Copy, Check, Building2, Plus, RefreshCw } from 'lucide-react';
+import { MapPin, Calendar, Weight, DollarSign, User, Truck, Route, Navigation, FileText, Download, ExternalLink, Pencil, Loader2, Copy, Check, Building2, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useDispatchers } from '@/hooks/useDispatchers';
@@ -138,7 +138,7 @@ function CopyLoadInfoButton({ load, totalMiles, emptyMiles, rpm, driver, dispatc
 }
 
 function BrokerScoreRow({ brokerName }: { brokerName: string | null | undefined }) {
-  const { getScoreForBroker, upsertScore, lookupMc } = useBrokerScores();
+  const { getScoreForBroker, upsertScore } = useBrokerScores();
   const [adding, setAdding] = useState(false);
   const [letterInput, setLetterInput] = useState('');
   const [daysInput, setDaysInput] = useState('');
@@ -165,26 +165,9 @@ function BrokerScoreRow({ brokerName }: { brokerName: string | null | undefined 
     }, {
       onSuccess: () => {
         setAdding(false); setLetterInput(''); setDaysInput('');
-        // Auto-lookup MC# if not already present
-        if (!existing?.mc_number && brokerName) {
-          lookupMc.mutate(brokerName.trim());
-        }
       },
     });
   };
-
-  const attemptedLookupBrokerRef = useRef<string | null>(null);
-
-  // Auto-lookup MC# once per broker name (also when there is no score yet)
-  useEffect(() => {
-    const normalizedBroker = brokerName?.trim().toLowerCase();
-    if (!normalizedBroker) return;
-
-    if (!existing?.mc_number && !lookupMc.isPending && attemptedLookupBrokerRef.current !== normalizedBroker) {
-      attemptedLookupBrokerRef.current = normalizedBroker;
-      lookupMc.mutate(brokerName!.trim());
-    }
-  }, [brokerName, existing?.mc_number, lookupMc.isPending]);
 
   return (
     <div>
@@ -194,9 +177,6 @@ function BrokerScoreRow({ brokerName }: { brokerName: string | null | undefined 
           <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-600/10 text-blue-600 border border-blue-600/20">
             MC# {existing.mc_number}
           </span>
-        )}
-        {lookupMc.isPending && (
-          <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
         )}
         {existing?.rating && (() => {
           const l = existing.rating.toUpperCase();
@@ -214,18 +194,6 @@ function BrokerScoreRow({ brokerName }: { brokerName: string | null | undefined 
             </span>
           );
         })()}
-        {!existing?.mc_number && !lookupMc.isPending && brokerName && (
-          <button
-            onClick={() => {
-              attemptedLookupBrokerRef.current = null;
-              lookupMc.mutate(brokerName.trim());
-            }}
-            className="p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
-            title="Buscar MC# en FMCSA"
-          >
-            <RefreshCw className="h-3 w-3" />
-          </button>
-        )}
         {!existing && brokerName && !adding && (
           <button onClick={() => setAdding(true)} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors" title="Agregar RTS Score">
             <Plus className="h-3 w-3" /> RTS
