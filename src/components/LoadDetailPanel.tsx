@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { formatDate } from '@/lib/dateUtils';
-import { MapPin, Calendar, Weight, DollarSign, User, Truck, Route, Navigation, FileText, Download, ExternalLink, Pencil, Loader2, Copy, Check, Building2 } from 'lucide-react';
+import { MapPin, Calendar, Weight, DollarSign, User, Truck, Route, Navigation, FileText, Download, ExternalLink, Pencil, Loader2, Copy, Check, Building2, Star, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useDispatchers } from '@/hooks/useDispatchers';
@@ -17,6 +17,7 @@ import { BolFormDialog } from '@/components/BolFormDialog';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { useToast } from '@/hooks/use-toast';
+import { useBrokerScores } from '@/hooks/useBrokerScores';
 import 'leaflet/dist/leaflet.css';
 
 // Geocoding with progressive fallback: full address → without suite → city+state+zip
@@ -961,10 +962,7 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
               <User className="h-3.5 w-3.5 text-muted-foreground" />
               <div><span className="text-muted-foreground">Dispatcher:</span> <span className="font-medium">{dispatcher?.name || '—'}</span></div>
             </div>
-            <div className="flex items-center gap-2">
-              <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
-              <div><span className="text-muted-foreground">Broker:</span> <span className="font-medium">{load.broker_client || '—'}</span></div>
-            </div>
+            <BrokerScoreRow brokerName={load.broker_client} />
             <div className="flex items-center gap-2">
               <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
               <div><span className="text-muted-foreground">Rate:</span> <span className="font-bold text-primary">${Number(load.total_rate).toLocaleString()}</span></div>
