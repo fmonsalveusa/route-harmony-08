@@ -37,7 +37,11 @@ export function useBrokerScores() {
   const getScoreForBroker = (brokerName: string | null | undefined): BrokerCreditScore | undefined => {
     if (!brokerName) return undefined;
     const lower = brokerName.toLowerCase().trim();
-    return scores.find(s => s.broker_name.toLowerCase().trim() === lower);
+    const matches = scores.filter(s => s.broker_name.toLowerCase().trim() === lower);
+    return matches.sort((a, b) => {
+      if (!!a.mc_number !== !!b.mc_number) return a.mc_number ? -1 : 1;
+      return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+    })[0];
   };
 
   const upsertScore = useMutation({
