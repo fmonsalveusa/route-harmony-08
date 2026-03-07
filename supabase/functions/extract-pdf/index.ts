@@ -332,6 +332,7 @@ IMPORTANT: Look carefully for ALL stops — some documents have multiple pickup 
     const result = {
       referenceNumber: extractedData.referenceNumber || "",
       brokerClient: extractedData.brokerClient || "",
+      carrierName: extractedData.carrierName || "",
       totalRate: extractedData.totalRate || 0,
       weight: extractedData.weight || 0,
       miles: extractedData.miles || 0,

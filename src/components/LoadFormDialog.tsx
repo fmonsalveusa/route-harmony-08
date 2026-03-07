@@ -273,6 +273,20 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
           miles: extracted.miles || prev.miles,
         }));
 
+        // Auto-match carrier name to a company
+        if (extracted.carrierName && companies.length > 0) {
+          const carrierLower = extracted.carrierName.toLowerCase().trim();
+          const match = companies.find(c => {
+            const nameLower = c.name.toLowerCase().trim();
+            const legalLower = (c.legal_name || '').toLowerCase().trim();
+            return carrierLower.includes(nameLower) || nameLower.includes(carrierLower)
+              || (legalLower && (carrierLower.includes(legalLower) || legalLower.includes(carrierLower)));
+          });
+          if (match) {
+            setSelectedCompany(match.id);
+          }
+        }
+
         // Update stop entries from extracted multi-stop data
         if (extracted.stops && Array.isArray(extracted.stops) && extracted.stops.length > 0) {
           setStopEntries(extracted.stops.map((s: any) => ({
