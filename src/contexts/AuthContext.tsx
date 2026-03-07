@@ -107,6 +107,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setSubscription(null);
   };
 
+  const forcePreviewHardReloadAfterLogin = () => {
+    if (!isLovablePreview) return false;
+
+    try {
+      if (sessionStorage.getItem(PREVIEW_LOGIN_RELOAD_KEY) === '1') return false;
+      sessionStorage.setItem(PREVIEW_LOGIN_RELOAD_KEY, '1');
+
+      const url = new URL(window.location.href);
+      url.searchParams.set('__preview_nocache', String(Date.now()));
+      window.location.replace(url.toString());
+      return true;
+    } catch (error) {
+      console.warn('[AuthContext] Preview hard reload fallback:', error);
+      window.location.reload();
+      return true;
+    }
+  };
+
   const fetchUserData = async (userId: string, retries = 3): Promise<boolean> => {
     for (let attempt = 1; attempt <= retries; attempt++) {
       try {
