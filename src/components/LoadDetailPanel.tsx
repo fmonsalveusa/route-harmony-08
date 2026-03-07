@@ -173,13 +173,18 @@ function BrokerScoreRow({ brokerName }: { brokerName: string | null | undefined 
     });
   };
 
-  // Auto-lookup MC# when broker has a score but no mc_number
+  const attemptedLookupBrokerRef = useRef<string | null>(null);
+
+  // Auto-lookup MC# once per broker name (also when there is no score yet)
   useEffect(() => {
-    if (existing && !existing.mc_number && brokerName && !lookupMc.isPending) {
-      lookupMc.mutate(brokerName.trim());
+    const normalizedBroker = brokerName?.trim().toLowerCase();
+    if (!normalizedBroker) return;
+
+    if (!existing?.mc_number && !lookupMc.isPending && attemptedLookupBrokerRef.current !== normalizedBroker) {
+      attemptedLookupBrokerRef.current = normalizedBroker;
+      lookupMc.mutate(brokerName!.trim());
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [existing?.id]);
+  }, [brokerName, existing?.mc_number, lookupMc.isPending]);
 
   return (
     <div>
@@ -209,8 +214,15 @@ function BrokerScoreRow({ brokerName }: { brokerName: string | null | undefined 
             </span>
           );
         })()}
-        {existing && !existing.mc_number && !lookupMc.isPending && brokerName && (
-          <button onClick={() => lookupMc.mutate(brokerName.trim())} className="p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground" title="Buscar MC# en FMCSA">
+        {!existing?.mc_number && !lookupMc.isPending && brokerName && (
+          <button
+            onClick={() => {
+              attemptedLookupBrokerRef.current = null;
+              lookupMc.mutate(brokerName.trim());
+            }}
+            className="p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
+            title="Buscar MC# en FMCSA"
+          >
             <RefreshCw className="h-3 w-3" />
           </button>
         )}
