@@ -1,29 +1,39 @@
 
 
-## Problema
+## Auto-fill Broker MC# via FMCSA API
 
-El preview de Lovable carga desde un iframe que puede mantener módulos JS en caché del navegador (no solo Service Worker). La limpieza actual en `main.tsx` solo elimina Service Workers y Cache API, pero el **caché HTTP del navegador** (disk cache) sigue sirviendo versiones antiguas de los chunks JS que contienen la función `generateTerminationLetterPdf`.
+### Overview
+Store the FMCSA API key securely, add an `mc_number` field to the broker scores table, create a backend function to look up brokers by name via the FMCSA public API, and display the MC# in the load detail next to the broker name/RTS score.
 
-Esto explica por qué la app publicada siempre muestra el formato correcto (deploy fresco) pero el preview a veces muestra el formato anterior.
+### Steps
 
-## Solución
+1. **Store FMCSA API key** as a secret using the secrets tool
 
-No hay una solución de código que resuelva esto permanentemente desde el lado de la app — es un comportamiento del navegador en el entorno de preview. Sin embargo, podemos mitigar el problema:
+2. **Database migration** — Add `mc_number` column to `broker_credit_scores`:
+```sql
+ALTER TABLE broker_credit_scores ADD COLUMN mc_number text;
+```
 
-1. **Agregar headers de no-cache para el preview** en `vite.config.ts`: Configurar headers del servidor de desarrollo para evitar que el navegador cachee los módulos JS.
+3. **New backend function** `lookup-broker-mc/index.ts`:
+   - Receives `broker_name` as input
+   - Calls FMCSA API: `https://mobile.fmcsa.dot.gov/qc/services/carriers/name/${encodedName}?webKey=KEY`
+   - Extracts the MC number from the response
+   - Returns `{ mc_number, dot_number, legal_name }`
 
-   En `server` config, agregar:
-   ```ts
-   headers: {
-     'Cache-Control': 'no-store, no-cache, must-revalidate',
-   }
-   ```
+4. **Update `useBrokerScores.ts`**:
+   - Add `mc_number` to the `BrokerCreditScore` interface
+   - Add a `lookupMc` mutation that calls the edge function and updates the broker record
+   - Auto-trigger lookup when saving a new broker score if `mc_number` is missing
 
-2. **Forzar limpieza más agresiva en preview**: Además de limpiar SW y Cache API, intentar forzar una recarga sin caché si se detecta que es la primera carga después de un cambio.
+5. **Update `LoadDetailPanel.tsx` `BrokerScoreRow`**:
+   - Display `MC# XXXXXX` badge next to the RTS score when available
+   - Show a small "lookup" spinner while fetching from FMCSA
+   - Add a refresh button to re-fetch MC# on demand
 
-Esto debería reducir significativamente el problema de ver formatos antiguos en el preview.
-
-## Archivos a modificar
-
-- `vite.config.ts` — agregar `headers` con `Cache-Control: no-store` en la config de `server`
+### Files to create/modify
+- Secret: `FMCSA_API_KEY`
+- Migration: add `mc_number` column
+- New: `supabase/functions/lookup-broker-mc/index.ts`
+- Edit: `src/hooks/useBrokerScores.ts`
+- Edit: `src/components/LoadDetailPanel.tsx`
 
