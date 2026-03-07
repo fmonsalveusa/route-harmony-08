@@ -2,6 +2,7 @@ import jsPDF from 'jspdf';
 import type { DbPayment } from '@/hooks/usePayments';
 import type { DbPaymentAdjustment } from '@/hooks/usePaymentAdjustments';
 import { ADJUSTMENT_REASONS } from '@/hooks/usePaymentAdjustments';
+import { loadPdfLogo } from './pdfLogoLoader';
 
 const reasonLabel = (r: string) => ADJUSTMENT_REASONS.find(a => a.value === r)?.label || r;
 
@@ -9,18 +10,13 @@ const reasonLabel = (r: string) => ADJUSTMENT_REASONS.find(a => a.value === r)?.
 const extractCityState = (address: string): string => {
   if (!address) return '—';
   const parts = address.split(',').map(p => p.trim());
-
-  // Walk backwards to find the state abbreviation (2-letter uppercase)
   for (let i = parts.length - 1; i >= 0; i--) {
     const stateMatch = parts[i].match(/\b([A-Z]{2})\b/);
     if (stateMatch && i > 0) {
-      // The part before the state is the city
       const city = parts[i - 1];
       return `${city}, ${stateMatch[1]}`;
     }
   }
-
-  // Fallback
   return parts.length >= 2 ? `${parts[0]}, ${parts[1]}` : address;
 };
 
@@ -33,7 +29,7 @@ export interface DispatcherLoadItem {
   amount: number;
 }
 
-export function generatePaymentReceipt(
+export async function generatePaymentReceipt(
   payment: DbPayment,
   adjustments: DbPaymentAdjustment[],
   totalAdjustment: number,
@@ -52,12 +48,20 @@ export function generatePaymentReceipt(
   const margin = 20;
   let y = 20;
 
+  // Blue banner
   doc.setFillColor(37, 99, 235);
   doc.rect(0, 0, pageWidth, 36, 'F');
+
+  // Logo in banner
+  try {
+    const logoData = await loadPdfLogo();
+    doc.addImage(logoData, 'PNG', margin, 3, 40, 12);
+  } catch {}
+
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(20);
   doc.setFont('helvetica', 'bold');
-  doc.text('PAYMENT RECEIPT', margin, 24);
+  doc.text('PAYMENT RECEIPT', margin, 28);
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.text(`Date: ${date}`, pageWidth - margin, 16, { align: 'right' });
@@ -126,7 +130,6 @@ export function generatePaymentReceipt(
       return `${m}/${day}/${yr}`;
     };
 
-    // Origin + Pickup
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(107, 114, 128);
     doc.text('Origin:', margin, y);
@@ -142,7 +145,6 @@ export function generatePaymentReceipt(
     doc.text(fmtDate(pickupDate), margin + 60, y);
     y += 10;
 
-    // Destination + Delivery
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(107, 114, 128);
     doc.text('Destination:', margin, y);
@@ -172,7 +174,6 @@ export function generatePaymentReceipt(
     doc.line(margin, y, pageWidth - margin, y);
     y += 8;
 
-    // Table header
     doc.setFontSize(8);
     doc.setFillColor(243, 244, 246);
     doc.rect(margin, y - 4, pageWidth - margin * 2, 8, 'F');

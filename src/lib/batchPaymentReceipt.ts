@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import type { DbPayment } from '@/hooks/usePayments';
+import { loadPdfLogo } from './pdfLogoLoader';
 
 interface BatchPaymentItem {
   payment: DbPayment;
@@ -7,7 +8,7 @@ interface BatchPaymentItem {
   finalAmount: number;
 }
 
-export function generateBatchPaymentReceipt(
+export async function generateBatchPaymentReceipt(
   recipientName: string,
   recipientType: string,
   items: BatchPaymentItem[],
@@ -19,12 +20,20 @@ export function generateBatchPaymentReceipt(
   const margin = 20;
   let y = 20;
 
+  // Blue banner
   doc.setFillColor(37, 99, 235);
   doc.rect(0, 0, pageWidth, 36, 'F');
+
+  // Logo in banner
+  try {
+    const logoData = await loadPdfLogo();
+    doc.addImage(logoData, 'PNG', margin, 3, 40, 12);
+  } catch {}
+
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(20);
   doc.setFont('helvetica', 'bold');
-  doc.text('BATCH PAYMENT RECEIPT', margin, 24);
+  doc.text('BATCH PAYMENT RECEIPT', margin, 28);
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.text(`Date: ${date}`, pageWidth - margin, 16, { align: 'right' });

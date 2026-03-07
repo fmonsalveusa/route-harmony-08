@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import type { Company } from '@/hooks/useCompanies';
+import { loadPdfLogo } from './pdfLogoLoader';
 
 interface InvoiceData {
   invoiceNumber: string;
@@ -15,35 +16,43 @@ interface InvoiceData {
   createdAt: string;
 }
 
-export function generateInvoicePdf(data: InvoiceData) {
+export async function generateInvoicePdf(data: InvoiceData) {
   const doc = new jsPDF();
   const pageW = doc.internal.pageSize.getWidth();
   let y = 20;
 
+  // Logo above INVOICE title (left-aligned)
+  try {
+    const logoData = await loadPdfLogo();
+    doc.addImage(logoData, 'PNG', 15, y - 5, 50, 15);
+    y += 14;
+  } catch {}
+
   // Company header (right-aligned)
+  let companyY = 20;
   if (data.company) {
     doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
-    doc.text(data.company.name, pageW - 15, y, { align: 'right' });
-    y += 6;
+    doc.text(data.company.name, pageW - 15, companyY, { align: 'right' });
+    companyY += 6;
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
     if (data.company.address) {
-      doc.text(`${data.company.address}`, pageW - 15, y, { align: 'right' });
-      y += 4;
+      doc.text(`${data.company.address}`, pageW - 15, companyY, { align: 'right' });
+      companyY += 4;
     }
     if (data.company.city || data.company.state || data.company.zip) {
-      doc.text(`${data.company.city || ''}, ${data.company.state || ''} ${data.company.zip || ''}`.trim(), pageW - 15, y, { align: 'right' });
-      y += 4;
+      doc.text(`${data.company.city || ''}, ${data.company.state || ''} ${data.company.zip || ''}`.trim(), pageW - 15, companyY, { align: 'right' });
+      companyY += 4;
     }
-    if (data.company.phone) { doc.text(`Phone: ${data.company.phone}`, pageW - 15, y, { align: 'right' }); y += 4; }
-    if (data.company.email) { doc.text(`Email: ${data.company.email}`, pageW - 15, y, { align: 'right' }); y += 4; }
-    if (data.company.mc_number) { doc.text(`MC# ${data.company.mc_number}`, pageW - 15, y, { align: 'right' }); y += 4; }
-    if (data.company.dot_number) { doc.text(`DOT# ${data.company.dot_number}`, pageW - 15, y, { align: 'right' }); y += 4; }
+    if (data.company.phone) { doc.text(`Phone: ${data.company.phone}`, pageW - 15, companyY, { align: 'right' }); companyY += 4; }
+    if (data.company.email) { doc.text(`Email: ${data.company.email}`, pageW - 15, companyY, { align: 'right' }); companyY += 4; }
+    if (data.company.mc_number) { doc.text(`MC# ${data.company.mc_number}`, pageW - 15, companyY, { align: 'right' }); companyY += 4; }
+    if (data.company.dot_number) { doc.text(`DOT# ${data.company.dot_number}`, pageW - 15, companyY, { align: 'right' }); companyY += 4; }
   }
 
   // INVOICE title
-  y = Math.max(y + 8, 50);
+  y = Math.max(y + 4, companyY + 8, 50);
   doc.setFontSize(24);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(30, 64, 120);
@@ -76,7 +85,6 @@ export function generateInvoicePdf(data: InvoiceData) {
 
   // Load details table
   y += 10;
-  const colX = [15, pageW - 15];
   doc.setFillColor(30, 64, 120);
   doc.rect(15, y - 4, pageW - 30, 10, 'F');
   doc.setTextColor(255, 255, 255);

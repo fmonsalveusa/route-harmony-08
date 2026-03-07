@@ -81,11 +81,11 @@ const handleGenerateReceipt = async (p: DbPayment) => {
         if (comp) companyName = (comp as any).name;
       }
     }
-    generatePaymentReceipt(p, adjustments, totalAdj, Number(p.amount) + totalAdj, dispatcherItems, loadOrigin, loadDestination, (load as any)?.pickup_date, (load as any)?.delivery_date, companyName);
+    await generatePaymentReceipt(p, adjustments, totalAdj, Number(p.amount) + totalAdj, dispatcherItems, loadOrigin, loadDestination, (load as any)?.pickup_date, (load as any)?.delivery_date, companyName);
     return;
   }
 
-  generatePaymentReceipt(p, adjustments, totalAdj, Number(p.amount) + totalAdj, dispatcherItems, undefined, undefined, undefined, undefined, companyName);
+  await generatePaymentReceipt(p, adjustments, totalAdj, Number(p.amount) + totalAdj, dispatcherItems, undefined, undefined, undefined, undefined, companyName);
 };
 
 interface PaymentsSectionProps {
@@ -277,7 +277,7 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
         adjustment: adjMap[p.id] || 0,
         finalAmount: Number(p.amount) + (adjMap[p.id] || 0),
       }));
-      generateBatchPaymentReceipt(selectedPayments[0].recipient_name, selectedPayments[0].recipient_type, items);
+      await generateBatchPaymentReceipt(selectedPayments[0].recipient_name, selectedPayments[0].recipient_type, items);
       toast({ title: `${selectedPayments.length} payment(s) marked as paid`, description: 'Batch receipt generated.' });
       setSelectedIds(new Set());
       refetch();
@@ -288,7 +288,7 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
     }
   };
 
-  const handleBatchReceiptOnly = () => {
+  const handleBatchReceiptOnly = async () => {
     if (!canBatchPay) {
       toast({ title: 'Error', description: 'Select payments from the same beneficiary.', variant: 'destructive' });
       return;
@@ -298,7 +298,7 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
       adjustment: adjMap[p.id] || 0,
       finalAmount: Number(p.amount) + (adjMap[p.id] || 0),
     }));
-    generateBatchPaymentReceipt(selectedPayments[0].recipient_name, selectedPayments[0].recipient_type, items);
+    await generateBatchPaymentReceipt(selectedPayments[0].recipient_name, selectedPayments[0].recipient_type, items);
     toast({ title: 'Batch receipt generated' });
   };
 
