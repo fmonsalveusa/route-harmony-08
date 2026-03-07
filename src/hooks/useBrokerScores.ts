@@ -37,7 +37,11 @@ export function useBrokerScores() {
   const getScoreForBroker = (brokerName: string | null | undefined): BrokerCreditScore | undefined => {
     if (!brokerName) return undefined;
     const lower = brokerName.toLowerCase().trim();
-    return scores.find(s => s.broker_name.toLowerCase().trim() === lower);
+    const matches = scores.filter(s => s.broker_name.toLowerCase().trim() === lower);
+    return matches.sort((a, b) => {
+      if (!!a.mc_number !== !!b.mc_number) return a.mc_number ? -1 : 1;
+      return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+    })[0];
   };
 
   const upsertScore = useMutation({
@@ -98,9 +102,13 @@ export function useBrokerScores() {
         const tenant_id = await getTenantId();
         await supabase
           .from('broker_credit_scores' as any)
-          .update({ mc_number: data.mc_number } as any)
-          .eq('broker_name', broker_name.trim())
-          .eq('tenant_id', tenant_id);
+          .upsert({
+            broker_name: broker_name.trim(),
+            mc_number: data.mc_number,
+            tenant_id,
+            updated_at: new Date().toISOString(),
+          } as any, { onConflict: 'broker_name,tenant_id' });
+
         queryClient.invalidateQueries({ queryKey: QUERY_KEY });
       }
     },
