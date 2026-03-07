@@ -953,134 +953,110 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
             </div>
 
             {/* Pick Up row */}
-            <div className="grid grid-cols-2 border-b">
-              <div className="grid grid-cols-[7rem_1fr] border-r">
-                <div className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Pick Up:</div>
-                <div className="px-3 py-2 font-medium flex items-center gap-1">
-                  {(() => {
-                    const pickupStop = resolvedStops.find(s => s.type === 'pickup') || null;
-                    const addr = pickupStop?.address || load.origin;
-                    return (
-                      <>
-                        <span className="truncate">{addr}</span>
-                        <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(addr)}`} target="_blank" rel="noopener noreferrer" className="flex-shrink-0 p-0.5 rounded hover:bg-muted text-primary"><Navigation className="h-3 w-3" /></a>
-                      </>
-                    );
-                  })()}
-                </div>
+            <div className="grid grid-cols-[7rem_1fr_7rem_auto] border-b">
+              <div className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Pick Up:</div>
+              <div className="px-3 py-2 font-medium flex items-center gap-1 border-r">
+                {(() => {
+                  const pickupStop = resolvedStops.find(s => s.type === 'pickup') || null;
+                  const addr = pickupStop?.address || load.origin;
+                  return (
+                    <>
+                      <span className="truncate">{addr}</span>
+                      <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(addr)}`} target="_blank" rel="noopener noreferrer" className="flex-shrink-0 p-0.5 rounded hover:bg-muted text-primary"><Navigation className="h-3 w-3" /></a>
+                    </>
+                  );
+                })()}
               </div>
-              <div className="grid grid-cols-[7rem_1fr]">
-                <div className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Pickup:</div>
-                <div className="px-3 py-2 font-medium">{formatDate(load.pickup_date)}</div>
-              </div>
+              <div className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Pickup:</div>
+              <div className="px-3 py-2 font-medium">{formatDate(load.pickup_date)}</div>
             </div>
 
             {/* Delivery row */}
-            <div className="grid grid-cols-2 border-b">
-              <div className="grid grid-cols-[7rem_1fr] border-r">
-                <div className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Delivery:</div>
-                <div className="px-3 py-2 font-medium flex items-center gap-1">
-                  {(() => {
-                    const deliveryStop = resolvedStops.filter(s => s.type === 'delivery').pop() || null;
-                    const addr = deliveryStop?.address || load.destination;
-                    return (
-                      <>
-                        <span className="truncate">{addr}</span>
-                        <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(addr)}`} target="_blank" rel="noopener noreferrer" className="flex-shrink-0 p-0.5 rounded hover:bg-muted text-primary"><Navigation className="h-3 w-3" /></a>
-                      </>
-                    );
-                  })()}
-                </div>
+            <div className="grid grid-cols-[7rem_1fr_7rem_auto] border-b">
+              <div className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Delivery:</div>
+              <div className="px-3 py-2 font-medium flex items-center gap-1 border-r">
+                {(() => {
+                  const deliveryStop = resolvedStops.filter(s => s.type === 'delivery').pop() || null;
+                  const addr = deliveryStop?.address || load.destination;
+                  return (
+                    <>
+                      <span className="truncate">{addr}</span>
+                      <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(addr)}`} target="_blank" rel="noopener noreferrer" className="flex-shrink-0 p-0.5 rounded hover:bg-muted text-primary"><Navigation className="h-3 w-3" /></a>
+                    </>
+                  );
+                })()}
               </div>
-              <div className="grid grid-cols-[7rem_1fr]">
-                <div className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Delivery:</div>
-                <div className="px-3 py-2 font-medium">{formatDate(load.delivery_date)}</div>
-              </div>
+              <div className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Delivery:</div>
+              <div className="px-3 py-2 font-medium">{formatDate(load.delivery_date)}</div>
             </div>
 
             {/* Weight / Type row */}
-            <div className="grid grid-cols-2 border-b">
-              <div className="grid grid-cols-[7rem_1fr] border-r">
-                <div className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Weight:</div>
-                <div className="px-3 py-2 font-medium">{load.weight ? `${load.weight.toLocaleString()} lbs` : '—'}</div>
-              </div>
-              <div className="grid grid-cols-[7rem_1fr]">
-                <div className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Type:</div>
-                <div className="px-3 py-2 font-medium">{truck?.truck_type || '—'}</div>
-              </div>
+            <div className="grid grid-cols-[7rem_1fr_7rem_auto] border-b">
+              <div className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Weight:</div>
+              <div className="px-3 py-2 font-medium border-r">{load.weight ? `${load.weight.toLocaleString()} lbs` : '—'}</div>
+              <div className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Type:</div>
+              <div className="px-3 py-2 font-medium">{truck?.truck_type || '—'}</div>
             </div>
 
             {/* Miles / Empty Miles row */}
-            <div className="grid grid-cols-2 border-b">
-              <div className="grid grid-cols-[7rem_1fr] border-r">
-                <div className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Miles:</div>
-                <div className="px-3 py-2 font-bold text-primary">{totalMiles > 0 ? totalMiles.toLocaleString() : '—'}</div>
-              </div>
-              <div className="grid grid-cols-[7rem_1fr]">
-                <div className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Empty Miles:</div>
-                <div className="px-3 py-2">
-                  <div className="flex items-center gap-1">
-                    <span className="font-bold text-amber-500">{emptyMiles > 0 ? emptyMiles.toLocaleString() : '—'}</span>
-                    <Popover open={editingEmptyOrigin} onOpenChange={(open) => {
-                      setEditingEmptyOrigin(open);
-                      if (open) setCustomOriginInput(emptyMilesOrigin || '');
-                    }}>
-                      <PopoverTrigger asChild>
-                        <button className="p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground" title="Editar origen de millas vacías">
-                          <Pencil className="h-3 w-3" />
-                        </button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-80" align="start">
-                        <div className="space-y-2">
-                          <p className="text-xs font-medium">Nuevo origen de millas vacías</p>
-                          <Input
-                            placeholder="Ej: Dallas, TX 75001"
-                            value={customOriginInput}
-                            onChange={(e) => setCustomOriginInput(e.target.value)}
-                            className="text-xs h-8"
-                            disabled={recalculating}
-                            onKeyDown={(e) => { if (e.key === 'Enter') void handleRecalculateEmptyMiles(); }}
-                          />
-                          <div className="flex gap-2 justify-end">
-                            <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setEditingEmptyOrigin(false)} disabled={recalculating}>
-                              Cancelar
-                            </Button>
-                            <Button size="sm" className="h-7 text-xs gap-1" onClick={() => void handleRecalculateEmptyMiles()} disabled={recalculating || !customOriginInput.trim()}>
-                              {recalculating && <Loader2 className="h-3 w-3 animate-spin" />}
-                              Recalcular
-                            </Button>
-                          </div>
+            <div className="grid grid-cols-[7rem_1fr_7rem_auto] border-b">
+              <div className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Miles:</div>
+              <div className="px-3 py-2 font-bold text-primary border-r">{totalMiles > 0 ? totalMiles.toLocaleString() : '—'}</div>
+              <div className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Empty Miles:</div>
+              <div className="px-3 py-2">
+                <div className="flex items-center gap-1">
+                  <span className="font-bold text-amber-500">{emptyMiles > 0 ? emptyMiles.toLocaleString() : '—'}</span>
+                  <Popover open={editingEmptyOrigin} onOpenChange={(open) => {
+                    setEditingEmptyOrigin(open);
+                    if (open) setCustomOriginInput(emptyMilesOrigin || '');
+                  }}>
+                    <PopoverTrigger asChild>
+                      <button className="p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground" title="Editar origen de millas vacías">
+                        <Pencil className="h-3 w-3" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80" align="start">
+                      <div className="space-y-2">
+                        <p className="text-xs font-medium">Nuevo origen de millas vacías</p>
+                        <Input
+                          placeholder="Ej: Dallas, TX 75001"
+                          value={customOriginInput}
+                          onChange={(e) => setCustomOriginInput(e.target.value)}
+                          className="text-xs h-8"
+                          disabled={recalculating}
+                          onKeyDown={(e) => { if (e.key === 'Enter') void handleRecalculateEmptyMiles(); }}
+                        />
+                        <div className="flex gap-2 justify-end">
+                          <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setEditingEmptyOrigin(false)} disabled={recalculating}>
+                            Cancelar
+                          </Button>
+                          <Button size="sm" className="h-7 text-xs gap-1" onClick={() => void handleRecalculateEmptyMiles()} disabled={recalculating || !customOriginInput.trim()}>
+                            {recalculating && <Loader2 className="h-3 w-3 animate-spin" />}
+                            Recalcular
+                          </Button>
                         </div>
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                  {emptyMilesOrigin && <div className="text-[10px] text-muted-foreground truncate max-w-[200px]">desde {emptyMilesOrigin}</div>}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 </div>
+                {emptyMilesOrigin && <div className="text-[10px] text-muted-foreground truncate max-w-[200px]">desde {emptyMilesOrigin}</div>}
               </div>
             </div>
 
             {/* Driver / RPM row */}
-            <div className="grid grid-cols-2 border-b">
-              <div className="grid grid-cols-[7rem_1fr] border-r">
-                <div className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Driver:</div>
-                <div className="px-3 py-2 font-medium">{driver?.name || 'Sin asignar'}</div>
-              </div>
-              <div className="grid grid-cols-[7rem_1fr]">
-                <div className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">$ RPM:</div>
-                <div className={`px-3 py-2 font-bold ${rpmColorClass}`}>{rpm > 0 ? `$${rpm.toFixed(2)}` : '—'}</div>
-              </div>
+            <div className="grid grid-cols-[7rem_1fr_7rem_auto] border-b">
+              <div className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Driver:</div>
+              <div className="px-3 py-2 font-medium border-r">{driver?.name || 'Sin asignar'}</div>
+              <div className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">$ RPM:</div>
+              <div className={`px-3 py-2 font-bold ${rpmColorClass}`}>{rpm > 0 ? `$${rpm.toFixed(2)}` : '—'}</div>
             </div>
 
             {/* Dispatcher / Rate row */}
-            <div className="grid grid-cols-2">
-              <div className="grid grid-cols-[7rem_1fr] border-r">
-                <div className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Dispatcher:</div>
-                <div className="px-3 py-2 font-medium">{dispatcher?.name || '—'}</div>
-              </div>
-              <div className="grid grid-cols-[7rem_1fr]">
-                <div className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">$ Rate:</div>
-                <div className="px-3 py-2 font-bold text-primary">${Number(load.total_rate).toLocaleString()}</div>
-              </div>
+            <div className="grid grid-cols-[7rem_1fr_7rem_auto]">
+              <div className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Dispatcher:</div>
+              <div className="px-3 py-2 font-medium border-r">{dispatcher?.name || '—'}</div>
+              <div className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">$ Rate:</div>
+              <div className="px-3 py-2 font-bold text-primary">${Number(load.total_rate).toLocaleString()}</div>
             </div>
           </div>
 
