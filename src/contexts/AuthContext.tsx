@@ -229,6 +229,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
+        if (forcePreviewHardReloadAfterLogin()) return;
         fetchWithTimeout(session.user.id).finally(() => setLoading(false));
       } else {
         setLoading(false);
