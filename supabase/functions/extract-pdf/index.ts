@@ -242,7 +242,8 @@ IMPORTANT: Look carefully for ALL stops — some documents have multiple pickup 
                     type: "string",
                     description: "Reference number, confirmation number, or load number",
                   },
-                  brokerClient: { type: "string", description: "Broker or client company name" },
+                  brokerClient: { type: "string", description: "Broker or client company name (the company that is hiring the carrier)" },
+                  carrierName: { type: "string", description: "Carrier company name (the trucking company that will haul the load). Usually labeled as 'Carrier' in the document." },
                   totalRate: { type: "number", description: "Total rate/payment amount in USD" },
                   weight: { type: "number", description: "Weight in lbs" },
                   miles: { type: "number", description: "Total miles if shown in document" },
@@ -331,6 +332,7 @@ IMPORTANT: Look carefully for ALL stops — some documents have multiple pickup 
     const result = {
       referenceNumber: extractedData.referenceNumber || "",
       brokerClient: extractedData.brokerClient || "",
+      carrierName: extractedData.carrierName || "",
       totalRate: extractedData.totalRate || 0,
       weight: extractedData.weight || 0,
       miles: extractedData.miles || 0,
