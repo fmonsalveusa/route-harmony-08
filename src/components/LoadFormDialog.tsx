@@ -99,7 +99,8 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       setSelectedDispatcher(editLoad.dispatcher_id || '');
       setSelectedStatus(editLoad.status);
       setSelectedServiceType((editLoad as any).service_type || '');
-      setSelectedCompany((editLoad as any).company_id || '');
+      const editCompanyId = (editLoad as any).company_id || '';
+      setSelectedCompany(editCompanyId || (companies.find(c => c.name === 'AG AR Transportation')?.id ?? ''));
       setPdfPreviewUrl(editLoad.pdf_url || null);
       setUploadedPdfPath(null);
       setUploadedPdfSignedUrl(editLoad.pdf_url || null);
@@ -110,7 +111,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       setSelectedDispatcher('');
       setSelectedStatus('planned');
       setSelectedServiceType('');
-      setSelectedCompany('');
+      setSelectedCompany(companies.find(c => c.name === 'AG AR Transportation')?.id ?? '');
       setExtractionStatus('idle');
       setPdfFileName('');
       setPdfFile(null);
