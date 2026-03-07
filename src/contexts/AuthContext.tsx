@@ -4,6 +4,14 @@ import { User, Session } from '@supabase/supabase-js';
 
 export type AppRole = 'master_admin' | 'admin' | 'accounting' | 'dispatcher' | 'driver';
 
+const isLovablePreview =
+  typeof window !== 'undefined' &&
+  (window.location.hostname.includes('lovableproject.com') ||
+    window.location.hostname.includes('lovable.app') ||
+    window.location.search.includes('__lovable_token'));
+
+const PREVIEW_LOGIN_RELOAD_KEY = 'lovable_preview_login_reload_done';
+
 export interface Profile {
   id: string;
   full_name: string;
