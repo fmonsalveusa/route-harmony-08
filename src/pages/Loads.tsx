@@ -108,7 +108,7 @@ const Loads = () => {
       pdf_url: null,
       notes: null,
     });
-    generateInvoicePdf({
+    await generateInvoicePdf({
       invoiceNumber,
       brokerName: load.broker_client,
       loadRef: load.reference_number,

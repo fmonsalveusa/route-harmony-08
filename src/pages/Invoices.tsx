@@ -74,11 +74,11 @@ const Invoices = () => {
     setEditInvoice(null);
   };
 
-  const handleDownloadPdf = (inv: Invoice) => {
+  const handleDownloadPdf = async (inv: Invoice) => {
     const load = loadDataMap[inv.load_id];
     const companyId = inv.company_id || load?.company_id;
     const company = companies.length > 0 ? (companyId ? companies.find(c => c.id === companyId) || companies[0] : companies[0]) : null;
-    generateInvoicePdf({
+    await generateInvoicePdf({
       invoiceNumber: inv.invoice_number,
       brokerName: inv.broker_name,
       loadRef: load?.reference_number || inv.invoice_number,

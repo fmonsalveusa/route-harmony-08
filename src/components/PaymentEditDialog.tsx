@@ -90,9 +90,9 @@ export const PaymentEditDialog = ({ payment, open, onOpenChange }: Props) => {
     toast({ title: 'Rate actualizado en carga y pagos asociados' });
   };
 
-  const handleGenerateReceipt = () => {
+  const handleGenerateReceipt = async () => {
     const updatedPayment = { ...payment, total_rate: currentRate, amount: currentBaseAmount };
-    generatePaymentReceipt(updatedPayment, adjustments, totalAdjustment, finalAmount);
+    await generatePaymentReceipt(updatedPayment, adjustments, totalAdjustment, finalAmount);
   };
 
   const reasonLabel = (r: string) => ADJUSTMENT_REASONS.find(a => a.value === r)?.label || r;
