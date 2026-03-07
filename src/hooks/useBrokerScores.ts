@@ -98,9 +98,13 @@ export function useBrokerScores() {
         const tenant_id = await getTenantId();
         await supabase
           .from('broker_credit_scores' as any)
-          .update({ mc_number: data.mc_number } as any)
-          .eq('broker_name', broker_name.trim())
-          .eq('tenant_id', tenant_id);
+          .upsert({
+            broker_name: broker_name.trim(),
+            mc_number: data.mc_number,
+            tenant_id,
+            updated_at: new Date().toISOString(),
+          } as any, { onConflict: 'broker_name,tenant_id' });
+
         queryClient.invalidateQueries({ queryKey: QUERY_KEY });
       }
     },
