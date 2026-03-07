@@ -95,7 +95,7 @@ const Loads = () => {
 
   const handleGenerateInvoice = async (load: DbLoad) => {
     if (!load.broker_client) { toast.error('Esta carga no tiene broker asignado'); return; }
-    const company = companies.length > 0 ? companies[0] : null;
+    const company = load.company_id ? companies.find(c => c.id === load.company_id) || (companies.length > 0 ? companies[0] : null) : (companies.length > 0 ? companies[0] : null);
     const invoiceNumber = `INV-${load.reference_number}`;
     await createInvoice({
       load_id: load.id,
