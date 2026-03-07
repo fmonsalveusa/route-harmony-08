@@ -945,7 +945,7 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
           {/* Structured table layout */}
           <div className="rounded-lg border bg-card overflow-hidden text-sm">
             {/* Broker row - full width */}
-            <div className="grid grid-cols-[auto_1fr] border-b">
+            <div className="grid grid-cols-[7rem_1fr] border-b">
               <div className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Broker:</div>
               <div className="px-3 py-2">
                 <BrokerScoreRow brokerName={load.broker_client} />
@@ -954,7 +954,7 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
 
             {/* Pick Up row */}
             <div className="grid grid-cols-2 border-b">
-              <div className="grid grid-cols-[auto_1fr] border-r">
+              <div className="grid grid-cols-[7rem_1fr] border-r">
                 <div className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Pick Up:</div>
                 <div className="px-3 py-2 font-medium flex items-center gap-1">
                   {(() => {
@@ -969,7 +969,7 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
                   })()}
                 </div>
               </div>
-              <div className="grid grid-cols-[auto_1fr]">
+              <div className="grid grid-cols-[7rem_1fr]">
                 <div className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Pickup:</div>
                 <div className="px-3 py-2 font-medium">{formatDate(load.pickup_date)}</div>
               </div>
@@ -977,7 +977,7 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
 
             {/* Delivery row */}
             <div className="grid grid-cols-2 border-b">
-              <div className="grid grid-cols-[auto_1fr] border-r">
+              <div className="grid grid-cols-[7rem_1fr] border-r">
                 <div className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Delivery:</div>
                 <div className="px-3 py-2 font-medium flex items-center gap-1">
                   {(() => {
@@ -992,7 +992,7 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
                   })()}
                 </div>
               </div>
-              <div className="grid grid-cols-[auto_1fr]">
+              <div className="grid grid-cols-[7rem_1fr]">
                 <div className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Delivery:</div>
                 <div className="px-3 py-2 font-medium">{formatDate(load.delivery_date)}</div>
               </div>
@@ -1000,11 +1000,11 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
 
             {/* Weight / Type row */}
             <div className="grid grid-cols-2 border-b">
-              <div className="grid grid-cols-[auto_1fr] border-r">
+              <div className="grid grid-cols-[7rem_1fr] border-r">
                 <div className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Weight:</div>
                 <div className="px-3 py-2 font-medium">{load.weight ? `${load.weight.toLocaleString()} lbs` : '—'}</div>
               </div>
-              <div className="grid grid-cols-[auto_1fr]">
+              <div className="grid grid-cols-[7rem_1fr]">
                 <div className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Type:</div>
                 <div className="px-3 py-2 font-medium">{truck?.truck_type || '—'}</div>
               </div>
@@ -1012,11 +1012,11 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
 
             {/* Miles / Empty Miles row */}
             <div className="grid grid-cols-2 border-b">
-              <div className="grid grid-cols-[auto_1fr] border-r">
+              <div className="grid grid-cols-[7rem_1fr] border-r">
                 <div className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Miles:</div>
                 <div className="px-3 py-2 font-bold text-primary">{totalMiles > 0 ? totalMiles.toLocaleString() : '—'}</div>
               </div>
-              <div className="grid grid-cols-[auto_1fr]">
+              <div className="grid grid-cols-[7rem_1fr]">
                 <div className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Empty Miles:</div>
                 <div className="px-3 py-2">
                   <div className="flex items-center gap-1">
@@ -1061,11 +1061,11 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
 
             {/* Driver / RPM row */}
             <div className="grid grid-cols-2 border-b">
-              <div className="grid grid-cols-[auto_1fr] border-r">
+              <div className="grid grid-cols-[7rem_1fr] border-r">
                 <div className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Driver:</div>
                 <div className="px-3 py-2 font-medium">{driver?.name || 'Sin asignar'}</div>
               </div>
-              <div className="grid grid-cols-[auto_1fr]">
+              <div className="grid grid-cols-[7rem_1fr]">
                 <div className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">$ RPM:</div>
                 <div className={`px-3 py-2 font-bold ${rpmColorClass}`}>{rpm > 0 ? `$${rpm.toFixed(2)}` : '—'}</div>
               </div>
@@ -1073,11 +1073,11 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
 
             {/* Dispatcher / Rate row */}
             <div className="grid grid-cols-2">
-              <div className="grid grid-cols-[auto_1fr] border-r">
+              <div className="grid grid-cols-[7rem_1fr] border-r">
                 <div className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Dispatcher:</div>
                 <div className="px-3 py-2 font-medium">{dispatcher?.name || '—'}</div>
               </div>
-              <div className="grid grid-cols-[auto_1fr]">
+              <div className="grid grid-cols-[7rem_1fr]">
                 <div className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">$ Rate:</div>
                 <div className="px-3 py-2 font-bold text-primary">${Number(load.total_rate).toLocaleString()}</div>
               </div>
