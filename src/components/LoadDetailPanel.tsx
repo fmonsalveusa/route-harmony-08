@@ -174,17 +174,22 @@ function BrokerScoreRow({ brokerName }: { brokerName: string | null | undefined 
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-muted-foreground">Broker:</span>
           <span className="font-medium">{brokerName || '—'}</span>
-          {existing?.rating && (
-            <span className="inline-flex items-center gap-0.5">
-              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold tracking-wider bg-muted text-muted-foreground border">RTS</span>
-              <span className={`px-2 py-0.5 rounded text-xs font-black ${letterColor(existing.rating).bg} ${letterColor(existing.rating).text}`}>
-                {existing.rating.toUpperCase()}
+          {existing?.rating && (() => {
+            const l = existing.rating.toUpperCase();
+            const colors = letterColor(l);
+            const isFactorable = ['A', 'B', 'C'].includes(l);
+            return (
+              <span className="inline-flex items-center gap-0.5">
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold tracking-wider bg-muted text-muted-foreground border">RTS</span>
+                <span className={`px-2 py-0.5 rounded text-xs font-black ${colors.bg} ${colors.text}`}>
+                  {l}
+                </span>
+                <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${isFactorable ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>
+                  {isFactorable ? 'FACTORING' : 'COBRO DIRECTO'}
+                </span>
               </span>
-              {existing.days_to_pay != null && (
-                <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-600 text-white">👍</span>
-              )}
-            </span>
-          )}
+            );
+          })()}
           {!existing && brokerName && !adding && (
             <button
               onClick={() => setAdding(true)}
