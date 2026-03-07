@@ -140,27 +140,30 @@ function CopyLoadInfoButton({ load, totalMiles, emptyMiles, rpm, driver, dispatc
 function BrokerScoreRow({ brokerName }: { brokerName: string | null | undefined }) {
   const { getScoreForBroker, upsertScore } = useBrokerScores();
   const [adding, setAdding] = useState(false);
-  const [scoreInput, setScoreInput] = useState('');
+  const [letterInput, setLetterInput] = useState('');
   const [daysInput, setDaysInput] = useState('');
 
   const existing = getScoreForBroker(brokerName);
 
-  const scoreColor = (s: number) =>
-    s >= 80 ? 'text-green-600 bg-green-50 border-green-200' :
-    s >= 50 ? 'text-amber-600 bg-amber-50 border-amber-200' :
-    'text-red-600 bg-red-50 border-red-200';
+  const letterColor = (letter: string) => {
+    const l = letter.toUpperCase();
+    if (['A', 'B', 'C'].includes(l)) return { bg: 'bg-green-600', text: 'text-white' };
+    if (l === 'D') return { bg: 'bg-amber-500', text: 'text-white' };
+    return { bg: 'bg-red-600', text: 'text-white' };
+  };
 
   const handleSave = () => {
-    if (!brokerName || !scoreInput) return;
-    const s = parseInt(scoreInput);
-    if (isNaN(s) || s < 0 || s > 100) return;
+    if (!brokerName || !letterInput.trim()) return;
+    const letter = letterInput.trim().toUpperCase();
+    if (!/^[A-F]$/.test(letter)) return;
+    const scoreNum = { A: 95, B: 85, C: 75, D: 55, E: 30, F: 10 }[letter] ?? 50;
     upsertScore.mutate({
       broker_name: brokerName.trim(),
-      score: s,
+      score: scoreNum,
       days_to_pay: daysInput ? parseInt(daysInput) : undefined,
-      rating: s >= 80 ? 'Good' : s >= 50 ? 'Average' : 'Poor',
+      rating: letter,
     }, {
-      onSuccess: () => { setAdding(false); setScoreInput(''); setDaysInput(''); },
+      onSuccess: () => { setAdding(false); setLetterInput(''); setDaysInput(''); },
     });
   };
 
@@ -171,12 +174,14 @@ function BrokerScoreRow({ brokerName }: { brokerName: string | null | undefined 
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-muted-foreground">Broker:</span>
           <span className="font-medium">{brokerName || '—'}</span>
-          {existing?.score != null && (
-            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold border ${scoreColor(existing.score)}`}>
-              <Star className="h-3 w-3" />
-              {existing.score}
+          {existing?.rating && (
+            <span className="inline-flex items-center gap-0.5">
+              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold tracking-wider bg-muted text-muted-foreground border">RTS</span>
+              <span className={`px-2 py-0.5 rounded text-xs font-black ${letterColor(existing.rating).bg} ${letterColor(existing.rating).text}`}>
+                {existing.rating.toUpperCase()}
+              </span>
               {existing.days_to_pay != null && (
-                <span className="font-normal ml-1">• {existing.days_to_pay}d</span>
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-600 text-white">👍</span>
               )}
             </span>
           )}
@@ -191,7 +196,7 @@ function BrokerScoreRow({ brokerName }: { brokerName: string | null | undefined 
           )}
           {existing && (
             <button
-              onClick={() => { setAdding(true); setScoreInput(String(existing.score ?? '')); setDaysInput(String(existing.days_to_pay ?? '')); }}
+              onClick={() => { setAdding(true); setLetterInput(existing.rating ?? ''); setDaysInput(String(existing.days_to_pay ?? '')); }}
               className="p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
               title="Editar RTS Score"
             >
@@ -201,15 +206,16 @@ function BrokerScoreRow({ brokerName }: { brokerName: string | null | undefined 
         </div>
         {adding && (
           <div className="flex items-center gap-2 mt-1.5">
-            <Input
-              placeholder="Score (0-100)"
-              type="number"
-              min={0}
-              max={100}
-              value={scoreInput}
-              onChange={(e) => setScoreInput(e.target.value)}
-              className="h-7 w-24 text-xs"
-            />
+            <select
+              value={letterInput}
+              onChange={(e) => setLetterInput(e.target.value)}
+              className="h-7 w-20 text-xs rounded-md border border-input bg-card px-2"
+            >
+              <option value="">Score</option>
+              {['A', 'B', 'C', 'D', 'E', 'F'].map(l => (
+                <option key={l} value={l}>{l}</option>
+              ))}
+            </select>
             <Input
               placeholder="Días pago"
               type="number"
@@ -218,7 +224,7 @@ function BrokerScoreRow({ brokerName }: { brokerName: string | null | undefined 
               onChange={(e) => setDaysInput(e.target.value)}
               className="h-7 w-20 text-xs"
             />
-            <Button size="sm" className="h-7 text-xs" onClick={handleSave} disabled={upsertScore.isPending || !scoreInput}>
+            <Button size="sm" className="h-7 text-xs" onClick={handleSave} disabled={upsertScore.isPending || !letterInput}>
               {upsertScore.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Guardar'}
             </Button>
             <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setAdding(false)}>✕</Button>
