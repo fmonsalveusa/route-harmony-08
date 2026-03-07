@@ -943,12 +943,12 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
           </div>
 
           {/* Structured table layout */}
-          <table className="w-full rounded-lg border bg-card overflow-hidden text-sm border-collapse">
+          <table className="w-full rounded-lg border bg-card overflow-hidden text-sm border-collapse table-fixed">
             <colgroup>
-              <col className="w-[7rem]" />
-              <col />
-              <col className="w-[7rem]" />
-              <col className="w-[8rem]" />
+              <col style={{ width: '12%' }} />
+              <col style={{ width: '48%' }} />
+              <col style={{ width: '14%' }} />
+              <col style={{ width: '26%' }} />
             </colgroup>
             <tbody>
             {/* Broker row - full width */}
