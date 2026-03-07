@@ -288,7 +288,7 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
     }
   };
 
-  const handleBatchReceiptOnly = () => {
+  const handleBatchReceiptOnly = async () => {
     if (!canBatchPay) {
       toast({ title: 'Error', description: 'Select payments from the same beneficiary.', variant: 'destructive' });
       return;
