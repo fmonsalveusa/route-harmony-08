@@ -124,7 +124,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
         { stop_type: 'delivery', address: '', date: '' },
       ]);
     }
-  }, [editLoad?.id, open]);
+  }, [editLoad?.id, open, companies]);
 
   // Sync stop entries separately when existingStops load
   useEffect(() => {
