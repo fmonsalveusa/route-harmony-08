@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { formatDate } from '@/lib/dateUtils';
-import { MapPin, Calendar, Weight, DollarSign, User, Truck, Route, Navigation, FileText, Download, ExternalLink, Pencil, Loader2, Copy, Check, Building2 } from 'lucide-react';
+import { MapPin, Calendar, Weight, DollarSign, User, Truck, Route, Navigation, FileText, Download, ExternalLink, Pencil, Loader2, Copy, Check, Building2, Star, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useDispatchers } from '@/hooks/useDispatchers';
@@ -17,6 +17,7 @@ import { BolFormDialog } from '@/components/BolFormDialog';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { useToast } from '@/hooks/use-toast';
+import { useBrokerScores } from '@/hooks/useBrokerScores';
 import 'leaflet/dist/leaflet.css';
 
 // Geocoding with progressive fallback: full address → without suite → city+state+zip
@@ -133,6 +134,98 @@ function CopyLoadInfoButton({ load, totalMiles, emptyMiles, rpm, driver, dispatc
     <button onClick={handleCopy} className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-info/10 text-info hover:bg-info/20 transition-colors" title="Copy load info">
       {copied ? <><Check className="h-4 w-4" /> Copied</> : <><Copy className="h-4 w-4" /> Copy</>}
     </button>
+  );
+}
+
+function BrokerScoreRow({ brokerName }: { brokerName: string | null | undefined }) {
+  const { getScoreForBroker, upsertScore } = useBrokerScores();
+  const [adding, setAdding] = useState(false);
+  const [scoreInput, setScoreInput] = useState('');
+  const [daysInput, setDaysInput] = useState('');
+
+  const existing = getScoreForBroker(brokerName);
+
+  const scoreColor = (s: number) =>
+    s >= 80 ? 'text-green-600 bg-green-50 border-green-200' :
+    s >= 50 ? 'text-amber-600 bg-amber-50 border-amber-200' :
+    'text-red-600 bg-red-50 border-red-200';
+
+  const handleSave = () => {
+    if (!brokerName || !scoreInput) return;
+    const s = parseInt(scoreInput);
+    if (isNaN(s) || s < 0 || s > 100) return;
+    upsertScore.mutate({
+      broker_name: brokerName.trim(),
+      score: s,
+      days_to_pay: daysInput ? parseInt(daysInput) : undefined,
+      rating: s >= 80 ? 'Good' : s >= 50 ? 'Average' : 'Poor',
+    }, {
+      onSuccess: () => { setAdding(false); setScoreInput(''); setDaysInput(''); },
+    });
+  };
+
+  return (
+    <div className="flex items-start gap-2 col-span-2">
+      <DollarSign className="h-3.5 w-3.5 text-muted-foreground mt-0.5" />
+      <div className="flex-1">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-muted-foreground">Broker:</span>
+          <span className="font-medium">{brokerName || '—'}</span>
+          {existing?.score != null && (
+            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold border ${scoreColor(existing.score)}`}>
+              <Star className="h-3 w-3" />
+              {existing.score}
+              {existing.days_to_pay != null && (
+                <span className="font-normal ml-1">• {existing.days_to_pay}d</span>
+              )}
+            </span>
+          )}
+          {!existing && brokerName && !adding && (
+            <button
+              onClick={() => setAdding(true)}
+              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              title="Agregar RTS Score"
+            >
+              <Plus className="h-3 w-3" /> RTS
+            </button>
+          )}
+          {existing && (
+            <button
+              onClick={() => { setAdding(true); setScoreInput(String(existing.score ?? '')); setDaysInput(String(existing.days_to_pay ?? '')); }}
+              className="p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
+              title="Editar RTS Score"
+            >
+              <Pencil className="h-3 w-3" />
+            </button>
+          )}
+        </div>
+        {adding && (
+          <div className="flex items-center gap-2 mt-1.5">
+            <Input
+              placeholder="Score (0-100)"
+              type="number"
+              min={0}
+              max={100}
+              value={scoreInput}
+              onChange={(e) => setScoreInput(e.target.value)}
+              className="h-7 w-24 text-xs"
+            />
+            <Input
+              placeholder="Días pago"
+              type="number"
+              min={0}
+              value={daysInput}
+              onChange={(e) => setDaysInput(e.target.value)}
+              className="h-7 w-20 text-xs"
+            />
+            <Button size="sm" className="h-7 text-xs" onClick={handleSave} disabled={upsertScore.isPending || !scoreInput}>
+              {upsertScore.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Guardar'}
+            </Button>
+            <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setAdding(false)}>✕</Button>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -961,10 +1054,7 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
               <User className="h-3.5 w-3.5 text-muted-foreground" />
               <div><span className="text-muted-foreground">Dispatcher:</span> <span className="font-medium">{dispatcher?.name || '—'}</span></div>
             </div>
-            <div className="flex items-center gap-2">
-              <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
-              <div><span className="text-muted-foreground">Broker:</span> <span className="font-medium">{load.broker_client || '—'}</span></div>
-            </div>
+            <BrokerScoreRow brokerName={load.broker_client} />
             <div className="flex items-center gap-2">
               <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
               <div><span className="text-muted-foreground">Rate:</span> <span className="font-bold text-primary">${Number(load.total_rate).toLocaleString()}</span></div>
