@@ -104,7 +104,7 @@ interface StopRow {
 const DriverRouteHistory = () => {
   const { drivers, loading: driversLoading } = useDrivers();
   const [selectedDriverId, setSelectedDriverId] = useState<string>('');
-  const [period, setPeriod] = useState('last_week');
+  const [period, setPeriod] = useState('this_week');
   const [loads, setLoads] = useState<LoadRow[]>([]);
   const [stops, setStops] = useState<StopRow[]>([]);
   const [mapLoading, setMapLoading] = useState(false);
