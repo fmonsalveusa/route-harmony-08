@@ -182,8 +182,7 @@ function BrokerScoreRow({ brokerName }: { brokerName: string | null | undefined 
   }, [existing?.id]);
 
   return (
-    <div className="flex items-start gap-2 col-span-2">
-      <DollarSign className="h-3.5 w-3.5 text-muted-foreground mt-0.5" />
+    <div className="flex items-center gap-2 flex-wrap">
       <div className="flex-1">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-muted-foreground">Broker:</span>
