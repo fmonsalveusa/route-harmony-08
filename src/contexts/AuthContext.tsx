@@ -311,6 +311,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
+    if (isLovablePreview) {
+      sessionStorage.removeItem(PREVIEW_LOGIN_RELOAD_KEY);
+    }
     await supabase.auth.signOut();
   };
 
