@@ -20,6 +20,7 @@ export type Database = {
           created_at: string | null
           days_to_pay: number | null
           id: string
+          mc_number: string | null
           notes: string | null
           rating: string | null
           score: number | null
@@ -31,6 +32,7 @@ export type Database = {
           created_at?: string | null
           days_to_pay?: number | null
           id?: string
+          mc_number?: string | null
           notes?: string | null
           rating?: string | null
           score?: number | null
@@ -42,6 +44,7 @@ export type Database = {
           created_at?: string | null
           days_to_pay?: number | null
           id?: string
+          mc_number?: string | null
           notes?: string | null
           rating?: string | null
           score?: number | null
