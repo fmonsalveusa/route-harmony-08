@@ -10,6 +10,7 @@ export interface BrokerCreditScore {
   days_to_pay: number | null;
   rating: string | null;
   notes: string | null;
+  mc_number: string | null;
   tenant_id: string | null;
   updated_at: string;
   created_at: string;
@@ -62,5 +63,29 @@ export function useBrokerScores() {
     },
   });
 
-  return { scores, isLoading, getScoreForBroker, upsertScore };
+  const lookupMc = useMutation({
+    mutationFn: async (broker_name: string) => {
+      const { data, error } = await supabase.functions.invoke('lookup-broker-mc', {
+        body: { broker_name },
+      });
+      if (error) throw error;
+      return data as { mc_number: string | null; dot_number: string | null; legal_name: string | null };
+    },
+    onSuccess: async (data, broker_name) => {
+      if (data.mc_number) {
+        const tenant_id = await getTenantId();
+        await supabase
+          .from('broker_credit_scores' as any)
+          .update({ mc_number: data.mc_number } as any)
+          .eq('broker_name', broker_name.trim())
+          .eq('tenant_id', tenant_id);
+        queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+      }
+    },
+    onError: (err) => {
+      console.error('MC lookup failed:', err);
+    },
+  });
+
+  return { scores, isLoading, getScoreForBroker, upsertScore, lookupMc };
 }
