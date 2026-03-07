@@ -945,8 +945,8 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
           {/* Structured table layout */}
           <table className="w-full rounded-lg border bg-card overflow-hidden text-sm border-collapse table-fixed">
             <colgroup>
-              <col style={{ width: '12%' }} />
-              <col style={{ width: '48%' }} />
+              <col style={{ width: '14%' }} />
+              <col style={{ width: '46%' }} />
               <col style={{ width: '14%' }} />
               <col style={{ width: '26%' }} />
             </colgroup>
