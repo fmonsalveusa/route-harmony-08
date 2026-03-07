@@ -182,90 +182,62 @@ function BrokerScoreRow({ brokerName }: { brokerName: string | null | undefined 
   }, [existing?.id]);
 
   return (
-    <div className="flex items-center gap-2 flex-wrap">
-      <div className="flex-1">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-muted-foreground">Broker:</span>
-          <span className="font-medium">{brokerName || '—'}</span>
-          {existing?.mc_number && (
-            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-600/10 text-blue-600 border border-blue-600/20">
-              MC# {existing.mc_number}
-            </span>
-          )}
-          {lookupMc.isPending && (
-            <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
-          )}
-          {existing?.rating && (() => {
-            const l = existing.rating.toUpperCase();
-            const colors = letterColor(l);
-            const isFactorable = ['A', 'B', 'C'].includes(l);
-            return (
-              <span className="inline-flex items-center gap-0.5">
-                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold tracking-wider bg-muted text-muted-foreground border">RTS</span>
-                <span className={`px-2 py-0.5 rounded text-xs font-black ${colors.bg} ${colors.text}`}>
-                  {l}
-                </span>
-                <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${isFactorable ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>
-                  {isFactorable ? 'FACTORING' : 'COBRO DIRECTO'}
-                </span>
+    <div>
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="font-medium">{brokerName || '—'}</span>
+        {existing?.mc_number && (
+          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-600/10 text-blue-600 border border-blue-600/20">
+            MC# {existing.mc_number}
+          </span>
+        )}
+        {lookupMc.isPending && (
+          <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+        )}
+        {existing?.rating && (() => {
+          const l = existing.rating.toUpperCase();
+          const colors = letterColor(l);
+          const isFactorable = ['A', 'B', 'C'].includes(l);
+          return (
+            <span className="inline-flex items-center gap-0.5">
+              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold tracking-wider bg-muted text-muted-foreground border">RTS</span>
+              <span className={`px-2 py-0.5 rounded text-xs font-black ${colors.bg} ${colors.text}`}>
+                {l}
               </span>
-            );
-          })()}
-          {existing && !existing.mc_number && !lookupMc.isPending && brokerName && (
-            <button
-              onClick={() => lookupMc.mutate(brokerName.trim())}
-              className="p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
-              title="Buscar MC# en FMCSA"
-            >
-              <RefreshCw className="h-3 w-3" />
-            </button>
-          )}
-          {!existing && brokerName && !adding && (
-            <button
-              onClick={() => setAdding(true)}
-              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-              title="Agregar RTS Score"
-            >
-              <Plus className="h-3 w-3" /> RTS
-            </button>
-          )}
-          {existing && (
-            <button
-              onClick={() => { setAdding(true); setLetterInput(existing.rating ?? ''); setDaysInput(String(existing.days_to_pay ?? '')); }}
-              className="p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
-              title="Editar RTS Score"
-            >
-              <Pencil className="h-3 w-3" />
-            </button>
-          )}
-        </div>
-        {adding && (
-          <div className="flex items-center gap-2 mt-1.5">
-            <select
-              value={letterInput}
-              onChange={(e) => setLetterInput(e.target.value)}
-              className="h-7 w-20 text-xs rounded-md border border-input bg-card px-2"
-            >
-              <option value="">Score</option>
-              {['A', 'B', 'C', 'D', 'E', 'F'].map(l => (
-                <option key={l} value={l}>{l}</option>
-              ))}
-            </select>
-            <Input
-              placeholder="Días pago"
-              type="number"
-              min={0}
-              value={daysInput}
-              onChange={(e) => setDaysInput(e.target.value)}
-              className="h-7 w-20 text-xs"
-            />
-            <Button size="sm" className="h-7 text-xs" onClick={handleSave} disabled={upsertScore.isPending || !letterInput}>
-              {upsertScore.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Guardar'}
-            </Button>
-            <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setAdding(false)}>✕</Button>
-          </div>
+              <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${isFactorable ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>
+                {isFactorable ? 'FACTORING' : 'COBRO DIRECTO'}
+              </span>
+            </span>
+          );
+        })()}
+        {existing && !existing.mc_number && !lookupMc.isPending && brokerName && (
+          <button onClick={() => lookupMc.mutate(brokerName.trim())} className="p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground" title="Buscar MC# en FMCSA">
+            <RefreshCw className="h-3 w-3" />
+          </button>
+        )}
+        {!existing && brokerName && !adding && (
+          <button onClick={() => setAdding(true)} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors" title="Agregar RTS Score">
+            <Plus className="h-3 w-3" /> RTS
+          </button>
+        )}
+        {existing && (
+          <button onClick={() => { setAdding(true); setLetterInput(existing.rating ?? ''); setDaysInput(String(existing.days_to_pay ?? '')); }} className="p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground" title="Editar RTS Score">
+            <Pencil className="h-3 w-3" />
+          </button>
         )}
       </div>
+      {adding && (
+        <div className="flex items-center gap-2 mt-1.5">
+          <select value={letterInput} onChange={(e) => setLetterInput(e.target.value)} className="h-7 w-20 text-xs rounded-md border border-input bg-card px-2">
+            <option value="">Score</option>
+            {['A', 'B', 'C', 'D', 'E', 'F'].map(l => (<option key={l} value={l}>{l}</option>))}
+          </select>
+          <Input placeholder="Días pago" type="number" min={0} value={daysInput} onChange={(e) => setDaysInput(e.target.value)} className="h-7 w-20 text-xs" />
+          <Button size="sm" className="h-7 text-xs" onClick={handleSave} disabled={upsertScore.isPending || !letterInput}>
+            {upsertScore.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Guardar'}
+          </Button>
+          <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setAdding(false)}>✕</Button>
+        </div>
+      )}
     </div>
   );
 }
