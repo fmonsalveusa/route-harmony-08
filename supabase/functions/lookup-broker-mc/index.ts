@@ -54,7 +54,14 @@ Deno.serve(async (req) => {
     const encoded = encodeURIComponent(broker_name.trim());
     const url = `https://mobile.fmcsa.dot.gov/qc/services/carriers/name/${encoded}?webKey=${apiKey}`;
 
-    const fmcsaRes = await fetch(url);
+    console.log("FMCSA request URL:", url.replace(apiKey, "***"));
+
+    const fmcsaRes = await fetch(url, {
+      headers: {
+        "User-Agent": "DispatchUp/1.0",
+        "Accept": "application/json",
+      },
+    });
     if (!fmcsaRes.ok) {
       const body = await fmcsaRes.text();
       console.error("FMCSA API error:", fmcsaRes.status, body);

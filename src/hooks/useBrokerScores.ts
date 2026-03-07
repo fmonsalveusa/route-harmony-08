@@ -65,11 +65,33 @@ export function useBrokerScores() {
 
   const lookupMc = useMutation({
     mutationFn: async (broker_name: string) => {
-      const { data, error } = await supabase.functions.invoke('lookup-broker-mc', {
-        body: { broker_name },
-      });
-      if (error) throw error;
-      return data as { mc_number: string | null; dot_number: string | null; legal_name: string | null };
+      const FMCSA_KEY = '5a7edc58509eaada5f5777a2b83b3abc68355b0b';
+      const encoded = encodeURIComponent(broker_name.trim());
+      const url = `https://mobile.fmcsa.dot.gov/qc/services/carriers/name/${encoded}?webKey=${FMCSA_KEY}`;
+      
+      const res = await fetch(url);
+      if (!res.ok) {
+        const body = await res.text();
+        console.error('FMCSA API error:', res.status, body);
+        return { mc_number: null, dot_number: null, legal_name: null };
+      }
+      
+      const fmcsaData = await res.json();
+      const carriers = fmcsaData?.content;
+      if (!carriers || !Array.isArray(carriers) || carriers.length === 0) {
+        return { mc_number: null, dot_number: null, legal_name: null };
+      }
+      
+      const first = carriers[0]?.carrier || carriers[0];
+      const mcNumber = first.mcNumber || first.mc_number || first.mcNum || null;
+      const dotNumber = first.dotNumber || first.dot_number || first.dotNum || null;
+      const legalName = first.legalName || first.legal_name || null;
+      
+      return {
+        mc_number: mcNumber ? String(mcNumber) : null,
+        dot_number: dotNumber ? String(dotNumber) : null,
+        legal_name: legalName,
+      };
     },
     onSuccess: async (data, broker_name) => {
       if (data.mc_number) {
