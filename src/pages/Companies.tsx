@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 
-import { Plus, Pencil, Trash2, Building2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Building2, Star } from 'lucide-react';
 import { toast } from 'sonner';
 import { StatCard } from '@/components/StatCard';
 
@@ -17,7 +17,7 @@ const emptyForm = {
 };
 
 const Companies = () => {
-  const { companies, loading, createCompany, updateCompany, deleteCompany } = useCompanies();
+  const { companies, loading, createCompany, updateCompany, deleteCompany, setPrimaryCompany } = useCompanies();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
@@ -86,7 +86,14 @@ const Companies = () => {
                 {companies.map(c => (
                   <tr key={c.id} className="border-b last:border-0 glass-row">
                     <td className="p-3">
-                      <div className="font-medium">{c.name}</div>
+                      <div className="flex items-center gap-2">
+                        <div className="font-medium">{c.name}</div>
+                        {c.is_primary && (
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 px-2 py-0.5 rounded-full">
+                            <Star className="h-3 w-3 fill-current" /> Principal
+                          </span>
+                        )}
+                      </div>
                       {c.legal_name && <div className="text-xs text-muted-foreground">{c.legal_name}</div>}
                     </td>
                     <td className="p-3 hidden md:table-cell text-muted-foreground">{c.mc_number || '—'}</td>
@@ -96,6 +103,11 @@ const Companies = () => {
                     <td className="p-3 hidden lg:table-cell text-muted-foreground">{c.email || '—'}</td>
                     <td className="p-3 text-right">
                       <div className="flex justify-end gap-1.5">
+                        {!c.is_primary && (
+                          <button className="glass-action-btn tint-blue inline-flex items-center" onClick={() => setPrimaryCompany(c.id)} title="Set as Principal">
+                            <Star className="h-4 w-4" /> Principal
+                          </button>
+                        )}
                         <button className="glass-action-btn tint-amber inline-flex items-center" onClick={() => openEdit(c)} title="Edit">
                           <Pencil className="h-4 w-4" /> Edit
                         </button>

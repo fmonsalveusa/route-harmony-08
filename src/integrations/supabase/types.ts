@@ -69,6 +69,7 @@ export type Database = {
           dot_number: string | null
           email: string | null
           id: string
+          is_primary: boolean
           legal_name: string | null
           logo_url: string | null
           mc_number: string | null
@@ -87,6 +88,7 @@ export type Database = {
           dot_number?: string | null
           email?: string | null
           id?: string
+          is_primary?: boolean
           legal_name?: string | null
           logo_url?: string | null
           mc_number?: string | null
@@ -105,6 +107,7 @@ export type Database = {
           dot_number?: string | null
           email?: string | null
           id?: string
+          is_primary?: boolean
           legal_name?: string | null
           logo_url?: string | null
           mc_number?: string | null

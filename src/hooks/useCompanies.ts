@@ -17,6 +17,7 @@ export interface Company {
   email: string | null;
   website: string | null;
   logo_url: string | null;
+  is_primary: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -49,6 +50,13 @@ export function useCompanies() {
     fetchCompanies();
   };
 
+  const setPrimaryCompany = async (id: string) => {
+    const { error } = await supabase.from('companies').update({ is_primary: true } as any).eq('id', id);
+    if (error) { toast.error('Error setting primary company'); return; }
+    toast.success('Primary company updated');
+    fetchCompanies();
+  };
+
   const deleteCompany = async (id: string) => {
     const { error } = await supabase.from('companies').delete().eq('id', id);
     if (error) { toast.error('Error deleting company'); return; }
@@ -56,5 +64,5 @@ export function useCompanies() {
     fetchCompanies();
   };
 
-  return { companies, loading, createCompany, updateCompany, deleteCompany, refetch: fetchCompanies };
+  return { companies, loading, createCompany, updateCompany, deleteCompany, setPrimaryCompany, refetch: fetchCompanies };
 }
