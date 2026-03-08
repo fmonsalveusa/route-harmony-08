@@ -61,6 +61,42 @@ export type Database = {
           },
         ]
       }
+      brokers: {
+        Row: {
+          created_at: string
+          days_to_pay: number | null
+          id: string
+          loads_count: number
+          mc_number: string | null
+          name: string
+          notes: string | null
+          rating: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          days_to_pay?: number | null
+          id?: string
+          loads_count?: number
+          mc_number?: string | null
+          name: string
+          notes?: string | null
+          rating?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          days_to_pay?: number | null
+          id?: string
+          loads_count?: number
+          mc_number?: string | null
+          name?: string
+          notes?: string | null
+          rating?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       companies: {
         Row: {
           address: string | null
