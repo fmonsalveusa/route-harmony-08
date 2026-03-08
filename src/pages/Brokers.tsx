@@ -35,6 +35,7 @@ export default function Brokers() {
   const [editBroker, setEditBroker] = useState<Broker | null>(null);
   const [form, setForm] = useState({ mc_number: '', dot_number: '', address: '', rating: '', days_to_pay: '', notes: '' });
   const [lookingUp, setLookingUp] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState<{ current: number; total: number } | null>(null);
 
   const filtered = brokers.filter(b => {
     const q = search.toLowerCase();
