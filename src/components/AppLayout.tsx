@@ -73,6 +73,7 @@ export const AppLayout = ({ children }: {children: ReactNode;}) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loadDialogOpen, setLoadDialogOpen] = useState(false);
   const [pendingDrivers, setPendingDrivers] = useState(0);
+  const [unratedBrokers, setUnratedBrokers] = useState(0);
   const { createLoad } = useLoads();
 
   useEffect(() => {
