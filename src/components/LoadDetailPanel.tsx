@@ -209,7 +209,7 @@ function BrokerScoreRow({ brokerName }: { brokerName: string | null | undefined 
         <div className="flex items-center gap-2 mt-1.5">
           <select value={letterInput} onChange={(e) => setLetterInput(e.target.value)} className="h-7 w-20 text-xs rounded-md border border-input bg-card px-2">
             <option value="">Score</option>
-            {['A', 'B', 'C', 'D', 'E', 'F'].map(l => (<option key={l} value={l}>{l}</option>))}
+            {['A', 'B', 'C', 'D', 'N', 'E', 'F'].map(l => (<option key={l} value={l}>{l}</option>))}
           </select>
           <Input placeholder="Días pago" type="number" min={0} value={daysInput} onChange={(e) => setDaysInput(e.target.value)} className="h-7 w-20 text-xs" />
           <Button size="sm" className="h-7 text-xs" onClick={handleSave} disabled={upsertScore.isPending || !letterInput}>

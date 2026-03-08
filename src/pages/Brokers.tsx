@@ -18,6 +18,7 @@ const ratingColors: Record<string, string> = {
   B: 'bg-success text-success-foreground',
   C: 'bg-success text-success-foreground',
   D: 'bg-warning text-warning-foreground',
+  N: 'bg-orange-500 text-white',
   E: 'bg-destructive text-destructive-foreground',
   F: 'bg-black text-white',
 };
@@ -83,6 +84,8 @@ export default function Brokers() {
   const handleRatingChange = (value: string) => {
     if (value === 'F') {
       setForm(f => ({ ...f, rating: value, notes: f.notes || 'NO USAR' }));
+    } else if (value === 'N') {
+      setForm(f => ({ ...f, rating: value, notes: f.notes || 'COBRO DIRECTO' }));
     } else {
       setForm(f => ({ ...f, rating: value }));
     }
@@ -91,6 +94,7 @@ export default function Brokers() {
   const handleInlineRatingChange = (brokerId: string, value: string) => {
     const updates: any = { id: brokerId, rating: value || null };
     if (value === 'F') updates.notes = 'NO USAR';
+    if (value === 'N') updates.notes = 'COBRO DIRECTO';
     updateBroker.mutate(updates);
   };
 
@@ -221,7 +225,7 @@ export default function Brokers() {
                           <SelectValue placeholder="—" />
                         </SelectTrigger>
                         <SelectContent>
-                          {['A', 'B', 'C', 'D', 'E', 'F'].map(r => (
+                          {['A', 'B', 'C', 'D', 'N', 'E', 'F'].map(r => (
                             <SelectItem key={r} value={r}>
                               <span className="font-bold">{r}</span>
                             </SelectItem>
@@ -291,7 +295,7 @@ export default function Brokers() {
                   <SelectValue placeholder="Seleccionar rating" />
                 </SelectTrigger>
                 <SelectContent>
-                  {['A', 'B', 'C', 'D', 'E', 'F'].map(r => (
+                  {['A', 'B', 'C', 'D', 'N', 'E', 'F'].map(r => (
                     <SelectItem key={r} value={r}>{r}</SelectItem>
                   ))}
                 </SelectContent>
