@@ -63,8 +63,10 @@ export type Database = {
       }
       brokers: {
         Row: {
+          address: string | null
           created_at: string
           days_to_pay: number | null
+          dot_number: string | null
           id: string
           loads_count: number
           mc_number: string | null
@@ -74,8 +76,10 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          address?: string | null
           created_at?: string
           days_to_pay?: number | null
+          dot_number?: string | null
           id?: string
           loads_count?: number
           mc_number?: string | null
@@ -85,8 +89,10 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          address?: string | null
           created_at?: string
           days_to_pay?: number | null
+          dot_number?: string | null
           id?: string
           loads_count?: number
           mc_number?: string | null

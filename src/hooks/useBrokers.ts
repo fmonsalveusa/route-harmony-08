@@ -6,6 +6,8 @@ export interface Broker {
   id: string;
   name: string;
   mc_number: string | null;
+  dot_number: string | null;
+  address: string | null;
   rating: string | null;
   days_to_pay: number | null;
   notes: string | null;
@@ -33,7 +35,7 @@ export function useBrokers() {
   });
 
   const updateBroker = useMutation({
-    mutationFn: async (input: { id: string; mc_number?: string | null; rating?: string | null; days_to_pay?: number | null; notes?: string | null }) => {
+    mutationFn: async (input: { id: string; mc_number?: string | null; dot_number?: string | null; address?: string | null; rating?: string | null; days_to_pay?: number | null; notes?: string | null }) => {
       const { id, ...updates } = input;
       const { data, error } = await supabase
         .from('brokers' as any)

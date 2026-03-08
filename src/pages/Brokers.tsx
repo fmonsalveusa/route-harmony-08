@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useBrokers, Broker } from '@/hooks/useBrokers';
+import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -8,7 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, Pencil, Handshake } from 'lucide-react';
+import { Search, Pencil, Handshake, Loader2, Globe } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 const ratingColors: Record<string, string> = {
   A: 'bg-success text-success-foreground',
@@ -28,9 +30,11 @@ const factoringLabel = (rating: string | null) => {
 
 export default function Brokers() {
   const { brokers, isLoading, updateBroker } = useBrokers();
+  const { toast } = useToast();
   const [search, setSearch] = useState('');
   const [editBroker, setEditBroker] = useState<Broker | null>(null);
-  const [form, setForm] = useState({ mc_number: '', rating: '', days_to_pay: '', notes: '' });
+  const [form, setForm] = useState({ mc_number: '', dot_number: '', address: '', rating: '', days_to_pay: '', notes: '' });
+  const [lookingUp, setLookingUp] = useState(false);
 
   const filtered = brokers.filter(b => {
     const q = search.toLowerCase();
@@ -41,10 +45,35 @@ export default function Brokers() {
     setEditBroker(broker);
     setForm({
       mc_number: broker.mc_number || '',
+      dot_number: broker.dot_number || '',
+      address: broker.address || '',
       rating: broker.rating || '',
       days_to_pay: broker.days_to_pay?.toString() || '',
       notes: broker.notes || '',
     });
+  };
+
+  const handleFmcsaLookup = async () => {
+    if (!editBroker) return;
+    setLookingUp(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('lookup-broker-mc', {
+        body: { broker_name: editBroker.name },
+      });
+      if (error) throw error;
+      if (data?.mc_number) setForm(f => ({ ...f, mc_number: data.mc_number }));
+      if (data?.dot_number) setForm(f => ({ ...f, dot_number: data.dot_number }));
+      if (data?.address) setForm(f => ({ ...f, address: data.address }));
+      if (!data?.mc_number && !data?.dot_number) {
+        toast({ title: 'Sin resultados', description: 'No se encontró información en FMCSA para este broker' });
+      } else {
+        toast({ title: 'Datos encontrados', description: 'MC#, DOT# y dirección auto-rellenados desde FMCSA' });
+      }
+    } catch {
+      toast({ title: 'Error', description: 'No se pudo consultar FMCSA', variant: 'destructive' });
+    } finally {
+      setLookingUp(false);
+    }
   };
 
   const handleSave = () => {
@@ -52,6 +81,8 @@ export default function Brokers() {
     updateBroker.mutate({
       id: editBroker.id,
       mc_number: form.mc_number || null,
+      dot_number: form.dot_number || null,
+      address: form.address || null,
       rating: form.rating || null,
       days_to_pay: form.days_to_pay ? parseInt(form.days_to_pay) : null,
       notes: form.notes || null,
@@ -84,6 +115,8 @@ export default function Brokers() {
             <TableRow>
               <TableHead>Broker</TableHead>
               <TableHead>MC#</TableHead>
+              <TableHead>DOT#</TableHead>
+              <TableHead>Dirección</TableHead>
               <TableHead>Rating</TableHead>
               <TableHead>Factoring</TableHead>
               <TableHead className="text-right">Días de Pago</TableHead>
@@ -94,9 +127,9 @@ export default function Brokers() {
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Cargando...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={10} className="text-center py-8 text-muted-foreground">Cargando...</TableCell></TableRow>
             ) : filtered.length === 0 ? (
-              <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No se encontraron brokers</TableCell></TableRow>
+              <TableRow><TableCell colSpan={10} className="text-center py-8 text-muted-foreground">No se encontraron brokers</TableCell></TableRow>
             ) : (
               filtered.map(broker => {
                 const fl = factoringLabel(broker.rating);
@@ -104,6 +137,8 @@ export default function Brokers() {
                   <TableRow key={broker.id} className="hover:bg-muted/50">
                     <TableCell className="font-medium">{broker.name}</TableCell>
                     <TableCell className="text-muted-foreground">{broker.mc_number || '—'}</TableCell>
+                    <TableCell className="text-muted-foreground">{broker.dot_number || '—'}</TableCell>
+                    <TableCell className="max-w-[200px] truncate text-muted-foreground text-xs">{broker.address || '—'}</TableCell>
                     <TableCell>
                       {broker.rating ? (
                         <Badge className={`${ratingColors[broker.rating.toUpperCase()] || 'bg-muted text-muted-foreground'} font-bold`}>
@@ -139,9 +174,27 @@ export default function Brokers() {
             <DialogTitle>Editar Broker: {editBroker?.name}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full gap-2"
+              onClick={handleFmcsaLookup}
+              disabled={lookingUp}
+            >
+              {lookingUp ? <Loader2 className="h-4 w-4 animate-spin" /> : <Globe className="h-4 w-4" />}
+              {lookingUp ? 'Buscando en FMCSA...' : 'Buscar en FMCSA'}
+            </Button>
             <div>
               <Label>MC#</Label>
               <Input value={form.mc_number} onChange={e => setForm(f => ({ ...f, mc_number: e.target.value }))} placeholder="MC Number" />
+            </div>
+            <div>
+              <Label>DOT#</Label>
+              <Input value={form.dot_number} onChange={e => setForm(f => ({ ...f, dot_number: e.target.value }))} placeholder="DOT Number" />
+            </div>
+            <div>
+              <Label>Dirección</Label>
+              <Input value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} placeholder="Dirección física" />
             </div>
             <div>
               <Label>Rating (RTS Score)</Label>
