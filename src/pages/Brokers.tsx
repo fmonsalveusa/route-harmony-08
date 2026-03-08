@@ -18,6 +18,7 @@ const ratingColors: Record<string, string> = {
   B: 'bg-success text-success-foreground',
   C: 'bg-success text-success-foreground',
   D: 'bg-warning text-warning-foreground',
+  N: 'bg-orange-500 text-white',
   E: 'bg-destructive text-destructive-foreground',
   F: 'bg-black text-white',
 };
