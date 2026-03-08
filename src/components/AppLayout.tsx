@@ -5,7 +5,7 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Truck, Users, Package, MapPin, FileText,
   BarChart3, LogOut, DollarSign, UserCog,
-  Headphones, Menu, Building2, Crown, CreditCard, Settings, Plus, Receipt, Trophy, Wrench, X } from
+  Headphones, Menu, Building2, Crown, CreditCard, Settings, Plus, Receipt, Trophy, Wrench, X, Handshake } from
 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
