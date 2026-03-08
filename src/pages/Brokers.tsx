@@ -156,7 +156,6 @@ export default function Brokers() {
             />
           </div>
         </div>
-        </div>
       </div>
 
       <div className="rounded-lg border bg-card overflow-auto">
