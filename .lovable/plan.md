@@ -1,32 +1,29 @@
 
 
-## Plan: Contador rojo de brokers sin rating en la navegación
+## Problema
 
-### Contexto
-- Ya existe un trigger `auto_register_broker` que inserta automáticamente brokers nuevos cuando se crea una carga -- esto ya funciona.
-- La tabla `brokers` no tiene `tenant_id`, así que el conteo es global.
-- En `AppLayout.tsx` ya hay un patrón idéntico para drivers pendientes (badge naranja en el nav item de Drivers).
+El preview de Lovable carga desde un iframe que puede mantener módulos JS en caché del navegador (no solo Service Worker). La limpieza actual en `main.tsx` solo elimina Service Workers y Cache API, pero el **caché HTTP del navegador** (disk cache) sigue sirviendo versiones antiguas de los chunks JS que contienen la función `generateTerminationLetterPdf`.
 
-### Cambios
+Esto explica por qué la app publicada siempre muestra el formato correcto (deploy fresco) pero el preview a veces muestra el formato anterior.
 
-**1. `src/components/AppLayout.tsx`**
-- Añadir un estado `unratedBrokers` (similar a `pendingDrivers`).
-- En un `useEffect`, consultar `brokers` donde `rating IS NULL`, obtener el count.
-- Suscribirse al canal realtime de `brokers` para refrescar automáticamente.
-- En ambos navs (desktop y mobile), mostrar un badge rojo junto al item "Brokers" cuando `unratedBrokers > 0`.
+## Solución
 
-**2. Sin cambios en la base de datos** -- el trigger `auto_register_broker` ya se encarga de registrar brokers nuevos al crear cargas.
+No hay una solución de código que resuelva esto permanentemente desde el lado de la app — es un comportamiento del navegador en el entorno de preview. Sin embargo, podemos mitigar el problema:
 
-### Detalle técnico
+1. **Agregar headers de no-cache para el preview** en `vite.config.ts`: Configurar headers del servidor de desarrollo para evitar que el navegador cachee los módulos JS.
 
-```text
-AppLayout
-├── pendingDrivers state (existing)
-├── unratedBrokers state (NEW)
-│   ├── useEffect: SELECT count(*) FROM brokers WHERE rating IS NULL
-│   ├── realtime channel on 'brokers' table → refetch count
-│   └── render red badge on '/brokers' nav item
-```
+   En `server` config, agregar:
+   ```ts
+   headers: {
+     'Cache-Control': 'no-store, no-cache, must-revalidate',
+   }
+   ```
 
-El badge será rojo (`bg-destructive`) para diferenciarlo del naranja de drivers pendientes.
+2. **Forzar limpieza más agresiva en preview**: Además de limpiar SW y Cache API, intentar forzar una recarga sin caché si se detecta que es la primera carga después de un cambio.
+
+Esto debería reducir significativamente el problema de ver formatos antiguos en el preview.
+
+## Archivos a modificar
+
+- `vite.config.ts` — agregar `headers` con `Cache-Control: no-store` en la config de `server`
 

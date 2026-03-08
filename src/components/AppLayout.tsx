@@ -73,6 +73,7 @@ export const AppLayout = ({ children }: {children: ReactNode;}) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loadDialogOpen, setLoadDialogOpen] = useState(false);
   const [pendingDrivers, setPendingDrivers] = useState(0);
+  const [unratedBrokers, setUnratedBrokers] = useState(0);
   const { createLoad } = useLoads();
 
   useEffect(() => {
@@ -92,6 +93,22 @@ export const AppLayout = ({ children }: {children: ReactNode;}) => {
     subscribe();
     return () => {supabase.removeChannel(channel);};
   }, [profile?.tenant_id]);
+
+  useEffect(() => {
+    const fetchUnrated = async () => {
+      const { count } = await supabase
+        .from('brokers' as any)
+        .select('*', { count: 'exact', head: true })
+        .is('rating', null);
+      setUnratedBrokers(count || 0);
+    };
+    fetchUnrated();
+    const channel = supabase
+      .channel('unrated-brokers-nav')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'brokers' }, () => fetchUnrated())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
   if (!profile) {
     return (
@@ -204,6 +221,11 @@ export const AppLayout = ({ children }: {children: ReactNode;}) => {
                   {pendingDrivers}
                 </span>
               }
+              {item.path === '/brokers' && unratedBrokers > 0 &&
+              <span className="inline-flex items-center justify-center h-4 min-w-[16px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold leading-none">
+                  {unratedBrokers}
+                </span>
+              }
             </Link>);
 
         })}
@@ -240,6 +262,11 @@ export const AppLayout = ({ children }: {children: ReactNode;}) => {
                     {item.path === '/drivers' && pendingDrivers > 0 &&
                   <span className="ml-auto inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-orange-500 text-white text-[11px] font-bold leading-none">
                         {pendingDrivers}
+                      </span>
+                  }
+                    {item.path === '/brokers' && unratedBrokers > 0 &&
+                  <span className="ml-auto inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-destructive text-destructive-foreground text-[11px] font-bold leading-none">
+                        {unratedBrokers}
                       </span>
                   }
                   </Link>);
