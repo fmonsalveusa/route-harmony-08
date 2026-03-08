@@ -26,9 +26,8 @@ Deno.serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -73,10 +72,9 @@ Deno.serve(async (req) => {
 
     const fmcsaData = await fmcsaRes.json();
 
-    // The FMCSA API returns { content: [ { carrier: { ...fields } } ] }
     const carriers = fmcsaData?.content;
     if (!carriers || !Array.isArray(carriers) || carriers.length === 0) {
-      return new Response(JSON.stringify({ mc_number: null, dot_number: null, legal_name: null }), {
+      return new Response(JSON.stringify({ mc_number: null, dot_number: null, legal_name: null, address: null }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -87,11 +85,20 @@ Deno.serve(async (req) => {
     const dotNumber = first.dotNumber || first.dot_number || first.dotNum || null;
     const legalName = first.legalName || first.legal_name || null;
 
+    // Build address from physical address fields
+    const parts: string[] = [];
+    if (first.phyStreet) parts.push(first.phyStreet);
+    if (first.phyCity) parts.push(first.phyCity);
+    if (first.phyState) parts.push(first.phyState);
+    if (first.phyZipcode) parts.push(first.phyZipcode);
+    const address = parts.length > 0 ? parts.join(", ") : null;
+
     return new Response(
       JSON.stringify({
         mc_number: mcNumber ? String(mcNumber) : null,
         dot_number: dotNumber ? String(dotNumber) : null,
         legal_name: legalName,
+        address,
       }),
       {
         status: 200,

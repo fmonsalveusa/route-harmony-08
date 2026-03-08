@@ -1,0 +1,1 @@
+ALTER TABLE public.brokers ADD COLUMN dot_number text, ADD COLUMN address text;
