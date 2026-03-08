@@ -264,6 +264,11 @@ export const AppLayout = ({ children }: {children: ReactNode;}) => {
                         {pendingDrivers}
                       </span>
                   }
+                    {item.path === '/brokers' && unratedBrokers > 0 &&
+                  <span className="ml-auto inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-destructive text-destructive-foreground text-[11px] font-bold leading-none">
+                        {unratedBrokers}
+                      </span>
+                  }
                   </Link>);
 
             })}
