@@ -1,29 +1,33 @@
 
 
-## Problema
+## Plan: Auto-completar datos de broker desde FMCSA
 
-El preview de Lovable carga desde un iframe que puede mantener módulos JS en caché del navegador (no solo Service Worker). La limpieza actual en `main.tsx` solo elimina Service Workers y Cache API, pero el **caché HTTP del navegador** (disk cache) sigue sirviendo versiones antiguas de los chunks JS que contienen la función `generateTerminationLetterPdf`.
+Ya tienes la infraestructura lista. La edge function `lookup-broker-mc` ya existe y consulta la API de FMCSA por nombre, devolviendo `mc_number`, `dot_number` y `legal_name`. La API key `FMCSA_API_KEY` ya está configurada como secret.
 
-Esto explica por qué la app publicada siempre muestra el formato correcto (deploy fresco) pero el preview a veces muestra el formato anterior.
+### Lo que falta
 
-## Solución
+1. **Agregar columnas `dot_number` y `address` a la tabla `brokers`** — actualmente solo tiene `mc_number`.
 
-No hay una solución de código que resuelva esto permanentemente desde el lado de la app — es un comportamiento del navegador en el entorno de preview. Sin embargo, podemos mitigar el problema:
+2. **Ampliar la edge function** para extraer también la dirección física (`phyStreet`, `phyCity`, `phyState`, `phyZipcode`) de la respuesta FMCSA.
 
-1. **Agregar headers de no-cache para el preview** en `vite.config.ts`: Configurar headers del servidor de desarrollo para evitar que el navegador cachee los módulos JS.
+3. **Botón "Buscar en FMCSA"** en el diálogo de edición del broker — al hacer clic, llama a la edge function con el nombre del broker y auto-rellena MC#, DOT# y dirección.
 
-   En `server` config, agregar:
-   ```ts
-   headers: {
-     'Cache-Control': 'no-store, no-cache, must-revalidate',
-   }
-   ```
+4. **Auto-lookup en el trigger** (opcional) — cuando se registra un broker nuevo automáticamente desde una carga, la edge function podría invocarse para pre-poblar los datos. Sin embargo, esto añade complejidad (llamada HTTP desde un trigger). La opción más práctica es hacerlo desde el frontend.
 
-2. **Forzar limpieza más agresiva en preview**: Además de limpiar SW y Cache API, intentar forzar una recarga sin caché si se detecta que es la primera carga después de un cambio.
+### Cambios específicos
 
-Esto debería reducir significativamente el problema de ver formatos antiguos en el preview.
+| Archivo/Recurso | Cambio |
+|---|---|
+| Migración SQL | `ALTER TABLE brokers ADD COLUMN dot_number text, ADD COLUMN address text` |
+| `supabase/functions/lookup-broker-mc/index.ts` | Extraer `phyStreet`, `phyCity`, `phyState`, `phyZipcode` y devolver campo `address` |
+| `src/hooks/useBrokers.ts` | Agregar `dot_number` y `address` al tipo `Broker` y al `updateBroker` |
+| `src/pages/Brokers.tsx` | Agregar columnas DOT# y Dirección a la tabla; agregar botón "Buscar FMCSA" en el diálogo de edición que invoque la función y pre-llene los campos |
 
-## Archivos a modificar
+### Flujo del usuario
 
-- `vite.config.ts` — agregar `headers` con `Cache-Control: no-store` en la config de `server`
+1. Abre el diálogo de edición de un broker
+2. Hace clic en "Buscar en FMCSA"
+3. El sistema busca por nombre → devuelve MC#, DOT#, dirección, legal name
+4. Los campos se auto-rellenan en el formulario
+5. El usuario revisa y guarda
 
