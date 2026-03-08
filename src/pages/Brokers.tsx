@@ -215,7 +215,7 @@ export default function Brokers() {
                     <TableCell className="font-medium">{broker.name}</TableCell>
                     <TableCell className="text-muted-foreground">{broker.mc_number || '—'}</TableCell>
                     <TableCell className="text-muted-foreground">{broker.dot_number || '—'}</TableCell>
-                    <TableCell className="max-w-[200px] truncate text-muted-foreground text-xs">{broker.address || '—'}</TableCell>
+                    <TableCell className="max-w-[350px] text-muted-foreground text-xs whitespace-normal">{broker.address || '—'}</TableCell>
                     <TableCell>
                       <Select
                         value={broker.rating?.toUpperCase() || ''}
