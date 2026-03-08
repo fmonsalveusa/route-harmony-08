@@ -225,7 +225,7 @@ export default function Brokers() {
                           <SelectValue placeholder="—" />
                         </SelectTrigger>
                         <SelectContent>
-                          {['A', 'B', 'C', 'D', 'E', 'F'].map(r => (
+                          {['A', 'B', 'C', 'D', 'N', 'E', 'F'].map(r => (
                             <SelectItem key={r} value={r}>
                               <span className="font-bold">{r}</span>
                             </SelectItem>
