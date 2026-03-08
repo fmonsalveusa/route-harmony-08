@@ -91,6 +91,40 @@ export default function Brokers() {
     setEditBroker(null);
   };
 
+  const handleBulkFmcsaLookup = async () => {
+    const pending = brokers.filter(b => !b.mc_number && !b.dot_number);
+    if (pending.length === 0) {
+      toast({ title: 'Todos actualizados', description: 'Todos los brokers ya tienen MC# o DOT#' });
+      return;
+    }
+    setBulkProgress({ current: 0, total: pending.length });
+    let updated = 0;
+    for (let i = 0; i < pending.length; i++) {
+      setBulkProgress({ current: i + 1, total: pending.length });
+      try {
+        const { data, error } = await supabase.functions.invoke('lookup-broker-mc', {
+          body: { broker_name: pending[i].name },
+        });
+        if (error) continue;
+        if (data?.mc_number || data?.dot_number || data?.address) {
+          await supabase
+            .from('brokers' as any)
+            .update({
+              ...(data.mc_number ? { mc_number: data.mc_number } : {}),
+              ...(data.dot_number ? { dot_number: data.dot_number } : {}),
+              ...(data.address ? { address: data.address } : {}),
+            } as any)
+            .eq('id', pending[i].id);
+          updated++;
+        }
+      } catch { /* skip */ }
+    }
+    setBulkProgress(null);
+    toast({ title: 'Búsqueda masiva completada', description: `${updated} de ${pending.length} brokers actualizados desde FMCSA` });
+    // Refresh data
+    window.location.reload();
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -99,14 +133,29 @@ export default function Brokers() {
           <h1 className="text-2xl font-bold text-foreground">Brokers</h1>
           <Badge variant="secondary" className="text-xs">{brokers.length}</Badge>
         </div>
-        <div className="relative w-full max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por nombre o MC#..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="pl-9"
-          />
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            onClick={handleBulkFmcsaLookup}
+            disabled={!!bulkProgress}
+          >
+            {bulkProgress ? <Loader2 className="h-4 w-4 animate-spin" /> : <Globe className="h-4 w-4" />}
+            {bulkProgress
+              ? `Buscando ${bulkProgress.current}/${bulkProgress.total}...`
+              : 'Actualizar todos desde FMCSA'}
+          </Button>
+          <div className="relative w-full max-w-xs">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por nombre o MC#..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+        </div>
         </div>
       </div>
 
