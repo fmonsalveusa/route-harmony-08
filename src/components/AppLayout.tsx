@@ -94,6 +94,22 @@ export const AppLayout = ({ children }: {children: ReactNode;}) => {
     return () => {supabase.removeChannel(channel);};
   }, [profile?.tenant_id]);
 
+  useEffect(() => {
+    const fetchUnrated = async () => {
+      const { count } = await supabase
+        .from('brokers' as any)
+        .select('*', { count: 'exact', head: true })
+        .is('rating', null);
+      setUnratedBrokers(count || 0);
+    };
+    fetchUnrated();
+    const channel = supabase
+      .channel('unrated-brokers-nav')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'brokers' }, () => fetchUnrated())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
   if (!profile) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4">
