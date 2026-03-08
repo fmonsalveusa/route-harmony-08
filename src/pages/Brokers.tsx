@@ -295,7 +295,7 @@ export default function Brokers() {
                   <SelectValue placeholder="Seleccionar rating" />
                 </SelectTrigger>
                 <SelectContent>
-                  {['A', 'B', 'C', 'D', 'E', 'F'].map(r => (
+                  {['A', 'B', 'C', 'D', 'N', 'E', 'F'].map(r => (
                     <SelectItem key={r} value={r}>{r}</SelectItem>
                   ))}
                 </SelectContent>
