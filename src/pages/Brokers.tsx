@@ -101,6 +101,8 @@ export default function Brokers() {
     let updated = 0;
     for (let i = 0; i < pending.length; i++) {
       setBulkProgress({ current: i + 1, total: pending.length });
+      // Delay between requests to avoid FMCSA rate limiting
+      if (i > 0) await new Promise(r => setTimeout(r, 1500));
       try {
         const { data, error } = await supabase.functions.invoke('lookup-broker-mc', {
           body: { broker_name: pending[i].name },
