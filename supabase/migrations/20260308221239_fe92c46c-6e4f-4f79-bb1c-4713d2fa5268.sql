@@ -1,0 +1,1 @@
+CREATE POLICY "Authenticated users can delete brokers" ON public.brokers FOR DELETE TO authenticated USING (true);
