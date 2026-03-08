@@ -82,9 +82,12 @@ Deno.serve(async (req) => {
     }
 
     const first = carriers[0]?.carrier || carriers[0];
-    const mcNumber = first.mcNumber || first.mc_number || first.mcNum || null;
+    const mcNumber = first.mcNumber || first.mc_number || first.mcNum || first.docketNumber || first.docket_number || null;
     const dotNumber = first.dotNumber || first.dot_number || first.dotNum || null;
     const legalName = first.legalName || first.legal_name || null;
+
+    console.log("FMCSA first carrier fields:", JSON.stringify(Object.keys(first)));
+    console.log("FMCSA MC/DOT values:", { mcNumber, dotNumber, legalName });
 
     // Build address from physical address fields
     const parts: string[] = [];
