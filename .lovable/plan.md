@@ -1,53 +1,29 @@
 
 
-## Plan: Página de Brokers con auto-detección y scores compartidos
+## Problema
 
-### Concepto
+El preview de Lovable carga desde un iframe que puede mantener módulos JS en caché del navegador (no solo Service Worker). La limpieza actual en `main.tsx` solo elimina Service Workers y Cache API, pero el **caché HTTP del navegador** (disk cache) sigue sirviendo versiones antiguas de los chunks JS que contienen la función `generateTerminationLetterPdf`.
 
-Crear una nueva tabla `brokers` como directorio maestro de brokers, **sin aislamiento por tenant** (visible para todos). Cuando se cree una carga con un `broker_client` nuevo, el sistema lo registra automáticamente. Cada broker tendrá su puntuación RTS/factoring editable, reutilizando la lógica existente de `broker_credit_scores`.
+Esto explica por qué la app publicada siempre muestra el formato correcto (deploy fresco) pero el preview a veces muestra el formato anterior.
 
-### Cambios en base de datos
+## Solución
 
-1. **Nueva tabla `brokers`** (sin tenant_id, compartida globalmente):
-   - `id uuid PK`
-   - `name text NOT NULL UNIQUE` — nombre del broker
-   - `mc_number text`
-   - `rating text` — letra A-F
-   - `days_to_pay integer`
-   - `notes text`
-   - `loads_count integer DEFAULT 0`
-   - `created_at`, `updated_at`
-   - RLS: SELECT para todos los autenticados, INSERT/UPDATE para autenticados
+No hay una solución de código que resuelva esto permanentemente desde el lado de la app — es un comportamiento del navegador en el entorno de preview. Sin embargo, podemos mitigar el problema:
 
-2. **Trigger `auto_register_broker`** en tabla `loads`:
-   - `AFTER INSERT OR UPDATE OF broker_client` — si `broker_client` no existe en `brokers`, lo inserta automáticamente.
+1. **Agregar headers de no-cache para el preview** en `vite.config.ts`: Configurar headers del servidor de desarrollo para evitar que el navegador cachee los módulos JS.
 
-### Nueva página `/brokers`
+   En `server` config, agregar:
+   ```ts
+   headers: {
+     'Cache-Control': 'no-store, no-cache, must-revalidate',
+   }
+   ```
 
-- Tabla con columnas: Nombre, MC#, Rating (badge color A-F), Días de Pago, Notas, # Cargas, Acciones
-- Búsqueda por nombre/MC
-- Edición inline o dialog para rating, days_to_pay, mc_number, notes (misma UI que `BrokerScoreRow` en LoadDetailPanel)
-- Badge de factoring: A/B/C = verde "FACTORING", D/E/F = rojo "COBRO DIRECTO"
-- Conteo de cargas calculado desde `loads.broker_client`
+2. **Forzar limpieza más agresiva en preview**: Además de limpiar SW y Cache API, intentar forzar una recarga sin caché si se detecta que es la primera carga después de un cambio.
 
-### Integración con sistema existente
+Esto debería reducir significativamente el problema de ver formatos antiguos en el preview.
 
-- Sincronizar `brokers` ↔ `broker_credit_scores`: cuando se edite un score en la página de brokers, se actualiza `broker_credit_scores` también (o migrar para usar solo `brokers` como fuente única).
-- Opción más limpia: **usar la tabla `brokers` como fuente única** y deprecar `broker_credit_scores`, actualizando `useBrokerScores` para leer de `brokers`.
+## Archivos a modificar
 
-### Navegación
-
-- Agregar "Brokers" al menú en `AppLayout.tsx` (icono `Handshake` de lucide), con permission `loads` (todos los que ven cargas ven brokers).
-- Ruta `/brokers` en `App.tsx` como ruta protegida.
-
-### Archivos a crear/modificar
-
-| Archivo | Acción |
-|---|---|
-| Migración SQL | Crear tabla `brokers`, trigger en `loads`, migrar datos existentes de `broker_credit_scores` |
-| `src/hooks/useBrokers.ts` | Hook CRUD para tabla `brokers` |
-| `src/pages/Brokers.tsx` | Página con tabla, búsqueda, edición de scores |
-| `src/hooks/useBrokerScores.ts` | Actualizar para leer de `brokers` en vez de `broker_credit_scores` |
-| `src/App.tsx` | Agregar ruta `/brokers` |
-| `src/components/AppLayout.tsx` | Agregar nav item "Brokers" |
+- `vite.config.ts` — agregar `headers` con `Cache-Control: no-store` en la config de `server`
 

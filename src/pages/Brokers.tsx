@@ -1,0 +1,174 @@
+import { useState } from 'react';
+import { useBrokers, Broker } from '@/hooks/useBrokers';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Search, Pencil, Handshake } from 'lucide-react';
+
+const ratingColors: Record<string, string> = {
+  A: 'bg-success text-success-foreground',
+  B: 'bg-success text-success-foreground',
+  C: 'bg-success text-success-foreground',
+  D: 'bg-warning text-warning-foreground',
+  E: 'bg-destructive text-destructive-foreground',
+  F: 'bg-destructive text-destructive-foreground',
+};
+
+const factoringLabel = (rating: string | null) => {
+  if (!rating) return null;
+  const upper = rating.toUpperCase();
+  if (['A', 'B', 'C'].includes(upper)) return { text: 'FACTORING', class: 'bg-success/20 text-success border-success/30' };
+  return { text: 'COBRO DIRECTO', class: 'bg-destructive/20 text-destructive border-destructive/30' };
+};
+
+export default function Brokers() {
+  const { brokers, isLoading, updateBroker } = useBrokers();
+  const [search, setSearch] = useState('');
+  const [editBroker, setEditBroker] = useState<Broker | null>(null);
+  const [form, setForm] = useState({ mc_number: '', rating: '', days_to_pay: '', notes: '' });
+
+  const filtered = brokers.filter(b => {
+    const q = search.toLowerCase();
+    return b.name.toLowerCase().includes(q) || (b.mc_number || '').toLowerCase().includes(q);
+  });
+
+  const openEdit = (broker: Broker) => {
+    setEditBroker(broker);
+    setForm({
+      mc_number: broker.mc_number || '',
+      rating: broker.rating || '',
+      days_to_pay: broker.days_to_pay?.toString() || '',
+      notes: broker.notes || '',
+    });
+  };
+
+  const handleSave = () => {
+    if (!editBroker) return;
+    updateBroker.mutate({
+      id: editBroker.id,
+      mc_number: form.mc_number || null,
+      rating: form.rating || null,
+      days_to_pay: form.days_to_pay ? parseInt(form.days_to_pay) : null,
+      notes: form.notes || null,
+    });
+    setEditBroker(null);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-2">
+          <Handshake className="h-6 w-6 text-primary" />
+          <h1 className="text-2xl font-bold text-foreground">Brokers</h1>
+          <Badge variant="secondary" className="text-xs">{brokers.length}</Badge>
+        </div>
+        <div className="relative w-full max-w-xs">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por nombre o MC#..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+      </div>
+
+      <div className="rounded-lg border bg-card overflow-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Broker</TableHead>
+              <TableHead>MC#</TableHead>
+              <TableHead>Rating</TableHead>
+              <TableHead>Factoring</TableHead>
+              <TableHead className="text-right">Días de Pago</TableHead>
+              <TableHead className="text-right">Cargas</TableHead>
+              <TableHead>Notas</TableHead>
+              <TableHead className="w-10"></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Cargando...</TableCell></TableRow>
+            ) : filtered.length === 0 ? (
+              <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No se encontraron brokers</TableCell></TableRow>
+            ) : (
+              filtered.map(broker => {
+                const fl = factoringLabel(broker.rating);
+                return (
+                  <TableRow key={broker.id} className="hover:bg-muted/50">
+                    <TableCell className="font-medium">{broker.name}</TableCell>
+                    <TableCell className="text-muted-foreground">{broker.mc_number || '—'}</TableCell>
+                    <TableCell>
+                      {broker.rating ? (
+                        <Badge className={`${ratingColors[broker.rating.toUpperCase()] || 'bg-muted text-muted-foreground'} font-bold`}>
+                          {broker.rating.toUpperCase()}
+                        </Badge>
+                      ) : <span className="text-muted-foreground">—</span>}
+                    </TableCell>
+                    <TableCell>
+                      {fl ? (
+                        <Badge variant="outline" className={`text-[10px] ${fl.class}`}>{fl.text}</Badge>
+                      ) : <span className="text-muted-foreground">—</span>}
+                    </TableCell>
+                    <TableCell className="text-right">{broker.days_to_pay ?? '—'}</TableCell>
+                    <TableCell className="text-right font-medium">{broker.loads_count}</TableCell>
+                    <TableCell className="max-w-[200px] truncate text-muted-foreground text-xs">{broker.notes || '—'}</TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(broker)}>
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editBroker} onOpenChange={open => !open && setEditBroker(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar Broker: {editBroker?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>MC#</Label>
+              <Input value={form.mc_number} onChange={e => setForm(f => ({ ...f, mc_number: e.target.value }))} placeholder="MC Number" />
+            </div>
+            <div>
+              <Label>Rating (RTS Score)</Label>
+              <Select value={form.rating} onValueChange={v => setForm(f => ({ ...f, rating: v }))}>
+                <SelectTrigger><SelectValue placeholder="Seleccionar rating" /></SelectTrigger>
+                <SelectContent>
+                  {['A', 'B', 'C', 'D', 'E', 'F'].map(r => (
+                    <SelectItem key={r} value={r}>{r}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Días de Pago</Label>
+              <Input type="number" value={form.days_to_pay} onChange={e => setForm(f => ({ ...f, days_to_pay: e.target.value }))} placeholder="30" />
+            </div>
+            <div>
+              <Label>Notas</Label>
+              <Textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={3} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditBroker(null)}>Cancelar</Button>
+            <Button onClick={handleSave} disabled={updateBroker.isPending}>Guardar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
