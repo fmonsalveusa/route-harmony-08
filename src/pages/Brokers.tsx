@@ -94,6 +94,7 @@ export default function Brokers() {
   const handleInlineRatingChange = (brokerId: string, value: string) => {
     const updates: any = { id: brokerId, rating: value || null };
     if (value === 'F') updates.notes = 'NO USAR';
+    if (value === 'N') updates.notes = 'COBRO DIRECTO';
     updateBroker.mutate(updates);
   };
 
