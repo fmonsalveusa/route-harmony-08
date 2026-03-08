@@ -189,11 +189,21 @@ export default function Brokers() {
                     <TableCell className="text-muted-foreground">{broker.dot_number || '—'}</TableCell>
                     <TableCell className="max-w-[200px] truncate text-muted-foreground text-xs">{broker.address || '—'}</TableCell>
                     <TableCell>
-                      {broker.rating ? (
-                        <Badge className={`${ratingColors[broker.rating.toUpperCase()] || 'bg-muted text-muted-foreground'} font-bold`}>
-                          {broker.rating.toUpperCase()}
-                        </Badge>
-                      ) : <span className="text-muted-foreground">—</span>}
+                      <Select
+                        value={broker.rating?.toUpperCase() || ''}
+                        onValueChange={v => updateBroker.mutate({ id: broker.id, rating: v || null })}
+                      >
+                        <SelectTrigger className={`w-16 h-7 text-xs font-bold ${broker.rating ? (ratingColors[broker.rating.toUpperCase()] || '') : ''}`}>
+                          <SelectValue placeholder="—" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {['A', 'B', 'C', 'D', 'E', 'F'].map(r => (
+                            <SelectItem key={r} value={r}>
+                              <span className={`font-bold ${ratingColors[r] ? '' : ''}`}>{r}</span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </TableCell>
                     <TableCell>
                       {fl ? (
