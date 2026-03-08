@@ -84,6 +84,8 @@ export default function Brokers() {
   const handleRatingChange = (value: string) => {
     if (value === 'F') {
       setForm(f => ({ ...f, rating: value, notes: f.notes || 'NO USAR' }));
+    } else if (value === 'N') {
+      setForm(f => ({ ...f, rating: value, notes: f.notes || 'COBRO DIRECTO' }));
     } else {
       setForm(f => ({ ...f, rating: value }));
     }
