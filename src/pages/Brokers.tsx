@@ -5,11 +5,12 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, Pencil, Handshake, Loader2, Globe } from 'lucide-react';
+import { Search, Pencil, Handshake, Loader2, Globe, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const ratingColors: Record<string, string> = {
@@ -18,21 +19,23 @@ const ratingColors: Record<string, string> = {
   C: 'bg-success text-success-foreground',
   D: 'bg-warning text-warning-foreground',
   E: 'bg-destructive text-destructive-foreground',
-  F: 'bg-destructive text-destructive-foreground',
+  F: 'bg-black text-white',
 };
 
 const factoringLabel = (rating: string | null) => {
   if (!rating) return null;
   const upper = rating.toUpperCase();
+  if (upper === 'F') return { text: 'NO USAR', class: 'bg-black/20 text-black dark:text-white border-black/30' };
   if (['A', 'B', 'C'].includes(upper)) return { text: 'FACTORING', class: 'bg-success/20 text-success border-success/30' };
   return { text: 'COBRO DIRECTO', class: 'bg-destructive/20 text-destructive border-destructive/30' };
 };
 
 export default function Brokers() {
-  const { brokers, isLoading, updateBroker } = useBrokers();
+  const { brokers, isLoading, updateBroker, deleteBroker } = useBrokers();
   const { toast } = useToast();
   const [search, setSearch] = useState('');
   const [editBroker, setEditBroker] = useState<Broker | null>(null);
+  const [deletingBroker, setDeletingBroker] = useState<Broker | null>(null);
   const [form, setForm] = useState({ mc_number: '', dot_number: '', address: '', rating: '', days_to_pay: '', notes: '' });
   const [lookingUp, setLookingUp] = useState(false);
   const [bulkProgress, setBulkProgress] = useState<{ current: number; total: number } | null>(null);
@@ -77,6 +80,20 @@ export default function Brokers() {
     }
   };
 
+  const handleRatingChange = (value: string) => {
+    if (value === 'F') {
+      setForm(f => ({ ...f, rating: value, notes: f.notes || 'NO USAR' }));
+    } else {
+      setForm(f => ({ ...f, rating: value }));
+    }
+  };
+
+  const handleInlineRatingChange = (brokerId: string, value: string) => {
+    const updates: any = { id: brokerId, rating: value || null };
+    if (value === 'F') updates.notes = 'NO USAR';
+    updateBroker.mutate(updates);
+  };
+
   const handleSave = () => {
     if (!editBroker) return;
     updateBroker.mutate({
@@ -91,6 +108,12 @@ export default function Brokers() {
     setEditBroker(null);
   };
 
+  const handleDelete = () => {
+    if (!deletingBroker) return;
+    deleteBroker.mutate(deletingBroker.id);
+    setDeletingBroker(null);
+  };
+
   const handleBulkFmcsaLookup = async () => {
     const pending = brokers.filter(b => !b.mc_number && !b.dot_number);
     if (pending.length === 0) {
@@ -101,7 +124,6 @@ export default function Brokers() {
     let updated = 0;
     for (let i = 0; i < pending.length; i++) {
       setBulkProgress({ current: i + 1, total: pending.length });
-      // Delay between requests to avoid FMCSA rate limiting
       if (i > 0) await new Promise(r => setTimeout(r, 1500));
       try {
         const { data, error } = await supabase.functions.invoke('lookup-broker-mc', {
@@ -123,7 +145,6 @@ export default function Brokers() {
     }
     setBulkProgress(null);
     toast({ title: 'Búsqueda masiva completada', description: `${updated} de ${pending.length} brokers actualizados desde FMCSA` });
-    // Refresh data
     window.location.reload();
   };
 
@@ -173,7 +194,7 @@ export default function Brokers() {
               <TableHead className="text-right">Días de Pago</TableHead>
               <TableHead className="text-right">Cargas</TableHead>
               <TableHead>Notas</TableHead>
-              <TableHead className="w-10"></TableHead>
+              <TableHead className="w-20"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -184,8 +205,9 @@ export default function Brokers() {
             ) : (
               filtered.map(broker => {
                 const fl = factoringLabel(broker.rating);
+                const isF = broker.rating?.toUpperCase() === 'F';
                 return (
-                  <TableRow key={broker.id} className="hover:bg-muted/50">
+                  <TableRow key={broker.id} className={`hover:bg-muted/50 ${isF ? 'opacity-60' : ''}`}>
                     <TableCell className="font-medium">{broker.name}</TableCell>
                     <TableCell className="text-muted-foreground">{broker.mc_number || '—'}</TableCell>
                     <TableCell className="text-muted-foreground">{broker.dot_number || '—'}</TableCell>
@@ -193,7 +215,7 @@ export default function Brokers() {
                     <TableCell>
                       <Select
                         value={broker.rating?.toUpperCase() || ''}
-                        onValueChange={v => updateBroker.mutate({ id: broker.id, rating: v || null })}
+                        onValueChange={v => handleInlineRatingChange(broker.id, v)}
                       >
                         <SelectTrigger className={`w-16 h-7 text-xs font-bold ${broker.rating ? (ratingColors[broker.rating.toUpperCase()] || '') : ''}`}>
                           <SelectValue placeholder="—" />
@@ -201,7 +223,7 @@ export default function Brokers() {
                         <SelectContent>
                           {['A', 'B', 'C', 'D', 'E', 'F'].map(r => (
                             <SelectItem key={r} value={r}>
-                              <span className={`font-bold ${ratingColors[r] ? '' : ''}`}>{r}</span>
+                              <span className="font-bold">{r}</span>
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -216,9 +238,14 @@ export default function Brokers() {
                     <TableCell className="text-right font-medium">{broker.loads_count}</TableCell>
                     <TableCell className="max-w-[200px] truncate text-muted-foreground text-xs">{broker.notes || '—'}</TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(broker)}>
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(broker)}>
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setDeletingBroker(broker)}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
@@ -259,8 +286,10 @@ export default function Brokers() {
             </div>
             <div>
               <Label>Rating (RTS Score)</Label>
-              <Select value={form.rating} onValueChange={v => setForm(f => ({ ...f, rating: v }))}>
-                <SelectTrigger><SelectValue placeholder="Seleccionar rating" /></SelectTrigger>
+              <Select value={form.rating} onValueChange={handleRatingChange}>
+                <SelectTrigger className={form.rating === 'F' ? 'bg-black text-white' : ''}>
+                  <SelectValue placeholder="Seleccionar rating" />
+                </SelectTrigger>
                 <SelectContent>
                   {['A', 'B', 'C', 'D', 'E', 'F'].map(r => (
                     <SelectItem key={r} value={r}>{r}</SelectItem>
@@ -283,6 +312,24 @@ export default function Brokers() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deletingBroker} onOpenChange={open => !open && setDeletingBroker(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar broker?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se eliminará permanentemente el broker <strong>{deletingBroker?.name}</strong>. Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

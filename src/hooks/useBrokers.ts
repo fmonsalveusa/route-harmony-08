@@ -55,5 +55,22 @@ export function useBrokers() {
     },
   });
 
-  return { brokers, isLoading, updateBroker };
+  const deleteBroker = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('brokers' as any)
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+      toast({ title: 'Broker eliminado' });
+    },
+    onError: () => {
+      toast({ title: 'Error', description: 'No se pudo eliminar el broker', variant: 'destructive' });
+    },
+  });
+
+  return { brokers, isLoading, updateBroker, deleteBroker };
 }
