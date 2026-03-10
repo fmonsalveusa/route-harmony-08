@@ -21,7 +21,7 @@ const SERVICE_OPTIONS = [
   "Tracking Up App",
   "Asesoría de Negocios",
   "Tramitación de Permisos",
-  "Load Up TMS",
+  "Dispatch Up TMS",
   "Auditoría FMCSA",
 ];
 

@@ -17,8 +17,8 @@ export function LandingNavbar() {
     <nav className="fixed top-0 left-0 right-0 z-50 bg-[hsl(214,52%,15%)]/95 backdrop-blur-md border-b border-white/10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
         <a href="/" className="flex items-center gap-2">
-          <img src={logo} alt="Load Up TMS" className="h-8 w-auto" />
-          <span className="text-white font-bold text-lg tracking-tight">Load Up</span>
+          <img src={logo} alt="Dispatch Up" className="h-8 w-auto" />
+          <span className="text-white font-bold text-lg tracking-tight">Dispatch Up</span>
         </a>
 
         <div className="hidden md:flex items-center gap-6">

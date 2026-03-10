@@ -52,7 +52,7 @@ export function LandingFooter() {
         </div>
 
         <div className="border-t border-white/10 mt-10 pt-6 text-center text-xs text-white/40">
-          © {new Date().getFullYear()} Load Up TMS. Todos los derechos reservados.
+          © {new Date().getFullYear()} Dispatch Up TMS. Todos los derechos reservados.
         </div>
       </div>
     </footer>

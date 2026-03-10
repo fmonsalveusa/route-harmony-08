@@ -116,10 +116,10 @@ const services: Service[] = [
   },
   {
     icon: LayoutDashboard,
-    title: "Load Up TMS",
+    title: "Dispatch Up TMS",
     description: "Software de gestión de transporte completo. Control de cargas, pagos, conductores, flota y reportes en una sola plataforma.",
     image: imgTms,
-    details: "Load Up TMS es nuestra plataforma todo-en-uno para la gestión de empresas de transporte. Controla cargas, pagos a conductores, comisiones de dispatchers, flota, gastos, facturación y reportes financieros desde un solo lugar. Diseñado por y para transportistas hispanos.",
+    details: "Dispatch Up TMS es nuestra plataforma todo-en-uno para la gestión de empresas de transporte. Controla cargas, pagos a conductores, comisiones de dispatchers, flota, gastos, facturación y reportes financieros desde un solo lugar. Diseñado por y para transportistas hispanos.",
     benefits: [
       "Gestión completa de cargas con estados en tiempo real",
       "Cálculo automático de pagos a conductores y dispatchers",
