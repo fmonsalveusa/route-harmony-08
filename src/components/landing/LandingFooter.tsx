@@ -8,8 +8,8 @@ export function LandingFooter() {
         <div className="grid md:grid-cols-3 gap-10">
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <img src={logo} alt="Load Up" className="h-8 w-auto" />
-              <span className="text-white font-bold text-lg">Load Up</span>
+              <img src={logo} alt="Dispatch Up" className="h-8 w-auto" />
+              <span className="text-white font-bold text-lg">Dispatch Up</span>
             </div>
             <p className="text-sm leading-relaxed">
               Tu socio de confianza en servicios de dispatching, leasing y transporte de carga en Estados Unidos.
