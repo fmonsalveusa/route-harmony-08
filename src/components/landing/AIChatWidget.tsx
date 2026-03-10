@@ -12,7 +12,7 @@ const QUICK_OPTIONS = [
   { label: "Leasing", text: "Me interesa operar bajo su MC#, ¿cómo funciona el Leasing?" },
   { label: "Curso", text: "¿Qué incluye el Curso de Dispatcher?" },
   { label: "Permisos", text: "Necesito tramitar permisos DOT y MC#" },
-  { label: "TMS", text: "Quiero saber más sobre el software Load Up TMS" },
+  { label: "TMS", text: "Quiero saber más sobre el software Dispatch Up TMS" },
 ];
 
 async function streamChat({
