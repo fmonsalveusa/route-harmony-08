@@ -68,6 +68,13 @@ export function LandingNavbar() {
                   {l.label}
                 </a>
               ))}
+              <a
+                href="#onboarding"
+                onClick={() => setOpen(false)}
+                className="bg-green-500 text-white px-4 py-3 rounded-md text-sm font-semibold text-center hover:bg-green-600 transition"
+              >
+                🚛 Regístrate como Driver
+              </a>
             </div>
           </motion.div>
         )}
