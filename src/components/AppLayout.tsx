@@ -147,7 +147,7 @@ export const AppLayout = ({ children }: {children: ReactNode;}) => {
           <img src={logoImg} alt="Dispatch Up TMS" className="h-7 w-7 rounded flex-shrink-0 object-cover" />
           }
           <span className="text-sm font-semibold tracking-tight truncate max-w-[160px] hidden sm:inline">
-            {tenant?.name || 'Load Up TMS'}
+            {tenant?.name || 'Dispatch Up TMS'}
           </span>
           {isMasterAdmin && isMasterRoute &&
           <Badge className="bg-purple-500/30 text-purple-200 text-[10px] border-purple-400/30 hidden md:inline-flex">
