@@ -86,7 +86,7 @@ const MasterDashboard = () => {
     <div className="space-y-6">
       <div>
         <h1 className="page-header">Master Admin Dashboard</h1>
-        <p className="page-description">Global overview of the Load Up TMS platform</p>
+        <p className="page-description">Global overview of the Dispatch Up TMS platform</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

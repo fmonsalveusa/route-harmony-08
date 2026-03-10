@@ -239,7 +239,7 @@ export const AppLayout = ({ children }: {children: ReactNode;}) => {
             <div className="flex items-center justify-between h-14 px-4 border-b">
               <div className="flex items-center gap-2">
                 <img src={logoImg} alt="" className="h-6 w-6 rounded" />
-                <span className="text-sm font-semibold">{tenant?.name || 'Load Up TMS'}</span>
+                <span className="text-sm font-semibold">{tenant?.name || 'Dispatch Up TMS'}</span>
               </div>
               <button onClick={() => setMobileMenuOpen(false)} className="p-1.5 rounded-md hover:bg-muted">
                 <X className="h-5 w-5" />
