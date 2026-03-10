@@ -36,6 +36,12 @@ export function LandingNavbar() {
             WhatsApp
           </a>
           <a
+            href="#onboarding"
+            className="bg-green-500 text-white px-4 py-2 rounded-md text-sm font-semibold hover:bg-green-600 transition animate-pulse"
+          >
+            🚛 Regístrate como Driver
+          </a>
+          <a
             href="/auth"
             className="border border-white/30 text-white px-4 py-2 rounded-md text-sm font-semibold hover:bg-white/10 transition"
           >
@@ -62,6 +68,13 @@ export function LandingNavbar() {
                   {l.label}
                 </a>
               ))}
+              <a
+                href="#onboarding"
+                onClick={() => setOpen(false)}
+                className="bg-green-500 text-white px-4 py-3 rounded-md text-sm font-semibold text-center hover:bg-green-600 transition"
+              >
+                🚛 Regístrate como Driver
+              </a>
             </div>
           </motion.div>
         )}

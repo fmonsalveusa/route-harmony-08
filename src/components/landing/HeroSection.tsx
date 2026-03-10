@@ -29,6 +29,12 @@ export function HeroSection() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4">
             <a
+              href="#onboarding"
+              className="inline-flex items-center justify-center gap-2 bg-green-500 text-white px-6 py-3 rounded-lg font-bold text-base hover:bg-green-600 transition shadow-lg shadow-green-500/25"
+            >
+              🚛 Regístrate como Driver <ArrowRight size={18} />
+            </a>
+            <a
               href="#servicios"
               className="inline-flex items-center justify-center gap-2 bg-accent text-accent-foreground px-6 py-3 rounded-lg font-semibold text-base hover:brightness-110 transition shadow-lg shadow-accent/25"
             >
