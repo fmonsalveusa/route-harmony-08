@@ -12,7 +12,7 @@ const QUICK_OPTIONS = [
   { label: "Leasing", text: "Me interesa operar bajo su MC#, ¿cómo funciona el Leasing?" },
   { label: "Curso", text: "¿Qué incluye el Curso de Dispatcher?" },
   { label: "Permisos", text: "Necesito tramitar permisos DOT y MC#" },
-  { label: "TMS", text: "Quiero saber más sobre el software Load Up TMS" },
+  { label: "TMS", text: "Quiero saber más sobre el software Dispatch Up TMS" },
 ];
 
 async function streamChat({
@@ -152,7 +152,7 @@ export function AIChatWidget() {
           {/* Header */}
           <div className="bg-accent text-accent-foreground px-4 py-3 flex items-center gap-2 shrink-0">
             <MessageCircle size={18} />
-            <span className="font-semibold text-sm">Asistente Load Up</span>
+            <span className="font-semibold text-sm">Asistente Dispatch Up</span>
           </div>
 
           {/* Messages */}

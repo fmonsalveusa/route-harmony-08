@@ -144,10 +144,10 @@ export const AppLayout = ({ children }: {children: ReactNode;}) => {
           {tenant?.logo_url ?
           <img src={tenant.logo_url} alt="" className="h-7 w-7 rounded flex-shrink-0 object-cover" /> :
 
-          <img src={logoImg} alt="Load Up TMS" className="h-7 w-7 rounded flex-shrink-0 object-cover" />
+          <img src={logoImg} alt="Dispatch Up TMS" className="h-7 w-7 rounded flex-shrink-0 object-cover" />
           }
           <span className="text-sm font-semibold tracking-tight truncate max-w-[160px] hidden sm:inline">
-            {tenant?.name || 'Load Up TMS'}
+            {tenant?.name || 'Dispatch Up TMS'}
           </span>
           {isMasterAdmin && isMasterRoute &&
           <Badge className="bg-purple-500/30 text-purple-200 text-[10px] border-purple-400/30 hidden md:inline-flex">
@@ -239,7 +239,7 @@ export const AppLayout = ({ children }: {children: ReactNode;}) => {
             <div className="flex items-center justify-between h-14 px-4 border-b">
               <div className="flex items-center gap-2">
                 <img src={logoImg} alt="" className="h-6 w-6 rounded" />
-                <span className="text-sm font-semibold">{tenant?.name || 'Load Up TMS'}</span>
+                <span className="text-sm font-semibold">{tenant?.name || 'Dispatch Up TMS'}</span>
               </div>
               <button onClick={() => setMobileMenuOpen(false)} className="p-1.5 rounded-md hover:bg-muted">
                 <X className="h-5 w-5" />

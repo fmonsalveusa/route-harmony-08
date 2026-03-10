@@ -76,8 +76,8 @@ const Auth = () => {
       <div className="hidden lg:flex lg:w-1/2 bg-primary flex-col justify-center items-center p-12 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary to-accent opacity-90" />
         <div className="relative z-10 text-center">
-          <img src={logoImg} alt="Load Up TMS" className="h-20 w-20 mb-6 mx-auto rounded-xl object-cover" />
-          <h1 className="text-4xl font-bold text-primary-foreground mb-4">Load Up TMS</h1>
+          <img src={logoImg} alt="Dispatch Up TMS" className="h-20 w-20 mb-6 mx-auto rounded-xl object-cover" />
+          <h1 className="text-4xl font-bold text-primary-foreground mb-4">Dispatch Up TMS</h1>
           <p className="text-primary-foreground/80 text-lg max-w-md">
             Comprehensive multi-company transportation management platform. Manage your fleet, loads, payments, and team.
           </p>
