@@ -144,7 +144,7 @@ export const AppLayout = ({ children }: {children: ReactNode;}) => {
           {tenant?.logo_url ?
           <img src={tenant.logo_url} alt="" className="h-7 w-7 rounded flex-shrink-0 object-cover" /> :
 
-          <img src={logoImg} alt="Load Up TMS" className="h-7 w-7 rounded flex-shrink-0 object-cover" />
+          <img src={logoImg} alt="Dispatch Up TMS" className="h-7 w-7 rounded flex-shrink-0 object-cover" />
           }
           <span className="text-sm font-semibold tracking-tight truncate max-w-[160px] hidden sm:inline">
             {tenant?.name || 'Load Up TMS'}
