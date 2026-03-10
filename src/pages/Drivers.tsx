@@ -330,16 +330,16 @@ const Drivers = () => {
           </div>
           <p className="page-description">{isDispatcher ? 'Drivers under your management' : 'Complete driver management'}</p>
         </div>
-        {!isDispatcher && (
-           <div className="flex gap-2">
+        <div className="flex gap-2">
+          {!isDispatcher && (
             <Button size="sm" variant="outline" className="gap-2" onClick={() => setOnboardingOpen(true)}>
               <Link2 className="h-4 w-4" /> Onboarding Link
             </Button>
-            <Button size="sm" className="gap-2" onClick={() => { setEditingDriver(null); setFormOpen(true); }}>
-              <Plus className="h-4 w-4" /> New Driver
-            </Button>
-          </div>
-        )}
+          )}
+          <Button size="sm" className="gap-2" onClick={() => { setEditingDriver(null); setFormOpen(true); }}>
+            <Plus className="h-4 w-4" /> New Driver
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-2 items-center">
