@@ -161,6 +161,7 @@ export const services: Service[] = [
       type: "fixed",
       fixedPrice: { amount: 1500, period: "único", note: "Incluye DOT, MC#, BOC-3, IFTA y UCR" },
     },
+    stripeConfig: { priceId: "price_1T9tKe75IaXwYE4pAZC1XmiQ", mode: "payment" },
   },
   {
     icon: GraduationCap,
