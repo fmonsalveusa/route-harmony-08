@@ -230,10 +230,23 @@ export function ServicesSection() {
                 </ul>
               </div>
 
-              <div className="mt-4">
+              <div className="mt-4 flex flex-col gap-2">
+                {isTmsService && (
+                  <Button
+                    className="w-full gap-2"
+                    onClick={() => {
+                      setSelectedService(null);
+                      navigate("/pricing");
+                    }}
+                  >
+                    <DollarSign size={18} />
+                    Ver Precios
+                  </Button>
+                )}
                 {selected.cta.href.startsWith("#") ? (
                   <Button
                     className="w-full"
+                    variant={isTmsService ? "outline" : "default"}
                     onClick={() => {
                       setSelectedService(null);
                       document.querySelector(selected.cta.href)?.scrollIntoView({ behavior: "smooth" });
@@ -242,7 +255,7 @@ export function ServicesSection() {
                     {selected.cta.label}
                   </Button>
                 ) : (
-                  <Button className="w-full gap-2" asChild>
+                  <Button className="w-full gap-2" variant={isTmsService ? "outline" : "default"} asChild>
                     <a href={selected.cta.href} target="_blank" rel="noopener noreferrer">
                       <MessageCircle size={18} />
                       {selected.cta.label}
