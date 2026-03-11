@@ -23,6 +23,7 @@ interface NavItem {
   icon: any;
   path: string;
   permission: string;
+  masterOnly?: boolean;
 }
 
 const tenantNavItems: NavItem[] = [
