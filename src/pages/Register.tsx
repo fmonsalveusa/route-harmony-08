@@ -72,16 +72,20 @@ const Register = () => {
         return;
       }
 
-      // If we got a checkout URL, redirect to Stripe
+      // If we got a checkout URL, redirect to Stripe immediately
+      // Do NOT sign in here — AuthContext would redirect to /dashboard before Stripe loads
       if (data?.checkoutUrl) {
-        // Sign in the user first so they have a session after checkout
-        await supabase.auth.signInWithPassword({ email, password });
         window.location.href = data.checkoutUrl;
         return;
       }
 
       // No checkout URL (Stripe not configured) — sign in and go to dashboard
-      await supabase.auth.signInWithPassword({ email, password });
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      if (signInError) {
+        toast.success('¡Cuenta creada! Inicia sesión con tus credenciales.');
+        navigate('/auth');
+        return;
+      }
       toast.success('¡Cuenta creada exitosamente!');
       navigate('/dashboard');
     } catch (err: any) {
