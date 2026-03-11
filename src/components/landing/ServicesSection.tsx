@@ -110,7 +110,7 @@ export function ServicesSection() {
                           exit={{ opacity: 0, height: 0 }}
                           transition={{ duration: 0.25 }}
                         >
-                          <ServicePricingSection pricing={selected.pricing} whatsappHref={selected.cta.href} onClose={handleClose} />
+                          <ServicePricingSection pricing={selected.pricing} whatsappHref={selected.cta.href} onClose={handleClose} stripeConfig={selected.stripeConfig} />
                         </motion.div>
                       </AnimatePresence>
                     )}

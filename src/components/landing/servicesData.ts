@@ -202,5 +202,6 @@ export const services: Service[] = [
       type: "fixed",
       fixedPrice: { amount: 500, period: "por auditoría", note: "Preparación completa, documentación y respuesta ante el FMCSA" },
     },
+    stripeConfig: { priceId: "price_1T9tLD75IaXwYE4puYvA0nIa", mode: "payment" },
   },
 ];
