@@ -23,6 +23,7 @@ interface NavItem {
   icon: any;
   path: string;
   permission: string;
+  masterOnly?: boolean;
 }
 
 const tenantNavItems: NavItem[] = [
@@ -39,7 +40,7 @@ const tenantNavItems: NavItem[] = [
 { label: 'Invoices', icon: FileText, path: '/invoices', permission: 'invoices' },
 { label: 'Route History', icon: MapPin, path: '/driver-route-history', permission: 'tracking' },
 { label: 'Companies', icon: Building2, path: '/companies', permission: 'companies' },
-{ label: 'Brokers', icon: Handshake, path: '/brokers', permission: 'loads' },
+{ label: 'Brokers', icon: Handshake, path: '/brokers', permission: 'loads', masterOnly: true },
 { label: 'Users', icon: UserCog, path: '/users', permission: 'users' },
 { label: 'Subscription', icon: CreditCard, path: '/subscription', permission: 'settings' }];
 
@@ -130,7 +131,7 @@ export const AppLayout = ({ children }: {children: ReactNode;}) => {
 
   const isMasterRoute = location.pathname.startsWith('/master');
   const navItems = isMasterAdmin && isMasterRoute ? masterNavItems : tenantNavItems;
-  const visibleItems = navItems.filter((item) => hasPermission(item.permission));
+  const visibleItems = navItems.filter((item) => hasPermission(item.permission) && (!item.masterOnly || isMasterAdmin));
   const initials = profile.full_name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
 
   return (
