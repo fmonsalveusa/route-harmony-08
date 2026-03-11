@@ -72,7 +72,13 @@ export const services: Service[] = [
       "Pagos semanales puntuales",
     ],
     cta: { label: "Contactar por WhatsApp", href: "https://wa.me/19807668815?text=Hola%2C%20me%20interesa%20el%20Leasing%20bajo%20su%20MC%23" },
-    pricing: { type: "quote" },
+    pricing: {
+      type: "plans",
+      plans: [
+        { name: "Box Truck", price: 300, period: "/semana", features: ["Seguro incluido", "Dispatch 24/7", "Compliance y safety", "Pagos semanales"] },
+        { name: "Semi Truck", price: 350, period: "/semana", features: ["Seguro incluido", "Dispatch 24/7", "Compliance y safety", "Pagos semanales", "Account manager dedicado"] },
+      ],
+    },
   },
   {
     icon: LayoutDashboard,
