@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import logoImg from '@/assets/logo.png';
+import bannerImg from '@/assets/dispatch-up-banner.png';
 
 const PLANS = [
   {
@@ -87,8 +88,15 @@ const Pricing = () => {
         </div>
       </nav>
 
+      {/* Banner */}
+      <div className="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 overflow-hidden">
+        <div className="max-w-7xl mx-auto flex items-center justify-center py-6 px-4">
+          <img src={bannerImg} alt="Dispatch Up TMS" className="h-16 md:h-20 object-contain" />
+        </div>
+      </div>
+
       {/* Hero */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-8 text-center">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-8 text-center">
         <Badge variant="secondary" className="mb-4 text-sm px-4 py-1.5">
           <Star className="h-3.5 w-3.5 mr-1.5" /> 7 días de prueba gratis
         </Badge>
