@@ -27,21 +27,6 @@ export function ServicePricingSection({ pricing, whatsappHref, onClose }: Servic
     );
   }
 
-  if (pricing.type === "quote") {
-    return (
-      <div className="rounded-xl border bg-muted/30 p-5 text-center space-y-3">
-        <p className="text-sm font-semibold text-foreground">Precio personalizado</p>
-        <p className="text-xs text-muted-foreground">Cada proyecto es único. Contáctanos para recibir una cotización a la medida de tu operación.</p>
-        <Button className="gap-2" asChild>
-          <a href={whatsappHref} target="_blank" rel="noopener noreferrer">
-            <MessageCircle size={16} />
-            Solicitar Cotización
-          </a>
-        </Button>
-      </div>
-    );
-  }
-
   if (pricing.type === "fixed" && pricing.fixedPrice) {
     const { amount, period, note } = pricing.fixedPrice;
     return (

@@ -17,7 +17,7 @@ export interface PricingPlan {
 }
 
 export interface ServicePricing {
-  type: "plans" | "fixed" | "quote" | "page";
+  type: "plans" | "fixed" | "page";
   plans?: PricingPlan[];
   fixedPrice?: { amount: number; period: string; note?: string };
   /** For type "page", navigate to this path instead of showing inline pricing */
@@ -72,7 +72,13 @@ export const services: Service[] = [
       "Pagos semanales puntuales",
     ],
     cta: { label: "Contactar por WhatsApp", href: "https://wa.me/19807668815?text=Hola%2C%20me%20interesa%20el%20Leasing%20bajo%20su%20MC%23" },
-    pricing: { type: "quote" },
+    pricing: {
+      type: "plans",
+      plans: [
+        { name: "Box Truck", price: 300, period: "/semana", features: ["Seguro incluido", "Dispatch 24/7", "Compliance y safety", "Pagos semanales"] },
+        { name: "Semi Truck", price: 350, period: "/semana", features: ["Seguro incluido", "Dispatch 24/7", "Compliance y safety", "Pagos semanales", "Account manager dedicado"] },
+      ],
+    },
   },
   {
     icon: LayoutDashboard,
@@ -125,11 +131,8 @@ export const services: Service[] = [
     ],
     cta: { label: "Contactar por WhatsApp", href: "https://wa.me/19807668815?text=Hola%2C%20me%20interesa%20la%20Asesor%C3%ADa%20Personal" },
     pricing: {
-      type: "plans",
-      plans: [
-        { name: "Sesión Única", price: 150, period: "única", features: ["1 hora de consultoría", "Plan de acción básico"] },
-        { name: "Mensual", price: 400, period: "/mes", features: ["4 sesiones al mes", "Plan estratégico completo", "Seguimiento semanal", "Soporte por WhatsApp"] },
-      ],
+      type: "fixed",
+      fixedPrice: { amount: 150, period: "/sesión", note: "Consultoría personalizada de 1 hora con expertos en transporte" },
     },
   },
   {
@@ -147,11 +150,8 @@ export const services: Service[] = [
     ],
     cta: { label: "Contactar por WhatsApp", href: "https://wa.me/19807668815?text=Hola%2C%20me%20interesa%20el%20Tr%C3%A1mite%20de%20Permisos%20DOT%20MC%23" },
     pricing: {
-      type: "plans",
-      plans: [
-        { name: "DOT + MC#", price: 1500, period: "único", features: ["Registro DOT", "Obtención de MC#", "BOC-3 incluido"] },
-        { name: "Paquete Completo", price: 2500, period: "único", features: ["DOT + MC#", "IFTA", "UCR", "BOC-3", "Asesoría de compliance"] },
-      ],
+      type: "fixed",
+      fixedPrice: { amount: 1500, period: "único", note: "Incluye DOT, MC#, BOC-3, IFTA y UCR" },
     },
   },
   {
@@ -188,6 +188,9 @@ export const services: Service[] = [
       "Asesoría continua para mantener un safety rating satisfactorio",
     ],
     cta: { label: "Contactar por WhatsApp", href: "https://wa.me/19807668815?text=Hola%2C%20me%20interesa%20la%20Asistencia%20en%20Auditor%C3%ADas%20del%20FMCSA" },
-    pricing: { type: "quote" },
+    pricing: {
+      type: "fixed",
+      fixedPrice: { amount: 500, period: "por auditoría", note: "Preparación completa, documentación y respuesta ante el FMCSA" },
+    },
   },
 ];
