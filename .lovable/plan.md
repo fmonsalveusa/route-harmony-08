@@ -1,29 +1,36 @@
 
 
-## Problema
+## Notificación de actualización de la app
 
-El preview de Lovable carga desde un iframe que puede mantener módulos JS en caché del navegador (no solo Service Worker). La limpieza actual en `main.tsx` solo elimina Service Workers y Cache API, pero el **caché HTTP del navegador** (disk cache) sigue sirviendo versiones antiguas de los chunks JS que contienen la función `generateTerminationLetterPdf`.
+### Situación actual
+La app ya tiene un Service Worker (PWA) que detecta nuevas versiones (`onNeedRefresh`), pero solo hace `console.log` — el usuario nunca se entera.
 
-Esto explica por qué la app publicada siempre muestra el formato correcto (deploy fresco) pero el preview a veces muestra el formato anterior.
+### Plan
 
-## Solución
+**1. Crear componente `UpdatePrompt`** — Un banner/toast persistente que aparece cuando el SW detecta una nueva versión. Muestra un mensaje como "Hay una nueva versión disponible" con un botón "Actualizar ahora" que recarga la app.
 
-No hay una solución de código que resuelva esto permanentemente desde el lado de la app — es un comportamiento del navegador en el entorno de preview. Sin embargo, podemos mitigar el problema:
+**2. Modificar `main.tsx`** — En lugar de solo loguear en `onNeedRefresh`, exponer una señal reactiva (evento custom o variable global) que el componente `UpdatePrompt` escuche.
 
-1. **Agregar headers de no-cache para el preview** en `vite.config.ts`: Configurar headers del servidor de desarrollo para evitar que el navegador cachee los módulos JS.
+**3. Enfoque técnico:**
+- Usar `virtual:pwa-register` con un callback que dispare un `CustomEvent` en `window`
+- El componente `UpdatePrompt` escucha ese evento y muestra el banner
+- Al hacer clic en "Actualizar", llama a `updateSW(true)` que activa el nuevo SW y recarga
+- El banner se renderiza en `App.tsx` para que esté disponible en todas las rutas (admin, driver, etc.)
 
-   En `server` config, agregar:
-   ```ts
-   headers: {
-     'Cache-Control': 'no-store, no-cache, must-revalidate',
-   }
-   ```
+```text
+[Service Worker detecta nueva versión]
+        ↓
+[window dispatches "sw-update-available"]
+        ↓
+[UpdatePrompt se muestra: banner fijo arriba]
+        ↓
+[Usuario clic "Actualizar" → updateSW(true) → reload]
+```
 
-2. **Forzar limpieza más agresiva en preview**: Además de limpiar SW y Cache API, intentar forzar una recarga sin caché si se detecta que es la primera carga después de un cambio.
+**4. Estilo del banner:** Fijo en la parte superior, con colores de la marca, visible tanto en la vista admin como en la app del driver. Se auto-cierra al actualizar.
 
-Esto debería reducir significativamente el problema de ver formatos antiguos en el preview.
-
-## Archivos a modificar
-
-- `vite.config.ts` — agregar `headers` con `Cache-Control: no-store` en la config de `server`
+### Alcance
+- Crear: `src/components/UpdatePrompt.tsx`
+- Editar: `src/main.tsx` (exponer señal de update)
+- Editar: `src/App.tsx` (montar el componente)
 
