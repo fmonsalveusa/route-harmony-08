@@ -37,6 +37,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Brokers from "./pages/Brokers";
 import Pricing from "./pages/Pricing";
 import Register from "./pages/Register";
+import Subscription from "./pages/Subscription";
 
 import DriverDashboard from "./pages/driver-app/DriverDashboard";
 import DriverLoads from "./pages/driver-app/DriverLoads";
