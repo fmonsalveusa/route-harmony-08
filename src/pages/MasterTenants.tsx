@@ -62,6 +62,33 @@ const MasterTenants = () => {
   const [creating, setCreating] = useState(false);
   const [createdCreds, setCreatedCreds] = useState<{ email: string; password: string } | null>(null);
   const [detailTenant, setDetailTenant] = useState<any>(null);
+  const [editTenant, setEditTenant] = useState<any>(null);
+  const [editForm, setEditForm] = useState({
+    name: '', legal_name: '', dba_name: '', dot_number: '', mc_number: '',
+    address: '', city: '', state: '', zip: '', phone: '', email: '', website: '',
+  });
+
+  const openEdit = (t: any) => {
+    setEditForm({
+      name: t.name || '', legal_name: t.legal_name || '', dba_name: t.dba_name || '',
+      dot_number: t.dot_number || '', mc_number: t.mc_number || '',
+      address: t.address || '', city: t.city || '', state: t.state || '',
+      zip: t.zip || '', phone: t.phone || '', email: t.email || '', website: t.website || '',
+    });
+    setEditTenant(t);
+  };
+
+  const handleEditSave = async () => {
+    if (!editTenant) return;
+    const payload: any = { ...editForm };
+    Object.keys(payload).forEach(k => { if (payload[k] === '') payload[k] = null; });
+    payload.name = editForm.name || editForm.legal_name;
+    const { error } = await supabase.from('tenants').update(payload).eq('id', editTenant.id);
+    if (error) { toast.error('Error al actualizar empresa'); return; }
+    toast.success('Empresa actualizada');
+    setEditTenant(null);
+    fetchTenants();
+  };
 
   const fetchTenants = async () => {
     const { data: tData } = await supabase.from('tenants').select('*').order('created_at', { ascending: false });
@@ -265,6 +292,9 @@ const MasterTenants = () => {
                         <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setDetailTenant(t)} title="Ver detalles">
                           <Eye className="h-4 w-4" />
                         </Button>
+                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => openEdit(t)} title="Editar">
+                          <Pencil className="h-4 w-4" />
+                        </Button>
                         <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => toggleTenantStatus(t.id, t.is_active)} title={t.is_active ? 'Suspender' : 'Activar'}>
                           {t.is_active ? <Ban className="h-4 w-4 text-red-500" /> : <CheckCircle className="h-4 w-4 text-green-500" />}
                         </Button>
@@ -317,6 +347,37 @@ const MasterTenants = () => {
               )}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editTenant} onOpenChange={() => setEditTenant(null)}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Pencil className="h-5 w-5" /> Editar Empresa</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="col-span-2"><Label>Nombre Comercial *</Label><Input value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} /></div>
+              <div className="col-span-2"><Label>Nombre Legal</Label><Input value={editForm.legal_name} onChange={e => setEditForm(f => ({ ...f, legal_name: e.target.value }))} /></div>
+              <div className="col-span-2"><Label>DBA</Label><Input value={editForm.dba_name} onChange={e => setEditForm(f => ({ ...f, dba_name: e.target.value }))} /></div>
+              <div><Label>DOT#</Label><Input value={editForm.dot_number} onChange={e => setEditForm(f => ({ ...f, dot_number: e.target.value }))} /></div>
+              <div><Label>MC#</Label><Input value={editForm.mc_number} onChange={e => setEditForm(f => ({ ...f, mc_number: e.target.value }))} /></div>
+              <div className="col-span-2"><Label>Dirección</Label><Input value={editForm.address} onChange={e => setEditForm(f => ({ ...f, address: e.target.value }))} /></div>
+              <div><Label>Ciudad</Label><Input value={editForm.city} onChange={e => setEditForm(f => ({ ...f, city: e.target.value }))} /></div>
+              <div className="grid grid-cols-2 gap-2">
+                <div><Label>Estado</Label><Input value={editForm.state} onChange={e => setEditForm(f => ({ ...f, state: e.target.value }))} /></div>
+                <div><Label>ZIP</Label><Input value={editForm.zip} onChange={e => setEditForm(f => ({ ...f, zip: e.target.value }))} /></div>
+              </div>
+              <div><Label>Teléfono</Label><Input value={editForm.phone} onChange={e => setEditForm(f => ({ ...f, phone: e.target.value }))} /></div>
+              <div><Label>Email</Label><Input type="email" value={editForm.email} onChange={e => setEditForm(f => ({ ...f, email: e.target.value }))} /></div>
+              <div className="col-span-2"><Label>Website</Label><Input value={editForm.website} onChange={e => setEditForm(f => ({ ...f, website: e.target.value }))} /></div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditTenant(null)}>Cancelar</Button>
+            <Button onClick={handleEditSave} className="bg-purple-600 hover:bg-purple-700">Guardar</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
