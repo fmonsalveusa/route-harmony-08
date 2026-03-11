@@ -35,6 +35,8 @@ import Install from "./pages/Install";
 import Landing from "./pages/Landing";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Brokers from "./pages/Brokers";
+import Pricing from "./pages/Pricing";
+import Register from "./pages/Register";
 
 import DriverDashboard from "./pages/driver-app/DriverDashboard";
 import DriverLoads from "./pages/driver-app/DriverLoads";
