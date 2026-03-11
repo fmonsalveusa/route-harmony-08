@@ -234,6 +234,7 @@ const App = () => {
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
+      <UpdatePrompt />
           <Toaster />
           <Sonner />
           <AuthProvider>
