@@ -121,6 +121,7 @@ export const services: Service[] = [
       type: "fixed",
       fixedPrice: { amount: 49, period: "/mes", note: "Incluido gratis con el servicio de Dispatching" },
     },
+    stripeConfig: { priceId: "price_1T9tJ175IaXwYE4pEqVJqVlW", mode: "subscription" },
   },
   {
     icon: Users,
