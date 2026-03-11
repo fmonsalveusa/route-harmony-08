@@ -7,6 +7,7 @@ const navLinks = [
   { label: "Servicios", href: "#servicios" },
   { label: "Cómo Funciona", href: "#como-funciona" },
   { label: "Vehículos", href: "#vehiculos" },
+  { label: "Precios", href: "/pricing" },
   { label: "Contacto", href: "#contacto" },
 ];
 
