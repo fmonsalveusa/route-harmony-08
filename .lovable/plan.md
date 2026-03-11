@@ -1,29 +1,29 @@
 
 
-## Notificaciones de Pagos de Servicios
+## Problema
 
-### Cambios necesarios para usar `developerup.pro@gmail.com`
+El preview de Lovable carga desde un iframe que puede mantener módulos JS en caché del navegador (no solo Service Worker). La limpieza actual en `main.tsx` solo elimina Service Workers y Cache API, pero el **caché HTTP del navegador** (disk cache) sigue sirviendo versiones antiguas de los chunks JS que contienen la función `generateTerminationLetterPdf`.
 
-**1. Agregar secret `NOTIFICATION_EMAIL`**
-- Crear secret con valor `developerup.pro@gmail.com` 
-- Este será el destinatario de notificaciones de pagos de servicios de la landing
+Esto explica por qué la app publicada siempre muestra el formato correcto (deploy fresco) pero el preview a veces muestra el formato anterior.
 
-**2. Modificar `stripe-webhook/index.ts`**
-- En el case `checkout.session.completed`, detectar cuando NO hay `tenant_id` (pago de servicio de landing vs suscripción TMS)
-- Recuperar los line items para identificar qué servicio se compró
-- Enviar email de notificación usando Gmail SMTP (ya configurado)
-- Email incluirá: nombre del servicio, monto, email del cliente, fecha
+## Solución
 
-**3. Mapeo de Price IDs a nombres de servicio**
-```text
-price_1T9sFL75IaXwYE4pkCmrRr29 → Tracking Up App
-price_1T9sFg75IaXwYE4pPyraBfIp → Curso de Dispatcher  
-price_1T9sG675IaXwYE4pXFW1sCbB → Asesoría Personal
-price_1T9sGW75IaXwYE4pLeZmCEqr → Trámite de Permisos
-price_1T9sGz75IaXwYE4pMnE6REhl → Auditorías FMCSA
-```
+No hay una solución de código que resuelva esto permanentemente desde el lado de la app — es un comportamiento del navegador en el entorno de preview. Sin embargo, podemos mitigar el problema:
 
-### Archivos a modificar
-- `supabase/functions/stripe-webhook/index.ts` - agregar lógica de notificación
-- Configurar nuevo secret `NOTIFICATION_EMAIL`
+1. **Agregar headers de no-cache para el preview** en `vite.config.ts`: Configurar headers del servidor de desarrollo para evitar que el navegador cachee los módulos JS.
+
+   En `server` config, agregar:
+   ```ts
+   headers: {
+     'Cache-Control': 'no-store, no-cache, must-revalidate',
+   }
+   ```
+
+2. **Forzar limpieza más agresiva en preview**: Además de limpiar SW y Cache API, intentar forzar una recarga sin caché si se detecta que es la primera carga después de un cambio.
+
+Esto debería reducir significativamente el problema de ver formatos antiguos en el preview.
+
+## Archivos a modificar
+
+- `vite.config.ts` — agregar `headers` con `Cache-Control: no-store` en la config de `server`
 
