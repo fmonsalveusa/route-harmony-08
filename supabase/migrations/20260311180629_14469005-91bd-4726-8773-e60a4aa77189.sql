@@ -1,0 +1,1 @@
+ALTER TABLE public.tenants ALTER COLUMN max_drivers SET DEFAULT 5; ALTER TABLE public.tenants ALTER COLUMN max_loads SET DEFAULT -1; UPDATE public.tenants SET max_loads = -1 WHERE max_loads IS NOT NULL AND max_loads != -1;

@@ -35,6 +35,8 @@ import Install from "./pages/Install";
 import Landing from "./pages/Landing";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Brokers from "./pages/Brokers";
+import Pricing from "./pages/Pricing";
+import Register from "./pages/Register";
 
 import DriverDashboard from "./pages/driver-app/DriverDashboard";
 import DriverLoads from "./pages/driver-app/DriverLoads";
@@ -128,6 +130,8 @@ const AppRoutes = () => {
       <Route path="/install" element={<Install />} />
       <Route path="/" element={user ? <Navigate to={getRedirectPath()} replace /> : isNativePlatform() ? <Navigate to="/auth" replace /> : <Landing />} />
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+      <Route path="/pricing" element={<Pricing />} />
+      <Route path="/register" element={<Register />} />
 
       {/* Driver mobile routes */}
       <Route path="/driver" element={<DriverWrapper />}>
