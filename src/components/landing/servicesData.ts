@@ -131,11 +131,8 @@ export const services: Service[] = [
     ],
     cta: { label: "Contactar por WhatsApp", href: "https://wa.me/19807668815?text=Hola%2C%20me%20interesa%20la%20Asesor%C3%ADa%20Personal" },
     pricing: {
-      type: "plans",
-      plans: [
-        { name: "Sesión Única", price: 150, period: "única", features: ["1 hora de consultoría", "Plan de acción básico"] },
-        { name: "Mensual", price: 400, period: "/mes", features: ["4 sesiones al mes", "Plan estratégico completo", "Seguimiento semanal", "Soporte por WhatsApp"] },
-      ],
+      type: "fixed",
+      fixedPrice: { amount: 150, period: "/sesión", note: "Consultoría personalizada de 1 hora con expertos en transporte" },
     },
   },
   {
