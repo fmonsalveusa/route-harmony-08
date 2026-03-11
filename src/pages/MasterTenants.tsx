@@ -350,6 +350,37 @@ const MasterTenants = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Edit Dialog */}
+      <Dialog open={!!editTenant} onOpenChange={() => setEditTenant(null)}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Pencil className="h-5 w-5" /> Editar Empresa</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="col-span-2"><Label>Nombre Comercial *</Label><Input value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} /></div>
+              <div className="col-span-2"><Label>Nombre Legal</Label><Input value={editForm.legal_name} onChange={e => setEditForm(f => ({ ...f, legal_name: e.target.value }))} /></div>
+              <div className="col-span-2"><Label>DBA</Label><Input value={editForm.dba_name} onChange={e => setEditForm(f => ({ ...f, dba_name: e.target.value }))} /></div>
+              <div><Label>DOT#</Label><Input value={editForm.dot_number} onChange={e => setEditForm(f => ({ ...f, dot_number: e.target.value }))} /></div>
+              <div><Label>MC#</Label><Input value={editForm.mc_number} onChange={e => setEditForm(f => ({ ...f, mc_number: e.target.value }))} /></div>
+              <div className="col-span-2"><Label>Dirección</Label><Input value={editForm.address} onChange={e => setEditForm(f => ({ ...f, address: e.target.value }))} /></div>
+              <div><Label>Ciudad</Label><Input value={editForm.city} onChange={e => setEditForm(f => ({ ...f, city: e.target.value }))} /></div>
+              <div className="grid grid-cols-2 gap-2">
+                <div><Label>Estado</Label><Input value={editForm.state} onChange={e => setEditForm(f => ({ ...f, state: e.target.value }))} /></div>
+                <div><Label>ZIP</Label><Input value={editForm.zip} onChange={e => setEditForm(f => ({ ...f, zip: e.target.value }))} /></div>
+              </div>
+              <div><Label>Teléfono</Label><Input value={editForm.phone} onChange={e => setEditForm(f => ({ ...f, phone: e.target.value }))} /></div>
+              <div><Label>Email</Label><Input type="email" value={editForm.email} onChange={e => setEditForm(f => ({ ...f, email: e.target.value }))} /></div>
+              <div className="col-span-2"><Label>Website</Label><Input value={editForm.website} onChange={e => setEditForm(f => ({ ...f, website: e.target.value }))} /></div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditTenant(null)}>Cancelar</Button>
+            <Button onClick={handleEditSave} className="bg-purple-600 hover:bg-purple-700">Guardar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Create Wizard */}
       <Dialog open={showWizard} onOpenChange={() => setShowWizard(false)}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
