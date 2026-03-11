@@ -20,6 +20,8 @@ import { TerminationLetterDialog } from '@/components/TerminationLetterDialog';
 import { toast } from '@/hooks/use-toast';
 import { ExpiryIndicators } from '@/components/ExpiryIndicators';
 import { supabase } from '@/integrations/supabase/client';
+import { useSubscription } from '@/hooks/useSubscription';
+import { DriverLimitDialog } from '@/components/DriverLimitDialog';
 
 const driverStatusColor = (status: string) => {
   switch (status) {
