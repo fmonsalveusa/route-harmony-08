@@ -8,6 +8,7 @@ import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/AppLayout";
 import { DriverMobileLayout } from "@/components/driver-app/DriverMobileLayout";
+import { supabase } from "@/integrations/supabase/client";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Loads from "./pages/Loads";
