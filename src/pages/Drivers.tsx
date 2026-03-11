@@ -55,6 +55,8 @@ const Drivers = () => {
   const [activeDriverIds, setActiveDriverIds] = useState<Set<string>>(new Set());
   const [terminationDriver, setTerminationDriver] = useState<DbDriver | null>(null);
   const [tenantName, setTenantName] = useState('');
+  const [limitDialogOpen, setLimitDialogOpen] = useState(false);
+  const { canAddDriver } = useSubscription();
 
   // Fetch tenant name for termination letter
   useEffect(() => {
