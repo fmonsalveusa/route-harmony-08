@@ -131,7 +131,7 @@ export const AppLayout = ({ children }: {children: ReactNode;}) => {
 
   const isMasterRoute = location.pathname.startsWith('/master');
   const navItems = isMasterAdmin && isMasterRoute ? masterNavItems : tenantNavItems;
-  const visibleItems = navItems.filter((item) => hasPermission(item.permission));
+  const visibleItems = navItems.filter((item) => hasPermission(item.permission) && (!item.masterOnly || isMasterAdmin));
   const initials = profile.full_name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
 
   return (
