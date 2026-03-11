@@ -24,6 +24,11 @@ export interface ServicePricing {
   pricingPath?: string;
 }
 
+export interface StripeConfig {
+  priceId: string;
+  mode: "payment" | "subscription";
+}
+
 export interface Service {
   icon: LucideIcon;
   title: string;
@@ -33,6 +38,7 @@ export interface Service {
   benefits: string[];
   cta: { label: string; href: string };
   pricing: ServicePricing;
+  stripeConfig?: StripeConfig;
 }
 
 export const services: Service[] = [
@@ -115,6 +121,7 @@ export const services: Service[] = [
       type: "fixed",
       fixedPrice: { amount: 49, period: "/mes", note: "Incluido gratis con el servicio de Dispatching" },
     },
+    stripeConfig: { priceId: "price_1T9tJ175IaXwYE4pEqVJqVlW", mode: "subscription" },
   },
   {
     icon: Users,
@@ -134,6 +141,7 @@ export const services: Service[] = [
       type: "fixed",
       fixedPrice: { amount: 150, period: "/sesión", note: "Consultoría personalizada de 1 hora con expertos en transporte" },
     },
+    stripeConfig: { priceId: "price_1T9tK575IaXwYE4pKcQDlrSH", mode: "payment" },
   },
   {
     icon: FileCheck,
@@ -153,6 +161,7 @@ export const services: Service[] = [
       type: "fixed",
       fixedPrice: { amount: 1500, period: "único", note: "Incluye DOT, MC#, BOC-3, IFTA y UCR" },
     },
+    stripeConfig: { priceId: "price_1T9tKe75IaXwYE4pAZC1XmiQ", mode: "payment" },
   },
   {
     icon: GraduationCap,
@@ -172,6 +181,7 @@ export const services: Service[] = [
       type: "fixed",
       fixedPrice: { amount: 997, period: "único", note: "Incluye material, práctica en vivo y certificado" },
     },
+    stripeConfig: { priceId: "price_1T9tJW75IaXwYE4pxjach0UV", mode: "payment" },
   },
   {
     icon: FileCheck,
@@ -192,5 +202,6 @@ export const services: Service[] = [
       type: "fixed",
       fixedPrice: { amount: 500, period: "por auditoría", note: "Preparación completa, documentación y respuesta ante el FMCSA" },
     },
+    stripeConfig: { priceId: "price_1T9tLD75IaXwYE4puYvA0nIa", mode: "payment" },
   },
 ];
