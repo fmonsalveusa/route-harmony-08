@@ -150,11 +150,8 @@ export const services: Service[] = [
     ],
     cta: { label: "Contactar por WhatsApp", href: "https://wa.me/19807668815?text=Hola%2C%20me%20interesa%20el%20Tr%C3%A1mite%20de%20Permisos%20DOT%20MC%23" },
     pricing: {
-      type: "plans",
-      plans: [
-        { name: "DOT + MC#", price: 1500, period: "único", features: ["Registro DOT", "Obtención de MC#", "BOC-3 incluido"] },
-        { name: "Paquete Completo", price: 2500, period: "único", features: ["DOT + MC#", "IFTA", "UCR", "BOC-3", "Asesoría de compliance"] },
-      ],
+      type: "fixed",
+      fixedPrice: { amount: 1500, period: "único", note: "Incluye DOT, MC#, BOC-3, IFTA y UCR" },
     },
   },
   {
