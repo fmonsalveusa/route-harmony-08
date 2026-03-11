@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import logoImg from '@/assets/logo.png';
+import bannerImg from '@/assets/dispatch-up-banner.png';
 
 const PLANS = [
   {
