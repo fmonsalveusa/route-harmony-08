@@ -62,6 +62,33 @@ const MasterTenants = () => {
   const [creating, setCreating] = useState(false);
   const [createdCreds, setCreatedCreds] = useState<{ email: string; password: string } | null>(null);
   const [detailTenant, setDetailTenant] = useState<any>(null);
+  const [editTenant, setEditTenant] = useState<any>(null);
+  const [editForm, setEditForm] = useState({
+    name: '', legal_name: '', dba_name: '', dot_number: '', mc_number: '',
+    address: '', city: '', state: '', zip: '', phone: '', email: '', website: '',
+  });
+
+  const openEdit = (t: any) => {
+    setEditForm({
+      name: t.name || '', legal_name: t.legal_name || '', dba_name: t.dba_name || '',
+      dot_number: t.dot_number || '', mc_number: t.mc_number || '',
+      address: t.address || '', city: t.city || '', state: t.state || '',
+      zip: t.zip || '', phone: t.phone || '', email: t.email || '', website: t.website || '',
+    });
+    setEditTenant(t);
+  };
+
+  const handleEditSave = async () => {
+    if (!editTenant) return;
+    const payload: any = { ...editForm };
+    Object.keys(payload).forEach(k => { if (payload[k] === '') payload[k] = null; });
+    payload.name = editForm.name || editForm.legal_name;
+    const { error } = await supabase.from('tenants').update(payload).eq('id', editTenant.id);
+    if (error) { toast.error('Error al actualizar empresa'); return; }
+    toast.success('Empresa actualizada');
+    setEditTenant(null);
+    fetchTenants();
+  };
 
   const fetchTenants = async () => {
     const { data: tData } = await supabase.from('tenants').select('*').order('created_at', { ascending: false });
