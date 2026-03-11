@@ -152,6 +152,8 @@ const services: Service[] = [
 export function ServicesSection() {
   const [selectedService, setSelectedService] = useState<number | null>(null);
   const selected = selectedService !== null ? services[selectedService] : null;
+  const navigate = useNavigate();
+  const isTmsService = selected?.title === "Dispatch Up TMS";
 
   return (
     <section id="servicios" className="py-20 bg-background">
