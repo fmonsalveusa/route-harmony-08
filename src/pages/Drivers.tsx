@@ -340,7 +340,14 @@ const Drivers = () => {
               <Link2 className="h-4 w-4" /> Onboarding Link
             </Button>
           )}
-          <Button size="sm" className="gap-2" onClick={() => { setEditingDriver(null); setFormOpen(true); }}>
+          <Button size="sm" className="gap-2" onClick={() => {
+            if (!canAddDriver()) {
+              setLimitDialogOpen(true);
+              return;
+            }
+            setEditingDriver(null);
+            setFormOpen(true);
+          }}>
             <Plus className="h-4 w-4" /> New Driver
           </Button>
         </div>
