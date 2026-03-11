@@ -1,29 +1,38 @@
 
 
-## Problema
+## Precios por servicio dentro del modal
 
-El preview de Lovable carga desde un iframe que puede mantener módulos JS en caché del navegador (no solo Service Worker). La limpieza actual en `main.tsx` solo elimina Service Workers y Cache API, pero el **caché HTTP del navegador** (disk cache) sigue sirviendo versiones antiguas de los chunks JS que contienen la función `generateTerminationLetterPdf`.
+### Concepto
+Agregar una propiedad `pricing` al tipo `Service` que puede ser:
+- **Planes** (como el TMS): array de `{ name, price, period, features[] }`
+- **Precio único**: `{ price, period, description }`
+- **Cotización**: sin precios, solo botón "Solicitar Cotización" vía WhatsApp
 
-Esto explica por qué la app publicada siempre muestra el formato correcto (deploy fresco) pero el preview a veces muestra el formato anterior.
+Cada modal mostrará un botón "Ver Precios" que expande una sección de precios inline (dentro del mismo modal), sin navegar a otra página. El TMS es la excepción: mantiene su botón que navega a `/pricing` porque ya tiene su página dedicada con checkout de Stripe.
 
-## Solución
+### Estructura de datos
 
-No hay una solución de código que resuelva esto permanentemente desde el lado de la app — es un comportamiento del navegador en el entorno de preview. Sin embargo, podemos mitigar el problema:
+```typescript
+interface ServicePricing {
+  type: 'plans' | 'fixed' | 'quote';
+  plans?: { name: string; price: number; period: string; features: string[] }[];
+  fixedPrice?: { amount: number; period: string; note?: string };
+}
+```
 
-1. **Agregar headers de no-cache para el preview** en `vite.config.ts`: Configurar headers del servidor de desarrollo para evitar que el navegador cachee los módulos JS.
+Cada servicio en el array `services` recibirá su `pricing` con los datos correspondientes. Los precios exactos se dejan como placeholder para que los ajustes después.
 
-   En `server` config, agregar:
-   ```ts
-   headers: {
-     'Cache-Control': 'no-store, no-cache, must-revalidate',
-   }
-   ```
+### Cambios en el modal
+- Botón "Ver Precios" debajo de beneficios (todos los servicios, no solo TMS)
+- Al pulsar, se expande una sección dentro del modal:
+  - **Plans**: mini-cards lado a lado con precio y features
+  - **Fixed**: precio destacado con descripción
+  - **Quote**: mensaje "Precio personalizado" + botón WhatsApp
+- El TMS mantiene su navegación a `/pricing`
 
-2. **Forzar limpieza más agresiva en preview**: Además de limpiar SW y Cache API, intentar forzar una recarga sin caché si se detecta que es la primera carga después de un cambio.
+### Archivos a modificar
+- `src/components/landing/ServicesSection.tsx` — agregar `pricing` a la interfaz, datos a cada servicio, y renderizar la sección de precios expandible en el modal
 
-Esto debería reducir significativamente el problema de ver formatos antiguos en el preview.
-
-## Archivos a modificar
-
-- `vite.config.ts` — agregar `headers` con `Cache-Control: no-store` en la config de `server`
+### Nota
+Los precios se colocarán como valores placeholder (ej: $200, $500). Podrás ajustarlos después indicándome los montos correctos.
 
