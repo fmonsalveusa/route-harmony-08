@@ -94,7 +94,7 @@ export function ServicesSection() {
               {/* Pricing section */}
               <div className="mt-4 space-y-3">
                 {selected.pricing.type === "page" ? (
-                  <ServicePricingSection pricing={selected.pricing} whatsappHref={selected.cta.href} onClose={handleClose} />
+                  <ServicePricingSection pricing={selected.pricing} whatsappHref={selected.cta.href} onClose={handleClose} stripeConfig={selected.stripeConfig} />
                 ) : (
                   <>
                     {!showPricing ? (
