@@ -292,6 +292,9 @@ const MasterTenants = () => {
                         <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setDetailTenant(t)} title="Ver detalles">
                           <Eye className="h-4 w-4" />
                         </Button>
+                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => openEdit(t)} title="Editar">
+                          <Pencil className="h-4 w-4" />
+                        </Button>
                         <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => toggleTenantStatus(t.id, t.is_active)} title={t.is_active ? 'Suspender' : 'Activar'}>
                           {t.is_active ? <Ban className="h-4 w-4 text-red-500" /> : <CheckCircle className="h-4 w-4 text-green-500" />}
                         </Button>
