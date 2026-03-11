@@ -1599,6 +1599,7 @@ export type Database = {
           city: string | null
           country: string | null
           created_at: string
+          current_plan: string | null
           dba_name: string | null
           dot_number: string | null
           email: string | null
@@ -1606,10 +1607,17 @@ export type Database = {
           is_active: boolean
           legal_name: string | null
           logo_url: string | null
+          max_drivers: number | null
+          max_loads: number | null
           mc_number: string | null
           name: string
           phone: string | null
           state: string | null
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          subscription_ends_at: string | null
+          subscription_status: string | null
+          trial_ends_at: string | null
           updated_at: string
           website: string | null
           zip: string | null
@@ -1619,6 +1627,7 @@ export type Database = {
           city?: string | null
           country?: string | null
           created_at?: string
+          current_plan?: string | null
           dba_name?: string | null
           dot_number?: string | null
           email?: string | null
@@ -1626,10 +1635,17 @@ export type Database = {
           is_active?: boolean
           legal_name?: string | null
           logo_url?: string | null
+          max_drivers?: number | null
+          max_loads?: number | null
           mc_number?: string | null
           name: string
           phone?: string | null
           state?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_ends_at?: string | null
+          subscription_status?: string | null
+          trial_ends_at?: string | null
           updated_at?: string
           website?: string | null
           zip?: string | null
@@ -1639,6 +1655,7 @@ export type Database = {
           city?: string | null
           country?: string | null
           created_at?: string
+          current_plan?: string | null
           dba_name?: string | null
           dot_number?: string | null
           email?: string | null
@@ -1646,10 +1663,17 @@ export type Database = {
           is_active?: boolean
           legal_name?: string | null
           logo_url?: string | null
+          max_drivers?: number | null
+          max_loads?: number | null
           mc_number?: string | null
           name?: string
           phone?: string | null
           state?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_ends_at?: string | null
+          subscription_status?: string | null
+          trial_ends_at?: string | null
           updated_at?: string
           website?: string | null
           zip?: string | null
