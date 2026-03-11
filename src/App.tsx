@@ -67,8 +67,25 @@ const LoadingScreen = () => (
 
 const ProtectedRoute = ({ children, masterOnly = false }: { children: React.ReactNode; masterOnly?: boolean }) => {
   const { user, loading, isMasterAdmin, profile, role } = useAuth();
+  const [companyCheck, setCompanyCheck] = useState<{ loaded: boolean; hasCompany: boolean }>({ loaded: false, hasCompany: true });
+  const currentPath = window.location.pathname;
 
-  if (loading) {
+  useEffect(() => {
+    const check = async () => {
+      if (!profile?.tenant_id || profile.is_master_admin) {
+        setCompanyCheck({ loaded: true, hasCompany: true });
+        return;
+      }
+      const { count } = await supabase
+        .from('companies')
+        .select('id', { count: 'exact', head: true })
+        .eq('tenant_id', profile.tenant_id);
+      setCompanyCheck({ loaded: true, hasCompany: (count ?? 0) > 0 });
+    };
+    if (profile) check();
+  }, [profile?.tenant_id, profile?.is_master_admin]);
+
+  if (loading || !companyCheck.loaded) {
     return <LoadingScreen />;
   }
 
@@ -77,12 +94,12 @@ const ProtectedRoute = ({ children, masterOnly = false }: { children: React.Reac
   // Drivers should always use the mobile app
   if (role === 'driver') return <Navigate to="/driver" replace />;
 
-  // Check tenant is active for non-master users
-  if (!isMasterAdmin && profile && !profile.is_master_admin) {
-    // tenant checks handled elsewhere
-  }
-
   if (masterOnly && !isMasterAdmin) return <Navigate to="/" replace />;
+
+  // If tenant has no company and user is not on /companies, redirect to setup
+  if (!companyCheck.hasCompany && !isMasterAdmin && currentPath !== '/companies') {
+    return <Navigate to="/companies" replace />;
+  }
 
   return <AppLayout>{children}</AppLayout>;
 };
