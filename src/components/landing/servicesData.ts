@@ -141,6 +141,7 @@ export const services: Service[] = [
       type: "fixed",
       fixedPrice: { amount: 150, period: "/sesión", note: "Consultoría personalizada de 1 hora con expertos en transporte" },
     },
+    stripeConfig: { priceId: "price_1T9tK575IaXwYE4pKcQDlrSH", mode: "payment" },
   },
   {
     icon: FileCheck,
