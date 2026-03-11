@@ -44,94 +44,46 @@ const Register = () => {
     setIsLoading(true);
 
     try {
-      // 1. Create user in Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: { full_name: fullName },
-        },
-      });
-
-      if (authError) {
-        if (authError.message.includes('already registered')) {
-          setError('Este email ya está registrado. Intenta iniciar sesión.');
-        } else {
-          setError(authError.message);
-        }
-        setIsLoading(false);
-        return;
-      }
-
-      const userId = authData.user?.id;
-      if (!userId) {
-        setError('Error creando la cuenta.');
-        setIsLoading(false);
-        return;
-      }
-
-      // 2. Create tenant
-      const { data: tenantData, error: tenantError } = await supabase
-        .from('tenants')
-        .insert({
-          name: companyName,
-          current_plan: plan,
-          subscription_status: 'pending',
-        } as any)
-        .select('id')
-        .single();
-
-      if (tenantError) {
-        console.error('Tenant creation error:', tenantError);
-        setError('Error creando la empresa. Intenta de nuevo.');
-        setIsLoading(false);
-        return;
-      }
-
-      const tenantId = tenantData.id;
-
-      // 3. Update profile with tenant_id
-      await supabase
-        .from('profiles')
-        .update({ tenant_id: tenantId } as any)
-        .eq('id', userId);
-
-      // 4. Assign admin role
-      await supabase
-        .from('user_roles')
-        .insert({ user_id: userId, role: 'admin', tenant_id: tenantId } as any);
-
-      // 5. Create company record
-      await supabase
-        .from('companies')
-        .insert({
-          name: companyName,
-          tenant_id: tenantId,
-          is_primary: true,
-        } as any);
-
-      // 6. Redirect to Stripe Checkout
-      const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke(
-        'create-checkout',
+      // Call edge function that handles everything server-side
+      const { data, error: fnError } = await supabase.functions.invoke(
+        'register-tenant',
         {
           body: {
-            priceId,
-            tenantId,
             email,
+            password,
+            fullName,
             companyName,
+            plan,
+            priceId,
           },
         }
       );
 
-      if (checkoutError || !checkoutData?.url) {
-        console.error('Checkout error:', checkoutError, checkoutData);
-        toast.error('Error conectando con el sistema de pagos. Tu cuenta fue creada, inicia sesión y configura tu suscripción.');
-        navigate('/auth');
+      if (fnError) {
+        console.error('Registration function error:', fnError);
+        setError('Error en el registro. Intenta de nuevo.');
+        setIsLoading(false);
         return;
       }
 
-      // Redirect to Stripe
-      window.location.href = checkoutData.url;
+      if (data?.error) {
+        setError(data.error);
+        setIsLoading(false);
+        return;
+      }
+
+      // If we got a checkout URL, redirect to Stripe
+      if (data?.checkoutUrl) {
+        // Sign in the user first so they have a session after checkout
+        await supabase.auth.signInWithPassword({ email, password });
+        window.location.href = data.checkoutUrl;
+        return;
+      }
+
+      // No checkout URL (Stripe not configured) — sign in and go to dashboard
+      await supabase.auth.signInWithPassword({ email, password });
+      toast.success('¡Cuenta creada exitosamente!');
+      navigate('/dashboard');
     } catch (err: any) {
       console.error('Registration error:', err);
       setError('Error inesperado. Intenta de nuevo.');
@@ -195,6 +147,7 @@ const Register = () => {
                       onChange={(e) => setFullName(e.target.value)}
                       className="pl-10"
                       required
+                      disabled={isLoading}
                     />
                   </div>
                 </div>
@@ -209,6 +162,7 @@ const Register = () => {
                       onChange={(e) => setCompanyName(e.target.value)}
                       className="pl-10"
                       required
+                      disabled={isLoading}
                     />
                   </div>
                 </div>
@@ -224,6 +178,7 @@ const Register = () => {
                       onChange={(e) => setEmail(e.target.value)}
                       className="pl-10"
                       required
+                      disabled={isLoading}
                     />
                   </div>
                 </div>
@@ -240,6 +195,7 @@ const Register = () => {
                       className="pl-10"
                       required
                       minLength={6}
+                      disabled={isLoading}
                     />
                   </div>
                 </div>
