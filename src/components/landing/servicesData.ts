@@ -17,7 +17,7 @@ export interface PricingPlan {
 }
 
 export interface ServicePricing {
-  type: "plans" | "fixed" | "quote" | "page";
+  type: "plans" | "fixed" | "page";
   plans?: PricingPlan[];
   fixedPrice?: { amount: number; period: string; note?: string };
   /** For type "page", navigate to this path instead of showing inline pricing */
