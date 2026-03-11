@@ -1,6 +1,7 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Radio, Key, GraduationCap, MapPin, Users, FileCheck, LayoutDashboard, Check, MessageCircle, type LucideIcon } from "lucide-react";
+import { Radio, Key, GraduationCap, MapPin, Users, FileCheck, LayoutDashboard, Check, MessageCircle, DollarSign, type LucideIcon } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
