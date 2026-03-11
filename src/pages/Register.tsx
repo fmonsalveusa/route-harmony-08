@@ -41,6 +41,20 @@ const Register = () => {
       return;
     }
 
+    const checkoutWindow = priceId ? window.open('', '_blank') : null;
+
+    if (checkoutWindow) {
+      checkoutWindow.document.write(`
+        <html>
+          <head><title>Redirecting to checkout...</title></head>
+          <body style="margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;">
+            <p>Redirecting to secure checkout...</p>
+          </body>
+        </html>
+      `);
+      checkoutWindow.document.close();
+    }
+
     setIsLoading(true);
 
     try {
@@ -60,6 +74,7 @@ const Register = () => {
       );
 
       if (fnError) {
+        checkoutWindow?.close();
         console.error('Registration function error:', fnError);
         setError('Error en el registro. Intenta de nuevo.');
         setIsLoading(false);
@@ -67,15 +82,35 @@ const Register = () => {
       }
 
       if (data?.error) {
+        checkoutWindow?.close();
         setError(data.error);
         setIsLoading(false);
         return;
       }
 
-      // If we got a checkout URL, redirect to Stripe immediately
-      // Do NOT sign in here — AuthContext would redirect to /dashboard before Stripe loads
+      // Open Stripe outside the preview iframe to avoid embedded checkout freezes
       if (data?.checkoutUrl) {
-        window.location.href = data.checkoutUrl;
+        if (checkoutWindow) {
+          checkoutWindow.location.replace(data.checkoutUrl);
+        } else {
+          window.location.href = data.checkoutUrl;
+        }
+
+        toast.success(
+          data?.resumedExistingAccount
+            ? 'Continuando tu registro en una nueva pestaña...'
+            : 'Checkout abierto en una nueva pestaña.'
+        );
+        setIsLoading(false);
+        return;
+      }
+
+      checkoutWindow?.close();
+
+      if (data?.resumedExistingAccount) {
+        toast.success('Tu cuenta ya existe. Inicia sesión para continuar.');
+        navigate('/auth');
+        setIsLoading(false);
         return;
       }
 
@@ -84,11 +119,14 @@ const Register = () => {
       if (signInError) {
         toast.success('¡Cuenta creada! Inicia sesión con tus credenciales.');
         navigate('/auth');
+        setIsLoading(false);
         return;
       }
       toast.success('¡Cuenta creada exitosamente!');
       navigate('/dashboard');
+      setIsLoading(false);
     } catch (err: any) {
+      checkoutWindow?.close();
       console.error('Registration error:', err);
       setError('Error inesperado. Intenta de nuevo.');
       setIsLoading(false);

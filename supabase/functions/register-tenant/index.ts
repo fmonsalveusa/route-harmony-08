@@ -13,6 +13,46 @@ const logStep = (step: string, details?: any) => {
   console.log(`[REGISTER-TENANT] ${step}${d}`);
 };
 
+const createCheckoutSession = async ({
+  stripeKey,
+  priceId,
+  email,
+  tenantId,
+  companyName,
+  origin,
+}: {
+  stripeKey: string;
+  priceId?: string;
+  email: string;
+  tenantId: string;
+  companyName: string;
+  origin: string;
+}) => {
+  if (!priceId) return null;
+
+  const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+
+  const customers = await stripe.customers.list({ email, limit: 1 });
+  const customerId = customers.data[0]?.id;
+
+  const session = await stripe.checkout.sessions.create({
+    customer: customerId,
+    customer_email: customerId ? undefined : email,
+    line_items: [{ price: priceId, quantity: 1 }],
+    mode: "subscription",
+    subscription_data: {
+      trial_period_days: 7,
+      metadata: { tenant_id: tenantId, company_name: companyName },
+    },
+    success_url: `${origin}/dashboard?checkout=success`,
+    cancel_url: `${origin}/pricing?checkout=canceled`,
+    metadata: { tenant_id: tenantId },
+  });
+
+  logStep("Checkout session created", { sessionId: session.id, tenantId });
+  return session.url;
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -36,118 +76,176 @@ serve(async (req) => {
       throw new Error("La contraseña debe tener al menos 6 caracteres");
     }
 
-    logStep("Creating user", { email, fullName, companyName, plan });
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const cleanCompanyName = String(companyName).trim();
+    const cleanFullName = String(fullName).trim();
+    const origin = req.headers.get("origin") || "https://route-harmony-08.lovable.app";
+    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
 
-    // 1. Create user via admin API (auto-confirms email)
+    logStep("Creating user", { email: normalizedEmail, fullName: cleanFullName, companyName: cleanCompanyName, plan });
+
+    let userId: string | null = null;
+    let tenantId: string | null = null;
+    let resumedExistingAccount = false;
+
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email,
+      email: normalizedEmail,
       password,
       email_confirm: true,
-      user_metadata: { full_name: fullName },
+      user_metadata: { full_name: cleanFullName },
     });
 
     if (authError) {
-      if (authError.message.includes("already been registered") || authError.message.includes("already exists")) {
+      const isDuplicateEmail =
+        authError.message.includes("already been registered") ||
+        authError.message.includes("already exists") ||
+        authError.message.includes("email address has already been registered");
+
+      if (!isDuplicateEmail) {
+        throw new Error(authError.message);
+      }
+
+      resumedExistingAccount = true;
+      logStep("Existing account detected", { email: normalizedEmail });
+
+      const { data: existingProfile, error: profileLookupError } = await supabaseAdmin
+        .from("profiles")
+        .select("id, tenant_id")
+        .ilike("email", normalizedEmail)
+        .maybeSingle();
+
+      if (profileLookupError) {
+        throw new Error("No pudimos recuperar tu registro previo. Intenta iniciar sesión.");
+      }
+
+      if (!existingProfile?.id || !existingProfile.tenant_id) {
         throw new Error("Este email ya está registrado. Intenta iniciar sesión.");
       }
-      throw new Error(authError.message);
+
+      userId = existingProfile.id;
+      tenantId = existingProfile.tenant_id;
+
+      const [tenantResult, subscriptionResult] = await Promise.all([
+        supabaseAdmin
+          .from("tenants")
+          .select("id, name, subscription_status, stripe_subscription_id")
+          .eq("id", tenantId)
+          .maybeSingle(),
+        supabaseAdmin
+          .from("subscriptions")
+          .select("id, status")
+          .eq("tenant_id", tenantId)
+          .maybeSingle(),
+      ]);
+
+      const tenant = tenantResult.data;
+      const subscription = subscriptionResult.data;
+      const hasActiveBilling =
+        Boolean(tenant?.stripe_subscription_id) ||
+        ["active", "pending_payment"].includes(tenant?.subscription_status ?? "") ||
+        ["active", "pending_payment"].includes(subscription?.status ?? "");
+
+      if (!tenant?.id || hasActiveBilling) {
+        throw new Error("Este email ya está registrado. Intenta iniciar sesión.");
+      }
+
+      cleanCompanyName || tenant.name;
+      logStep("Resuming pending registration", { userId, tenantId });
+    } else {
+      userId = authData.user?.id ?? null;
+      if (!userId) throw new Error("Error creando la cuenta");
+      logStep("User created", { userId });
+
+      const { data: tenantData, error: tenantError } = await supabaseAdmin
+        .from("tenants")
+        .insert({
+          name: cleanCompanyName,
+          current_plan: plan || "basic",
+          subscription_status: "pending",
+        })
+        .select("id")
+        .single();
+
+      if (tenantError || !tenantData?.id) {
+        logStep("Tenant creation error", { error: tenantError?.message });
+        throw new Error("Error creando la empresa");
+      }
+
+      tenantId = tenantData.id;
+      logStep("Tenant created", { tenantId });
+
+      const { error: profileError } = await supabaseAdmin
+        .from("profiles")
+        .upsert(
+          {
+            id: userId,
+            email: normalizedEmail,
+            full_name: cleanFullName,
+            tenant_id: tenantId,
+          },
+          { onConflict: "id" }
+        );
+
+      if (profileError) {
+        logStep("Profile upsert error", { error: profileError.message });
+      }
+
+      const { data: existingRole } = await supabaseAdmin
+        .from("user_roles")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("role", "admin")
+        .maybeSingle();
+
+      if (!existingRole) {
+        const { error: roleError } = await supabaseAdmin
+          .from("user_roles")
+          .insert({ user_id: userId, role: "admin", tenant_id: tenantId });
+
+        if (roleError) {
+          logStep("Role assignment error", { error: roleError.message });
+        }
+      }
+
+      const { data: existingCompany } = await supabaseAdmin
+        .from("companies")
+        .select("id")
+        .eq("tenant_id", tenantId)
+        .eq("is_primary", true)
+        .maybeSingle();
+
+      if (!existingCompany) {
+        const { error: companyError } = await supabaseAdmin
+          .from("companies")
+          .insert({ name: cleanCompanyName, tenant_id: tenantId, is_primary: true });
+
+        if (companyError) {
+          logStep("Company creation error", { error: companyError.message });
+        }
+      }
+
+      logStep("Initial tenant records created", { tenantId });
     }
 
-    const userId = authData.user?.id;
-    if (!userId) throw new Error("Error creando la cuenta");
-    logStep("User created", { userId });
-
-    // 2. Create tenant
-    const { data: tenantData, error: tenantError } = await supabaseAdmin
-      .from("tenants")
-      .insert({
-        name: companyName,
-        current_plan: plan || "basic",
-        subscription_status: "pending",
-      })
-      .select("id")
-      .single();
-
-    if (tenantError) {
-      logStep("Tenant creation error", { error: tenantError.message });
-      throw new Error("Error creando la empresa");
-    }
-
-    const tenantId = tenantData.id;
-    logStep("Tenant created", { tenantId });
-
-    // 3. Update profile with tenant_id (profile created by trigger)
-    // Wait briefly for the trigger to create the profile
-    await new Promise((r) => setTimeout(r, 1000));
-
-    const { error: profileError } = await supabaseAdmin
-      .from("profiles")
-      .update({ tenant_id: tenantId })
-      .eq("id", userId);
-
-    if (profileError) {
-      logStep("Profile update error", { error: profileError.message });
-    }
-
-    // 4. Assign admin role
-    const { error: roleError } = await supabaseAdmin
-      .from("user_roles")
-      .insert({ user_id: userId, role: "admin", tenant_id: tenantId });
-
-    if (roleError) {
-      logStep("Role assignment error", { error: roleError.message });
-    }
-
-    // 5. Create company record
-    const { error: companyError } = await supabaseAdmin
-      .from("companies")
-      .insert({ name: companyName, tenant_id: tenantId, is_primary: true });
-
-    if (companyError) {
-      logStep("Company creation error", { error: companyError.message });
-    }
-
-    logStep("All records created successfully");
-
-    // 6. Create Stripe checkout session
-    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     let checkoutUrl: string | null = null;
 
-    if (stripeKey && priceId) {
+    if (stripeKey && priceId && tenantId) {
       try {
-        const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-
-        const customers = await stripe.customers.list({ email, limit: 1 });
-        let customerId: string | undefined;
-        if (customers.data.length > 0) {
-          customerId = customers.data[0].id;
-        }
-
-        const origin = req.headers.get("origin") || "https://route-harmony-08.lovable.app";
-
-        const session = await stripe.checkout.sessions.create({
-          customer: customerId,
-          customer_email: customerId ? undefined : email,
-          line_items: [{ price: priceId, quantity: 1 }],
-          mode: "subscription",
-          subscription_data: {
-            trial_period_days: 7,
-            metadata: { tenant_id: tenantId, company_name: companyName },
-          },
-          success_url: `${origin}/dashboard?checkout=success`,
-          cancel_url: `${origin}/pricing?checkout=canceled`,
-          metadata: { tenant_id: tenantId },
+        checkoutUrl = await createCheckoutSession({
+          stripeKey,
+          priceId,
+          email: normalizedEmail,
+          tenantId,
+          companyName: cleanCompanyName,
+          origin,
         });
-
-        checkoutUrl = session.url;
-        logStep("Checkout session created", { sessionId: session.id });
       } catch (stripeErr: any) {
         logStep("Stripe error", { message: stripeErr.message });
       }
     }
 
     return new Response(
-      JSON.stringify({ success: true, checkoutUrl, tenantId }),
+      JSON.stringify({ success: true, checkoutUrl, tenantId, resumedExistingAccount }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
     );
   } catch (error) {
