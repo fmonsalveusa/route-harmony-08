@@ -200,8 +200,8 @@ export const services: Service[] = [
     cta: { label: "Contactar por WhatsApp", href: "https://wa.me/19807668815?text=Hola%2C%20me%20interesa%20la%20Asistencia%20en%20Auditor%C3%ADas%20del%20FMCSA" },
     pricing: {
       type: "fixed",
-      fixedPrice: { amount: 500, period: "por auditoría", note: "Preparación completa, documentación y respuesta ante el FMCSA" },
+      fixedPrice: { amount: 250, period: "por auditoría", note: "Preparación completa, documentación y respuesta ante el FMCSA" },
     },
-    stripeConfig: { priceId: "price_1T9tLD75IaXwYE4puYvA0nIa", mode: "payment" },
+    stripeConfig: { priceId: "price_1T9u3M75IaXwYE4pPBNztAe3", mode: "payment" },
   },
 ];

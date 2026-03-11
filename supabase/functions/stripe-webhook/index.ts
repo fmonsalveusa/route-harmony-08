@@ -15,11 +15,11 @@ const PLAN_LIMITS: Record<string, { max_drivers: number; max_loads: number; plan
 };
 
 const SERVICE_NAMES: Record<string, string> = {
-  "price_1T9sFL75IaXwYE4pkCmrRr29": "Tracking Up App ($49/mes)",
-  "price_1T9sFg75IaXwYE4pPyraBfIp": "Curso de Dispatcher ($997)",
-  "price_1T9sG675IaXwYE4pXFW1sCbB": "Asesoría Personal ($150)",
-  "price_1T9sGW75IaXwYE4pLeZmCEqr": "Trámite de Permisos ($1,500)",
-  "price_1T9sGz75IaXwYE4pMnE6REhl": "Auditorías FMCSA ($500)",
+  "price_1T9tJ175IaXwYE4pEqVJqVlW": "Tracking Up App ($49/mes)",
+  "price_1T9u2r75IaXwYE4pJIxqbJ56": "Curso de Dispatcher ($250)",
+  "price_1T9tK575IaXwYE4pKcQDlrSH": "Asesoría Personal ($150)",
+  "price_1T9tKe75IaXwYE4pAZC1XmiQ": "Trámite de Permisos ($1,500)",
+  "price_1T9u3M75IaXwYE4pPBNztAe3": "Auditorías FMCSA ($250)",
 };
 
 async function sendNotificationEmail(serviceName: string, amount: number, customerEmail: string) {
