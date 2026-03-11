@@ -1,12 +1,10 @@
 import { useState } from 'react';
 import { useCompanies, Company } from '@/hooks/useCompanies';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-
-import { Plus, Pencil, Trash2, Building2, Star } from 'lucide-react';
+import { Pencil, Building2, Star, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { StatCard } from '@/components/StatCard';
 
@@ -17,13 +15,14 @@ const emptyForm = {
 };
 
 const Companies = () => {
-  const { companies, loading, createCompany, updateCompany, deleteCompany, setPrimaryCompany } = useCompanies();
+  const { companies, loading, createCompany, updateCompany, setPrimaryCompany } = useCompanies();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
-  const [deleteTarget, setDeleteTarget] = useState<Company | null>(null);
 
-  const openNew = () => { setEditId(null); setForm(emptyForm); setShowForm(true); };
+  const hasCompany = companies.length > 0;
+  const isSetupMode = !hasCompany && !loading;
+
   const openEdit = (c: Company) => {
     setEditId(c.id);
     setForm({
@@ -43,6 +42,7 @@ const Companies = () => {
     const payload: any = { ...form };
     Object.keys(payload).forEach(k => { if (payload[k] === '') payload[k] = null; });
     payload.name = form.name;
+    payload.is_primary = true; // Always primary since only one company per tenant
     if (editId) await updateCompany(editId, payload);
     else await createCompany(payload);
     setShowForm(false);
@@ -50,16 +50,43 @@ const Companies = () => {
 
   const set = (field: string, val: string) => setForm(f => ({ ...f, [field]: val }));
 
+  // Setup mode: show a welcome screen for new clients
+  if (isSetupMode) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-6">
+        <div className="p-4 rounded-full bg-primary/10">
+          <Building2 className="h-12 w-12 text-primary" />
+        </div>
+        <div className="text-center space-y-2 max-w-md">
+          <h1 className="text-2xl font-bold">¡Bienvenido a DispatchUp!</h1>
+          <p className="text-muted-foreground">
+            Para comenzar a usar el sistema, completa la información de tu empresa. Esta información se usará en tus facturas y documentos.
+          </p>
+        </div>
+        <Button size="lg" className="gap-2" onClick={() => { setEditId(null); setForm(emptyForm); setShowForm(true); }}>
+          <Building2 className="h-5 w-5" /> Configurar mi Empresa
+        </Button>
+
+        {/* Form Dialog */}
+        <CompanyFormDialog
+          open={showForm}
+          onOpenChange={setShowForm}
+          editId={editId}
+          form={form}
+          set={set}
+          onSave={handleSave}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="page-header">Companies</h1>
-          <p className="page-description">Configure your trucking company information</p>
+          <h1 className="page-header">Mi Empresa</h1>
+          <p className="page-description">Información de tu empresa de trucking</p>
         </div>
-        <Button size="sm" className="gap-2" onClick={openNew}>
-          <Plus className="h-4 w-4" /> New Company
-        </Button>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -71,18 +98,15 @@ const Companies = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-[15px]">
               <thead><tr className="border-b glass-table-header">
-                <th className="text-left p-3 font-medium text-muted-foreground">Company</th>
+                <th className="text-left p-3 font-medium text-muted-foreground">Empresa</th>
                 <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">MC#</th>
                 <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">DOT#</th>
-                <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">City</th>
-                <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Phone</th>
+                <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Ciudad</th>
+                <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Teléfono</th>
                 <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Email</th>
-                <th className="text-right p-3 font-medium text-muted-foreground">Actions</th>
+                <th className="text-right p-3 font-medium text-muted-foreground">Acciones</th>
               </tr></thead>
               <tbody>
-                {companies.length === 0 && !loading && (
-                  <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">No companies configured. Add one to include it in your invoices.</td></tr>
-                )}
                 {companies.map(c => (
                   <tr key={c.id} className="border-b last:border-0 glass-row">
                     <td className="p-3">
@@ -103,16 +127,8 @@ const Companies = () => {
                     <td className="p-3 hidden lg:table-cell text-muted-foreground">{c.email || '—'}</td>
                     <td className="p-3 text-right">
                       <div className="flex justify-end gap-1.5">
-                        {!c.is_primary && (
-                          <button className="glass-action-btn tint-blue inline-flex items-center" onClick={() => setPrimaryCompany(c.id)} title="Set as Principal">
-                            <Star className="h-4 w-4" /> Principal
-                          </button>
-                        )}
-                        <button className="glass-action-btn tint-amber inline-flex items-center" onClick={() => openEdit(c)} title="Edit">
-                          <Pencil className="h-4 w-4" /> Edit
-                        </button>
-                        <button className="glass-action-btn tint-red inline-flex items-center" onClick={async () => { if (window.confirm(`Delete company ${c.name}? This action is permanent.`)) { await deleteCompany(c.id); } }} title="Delete">
-                          <Trash2 className="h-4 w-4" /> Delete
+                        <button className="glass-action-btn tint-amber inline-flex items-center" onClick={() => openEdit(c)} title="Editar">
+                          <Pencil className="h-4 w-4" /> Editar
                         </button>
                       </div>
                     </td>
@@ -125,38 +141,57 @@ const Companies = () => {
       </div>
 
       {/* Form Dialog */}
-      <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editId ? 'Edit Company' : 'New Company'}</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-2">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="col-span-2"><Label>Name *</Label><Input value={form.name} onChange={e => set('name', e.target.value)} /></div>
-              <div className="col-span-2"><Label>Legal Name</Label><Input value={form.legal_name} onChange={e => set('legal_name', e.target.value)} /></div>
-              <div><Label>MC#</Label><Input value={form.mc_number} onChange={e => set('mc_number', e.target.value)} /></div>
-              <div><Label>DOT#</Label><Input value={form.dot_number} onChange={e => set('dot_number', e.target.value)} /></div>
-              <div className="col-span-2"><Label>Address</Label><Input value={form.address} onChange={e => set('address', e.target.value)} /></div>
-              <div><Label>City</Label><Input value={form.city} onChange={e => set('city', e.target.value)} /></div>
-              <div className="grid grid-cols-2 gap-2">
-                <div><Label>State</Label><Input value={form.state} onChange={e => set('state', e.target.value)} /></div>
-                <div><Label>ZIP</Label><Input value={form.zip} onChange={e => set('zip', e.target.value)} /></div>
-              </div>
-              <div><Label>Phone</Label><Input value={form.phone} onChange={e => set('phone', e.target.value)} /></div>
-              <div><Label>Email</Label><Input value={form.email} onChange={e => set('email', e.target.value)} type="email" /></div>
-              <div className="col-span-2"><Label>Website</Label><Input value={form.website} onChange={e => set('website', e.target.value)} /></div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
-            <Button onClick={handleSave} disabled={!form.name.trim()}>Save</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete now uses window.confirm */}
+      <CompanyFormDialog
+        open={showForm}
+        onOpenChange={setShowForm}
+        editId={editId}
+        form={form}
+        set={set}
+        onSave={handleSave}
+      />
     </div>
   );
 };
+
+// Extracted form dialog component
+const CompanyFormDialog = ({
+  open, onOpenChange, editId, form, set, onSave,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  editId: string | null;
+  form: typeof emptyForm;
+  set: (field: string, val: string) => void;
+  onSave: () => void;
+}) => (
+  <Dialog open={open} onOpenChange={onOpenChange}>
+    <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogHeader>
+        <DialogTitle>{editId ? 'Editar Empresa' : 'Configurar Empresa'}</DialogTitle>
+      </DialogHeader>
+      <div className="grid gap-4 py-2">
+        <div className="grid grid-cols-2 gap-3">
+          <div className="col-span-2"><Label>Nombre de la Empresa *</Label><Input value={form.name} onChange={e => set('name', e.target.value)} /></div>
+          <div className="col-span-2"><Label>Nombre Legal</Label><Input value={form.legal_name} onChange={e => set('legal_name', e.target.value)} /></div>
+          <div><Label>MC#</Label><Input value={form.mc_number} onChange={e => set('mc_number', e.target.value)} /></div>
+          <div><Label>DOT#</Label><Input value={form.dot_number} onChange={e => set('dot_number', e.target.value)} /></div>
+          <div className="col-span-2"><Label>Dirección</Label><Input value={form.address} onChange={e => set('address', e.target.value)} /></div>
+          <div><Label>Ciudad</Label><Input value={form.city} onChange={e => set('city', e.target.value)} /></div>
+          <div className="grid grid-cols-2 gap-2">
+            <div><Label>Estado</Label><Input value={form.state} onChange={e => set('state', e.target.value)} /></div>
+            <div><Label>ZIP</Label><Input value={form.zip} onChange={e => set('zip', e.target.value)} /></div>
+          </div>
+          <div><Label>Teléfono</Label><Input value={form.phone} onChange={e => set('phone', e.target.value)} /></div>
+          <div><Label>Email</Label><Input value={form.email} onChange={e => set('email', e.target.value)} type="email" /></div>
+          <div className="col-span-2"><Label>Website</Label><Input value={form.website} onChange={e => set('website', e.target.value)} /></div>
+        </div>
+      </div>
+      <DialogFooter>
+        <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+        <Button onClick={onSave} disabled={!form.name.trim()}>Guardar</Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
+);
 
 export default Companies;
