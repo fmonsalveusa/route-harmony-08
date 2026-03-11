@@ -1,29 +1,51 @@
 
 
-## Problema
+## Pagos directos por Stripe para servicios de la landing
 
-El preview de Lovable carga desde un iframe que puede mantener módulos JS en caché del navegador (no solo Service Worker). La limpieza actual en `main.tsx` solo elimina Service Workers y Cache API, pero el **caché HTTP del navegador** (disk cache) sigue sirviendo versiones antiguas de los chunks JS que contienen la función `generateTerminationLetterPdf`.
+### Resumen
 
-Esto explica por qué la app publicada siempre muestra el formato correcto (deploy fresco) pero el preview a veces muestra el formato anterior.
+Habilitar checkout de Stripe en 5 servicios (Tracking, Curso, Asesoría, Permisos, Auditorías). Dispatching y Leasing se mantienen solo WhatsApp. TMS mantiene su `/pricing`.
 
-## Solución
+### 1. Crear productos y precios en Stripe
 
-No hay una solución de código que resuelva esto permanentemente desde el lado de la app — es un comportamiento del navegador en el entorno de preview. Sin embargo, podemos mitigar el problema:
+| Servicio | Tipo | Monto | Modo |
+|----------|------|-------|------|
+| Tracking Up App | Recurrente | $49/mes | subscription |
+| Curso de Dispatcher | Único | $997 | payment |
+| Asesoría Personal | Único | $150 | payment |
+| Trámite de Permisos (DOT, MC#) | Único | $1,500 | payment |
+| Auditorías FMCSA | Único | $500 | payment |
 
-1. **Agregar headers de no-cache para el preview** en `vite.config.ts`: Configurar headers del servidor de desarrollo para evitar que el navegador cachee los módulos JS.
+Se crearán usando las herramientas de Stripe disponibles.
 
-   En `server` config, agregar:
-   ```ts
-   headers: {
-     'Cache-Control': 'no-store, no-cache, must-revalidate',
-   }
-   ```
+### 2. Nueva Edge Function: `create-service-checkout`
 
-2. **Forzar limpieza más agresiva en preview**: Además de limpiar SW y Cache API, intentar forzar una recarga sin caché si se detecta que es la primera carga después de un cambio.
+Una sola función que recibe `priceId` y `mode` ("payment" o "subscription"), crea la sesión de Stripe Checkout y devuelve la URL. No requiere autenticación (checkout público para visitantes de la landing). Busca cliente existente por email si se proporciona.
 
-Esto debería reducir significativamente el problema de ver formatos antiguos en el preview.
+### 3. Cambios en datos (`servicesData.ts`)
 
-## Archivos a modificar
+Agregar `stripeConfig` opcional al tipo `Service`:
+```typescript
+stripeConfig?: {
+  priceId: string;
+  mode: "payment" | "subscription";
+};
+```
 
-- `vite.config.ts` — agregar `headers` con `Cache-Control: no-store` en la config de `server`
+Los 5 servicios con Stripe tendrán esta propiedad. Dispatching y Leasing no la tendrán.
+
+### 4. Cambios en UI (`ServicePricingSection.tsx`)
+
+Cuando el servicio tiene `stripeConfig`, agregar un botón "Pagar Ahora" debajo del precio que:
+- Llama a `create-service-checkout` con el `priceId` y `mode`
+- Abre la URL de Stripe Checkout en nueva pestaña
+
+Los servicios sin `stripeConfig` mantienen solo el botón de WhatsApp.
+
+### 5. Archivos a crear/modificar
+
+- **Crear**: `supabase/functions/create-service-checkout/index.ts`
+- **Modificar**: `supabase/config.toml` (agregar verify_jwt = false)
+- **Modificar**: `src/components/landing/servicesData.ts` (agregar stripeConfig)
+- **Modificar**: `src/components/landing/ServicePricingSection.tsx` (botón de pago)
 
