@@ -179,9 +179,9 @@ export const services: Service[] = [
     cta: { label: "Contactar por WhatsApp", href: "https://wa.me/19807668815?text=Hola%2C%20me%20interesa%20el%20Curso%20de%20Dispatcher" },
     pricing: {
       type: "fixed",
-      fixedPrice: { amount: 997, period: "único", note: "Incluye material, práctica en vivo y certificado" },
+      fixedPrice: { amount: 250, period: "único", note: "Incluye material, práctica en vivo y certificado" },
     },
-    stripeConfig: { priceId: "price_1T9tJW75IaXwYE4pxjach0UV", mode: "payment" },
+    stripeConfig: { priceId: "price_1T9u2r75IaXwYE4pJIxqbJ56", mode: "payment" },
   },
   {
     icon: FileCheck,
