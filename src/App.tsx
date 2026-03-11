@@ -86,14 +86,49 @@ const ProtectedRoute = ({ children, masterOnly = false }: { children: React.Reac
   return <AppLayout>{children}</AppLayout>;
 };
 
-const DriverWrapper = () => {
-  const { user, loading, role, isMasterAdmin } = useAuth();
+const SuspendedScreen = () => (
+  <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background text-foreground p-6">
+    <div className="p-4 rounded-full bg-destructive/10">
+      <svg className="h-12 w-12 text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    </div>
+    <h2 className="text-xl font-bold text-center">Cuenta suspendida</h2>
+    <p className="text-muted-foreground text-center max-w-sm">
+      Tu empresa necesita renovar su suscripción. Contacta a tu administrador para reactivar el acceso.
+    </p>
+  </div>
+);
 
-  if (loading) {
+const DriverWrapper = () => {
+  const { user, loading, role, isMasterAdmin, tenant, profile } = useAuth();
+  const [subStatus, setSubStatus] = useState<string | null>(null);
+  const [subLoading, setSubLoading] = useState(true);
+
+  useEffect(() => {
+    const checkSub = async () => {
+      if (!profile?.tenant_id) { setSubLoading(false); return; }
+      const { data } = await supabase
+        .from('tenants')
+        .select('subscription_status')
+        .eq('id', profile.tenant_id)
+        .maybeSingle();
+      setSubStatus((data as any)?.subscription_status || null);
+      setSubLoading(false);
+    };
+    checkSub();
+  }, [profile?.tenant_id]);
+
+  if (loading || subLoading) {
     return <LoadingScreen />;
   }
 
   if (!user) return <Navigate to="/auth" replace />;
+
+  // Block suspended/canceled tenants
+  if (subStatus === 'suspended' || subStatus === 'canceled') {
+    return <SuspendedScreen />;
+  }
 
   // Non-drivers should not access the driver app
   if (role && role !== 'driver') {
