@@ -1,6 +1,7 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Radio, Key, GraduationCap, MapPin, Users, FileCheck, LayoutDashboard, Check, MessageCircle, type LucideIcon } from "lucide-react";
+import { Radio, Key, GraduationCap, MapPin, Users, FileCheck, LayoutDashboard, Check, MessageCircle, DollarSign, type LucideIcon } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
@@ -151,6 +152,8 @@ const services: Service[] = [
 export function ServicesSection() {
   const [selectedService, setSelectedService] = useState<number | null>(null);
   const selected = selectedService !== null ? services[selectedService] : null;
+  const navigate = useNavigate();
+  const isTmsService = selected?.title === "Dispatch Up TMS";
 
   return (
     <section id="servicios" className="py-20 bg-background">
@@ -227,10 +230,23 @@ export function ServicesSection() {
                 </ul>
               </div>
 
-              <div className="mt-4">
+              <div className="mt-4 flex flex-col gap-2">
+                {isTmsService && (
+                  <Button
+                    className="w-full gap-2"
+                    onClick={() => {
+                      setSelectedService(null);
+                      navigate("/pricing");
+                    }}
+                  >
+                    <DollarSign size={18} />
+                    Ver Precios
+                  </Button>
+                )}
                 {selected.cta.href.startsWith("#") ? (
                   <Button
                     className="w-full"
+                    variant={isTmsService ? "outline" : "default"}
                     onClick={() => {
                       setSelectedService(null);
                       document.querySelector(selected.cta.href)?.scrollIntoView({ behavior: "smooth" });
@@ -239,7 +255,7 @@ export function ServicesSection() {
                     {selected.cta.label}
                   </Button>
                 ) : (
-                  <Button className="w-full gap-2" asChild>
+                  <Button className="w-full gap-2" variant={isTmsService ? "outline" : "default"} asChild>
                     <a href={selected.cta.href} target="_blank" rel="noopener noreferrer">
                       <MessageCircle size={18} />
                       {selected.cta.label}
