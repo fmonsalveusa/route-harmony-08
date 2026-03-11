@@ -48,6 +48,7 @@ import DriverProfile from "./pages/driver-app/DriverProfile";
 import DriverTracking from "./pages/driver-app/DriverTracking";
 import { DriverTrackingProvider } from "./contexts/DriverTrackingContext";
 import { isNativePlatform } from "./lib/nativeTracking";
+import { UpdatePrompt } from "./components/UpdatePrompt";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -233,6 +234,7 @@ const App = () => {
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
+      <UpdatePrompt />
           <Toaster />
           <Sonner />
           <AuthProvider>

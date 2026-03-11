@@ -12,12 +12,18 @@ window.addEventListener("unhandledrejection", (event) => {
 // Register PWA service worker for production
 const updateSW = registerSW({
   onNeedRefresh() {
-    console.log("New version available - will update on next reload");
+    console.log("New version available - notifying user");
+    window.dispatchEvent(new CustomEvent("sw-update-available"));
   },
   onOfflineReady() {
     console.log("App ready for offline use");
   },
   immediate: true,
+});
+
+// Listen for user-triggered update
+window.addEventListener("sw-do-update", () => {
+  updateSW(true);
 });
 
 setInterval(() => {
