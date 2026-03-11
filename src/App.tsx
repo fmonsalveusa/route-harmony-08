@@ -130,6 +130,8 @@ const AppRoutes = () => {
       <Route path="/install" element={<Install />} />
       <Route path="/" element={user ? <Navigate to={getRedirectPath()} replace /> : isNativePlatform() ? <Navigate to="/auth" replace /> : <Landing />} />
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+      <Route path="/pricing" element={<Pricing />} />
+      <Route path="/register" element={<Register />} />
 
       {/* Driver mobile routes */}
       <Route path="/driver" element={<DriverWrapper />}>
