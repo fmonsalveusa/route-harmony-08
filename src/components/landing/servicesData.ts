@@ -24,6 +24,11 @@ export interface ServicePricing {
   pricingPath?: string;
 }
 
+export interface StripeConfig {
+  priceId: string;
+  mode: "payment" | "subscription";
+}
+
 export interface Service {
   icon: LucideIcon;
   title: string;
@@ -33,6 +38,7 @@ export interface Service {
   benefits: string[];
   cta: { label: string; href: string };
   pricing: ServicePricing;
+  stripeConfig?: StripeConfig;
 }
 
 export const services: Service[] = [
