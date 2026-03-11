@@ -405,6 +405,7 @@ const Drivers = () => {
         companyName={tenantName}
         onSuccess={() => { refetch(); setTerminationDriver(null); }}
       />
+      <DriverLimitDialog open={limitDialogOpen} onOpenChange={setLimitDialogOpen} />
     </div>
   );
 };
