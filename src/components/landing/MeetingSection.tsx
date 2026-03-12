@@ -29,7 +29,7 @@ const TRUCK_TYPES = ["Box Truck", "Hotshot", "Dry Van", "Flatbed", "Reefer"];
 
 function getTimeSlots(selectedDate: Date | undefined) {
   if (!selectedDate) return [];
-  const day = selectedDate.getDay(); // 0=Sun, 6=Sat
+  const day = selectedDate.getDay();
   const startHour = day === 6 ? 9 : 10;
   const endHour = day === 6 ? 12 : 17;
   const slots: string[] = [];
@@ -46,14 +46,7 @@ function getTimeSlots(selectedDate: Date | undefined) {
 export function MeetingSection() {
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
-    driver_name: "",
-    phone: "",
-    city: "",
-    state: "",
-    truck_type: "",
-    meeting_time: "",
-    service_interest: "",
-    comments: "",
+    driver_name: "", phone: "", city: "", state: "", truck_type: "", meeting_time: "", service_interest: "", comments: "",
   });
   const [date, setDate] = useState<Date>();
 
@@ -67,18 +60,10 @@ export function MeetingSection() {
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("send-meeting-request", {
-        body: {
-          ...form,
-          driver_name: form.driver_name.trim(),
-          phone: form.phone.trim(),
-          city: form.city.trim(),
-          meeting_date: format(date, "yyyy-MM-dd"),
-        },
+        body: { ...form, driver_name: form.driver_name.trim(), phone: form.phone.trim(), city: form.city.trim(), meeting_date: format(date, "yyyy-MM-dd") },
       });
-
       if (error) throw new Error("Error al enviar la solicitud");
       if (data?.error) throw new Error(data.error);
-
       toast.success("¡Reunión agendada! Te contactaremos para confirmar.");
       setForm({ driver_name: "", phone: "", city: "", state: "", truck_type: "", meeting_time: "", service_interest: "", comments: "" });
       setDate(undefined);
@@ -90,7 +75,7 @@ export function MeetingSection() {
   };
 
   return (
-    <section id="meeting" className="py-20 bg-[hsl(214,52%,12%)]">
+    <section id="meeting" className="py-20 bg-secondary/50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <motion.div
@@ -98,13 +83,13 @@ export function MeetingSection() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
               Agenda una <span className="text-accent">Reunión</span>
             </h2>
-            <p className="text-white/60 mb-6 leading-relaxed">
+            <p className="text-muted-foreground mb-6 leading-relaxed">
               ¿Tienes preguntas sobre nuestros servicios? Agenda una reunión con nuestro equipo y te explicaremos cómo podemos ayudarte a crecer tu negocio de trucking.
             </p>
-            <ul className="space-y-3 text-white/70 text-sm">
+            <ul className="space-y-3 text-muted-foreground text-sm">
               <li className="flex items-center gap-2">📅 Elige la fecha y hora que mejor te convenga</li>
               <li className="flex items-center gap-2">📞 Te contactaremos para confirmar</li>
               <li className="flex items-center gap-2">💼 Consulta personalizada sin compromiso</li>
@@ -117,7 +102,7 @@ export function MeetingSection() {
             initial={{ opacity: 0, x: 20 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            className="bg-card rounded-2xl p-8 shadow-2xl border"
+            className="bg-card rounded-2xl p-8 shadow-lg border"
           >
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
@@ -131,12 +116,10 @@ export function MeetingSection() {
                 <Label htmlFor="meeting-name">Nombre completo *</Label>
                 <Input id="meeting-name" placeholder="Tu nombre" maxLength={100} value={form.driver_name} onChange={(e) => setForm({ ...form, driver_name: e.target.value })} required />
               </div>
-
               <div>
                 <Label htmlFor="meeting-phone">Teléfono *</Label>
                 <Input id="meeting-phone" type="tel" placeholder="+1 (000) 000-0000" maxLength={20} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} required />
               </div>
-
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label htmlFor="meeting-city">Ciudad *</Label>
@@ -154,7 +137,6 @@ export function MeetingSection() {
                   </Select>
                 </div>
               </div>
-
               <div>
                 <Label>Tipo de vehículo *</Label>
                 <Select value={form.truck_type} onValueChange={(v) => setForm({ ...form, truck_type: v })}>
@@ -166,7 +148,6 @@ export function MeetingSection() {
                   </SelectContent>
                 </Select>
               </div>
-
               <div>
                 <Label>Servicio de interés</Label>
                 <Select value={form.service_interest} onValueChange={(v) => setForm({ ...form, service_interest: v })}>
@@ -178,32 +159,22 @@ export function MeetingSection() {
                   </SelectContent>
                 </Select>
               </div>
-
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label>Fecha *</Label>
                   <Popover>
                     <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}
-                      >
+                      <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}>
                         <CalendarIcon className="mr-2 h-4 w-4" />
                         {date ? format(date, "MM/dd/yyyy") : "Seleccionar"}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
                       <Calendar
-                        mode="single"
-                        selected={date}
+                        mode="single" selected={date}
                         onSelect={(d) => { setDate(d); setForm(f => ({ ...f, meeting_time: "" })); }}
-                        disabled={(d) => {
-                          const today = new Date();
-                          today.setHours(0, 0, 0, 0);
-                          return d < today || d.getDay() === 0;
-                        }}
-                        initialFocus
-                        className="p-3 pointer-events-auto"
+                        disabled={(d) => { const today = new Date(); today.setHours(0,0,0,0); return d < today || d.getDay() === 0; }}
+                        initialFocus className="p-3 pointer-events-auto"
                       />
                     </PopoverContent>
                   </Popover>
@@ -215,7 +186,7 @@ export function MeetingSection() {
                       <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
                       <SelectValue placeholder="Hora" />
                     </SelectTrigger>
-                     <SelectContent className="max-h-[200px]">
+                    <SelectContent className="max-h-[200px]">
                       {getTimeSlots(date).map((t) => (
                         <SelectItem key={t} value={t}>{t}</SelectItem>
                       ))}
@@ -223,12 +194,10 @@ export function MeetingSection() {
                   </Select>
                 </div>
               </div>
-
               <div>
                 <Label htmlFor="meeting-comments">Comentario</Label>
                 <Textarea id="meeting-comments" placeholder="Algún comentario adicional..." maxLength={500} rows={3} value={form.comments} onChange={(e) => setForm({ ...form, comments: e.target.value })} />
               </div>
-
               <Button type="submit" disabled={loading} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-semibold py-3 text-base">
                 {loading ? <Loader2 className="animate-spin mr-2" size={18} /> : null}
                 {loading ? "Enviando..." : "Agendar Reunión"}

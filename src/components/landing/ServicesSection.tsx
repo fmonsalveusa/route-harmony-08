@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, MessageCircle, DollarSign } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -6,10 +6,26 @@ import { Button } from "@/components/ui/button";
 import { services } from "./servicesData";
 import { ServicePricingSection } from "./ServicePricingSection";
 
+const categories = [
+  { label: "Todos", filter: () => true },
+  { label: "Dispatching", filter: (t: string) => t.includes("Dispatching") || t.includes("Leasing") },
+  { label: "Software", filter: (t: string) => t.includes("TMS") || t.includes("Tracking") },
+  { label: "Compliance", filter: (t: string) => t.includes("Permisos") || t.includes("Auditoría") },
+  { label: "Formación", filter: (t: string) => t.includes("Curso") || t.includes("Asesoría") },
+];
+
 export function ServicesSection() {
   const [selectedService, setSelectedService] = useState<number | null>(null);
   const [showPricing, setShowPricing] = useState(false);
+  const [activeTab, setActiveTab] = useState(0);
   const selected = selectedService !== null ? services[selectedService] : null;
+
+  const filteredServices = useMemo(() => {
+    const cat = categories[activeTab];
+    return services
+      .map((s, i) => ({ ...s, originalIndex: i }))
+      .filter((s) => cat.filter(s.title));
+  }, [activeTab]);
 
   const handleClose = () => {
     setSelectedService(null);
@@ -17,13 +33,13 @@ export function ServicesSection() {
   };
 
   return (
-    <section id="servicios" className="py-20 bg-background">
+    <section id="servicios" className="py-20 bg-secondary/50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-center mb-14"
+          className="text-center mb-10"
         >
           <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">Nuestros Servicios</h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
@@ -31,16 +47,33 @@ export function ServicesSection() {
           </p>
         </motion.div>
 
+        {/* Category tabs */}
+        <div className="flex flex-wrap justify-center gap-2 mb-10">
+          {categories.map((cat, i) => (
+            <button
+              key={cat.label}
+              onClick={() => setActiveTab(i)}
+              className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${
+                activeTab === i
+                  ? "bg-accent text-accent-foreground shadow-sm"
+                  : "bg-card text-muted-foreground hover:text-foreground border border-border"
+              }`}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
+
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {services.map((s, i) => (
+          {filteredServices.map((s, i) => (
             <motion.div
               key={s.title}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              className="group bg-card border rounded-xl overflow-hidden hover:shadow-lg hover:border-accent/40 transition-all duration-300 cursor-pointer"
-              onClick={() => { setSelectedService(i); setShowPricing(false); }}
+              transition={{ delay: i * 0.08 }}
+              className="group bg-card border rounded-xl overflow-hidden hover:shadow-lg hover:border-accent/30 transition-all duration-300 cursor-pointer"
+              onClick={() => { setSelectedService(s.originalIndex); setShowPricing(false); }}
             >
               <div className="aspect-[2/1] overflow-hidden">
                 <img
@@ -50,12 +83,12 @@ export function ServicesSection() {
                   loading="lazy"
                 />
               </div>
-              <div className="p-6">
-                <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center mb-3 group-hover:bg-accent/20 transition-colors">
-                  <s.icon className="text-accent" size={20} />
+              <div className="p-5">
+                <div className="w-9 h-9 rounded-lg bg-accent/10 flex items-center justify-center mb-3 group-hover:bg-accent/20 transition-colors">
+                  <s.icon className="text-accent" size={18} />
                 </div>
-                <h3 className="font-bold text-foreground text-lg mb-2">{s.title}</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">{s.description}</p>
+                <h3 className="font-bold text-foreground text-base mb-1.5">{s.title}</h3>
+                <p className="text-muted-foreground text-sm leading-relaxed line-clamp-2">{s.description}</p>
               </div>
             </motion.div>
           ))}
@@ -91,7 +124,6 @@ export function ServicesSection() {
                 </ul>
               </div>
 
-              {/* Pricing section */}
               <div className="mt-4 space-y-3">
                 {selected.pricing.type === "page" ? (
                   <ServicePricingSection pricing={selected.pricing} whatsappHref={selected.cta.href} onClose={handleClose} stripeConfig={selected.stripeConfig} />
@@ -117,7 +149,6 @@ export function ServicesSection() {
                   </>
                 )}
 
-                {/* WhatsApp CTA */}
                 <Button className="w-full gap-2" variant={selected.pricing.type === "page" ? "outline" : "default"} asChild>
                   <a href={selected.cta.href} target="_blank" rel="noopener noreferrer">
                     <MessageCircle size={18} />
