@@ -337,7 +337,7 @@ export function LandingNavbar() {
               <div className="mt-4 space-y-3">
                 {selected.pricing.type === "page" ? (
                   <ServicePricingSection pricing={selected.pricing} whatsappHref={selected.cta.href} onClose={handleServiceClose} stripeConfig={selected.stripeConfig} />
-                ) : (
+                ) : (selected.pricing.fixedPrice || selected.pricing.plans) ? (
                   <>
                     {!showPricing ? (
                       <Button className="w-full gap-2" variant="outline" onClick={() => setShowPricing(true)}>
@@ -357,7 +357,7 @@ export function LandingNavbar() {
                       </AnimatePresence>
                     )}
                   </>
-                )}
+                ) : null}
 
                 <Button className="w-full gap-2" variant={selected.pricing.type === "page" ? "outline" : "default"} asChild>
                   <a href={selected.cta.href} target="_blank" rel="noopener noreferrer">
