@@ -137,7 +137,7 @@ export function HeroSection() {
               <img
                 src={heroImg}
                 alt="Dispatch Up Fleet"
-                className="w-full h-[550px] object-cover"
+                className="w-full h-auto max-h-[70vh] object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-foreground/30 to-transparent" />
               <div className="absolute bottom-6 left-6 right-6 bg-card/90 backdrop-blur-sm rounded-xl p-4 border">
