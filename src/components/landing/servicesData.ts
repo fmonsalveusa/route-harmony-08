@@ -69,19 +69,13 @@ export const services: Service[] = [
     details: "Si tienes tu camión pero no cuentas con MC# propio, puedes operar bajo nuestra autoridad. Nos encargamos de todo el papeleo, seguros y compliance mientras tú generas ingresos desde el primer día. Sin inversión inicial en permisos.",
     benefits: [
       "Opera legalmente desde el día uno sin MC# propio",
-      "Cobertura de seguro incluida bajo nuestra póliza",
       "Compliance y safety management incluidos",
       "Facturación y cobro a brokers gestionado por nosotros",
-      "Pagos semanales puntuales",
+      "Pagos seguros y puntuales",
+      "Cobertura de seguro incluida bajo nuestra póliza (Opcional)",
     ],
     cta: { label: "Contactar por WhatsApp", href: "https://wa.me/19807668815?text=Hola%2C%20me%20interesa%20el%20Leasing%20bajo%20su%20MC%23" },
-    pricing: {
-      type: "plans",
-      plans: [
-        { name: "Box Truck", price: 300, period: "/semana", features: ["Seguro incluido", "Dispatch 24/7", "Compliance y safety", "Pagos semanales"] },
-        { name: "Semi Truck", price: 350, period: "/semana", features: ["Seguro incluido", "Dispatch 24/7", "Compliance y safety", "Pagos semanales", "Account manager dedicado"] },
-      ],
-    },
+    pricing: { type: "fixed" as const },
   },
   {
     icon: LayoutDashboard,
