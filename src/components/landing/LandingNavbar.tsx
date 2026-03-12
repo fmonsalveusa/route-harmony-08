@@ -46,6 +46,7 @@ const vehicles = [
       "Materiales de construcción — vigas, acero, madera",
     ],
     benefits: [
+      "Las tarifas más competitivas del mercado",
       "Ideal para cargas urgentes con tarifas premium",
       "Menor inversión inicial que un semi truck",
       "No requiere CDL para combinaciones bajo 26,000 lbs",
