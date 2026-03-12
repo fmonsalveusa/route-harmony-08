@@ -37,17 +37,15 @@ const vehicles = [
     title: "Hotshot",
     icon: Truck,
     desc: "Transporte rápido y flexible con trailer de plataforma. Ideal para cargas urgentes.",
-    details: "El servicio hotshot es perfecto para cargas que necesitan entrega rápida o equipos que no llenan un trailer completo. Utilizamos pickups con trailers de plataforma (flatbed) para mover cargas de manera ágil y económica. Nuestros dispatchers especializados encuentran las mejores cargas hotshot del mercado.",
+    details: "El servicio hotshot es perfecto para cargas que necesitan entrega rápida o equipos que no llenan un trailer completo. Utilizamos pickups con trailers de plataforma (flatbed) para mover cargas de manera ágil y efectiva. Nuestros dispatchers especializados encuentran las mejores cargas hotshot del mercado.",
     cargas: [
       "Equipos pesados y maquinaria de construcción",
       "Tubería y materiales para la industria petrolera (oil field)",
-      "Cargas oversize y sobre-dimensionadas",
       "Partes automotrices y agrícolas",
       "Cargas urgentes con entrega el mismo día o al día siguiente",
       "Materiales de construcción — vigas, acero, madera",
     ],
     benefits: [
-      "Tarifas promedio de $1.50 - $2.80 por milla",
       "Ideal para cargas urgentes con tarifas premium",
       "Menor inversión inicial que un semi truck",
       "No requiere CDL para combinaciones bajo 26,000 lbs",
