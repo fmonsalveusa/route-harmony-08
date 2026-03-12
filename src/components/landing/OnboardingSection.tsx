@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UserPlus, Loader2, ArrowRight } from "lucide-react";
+import { UserPlus, Loader2, ArrowRight, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 
 export function OnboardingSection() {
@@ -41,8 +41,15 @@ export function OnboardingSection() {
     }
   };
 
+  const benefits = [
+    "Sin costo de registro",
+    "Proceso 100% digital",
+    "Activación en 24-48 horas",
+    "Soporte en español",
+  ];
+
   return (
-    <section id="onboarding" className="py-20 bg-[hsl(214,52%,12%)]">
+    <section id="onboarding" className="py-20 bg-primary">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <AnimatePresence mode="wait">
           {!showForm ? (
@@ -53,18 +60,19 @@ export function OnboardingSection() {
               exit={{ opacity: 0, y: -20 }}
               className="text-center max-w-2xl mx-auto"
             >
-              <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+              <h2 className="text-3xl sm:text-4xl font-bold text-primary-foreground mb-4">
                 ¿Listo para <span className="text-accent">Empezar</span>?
               </h2>
-              <p className="text-white/60 mb-8 leading-relaxed">
+              <p className="text-primary-foreground/60 mb-8 leading-relaxed">
                 Regístrate en menos de 2 minutos. Proceso 100% digital, sin costo de registro y con activación en 24-48 horas.
               </p>
-              <ul className="flex flex-wrap justify-center gap-4 text-white/70 text-sm mb-10">
-                <li>✅ Sin costo</li>
-                <li>✅ 100% digital</li>
-                <li>✅ Activación rápida</li>
-                <li>✅ Soporte en español</li>
-              </ul>
+              <div className="flex flex-wrap justify-center gap-4 text-primary-foreground/70 text-sm mb-10">
+                {benefits.map((b) => (
+                  <span key={b} className="flex items-center gap-1.5">
+                    <CheckCircle2 size={14} className="text-accent" /> {b}
+                  </span>
+                ))}
+              </div>
               <Button
                 onClick={() => setShowForm(true)}
                 className="bg-accent hover:bg-accent/90 text-accent-foreground font-semibold text-lg px-10 py-6 h-auto"
@@ -82,17 +90,18 @@ export function OnboardingSection() {
               className="grid lg:grid-cols-2 gap-12 items-center"
             >
               <div>
-                <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+                <h2 className="text-3xl sm:text-4xl font-bold text-primary-foreground mb-4">
                   ¿Listo para <span className="text-accent">Empezar</span>?
                 </h2>
-                <p className="text-white/60 mb-6 leading-relaxed">
-                  Regístrate en menos de 2 minutos. Llena este formulario rápido y te redirigiremos al proceso completo de onboarding.
+                <p className="text-primary-foreground/60 mb-6 leading-relaxed">
+                  Llena este formulario rápido y te redirigiremos al proceso completo de onboarding.
                 </p>
-                <ul className="space-y-3 text-white/70 text-sm">
-                  <li className="flex items-center gap-2">✅ Sin costo de registro</li>
-                  <li className="flex items-center gap-2">✅ Proceso 100% digital</li>
-                  <li className="flex items-center gap-2">✅ Activación en 24-48 horas</li>
-                  <li className="flex items-center gap-2">✅ Soporte en español</li>
+                <ul className="space-y-3 text-primary-foreground/70 text-sm">
+                  {benefits.map((b) => (
+                    <li key={b} className="flex items-center gap-2">
+                      <CheckCircle2 size={14} className="text-accent" /> {b}
+                    </li>
+                  ))}
                 </ul>
               </div>
 

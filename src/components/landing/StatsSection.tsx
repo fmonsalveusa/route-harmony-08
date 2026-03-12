@@ -1,0 +1,65 @@
+import { motion, useMotionValue, useTransform, animate } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
+
+const stats = [
+  { value: 5000, suffix: "+", label: "Cargas Despachadas" },
+  { value: 48, suffix: "", label: "Estados Cubiertos" },
+  { value: 98, suffix: "%", label: "Satisfacción de Clientes" },
+  { value: 24, suffix: "/7", label: "Soporte Disponible" },
+];
+
+function AnimatedNumber({ value, suffix }: { value: number; suffix: string }) {
+  const [display, setDisplay] = useState(0);
+  const ref = useRef<HTMLDivElement>(null);
+  const [inView, setInView] = useState(false);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) setInView(true); },
+      { threshold: 0.5 }
+    );
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!inView) return;
+    const duration = 1500;
+    const start = performance.now();
+    const step = (now: number) => {
+      const progress = Math.min((now - start) / duration, 1);
+      setDisplay(Math.floor(progress * value));
+      if (progress < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }, [inView, value]);
+
+  return (
+    <div ref={ref} className="text-4xl sm:text-5xl font-extrabold text-accent">
+      {display.toLocaleString()}{suffix}
+    </div>
+  );
+}
+
+export function StatsSection() {
+  return (
+    <section className="py-16 bg-primary">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+          {stats.map((s) => (
+            <motion.div
+              key={s.label}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center"
+            >
+              <AnimatedNumber value={s.value} suffix={s.suffix} />
+              <p className="text-primary-foreground/70 text-sm font-medium mt-2">{s.label}</p>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
