@@ -12,7 +12,7 @@ import { AIChatWidget } from "@/components/landing/AIChatWidget";
 
 export default function Landing() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background" data-theme="light" style={{ colorScheme: 'light' }}>
       <LandingNavbar />
       <HeroSection />
       <StatsSection />
