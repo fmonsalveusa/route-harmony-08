@@ -1,4 +1,4 @@
-import { motion, useMotionValue, useTransform, animate } from "framer-motion";
+import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 
 const stats = [
@@ -14,10 +14,10 @@ function AnimatedNumber({ value, suffix }: { value: number; suffix: string }) {
   const [inView, setInView] = useState(false);
 
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) setInView(true); },
-      { threshold: 0.5 }
-    );
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) setInView(true);
+    }, { threshold: 0.5 });
+
     if (ref.current) observer.observe(ref.current);
     return () => observer.disconnect();
   }, []);
@@ -26,24 +26,27 @@ function AnimatedNumber({ value, suffix }: { value: number; suffix: string }) {
     if (!inView) return;
     const duration = 1500;
     const start = performance.now();
+
     const step = (now: number) => {
       const progress = Math.min((now - start) / duration, 1);
       setDisplay(Math.floor(progress * value));
       if (progress < 1) requestAnimationFrame(step);
     };
+
     requestAnimationFrame(step);
   }, [inView, value]);
 
   return (
     <div ref={ref} className="text-4xl sm:text-5xl font-extrabold text-accent">
-      {display.toLocaleString()}{suffix}
+      {display.toLocaleString()}
+      {suffix}
     </div>
   );
 }
 
 export function StatsSection() {
   return (
-    <section className="py-16 bg-primary">
+    <section className="py-16 bg-secondary/60">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
           {stats.map((s) => (
@@ -55,7 +58,7 @@ export function StatsSection() {
               className="text-center"
             >
               <AnimatedNumber value={s.value} suffix={s.suffix} />
-              <p className="text-primary-foreground/70 text-sm font-medium mt-2">{s.label}</p>
+              <p className="text-muted-foreground text-sm font-medium mt-2">{s.label}</p>
             </motion.div>
           ))}
         </div>

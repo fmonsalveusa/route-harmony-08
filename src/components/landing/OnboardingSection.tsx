@@ -49,7 +49,7 @@ export function OnboardingSection() {
   ];
 
   return (
-    <section id="onboarding" className="py-20 bg-primary">
+    <section id="onboarding" className="py-20 bg-secondary/60">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <AnimatePresence mode="wait">
           {!showForm ? (
@@ -60,13 +60,13 @@ export function OnboardingSection() {
               exit={{ opacity: 0, y: -20 }}
               className="text-center max-w-2xl mx-auto"
             >
-              <h2 className="text-3xl sm:text-4xl font-bold text-primary-foreground mb-4">
+              <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
                 ¿Listo para <span className="text-accent">Empezar</span>?
               </h2>
-              <p className="text-primary-foreground/60 mb-8 leading-relaxed">
+              <p className="text-muted-foreground mb-8 leading-relaxed">
                 Regístrate en menos de 2 minutos. Proceso 100% digital, sin costo de registro y con activación en 24-48 horas.
               </p>
-              <div className="flex flex-wrap justify-center gap-4 text-primary-foreground/70 text-sm mb-10">
+              <div className="flex flex-wrap justify-center gap-4 text-muted-foreground text-sm mb-10">
                 {benefits.map((b) => (
                   <span key={b} className="flex items-center gap-1.5">
                     <CheckCircle2 size={14} className="text-accent" /> {b}
@@ -90,13 +90,13 @@ export function OnboardingSection() {
               className="grid lg:grid-cols-2 gap-12 items-center"
             >
               <div>
-                <h2 className="text-3xl sm:text-4xl font-bold text-primary-foreground mb-4">
+                <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
                   ¿Listo para <span className="text-accent">Empezar</span>?
                 </h2>
-                <p className="text-primary-foreground/60 mb-6 leading-relaxed">
+                <p className="text-muted-foreground mb-6 leading-relaxed">
                   Llena este formulario rápido y te redirigiremos al proceso completo de onboarding.
                 </p>
-                <ul className="space-y-3 text-primary-foreground/70 text-sm">
+                <ul className="space-y-3 text-muted-foreground text-sm">
                   {benefits.map((b) => (
                     <li key={b} className="flex items-center gap-2">
                       <CheckCircle2 size={14} className="text-accent" /> {b}
