@@ -57,11 +57,8 @@ export const services: Service[] = [
     ],
     cta: { label: "Contactar por WhatsApp", href: "https://wa.me/19807668815?text=Hola%2C%20me%20interesa%20el%20servicio%20de%20Dispatching%20para%20mi%20MC%23" },
     pricing: {
-      type: "plans",
-      plans: [
-        { name: "Por Camión", price: 250, period: "/semana", features: ["1 camión", "Dispatch 24/7", "Reportes semanales"] },
-        { name: "Flota", price: 200, period: "/semana por camión", features: ["3+ camiones", "Dispatch 24/7", "Account manager dedicado", "Reportes avanzados"] },
-      ],
+      type: "fixed",
+      fixedPrice: { amount: 8, period: "% del gross", note: "Porcentaje sobre el total de cada carga despachada" },
     },
   },
   {
