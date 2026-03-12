@@ -3,9 +3,9 @@ import logo from "@/assets/logo.png";
 
 export function LandingFooter() {
   return (
-    <footer id="contacto" className="bg-primary text-primary-foreground">
+    <footer id="contacto" className="bg-secondary/60 text-foreground border-t border-border">
       {/* CTA Banner */}
-      <div className="border-b border-primary-foreground/10">
+      <div className="border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
           <h3 className="text-2xl sm:text-3xl font-bold mb-4">
             No manejes vacío, maneja con <span className="text-accent">Dispatch Up</span>
@@ -27,14 +27,14 @@ export function LandingFooter() {
               <img src={logo} alt="Dispatch Up" className="h-8 w-auto" />
               <span className="font-bold text-lg">Dispatch Up</span>
             </div>
-            <p className="text-sm leading-relaxed text-primary-foreground/60">
+            <p className="text-sm leading-relaxed text-muted-foreground">
               Tu socio de confianza en servicios de dispatching, leasing y transporte de carga en Estados Unidos.
             </p>
           </div>
 
           <div>
             <h4 className="font-semibold mb-4">Servicios</h4>
-            <ul className="space-y-2 text-sm text-primary-foreground/60">
+            <ul className="space-y-2 text-sm text-muted-foreground">
               <li>Dispatching para MC# propio</li>
               <li>Leasing bajo nuestro MC#</li>
               <li>Curso de Dispatcher</li>
@@ -46,7 +46,7 @@ export function LandingFooter() {
 
           <div>
             <h4 className="font-semibold mb-4">Contacto</h4>
-            <ul className="space-y-3 text-sm text-primary-foreground/60">
+            <ul className="space-y-3 text-sm text-muted-foreground">
               <li>
                 <a
                   href="https://wa.me/19807668815?text=Hola,%20me%20interesa%20información%20sobre%20sus%20servicios"
@@ -67,7 +67,7 @@ export function LandingFooter() {
           </div>
         </div>
 
-        <div className="border-t border-primary-foreground/10 mt-10 pt-6 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-primary-foreground/40">
+        <div className="border-t border-border mt-10 pt-6 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-muted-foreground">
           <span>© {new Date().getFullYear()} Dispatch Up TMS. Todos los derechos reservados.</span>
           <a href="/privacy" className="hover:text-accent transition-colors">Política de Privacidad</a>
         </div>
