@@ -133,26 +133,27 @@ export function HeroSection() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="hidden lg:block"
           >
-            <div className="relative rounded-2xl overflow-hidden shadow-2xl">
-              <img
-                src={heroImg}
-                alt="Dispatch Up Fleet"
-                className="w-full h-auto max-h-[70vh] object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-foreground/30 to-transparent" />
-              <div className="absolute bottom-6 left-6 right-6 bg-card/90 backdrop-blur-sm rounded-xl p-4 border">
+            <div>
+              <div className="rounded-2xl overflow-hidden shadow-2xl">
+                <img
+                  src={heroImg}
+                  alt="Dispatch Up Fleet"
+                  className="w-full h-auto max-h-[65vh] object-cover"
+                />
+              </div>
+              <div className="mt-4 bg-card rounded-xl p-4 border shadow-sm">
                 <div className="flex items-center justify-between">
-                  <div>
+                  <div className="text-center flex-1">
                     <p className="text-xs text-muted-foreground">Operando en</p>
                     <p className="font-bold text-foreground">48 Estados</p>
                   </div>
                   <div className="h-8 w-px bg-border" />
-                  <div>
+                  <div className="text-center flex-1">
                     <p className="text-xs text-muted-foreground">Soporte</p>
                     <p className="font-bold text-foreground">24/7</p>
                   </div>
                   <div className="h-8 w-px bg-border" />
-                  <div>
+                  <div className="text-center flex-1">
                     <p className="text-xs text-muted-foreground">Idiomas</p>
                     <p className="font-bold text-foreground">ES / EN</p>
                   </div>
