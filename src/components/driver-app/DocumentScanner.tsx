@@ -196,37 +196,6 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
     fileRef.current?.click();
   };
 
-  // ─── Toggle: Color HD ↔ Original ───
-  const handleEnhanceCycle = async () => {
-    if (pages.length === 0) return;
-    const page = pages[selectedIndex];
-
-    if (page.displayMode === 'color') {
-      setPages((prev) =>
-        prev.map((p, i) => (i === selectedIndex ? { ...p, displayMode: 'original' } : p))
-      );
-      return;
-    }
-
-    if (!page.colorEnhanced) {
-      setEnhancing(true);
-      try {
-        const colorEnhanced = await enhanceImageColor(page.original);
-        setPages((prev) =>
-          prev.map((p, i) =>
-            i === selectedIndex ? { ...p, colorEnhanced, displayMode: 'color' } : p
-          )
-        );
-      } finally {
-        setEnhancing(false);
-      }
-      return;
-    }
-
-    setPages((prev) =>
-      prev.map((p, i) => (i === selectedIndex ? { ...p, displayMode: 'color' } : p))
-    );
-  };
 
   const handleRetake = () => {
     setPages((prev) => prev.filter((_, i) => i !== selectedIndex));
