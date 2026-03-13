@@ -214,29 +214,8 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
     try {
       const tenant_id = await getTenantId();
 
-      // Collect all page images in full color for final PDF
-      const enhancedByIndex = new Map<number, string>();
-      const imageDataUrls: string[] = [];
-
-      for (let i = 0; i < pages.length; i++) {
-        const page = pages[i];
-        if (page.colorEnhanced) {
-          imageDataUrls.push(page.colorEnhanced);
-        } else {
-          const colorEnhanced = await enhanceImageColor(page.original);
-          enhancedByIndex.set(i, colorEnhanced);
-          imageDataUrls.push(colorEnhanced);
-        }
-      }
-
-      if (enhancedByIndex.size > 0) {
-        setPages((prev) =>
-          prev.map((p, i) => {
-            const colorEnhanced = enhancedByIndex.get(i);
-            return colorEnhanced ? { ...p, colorEnhanced, displayMode: 'color' } : p;
-          })
-        );
-      }
+      // Always use full-color original/cropped page without extra processing
+      const imageDataUrls = pages.map((page) => page.colorEnhanced ?? page.original);
 
       // Generate single PDF from all pages
       const pdfBlob = await scanToPdf(imageDataUrls);
