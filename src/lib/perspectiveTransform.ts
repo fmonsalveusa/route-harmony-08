@@ -109,7 +109,7 @@ export function perspectiveTransform(
       }
 
       outCtx.putImageData(outImageData, 0, 0);
-      resolve(outCanvas.toDataURL('image/jpeg', 0.92));
+      resolve(outCanvas.toDataURL('image/jpeg', 0.95));
     };
     img.src = imageDataUrl;
   });

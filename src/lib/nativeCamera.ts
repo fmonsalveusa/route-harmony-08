@@ -46,7 +46,7 @@ export async function pickFromGallery(): Promise<string[]> {
 
     // Single pick via getPhoto (multi-pick not well supported across platforms)
     const photo = await Camera.getPhoto({
-      quality: 92,
+      quality: 100,
       resultType: CameraResultType.DataUrl,
       source: CameraSource.Photos,
       correctOrientation: true,

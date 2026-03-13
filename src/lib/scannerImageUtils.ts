@@ -182,7 +182,7 @@ export async function resizeForDetection(dataUrl: string, maxDim = 1024): Promis
 }
 
 /** Resize large camera images for crop overlay (Android cameras can be 12MP+) */
-export async function resizeForCrop(dataUrl: string, maxDim = 2048): Promise<string> {
+export async function resizeForCrop(dataUrl: string, maxDim = 3200): Promise<string> {
   const blob = dataUrlToBlob(dataUrl);
   let origW: number, origH: number;
 
