@@ -40,7 +40,7 @@ const teamItems: NavItem[] = [
   { label: 'Fleet', icon: Truck, path: '/fleet', permission: 'fleet' },
   { label: 'Drivers', icon: Users, path: '/drivers', permission: 'drivers' },
   { label: 'Dispatchers', icon: Headphones, path: '/dispatchers', permission: 'dispatchers' },
-  { label: 'Companies', icon: Building2, path: '/companies', permission: 'companies' },
+  { label: 'Brokers', icon: Handshake, path: '/brokers', permission: 'loads', masterOnly: true },
 ];
 
 const accountingItems: NavItem[] = [
@@ -50,12 +50,15 @@ const accountingItems: NavItem[] = [
   { label: 'Performance', icon: Trophy, path: '/performance', permission: 'performance' },
 ];
 
+const profileItems: NavItem[] = [
+  { label: 'Companies', icon: Building2, path: '/companies', permission: 'companies' },
+  { label: 'Users', icon: UserCog, path: '/users', permission: 'users' },
+  { label: 'Subscription', icon: CreditCard, path: '/subscription', permission: 'settings' },
+];
+
 const bottomLevelItems: NavItem[] = [
   { label: 'Maintenance', icon: Wrench, path: '/maintenance', permission: 'fleet' },
   { label: 'Route History', icon: MapPin, path: '/driver-route-history', permission: 'tracking' },
-  { label: 'Brokers', icon: Handshake, path: '/brokers', permission: 'loads', masterOnly: true },
-  { label: 'Users', icon: UserCog, path: '/users', permission: 'users' },
-  { label: 'Subscription', icon: CreditCard, path: '/subscription', permission: 'settings' },
 ];
 
 // All items flat (for mobile menu)
@@ -372,6 +375,17 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
 
             {/* Remaining top-level links */}
             {visibleBottomLevel.map(renderNavLink)}
+
+            {/* Profile dropdown */}
+            <NavDropdownGroup
+              label="Profile"
+              icon={Settings}
+              items={profileItems}
+              hasPermission={hasPermission}
+              isMasterAdmin={isMasterAdmin}
+              pendingDrivers={pendingDrivers}
+              unratedBrokers={unratedBrokers}
+            />
           </>
         )}
       </nav>
