@@ -348,11 +348,6 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
 
   const currentPage = pages[selectedIndex];
   const currentSrc = currentPage ? getPageSrc(currentPage) : null;
-  const nextModeLabel = currentPage
-    ? currentPage.displayMode === 'color'
-      ? 'Original'
-      : 'Color HD'
-    : '';
 
   return (
     <div className="fixed inset-0 z-[100] bg-black flex flex-col">
