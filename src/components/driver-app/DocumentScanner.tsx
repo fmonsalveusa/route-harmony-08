@@ -425,17 +425,10 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
         </Button>
 
         {currentPage && (
-          <>
-            <Button variant="outline" size="sm" onClick={handleEnhanceCycle} disabled={enhancing}
-              className="gap-1.5 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20">
-              <Contrast className="h-4 w-4" />
-              {enhancing ? 'Mejorando...' : nextModeLabel}
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleRetake}
-              className="gap-1.5 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20">
-              <RotateCcw className="h-4 w-4" /> Re-tomar
-            </Button>
-          </>
+          <Button variant="outline" size="sm" onClick={handleRetake}
+            className="gap-1.5 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20">
+            <RotateCcw className="h-4 w-4" /> Re-tomar
+          </Button>
         )}
 
         {pages.length > 0 && (
