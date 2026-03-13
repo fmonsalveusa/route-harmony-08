@@ -8,8 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { UserPlus, Loader2, ArrowRight, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
+import { useLandingLang } from "@/contexts/LandingLanguageContext";
+import t from "./landingTranslations";
 
 export function OnboardingSection() {
+  const { lang } = useLandingLang();
+  const tr = t[lang];
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -18,86 +22,55 @@ export function OnboardingSection() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name || !form.email || !form.phone) {
-      toast.error("Por favor completa todos los campos requeridos");
+      toast.error(tr.obErrorRequired);
       return;
     }
-
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("create-onboarding-token", {
         body: { name: form.name, email: form.email, phone: form.phone, truck_type: form.truck_type },
       });
-
-      if (error || !data?.token) {
-        throw new Error(data?.error || "Error al crear el registro");
-      }
-
-      toast.success("¡Registro iniciado! Completa tu información.");
+      if (error || !data?.token) throw new Error(data?.error || tr.obErrorCreate);
+      toast.success(tr.obSuccess);
       navigate(`/onboarding/${data.token}`);
     } catch (err: any) {
-      toast.error(err.message || "Error al procesar tu solicitud");
+      toast.error(err.message || tr.obErrorGeneric);
     } finally {
       setLoading(false);
     }
   };
-
-  const benefits = [
-    "Sin costo de registro",
-    "Proceso 100% digital",
-    "Activación en 24-48 horas",
-    "Soporte en español",
-  ];
 
   return (
     <section id="onboarding" className="py-20 bg-secondary/60">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <AnimatePresence mode="wait">
           {!showForm ? (
-            <motion.div
-              key="cta"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="text-center max-w-2xl mx-auto"
-            >
+            <motion.div key="cta" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="text-center max-w-2xl mx-auto">
               <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-                ¿Listo para <span className="text-accent">Empezar</span>?
+                {tr.obTitle1} <span className="text-accent">{tr.obTitle2}</span>?
               </h2>
-              <p className="text-muted-foreground mb-8 leading-relaxed">
-                Regístrate en menos de 2 minutos. Proceso 100% digital, sin costo de registro y con activación en 24-48 horas.
-              </p>
+              <p className="text-muted-foreground mb-8 leading-relaxed">{tr.obSubtitle}</p>
               <div className="flex flex-wrap justify-center gap-4 text-muted-foreground text-sm mb-10">
-                {benefits.map((b) => (
+                {tr.obBenefits.map((b) => (
                   <span key={b} className="flex items-center gap-1.5">
                     <CheckCircle2 size={14} className="text-accent" /> {b}
                   </span>
                 ))}
               </div>
-              <Button
-                onClick={() => setShowForm(true)}
-                className="bg-accent hover:bg-accent/90 text-accent-foreground font-semibold text-lg px-10 py-6 h-auto"
-                size="lg"
-              >
-                Regístrate como Driver
+              <Button onClick={() => setShowForm(true)} className="bg-accent hover:bg-accent/90 text-accent-foreground font-semibold text-lg px-10 py-6 h-auto" size="lg">
+                {tr.obCta}
                 <ArrowRight className="ml-2" size={20} />
               </Button>
             </motion.div>
           ) : (
-            <motion.div
-              key="form"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="grid lg:grid-cols-2 gap-12 items-center"
-            >
+            <motion.div key="form" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="grid lg:grid-cols-2 gap-12 items-center">
               <div>
                 <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-                  ¿Listo para <span className="text-accent">Empezar</span>?
+                  {tr.obTitle1} <span className="text-accent">{tr.obTitle2}</span>?
                 </h2>
-                <p className="text-muted-foreground mb-6 leading-relaxed">
-                  Llena este formulario rápido y te redirigiremos al proceso completo de onboarding.
-                </p>
+                <p className="text-muted-foreground mb-6 leading-relaxed">{tr.obFormSubtitle}</p>
                 <ul className="space-y-3 text-muted-foreground text-sm">
-                  {benefits.map((b) => (
+                  {tr.obBenefits.map((b) => (
                     <li key={b} className="flex items-center gap-2">
                       <CheckCircle2 size={14} className="text-accent" /> {b}
                     </li>
@@ -105,35 +78,29 @@ export function OnboardingSection() {
                 </ul>
               </div>
 
-              <motion.form
-                onSubmit={handleSubmit}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.15 }}
-                className="bg-card rounded-2xl p-8 shadow-2xl border"
-              >
+              <motion.form onSubmit={handleSubmit} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 }} className="bg-card rounded-2xl p-8 shadow-2xl border">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
                     <UserPlus className="text-accent" size={20} />
                   </div>
-                  <h3 className="font-bold text-foreground text-lg">Registro Rápido</h3>
+                  <h3 className="font-bold text-foreground text-lg">{tr.obFormTitle}</h3>
                 </div>
 
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="name">Nombre completo *</Label>
-                    <Input id="name" placeholder="Tu nombre" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+                    <Label htmlFor="name">{tr.obName}</Label>
+                    <Input id="name" placeholder={tr.obNamePh} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
                   </div>
                   <div>
-                    <Label htmlFor="email">Email *</Label>
-                    <Input id="email" type="email" placeholder="tu@email.com" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
+                    <Label htmlFor="email">{tr.obEmail}</Label>
+                    <Input id="email" type="email" placeholder={tr.heroEmail} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
                   </div>
                   <div>
-                    <Label htmlFor="phone">Teléfono *</Label>
-                    <Input id="phone" type="tel" placeholder="+1 (000) 000-0000" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} required />
+                    <Label htmlFor="phone">{tr.obPhone}</Label>
+                    <Input id="phone" type="tel" placeholder={tr.heroPhone} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} required />
                   </div>
                   <div>
-                    <Label>Tipo de vehículo</Label>
+                    <Label>{tr.obTruck}</Label>
                     <Select value={form.truck_type} onValueChange={(v) => setForm({ ...form, truck_type: v })}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
@@ -145,10 +112,9 @@ export function OnboardingSection() {
                       </SelectContent>
                     </Select>
                   </div>
-
                   <Button type="submit" disabled={loading} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-semibold py-3 text-base">
                     {loading ? <Loader2 className="animate-spin mr-2" size={18} /> : null}
-                    {loading ? "Procesando..." : "Comenzar Registro"}
+                    {loading ? tr.obProcessing : tr.obSubmit}
                   </Button>
                 </div>
               </motion.form>
