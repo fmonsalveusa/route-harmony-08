@@ -2,7 +2,6 @@ import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Check, SkipForward, Loader2 } from 'lucide-react';
 import type { Corners, Point } from '@/lib/perspectiveTransform';
-import { useBottomSafePadding } from '@/hooks/useBottomSafePadding';
 
 interface EdgeCropOverlayProps {
   imageUrl: string;
@@ -24,7 +23,7 @@ export const EdgeCropOverlay = ({
   const [imgLoaded, setImgLoaded] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
-  const bottomSafePadding = useBottomSafePadding();
+  const bottomSafePadding = '32px';
 
   useEffect(() => {
     setCorners(initialCorners);

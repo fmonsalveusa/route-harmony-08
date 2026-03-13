@@ -14,7 +14,6 @@ import {
   fileToDataUrl,
 } from '@/lib/scannerImageUtils';
 import { scanToPdf } from '@/lib/scanToPdf';
-import { useBottomSafePadding } from '@/hooks/useBottomSafePadding';
 
 type DisplayMode = 'original' | 'color';
 
@@ -71,7 +70,7 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
   const cameraRef = useRef<HTMLInputElement>(null);
 
   const docLabel = stop.stop_type === 'pickup' ? 'BOL' : 'POD';
-  const bottomSafePadding = useBottomSafePadding();
+  const bottomSafePadding = '32px';
 
   // ─── Edge detection ───
   const detectEdges = useCallback(async (dataUrl: string) => {
