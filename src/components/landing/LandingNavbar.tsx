@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Menu, X, Phone, ChevronDown, Check, MessageCircle, DollarSign, Truck, Package } from "lucide-react";
+import { Menu, X, Phone, ChevronDown, Check, MessageCircle, DollarSign, Truck, Package, Globe } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import logo from "@/assets/logo.png";
 import { services } from "./servicesData";
@@ -8,60 +8,40 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button";
 import boxtruckImg from "@/assets/landing-boxtruck.jpg";
 import hotshotImg from "@/assets/landing-hotshot.jpg";
-
-const vehicles = [
-  {
-    img: boxtruckImg,
-    title: "Box Truck",
-    icon: Package,
-    desc: "Ideal para cargas secas y entregas urbanas. Capacidad de 10,000 a 26,000 lbs.",
-    details: "Nuestro servicio de dispatching para Box Trucks está diseñado para maximizar la eficiencia en rutas a nivel nacional. Los Box Trucks son ideales para cargas secas, LTL y FTL, entregas de última milla. Nuestro equipo conoce los mejores mercados y rutas para este tipo de vehículo.",
-    cargas: [
-      "Cargas secas (dry freight) — productos empacados, cajas, pallets",
-      "Entregas de última milla para Amazon, FedEx, UPS Freight",
-      "Mudanzas comerciales",
-      "Distribución de alimentos no perecederos",
-      "Materiales de construcción y suministros industriales",
-      "Electrónicos y electrodomésticos",
-    ],
-    benefits: [
-      "Las mejores Tarifas del mercado",
-      "Alta demanda en rutas a nivel nacional",
-      "No requiere CDL para camiones de menos de 26,000 lbs",
-      "Menores costos operativos que un semi truck",
-      "Flexibilidad para cargas parciales y completas",
-    ],
-  },
-  {
-    img: hotshotImg,
-    title: "Hotshot",
-    icon: Truck,
-    desc: "Transporte rápido y flexible con trailer de plataforma. Ideal para cargas urgentes.",
-    details: "El servicio hotshot es perfecto para cargas que necesitan entrega rápida o equipos que no llenan un trailer completo. Utilizamos pickups con trailers de plataforma (flatbed) para mover cargas de manera ágil y efectiva. Nuestros dispatchers especializados encuentran las mejores cargas hotshot del mercado.",
-    cargas: [
-      "Equipos pesados y maquinaria de construcción",
-      "Tubería y materiales para la industria petrolera (oil field)",
-      "Partes automotrices y agrícolas",
-      "Cargas urgentes con entrega el mismo día o al día siguiente",
-      "Materiales de construcción — vigas, acero, madera",
-    ],
-    benefits: [
-      "Las tarifas más competitivas del mercado",
-      "Ideal para cargas urgentes con tarifas premium",
-      "Menor inversión inicial que un semi truck",
-      "No requiere CDL para combinaciones bajo 26,000 lbs",
-      "Acceso a cargas de oil field con tarifas elevadas",
-    ],
-  },
-];
-
-const staticLinks = [
-  { label: "Ventajas", href: "#ventajas" },
-  { label: "FAQ", href: "#faq" },
-  { label: "Contacto", href: "#contacto" },
-];
+import { useLandingLang } from "@/contexts/LandingLanguageContext";
+import t from "./landingTranslations";
 
 export function LandingNavbar() {
+  const { lang, toggleLang } = useLandingLang();
+  const tr = t[lang];
+
+  const vehicles = [
+    {
+      img: boxtruckImg,
+      title: "Box Truck",
+      icon: Package,
+      desc: tr.vehBoxTruckDesc,
+      details: tr.vehBoxTruckDetails,
+      cargas: tr.vehBoxTruckCargas,
+      benefits: tr.vehBoxTruckBenefits,
+    },
+    {
+      img: hotshotImg,
+      title: "Hotshot",
+      icon: Truck,
+      desc: tr.vehHotshotDesc,
+      details: tr.vehHotshotDetails,
+      cargas: tr.vehHotshotCargas,
+      benefits: tr.vehHotshotBenefits,
+    },
+  ];
+
+  const staticLinks = [
+    { label: tr.navAdvantages, href: "#ventajas" },
+    { label: tr.navFaq, href: "#faq" },
+    { label: tr.navContact, href: "#contacto" },
+  ];
+
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [servicesOpen, setServicesOpen] = useState(false);
@@ -69,13 +49,15 @@ export function LandingNavbar() {
   const [selectedService, setSelectedService] = useState<number | null>(null);
   const [showPricing, setShowPricing] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<number | null>(null);
-
-  // Mobile accordion
   const [mobileServicesOpen, setMobileServicesOpen] = useState(false);
   const [mobileVehiclesOpen, setMobileVehiclesOpen] = useState(false);
 
   const selected = selectedService !== null ? services[selectedService] : null;
   const selectedVeh = selectedVehicle !== null ? vehicles[selectedVehicle] : null;
+
+  // Get localized service data
+  const svcKeys = ["dispatching", "leasing", "tms", "tracking", "asesoria", "permisos", "curso", "auditoria"] as const;
+  const localizedService = selectedService !== null ? tr.svcData[svcKeys[selectedService]] : null;
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10);
@@ -87,6 +69,17 @@ export function LandingNavbar() {
     setSelectedService(null);
     setShowPricing(false);
   };
+
+  const LangToggle = () => (
+    <button
+      onClick={toggleLang}
+      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-accent/40 transition-colors"
+      aria-label="Toggle language"
+    >
+      <Globe size={14} />
+      {lang === "es" ? "EN" : "ES"}
+    </button>
+  );
 
   return (
     <>
@@ -112,7 +105,7 @@ export function LandingNavbar() {
               onMouseLeave={() => setServicesOpen(false)}
             >
               <button className="flex items-center gap-1 text-muted-foreground hover:text-foreground text-sm font-medium transition-colors">
-                Servicios <ChevronDown size={14} className={`transition-transform ${servicesOpen ? "rotate-180" : ""}`} />
+                {tr.navServices} <ChevronDown size={14} className={`transition-transform ${servicesOpen ? "rotate-180" : ""}`} />
               </button>
               <AnimatePresence>
                 {servicesOpen && (
@@ -124,18 +117,21 @@ export function LandingNavbar() {
                     className="absolute top-full left-1/2 -translate-x-1/2 pt-2 w-72"
                   >
                     <div className="bg-card border border-border rounded-xl shadow-lg p-2">
-                      {services.map((s, i) => (
-                        <button
-                          key={s.title}
-                          onClick={() => { setSelectedService(i); setServicesOpen(false); setShowPricing(false); }}
-                          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-accent/10 transition-colors"
-                        >
-                          <div className="w-8 h-8 rounded-md bg-accent/10 flex items-center justify-center shrink-0">
-                            <s.icon className="text-accent" size={16} />
-                          </div>
-                          <span className="text-sm font-medium text-foreground leading-tight">{s.title}</span>
-                        </button>
-                      ))}
+                      {services.map((s, i) => {
+                        const localTitle = tr.svcData[svcKeys[i]]?.title || s.title;
+                        return (
+                          <button
+                            key={s.title}
+                            onClick={() => { setSelectedService(i); setServicesOpen(false); setShowPricing(false); }}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-accent/10 transition-colors"
+                          >
+                            <div className="w-8 h-8 rounded-md bg-accent/10 flex items-center justify-center shrink-0">
+                              <s.icon className="text-accent" size={16} />
+                            </div>
+                            <span className="text-sm font-medium text-foreground leading-tight">{localTitle}</span>
+                          </button>
+                        );
+                      })}
                     </div>
                   </motion.div>
                 )}
@@ -149,7 +145,7 @@ export function LandingNavbar() {
               onMouseLeave={() => setVehiclesOpen(false)}
             >
               <button className="flex items-center gap-1 text-muted-foreground hover:text-foreground text-sm font-medium transition-colors">
-                Vehículos <ChevronDown size={14} className={`transition-transform ${vehiclesOpen ? "rotate-180" : ""}`} />
+                {tr.navVehicles} <ChevronDown size={14} className={`transition-transform ${vehiclesOpen ? "rotate-180" : ""}`} />
               </button>
               <AnimatePresence>
                 {vehiclesOpen && (
@@ -198,11 +194,12 @@ export function LandingNavbar() {
               <Phone size={16} className="text-accent" />
               (980) 766-8815
             </a>
+            <LangToggle />
             <a href="/auth" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-2">
-              Iniciar Sesión
+              {tr.navLogin}
             </a>
             <a href="#onboarding" className="bg-accent text-accent-foreground px-5 py-2 rounded-lg text-sm font-bold hover:brightness-110 transition shadow-sm">
-              🚛 Regístrate Gratis
+              {tr.navRegister}
             </a>
           </div>
 
@@ -221,12 +218,17 @@ export function LandingNavbar() {
               className="lg:hidden bg-card overflow-hidden border-b border-border"
             >
               <div className="px-4 py-4 flex flex-col gap-1">
+                {/* Mobile lang toggle */}
+                <div className="flex justify-end mb-2">
+                  <LangToggle />
+                </div>
+
                 {/* Mobile Servicios */}
                 <button
                   onClick={() => setMobileServicesOpen(!mobileServicesOpen)}
                   className="flex items-center justify-between text-foreground/80 hover:text-accent text-sm font-medium py-2"
                 >
-                  Servicios <ChevronDown size={14} className={`transition-transform ${mobileServicesOpen ? "rotate-180" : ""}`} />
+                  {tr.navServices} <ChevronDown size={14} className={`transition-transform ${mobileServicesOpen ? "rotate-180" : ""}`} />
                 </button>
                 <AnimatePresence>
                   {mobileServicesOpen && (
@@ -236,16 +238,19 @@ export function LandingNavbar() {
                       exit={{ height: 0, opacity: 0 }}
                       className="overflow-hidden pl-3"
                     >
-                      {services.map((s, i) => (
-                        <button
-                          key={s.title}
-                          onClick={() => { setSelectedService(i); setOpen(false); setShowPricing(false); }}
-                          className="w-full flex items-center gap-2 py-2 text-left text-sm text-muted-foreground hover:text-accent"
-                        >
-                          <s.icon size={14} className="text-accent shrink-0" />
-                          {s.title}
-                        </button>
-                      ))}
+                      {services.map((s, i) => {
+                        const localTitle = tr.svcData[svcKeys[i]]?.title || s.title;
+                        return (
+                          <button
+                            key={s.title}
+                            onClick={() => { setSelectedService(i); setOpen(false); setShowPricing(false); }}
+                            className="w-full flex items-center gap-2 py-2 text-left text-sm text-muted-foreground hover:text-accent"
+                          >
+                            <s.icon size={14} className="text-accent shrink-0" />
+                            {localTitle}
+                          </button>
+                        );
+                      })}
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -255,7 +260,7 @@ export function LandingNavbar() {
                   onClick={() => setMobileVehiclesOpen(!mobileVehiclesOpen)}
                   className="flex items-center justify-between text-foreground/80 hover:text-accent text-sm font-medium py-2"
                 >
-                  Vehículos <ChevronDown size={14} className={`transition-transform ${mobileVehiclesOpen ? "rotate-180" : ""}`} />
+                  {tr.navVehicles} <ChevronDown size={14} className={`transition-transform ${mobileVehiclesOpen ? "rotate-180" : ""}`} />
                 </button>
                 <AnimatePresence>
                   {mobileVehiclesOpen && (
@@ -290,14 +295,14 @@ export function LandingNavbar() {
                   </a>
                 ))}
                 <a href="/auth" onClick={() => setOpen(false)} className="text-foreground/80 hover:text-accent text-sm font-medium py-2">
-                  Iniciar Sesión
+                  {tr.navLogin}
                 </a>
                 <a
                   href="#onboarding"
                   onClick={() => setOpen(false)}
                   className="bg-accent text-accent-foreground px-4 py-3 rounded-lg text-sm font-bold text-center hover:brightness-110 transition mt-2"
                 >
-                  🚛 Regístrate Gratis
+                  {tr.navRegister}
                 </a>
               </div>
             </motion.div>
@@ -308,24 +313,24 @@ export function LandingNavbar() {
       {/* Service Detail Modal */}
       <Dialog open={selectedService !== null} onOpenChange={(o) => !o && handleServiceClose()}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-          {selected && (
+          {selected && localizedService && (
             <>
               <DialogHeader>
                 <div className="flex items-center gap-3 mb-1">
                   <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
                     <selected.icon className="text-accent" size={20} />
                   </div>
-                  <DialogTitle className="text-xl">{selected.title}</DialogTitle>
+                  <DialogTitle className="text-xl">{localizedService.title}</DialogTitle>
                 </div>
                 <DialogDescription className="text-base leading-relaxed pt-2">
-                  {selected.details}
+                  {localizedService.details}
                 </DialogDescription>
               </DialogHeader>
 
               <div className="space-y-3 mt-2">
-                <h4 className="font-semibold text-foreground text-sm">Beneficios</h4>
+                <h4 className="font-semibold text-foreground text-sm">{tr.svcBenefits}</h4>
                 <ul className="space-y-2">
-                  {selected.benefits.map((b) => (
+                  {localizedService.benefits.map((b) => (
                     <li key={b} className="flex items-start gap-2 text-sm text-muted-foreground">
                       <Check className="text-accent mt-0.5 shrink-0" size={16} />
                       <span>{b}</span>
@@ -342,7 +347,7 @@ export function LandingNavbar() {
                     {!showPricing ? (
                       <Button className="w-full gap-2" variant="outline" onClick={() => setShowPricing(true)}>
                         <DollarSign size={18} />
-                        Ver Precios
+                        {tr.svcViewPrices}
                       </Button>
                     ) : (
                       <AnimatePresence>
@@ -362,7 +367,7 @@ export function LandingNavbar() {
                 <Button className="w-full gap-2" variant={selected.pricing.type === "page" ? "outline" : "default"} asChild>
                   <a href={selected.cta.href} target="_blank" rel="noopener noreferrer">
                     <MessageCircle size={18} />
-                    {selected.cta.label}
+                    {localizedService.cta}
                   </a>
                 </Button>
               </div>
@@ -393,7 +398,7 @@ export function LandingNavbar() {
 
               <div className="space-y-4 mt-2">
                 <div>
-                  <h4 className="font-semibold text-foreground text-sm mb-2">Tipos de Cargas</h4>
+                  <h4 className="font-semibold text-foreground text-sm mb-2">{tr.vehLoadTypes}</h4>
                   <ul className="space-y-2">
                     {selectedVeh.cargas.map((c) => (
                       <li key={c} className="flex items-start gap-2 text-sm text-muted-foreground">
@@ -405,7 +410,7 @@ export function LandingNavbar() {
                 </div>
 
                 <div>
-                  <h4 className="font-semibold text-foreground text-sm mb-2">Ventajas</h4>
+                  <h4 className="font-semibold text-foreground text-sm mb-2">{tr.vehAdvantages}</h4>
                   <ul className="space-y-2">
                     {selectedVeh.benefits.map((b) => (
                       <li key={b} className="flex items-start gap-2 text-sm text-muted-foreground">
@@ -425,7 +430,7 @@ export function LandingNavbar() {
                     rel="noopener noreferrer"
                   >
                     <MessageCircle size={18} />
-                    Consultar sobre {selectedVeh.title}
+                    {tr.navConsult} {selectedVeh.title}
                   </a>
                 </Button>
               </div>

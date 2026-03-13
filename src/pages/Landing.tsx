@@ -11,6 +11,7 @@ import { OnboardingSection } from "@/components/landing/OnboardingSection";
 import { FAQSection } from "@/components/landing/FAQSection";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { AIChatWidget } from "@/components/landing/AIChatWidget";
+import { LandingLanguageProvider } from "@/contexts/LandingLanguageContext";
 
 export default function Landing() {
   const { theme, setTheme } = useTheme();
@@ -24,18 +25,20 @@ export default function Landing() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background">
-      <LandingNavbar />
-      <HeroSection />
-      <StatsSection />
-      <ServicesSection />
-      <HowItWorks />
-      <VehicleGallery />
-      <MeetingSection />
-      <OnboardingSection />
-      <FAQSection />
-      <LandingFooter />
-      <AIChatWidget />
-    </div>
+    <LandingLanguageProvider>
+      <div className="min-h-screen bg-background">
+        <LandingNavbar />
+        <HeroSection />
+        <StatsSection />
+        <ServicesSection />
+        <HowItWorks />
+        <VehicleGallery />
+        <MeetingSection />
+        <OnboardingSection />
+        <FAQSection />
+        <LandingFooter />
+        <AIChatWidget />
+      </div>
+    </LandingLanguageProvider>
   );
 }

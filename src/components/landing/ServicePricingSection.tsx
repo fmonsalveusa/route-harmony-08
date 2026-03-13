@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { ServicePricing, StripeConfig } from "./servicesData";
+import { useLandingLang } from "@/contexts/LandingLanguageContext";
+import t from "./landingTranslations";
 
 interface ServicePricingSectionProps {
   pricing: ServicePricing;
@@ -14,6 +16,8 @@ interface ServicePricingSectionProps {
 }
 
 export function ServicePricingSection({ pricing, whatsappHref, onClose, stripeConfig }: ServicePricingSectionProps) {
+  const { lang } = useLandingLang();
+  const tr = t[lang];
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
@@ -25,11 +29,9 @@ export function ServicePricingSection({ pricing, whatsappHref, onClose, stripeCo
         body: { priceId: stripeConfig.priceId, mode: stripeConfig.mode },
       });
       if (error) throw error;
-      if (data?.url) {
-        window.open(data.url, "_blank");
-      }
+      if (data?.url) window.open(data.url, "_blank");
     } catch (err: any) {
-      toast.error("Error al iniciar el pago. Intenta de nuevo.");
+      toast.error("Error");
       console.error(err);
     } finally {
       setLoading(false);
@@ -38,15 +40,9 @@ export function ServicePricingSection({ pricing, whatsappHref, onClose, stripeCo
 
   if (pricing.type === "page") {
     return (
-      <Button
-        className="w-full gap-2"
-        onClick={() => {
-          onClose();
-          navigate(pricing.pricingPath || "/pricing");
-        }}
-      >
+      <Button className="w-full gap-2" onClick={() => { onClose(); navigate(pricing.pricingPath || "/pricing"); }}>
         <DollarSign size={18} />
-        Ver Precios
+        {tr.svcViewPrices}
       </Button>
     );
   }
@@ -65,7 +61,7 @@ export function ServicePricingSection({ pricing, whatsappHref, onClose, stripeCo
         {stripeConfig && (
           <Button className="w-full gap-2" onClick={handleStripeCheckout} disabled={loading}>
             {loading ? <Loader2 size={18} className="animate-spin" /> : <CreditCard size={18} />}
-            Pagar Ahora
+            {tr.svcPayNow}
           </Button>
         )}
       </div>
@@ -86,8 +82,7 @@ export function ServicePricingSection({ pricing, whatsappHref, onClose, stripeCo
               <ul className="space-y-1 pt-1">
                 {plan.features.map((f) => (
                   <li key={f} className="text-xs text-muted-foreground flex items-start gap-1.5">
-                    <span className="text-accent mt-0.5">•</span>
-                    {f}
+                    <span className="text-accent mt-0.5">•</span>{f}
                   </li>
                 ))}
               </ul>
@@ -97,7 +92,7 @@ export function ServicePricingSection({ pricing, whatsappHref, onClose, stripeCo
         {stripeConfig && (
           <Button className="w-full gap-2" onClick={handleStripeCheckout} disabled={loading}>
             {loading ? <Loader2 size={18} className="animate-spin" /> : <CreditCard size={18} />}
-            Pagar Ahora
+            {tr.svcPayNow}
           </Button>
         )}
       </div>
