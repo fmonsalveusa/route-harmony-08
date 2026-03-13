@@ -48,12 +48,10 @@ const DEFAULT_CORNERS: Corners = {
 const MODE_LABELS: Record<DisplayMode, string> = {
   original: 'Original',
   color: 'Color HD',
-  bw: 'B&N',
 };
 
 function getPageSrc(page: ScannedPage): string {
   if (page.displayMode === 'color' && page.colorEnhanced) return page.colorEnhanced;
-  if (page.displayMode === 'bw' && page.bwEnhanced) return page.bwEnhanced;
   return page.original;
 }
 
