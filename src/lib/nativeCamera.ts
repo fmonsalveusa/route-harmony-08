@@ -16,7 +16,7 @@ export async function takeNativePhoto(): Promise<string | null> {
     );
 
     const photo = await Camera.getPhoto({
-      quality: 92,
+      quality: 100,
       resultType: CameraResultType.DataUrl,
       source: CameraSource.Camera,
       correctOrientation: true,
