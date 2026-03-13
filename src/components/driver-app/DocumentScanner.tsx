@@ -9,7 +9,6 @@ import { toast } from '@/hooks/use-toast';
 import { EdgeCropOverlay } from './EdgeCropOverlay';
 import { perspectiveTransform, type Corners } from '@/lib/perspectiveTransform';
 import {
-  enhanceImage,
   enhanceImageColor,
   resizeForCrop,
   resizeForDetection,
@@ -17,12 +16,11 @@ import {
 } from '@/lib/scannerImageUtils';
 import { scanToPdf } from '@/lib/scanToPdf';
 
-type DisplayMode = 'original' | 'color' | 'bw';
+type DisplayMode = 'original' | 'color';
 
 interface ScannedPage {
   original: string;
   colorEnhanced: string | null;
-  bwEnhanced: string | null;
   displayMode: DisplayMode;
 }
 
@@ -50,12 +48,10 @@ const DEFAULT_CORNERS: Corners = {
 const MODE_LABELS: Record<DisplayMode, string> = {
   original: 'Original',
   color: 'Color HD',
-  bw: 'B&N',
 };
 
 function getPageSrc(page: ScannedPage): string {
   if (page.displayMode === 'color' && page.colorEnhanced) return page.colorEnhanced;
-  if (page.displayMode === 'bw' && page.bwEnhanced) return page.bwEnhanced;
   return page.original;
 }
 
@@ -76,6 +72,7 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
   const cameraRef = useRef<HTMLInputElement>(null);
 
   const docLabel = stop.stop_type === 'pickup' ? 'BOL' : 'POD';
+  const bottomSafePadding = 'calc(env(safe-area-inset-bottom, 0px) + 112px)';
 
   // ─── Edge detection ───
   const detectEdges = useCallback(async (dataUrl: string) => {
@@ -95,13 +92,26 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
     }
   }, []);
 
-  // ─── Add a page (original only, no auto-enhance) ───
+  // ─── Add a page (default to color mode and precompute Color HD) ───
   const addPage = useCallback((imageDataUrl: string) => {
+    let newIndex = 0;
     setPages((prev) => {
-      const next = [...prev, { original: imageDataUrl, colorEnhanced: null, bwEnhanced: null, displayMode: 'original' as DisplayMode }];
+      newIndex = prev.length;
+      const next = [...prev, { original: imageDataUrl, colorEnhanced: null, displayMode: 'color' as DisplayMode }];
       setSelectedIndex(next.length - 1);
       return next;
     });
+
+    void (async () => {
+      try {
+        const colorEnhanced = await enhanceImageColor(imageDataUrl);
+        setPages((prev) =>
+          prev.map((p, i) => (i === newIndex ? { ...p, colorEnhanced, displayMode: 'color' } : p))
+        );
+      } catch (err) {
+        console.error('Color enhancement failed:', err);
+      }
+    })();
   }, []);
 
   // ─── Full pipeline capture (camera/gallery) ───
@@ -201,35 +211,36 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
     fileRef.current?.click();
   };
 
-  // ─── Cycle: Original → Color → B&W ───
+  // ─── Toggle: Color HD ↔ Original ───
   const handleEnhanceCycle = async () => {
     if (pages.length === 0) return;
     const page = pages[selectedIndex];
 
-    if (page.displayMode === 'original') {
-      // Generate color enhanced if needed
-      if (!page.colorEnhanced) {
-        setEnhancing(true);
-        const colorEnhanced = await enhanceImageColor(page.original);
-        setPages((prev) => prev.map((p, i) => (i === selectedIndex ? { ...p, colorEnhanced, displayMode: 'color' } : p)));
-        setEnhancing(false);
-      } else {
-        setPages((prev) => prev.map((p, i) => (i === selectedIndex ? { ...p, displayMode: 'color' } : p)));
-      }
-    } else if (page.displayMode === 'color') {
-      // Generate B&W if needed
-      if (!page.bwEnhanced) {
-        setEnhancing(true);
-        const bwEnhanced = await enhanceImage(page.original);
-        setPages((prev) => prev.map((p, i) => (i === selectedIndex ? { ...p, bwEnhanced, displayMode: 'bw' } : p)));
-        setEnhancing(false);
-      } else {
-        setPages((prev) => prev.map((p, i) => (i === selectedIndex ? { ...p, displayMode: 'bw' } : p)));
-      }
-    } else {
-      // Back to original
-      setPages((prev) => prev.map((p, i) => (i === selectedIndex ? { ...p, displayMode: 'original' } : p)));
+    if (page.displayMode === 'color') {
+      setPages((prev) =>
+        prev.map((p, i) => (i === selectedIndex ? { ...p, displayMode: 'original' } : p))
+      );
+      return;
     }
+
+    if (!page.colorEnhanced) {
+      setEnhancing(true);
+      try {
+        const colorEnhanced = await enhanceImageColor(page.original);
+        setPages((prev) =>
+          prev.map((p, i) =>
+            i === selectedIndex ? { ...p, colorEnhanced, displayMode: 'color' } : p
+          )
+        );
+      } finally {
+        setEnhancing(false);
+      }
+      return;
+    }
+
+    setPages((prev) =>
+      prev.map((p, i) => (i === selectedIndex ? { ...p, displayMode: 'color' } : p))
+    );
   };
 
   const handleRetake = () => {
@@ -249,8 +260,29 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
     try {
       const tenant_id = await getTenantId();
 
-      // Collect all page images (respecting display mode)
-      const imageDataUrls = pages.map((p) => getPageSrc(p));
+      // Collect all page images in full color for final PDF
+      const enhancedByIndex = new Map<number, string>();
+      const imageDataUrls: string[] = [];
+
+      for (let i = 0; i < pages.length; i++) {
+        const page = pages[i];
+        if (page.colorEnhanced) {
+          imageDataUrls.push(page.colorEnhanced);
+        } else {
+          const colorEnhanced = await enhanceImageColor(page.original);
+          enhancedByIndex.set(i, colorEnhanced);
+          imageDataUrls.push(colorEnhanced);
+        }
+      }
+
+      if (enhancedByIndex.size > 0) {
+        setPages((prev) =>
+          prev.map((p, i) => {
+            const colorEnhanced = enhancedByIndex.get(i);
+            return colorEnhanced ? { ...p, colorEnhanced, displayMode: 'color' } : p;
+          })
+        );
+      }
 
       // Generate single PDF from all pages
       const pdfBlob = await scanToPdf(imageDataUrls);
@@ -343,15 +375,18 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
         </div>
 
         {/* Last scanned preview */}
-        <div className="flex-1 flex flex-col items-center justify-center gap-6 px-6">
-          {pages.length > 0 && (
-            <img src={getPageSrc(pages[pages.length - 1])} alt={`Página ${pages.length}`} className="max-w-[60%] max-h-[40vh] object-contain rounded-lg border-2 border-primary/50" />
-          )}
-          <div className="text-center space-y-2">
-            <p className="text-white font-medium text-base">Página {pages.length} escaneada ✓</p>
-            <p className="text-white/70 text-sm">¿Deseas escanear otra página?</p>
+        <div className="flex-1 flex flex-col px-6">
+          <div className="flex-1 flex flex-col items-center justify-center gap-6">
+            {pages.length > 0 && (
+              <img src={getPageSrc(pages[pages.length - 1])} alt={`Página ${pages.length}`} className="max-w-[60%] max-h-[40vh] object-contain rounded-lg border-2 border-primary/50" />
+            )}
+            <div className="text-center space-y-2">
+              <p className="text-white font-medium text-base">Página {pages.length} escaneada ✓</p>
+              <p className="text-white/70 text-sm">¿Deseas escanear otra página?</p>
+            </div>
           </div>
-          <div className="flex flex-col gap-3 w-full max-w-xs" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 80px)' }}>
+
+          <div className="flex flex-col gap-3 w-full max-w-xs mx-auto" style={{ paddingBottom: bottomSafePadding }}>
             <Button onClick={() => handleAddMoreYes('camera')} className="gap-2 w-full" size="lg">
               <Camera className="h-5 w-5" /> Escanear otra (Cámara)
             </Button>
@@ -381,9 +416,9 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
   const currentPage = pages[selectedIndex];
   const currentSrc = currentPage ? getPageSrc(currentPage) : null;
   const nextModeLabel = currentPage
-    ? currentPage.displayMode === 'original' ? 'Color HD'
-    : currentPage.displayMode === 'color' ? 'B&N'
-    : 'Original'
+    ? currentPage.displayMode === 'color'
+      ? 'Original'
+      : 'Color HD'
     : '';
 
   return (
@@ -448,7 +483,7 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
       )}
 
       {/* Actions */}
-      <div className="flex flex-wrap gap-2 px-4 pt-3 bg-black/90 justify-center" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 80px)' }}>
+      <div className="flex flex-wrap gap-2 px-4 pt-3 bg-black/90 justify-center" style={{ paddingBottom: bottomSafePadding }}>
         <Button variant="outline" size="sm" onClick={triggerCamera}
           className="gap-1.5 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20">
           <Camera className="h-4 w-4" />
