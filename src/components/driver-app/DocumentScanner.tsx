@@ -9,7 +9,6 @@ import { toast } from '@/hooks/use-toast';
 import { EdgeCropOverlay } from './EdgeCropOverlay';
 import { perspectiveTransform, type Corners } from '@/lib/perspectiveTransform';
 import {
-  enhanceImage,
   enhanceImageColor,
   resizeForCrop,
   resizeForDetection,
