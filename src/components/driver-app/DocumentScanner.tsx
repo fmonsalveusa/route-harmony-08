@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import { isNativeCamera, takeNativePhoto, pickFromGallery } from '@/lib/nativeCamera';
-import { X, Upload, RotateCcw, Contrast, ScanLine, Camera, ImageIcon, Info } from 'lucide-react';
+import { X, Upload, RotateCcw, ScanLine, Camera, ImageIcon, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { getTenantId } from '@/hooks/useTenantId';
@@ -9,7 +9,6 @@ import { toast } from '@/hooks/use-toast';
 import { EdgeCropOverlay } from './EdgeCropOverlay';
 import { perspectiveTransform, type Corners } from '@/lib/perspectiveTransform';
 import {
-  enhanceImageColor,
   resizeForCrop,
   resizeForDetection,
   fileToDataUrl,
