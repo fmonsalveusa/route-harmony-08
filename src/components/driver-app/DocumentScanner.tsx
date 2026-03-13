@@ -14,7 +14,6 @@ import {
   fileToDataUrl,
 } from '@/lib/scannerImageUtils';
 import { scanToPdf } from '@/lib/scanToPdf';
-import { useBottomSafePadding } from '@/hooks/useBottomSafePadding';
 
 type DisplayMode = 'original' | 'color';
 

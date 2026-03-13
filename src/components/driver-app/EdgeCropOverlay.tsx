@@ -2,7 +2,6 @@ import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Check, SkipForward, Loader2 } from 'lucide-react';
 import type { Corners, Point } from '@/lib/perspectiveTransform';
-import { useBottomSafePadding } from '@/hooks/useBottomSafePadding';
 
 interface EdgeCropOverlayProps {
   imageUrl: string;
