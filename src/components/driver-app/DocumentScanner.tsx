@@ -91,13 +91,26 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
     }
   }, []);
 
-  // ─── Add a page (original only, no auto-enhance) ───
+  // ─── Add a page (default to color mode and precompute Color HD) ───
   const addPage = useCallback((imageDataUrl: string) => {
+    let newIndex = 0;
     setPages((prev) => {
-      const next = [...prev, { original: imageDataUrl, colorEnhanced: null, bwEnhanced: null, displayMode: 'original' as DisplayMode }];
+      newIndex = prev.length;
+      const next = [...prev, { original: imageDataUrl, colorEnhanced: null, displayMode: 'color' as DisplayMode }];
       setSelectedIndex(next.length - 1);
       return next;
     });
+
+    void (async () => {
+      try {
+        const colorEnhanced = await enhanceImageColor(imageDataUrl);
+        setPages((prev) =>
+          prev.map((p, i) => (i === newIndex ? { ...p, colorEnhanced, displayMode: 'color' } : p))
+        );
+      } catch (err) {
+        console.error('Color enhancement failed:', err);
+      }
+    })();
   }, []);
 
   // ─── Full pipeline capture (camera/gallery) ───
