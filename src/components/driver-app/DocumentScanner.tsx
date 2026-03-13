@@ -375,15 +375,18 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
         </div>
 
         {/* Last scanned preview */}
-        <div className="flex-1 flex flex-col items-center justify-center gap-6 px-6">
-          {pages.length > 0 && (
-            <img src={getPageSrc(pages[pages.length - 1])} alt={`Página ${pages.length}`} className="max-w-[60%] max-h-[40vh] object-contain rounded-lg border-2 border-primary/50" />
-          )}
-          <div className="text-center space-y-2">
-            <p className="text-white font-medium text-base">Página {pages.length} escaneada ✓</p>
-            <p className="text-white/70 text-sm">¿Deseas escanear otra página?</p>
+        <div className="flex-1 flex flex-col px-6">
+          <div className="flex-1 flex flex-col items-center justify-center gap-6">
+            {pages.length > 0 && (
+              <img src={getPageSrc(pages[pages.length - 1])} alt={`Página ${pages.length}`} className="max-w-[60%] max-h-[40vh] object-contain rounded-lg border-2 border-primary/50" />
+            )}
+            <div className="text-center space-y-2">
+              <p className="text-white font-medium text-base">Página {pages.length} escaneada ✓</p>
+              <p className="text-white/70 text-sm">¿Deseas escanear otra página?</p>
+            </div>
           </div>
-          <div className="flex flex-col gap-3 w-full max-w-xs" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 80px)' }}>
+
+          <div className="flex flex-col gap-3 w-full max-w-xs mx-auto" style={{ paddingBottom: bottomSafePadding }}>
             <Button onClick={() => handleAddMoreYes('camera')} className="gap-2 w-full" size="lg">
               <Camera className="h-5 w-5" /> Escanear otra (Cámara)
             </Button>
