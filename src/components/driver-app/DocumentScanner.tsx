@@ -351,7 +351,7 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
             <p className="text-white font-medium text-base">Página {pages.length} escaneada ✓</p>
             <p className="text-white/70 text-sm">¿Deseas escanear otra página?</p>
           </div>
-          <div className="flex flex-col gap-3 w-full max-w-xs">
+          <div className="flex flex-col gap-3 w-full max-w-xs" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 80px)' }}>
             <Button onClick={() => handleAddMoreYes('camera')} className="gap-2 w-full" size="lg">
               <Camera className="h-5 w-5" /> Escanear otra (Cámara)
             </Button>
