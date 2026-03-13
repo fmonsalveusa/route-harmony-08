@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import { isNativeCamera, takeNativePhoto, pickFromGallery } from '@/lib/nativeCamera';
-import { X, Upload, RotateCcw, Contrast, ScanLine, Camera, ImageIcon, Info } from 'lucide-react';
+import { X, Upload, RotateCcw, ScanLine, Camera, ImageIcon, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { getTenantId } from '@/hooks/useTenantId';
@@ -9,7 +9,6 @@ import { toast } from '@/hooks/use-toast';
 import { EdgeCropOverlay } from './EdgeCropOverlay';
 import { perspectiveTransform, type Corners } from '@/lib/perspectiveTransform';
 import {
-  enhanceImageColor,
   resizeForCrop,
   resizeForDetection,
   fileToDataUrl,
@@ -47,7 +46,7 @@ const DEFAULT_CORNERS: Corners = {
 
 const MODE_LABELS: Record<DisplayMode, string> = {
   original: 'Original',
-  color: 'Color HD',
+  color: 'Color completo',
 };
 
 function getPageSrc(page: ScannedPage): string {
@@ -59,7 +58,6 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
   const [pages, setPages] = useState<ScannedPage[]>([]);
   const [selectedIndex, setSelectedIndex] = useState<number>(0);
   const [uploading, setUploading] = useState(false);
-  const [enhancing, setEnhancing] = useState(false);
   const [processing, setProcessing] = useState(false);
 
   // Edge detection state
@@ -72,7 +70,7 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
   const cameraRef = useRef<HTMLInputElement>(null);
 
   const docLabel = stop.stop_type === 'pickup' ? 'BOL' : 'POD';
-  const bottomSafePadding = '112px';
+  const bottomSafePadding = '160px';
 
   // ─── Edge detection ───
   const detectEdges = useCallback(async (dataUrl: string) => {
@@ -92,26 +90,13 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
     }
   }, []);
 
-  // ─── Add a page (default to color mode and precompute Color HD) ───
+  // ─── Add a page (always keep full-color original) ───
   const addPage = useCallback((imageDataUrl: string) => {
-    let newIndex = 0;
     setPages((prev) => {
-      newIndex = prev.length;
-      const next = [...prev, { original: imageDataUrl, colorEnhanced: null, displayMode: 'color' as DisplayMode }];
+      const next = [...prev, { original: imageDataUrl, colorEnhanced: imageDataUrl, displayMode: 'color' as DisplayMode }];
       setSelectedIndex(next.length - 1);
       return next;
     });
-
-    void (async () => {
-      try {
-        const colorEnhanced = await enhanceImageColor(imageDataUrl);
-        setPages((prev) =>
-          prev.map((p, i) => (i === newIndex ? { ...p, colorEnhanced, displayMode: 'color' } : p))
-        );
-      } catch (err) {
-        console.error('Color enhancement failed:', err);
-      }
-    })();
   }, []);
 
   // ─── Full pipeline capture (camera/gallery) ───
@@ -211,37 +196,6 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
     fileRef.current?.click();
   };
 
-  // ─── Toggle: Color HD ↔ Original ───
-  const handleEnhanceCycle = async () => {
-    if (pages.length === 0) return;
-    const page = pages[selectedIndex];
-
-    if (page.displayMode === 'color') {
-      setPages((prev) =>
-        prev.map((p, i) => (i === selectedIndex ? { ...p, displayMode: 'original' } : p))
-      );
-      return;
-    }
-
-    if (!page.colorEnhanced) {
-      setEnhancing(true);
-      try {
-        const colorEnhanced = await enhanceImageColor(page.original);
-        setPages((prev) =>
-          prev.map((p, i) =>
-            i === selectedIndex ? { ...p, colorEnhanced, displayMode: 'color' } : p
-          )
-        );
-      } finally {
-        setEnhancing(false);
-      }
-      return;
-    }
-
-    setPages((prev) =>
-      prev.map((p, i) => (i === selectedIndex ? { ...p, displayMode: 'color' } : p))
-    );
-  };
 
   const handleRetake = () => {
     setPages((prev) => prev.filter((_, i) => i !== selectedIndex));
@@ -260,29 +214,8 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
     try {
       const tenant_id = await getTenantId();
 
-      // Collect all page images in full color for final PDF
-      const enhancedByIndex = new Map<number, string>();
-      const imageDataUrls: string[] = [];
-
-      for (let i = 0; i < pages.length; i++) {
-        const page = pages[i];
-        if (page.colorEnhanced) {
-          imageDataUrls.push(page.colorEnhanced);
-        } else {
-          const colorEnhanced = await enhanceImageColor(page.original);
-          enhancedByIndex.set(i, colorEnhanced);
-          imageDataUrls.push(colorEnhanced);
-        }
-      }
-
-      if (enhancedByIndex.size > 0) {
-        setPages((prev) =>
-          prev.map((p, i) => {
-            const colorEnhanced = enhancedByIndex.get(i);
-            return colorEnhanced ? { ...p, colorEnhanced, displayMode: 'color' } : p;
-          })
-        );
-      }
+      // Always use full-color original/cropped page without extra processing
+      const imageDataUrls = pages.map((page) => page.colorEnhanced ?? page.original);
 
       // Generate single PDF from all pages
       const pdfBlob = await scanToPdf(imageDataUrls);
@@ -415,11 +348,6 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
 
   const currentPage = pages[selectedIndex];
   const currentSrc = currentPage ? getPageSrc(currentPage) : null;
-  const nextModeLabel = currentPage
-    ? currentPage.displayMode === 'color'
-      ? 'Original'
-      : 'Color HD'
-    : '';
 
   return (
     <div className="fixed inset-0 z-[100] bg-black flex flex-col">
@@ -497,17 +425,10 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
         </Button>
 
         {currentPage && (
-          <>
-            <Button variant="outline" size="sm" onClick={handleEnhanceCycle} disabled={enhancing}
-              className="gap-1.5 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20">
-              <Contrast className="h-4 w-4" />
-              {enhancing ? 'Mejorando...' : nextModeLabel}
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleRetake}
-              className="gap-1.5 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20">
-              <RotateCcw className="h-4 w-4" /> Re-tomar
-            </Button>
-          </>
+          <Button variant="outline" size="sm" onClick={handleRetake}
+            className="gap-1.5 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20">
+            <RotateCcw className="h-4 w-4" /> Re-tomar
+          </Button>
         )}
 
         {pages.length > 0 && (
