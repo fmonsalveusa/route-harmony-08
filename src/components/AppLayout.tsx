@@ -375,6 +375,17 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
 
             {/* Remaining top-level links */}
             {visibleBottomLevel.map(renderNavLink)}
+
+            {/* Profile dropdown */}
+            <NavDropdownGroup
+              label="Profile"
+              icon={Settings}
+              items={profileItems}
+              hasPermission={hasPermission}
+              isMasterAdmin={isMasterAdmin}
+              pendingDrivers={pendingDrivers}
+              unratedBrokers={unratedBrokers}
+            />
           </>
         )}
       </nav>
