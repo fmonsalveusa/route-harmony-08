@@ -55,7 +55,7 @@ async function loadAndDraw(
   targetW?: number,
   targetH?: number,
   processor?: (ctx: CanvasRenderingContext2D, w: number, h: number) => void,
-  quality = 0.85
+  quality = 0.92
 ): Promise<string> {
   let w: number, h: number;
   const canvas = document.createElement('canvas');
