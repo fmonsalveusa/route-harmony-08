@@ -58,7 +58,6 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
   const [pages, setPages] = useState<ScannedPage[]>([]);
   const [selectedIndex, setSelectedIndex] = useState<number>(0);
   const [uploading, setUploading] = useState(false);
-  const [enhancing, setEnhancing] = useState(false);
   const [processing, setProcessing] = useState(false);
 
   // Edge detection state
@@ -71,7 +70,7 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
   const cameraRef = useRef<HTMLInputElement>(null);
 
   const docLabel = stop.stop_type === 'pickup' ? 'BOL' : 'POD';
-  const bottomSafePadding = '112px';
+  const bottomSafePadding = '160px';
 
   // ─── Edge detection ───
   const detectEdges = useCallback(async (dataUrl: string) => {
