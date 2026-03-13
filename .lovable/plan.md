@@ -1,26 +1,29 @@
 
 
-# Fix: Botones ocultos por barra de navegación Samsung
-
 ## Problema
-Los botones "Omitir Recorte" y "Confirmar Recorte" del `EdgeCropOverlay`, así como los botones del `DocumentScanner`, quedan detrás de la barra de navegación de Samsung. El `env(safe-area-inset-bottom)` no funciona correctamente en el WebView de Android porque Capacitor no siempre expone esa variable CSS.
+
+El preview de Lovable carga desde un iframe que puede mantener módulos JS en caché del navegador (no solo Service Worker). La limpieza actual en `main.tsx` solo elimina Service Workers y Cache API, pero el **caché HTTP del navegador** (disk cache) sigue sirviendo versiones antiguas de los chunks JS que contienen la función `generateTerminationLetterPdf`.
+
+Esto explica por qué la app publicada siempre muestra el formato correcto (deploy fresco) pero el preview a veces muestra el formato anterior.
 
 ## Solución
-Cambiar la estrategia: en lugar de depender de `env(safe-area-inset-bottom)` (que no reporta valores en Android WebView), usar un padding fijo más agresivo (80px) combinado con el safe-area como fallback. Esto garantiza espacio suficiente incluso con barras de navegación por gestos o botones virtuales de Samsung.
 
-## Cambios
+No hay una solución de código que resuelva esto permanentemente desde el lado de la app — es un comportamiento del navegador en el entorno de preview. Sin embargo, podemos mitigar el problema:
 
-### 1. `src/components/driver-app/EdgeCropOverlay.tsx`
-- Cambiar el `style` del contenedor de botones de:
-  `paddingBottom: 'max(env(safe-area-inset-bottom, 56px), 56px)'`
-  a:
-  `paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 80px)'`
+1. **Agregar headers de no-cache para el preview** en `vite.config.ts`: Configurar headers del servidor de desarrollo para evitar que el navegador cachee los módulos JS.
 
-### 2. `src/components/driver-app/DocumentScanner.tsx`
-- Cambiar el `style` del contenedor de acciones (línea 451) de:
-  `paddingBottom: 'max(env(safe-area-inset-bottom, 40px), 40px)'`
-  a:
-  `paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 80px)'`
+   En `server` config, agregar:
+   ```ts
+   headers: {
+     'Cache-Control': 'no-store, no-cache, must-revalidate',
+   }
+   ```
 
-Esto suma 80px de espacio fijo **más** cualquier safe-area que el sistema reporte, asegurando que los botones queden siempre visibles por encima de cualquier barra de navegación de Android.
+2. **Forzar limpieza más agresiva en preview**: Además de limpiar SW y Cache API, intentar forzar una recarga sin caché si se detecta que es la primera carga después de un cambio.
+
+Esto debería reducir significativamente el problema de ver formatos antiguos en el preview.
+
+## Archivos a modificar
+
+- `vite.config.ts` — agregar `headers` con `Cache-Control: no-store` en la config de `server`
 
