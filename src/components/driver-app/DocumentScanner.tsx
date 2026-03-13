@@ -72,7 +72,7 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
   const cameraRef = useRef<HTMLInputElement>(null);
 
   const docLabel = stop.stop_type === 'pickup' ? 'BOL' : 'POD';
-  const bottomSafePadding = 'calc(env(safe-area-inset-bottom, 0px) + 112px)';
+  const bottomSafePadding = '112px';
 
   // ─── Edge detection ───
   const detectEdges = useCallback(async (dataUrl: string) => {
