@@ -149,7 +149,7 @@ export async function enhanceImageColor(dataUrl: string): Promise<string> {
       data[i + 2] = b;
     }
     ctx.putImageData(imageData, 0, 0);
-  }, 0.90);
+  }, 0.95);
 }
 
 /** Resize image for AI edge detection (small payload) */
