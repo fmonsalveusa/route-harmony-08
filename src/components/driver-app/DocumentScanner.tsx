@@ -16,12 +16,11 @@ import {
 } from '@/lib/scannerImageUtils';
 import { scanToPdf } from '@/lib/scanToPdf';
 
-type DisplayMode = 'original' | 'color' | 'bw';
+type DisplayMode = 'original' | 'color';
 
 interface ScannedPage {
   original: string;
   colorEnhanced: string | null;
-  bwEnhanced: string | null;
   displayMode: DisplayMode;
 }
 
