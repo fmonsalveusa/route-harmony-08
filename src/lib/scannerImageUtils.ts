@@ -55,7 +55,7 @@ async function loadAndDraw(
   targetW?: number,
   targetH?: number,
   processor?: (ctx: CanvasRenderingContext2D, w: number, h: number) => void,
-  quality = 0.85
+  quality = 0.92
 ): Promise<string> {
   let w: number, h: number;
   const canvas = document.createElement('canvas');
@@ -114,7 +114,7 @@ export async function enhanceImage(dataUrl: string): Promise<string> {
       data[i + 2] = val;
     }
     ctx.putImageData(imageData, 0, 0);
-  }, 0.80);
+  }, 0.92);
 }
 
 /** S-curve function for smooth contrast */
@@ -149,7 +149,7 @@ export async function enhanceImageColor(dataUrl: string): Promise<string> {
       data[i + 2] = b;
     }
     ctx.putImageData(imageData, 0, 0);
-  }, 0.90);
+  }, 0.95);
 }
 
 /** Resize image for AI edge detection (small payload) */
@@ -182,7 +182,7 @@ export async function resizeForDetection(dataUrl: string, maxDim = 1024): Promis
 }
 
 /** Resize large camera images for crop overlay (Android cameras can be 12MP+) */
-export async function resizeForCrop(dataUrl: string, maxDim = 2048): Promise<string> {
+export async function resizeForCrop(dataUrl: string, maxDim = 3200): Promise<string> {
   const blob = dataUrlToBlob(dataUrl);
   let origW: number, origH: number;
 

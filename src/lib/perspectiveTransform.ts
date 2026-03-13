@@ -75,22 +75,41 @@ export function perspectiveTransform(
             u * v * src.bottomRight.y +
             (1 - u) * v * src.bottomLeft.y;
 
-          // Nearest neighbor sampling
-          const ix = Math.min(Math.max(Math.round(sx), 0), w - 1);
-          const iy = Math.min(Math.max(Math.round(sy), 0), h - 1);
+          // Bilinear interpolation
+          const floorX = Math.floor(sx);
+          const floorY = Math.floor(sy);
+          const fracX = sx - floorX;
+          const fracY = sy - floorY;
 
-          const srcIdx = (iy * w + ix) * 4;
+          const x0 = Math.min(Math.max(floorX, 0), w - 1);
+          const x1 = Math.min(x0 + 1, w - 1);
+          const y0 = Math.min(Math.max(floorY, 0), h - 1);
+          const y1 = Math.min(y0 + 1, h - 1);
+
+          const w00 = (1 - fracX) * (1 - fracY);
+          const w10 = fracX * (1 - fracY);
+          const w01 = (1 - fracX) * fracY;
+          const w11 = fracX * fracY;
+
+          const i00 = (y0 * w + x0) * 4;
+          const i10 = (y0 * w + x1) * 4;
+          const i01 = (y1 * w + x0) * 4;
+          const i11 = (y1 * w + x1) * 4;
+
           const dstIdx = (dy * outW + dx) * 4;
-
-          outImageData.data[dstIdx] = srcData.data[srcIdx];
-          outImageData.data[dstIdx + 1] = srcData.data[srcIdx + 1];
-          outImageData.data[dstIdx + 2] = srcData.data[srcIdx + 2];
-          outImageData.data[dstIdx + 3] = srcData.data[srcIdx + 3];
+          for (let c = 0; c < 4; c++) {
+            outImageData.data[dstIdx + c] = Math.round(
+              srcData.data[i00 + c] * w00 +
+              srcData.data[i10 + c] * w10 +
+              srcData.data[i01 + c] * w01 +
+              srcData.data[i11 + c] * w11
+            );
+          }
         }
       }
 
       outCtx.putImageData(outImageData, 0, 0);
-      resolve(outCanvas.toDataURL('image/jpeg', 0.92));
+      resolve(outCanvas.toDataURL('image/jpeg', 0.95));
     };
     img.src = imageDataUrl;
   });

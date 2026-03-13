@@ -44,7 +44,7 @@ export async function scanToPdf(imageDataUrls: string[]): Promise<Blob> {
     }
 
     const format = dataUrl.includes('image/png') ? 'PNG' : 'JPEG';
-    pdf!.addImage(dataUrl, format, offsetX, offsetY, drawW, drawH);
+    pdf!.addImage(dataUrl, format, offsetX, offsetY, drawW, drawH, undefined, 'NONE');
   }
 
   if (!pdf) throw new Error('No images provided');
