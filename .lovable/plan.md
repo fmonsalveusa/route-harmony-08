@@ -1,29 +1,37 @@
 
+# Mejorar calidad de imagen del escáner en Samsung
 
 ## Problema
+La cadena de procesamiento actual reduce la calidad de las fotos tomadas con Samsung (que capturan a 12MP+, ~4000x3000px) en varios puntos:
 
-El preview de Lovable carga desde un iframe que puede mantener módulos JS en caché del navegador (no solo Service Worker). La limpieza actual en `main.tsx` solo elimina Service Workers y Cache API, pero el **caché HTTP del navegador** (disk cache) sigue sirviendo versiones antiguas de los chunks JS que contienen la función `generateTerminationLetterPdf`.
+1. **`resizeForCrop` reduce a max 2048px** — pierde ~50% de la resolución original antes del recorte
+2. **Re-compresión JPEG en cada paso** — calidad 0.85 en resize, 0.80 en B&W, 0.90 en color
+3. **Cámara nativa a quality 92** — podría ser más alto para documentos
+4. **Transformación de perspectiva usa nearest-neighbor** — genera bordes pixelados
+5. **PDF final usa A4 fijo** — no aprovecha la resolución real de la imagen
 
-Esto explica por qué la app publicada siempre muestra el formato correcto (deploy fresco) pero el preview a veces muestra el formato anterior.
+## Cambios propuestos
 
-## Solución
+### 1. `src/lib/nativeCamera.ts`
+- Subir `quality` de 92 a **100** en `takeNativePhoto()` y `pickFromGallery()` — la compresión se aplica después en el pipeline
 
-No hay una solución de código que resuelva esto permanentemente desde el lado de la app — es un comportamiento del navegador en el entorno de preview. Sin embargo, podemos mitigar el problema:
+### 2. `src/lib/scannerImageUtils.ts`
+- **`resizeForCrop`**: subir `maxDim` de 2048 a **3200** — conserva mucho más detalle del Samsung
+- **`resizeForDetection`**: mantener en 1024 (solo se usa para la IA, no afecta calidad final)
+- **`enhanceImage` (B&W)**: subir calidad JPEG de 0.80 a **0.92**
+- **`enhanceImageColor`**: subir de 0.90 a **0.95**
+- **`loadAndDraw` resize**: subir calidad default de 0.85 a **0.92**
 
-1. **Agregar headers de no-cache para el preview** en `vite.config.ts`: Configurar headers del servidor de desarrollo para evitar que el navegador cachee los módulos JS.
+### 3. `src/lib/perspectiveTransform.ts`
+- Reemplazar **nearest-neighbor** por **bilinear interpolation real** (sampling de 4 píxeles vecinos con pesos) — elimina el pixelado en bordes y texto
+- Subir calidad de salida de 0.92 a **0.95**
 
-   En `server` config, agregar:
-   ```ts
-   headers: {
-     'Cache-Control': 'no-store, no-cache, must-revalidate',
-   }
-   ```
+### 4. `src/lib/scanToPdf.ts`
+- Añadir opción `compress: false` en `addImage()` de jsPDF para evitar re-compresión dentro del PDF
+- Ya usa JPEG, así que la calidad se preserva mejor
 
-2. **Forzar limpieza más agresiva en preview**: Además de limpiar SW y Cache API, intentar forzar una recarga sin caché si se detecta que es la primera carga después de un cambio.
-
-Esto debería reducir significativamente el problema de ver formatos antiguos en el preview.
-
-## Archivos a modificar
-
-- `vite.config.ts` — agregar `headers` con `Cache-Control: no-store` en la config de `server`
-
+## Resumen de impacto
+- Las fotos de Samsung conservarán ~2.4x más resolución (3200 vs 2048)
+- Menos artefactos de compresión en cada paso
+- Texto más nítido después del recorte de perspectiva
+- PDFs finales con mejor calidad visual
