@@ -179,7 +179,7 @@ export const EdgeCropOverlay = ({
       </div>
 
       {/* Actions */}
-      <div className="flex gap-3 px-4 pt-3 bg-black/90 justify-center" style={{ paddingBottom: '160px' }}>
+      <div className="flex gap-3 px-4 pt-3 bg-black/90 justify-center" style={{ paddingBottom: bottomSafePadding }}>
         <Button
           variant="outline"
           size="sm"
