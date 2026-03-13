@@ -46,7 +46,7 @@ const DEFAULT_CORNERS: Corners = {
 
 const MODE_LABELS: Record<DisplayMode, string> = {
   original: 'Original',
-  color: 'Color HD',
+  color: 'Color completo',
 };
 
 function getPageSrc(page: ScannedPage): string {
