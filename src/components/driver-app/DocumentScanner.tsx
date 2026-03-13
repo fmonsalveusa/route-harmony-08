@@ -416,9 +416,9 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
   const currentPage = pages[selectedIndex];
   const currentSrc = currentPage ? getPageSrc(currentPage) : null;
   const nextModeLabel = currentPage
-    ? currentPage.displayMode === 'original' ? 'Color HD'
-    : currentPage.displayMode === 'color' ? 'B&N'
-    : 'Original'
+    ? currentPage.displayMode === 'color'
+      ? 'Original'
+      : 'Color HD'
     : '';
 
   return (
