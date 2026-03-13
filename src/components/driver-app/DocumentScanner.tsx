@@ -210,35 +210,36 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
     fileRef.current?.click();
   };
 
-  // ─── Cycle: Original → Color → B&W ───
+  // ─── Toggle: Color HD ↔ Original ───
   const handleEnhanceCycle = async () => {
     if (pages.length === 0) return;
     const page = pages[selectedIndex];
 
-    if (page.displayMode === 'original') {
-      // Generate color enhanced if needed
-      if (!page.colorEnhanced) {
-        setEnhancing(true);
-        const colorEnhanced = await enhanceImageColor(page.original);
-        setPages((prev) => prev.map((p, i) => (i === selectedIndex ? { ...p, colorEnhanced, displayMode: 'color' } : p)));
-        setEnhancing(false);
-      } else {
-        setPages((prev) => prev.map((p, i) => (i === selectedIndex ? { ...p, displayMode: 'color' } : p)));
-      }
-    } else if (page.displayMode === 'color') {
-      // Generate B&W if needed
-      if (!page.bwEnhanced) {
-        setEnhancing(true);
-        const bwEnhanced = await enhanceImage(page.original);
-        setPages((prev) => prev.map((p, i) => (i === selectedIndex ? { ...p, bwEnhanced, displayMode: 'bw' } : p)));
-        setEnhancing(false);
-      } else {
-        setPages((prev) => prev.map((p, i) => (i === selectedIndex ? { ...p, displayMode: 'bw' } : p)));
-      }
-    } else {
-      // Back to original
-      setPages((prev) => prev.map((p, i) => (i === selectedIndex ? { ...p, displayMode: 'original' } : p)));
+    if (page.displayMode === 'color') {
+      setPages((prev) =>
+        prev.map((p, i) => (i === selectedIndex ? { ...p, displayMode: 'original' } : p))
+      );
+      return;
     }
+
+    if (!page.colorEnhanced) {
+      setEnhancing(true);
+      try {
+        const colorEnhanced = await enhanceImageColor(page.original);
+        setPages((prev) =>
+          prev.map((p, i) =>
+            i === selectedIndex ? { ...p, colorEnhanced, displayMode: 'color' } : p
+          )
+        );
+      } finally {
+        setEnhancing(false);
+      }
+      return;
+    }
+
+    setPages((prev) =>
+      prev.map((p, i) => (i === selectedIndex ? { ...p, displayMode: 'color' } : p))
+    );
   };
 
   const handleRetake = () => {
