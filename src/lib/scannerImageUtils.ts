@@ -114,7 +114,7 @@ export async function enhanceImage(dataUrl: string): Promise<string> {
       data[i + 2] = val;
     }
     ctx.putImageData(imageData, 0, 0);
-  }, 0.80);
+  }, 0.92);
 }
 
 /** S-curve function for smooth contrast */
