@@ -206,6 +206,7 @@ export const EdgeCropOverlay = ({
         onTouchCancel={stopDragging}
       >
         <img
+          key={imageUrl}
           ref={imgRef}
           src={imageUrl}
           alt="Documento"
