@@ -23,8 +23,8 @@ export const EdgeCropOverlay = ({
   const [imgLoaded, setImgLoaded] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
-  // bottomSafePadding removed - using inline CSS calc instead
-
+  const isAndroid = typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent);
+  const bottomSafePadding = isAndroid ? '84px' : '32px';
   useEffect(() => {
     setCorners(initialCorners);
   }, [initialCorners]);
@@ -178,7 +178,7 @@ export const EdgeCropOverlay = ({
       </div>
 
       {/* Actions */}
-      <div className="flex gap-3 px-4 pt-3 bg-black/90 justify-center" style={{ paddingBottom: 'max(32px, env(safe-area-inset-bottom, 32px))' }}>
+      <div className="flex gap-3 px-4 pt-3 bg-black/90 justify-center" style={{ paddingBottom: bottomSafePadding }}>
         <Button
           variant="outline"
           size="sm"
