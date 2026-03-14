@@ -23,8 +23,8 @@ export const EdgeCropOverlay = ({
   const [imgLoaded, setImgLoaded] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
-  // bottomSafePadding removed - using inline CSS calc instead
-
+  const isAndroid = typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent);
+  const bottomSafePadding = isAndroid ? '84px' : '32px';
   useEffect(() => {
     setCorners(initialCorners);
   }, [initialCorners]);
