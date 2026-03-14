@@ -66,6 +66,21 @@ export const EdgeCropOverlay = ({
   }, []);
 
   useEffect(() => {
+    setImgLoaded(false);
+    setImgRect(null);
+
+    const frame = window.requestAnimationFrame(() => {
+      const img = imgRef.current;
+      if (img && img.complete && img.naturalWidth > 0) {
+        setImgLoaded(true);
+        updateImageRect();
+      }
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [imageUrl, updateImageRect]);
+
+  useEffect(() => {
     if (!imgLoaded) return;
 
     updateImageRect();
