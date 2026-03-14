@@ -23,8 +23,7 @@ export const EdgeCropOverlay = ({
   const [imgLoaded, setImgLoaded] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
-  const isAndroid = typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent);
-  const bottomSafePadding = isAndroid ? '84px' : '32px';
+
   useEffect(() => {
     setCorners(initialCorners);
   }, [initialCorners]);
@@ -81,9 +80,9 @@ export const EdgeCropOverlay = ({
     .join(' ');
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black flex flex-col">
+    <div className="fixed inset-0 z-[100] bg-black">
       {/* Header */}
-      <div className="px-4 py-3 bg-black/90 text-center">
+      <div className="absolute inset-x-0 top-0 z-20 px-4 py-3 bg-black/90 text-center">
         <h2 className="text-white font-semibold text-sm">
           {detecting ? 'Detectando bordes...' : 'Ajusta las esquinas del documento'}
         </h2>
@@ -92,8 +91,8 @@ export const EdgeCropOverlay = ({
         </p>
       </div>
 
-      {/* Actions - NOW AT TOP */}
-      <div className="flex gap-3 px-4 py-3 bg-black/90 justify-center">
+      {/* Actions fixed at top */}
+      <div className="absolute inset-x-0 z-20 flex gap-3 px-4 py-3 bg-black/90 justify-center" style={{ top: '60px' }}>
         <Button
           variant="outline"
           size="sm"
@@ -115,7 +114,7 @@ export const EdgeCropOverlay = ({
       {/* Image + overlay */}
       <div
         ref={containerRef}
-        className="flex-1 relative flex items-center justify-center overflow-hidden"
+        className="absolute inset-0 pt-[120px] relative flex items-center justify-center overflow-hidden"
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
       >
