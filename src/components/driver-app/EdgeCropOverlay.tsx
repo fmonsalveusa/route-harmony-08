@@ -80,9 +80,9 @@ export const EdgeCropOverlay = ({
     .join(' ');
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black">
+    <div className="fixed inset-0 z-[100] bg-black flex flex-col">
       {/* Header */}
-      <div className="absolute inset-x-0 top-0 z-20 px-4 py-3 bg-black/90 text-center">
+      <div className="px-4 py-3 bg-black/90 text-center flex-shrink-0">
         <h2 className="text-white font-semibold text-sm">
           {detecting ? 'Detectando bordes...' : 'Ajusta las esquinas del documento'}
         </h2>
@@ -91,8 +91,8 @@ export const EdgeCropOverlay = ({
         </p>
       </div>
 
-      {/* Actions fixed at top */}
-      <div className="absolute inset-x-0 z-20 flex gap-3 px-4 py-3 bg-black/90 justify-center" style={{ top: '60px' }}>
+      {/* Actions at top */}
+      <div className="flex gap-3 px-4 py-3 bg-black/90 justify-center flex-shrink-0">
         <Button
           variant="outline"
           size="sm"
@@ -114,7 +114,7 @@ export const EdgeCropOverlay = ({
       {/* Image + overlay */}
       <div
         ref={containerRef}
-        className="absolute inset-0 pt-[120px] relative flex items-center justify-center overflow-hidden"
+        className="flex-1 relative flex items-center justify-center overflow-hidden min-h-0"
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
       >
