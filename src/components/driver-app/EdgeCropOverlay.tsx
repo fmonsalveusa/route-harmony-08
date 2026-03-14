@@ -92,6 +92,26 @@ export const EdgeCropOverlay = ({
         </p>
       </div>
 
+      {/* Actions - NOW AT TOP */}
+      <div className="flex gap-3 px-4 py-3 bg-black/90 justify-center">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onSkip}
+          className="gap-1.5 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20"
+        >
+          <SkipForward className="h-4 w-4" /> Omitir recorte
+        </Button>
+        <Button
+          size="sm"
+          onClick={() => onConfirm(corners)}
+          disabled={detecting}
+          className="gap-1.5 text-xs"
+        >
+          <Check className="h-4 w-4" /> Confirmar recorte
+        </Button>
+      </div>
+
       {/* Image + overlay */}
       <div
         ref={containerRef}
@@ -129,7 +149,6 @@ export const EdgeCropOverlay = ({
             viewBox="0 0 100 100"
             preserveAspectRatio="none"
           >
-            {/* Semi-transparent overlay outside the polygon */}
             <defs>
               <mask id="cropMask">
                 <rect width="100" height="100" fill="white" />
@@ -140,8 +159,6 @@ export const EdgeCropOverlay = ({
               </mask>
             </defs>
             <rect width="100" height="100" fill="rgba(0,0,0,0.5)" mask="url(#cropMask)" />
-
-            {/* Border lines */}
             <polygon
               points={cornerKeys.map((k) => `${corners[k].x * 100},${corners[k].y * 100}`).join(' ')}
               fill="none"
@@ -175,26 +192,6 @@ export const EdgeCropOverlay = ({
               </div>
             );
           })}
-      </div>
-
-      {/* Actions */}
-      <div className="flex gap-3 px-4 pt-3 bg-black/90 justify-center" style={{ paddingBottom: bottomSafePadding }}>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onSkip}
-          className="gap-1.5 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20"
-        >
-          <SkipForward className="h-4 w-4" /> Omitir recorte
-        </Button>
-        <Button
-          size="sm"
-          onClick={() => onConfirm(corners)}
-          disabled={detecting}
-          className="gap-1.5 text-xs"
-        >
-          <Check className="h-4 w-4" /> Confirmar recorte
-        </Button>
       </div>
     </div>
   );
