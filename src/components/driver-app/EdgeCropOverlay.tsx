@@ -40,10 +40,6 @@ export const EdgeCropOverlay = ({
     setCorners(initialCorners);
   }, [initialCorners]);
 
-  useEffect(() => {
-    setImgLoaded(false);
-    setImgRect(null);
-  }, [imageUrl]);
 
   const updateImageRect = useCallback(() => {
     const container = containerRef.current;
@@ -68,6 +64,21 @@ export const EdgeCropOverlay = ({
       height,
     });
   }, []);
+
+  useEffect(() => {
+    setImgLoaded(false);
+    setImgRect(null);
+
+    const frame = window.requestAnimationFrame(() => {
+      const img = imgRef.current;
+      if (img && img.complete && img.naturalWidth > 0) {
+        setImgLoaded(true);
+        updateImageRect();
+      }
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [imageUrl, updateImageRect]);
 
   useEffect(() => {
     if (!imgLoaded) return;
@@ -195,6 +206,7 @@ export const EdgeCropOverlay = ({
         onTouchCancel={stopDragging}
       >
         <img
+          key={imageUrl}
           ref={imgRef}
           src={imageUrl}
           alt="Documento"
