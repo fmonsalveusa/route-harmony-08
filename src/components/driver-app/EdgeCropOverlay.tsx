@@ -23,7 +23,7 @@ export const EdgeCropOverlay = ({
   const [imgLoaded, setImgLoaded] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
-  const bottomSafePadding = '32px';
+  // bottomSafePadding removed - using inline CSS calc instead
 
   useEffect(() => {
     setCorners(initialCorners);
