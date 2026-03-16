@@ -19,6 +19,15 @@ interface Plan {
   planKey: string;
 }
 
+interface PlanConfigRow {
+  plan: string;
+  name: string;
+  price_monthly: number;
+  max_users: number;
+  max_trucks: number;
+  max_drivers: number;
+}
+
 const defaultPlans: Plan[] = [
   { id: '1', name: 'Basic', price: '$199/mo', users: '1 user', trucks: '5 trucks', drivers: '5 drivers', planKey: 'basic' },
   { id: '2', name: 'Intermediate', price: '$399/mo', users: '2 users', trucks: '15 trucks', drivers: '15 drivers', planKey: 'intermediate' },
@@ -50,55 +59,39 @@ const MasterSettings = () => {
   const [form, setForm] = useState({ name: '', price: '', users: '', trucks: '', drivers: '' });
   const [saving, setSaving] = useState(false);
 
-  // Load actual plan data from the database on mount
   const loadPlansFromDb = useCallback(async () => {
     try {
-      // Get one representative subscription per plan to read current limits
-      const { data: subs } = await supabase
-        .from('subscriptions')
-        .select('plan, price_monthly, max_users, max_trucks');
+      const { data, error } = await supabase
+        .from('plan_configs' as any)
+        .select('plan, name, price_monthly, max_users, max_trucks, max_drivers');
 
-      // Get max_drivers from tenants per plan
-      const { data: tenants } = await supabase
-        .from('tenants')
-        .select('current_plan, max_drivers');
+      if (error) throw error;
+      if (!data || data.length === 0) return;
 
-      if (!subs || subs.length === 0) return; // no subscriptions yet, keep defaults
+      const planMap = Object.fromEntries(
+        (data as PlanConfigRow[]).map((plan) => [plan.plan, plan])
+      );
 
-      // Build a map of plan -> latest values
-      const planMap: Record<string, { price: number; users: number; trucks: number; drivers: number }> = {};
+      setPlans((prev) =>
+        prev.map((plan) => {
+          const dbPlan = planMap[plan.planKey];
+          if (!dbPlan) return plan;
 
-      for (const s of subs) {
-        const key = s.plan as string;
-        // Use the latest values (overwrite is fine, all subs of same plan should match)
-        planMap[key] = {
-          price: s.price_monthly,
-          users: s.max_users,
-          trucks: s.max_trucks,
-          drivers: planMap[key]?.drivers ?? -1,
-        };
-      }
+          const maxUsers = Number(dbPlan.max_users);
+          const maxTrucks = Number(dbPlan.max_trucks);
+          const maxDrivers = Number(dbPlan.max_drivers);
+          const priceMonthly = Number(dbPlan.price_monthly);
 
-      // Merge max_drivers from tenants
-      for (const t of (tenants || [])) {
-        const key = t.current_plan as string;
-        if (key && planMap[key] && t.max_drivers !== null) {
-          planMap[key].drivers = t.max_drivers;
-        }
-      }
-
-      // Update plans state with DB values
-      setPlans(prev => prev.map(p => {
-        const db = planMap[p.planKey];
-        if (!db) return p;
-        return {
-          ...p,
-          price: `$${db.price}/mo`,
-          users: formatLimit(db.users, db.users === 1 ? 'user' : 'users'),
-          trucks: formatLimit(db.trucks, db.trucks === 1 ? 'truck' : 'trucks'),
-          drivers: formatLimit(db.drivers, db.drivers === 1 ? 'driver' : 'drivers'),
-        };
-      }));
+          return {
+            ...plan,
+            name: dbPlan.name,
+            price: `$${priceMonthly}/mo`,
+            users: formatLimit(maxUsers, maxUsers === 1 ? 'user' : 'users'),
+            trucks: formatLimit(maxTrucks, maxTrucks === 1 ? 'truck' : 'trucks'),
+            drivers: formatLimit(maxDrivers, maxDrivers === 1 ? 'driver' : 'drivers'),
+          };
+        })
+      );
     } catch (err) {
       console.error('Error loading plans from DB:', err);
     }
