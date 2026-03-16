@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
@@ -38,12 +38,75 @@ const parsePriceMonthly = (val: string): number => {
   return isNaN(num) ? 0 : num;
 };
 
+const formatLimit = (val: number, suffix: string): string => {
+  if (val === -1) return 'Unlimited';
+  return `${val} ${suffix}`;
+};
+
 const MasterSettings = () => {
   const [plans, setPlans] = useState<Plan[]>(defaultPlans);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
   const [form, setForm] = useState({ name: '', price: '', users: '', trucks: '', drivers: '' });
   const [saving, setSaving] = useState(false);
+
+  // Load actual plan data from the database on mount
+  const loadPlansFromDb = useCallback(async () => {
+    try {
+      // Get one representative subscription per plan to read current limits
+      const { data: subs } = await supabase
+        .from('subscriptions')
+        .select('plan, price_monthly, max_users, max_trucks');
+
+      // Get max_drivers from tenants per plan
+      const { data: tenants } = await supabase
+        .from('tenants')
+        .select('current_plan, max_drivers');
+
+      if (!subs || subs.length === 0) return; // no subscriptions yet, keep defaults
+
+      // Build a map of plan -> latest values
+      const planMap: Record<string, { price: number; users: number; trucks: number; drivers: number }> = {};
+
+      for (const s of subs) {
+        const key = s.plan as string;
+        // Use the latest values (overwrite is fine, all subs of same plan should match)
+        planMap[key] = {
+          price: s.price_monthly,
+          users: s.max_users,
+          trucks: s.max_trucks,
+          drivers: planMap[key]?.drivers ?? -1,
+        };
+      }
+
+      // Merge max_drivers from tenants
+      for (const t of (tenants || [])) {
+        const key = t.current_plan as string;
+        if (key && planMap[key] && t.max_drivers !== null) {
+          planMap[key].drivers = t.max_drivers;
+        }
+      }
+
+      // Update plans state with DB values
+      setPlans(prev => prev.map(p => {
+        const db = planMap[p.planKey];
+        if (!db) return p;
+        return {
+          ...p,
+          price: `$${db.price}/mo`,
+          users: formatLimit(db.users, db.users === 1 ? 'user' : 'users'),
+          trucks: formatLimit(db.trucks, db.trucks === 1 ? 'truck' : 'trucks'),
+          drivers: formatLimit(db.drivers, db.drivers === 1 ? 'driver' : 'drivers'),
+        };
+      }));
+    } catch (err) {
+      console.error('Error loading plans from DB:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadPlansFromDb();
+  }, [loadPlansFromDb]);
 
   const openCreate = () => {
     setEditingPlan(null);
