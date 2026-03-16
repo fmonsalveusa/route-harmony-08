@@ -66,6 +66,7 @@ const MasterTenants = () => {
   const [editForm, setEditForm] = useState({
     name: '', legal_name: '', dba_name: '', dot_number: '', mc_number: '',
     address: '', city: '', state: '', zip: '', phone: '', email: '', website: '',
+    plan: '' as string,
   });
 
   const openEdit = (t: any) => {
@@ -74,17 +75,43 @@ const MasterTenants = () => {
       dot_number: t.dot_number || '', mc_number: t.mc_number || '',
       address: t.address || '', city: t.city || '', state: t.state || '',
       zip: t.zip || '', phone: t.phone || '', email: t.email || '', website: t.website || '',
+      plan: t.subscription?.plan || '',
     });
     setEditTenant(t);
   };
 
   const handleEditSave = async () => {
     if (!editTenant) return;
-    const payload: any = { ...editForm };
+    const { plan, ...rest } = editForm;
+    const payload: any = { ...rest };
     Object.keys(payload).forEach(k => { if (payload[k] === '') payload[k] = null; });
-    payload.name = editForm.name || editForm.legal_name;
+    payload.name = rest.name || rest.legal_name;
     const { error } = await supabase.from('tenants').update(payload).eq('id', editTenant.id);
     if (error) { toast.error('Error al actualizar empresa'); return; }
+
+    // Update subscription plan if changed
+    if (plan && plan !== editTenant.subscription?.plan) {
+      const pd = planDetails[plan as keyof typeof planDetails];
+      if (pd && editTenant.subscription?.id) {
+        const { error: subErr } = await supabase.from('subscriptions').update({
+          plan: plan as any,
+          price_monthly: pd.price,
+          max_users: pd.maxUsers,
+          max_trucks: pd.maxTrucks,
+        }).eq('id', editTenant.subscription.id);
+        if (subErr) { toast.error('Error al actualizar plan'); return; }
+      } else if (pd && !editTenant.subscription) {
+        // Create subscription if none exists
+        await supabase.from('subscriptions').insert({
+          tenant_id: editTenant.id,
+          plan: plan as any,
+          price_monthly: pd.price,
+          max_users: pd.maxUsers,
+          max_trucks: pd.maxTrucks,
+        });
+      }
+    }
+
     toast.success('Empresa actualizada');
     setEditTenant(null);
     fetchTenants();
@@ -372,6 +399,23 @@ const MasterTenants = () => {
               <div><Label>Teléfono</Label><Input value={editForm.phone} onChange={e => setEditForm(f => ({ ...f, phone: e.target.value }))} /></div>
               <div><Label>Email</Label><Input type="email" value={editForm.email} onChange={e => setEditForm(f => ({ ...f, email: e.target.value }))} /></div>
               <div className="col-span-2"><Label>Website</Label><Input value={editForm.website} onChange={e => setEditForm(f => ({ ...f, website: e.target.value }))} /></div>
+              <div className="col-span-2">
+                <Label>Plan de Suscripción</Label>
+                <div className="grid grid-cols-3 gap-2 mt-1">
+                  {(Object.entries(planDetails) as [string, typeof planDetails.basic][]).map(([key, plan]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setEditForm(f => ({ ...f, plan: key }))}
+                      className={`rounded-lg border-2 p-3 text-left transition-all ${editForm.plan === key ? `${plan.color} border-primary ring-2 ring-primary/20` : 'border-border hover:border-muted-foreground/30'}`}
+                    >
+                      <p className="font-bold text-sm">{plan.label}</p>
+                      <p className="text-lg font-bold">${plan.price}<span className="text-xs font-normal text-muted-foreground">/mes</span></p>
+                      <p className="text-xs text-muted-foreground">{plan.maxUsers} usuarios · {plan.maxTrucks} camiones</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
           <DialogFooter>
