@@ -1293,6 +1293,39 @@ export type Database = {
           },
         ]
       }
+      plan_configs: {
+        Row: {
+          created_at: string
+          max_drivers: number
+          max_trucks: number
+          max_users: number
+          name: string
+          plan: Database["public"]["Enums"]["subscription_plan"]
+          price_monthly: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          max_drivers?: number
+          max_trucks?: number
+          max_users?: number
+          name: string
+          plan: Database["public"]["Enums"]["subscription_plan"]
+          price_monthly?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          max_drivers?: number
+          max_trucks?: number
+          max_users?: number
+          name?: string
+          plan?: Database["public"]["Enums"]["subscription_plan"]
+          price_monthly?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pod_documents: {
         Row: {
           created_at: string
