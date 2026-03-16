@@ -55,7 +55,30 @@ export function useSubscription() {
 
   useEffect(() => {
     fetchSubscription();
-  }, [fetchSubscription]);
+
+    if (!profile?.tenant_id) return;
+
+    // Listen for realtime changes on this tenant's row
+    const channel = supabase
+      .channel(`tenant-sub-${profile.tenant_id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'tenants',
+          filter: `id=eq.${profile.tenant_id}`,
+        },
+        () => {
+          fetchSubscription();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchSubscription, profile?.tenant_id]);
 
   const canAddDriver = () => {
     if (!subscription) return true;
