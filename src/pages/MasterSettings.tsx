@@ -19,6 +19,15 @@ interface Plan {
   planKey: string;
 }
 
+interface PlanConfigRow {
+  plan: string;
+  name: string;
+  price_monthly: number;
+  max_users: number;
+  max_trucks: number;
+  max_drivers: number;
+}
+
 const defaultPlans: Plan[] = [
   { id: '1', name: 'Basic', price: '$199/mo', users: '1 user', trucks: '5 trucks', drivers: '5 drivers', planKey: 'basic' },
   { id: '2', name: 'Intermediate', price: '$399/mo', users: '2 users', trucks: '15 trucks', drivers: '15 drivers', planKey: 'intermediate' },
@@ -50,55 +59,41 @@ const MasterSettings = () => {
   const [form, setForm] = useState({ name: '', price: '', users: '', trucks: '', drivers: '' });
   const [saving, setSaving] = useState(false);
 
-  // Load actual plan data from the database on mount
   const loadPlansFromDb = useCallback(async () => {
     try {
-      // Get one representative subscription per plan to read current limits
-      const { data: subs } = await supabase
-        .from('subscriptions')
-        .select('plan, price_monthly, max_users, max_trucks');
+      const { data, error } = await supabase
+        .from('plan_configs' as any)
+        .select('plan, name, price_monthly, max_users, max_trucks, max_drivers');
 
-      // Get max_drivers from tenants per plan
-      const { data: tenants } = await supabase
-        .from('tenants')
-        .select('current_plan, max_drivers');
+      if (error) throw error;
 
-      if (!subs || subs.length === 0) return; // no subscriptions yet, keep defaults
+      const rows = ((data ?? []) as unknown) as PlanConfigRow[];
+      if (rows.length === 0) return;
 
-      // Build a map of plan -> latest values
-      const planMap: Record<string, { price: number; users: number; trucks: number; drivers: number }> = {};
+      const planMap = Object.fromEntries(
+        rows.map((plan) => [plan.plan, plan])
+      );
 
-      for (const s of subs) {
-        const key = s.plan as string;
-        // Use the latest values (overwrite is fine, all subs of same plan should match)
-        planMap[key] = {
-          price: s.price_monthly,
-          users: s.max_users,
-          trucks: s.max_trucks,
-          drivers: planMap[key]?.drivers ?? -1,
-        };
-      }
+      setPlans((prev) =>
+        prev.map((plan) => {
+          const dbPlan = planMap[plan.planKey];
+          if (!dbPlan) return plan;
 
-      // Merge max_drivers from tenants
-      for (const t of (tenants || [])) {
-        const key = t.current_plan as string;
-        if (key && planMap[key] && t.max_drivers !== null) {
-          planMap[key].drivers = t.max_drivers;
-        }
-      }
+          const maxUsers = Number(dbPlan.max_users);
+          const maxTrucks = Number(dbPlan.max_trucks);
+          const maxDrivers = Number(dbPlan.max_drivers);
+          const priceMonthly = Number(dbPlan.price_monthly);
 
-      // Update plans state with DB values
-      setPlans(prev => prev.map(p => {
-        const db = planMap[p.planKey];
-        if (!db) return p;
-        return {
-          ...p,
-          price: `$${db.price}/mo`,
-          users: formatLimit(db.users, db.users === 1 ? 'user' : 'users'),
-          trucks: formatLimit(db.trucks, db.trucks === 1 ? 'truck' : 'trucks'),
-          drivers: formatLimit(db.drivers, db.drivers === 1 ? 'driver' : 'drivers'),
-        };
-      }));
+          return {
+            ...plan,
+            name: dbPlan.name,
+            price: `$${priceMonthly}/mo`,
+            users: formatLimit(maxUsers, maxUsers === 1 ? 'user' : 'users'),
+            trucks: formatLimit(maxTrucks, maxTrucks === 1 ? 'truck' : 'trucks'),
+            drivers: formatLimit(maxDrivers, maxDrivers === 1 ? 'driver' : 'drivers'),
+          };
+        })
+      );
     } catch (err) {
       console.error('Error loading plans from DB:', err);
     }
@@ -130,53 +125,63 @@ const MasterSettings = () => {
 
     try {
       if (editingPlan) {
-        // Update local state
-        setPlans(prev => prev.map(p => p.id === editingPlan.id ? { ...p, ...form } : p));
-
         const planKey = editingPlan.planKey;
         const maxDrivers = parseNumericLimit(form.drivers);
         const maxTrucks = parseNumericLimit(form.trucks);
         const maxUsers = parseNumericLimit(form.users);
         const priceMonthly = parsePriceMonthly(form.price);
 
-        // 1. Update subscriptions that have this plan
-        const { error: subErr } = await supabase
-          .from('subscriptions')
-          .update({
-            max_users: maxUsers,
-            max_trucks: maxTrucks,
-            price_monthly: priceMonthly,
-          })
-          .eq('plan', planKey as any);
+        const { error: planConfigErr } = await supabase
+          .from('plan_configs' as any)
+          .upsert(
+            {
+              plan: planKey,
+              name: form.name.trim(),
+              price_monthly: priceMonthly,
+              max_users: maxUsers,
+              max_trucks: maxTrucks,
+              max_drivers: maxDrivers,
+            },
+            { onConflict: 'plan' }
+          );
 
-        if (subErr) console.error('Error updating subscriptions:', subErr);
+        if (planConfigErr) throw planConfigErr;
 
-        // 2. Get tenant IDs affected by this plan (via subscriptions table)
-        const { data: affectedSubs } = await supabase
-          .from('subscriptions')
-          .select('tenant_id')
-          .eq('plan', planKey as any);
+        const [{ error: subErr }, { data: affectedSubs, error: affectedSubsErr }, { error: tenantErrByPlan }] = await Promise.all([
+          supabase
+            .from('subscriptions')
+            .update({
+              max_users: maxUsers,
+              max_trucks: maxTrucks,
+              price_monthly: priceMonthly,
+            })
+            .eq('plan', planKey as any),
+          supabase
+            .from('subscriptions')
+            .select('tenant_id')
+            .eq('plan', planKey as any),
+          supabase
+            .from('tenants')
+            .update({ max_drivers: maxDrivers })
+            .eq('current_plan', planKey),
+        ]);
 
-        const tenantIds = (affectedSubs || []).map(s => s.tenant_id);
+        if (subErr) throw subErr;
+        if (affectedSubsErr) throw affectedSubsErr;
+        if (tenantErrByPlan) throw tenantErrByPlan;
 
-        // 3. Also include tenants with current_plan matching
+        const tenantIds = [...new Set((affectedSubs || []).map((sub) => sub.tenant_id).filter(Boolean))];
+
         if (tenantIds.length > 0) {
           const { error: tenantErr } = await supabase
             .from('tenants')
             .update({ max_drivers: maxDrivers, current_plan: planKey })
             .in('id', tenantIds);
 
-          if (tenantErr) console.error('Error updating tenants:', tenantErr);
+          if (tenantErr) throw tenantErr;
         }
 
-        // 4. Also update any tenants matched by current_plan but without subscription
-        const { error: tenantErr2 } = await supabase
-          .from('tenants')
-          .update({ max_drivers: maxDrivers })
-          .eq('current_plan', planKey);
-
-        if (tenantErr2) console.error('Error updating tenants by plan:', tenantErr2);
-
+        await loadPlansFromDb();
         toast.success(`Plan "${form.name}" updated. All companies with this plan have been synced.`);
       } else {
         setPlans(prev => [...prev, { id: crypto.randomUUID(), planKey: form.name.toLowerCase().replace(/\s+/g, '_'), ...form }]);
