@@ -37,27 +37,33 @@ const PLAN_PRICES: Record<string, number> = {
 export function useSubscription() {
   const { profile } = useAuth();
   const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
+  const [subDetails, setSubDetails] = useState<SubscriptionDetails | null>(null);
   const [activeDriverCount, setActiveDriverCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   const fetchSubscription = useCallback(async () => {
     if (!profile?.tenant_id) return;
 
-    const { data } = await supabase
-      .from('tenants')
-      .select('current_plan, subscription_status, max_drivers, max_loads, trial_ends_at, subscription_ends_at, stripe_customer_id, stripe_subscription_id')
-      .eq('id', profile.tenant_id)
-      .maybeSingle();
+    const [tenantRes, subRes, driverRes] = await Promise.all([
+      supabase
+        .from('tenants')
+        .select('current_plan, subscription_status, max_drivers, max_loads, trial_ends_at, subscription_ends_at, stripe_customer_id, stripe_subscription_id')
+        .eq('id', profile.tenant_id)
+        .maybeSingle(),
+      supabase
+        .from('subscriptions')
+        .select('plan, status, price_monthly, max_users, max_trucks')
+        .eq('tenant_id', profile.tenant_id)
+        .maybeSingle(),
+      supabase
+        .from('drivers')
+        .select('*', { count: 'exact', head: true })
+        .neq('status', 'inactive'),
+    ]);
 
-    if (data) setSubscription(data as any as SubscriptionInfo);
-
-    // Count active drivers
-    const { count } = await supabase
-      .from('drivers')
-      .select('*', { count: 'exact', head: true })
-      .neq('status', 'inactive');
-
-    setActiveDriverCount(count || 0);
+    if (tenantRes.data) setSubscription(tenantRes.data as any as SubscriptionInfo);
+    if (subRes.data) setSubDetails(subRes.data as any as SubscriptionDetails);
+    setActiveDriverCount(driverRes.count || 0);
     setLoading(false);
   }, [profile?.tenant_id]);
 
@@ -66,7 +72,6 @@ export function useSubscription() {
 
     if (!profile?.tenant_id) return;
 
-    // Listen for realtime changes on this tenant's row
     const channel = supabase
       .channel(`tenant-sub-${profile.tenant_id}`)
       .on(
@@ -77,9 +82,17 @@ export function useSubscription() {
           table: 'tenants',
           filter: `id=eq.${profile.tenant_id}`,
         },
-        () => {
-          fetchSubscription();
-        }
+        () => { fetchSubscription(); }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'subscriptions',
+          filter: `tenant_id=eq.${profile.tenant_id}`,
+        },
+        () => { fetchSubscription(); }
       )
       .subscribe();
 
@@ -105,7 +118,7 @@ export function useSubscription() {
   const isCanceled = () => subscription?.subscription_status === 'canceled';
 
   const getPlanLabel = () => PLAN_LABELS[subscription?.current_plan || ''] || subscription?.current_plan || 'N/A';
-  const getPlanPrice = () => PLAN_PRICES[subscription?.current_plan || ''] || 0;
+  const getPlanPrice = () => subDetails?.price_monthly ?? PLAN_PRICES[subscription?.current_plan || ''] ?? 0;
 
   const openCustomerPortal = async () => {
     const { data, error } = await supabase.functions.invoke('customer-portal');
@@ -118,6 +131,7 @@ export function useSubscription() {
 
   return {
     subscription,
+    subDetails,
     activeDriverCount,
     loading,
     canAddDriver,
