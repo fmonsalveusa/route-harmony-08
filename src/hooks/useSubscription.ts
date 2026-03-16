@@ -13,6 +13,14 @@ export interface SubscriptionInfo {
   stripe_subscription_id: string | null;
 }
 
+export interface SubscriptionDetails {
+  plan: string;
+  status: string;
+  price_monthly: number;
+  max_users: number;
+  max_trucks: number;
+}
+
 const PLAN_LABELS: Record<string, string> = {
   basic: 'Basic',
   pro: 'Pro',
