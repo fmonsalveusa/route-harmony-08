@@ -1,25 +1,29 @@
 
 
-## Update Service Agreement Contract — QUINTA/FIFTH Clause
+## Problema
 
-After comparing the uploaded V1.2 PDF with the current code in `ServiceAgreementDialog.tsx`, the **only change** is in **Clause QUINTA (Inspecciones en Carretera) / FIFTH (Roadside Inspections)**. The text has been significantly expanded in both Spanish and English versions.
+El preview de Lovable carga desde un iframe que puede mantener módulos JS en caché del navegador (no solo Service Worker). La limpieza actual en `main.tsx` solo elimina Service Workers y Cache API, pero el **caché HTTP del navegador** (disk cache) sigue sirviendo versiones antiguas de los chunks JS que contienen la función `generateTerminationLetterPdf`.
 
-### What changes
+Esto explica por qué la app publicada siempre muestra el formato correcto (deploy fresco) pero el preview a veces muestra el formato anterior.
 
-**Spanish — QUINTA. INSPECCIONES EN CARRETERA:**
-The current short paragraph is replaced with three paragraphs:
-1. Driver must notify immediately; must use only their own company info (USDOT, MC, etc.) on both sides of the vehicle. Must never use the Company's identifying information.
-2. If Company's name appears on inspection report, Company reserves the right to withhold full payment as "liquidated damages."
-3. New paragraph: If Driver operates under a Leasing Agreement and gets a violation/warning/Out-of-Service, a $300 penalty applies. Conversely, a clean inspection earns a $100 safety bonus.
+## Solución
 
-**English — FIFTH. ROADSIDE INSPECTIONS:**
-Same three-paragraph expansion as the Spanish version.
+No hay una solución de código que resuelva esto permanentemente desde el lado de la app — es un comportamiento del navegador en el entorno de preview. Sin embargo, podemos mitigar el problema:
 
-### Files to modify
+1. **Agregar headers de no-cache para el preview** en `vite.config.ts`: Configurar headers del servidor de desarrollo para evitar que el navegador cachee los módulos JS.
 
-1. **`src/components/onboarding/ServiceAgreementDialog.tsx`** — Replace the QUINTA and FIFTH clause text blocks with the updated V1.2 content.
+   En `server` config, agregar:
+   ```ts
+   headers: {
+     'Cache-Control': 'no-store, no-cache, must-revalidate',
+   }
+   ```
 
-2. **`src/lib/onboardingDocPdf.ts`** — Update the `generateServiceAgreementPdf` function to include the same updated text in the generated PDF output (both Spanish and English sections).
+2. **Forzar limpieza más agresiva en preview**: Además de limpiar SW y Cache API, intentar forzar una recarga sin caché si se detecta que es la primera carga después de un cambio.
 
-No changes to fields, signatures, or any other clauses.
+Esto debería reducir significativamente el problema de ver formatos antiguos en el preview.
+
+## Archivos a modificar
+
+- `vite.config.ts` — agregar `headers` con `Cache-Control: no-store` en la config de `server`
 
