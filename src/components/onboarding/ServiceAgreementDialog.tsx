@@ -150,7 +150,9 @@ export default function ServiceAgreementDialog({ open, onOpenChange, driverName,
               <p>If THE DRIVER remains with the company for more than three (3) months, said amount will be refunded.</p>
 
               <h4 className="font-bold">FIFTH. ROADSIDE INSPECTIONS</h4>
-              <p>In the event THE DRIVER is subject to a roadside inspection (DOT or similar), THE DRIVER must notify THE COMPANY immediately. For such inspection, THE DRIVER must always use the information of his/her own company, which must be displayed on both sides of the vehicle. THE COMPANY's information must never be used. If the inspection report shows the name of THE COMPANY, the corresponding payment for the load being carried at that time will be withheld.</p>
+              <p>In the event THE DRIVER is subject to a roadside inspection (DOT or similar), THE DRIVER must notify THE COMPANY immediately. For such inspection, THE DRIVER must always use the information corresponding to his/her own company (USDOT, MC, trade name, etc.), which must be visibly displayed on both sides of the vehicle in accordance with federal regulations. Under no circumstances shall THE DRIVER use the identifying information of THE COMPANY.</p>
+              <p>If THE COMPANY's name appears on the inspection report, THE COMPANY reserves the right to withhold the full payment corresponding to the load being carried at that time as "liquidated damages."</p>
+              <p>If THE DRIVER operates under a Leasing Agreement with THE COMPANY and during an inspection receives a violation, warning, or is placed Out-of-Service, a penalty of three hundred dollars (USD $300) shall apply. Conversely, if THE DRIVER receives a clean inspection (no violations), he/she shall receive a safety bonus of one hundred dollars (USD $100) as recognition.</p>
 
               <h4 className="font-bold">SIXTH. PENALTIES</h4>
               <p>The following penalties and deductions shall apply:</p>
