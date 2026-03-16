@@ -399,6 +399,23 @@ const MasterTenants = () => {
               <div><Label>Teléfono</Label><Input value={editForm.phone} onChange={e => setEditForm(f => ({ ...f, phone: e.target.value }))} /></div>
               <div><Label>Email</Label><Input type="email" value={editForm.email} onChange={e => setEditForm(f => ({ ...f, email: e.target.value }))} /></div>
               <div className="col-span-2"><Label>Website</Label><Input value={editForm.website} onChange={e => setEditForm(f => ({ ...f, website: e.target.value }))} /></div>
+              <div className="col-span-2">
+                <Label>Plan de Suscripción</Label>
+                <div className="grid grid-cols-3 gap-2 mt-1">
+                  {(Object.entries(planDetails) as [string, typeof planDetails.basic][]).map(([key, plan]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setEditForm(f => ({ ...f, plan: key }))}
+                      className={`rounded-lg border-2 p-3 text-left transition-all ${editForm.plan === key ? `${plan.color} border-primary ring-2 ring-primary/20` : 'border-border hover:border-muted-foreground/30'}`}
+                    >
+                      <p className="font-bold text-sm">{plan.label}</p>
+                      <p className="text-lg font-bold">${plan.price}<span className="text-xs font-normal text-muted-foreground">/mes</span></p>
+                      <p className="text-xs text-muted-foreground">{plan.maxUsers} usuarios · {plan.maxTrucks} camiones</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
           <DialogFooter>
