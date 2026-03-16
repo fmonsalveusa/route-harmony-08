@@ -82,11 +82,36 @@ const MasterTenants = () => {
 
   const handleEditSave = async () => {
     if (!editTenant) return;
-    const payload: any = { ...editForm };
+    const { plan, ...rest } = editForm;
+    const payload: any = { ...rest };
     Object.keys(payload).forEach(k => { if (payload[k] === '') payload[k] = null; });
-    payload.name = editForm.name || editForm.legal_name;
+    payload.name = rest.name || rest.legal_name;
     const { error } = await supabase.from('tenants').update(payload).eq('id', editTenant.id);
     if (error) { toast.error('Error al actualizar empresa'); return; }
+
+    // Update subscription plan if changed
+    if (plan && plan !== editTenant.subscription?.plan) {
+      const pd = planDetails[plan as keyof typeof planDetails];
+      if (pd && editTenant.subscription?.id) {
+        const { error: subErr } = await supabase.from('subscriptions').update({
+          plan: plan as any,
+          price_monthly: pd.price,
+          max_users: pd.maxUsers,
+          max_trucks: pd.maxTrucks,
+        }).eq('id', editTenant.subscription.id);
+        if (subErr) { toast.error('Error al actualizar plan'); return; }
+      } else if (pd && !editTenant.subscription) {
+        // Create subscription if none exists
+        await supabase.from('subscriptions').insert({
+          tenant_id: editTenant.id,
+          plan: plan as any,
+          price_monthly: pd.price,
+          max_users: pd.maxUsers,
+          max_trucks: pd.maxTrucks,
+        });
+      }
+    }
+
     toast.success('Empresa actualizada');
     setEditTenant(null);
     fetchTenants();
