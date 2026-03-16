@@ -66,6 +66,7 @@ const MasterTenants = () => {
   const [editForm, setEditForm] = useState({
     name: '', legal_name: '', dba_name: '', dot_number: '', mc_number: '',
     address: '', city: '', state: '', zip: '', phone: '', email: '', website: '',
+    plan: '' as string,
   });
 
   const openEdit = (t: any) => {
