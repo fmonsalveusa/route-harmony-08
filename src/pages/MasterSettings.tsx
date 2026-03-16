@@ -123,53 +123,63 @@ const MasterSettings = () => {
 
     try {
       if (editingPlan) {
-        // Update local state
-        setPlans(prev => prev.map(p => p.id === editingPlan.id ? { ...p, ...form } : p));
-
         const planKey = editingPlan.planKey;
         const maxDrivers = parseNumericLimit(form.drivers);
         const maxTrucks = parseNumericLimit(form.trucks);
         const maxUsers = parseNumericLimit(form.users);
         const priceMonthly = parsePriceMonthly(form.price);
 
-        // 1. Update subscriptions that have this plan
-        const { error: subErr } = await supabase
-          .from('subscriptions')
-          .update({
-            max_users: maxUsers,
-            max_trucks: maxTrucks,
-            price_monthly: priceMonthly,
-          })
-          .eq('plan', planKey as any);
+        const { error: planConfigErr } = await supabase
+          .from('plan_configs' as any)
+          .upsert(
+            {
+              plan: planKey,
+              name: form.name.trim(),
+              price_monthly: priceMonthly,
+              max_users: maxUsers,
+              max_trucks: maxTrucks,
+              max_drivers: maxDrivers,
+            },
+            { onConflict: 'plan' }
+          );
 
-        if (subErr) console.error('Error updating subscriptions:', subErr);
+        if (planConfigErr) throw planConfigErr;
 
-        // 2. Get tenant IDs affected by this plan (via subscriptions table)
-        const { data: affectedSubs } = await supabase
-          .from('subscriptions')
-          .select('tenant_id')
-          .eq('plan', planKey as any);
+        const [{ error: subErr }, { data: affectedSubs, error: affectedSubsErr }, { error: tenantErrByPlan }] = await Promise.all([
+          supabase
+            .from('subscriptions')
+            .update({
+              max_users: maxUsers,
+              max_trucks: maxTrucks,
+              price_monthly: priceMonthly,
+            })
+            .eq('plan', planKey as any),
+          supabase
+            .from('subscriptions')
+            .select('tenant_id')
+            .eq('plan', planKey as any),
+          supabase
+            .from('tenants')
+            .update({ max_drivers: maxDrivers })
+            .eq('current_plan', planKey),
+        ]);
 
-        const tenantIds = (affectedSubs || []).map(s => s.tenant_id);
+        if (subErr) throw subErr;
+        if (affectedSubsErr) throw affectedSubsErr;
+        if (tenantErrByPlan) throw tenantErrByPlan;
 
-        // 3. Also include tenants with current_plan matching
+        const tenantIds = [...new Set((affectedSubs || []).map((sub) => sub.tenant_id).filter(Boolean))];
+
         if (tenantIds.length > 0) {
           const { error: tenantErr } = await supabase
             .from('tenants')
             .update({ max_drivers: maxDrivers, current_plan: planKey })
             .in('id', tenantIds);
 
-          if (tenantErr) console.error('Error updating tenants:', tenantErr);
+          if (tenantErr) throw tenantErr;
         }
 
-        // 4. Also update any tenants matched by current_plan but without subscription
-        const { error: tenantErr2 } = await supabase
-          .from('tenants')
-          .update({ max_drivers: maxDrivers })
-          .eq('current_plan', planKey);
-
-        if (tenantErr2) console.error('Error updating tenants by plan:', tenantErr2);
-
+        await loadPlansFromDb();
         toast.success(`Plan "${form.name}" updated. All companies with this plan have been synced.`);
       } else {
         setPlans(prev => [...prev, { id: crypto.randomUUID(), planKey: form.name.toLowerCase().replace(/\s+/g, '_'), ...form }]);
