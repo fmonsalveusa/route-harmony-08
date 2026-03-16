@@ -75,6 +75,7 @@ const MasterTenants = () => {
       dot_number: t.dot_number || '', mc_number: t.mc_number || '',
       address: t.address || '', city: t.city || '', state: t.state || '',
       zip: t.zip || '', phone: t.phone || '', email: t.email || '', website: t.website || '',
+      plan: t.subscription?.plan || '',
     });
     setEditTenant(t);
   };
