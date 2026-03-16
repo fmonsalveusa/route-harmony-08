@@ -85,8 +85,9 @@ export default function ServiceAgreementDialog({ open, onOpenChange, driverName,
             <p>Si EL DRIVER permanece en la empresa más de tres (3) meses, se le reintegrará dicho importe.</p>
 
             <h4 className="font-bold">QUINTA. INSPECCIONES EN CARRETERA</h4>
-            <p>En caso de que EL DRIVER sea sometido a una inspección en carretera (DOT o similar), debe ser notificado de manera inmediata, para tal inspección EL DRIVER utilizará siempre la información correspondiente a su propia empresa la cual debe estar colocada a cada lado de su vehículo. Nunca debe usar la información de nuestra empresa.</p>
-            <p>En caso que en el reporte de la inspección aparezca el nombre de nuestra empresa, el pago correspondiente a la carga que lleve en ese momento será retenido.</p>
+            <p>En caso de que EL DRIVER sea sometido a una inspección en carretera (DOT o similar), deberá notificar a LA EMPRESA de manera inmediata. Para dicha inspección, EL DRIVER utilizará siempre la información correspondiente a su propia empresa (USDOT, MC, nombre comercial, etc.), la cual deberá estar colocada de forma visible a cada lado de su vehículo de acuerdo con las regulaciones federales. Bajo ninguna circunstancia deberá utilizar la información identificativa de LA EMPRESA.</p>
+            <p>En caso de que en el reporte de la inspección aparezca el nombre de LA EMPRESA, ésta se reserva el derecho de retener el pago completo correspondiente a la carga que el DRIVER lleve en ese momento, como "liquidated damages" (daños y perjuicios liquidados).</p>
+            <p>Si EL DRIVER opera bajo un Contrato de Arrendamiento (Leasing Agreement) con LA EMPRESA y durante una inspección se le emite una violación, advertencia o es puesto fuera de servicio (Out-of-Service), se aplicará una penalización de $300 (trescientos dólares). Por el contrario, si EL DRIVER recibe una inspección limpia (sin violaciones), recibirá un bono de seguridad de $100 (cien dólares) como reconocimiento.</p>
 
             <h4 className="font-bold">SEXTA. PENALIZACIONES</h4>
             <p>A continuación la lista de las penalizaciones y su descuento correspondiente:</p>
