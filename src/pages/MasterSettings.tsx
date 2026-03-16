@@ -66,10 +66,12 @@ const MasterSettings = () => {
         .select('plan, name, price_monthly, max_users, max_trucks, max_drivers');
 
       if (error) throw error;
-      if (!data || data.length === 0) return;
+
+      const rows = ((data ?? []) as unknown) as PlanConfigRow[];
+      if (rows.length === 0) return;
 
       const planMap = Object.fromEntries(
-        (data as PlanConfigRow[]).map((plan) => [plan.plan, plan])
+        rows.map((plan) => [plan.plan, plan])
       );
 
       setPlans((prev) =>
