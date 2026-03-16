@@ -70,22 +70,13 @@ const MasterSettings = () => {
         // Update local state
         setPlans(prev => prev.map(p => p.id === editingPlan.id ? { ...p, ...form } : p));
 
-        // Propagate to all tenants & subscriptions with this plan
         const planKey = editingPlan.planKey;
         const maxDrivers = parseNumericLimit(form.drivers);
         const maxTrucks = parseNumericLimit(form.trucks);
         const maxUsers = parseNumericLimit(form.users);
         const priceMonthly = parsePriceMonthly(form.price);
 
-        // Update tenants that have this plan
-        const { error: tenantErr } = await supabase
-          .from('tenants')
-          .update({ max_drivers: maxDrivers })
-          .eq('current_plan', planKey);
-
-        if (tenantErr) console.error('Error updating tenants:', tenantErr);
-
-        // Update subscriptions that have this plan
+        // 1. Update subscriptions that have this plan
         const { error: subErr } = await supabase
           .from('subscriptions')
           .update({
@@ -96,6 +87,32 @@ const MasterSettings = () => {
           .eq('plan', planKey as any);
 
         if (subErr) console.error('Error updating subscriptions:', subErr);
+
+        // 2. Get tenant IDs affected by this plan (via subscriptions table)
+        const { data: affectedSubs } = await supabase
+          .from('subscriptions')
+          .select('tenant_id')
+          .eq('plan', planKey as any);
+
+        const tenantIds = (affectedSubs || []).map(s => s.tenant_id);
+
+        // 3. Also include tenants with current_plan matching
+        if (tenantIds.length > 0) {
+          const { error: tenantErr } = await supabase
+            .from('tenants')
+            .update({ max_drivers: maxDrivers, current_plan: planKey })
+            .in('id', tenantIds);
+
+          if (tenantErr) console.error('Error updating tenants:', tenantErr);
+        }
+
+        // 4. Also update any tenants matched by current_plan but without subscription
+        const { error: tenantErr2 } = await supabase
+          .from('tenants')
+          .update({ max_drivers: maxDrivers })
+          .eq('current_plan', planKey);
+
+        if (tenantErr2) console.error('Error updating tenants by plan:', tenantErr2);
 
         toast.success(`Plan "${form.name}" updated. All companies with this plan have been synced.`);
       } else {
