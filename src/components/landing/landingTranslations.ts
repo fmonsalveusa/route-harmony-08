@@ -530,7 +530,7 @@ const t = {
       { q: "Can I operate without my own MC#?", a: "Yes! With our MC# Leasing service, you can operate legally from day one without needing your own MC#. We handle insurance, compliance and billing." },
       { q: "What languages do you offer support in?", a: "Our entire team is bilingual. We offer full support in Spanish and English, 24 hours a day, 7 days a week." },
       { q: "How do I receive my payments?", a: "Payments are processed weekly. You receive a detailed report for each load and your payment is deposited directly into your bank account." },
-      { q: "What types of vehicles do you accept?", a: "We work with Box Trucks, Hotshots, Dry Vans, Flatbeds and Reefers. Each vehicle type has adapted plans and rates." },
+      { q: "What types of vehicles do you accept?", a: "We work with Box Trucks and Hotshots. Each vehicle type has plans and rates tailored to your needs." },
     ],
 
     // Footer
