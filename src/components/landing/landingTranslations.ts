@@ -526,7 +526,7 @@ const t = {
     faqSubtitle: "Answers to the most common questions about our services.",
     faqs: [
       { q: "What do I need to start working with Dispatch Up?", a: "You just need your truck and up-to-date documents. If you don't have an MC#, you can operate under our authority. The registration process is 100% digital and takes less than 2 minutes." },
-      { q: "How much do you charge for the dispatching service?", a: "Our rates start at $200/week per truck for fleets of 3+ trucks and $250/week for individual trucks. The service includes 24/7 dispatch, access to premium load boards and weekly reports." },
+      { q: "How much do you charge for the dispatching service?", a: "Our rates depend on the type of service you need. We recommend scheduling a meeting to discuss which service best fits your needs and offer you the best option at the best market price." },
       { q: "Can I operate without my own MC#?", a: "Yes! With our MC# Leasing service, you can operate legally from day one without needing your own MC#. We handle insurance, compliance and billing." },
       { q: "What languages do you offer support in?", a: "Our entire team is bilingual. We offer full support in Spanish and English, 24 hours a day, 7 days a week." },
       { q: "How do I receive my payments?", a: "Payments are processed weekly. You receive a detailed report for each load and your payment is deposited directly into your bank account." },
