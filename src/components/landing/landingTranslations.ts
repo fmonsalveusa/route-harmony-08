@@ -181,7 +181,7 @@ const t = {
     faqSubtitle: "Respuestas a las dudas más comunes sobre nuestros servicios.",
     faqs: [
       { q: "¿Qué necesito para empezar a trabajar con Dispatch Up?", a: "Solo necesitas tu camión y documentos al día. Si no tienes MC#, puedes operar bajo nuestra autoridad. El proceso de registro es 100% digital y toma menos de 2 minutos." },
-      { q: "¿Cuánto cobran por el servicio de dispatching?", a: "Nuestras tarifas comienzan en $200/semana por camión para flotas de 3+ camiones y $250/semana para camiones individuales. El servicio incluye dispatch 24/7, acceso a load boards premium y reportes semanales." },
+      { q: "¿Cuánto cobran por el servicio de dispatching?", a: "Nuestras tarifas dependen del tipo de servicio que necesites. Te recomendamos agendar una reunión para conversar contigo y ver cuál servicio se adapta más a tu necesidad, y ofrecerte la mejor opción al mejor precio del mercado." },
       { q: "¿Puedo operar sin MC# propio?", a: "¡Sí! Con nuestro servicio de Leasing bajo MC#, puedes operar legalmente desde el día uno sin necesidad de tener tu propio MC#. Nos encargamos de seguros, compliance y facturación." },
       { q: "¿En qué idiomas ofrecen soporte?", a: "Todo nuestro equipo es bilingüe. Ofrecemos atención completa en español e inglés, las 24 horas del día, los 7 días de la semana." },
       { q: "¿Cómo recibo mis pagos?", a: "Los pagos se procesan semanalmente. Recibes un reporte detallado de cada carga y tu pago se deposita directamente en tu cuenta bancaria." },
