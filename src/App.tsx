@@ -38,6 +38,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Brokers from "./pages/Brokers";
 import Pricing from "./pages/Pricing";
 import Register from "./pages/Register";
+import EldSettings from "./pages/EldSettings";
 import Subscription from "./pages/Subscription";
 
 import DriverDashboard from "./pages/driver-app/DriverDashboard";
