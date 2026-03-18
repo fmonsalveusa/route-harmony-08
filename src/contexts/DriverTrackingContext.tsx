@@ -35,6 +35,7 @@ interface DriverTrackingContextType {
   paused: boolean;
   batterySaver: boolean;
   toggleBatterySaver: () => void;
+  isEldTracked: boolean;
 }
 
 const DriverTrackingContext = createContext<DriverTrackingContextType | null>(null);
