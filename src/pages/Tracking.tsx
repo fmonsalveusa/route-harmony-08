@@ -572,7 +572,7 @@ const Tracking = () => {
                     <Popup>
                       <div className="text-xs">
                         <strong>{driver.name}</strong>
-                        <br />📍 GPS Live
+                        <br />{loc.source === 'eld' ? '📡 ELD Tracking' : '📍 GPS Live'}
                         {loc.speed != null && <><br />Speed: {(loc.speed * 2.237).toFixed(0)} mph</>}
                         <br /><span className="text-muted-foreground">Updated: {new Date(loc.updated_at).toLocaleTimeString()}</span>
                       </div>
