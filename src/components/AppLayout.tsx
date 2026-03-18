@@ -54,6 +54,7 @@ const profileItems: NavItem[] = [
   { label: 'Companies', icon: Building2, path: '/companies', permission: 'companies' },
   { label: 'Users', icon: UserCog, path: '/users', permission: 'users' },
   { label: 'Subscription', icon: CreditCard, path: '/subscription', permission: 'settings' },
+  { label: 'ELD Settings', icon: Settings, path: '/eld-settings', permission: 'settings' },
 ];
 
 const bottomLevelItems: NavItem[] = [
