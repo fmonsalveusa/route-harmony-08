@@ -70,12 +70,13 @@ const Drivers = () => {
   // Fetch driver_locations for GPS active indicator
   useEffect(() => {
     const fetchLocations = async () => {
-      const { data } = await supabase.from('driver_locations').select('driver_id, updated_at');
+      const { data } = await supabase.from('driver_locations').select('driver_id, updated_at, source');
       if (data) {
         const now = Date.now();
-        const active = new Set(
-          (data as any[]).filter(d => now - new Date(d.updated_at).getTime() < 5 * 60 * 1000).map(d => d.driver_id)
-        );
+        const active = new Map<string, string>();
+        (data as any[]).filter(d => now - new Date(d.updated_at).getTime() < 5 * 60 * 1000).forEach(d => {
+          active.set(d.driver_id, d.source || 'gps');
+        });
         setActiveDriverIds(active);
       }
     };
