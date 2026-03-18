@@ -169,7 +169,7 @@ const Tracking = () => {
 
   // Driver live locations
   const [driverLocations, setDriverLocations] = useState<Array<{
-    driver_id: string; lat: number; lng: number; speed: number | null; heading: number | null; updated_at: string;
+    driver_id: string; lat: number; lng: number; speed: number | null; heading: number | null; updated_at: string; source: string;
   }>>([]);
 
   // Fetch driver locations + realtime
