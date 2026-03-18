@@ -511,7 +511,7 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
   }, []);
 
   return (
-    <DriverTrackingContext.Provider value={{ tracking, lastPosition, speed, accuracy, permissionStatus, startTracking, stopTracking, nearbyStop, confirmArrival, dismissArrival, paused, batterySaver, toggleBatterySaver }}>
+    <DriverTrackingContext.Provider value={{ tracking, lastPosition, speed, accuracy, permissionStatus, startTracking, stopTracking, nearbyStop, confirmArrival, dismissArrival, paused, batterySaver, toggleBatterySaver, isEldTracked }}>
       {children}
     </DriverTrackingContext.Provider>
   );
