@@ -210,10 +210,14 @@ const Drivers = () => {
                             <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm">{initials}</AvatarFallback>
                           </Avatar>
                           <div className="flex flex-col items-start">
-                            <span className="font-semibold flex items-center gap-1.5">
-                              {driver.name}
-                              {activeDriverIds.has(driver.id) && (
-                                <Navigation className="h-3.5 w-3.5 text-[hsl(152,60%,40%)] animate-pulse" />
+                             <span className="font-semibold flex items-center gap-1.5">
+                               {driver.name}
+                               {activeDriverIds.has(driver.id) && (
+                                 activeDriverIds.get(driver.id) === 'eld' ? (
+                                   <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-blue-500/15 text-blue-600 text-[9px] font-semibold">📡 ELD</span>
+                                 ) : (
+                                   <Navigation className="h-3.5 w-3.5 text-[hsl(152,60%,40%)] animate-pulse" />
+                                 )
                               )}
                             </span>
                             <ExpiryIndicators items={[
