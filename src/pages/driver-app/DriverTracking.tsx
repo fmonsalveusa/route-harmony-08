@@ -2,7 +2,7 @@ import { useDriverTracking } from '@/contexts/DriverTrackingContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Navigation, MapPin, Gauge, Crosshair, Wifi, WifiOff, AlertTriangle, ShieldAlert, BatteryMedium, Pause } from 'lucide-react';
+import { Navigation, MapPin, Gauge, Crosshair, Wifi, WifiOff, AlertTriangle, ShieldAlert, BatteryMedium, Pause, Radio } from 'lucide-react';
 
 function getAccuracyColor(accuracy: number | null) {
   if (accuracy === null) return 'text-muted-foreground';
