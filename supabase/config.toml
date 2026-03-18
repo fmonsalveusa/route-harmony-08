@@ -38,3 +38,6 @@ verify_jwt = false
 
 [functions.create-service-checkout]
 verify_jwt = false
+
+[functions.eld-sync]
+verify_jwt = false

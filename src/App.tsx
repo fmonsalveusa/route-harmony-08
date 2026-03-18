@@ -38,6 +38,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Brokers from "./pages/Brokers";
 import Pricing from "./pages/Pricing";
 import Register from "./pages/Register";
+import EldSettings from "./pages/EldSettings";
 import Subscription from "./pages/Subscription";
 
 import DriverDashboard from "./pages/driver-app/DriverDashboard";
@@ -216,6 +217,7 @@ const AppRoutes = () => {
       <Route path="/users" element={<ProtectedRoute><UsersPage /></ProtectedRoute>} />
       <Route path="/brokers" element={<ProtectedRoute masterOnly><Brokers /></ProtectedRoute>} />
       <Route path="/subscription" element={<ProtectedRoute><Subscription /></ProtectedRoute>} />
+      <Route path="/eld-settings" element={<ProtectedRoute><EldSettings /></ProtectedRoute>} />
 
       {/* Master Admin routes */}
       <Route path="/master" element={<ProtectedRoute masterOnly><MasterDashboard /></ProtectedRoute>} />
