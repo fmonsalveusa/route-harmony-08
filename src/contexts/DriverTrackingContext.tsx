@@ -126,7 +126,14 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
   useEffect(() => {
     if (!profile?.email) return;
     supabase.from('drivers').select('id').eq('email', profile.email).maybeSingle().then(({ data }) => {
-      if (data) setDriverId(data.id);
+      if (data) {
+        setDriverId(data.id);
+        // Check if this driver is ELD-tracked
+        supabase.from('eld_vehicle_map' as any).select('id').eq('driver_id', data.id).eq('is_active', true).limit(1)
+          .then(({ data: eldData }) => {
+            setIsEldTracked(!!eldData && (eldData as any[]).length > 0);
+          });
+      }
     });
   }, [profile?.email]);
 
