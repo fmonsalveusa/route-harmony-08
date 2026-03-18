@@ -86,6 +86,7 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
   const [driverId, setDriverId] = useState<string | null>(null);
   const [nearbyStop, setNearbyStop] = useState<ActiveStop | null>(null);
   const [activeStops, setActiveStops] = useState<ActiveStop[]>([]);
+  const [isEldTracked, setIsEldTracked] = useState(false);
   const watchRef = useRef<number | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const posRef = useRef<GeolocationPosition | null>(null);
