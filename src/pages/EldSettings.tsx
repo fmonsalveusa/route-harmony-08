@@ -181,7 +181,7 @@ export default function EldSettings() {
                     <SelectTrigger><SelectValue placeholder="Select truck" /></SelectTrigger>
                     <SelectContent>
                       {trucks.map(t => (
-                        <SelectItem key={t.id} value={t.id}>{t.plate_number} - {t.model}</SelectItem>
+                        <SelectItem key={t.id} value={t.id}>{t.unit_number} - {t.model}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
