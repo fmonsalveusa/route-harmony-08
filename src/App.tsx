@@ -217,6 +217,7 @@ const AppRoutes = () => {
       <Route path="/users" element={<ProtectedRoute><UsersPage /></ProtectedRoute>} />
       <Route path="/brokers" element={<ProtectedRoute masterOnly><Brokers /></ProtectedRoute>} />
       <Route path="/subscription" element={<ProtectedRoute><Subscription /></ProtectedRoute>} />
+      <Route path="/eld-settings" element={<ProtectedRoute><EldSettings /></ProtectedRoute>} />
 
       {/* Master Admin routes */}
       <Route path="/master" element={<ProtectedRoute masterOnly><MasterDashboard /></ProtectedRoute>} />

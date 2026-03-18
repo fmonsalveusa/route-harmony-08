@@ -80,6 +80,7 @@ const tenantNavItems: NavItem[] = [
   { label: 'Brokers', icon: Handshake, path: '/brokers', permission: 'loads', masterOnly: true },
   { label: 'Users', icon: UserCog, path: '/users', permission: 'users' },
   { label: 'Subscription', icon: CreditCard, path: '/subscription', permission: 'settings' },
+  { label: 'ELD Settings', icon: Settings, path: '/eld-settings', permission: 'settings' },
 ];
 
 const masterNavItems: NavItem[] = [
