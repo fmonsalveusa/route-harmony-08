@@ -52,7 +52,7 @@ const Drivers = () => {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [dispatcherFilter, setDispatcherFilter] = useState<string>('all');
-  const [activeDriverIds, setActiveDriverIds] = useState<Set<string>>(new Set());
+  const [activeDriverIds, setActiveDriverIds] = useState<Map<string, string>>(new Map());
   const [terminationDriver, setTerminationDriver] = useState<DbDriver | null>(null);
   const [tenantName, setTenantName] = useState('');
   const [limitDialogOpen, setLimitDialogOpen] = useState(false);
