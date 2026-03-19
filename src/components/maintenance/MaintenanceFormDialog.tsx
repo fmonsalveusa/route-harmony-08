@@ -27,7 +27,7 @@ export function MaintenanceFormDialog({ open, onOpenChange, trucks, drivers, onS
     return driver && driver.service_type === 'company_driver';
   });
   const [truckId, setTruckId] = useState('');
-  const [maintenanceType, setMaintenanceType] = useState('oil_change');
+  const [maintenanceType, setMaintenanceType] = useState('maintenance');
   const [category, setCategory] = useState('');
   const [customType, setCustomType] = useState('');
   const [performedAt, setPerformedAt] = useState(new Date().toISOString().split('T')[0]);
@@ -69,7 +69,7 @@ export function MaintenanceFormDialog({ open, onOpenChange, trucks, drivers, onS
         setIsRecurring(!!(editItem.interval_miles || editItem.interval_days));
       } else {
         setTruckId(companyDriverTrucks[0]?.id || '');
-        setMaintenanceType('oil_change');
+        setMaintenanceType('maintenance');
         setCategory('');
         setCustomType('');
         setPerformedAt(new Date().toISOString().split('T')[0]);
