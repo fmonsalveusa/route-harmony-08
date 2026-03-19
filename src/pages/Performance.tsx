@@ -403,7 +403,7 @@ export default function Performance() {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-lg">Truck Performance Summary</CardTitle>
-              <CardDescription>Company Drivers Only — {periodLabels[period]}</CardDescription>
+              <CardDescription>Company Drivers Only — {periodOptions.find(o => o.value === period)?.label}</CardDescription>
             </div>
             <Button variant="outline" size="sm" className="gap-2" onClick={() => setFixedCostsDialogOpen(true)}>
               <Settings className="h-4 w-4" />
