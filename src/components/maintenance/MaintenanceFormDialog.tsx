@@ -69,7 +69,7 @@ export function MaintenanceFormDialog({ open, onOpenChange, trucks, drivers, onS
         setIsRecurring(!!(editItem.interval_miles || editItem.interval_days));
       } else {
         setTruckId(companyDriverTrucks[0]?.id || '');
-        setMaintenanceType('oil_change');
+        setMaintenanceType('maintenance');
         setCategory('');
         setCustomType('');
         setPerformedAt(new Date().toISOString().split('T')[0]);
