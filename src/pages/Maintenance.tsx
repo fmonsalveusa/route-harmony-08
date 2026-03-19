@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Wrench, Plus, AlertTriangle, CheckCircle, Clock, RefreshCw } from 'lucide-react';
+import { Wrench, Plus, AlertTriangle, CheckCircle, Clock, RefreshCw, List, Truck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTruckMaintenance, DbTruckMaintenance } from '@/hooks/useTruckMaintenance';
 import { useTrucks } from '@/hooks/useTrucks';
 import { useDrivers } from '@/hooks/useDrivers';
 import { MaintenanceFormDialog } from '@/components/maintenance/MaintenanceFormDialog';
 import { MaintenanceCard } from '@/components/maintenance/MaintenanceCard';
 import { OneTimeMaintenanceTable } from '@/components/maintenance/OneTimeMaintenanceTable';
+import { AllServicesTable } from '@/components/maintenance/AllServicesTable';
 import { LogServiceDialog } from '@/components/maintenance/LogServiceDialog';
 import { ServiceHistoryDialog } from '@/components/maintenance/ServiceHistoryDialog';
 import { StatCard } from '@/components/StatCard';
@@ -94,84 +96,113 @@ const Maintenance = () => {
         <StatCard title="Overdue" value={dueCount} icon={AlertTriangle} iconClassName="bg-destructive/10 text-destructive" />
       </div>
 
-      {/* Filters */}
-      <div className="flex gap-3">
-        <Select value={filterTruck} onValueChange={setFilterTruck}>
-          <SelectTrigger className="w-48"><SelectValue placeholder="All Trucks" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Trucks</SelectItem>
-            {trucks.map(t => (
-              <SelectItem key={t.id} value={t.id}>{t.unit_number}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger className="w-36"><SelectValue placeholder="All Status" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="ok">OK</SelectItem>
-            <SelectItem value="warning">Warning</SelectItem>
-            <SelectItem value="due">Due</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      {/* Tabs */}
+      <Tabs defaultValue="by-truck">
+        <TabsList>
+          <TabsTrigger value="by-truck"><Truck className="h-4 w-4" /> By Truck</TabsTrigger>
+          <TabsTrigger value="all-services"><List className="h-4 w-4" /> All Services</TabsTrigger>
+        </TabsList>
 
-      {/* Grouped Cards */}
-      {loading ? (
-        <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        {/* Filters (shared) */}
+        <div className="flex gap-3 mt-4">
+          <Select value={filterTruck} onValueChange={setFilterTruck}>
+            <SelectTrigger className="w-48"><SelectValue placeholder="All Trucks" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Trucks</SelectItem>
+              {trucks.map(t => (
+                <SelectItem key={t.id} value={t.id}>{t.unit_number}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="w-36"><SelectValue placeholder="All Status" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="ok">OK</SelectItem>
+              <SelectItem value="warning">Warning</SelectItem>
+              <SelectItem value="due">Due</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-      ) : Object.keys(grouped).length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center text-muted-foreground">
-            <Wrench className="h-10 w-10 mx-auto mb-3 opacity-30" />
-            <p>No maintenance schedules yet. Click "Add Maintenance" to get started.</p>
-          </CardContent>
-        </Card>
-      ) : (
-        Object.entries(grouped).map(([truckId, items]) => (
-          <motion.div
-            key={truckId}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <div className="glass-card overflow-hidden">
-              <div className="px-5 py-3 border-b bg-muted/30">
-                <h3 className="font-semibold text-sm">{getTruckLabel(truckId)}</h3>
-              </div>
-              <CardContent className="p-4">
-                {(() => {
-                  const recurringItems = items.filter(i => i.interval_miles || i.interval_days);
-                  const oneTimeItems = items.filter(i => !i.interval_miles && !i.interval_days);
-                  return (
-                    <>
-                      {recurringItems.length > 0 && (
-                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                          {recurringItems.map(item => (
-                            <MaintenanceCard
-                              key={item.id}
-                              item={item}
-                              onEdit={() => { setEditItem(item); setFormOpen(true); }}
-                              onDelete={() => deleteMaintenance(item.id)}
-                              onLogService={() => setLogItem(item)}
-                              onViewHistory={() => setHistoryItem(item)}
-                            />
-                          ))}
-                        </div>
-                      )}
-                      <OneTimeMaintenanceTable
-                        items={oneTimeItems}
-                        onEdit={(item) => { setEditItem(item); setFormOpen(true); }}
-                        onDelete={(id) => deleteMaintenance(id)}
-                      />
-                    </>
-                  );
-                })()}
-              </CardContent>
+
+        {/* Tab: By Truck */}
+        <TabsContent value="by-truck">
+          {loading ? (
+            <div className="flex justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
             </div>
-          </motion.div>
-        ))
-      )}
+          ) : Object.keys(grouped).length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center text-muted-foreground">
+                <Wrench className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                <p>No maintenance schedules yet. Click "Add Maintenance" to get started.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            Object.entries(grouped).map(([truckId, items]) => (
+              <motion.div
+                key={truckId}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-4"
+              >
+                <div className="glass-card overflow-hidden">
+                  <div className="px-5 py-3 border-b bg-muted/30">
+                    <h3 className="font-semibold text-sm">{getTruckLabel(truckId)}</h3>
+                  </div>
+                  <CardContent className="p-4">
+                    {(() => {
+                      const recurringItems = items.filter(i => i.interval_miles || i.interval_days);
+                      const oneTimeItems = items.filter(i => !i.interval_miles && !i.interval_days);
+                      return (
+                        <>
+                          {recurringItems.length > 0 && (
+                            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                              {recurringItems.map(item => (
+                                <MaintenanceCard
+                                  key={item.id}
+                                  item={item}
+                                  onEdit={() => { setEditItem(item); setFormOpen(true); }}
+                                  onDelete={() => deleteMaintenance(item.id)}
+                                  onLogService={() => setLogItem(item)}
+                                  onViewHistory={() => setHistoryItem(item)}
+                                />
+                              ))}
+                            </div>
+                          )}
+                          <OneTimeMaintenanceTable
+                            items={oneTimeItems}
+                            onEdit={(item) => { setEditItem(item); setFormOpen(true); }}
+                            onDelete={(id) => deleteMaintenance(id)}
+                          />
+                        </>
+                      );
+                    })()}
+                  </CardContent>
+                </div>
+              </motion.div>
+            ))
+          )}
+        </TabsContent>
+
+        {/* Tab: All Services */}
+        <TabsContent value="all-services">
+          {loading ? (
+            <div className="flex justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+            </div>
+          ) : (
+            <AllServicesTable
+              items={filtered}
+              getTruckLabel={getTruckLabel}
+              onEdit={(item) => { setEditItem(item); setFormOpen(true); }}
+              onDelete={(id) => deleteMaintenance(id)}
+              onLogService={(item) => setLogItem(item)}
+              onViewHistory={(item) => setHistoryItem(item)}
+            />
+          )}
+        </TabsContent>
+      </Tabs>
 
       {/* Dialogs */}
       <MaintenanceFormDialog
