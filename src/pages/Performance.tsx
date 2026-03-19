@@ -550,8 +550,22 @@ export default function Performance() {
 
         {/* Expense Breakdown Pie */}
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="pb-2 flex flex-row items-center justify-between">
             <CardTitle className="text-base">Total Expense Breakdown</CardTitle>
+            <div className="flex items-center gap-1 rounded-md border border-border p-0.5 text-xs">
+              <button
+                onClick={() => setBreakdownBase('expenses')}
+                className={`px-2 py-1 rounded-sm transition-colors ${breakdownBase === 'expenses' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                % of Expenses
+              </button>
+              <button
+                onClick={() => setBreakdownBase('revenue')}
+                className={`px-2 py-1 rounded-sm transition-colors ${breakdownBase === 'revenue' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                % of Revenue
+              </button>
+            </div>
           </CardHeader>
           <CardContent>
             {expenseBreakdownData.length > 0 ? (
@@ -565,7 +579,11 @@ export default function Performance() {
                     cy="50%"
                     outerRadius={100}
                     innerRadius={50}
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    label={({ name, value }) => {
+                      const base = breakdownBase === 'expenses' ? totalExpensesSum : totalRevenue;
+                      const pct = base > 0 ? ((value / base) * 100).toFixed(0) : '0';
+                      return `${name} ${pct}%`;
+                    }}
                   >
                     {expenseBreakdownData.map((entry, i) => (
                       <Cell key={i} fill={entry.fill} />
