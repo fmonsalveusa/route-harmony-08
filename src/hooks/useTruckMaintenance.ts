@@ -34,7 +34,11 @@ export interface MaintenanceInput {
   last_performed_at: string;
   last_miles: number;
   cost?: number | null;
+  tax_amount?: number | null;
   vendor?: string | null;
+  payment_method?: string;
+  location?: string | null;
+  invoice_number?: string | null;
   create_expense?: boolean;
 }
 
