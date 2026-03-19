@@ -85,6 +85,40 @@ export const MAINTENANCE_CATEGORIES_BY_TYPE: Record<string, { value: string; lab
     { value: 'pm_c', label: 'PM-C (Comprehensive)' },
     { value: 'lubrication', label: 'Lubrication/Greasing' },
   ],
+  maintenance: [
+    { value: 'oil_change', label: 'Oil Change' },
+    { value: 'filter_replacement', label: 'Filter Replacement' },
+    { value: 'dot_inspection', label: 'DOT Inspection' },
+    { value: 'pm_service', label: 'PM Service' },
+    { value: 'lubrication', label: 'Lubrication/Greasing' },
+    { value: 'fluid_topup', label: 'Fluid Top-Up' },
+  ],
+  repairs: [
+    { value: 'engine', label: 'Engine Repair' },
+    { value: 'transmission', label: 'Transmission Repair' },
+    { value: 'brake', label: 'Brake Repair' },
+    { value: 'electrical', label: 'Electrical Repair' },
+    { value: 'body_work', label: 'Body Work' },
+    { value: 'ac_repair', label: 'A/C Repair' },
+    { value: 'suspension', label: 'Suspension Repair' },
+    { value: 'other_repair', label: 'Other Repair' },
+  ],
+  tires: [
+    { value: 'new_tires', label: 'New Tires' },
+    { value: 'tire_repair', label: 'Tire Repair/Patch' },
+    { value: 'tire_rotation', label: 'Tire Rotation' },
+    { value: 'wheel_alignment', label: 'Wheel Alignment' },
+    { value: 'tire_balancing', label: 'Tire Balancing' },
+  ],
+  parts: [
+    { value: 'filters', label: 'Filters' },
+    { value: 'belts', label: 'Belts' },
+    { value: 'hoses', label: 'Hoses' },
+    { value: 'lights', label: 'Lights' },
+    { value: 'batteries', label: 'Batteries' },
+    { value: 'wipers', label: 'Wipers' },
+    { value: 'other_parts', label: 'Other Parts' },
+  ],
 };
 
 export function getMaintenanceTypeConfig(key: string): MaintenanceTypeConfig {
