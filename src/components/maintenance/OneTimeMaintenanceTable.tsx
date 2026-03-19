@@ -23,6 +23,7 @@ export function OneTimeMaintenanceTable({ items, onEdit, onDelete }: OneTimeMain
           <TableHeader>
             <TableRow>
               <TableHead>Type</TableHead>
+              <TableHead>Description</TableHead>
               <TableHead>Date</TableHead>
               <TableHead className="text-right">Odometer</TableHead>
               <TableHead className="text-right">Cost</TableHead>
@@ -41,6 +42,9 @@ export function OneTimeMaintenanceTable({ items, onEdit, onDelete }: OneTimeMain
                       <Icon className="h-4 w-4 text-muted-foreground" />
                       <span className="text-sm font-medium">{config.label}</span>
                     </div>
+                  </TableCell>
+                  <TableCell className="py-2 text-sm text-muted-foreground max-w-[200px] truncate">
+                    {item.description || '—'}
                   </TableCell>
                   <TableCell className="py-2 text-sm">
                     {new Date(item.last_performed_at).toLocaleDateString()}
