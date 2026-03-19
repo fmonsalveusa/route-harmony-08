@@ -56,6 +56,13 @@ export const CATEGORIES_BY_TYPE: Record<string, { value: string; label: string }
     { value: 'lubrication', label: 'Lubrication/Greasing' },
     { value: 'fluid_topup', label: 'Fluid Top-Up' },
   ],
+  materials: [
+    { value: 'straps', label: 'Straps' },
+    { value: 'tarp', label: 'Tarp' },
+    { value: 'elastic_straps', label: 'Elastic Straps' },
+    { value: 'wood_pieces', label: 'Wood Pieces' },
+    { value: 'other_materials', label: 'Other Materials' },
+  ],
   repairs: [
     { value: 'engine', label: 'Engine Repair' },
     { value: 'transmission', label: 'Transmission Repair' },
