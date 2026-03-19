@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { MAINTENANCE_TYPES } from './maintenanceConstants';
+import { MAINTENANCE_TYPES, MAINTENANCE_TYPE_LABELS, MAINTENANCE_CATEGORIES_BY_TYPE } from './maintenanceConstants';
 import { PAYMENT_METHODS } from '@/components/expenses/expenseConstants';
 import type { DbTruck } from '@/hooks/useTrucks';
 import type { DbTruckMaintenance, MaintenanceInput } from '@/hooks/useTruckMaintenance';
@@ -28,6 +28,7 @@ export function MaintenanceFormDialog({ open, onOpenChange, trucks, drivers, onS
   });
   const [truckId, setTruckId] = useState('');
   const [maintenanceType, setMaintenanceType] = useState('oil_change');
+  const [category, setCategory] = useState('');
   const [customType, setCustomType] = useState('');
   const [performedAt, setPerformedAt] = useState(new Date().toISOString().split('T')[0]);
   const [lastMiles, setLastMiles] = useState('');
@@ -51,6 +52,7 @@ export function MaintenanceFormDialog({ open, onOpenChange, trucks, drivers, onS
         setTruckId(editItem.truck_id);
         const found = MAINTENANCE_TYPES.find(t => t.label === editItem.maintenance_type);
         setMaintenanceType(found?.key || 'custom');
+        setCategory('');
         setCustomType(found ? '' : editItem.maintenance_type);
         setPerformedAt(editItem.last_performed_at);
         setLastMiles(String(editItem.last_miles));
@@ -68,6 +70,7 @@ export function MaintenanceFormDialog({ open, onOpenChange, trucks, drivers, onS
       } else {
         setTruckId(companyDriverTrucks[0]?.id || '');
         setMaintenanceType('oil_change');
+        setCategory('');
         setCustomType('');
         setPerformedAt(new Date().toISOString().split('T')[0]);
         setLastMiles('');
@@ -186,21 +189,33 @@ export function MaintenanceFormDialog({ open, onOpenChange, trucks, drivers, onS
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label>Maintenance Type *</Label>
-                <Select value={maintenanceType} onValueChange={setMaintenanceType}>
+                <Select value={maintenanceType} onValueChange={v => { setMaintenanceType(v); setCategory(''); }}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {MAINTENANCE_TYPES.map(t => (
+                    {[...MAINTENANCE_TYPES].sort((a, b) => a.label.localeCompare(b.label)).map(t => (
                       <SelectItem key={t.key} value={t.key}>{t.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-              {maintenanceType === 'custom' && (
+              {maintenanceType === 'custom' ? (
                 <div>
                   <Label>Custom Type Name *</Label>
                   <Input value={customType} onChange={e => setCustomType(e.target.value)} placeholder="e.g. Belt Replacement" />
                 </div>
-              )}
+              ) : (MAINTENANCE_CATEGORIES_BY_TYPE[maintenanceType] || []).length > 0 ? (
+                <div>
+                  <Label>Category</Label>
+                  <Select value={category} onValueChange={setCategory}>
+                    <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                    <SelectContent>
+                      {[...(MAINTENANCE_CATEGORIES_BY_TYPE[maintenanceType] || [])].sort((a, b) => a.label.localeCompare(b.label)).map(c => (
+                        <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ) : null}
               <div className="md:col-span-2">
                 <Label>Description * ({description.length}/500)</Label>
                 <Textarea value={description} maxLength={500} onChange={e => setDescription(e.target.value)}
