@@ -401,7 +401,8 @@ export default function Performance() {
                   <TableHead>Truck</TableHead>
                   <TableHead>Driver</TableHead>
                   <TableHead className="text-right">Revenue</TableHead>
-                  <TableHead className="text-right">Fixed Costs</TableHead>
+                   <TableHead className="text-right">Fixed Costs</TableHead>
+                   <TableHead className="text-right">Driver Pay</TableHead>
                   <TableHead className="text-right">% Factoring</TableHead>
                   <TableHead className="text-right">Expenses</TableHead>
                   <TableHead className="text-right font-bold">Net Profit</TableHead>
