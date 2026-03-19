@@ -22,9 +22,9 @@ export function OneTimeMaintenanceTable({ items, onEdit, onDelete }: OneTimeMain
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>Date</TableHead>
               <TableHead>Type</TableHead>
               <TableHead>Description</TableHead>
-              <TableHead>Date</TableHead>
               <TableHead className="text-right">Odometer</TableHead>
               <TableHead className="text-right">Cost</TableHead>
               <TableHead>Vendor</TableHead>
@@ -37,6 +37,9 @@ export function OneTimeMaintenanceTable({ items, onEdit, onDelete }: OneTimeMain
               const Icon = config.icon;
               return (
                 <TableRow key={item.id}>
+                  <TableCell className="py-2 text-sm">
+                    {new Date(item.last_performed_at).toLocaleDateString()}
+                  </TableCell>
                   <TableCell className="py-2">
                     <div className="flex items-center gap-2">
                       <Icon className="h-4 w-4 text-muted-foreground" />
@@ -45,9 +48,6 @@ export function OneTimeMaintenanceTable({ items, onEdit, onDelete }: OneTimeMain
                   </TableCell>
                   <TableCell className="py-2 text-sm text-muted-foreground max-w-[200px] truncate">
                     {item.description || '—'}
-                  </TableCell>
-                  <TableCell className="py-2 text-sm">
-                    {new Date(item.last_performed_at).toLocaleDateString()}
                   </TableCell>
                   <TableCell className="py-2 text-sm text-right tabular-nums">
                     {item.last_miles.toLocaleString()} mi
