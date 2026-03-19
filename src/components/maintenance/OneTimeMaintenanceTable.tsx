@@ -43,7 +43,9 @@ export function OneTimeMaintenanceTable({ items, onEdit, onDelete }: OneTimeMain
                       <span className="text-sm font-medium">{config.label}</span>
                     </div>
                   </TableCell>
-                  <TableCell className="py-2 text-sm">
+                  <TableCell className="py-2 text-sm text-muted-foreground max-w-[200px] truncate">
+                    {item.description || '—'}
+                  </TableCell>
                     {new Date(item.last_performed_at).toLocaleDateString()}
                   </TableCell>
                   <TableCell className="py-2 text-sm text-right tabular-nums">
