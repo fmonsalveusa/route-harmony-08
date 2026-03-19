@@ -10,7 +10,7 @@ import { useTrucks } from '@/hooks/useTrucks';
 import { useDrivers } from '@/hooks/useDrivers';
 import { MaintenanceFormDialog } from '@/components/maintenance/MaintenanceFormDialog';
 import { MaintenanceCard } from '@/components/maintenance/MaintenanceCard';
-import { OneTimeMaintenanceTable } from '@/components/maintenance/OneTimeMaintenanceTable';
+
 import { AllServicesTable } from '@/components/maintenance/AllServicesTable';
 import { LogServiceDialog } from '@/components/maintenance/LogServiceDialog';
 import { ServiceHistoryDialog } from '@/components/maintenance/ServiceHistoryDialog';
