@@ -1,5 +1,5 @@
 export const EXPENSE_TYPES = [
-  'fuel', 'maintenance', 'repairs', 'tires', 'insurance',
+  'fuel', 'maintenance', 'materials', 'repairs', 'tires', 'insurance',
   'permits_licenses', 'tolls', 'parking', 'cleaning',
   'parts', 'labor', 'towing', 'fines', 'other',
 ] as const;
@@ -7,6 +7,7 @@ export const EXPENSE_TYPES = [
 export const EXPENSE_TYPE_LABELS: Record<string, string> = {
   fuel: 'Fuel',
   maintenance: 'Maintenance',
+  materials: 'Materials',
   repairs: 'Repairs',
   tires: 'Tires',
   insurance: 'Insurance',
@@ -24,6 +25,7 @@ export const EXPENSE_TYPE_LABELS: Record<string, string> = {
 export const EXPENSE_TYPE_COLORS: Record<string, string> = {
   fuel: 'bg-emerald-100 text-emerald-800',
   maintenance: 'bg-blue-100 text-blue-800',
+  materials: 'bg-lime-100 text-lime-800',
   repairs: 'bg-amber-100 text-amber-800',
   tires: 'bg-violet-100 text-violet-800',
   insurance: 'bg-indigo-100 text-indigo-800',
@@ -53,6 +55,13 @@ export const CATEGORIES_BY_TYPE: Record<string, { value: string; label: string }
     { value: 'pm_service', label: 'PM Service' },
     { value: 'lubrication', label: 'Lubrication/Greasing' },
     { value: 'fluid_topup', label: 'Fluid Top-Up' },
+  ],
+  materials: [
+    { value: 'straps', label: 'Straps' },
+    { value: 'tarp', label: 'Tarp' },
+    { value: 'elastic_straps', label: 'Elastic Straps' },
+    { value: 'wood_pieces', label: 'Wood Pieces' },
+    { value: 'other_materials', label: 'Other Materials' },
   ],
   repairs: [
     { value: 'engine', label: 'Engine Repair' },
