@@ -10,7 +10,7 @@ import { useTrucks } from '@/hooks/useTrucks';
 import { useDrivers } from '@/hooks/useDrivers';
 import { MaintenanceFormDialog } from '@/components/maintenance/MaintenanceFormDialog';
 import { MaintenanceCard } from '@/components/maintenance/MaintenanceCard';
-import { OneTimeMaintenanceTable } from '@/components/maintenance/OneTimeMaintenanceTable';
+
 import { AllServicesTable } from '@/components/maintenance/AllServicesTable';
 import { LogServiceDialog } from '@/components/maintenance/LogServiceDialog';
 import { ServiceHistoryDialog } from '@/components/maintenance/ServiceHistoryDialog';
@@ -151,33 +151,21 @@ const Maintenance = () => {
                     <h3 className="font-semibold text-sm">{getTruckLabel(truckId)}</h3>
                   </div>
                   <CardContent className="p-4">
-                    {(() => {
-                      const recurringItems = items.filter(i => i.interval_miles || i.interval_days);
-                      const oneTimeItems = items.filter(i => !i.interval_miles && !i.interval_days);
-                      return (
-                        <>
-                          {recurringItems.length > 0 && (
-                            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                              {recurringItems.map(item => (
-                                <MaintenanceCard
-                                  key={item.id}
-                                  item={item}
-                                  onEdit={() => { setEditItem(item); setFormOpen(true); }}
-                                  onDelete={() => deleteMaintenance(item.id)}
-                                  onLogService={() => setLogItem(item)}
-                                  onViewHistory={() => setHistoryItem(item)}
-                                />
-                              ))}
-                            </div>
-                          )}
-                          <OneTimeMaintenanceTable
-                            items={oneTimeItems}
-                            onEdit={(item) => { setEditItem(item); setFormOpen(true); }}
-                            onDelete={(id) => deleteMaintenance(id)}
-                          />
-                        </>
-                      );
-                    })()}
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                      {items.filter(i => i.interval_miles || i.interval_days).map(item => (
+                        <MaintenanceCard
+                          key={item.id}
+                          item={item}
+                          onEdit={() => { setEditItem(item); setFormOpen(true); }}
+                          onDelete={() => deleteMaintenance(item.id)}
+                          onLogService={() => setLogItem(item)}
+                          onViewHistory={() => setHistoryItem(item)}
+                        />
+                      ))}
+                    </div>
+                    {items.filter(i => i.interval_miles || i.interval_days).length === 0 && (
+                      <p className="text-sm text-muted-foreground text-center py-4">No recurring maintenance for this truck.</p>
+                    )}
                   </CardContent>
                 </div>
               </motion.div>
