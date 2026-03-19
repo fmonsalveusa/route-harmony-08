@@ -211,6 +211,7 @@ export default function Performance() {
   const totalDispPay = truckPerformance.reduce((s, t) => s + t.dispatcherPay, 0);
   const totalDriverPay = truckPerformance.reduce((s, t) => s + t.driverPay, 0);
   const totalOther = truckPerformance.reduce((s, t) => s + t.otherExp, 0);
+  const totalFactoring = truckPerformance.reduce((s, t) => s + t.factoringAmount, 0);
 
   const expenseBreakdownData = [
     { name: 'Fuel', value: totalFuel, fill: 'hsl(28, 92%, 52%)' },
@@ -218,6 +219,7 @@ export default function Performance() {
     { name: 'Repairs', value: totalRepairs, fill: 'hsl(0, 72%, 51%)' },
     { name: 'Dispatcher Pay', value: totalDispPay, fill: 'hsl(270, 50%, 50%)' },
     { name: 'Driver Pay', value: totalDriverPay, fill: 'hsl(152, 60%, 40%)' },
+    { name: 'Factoring', value: totalFactoring, fill: 'hsl(45, 80%, 50%)' },
     { name: 'Other', value: totalOther, fill: 'hsl(218, 15%, 48%)' },
   ].filter(d => d.value > 0);
 
