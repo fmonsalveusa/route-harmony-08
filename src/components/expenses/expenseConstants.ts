@@ -7,6 +7,7 @@ export const EXPENSE_TYPES = [
 export const EXPENSE_TYPE_LABELS: Record<string, string> = {
   fuel: 'Fuel',
   maintenance: 'Maintenance',
+  materials: 'Materials',
   repairs: 'Repairs',
   tires: 'Tires',
   insurance: 'Insurance',
