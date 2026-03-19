@@ -248,7 +248,7 @@ export function MaintenanceFormDialog({ open, onOpenChange, trucks, drivers, onS
         <div className="flex justify-end gap-2 mt-4">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button onClick={handleSubmit} disabled={saving || !truckId}>
-            {saving ? 'Saving...' : editItem ? 'Update' : 'Create Schedule'}
+            {saving ? 'Saving...' : editItem ? 'Update Maintenance' : 'Save Maintenance'}
           </Button>
         </div>
       </DialogContent>
