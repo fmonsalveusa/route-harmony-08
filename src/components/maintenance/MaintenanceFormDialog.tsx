@@ -40,6 +40,7 @@ export function MaintenanceFormDialog({ open, onOpenChange, trucks, drivers, onS
   const [paymentMethod, setPaymentMethod] = useState('other');
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [description, setDescription] = useState('');
+  const [notes, setNotes] = useState('');
   const [createExpense, setCreateExpense] = useState(true);
   const [isRecurring, setIsRecurring] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -62,6 +63,7 @@ export function MaintenanceFormDialog({ open, onOpenChange, trucks, drivers, onS
         setPaymentMethod('other');
         setInvoiceNumber('');
         setDescription(editItem.description || '');
+        setNotes('');
         setIsRecurring(!!(editItem.interval_miles || editItem.interval_days));
       } else {
         setTruckId(companyDriverTrucks[0]?.id || '');
@@ -78,6 +80,7 @@ export function MaintenanceFormDialog({ open, onOpenChange, trucks, drivers, onS
         setPaymentMethod('other');
         setInvoiceNumber('');
         setDescription('');
+        setNotes('');
         setCreateExpense(true);
         setIsRecurring(true);
       }
@@ -106,10 +109,12 @@ export function MaintenanceFormDialog({ open, onOpenChange, trucks, drivers, onS
       ? customType
       : MAINTENANCE_TYPES.find(t => t.key === maintenanceType)?.label || maintenanceType;
 
+    const fullDescription = [description, notes].filter(Boolean).join('\n').trim() || null;
+
     const ok = await onSubmit({
       truck_id: truckId,
       maintenance_type: typeLabel,
-      description: description || null,
+      description: fullDescription,
       interval_miles: isRecurring && intervalMiles ? Number(intervalMiles) : null,
       interval_days: isRecurring && intervalDays ? Number(intervalDays) : null,
       last_performed_at: performedAt,
@@ -134,7 +139,7 @@ export function MaintenanceFormDialog({ open, onOpenChange, trucks, drivers, onS
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Section 1: Basic Information */}
+          {/* Basic Information */}
           <div>
             <h3 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">Basic Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -149,10 +154,10 @@ export function MaintenanceFormDialog({ open, onOpenChange, trucks, drivers, onS
                   <SelectTrigger><SelectValue placeholder="Select truck" /></SelectTrigger>
                   <SelectContent>
                     {companyDriverTrucks.map(t => {
-                      const driver = drivers.find(d => d.id === t.driver_id);
+                      const driver = drivers.find(d => d.truck_id === t.id);
                       return (
                         <SelectItem key={t.id} value={t.id}>
-                          {t.unit_number} — {t.make} {t.model} {driver ? `(${driver.name})` : ''}
+                          {t.unit_number} - {driver?.name || 'No Driver'}
                         </SelectItem>
                       );
                     })}
@@ -175,7 +180,7 @@ export function MaintenanceFormDialog({ open, onOpenChange, trucks, drivers, onS
             </div>
           </div>
 
-          {/* Section 2: Maintenance Details */}
+          {/* Maintenance Details */}
           <div>
             <h3 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">Maintenance Details</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -190,32 +195,21 @@ export function MaintenanceFormDialog({ open, onOpenChange, trucks, drivers, onS
                   </SelectContent>
                 </Select>
               </div>
-              {maintenanceType === 'custom' ? (
+              {maintenanceType === 'custom' && (
                 <div>
                   <Label>Custom Type Name *</Label>
                   <Input value={customType} onChange={e => setCustomType(e.target.value)} placeholder="e.g. Belt Replacement" />
                 </div>
-              ) : (
-                <div>
-                  <Label>Odometer Reading (miles)</Label>
-                  <Input type="number" value={lastMiles} onChange={e => setLastMiles(e.target.value)} placeholder="e.g. 150000" />
-                </div>
               )}
-              {maintenanceType === 'custom' && (
-                <div>
-                  <Label>Odometer Reading (miles)</Label>
-                  <Input type="number" value={lastMiles} onChange={e => setLastMiles(e.target.value)} placeholder="e.g. 150000" />
-                </div>
-              )}
-              <div className={maintenanceType === 'custom' ? '' : 'md:col-span-2'}>
-                <Label>Description / Notes ({description.length}/500)</Label>
+              <div className="md:col-span-2">
+                <Label>Description * ({description.length}/500)</Label>
                 <Textarea value={description} maxLength={500} onChange={e => setDescription(e.target.value)}
-                  placeholder="Describe the maintenance performed..." rows={2} />
+                  placeholder="Describe the maintenance in detail..." />
               </div>
             </div>
           </div>
 
-          {/* Section 3: Schedule Intervals */}
+          {/* Schedule */}
           <div>
             <h3 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">Schedule</h3>
             <div className="flex items-center gap-2 mb-4">
@@ -237,15 +231,15 @@ export function MaintenanceFormDialog({ open, onOpenChange, trucks, drivers, onS
             )}
           </div>
 
-          {/* Section 4: Cost Information */}
+          {/* Cost Information */}
           <div>
             <h3 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">Cost Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <Label>Amount</Label>
+                <Label>Amount *</Label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                  <Input type="number" step="0.01" min="0" className="pl-7" value={cost}
+                  <Input type="number" step="0.01" min="0.01" className="pl-7" value={cost}
                     onChange={e => setCost(e.target.value)} placeholder="0.00" />
                 </div>
               </div>
@@ -264,7 +258,7 @@ export function MaintenanceFormDialog({ open, onOpenChange, trucks, drivers, onS
                 </div>
               </div>
               <div>
-                <Label>Payment Method</Label>
+                <Label>Payment Method *</Label>
                 <Select value={paymentMethod} onValueChange={setPaymentMethod}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -276,25 +270,43 @@ export function MaintenanceFormDialog({ open, onOpenChange, trucks, drivers, onS
               </div>
               <div>
                 <Label>Vendor</Label>
-                <Input value={vendor} maxLength={100} onChange={e => setVendor(e.target.value)} placeholder="e.g. Shop name" />
+                <Input value={vendor} maxLength={100}
+                  onChange={e => setVendor(e.target.value)}
+                  placeholder="e.g., Pilot, Love's" />
               </div>
               <div>
                 <Label>Location</Label>
-                <Input value={location} maxLength={100} onChange={e => setLocation(e.target.value)} placeholder="City, State" />
+                <Input value={location} maxLength={100}
+                  onChange={e => setLocation(e.target.value)}
+                  placeholder="City, State" />
               </div>
             </div>
           </div>
 
-          {/* Section 5: Additional Information */}
+          {/* Additional Information */}
           <div>
             <h3 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">Additional Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
+                <Label>Odometer Reading</Label>
+                <Input type="number" value={lastMiles}
+                  onChange={e => setLastMiles(e.target.value)}
+                  placeholder="e.g., 125000" />
+              </div>
+              <div>
                 <Label>Invoice/Receipt Number</Label>
-                <Input value={invoiceNumber} maxLength={50} onChange={e => setInvoiceNumber(e.target.value)} placeholder="e.g., INV-12345" />
+                <Input value={invoiceNumber} maxLength={50}
+                  onChange={e => setInvoiceNumber(e.target.value)}
+                  placeholder="e.g., INV-12345" />
+              </div>
+              <div className="md:col-span-2">
+                <Label>Notes ({notes.length}/1000)</Label>
+                <Textarea value={notes} maxLength={1000}
+                  onChange={e => setNotes(e.target.value)}
+                  placeholder="Any additional notes..." />
               </div>
               {Number(cost) > 0 && !editItem && (
-                <div className="flex items-center gap-2 self-end pb-2">
+                <div className="flex items-center gap-2">
                   <Switch checked={createExpense} onCheckedChange={setCreateExpense} />
                   <Label className="cursor-pointer text-sm">Create expense record</Label>
                 </div>
