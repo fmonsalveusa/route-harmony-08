@@ -52,6 +52,7 @@ export function MaintenanceFormDialog({ open, onOpenChange, trucks, drivers, onS
         setTruckId(editItem.truck_id);
         const found = MAINTENANCE_TYPES.find(t => t.label === editItem.maintenance_type);
         setMaintenanceType(found?.key || 'custom');
+        setCategory('');
         setCustomType(found ? '' : editItem.maintenance_type);
         setPerformedAt(editItem.last_performed_at);
         setLastMiles(String(editItem.last_miles));
