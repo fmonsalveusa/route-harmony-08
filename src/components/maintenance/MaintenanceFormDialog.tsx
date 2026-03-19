@@ -28,6 +28,7 @@ export function MaintenanceFormDialog({ open, onOpenChange, trucks, drivers, onS
   });
   const [truckId, setTruckId] = useState('');
   const [maintenanceType, setMaintenanceType] = useState('oil_change');
+  const [category, setCategory] = useState('');
   const [customType, setCustomType] = useState('');
   const [performedAt, setPerformedAt] = useState(new Date().toISOString().split('T')[0]);
   const [lastMiles, setLastMiles] = useState('');
