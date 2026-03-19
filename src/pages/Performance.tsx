@@ -568,7 +568,16 @@ export default function Performance() {
                       <Cell key={i} fill={entry.fill} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(v: number) => fmt(v)} />
+                  <Tooltip
+                    formatter={(v: number, name: string) => {
+                      const pctOfExpenses = totalExpensesSum > 0 ? ((v / totalExpensesSum) * 100).toFixed(1) : '0';
+                      const pctOfRevenue = totalRevenue > 0 ? ((v / totalRevenue) * 100).toFixed(1) : '0';
+                      return [
+                        `${fmt(v)} — ${pctOfExpenses}% of expenses · ${pctOfRevenue}% of revenue`,
+                        name,
+                      ];
+                    }}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
