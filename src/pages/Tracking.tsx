@@ -169,7 +169,7 @@ const Tracking = () => {
 
   // Driver live locations
   const [driverLocations, setDriverLocations] = useState<Array<{
-    driver_id: string; lat: number; lng: number; speed: number | null; heading: number | null; updated_at: string; source: string;
+    driver_id: string; lat: number; lng: number; speed: number | null; heading: number | null; updated_at: string;
   }>>([]);
 
   // Fetch driver locations + realtime
@@ -572,7 +572,7 @@ const Tracking = () => {
                     <Popup>
                       <div className="text-xs">
                         <strong>{driver.name}</strong>
-                        <br />{loc.source === 'eld' ? '📡 ELD Tracking' : '📍 GPS Live'}
+                        <br />📍 GPS Live
                         {loc.speed != null && <><br />Speed: {(loc.speed * 2.237).toFixed(0)} mph</>}
                         <br /><span className="text-muted-foreground">Updated: {new Date(loc.updated_at).toLocaleTimeString()}</span>
                       </div>
@@ -644,15 +644,13 @@ const Tracking = () => {
                       </div>
                       {(() => {
                         const loc = driverLocations.find(dl => dl.driver_id === driver.id);
-                        const isActive = loc && (Date.now() - new Date(loc.updated_at).getTime()) < 5 * 60 * 1000;
-                        if (!isActive) return null;
-                        const isEld = loc.source === 'eld';
-                        return (
-                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold animate-pulse ${isEld ? 'bg-blue-500/15 text-blue-600' : 'bg-[hsl(152,60%,40%)]/15 text-[hsl(152,60%,40%)]'}`}>
-                            {isEld ? <span>📡</span> : <Navigation className="h-3 w-3" />}
-                            {isEld ? 'ELD' : 'GPS'}
+                        const isGpsActive = loc && (Date.now() - new Date(loc.updated_at).getTime()) < 5 * 60 * 1000;
+                        return isGpsActive ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[hsl(152,60%,40%)]/15 text-[hsl(152,60%,40%)] text-[10px] font-semibold animate-pulse">
+                            <Navigation className="h-3 w-3" />
+                            GPS
                           </span>
-                        );
+                        ) : null;
                       })()}
                       {driver.phone && (
                         <span className="text-xs text-muted-foreground whitespace-nowrap">{driver.phone}</span>

@@ -52,7 +52,7 @@ const Drivers = () => {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [dispatcherFilter, setDispatcherFilter] = useState<string>('all');
-  const [activeDriverIds, setActiveDriverIds] = useState<Map<string, string>>(new Map());
+  const [activeDriverIds, setActiveDriverIds] = useState<Set<string>>(new Set());
   const [terminationDriver, setTerminationDriver] = useState<DbDriver | null>(null);
   const [tenantName, setTenantName] = useState('');
   const [limitDialogOpen, setLimitDialogOpen] = useState(false);
@@ -70,13 +70,12 @@ const Drivers = () => {
   // Fetch driver_locations for GPS active indicator
   useEffect(() => {
     const fetchLocations = async () => {
-      const { data } = await supabase.from('driver_locations').select('driver_id, updated_at, source');
+      const { data } = await supabase.from('driver_locations').select('driver_id, updated_at');
       if (data) {
         const now = Date.now();
-        const active = new Map<string, string>();
-        (data as any[]).filter(d => now - new Date(d.updated_at).getTime() < 5 * 60 * 1000).forEach(d => {
-          active.set(d.driver_id, d.source || 'gps');
-        });
+        const active = new Set(
+          (data as any[]).filter(d => now - new Date(d.updated_at).getTime() < 5 * 60 * 1000).map(d => d.driver_id)
+        );
         setActiveDriverIds(active);
       }
     };
@@ -210,14 +209,10 @@ const Drivers = () => {
                             <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm">{initials}</AvatarFallback>
                           </Avatar>
                           <div className="flex flex-col items-start">
-                             <span className="font-semibold flex items-center gap-1.5">
-                               {driver.name}
-                               {activeDriverIds.has(driver.id) && (
-                                 activeDriverIds.get(driver.id) === 'eld' ? (
-                                   <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-blue-500/15 text-blue-600 text-[9px] font-semibold">📡 ELD</span>
-                                 ) : (
-                                   <Navigation className="h-3.5 w-3.5 text-[hsl(152,60%,40%)] animate-pulse" />
-                                 )
+                            <span className="font-semibold flex items-center gap-1.5">
+                              {driver.name}
+                              {activeDriverIds.has(driver.id) && (
+                                <Navigation className="h-3.5 w-3.5 text-[hsl(152,60%,40%)] animate-pulse" />
                               )}
                             </span>
                             <ExpiryIndicators items={[
