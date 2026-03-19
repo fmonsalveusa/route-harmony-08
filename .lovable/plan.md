@@ -1,29 +1,29 @@
 
 
-## Problema
+## Separar Mantenimientos One-Time en Tabla Compacta
 
-El preview de Lovable carga desde un iframe que puede mantener módulos JS en caché del navegador (no solo Service Worker). La limpieza actual en `main.tsx` solo elimina Service Workers y Cache API, pero el **caché HTTP del navegador** (disk cache) sigue sirviendo versiones antiguas de los chunks JS que contienen la función `generateTerminationLetterPdf`.
+### Resumen
+Dentro de cada grupo por camión, los mantenimientos **recurrentes** seguirán mostrándose como cards (como ahora). Los **one-time** se mostrarán en una tabla compacta debajo, con columnas: Tipo, Fecha, Odómetro, Costo, Vendor, y acciones (editar/eliminar).
 
-Esto explica por qué la app publicada siempre muestra el formato correcto (deploy fresco) pero el preview a veces muestra el formato anterior.
+### Cambios
 
-## Solución
+#### 1. `src/pages/Maintenance.tsx`
+- Dentro del loop por camión, separar `items` en dos arrays: `recurringItems` (tienen `interval_miles` o `interval_days`) y `oneTimeItems` (no tienen ninguno).
+- Renderizar `recurringItems` con `MaintenanceCard` en grid como ahora.
+- Renderizar `oneTimeItems` en una tabla debajo del grid, con header "One-Time Services".
 
-No hay una solución de código que resuelva esto permanentemente desde el lado de la app — es un comportamiento del navegador en el entorno de preview. Sin embargo, podemos mitigar el problema:
+#### 2. Nuevo componente: `src/components/maintenance/OneTimeMaintenanceTable.tsx`
+- Recibe `items: DbTruckMaintenance[]`, `onEdit`, `onDelete`.
+- Renderiza una tabla con columnas: Type (icon + label), Date (last_performed_at), Odometer (last_miles), Cost, Vendor (de description o "—"), y columna Actions con botones icon-only de Edit y Delete.
+- Filas compactas, estilo consistente con el resto de la app (usa componentes `Table` de shadcn).
+- Si no hay items one-time, no renderiza nada.
 
-1. **Agregar headers de no-cache para el preview** en `vite.config.ts`: Configurar headers del servidor de desarrollo para evitar que el navegador cachee los módulos JS.
+#### 3. `src/components/maintenance/MaintenanceCard.tsx`
+- Sin cambios. Solo se usará para recurrentes.
 
-   En `server` config, agregar:
-   ```ts
-   headers: {
-     'Cache-Control': 'no-store, no-cache, must-revalidate',
-   }
-   ```
-
-2. **Forzar limpieza más agresiva en preview**: Además de limpiar SW y Cache API, intentar forzar una recarga sin caché si se detecta que es la primera carga después de un cambio.
-
-Esto debería reducir significativamente el problema de ver formatos antiguos en el preview.
-
-## Archivos a modificar
-
-- `vite.config.ts` — agregar `headers` con `Cache-Control: no-store` en la config de `server`
+### Archivos
+| Archivo | Acción |
+|---|---|
+| `src/components/maintenance/OneTimeMaintenanceTable.tsx` | Crear |
+| `src/pages/Maintenance.tsx` | Editar (separar recurring vs one-time) |
 
