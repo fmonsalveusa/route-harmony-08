@@ -55,6 +55,7 @@ export default function Performance() {
   const { getPeriodFixedCosts, fixedCosts } = useTruckFixedCosts();
   const [period, setPeriod] = useState<PeriodKey>('month');
   const [fixedCostsDialogOpen, setFixedCostsDialogOpen] = useState(false);
+  const [breakdownBase, setBreakdownBase] = useState<'expenses' | 'revenue'>('expenses');
 
   const { start, end } = getDateRange(period);
   const prev = getPrevDateRange(period);
