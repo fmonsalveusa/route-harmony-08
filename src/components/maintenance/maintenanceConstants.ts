@@ -1,4 +1,4 @@
-import { Droplets, RotateCcw, Disc, Settings, Wind, Thermometer, Fuel, ClipboardCheck, Wrench, HelpCircle, Hammer, CircleDot, Package, Cog } from 'lucide-react';
+import { HelpCircle, Hammer, CircleDot, Package, Cog } from 'lucide-react';
 
 export interface MaintenanceTypeConfig {
   key: string;
