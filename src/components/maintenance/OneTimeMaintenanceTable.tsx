@@ -23,6 +23,7 @@ export function OneTimeMaintenanceTable({ items, onEdit, onDelete }: OneTimeMain
           <TableHeader>
             <TableRow>
               <TableHead>Type</TableHead>
+              <TableHead>Description</TableHead>
               <TableHead>Date</TableHead>
               <TableHead className="text-right">Odometer</TableHead>
               <TableHead className="text-right">Cost</TableHead>
