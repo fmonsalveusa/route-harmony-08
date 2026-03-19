@@ -70,6 +70,7 @@ export function MaintenanceFormDialog({ open, onOpenChange, trucks, drivers, onS
       } else {
         setTruckId(companyDriverTrucks[0]?.id || '');
         setMaintenanceType('oil_change');
+        setCategory('');
         setCustomType('');
         setPerformedAt(new Date().toISOString().split('T')[0]);
         setLastMiles('');
