@@ -317,13 +317,16 @@ export default function Performance() {
       </div>
 
       {/* Period Tabs */}
-      <Tabs value={period} onValueChange={v => setPeriod(v as PeriodKey)}>
-        <TabsList className="bg-muted">
-          <TabsTrigger value="week">This Week</TabsTrigger>
-          <TabsTrigger value="month">This Month</TabsTrigger>
-          <TabsTrigger value="year">This Year</TabsTrigger>
-        </TabsList>
-      </Tabs>
+      <Select value={period} onValueChange={v => setPeriod(v as PeriodKey)}>
+        <SelectTrigger className="w-[180px] h-9 text-sm">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {periodOptions.map(o => (
+            <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
