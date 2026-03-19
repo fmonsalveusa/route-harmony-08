@@ -1,4 +1,4 @@
-import { Droplets, RotateCcw, Disc, Settings, Wind, Thermometer, Fuel, ClipboardCheck, Wrench, HelpCircle } from 'lucide-react';
+import { Droplets, RotateCcw, Disc, Settings, Wind, Thermometer, Fuel, ClipboardCheck, Wrench, HelpCircle, Hammer, CircleDot, Package, Cog } from 'lucide-react';
 
 export interface MaintenanceTypeConfig {
   key: string;
@@ -18,6 +18,10 @@ export const MAINTENANCE_TYPES: MaintenanceTypeConfig[] = [
   { key: 'def_system', label: 'DEF System', icon: Fuel, defaultIntervalMiles: 10000 },
   { key: 'dot_inspection', label: 'DOT Inspection', icon: ClipboardCheck, defaultIntervalDays: 365 },
   { key: 'pm_service', label: 'PM Service', icon: Wrench, defaultIntervalMiles: 25000 },
+  { key: 'maintenance', label: 'Maintenance', icon: Cog },
+  { key: 'repairs', label: 'Repairs', icon: Hammer },
+  { key: 'tires', label: 'Tires', icon: CircleDot },
+  { key: 'parts', label: 'Parts', icon: Package },
   { key: 'custom', label: 'Custom', icon: HelpCircle },
 ];
 
