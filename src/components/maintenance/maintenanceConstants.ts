@@ -58,7 +58,7 @@ export const MAINTENANCE_CATEGORIES_BY_TYPE: Record<string, { value: string; lab
 };
 
 export function getMaintenanceTypeConfig(key: string): MaintenanceTypeConfig {
-  return MAINTENANCE_TYPES.find(t => t.key === key) || MAINTENANCE_TYPES[MAINTENANCE_TYPES.length - 1];
+  return MAINTENANCE_TYPES.find(t => t.key === key || t.label === key) || MAINTENANCE_TYPES[MAINTENANCE_TYPES.length - 1];
 }
 
 export function getStatusColor(status: string) {
