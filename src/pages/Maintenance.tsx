@@ -139,17 +139,34 @@ const Maintenance = () => {
               <div className="px-5 py-3 border-b bg-muted/30">
                 <h3 className="font-semibold text-sm">{getTruckLabel(truckId)}</h3>
               </div>
-              <CardContent className="p-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {items.map(item => (
-                  <MaintenanceCard
-                    key={item.id}
-                    item={item}
-                    onEdit={() => { setEditItem(item); setFormOpen(true); }}
-                    onDelete={() => deleteMaintenance(item.id)}
-                    onLogService={() => setLogItem(item)}
-                    onViewHistory={() => setHistoryItem(item)}
-                  />
-                ))}
+              <CardContent className="p-4">
+                {(() => {
+                  const recurringItems = items.filter(i => i.interval_miles || i.interval_days);
+                  const oneTimeItems = items.filter(i => !i.interval_miles && !i.interval_days);
+                  return (
+                    <>
+                      {recurringItems.length > 0 && (
+                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                          {recurringItems.map(item => (
+                            <MaintenanceCard
+                              key={item.id}
+                              item={item}
+                              onEdit={() => { setEditItem(item); setFormOpen(true); }}
+                              onDelete={() => deleteMaintenance(item.id)}
+                              onLogService={() => setLogItem(item)}
+                              onViewHistory={() => setHistoryItem(item)}
+                            />
+                          ))}
+                        </div>
+                      )}
+                      <OneTimeMaintenanceTable
+                        items={oneTimeItems}
+                        onEdit={(item) => { setEditItem(item); setFormOpen(true); }}
+                        onDelete={(id) => deleteMaintenance(id)}
+                      />
+                    </>
+                  );
+                })()}
               </CardContent>
             </div>
           </motion.div>
