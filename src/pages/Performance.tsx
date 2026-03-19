@@ -416,7 +416,7 @@ export default function Performance() {
               <TableBody>
                 {truckPerformance.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={13} className="text-center py-12 text-muted-foreground">
+                    <TableCell colSpan={14} className="text-center py-12 text-muted-foreground">
                       No company driver trucks found for this period
                     </TableCell>
                   </TableRow>
