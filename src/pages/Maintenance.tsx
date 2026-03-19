@@ -139,7 +139,15 @@ const Maintenance = () => {
               </CardContent>
             </Card>
           ) : (
-            Object.entries(grouped).map(([truckId, items]) => (
+            Object.entries(grouped)
+              .sort(([a], [b]) => {
+                const truckA = trucks.find(t => t.id === a);
+                const truckB = trucks.find(t => t.id === b);
+                const unitA = truckA?.unit_number || '';
+                const unitB = truckB?.unit_number || '';
+                return unitA.localeCompare(unitB, undefined, { numeric: true });
+              })
+              .map(([truckId, items]) => (
               <motion.div
                 key={truckId}
                 initial={{ opacity: 0, y: 12 }}
