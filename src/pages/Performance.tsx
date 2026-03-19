@@ -433,6 +433,7 @@ export default function Performance() {
                         <TableCell className="text-right font-medium">{fmt(t.revenue)}</TableCell>
                          <TableCell className="text-right text-muted-foreground">{fmt(t.fixedCosts)}</TableCell>
                          <TableCell className="text-right text-muted-foreground">{fmt(t.driverPay)}</TableCell>
+                         <TableCell className="text-right text-muted-foreground">{fmt(t.dispatcherPay)}</TableCell>
                         <TableCell className="text-right">
                           <div className="text-xs">{fmtPct(t.factoringPct)}</div>
                           <div className="text-[10px] text-muted-foreground">{fmt(t.factoringAmount)}</div>
