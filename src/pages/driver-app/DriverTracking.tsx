@@ -2,7 +2,7 @@ import { useDriverTracking } from '@/contexts/DriverTrackingContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Navigation, MapPin, Gauge, Crosshair, Wifi, WifiOff, AlertTriangle, ShieldAlert, BatteryMedium, Pause, Radio } from 'lucide-react';
+import { Navigation, MapPin, Gauge, Crosshair, Wifi, WifiOff, AlertTriangle, ShieldAlert, BatteryMedium, Pause } from 'lucide-react';
 
 function getAccuracyColor(accuracy: number | null) {
   if (accuracy === null) return 'text-muted-foreground';
@@ -19,33 +19,10 @@ function getAccuracyLabel(accuracy: number | null) {
 }
 
 export default function DriverTracking() {
-  const { tracking, lastPosition, speed, accuracy, permissionStatus, startTracking, stopTracking, paused, batterySaver, toggleBatterySaver, isEldTracked } = useDriverTracking();
+  const { tracking, lastPosition, speed, accuracy, permissionStatus, startTracking, stopTracking, paused, batterySaver, toggleBatterySaver } = useDriverTracking();
 
   const speedKmh = speed !== null && speed > 0 ? (speed * 3.6).toFixed(0) : '0';
   const speedMph = speed !== null && speed > 0 ? (speed * 2.237).toFixed(0) : '0';
-
-  if (isEldTracked) {
-    return (
-      <div className="p-4 pb-[calc(72px+env(safe-area-inset-bottom,0px))] space-y-4">
-        <h1 className="text-xl font-bold">GPS Tracking</h1>
-        <Card>
-          <CardContent className="p-6 text-center space-y-3">
-            <div className="w-16 h-16 rounded-full bg-success/20 flex items-center justify-center mx-auto">
-              <Radio className="h-8 w-8 text-success" />
-            </div>
-            <p className="font-semibold text-lg">Tracked via ELD</p>
-            <p className="text-sm text-muted-foreground">
-              Tu ubicación se actualiza automáticamente a través del dispositivo ELD instalado en tu camión. No necesitas activar el GPS manual.
-            </p>
-          </CardContent>
-        </Card>
-        <div className="fixed bottom-[calc(72px+env(safe-area-inset-bottom,0px))] left-0 right-0 flex items-center justify-center gap-2 py-2 text-xs font-medium bg-success text-success-foreground z-10">
-          <Radio className="h-3.5 w-3.5" />
-          Rastreo ELD Activo
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="p-4 pb-[calc(72px+env(safe-area-inset-bottom,0px))] space-y-4">

@@ -352,7 +352,6 @@ export type Database = {
           id: string
           lat: number
           lng: number
-          source: string
           speed: number | null
           tenant_id: string | null
           updated_at: string
@@ -364,7 +363,6 @@ export type Database = {
           id?: string
           lat: number
           lng: number
-          source?: string
           speed?: number | null
           tenant_id?: string | null
           updated_at?: string
@@ -376,7 +374,6 @@ export type Database = {
           id?: string
           lat?: number
           lng?: number
-          source?: string
           speed?: number | null
           tenant_id?: string | null
           updated_at?: string
@@ -515,114 +512,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "drivers_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      eld_accounts: {
-        Row: {
-          api_password_encrypted: string
-          api_user: string
-          company_id: string
-          created_at: string
-          id: string
-          is_active: boolean
-          last_synced_at: string | null
-          provider: string
-          tenant_id: string
-          updated_at: string
-        }
-        Insert: {
-          api_password_encrypted: string
-          api_user: string
-          company_id: string
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          last_synced_at?: string | null
-          provider?: string
-          tenant_id: string
-          updated_at?: string
-        }
-        Update: {
-          api_password_encrypted?: string
-          api_user?: string
-          company_id?: string
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          last_synced_at?: string | null
-          provider?: string
-          tenant_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "eld_accounts_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      eld_vehicle_map: {
-        Row: {
-          created_at: string
-          driver_id: string | null
-          eld_account_id: string
-          eld_vehicle_id: string
-          eld_vehicle_name: string | null
-          id: string
-          is_active: boolean
-          tenant_id: string
-          truck_id: string | null
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          driver_id?: string | null
-          eld_account_id: string
-          eld_vehicle_id: string
-          eld_vehicle_name?: string | null
-          id?: string
-          is_active?: boolean
-          tenant_id: string
-          truck_id?: string | null
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          driver_id?: string | null
-          eld_account_id?: string
-          eld_vehicle_id?: string
-          eld_vehicle_name?: string | null
-          id?: string
-          is_active?: boolean
-          tenant_id?: string
-          truck_id?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "eld_vehicle_map_driver_id_fkey"
-            columns: ["driver_id"]
-            isOneToOne: false
-            referencedRelation: "drivers"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "eld_vehicle_map_eld_account_id_fkey"
-            columns: ["eld_account_id"]
-            isOneToOne: false
-            referencedRelation: "eld_accounts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "eld_vehicle_map_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"

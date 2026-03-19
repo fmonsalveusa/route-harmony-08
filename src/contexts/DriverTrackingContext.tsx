@@ -35,7 +35,6 @@ interface DriverTrackingContextType {
   paused: boolean;
   batterySaver: boolean;
   toggleBatterySaver: () => void;
-  isEldTracked: boolean;
 }
 
 const DriverTrackingContext = createContext<DriverTrackingContextType | null>(null);
@@ -86,7 +85,6 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
   const [driverId, setDriverId] = useState<string | null>(null);
   const [nearbyStop, setNearbyStop] = useState<ActiveStop | null>(null);
   const [activeStops, setActiveStops] = useState<ActiveStop[]>([]);
-  const [isEldTracked, setIsEldTracked] = useState(false);
   const watchRef = useRef<number | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const posRef = useRef<GeolocationPosition | null>(null);
@@ -126,14 +124,7 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
   useEffect(() => {
     if (!profile?.email) return;
     supabase.from('drivers').select('id').eq('email', profile.email).maybeSingle().then(({ data }) => {
-      if (data) {
-        setDriverId(data.id);
-        // Check if this driver is ELD-tracked
-        supabase.from('eld_vehicle_map' as any).select('id').eq('driver_id', data.id).eq('is_active', true).limit(1)
-          .then(({ data: eldData }) => {
-            setIsEldTracked(!!eldData && (eldData as any[]).length > 0);
-          });
-      }
+      if (data) setDriverId(data.id);
     });
   }, [profile?.email]);
 
@@ -518,7 +509,7 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
   }, []);
 
   return (
-    <DriverTrackingContext.Provider value={{ tracking, lastPosition, speed, accuracy, permissionStatus, startTracking, stopTracking, nearbyStop, confirmArrival, dismissArrival, paused, batterySaver, toggleBatterySaver, isEldTracked }}>
+    <DriverTrackingContext.Provider value={{ tracking, lastPosition, speed, accuracy, permissionStatus, startTracking, stopTracking, nearbyStop, confirmArrival, dismissArrival, paused, batterySaver, toggleBatterySaver }}>
       {children}
     </DriverTrackingContext.Provider>
   );
