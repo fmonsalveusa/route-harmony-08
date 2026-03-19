@@ -1,28 +1,16 @@
 
 
-## Agregar pestaña "All Services" a la página de Maintenance
+## Plan: Add "Driver Pay" Column to Performance Table
 
-### Resumen
-Agregar un sistema de pestañas (Tabs) a la página de Maintenance con dos vistas:
-- **By Truck** (vista actual): cards agrupadas por camión con recurring cards + tabla one-time.
-- **All Services**: una tabla única con TODOS los mantenimientos de todos los camiones, ordenados por fecha, mostrando el camión al que pertenecen.
+### Current State
+The Performance page already calculates `driverPay` per truck (from `load.driver_pay_amount`) and includes it in the net profit calculation. However, it is **not shown as a separate column** in the table — it's hidden inside the "Expenses" total.
 
-### Cambios
+### Changes (1 file: `src/pages/Performance.tsx`)
 
-#### 1. `src/pages/Maintenance.tsx`
-- Envolver el contenido actual (filtros + grouped cards) dentro de un `Tabs` con dos `TabsContent`:
-  - `by-truck`: contenido actual sin cambios.
-  - `all-services`: nueva tabla plana con todos los items filtrados.
-- Los summary cards y el header quedan fuera de los tabs (visibles siempre).
-- Los filtros de truck/status aplican a ambas pestañas.
+1. **Add a "Driver Pay" column header** between "Fixed Costs" and "% Factoring" in the table header.
+2. **Add the corresponding data cell** displaying `t.driverPay` for each truck row.
+3. **Add the total** for Driver Pay in the totals row.
+4. **Update `colSpan`** on the empty-state row to account for the new column (12 → 13).
 
-#### 2. Tabla "All Services" (inline en Maintenance.tsx o componente separado)
-- Columnas: **Date**, **Truck** (unit_number), **Type** (icon + label), **Description**, **Recurring?** (badge Yes/No), **Odometer**, **Miles Accumulated**, **Status** (badge color), **Cost**, **Vendor**, **Actions** (edit/delete/log service).
-- Ordenada por `last_performed_at` descendente.
-- Reutiliza `getMaintenanceTypeConfig` para iconos y labels.
-
-### Archivos
-| Archivo | Acción |
-|---|---|
-| `src/pages/Maintenance.tsx` | Editar: agregar Tabs wrapper y nueva tabla "All Services" |
+No database changes needed — the data (`driver_pay_amount`) is already loaded from the `loads` table and computed per truck.
 
