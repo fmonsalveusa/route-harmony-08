@@ -1,5 +1,5 @@
 export const EXPENSE_TYPES = [
-  'fuel', 'maintenance', 'repairs', 'tires', 'insurance',
+  'fuel', 'maintenance', 'materials', 'repairs', 'tires', 'insurance',
   'permits_licenses', 'tolls', 'parking', 'cleaning',
   'parts', 'labor', 'towing', 'fines', 'other',
 ] as const;
