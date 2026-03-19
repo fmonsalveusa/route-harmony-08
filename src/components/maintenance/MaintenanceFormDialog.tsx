@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { MAINTENANCE_TYPES } from './maintenanceConstants';
+import { MAINTENANCE_TYPES, MAINTENANCE_TYPE_LABELS, MAINTENANCE_CATEGORIES_BY_TYPE } from './maintenanceConstants';
 import { PAYMENT_METHODS } from '@/components/expenses/expenseConstants';
 import type { DbTruck } from '@/hooks/useTrucks';
 import type { DbTruckMaintenance, MaintenanceInput } from '@/hooks/useTruckMaintenance';
