@@ -133,7 +133,8 @@ export default function Performance() {
       const driverPay = truckLoads.reduce((s, l) => s + (l.driver_pay_amount || 0), 0);
 
       // Fixed costs (period-adjusted)
-      const fixedCostsAmount = getPeriodFixedCosts(truck.id, period === 'prev_week' || period === 'week' ? 'week' : period === 'prev_month' || period === 'month' ? 'month' : period === 'last_3_months' ? 'month' : 'year');
+      const fixedCostsPeriod = (period === 'prev_week' || period === 'week') ? 'week' : (period === 'year') ? 'year' : 'month';
+      const fixedCostsAmount = getPeriodFixedCosts(truck.id, fixedCostsPeriod) * (period === 'last_3_months' ? 3 : 1);
 
       // Factoring % from driver
       const factoringPct = driver?.factoring_percentage || 0;
