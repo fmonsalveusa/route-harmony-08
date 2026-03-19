@@ -401,7 +401,8 @@ export default function Performance() {
                   <TableHead>Truck</TableHead>
                   <TableHead>Driver</TableHead>
                   <TableHead className="text-right">Revenue</TableHead>
-                  <TableHead className="text-right">Fixed Costs</TableHead>
+                   <TableHead className="text-right">Fixed Costs</TableHead>
+                   <TableHead className="text-right">Driver Pay</TableHead>
                   <TableHead className="text-right">% Factoring</TableHead>
                   <TableHead className="text-right">Expenses</TableHead>
                   <TableHead className="text-right font-bold">Net Profit</TableHead>
@@ -414,7 +415,7 @@ export default function Performance() {
               <TableBody>
                 {truckPerformance.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={12} className="text-center py-12 text-muted-foreground">
+                    <TableCell colSpan={13} className="text-center py-12 text-muted-foreground">
                       No company driver trucks found for this period
                     </TableCell>
                   </TableRow>
@@ -429,7 +430,8 @@ export default function Performance() {
                         </TableCell>
                         <TableCell className="font-medium">{t.driverName}</TableCell>
                         <TableCell className="text-right font-medium">{fmt(t.revenue)}</TableCell>
-                        <TableCell className="text-right text-muted-foreground">{fmt(t.fixedCosts)}</TableCell>
+                         <TableCell className="text-right text-muted-foreground">{fmt(t.fixedCosts)}</TableCell>
+                         <TableCell className="text-right text-muted-foreground">{fmt(t.driverPay)}</TableCell>
                         <TableCell className="text-right">
                           <div className="text-xs">{fmtPct(t.factoringPct)}</div>
                           <div className="text-[10px] text-muted-foreground">{fmt(t.factoringAmount)}</div>
@@ -450,7 +452,8 @@ export default function Performance() {
                       <TableCell>TOTAL ({companyTrucks.length} trucks)</TableCell>
                       <TableCell>—</TableCell>
                       <TableCell className="text-right">{fmt(totalRevenue)}</TableCell>
-                      <TableCell className="text-right text-muted-foreground">{fmt(truckPerformance.reduce((s, t) => s + t.fixedCosts, 0))}</TableCell>
+                       <TableCell className="text-right text-muted-foreground">{fmt(truckPerformance.reduce((s, t) => s + t.fixedCosts, 0))}</TableCell>
+                       <TableCell className="text-right text-muted-foreground">{fmt(truckPerformance.reduce((s, t) => s + t.driverPay, 0))}</TableCell>
                       <TableCell className="text-right text-muted-foreground">{fmt(truckPerformance.reduce((s, t) => s + t.factoringAmount, 0))}</TableCell>
                       <TableCell className="text-right text-destructive">{fmt(totalExpensesSum)}</TableCell>
                       <TableCell className={`text-right text-base ${totalProfit >= 0 ? 'text-[hsl(152,60%,40%)]' : 'text-destructive'}`}>
