@@ -1,4 +1,4 @@
-import { Droplets, RotateCcw, Disc, Settings, Wind, Thermometer, Fuel, ClipboardCheck, Wrench, HelpCircle } from 'lucide-react';
+import { Droplets, RotateCcw, Disc, Settings, Wind, Thermometer, Fuel, ClipboardCheck, Wrench, HelpCircle, Hammer, CircleDot, Package, Cog } from 'lucide-react';
 
 export interface MaintenanceTypeConfig {
   key: string;
@@ -18,6 +18,10 @@ export const MAINTENANCE_TYPES: MaintenanceTypeConfig[] = [
   { key: 'def_system', label: 'DEF System', icon: Fuel, defaultIntervalMiles: 10000 },
   { key: 'dot_inspection', label: 'DOT Inspection', icon: ClipboardCheck, defaultIntervalDays: 365 },
   { key: 'pm_service', label: 'PM Service', icon: Wrench, defaultIntervalMiles: 25000 },
+  { key: 'maintenance', label: 'Maintenance', icon: Cog },
+  { key: 'repairs', label: 'Repairs', icon: Hammer },
+  { key: 'tires', label: 'Tires', icon: CircleDot },
+  { key: 'parts', label: 'Parts', icon: Package },
   { key: 'custom', label: 'Custom', icon: HelpCircle },
 ];
 
@@ -80,6 +84,40 @@ export const MAINTENANCE_CATEGORIES_BY_TYPE: Record<string, { value: string; lab
     { value: 'pm_b', label: 'PM-B (Intermediate)' },
     { value: 'pm_c', label: 'PM-C (Comprehensive)' },
     { value: 'lubrication', label: 'Lubrication/Greasing' },
+  ],
+  maintenance: [
+    { value: 'oil_change', label: 'Oil Change' },
+    { value: 'filter_replacement', label: 'Filter Replacement' },
+    { value: 'dot_inspection', label: 'DOT Inspection' },
+    { value: 'pm_service', label: 'PM Service' },
+    { value: 'lubrication', label: 'Lubrication/Greasing' },
+    { value: 'fluid_topup', label: 'Fluid Top-Up' },
+  ],
+  repairs: [
+    { value: 'engine', label: 'Engine Repair' },
+    { value: 'transmission', label: 'Transmission Repair' },
+    { value: 'brake', label: 'Brake Repair' },
+    { value: 'electrical', label: 'Electrical Repair' },
+    { value: 'body_work', label: 'Body Work' },
+    { value: 'ac_repair', label: 'A/C Repair' },
+    { value: 'suspension', label: 'Suspension Repair' },
+    { value: 'other_repair', label: 'Other Repair' },
+  ],
+  tires: [
+    { value: 'new_tires', label: 'New Tires' },
+    { value: 'tire_repair', label: 'Tire Repair/Patch' },
+    { value: 'tire_rotation', label: 'Tire Rotation' },
+    { value: 'wheel_alignment', label: 'Wheel Alignment' },
+    { value: 'tire_balancing', label: 'Tire Balancing' },
+  ],
+  parts: [
+    { value: 'filters', label: 'Filters' },
+    { value: 'belts', label: 'Belts' },
+    { value: 'hoses', label: 'Hoses' },
+    { value: 'lights', label: 'Lights' },
+    { value: 'batteries', label: 'Batteries' },
+    { value: 'wipers', label: 'Wipers' },
+    { value: 'other_parts', label: 'Other Parts' },
   ],
 };
 
