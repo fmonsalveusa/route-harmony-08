@@ -456,6 +456,7 @@ export default function Performance() {
                       <TableCell className="text-right">{fmt(totalRevenue)}</TableCell>
                        <TableCell className="text-right text-muted-foreground">{fmt(truckPerformance.reduce((s, t) => s + t.fixedCosts, 0))}</TableCell>
                        <TableCell className="text-right text-muted-foreground">{fmt(truckPerformance.reduce((s, t) => s + t.driverPay, 0))}</TableCell>
+                       <TableCell className="text-right text-muted-foreground">{fmt(truckPerformance.reduce((s, t) => s + t.dispatcherPay, 0))}</TableCell>
                       <TableCell className="text-right text-muted-foreground">{fmt(truckPerformance.reduce((s, t) => s + t.factoringAmount, 0))}</TableCell>
                       <TableCell className="text-right text-destructive">{fmt(totalExpensesSum)}</TableCell>
                       <TableCell className={`text-right text-base ${totalProfit >= 0 ? 'text-[hsl(152,60%,40%)]' : 'text-destructive'}`}>
