@@ -9,15 +9,6 @@ export interface MaintenanceTypeConfig {
 }
 
 export const MAINTENANCE_TYPES: MaintenanceTypeConfig[] = [
-  { key: 'oil_change', label: 'Oil Change', icon: Droplets, defaultIntervalMiles: 10000 },
-  { key: 'tire_rotation', label: 'Tire Rotation', icon: RotateCcw, defaultIntervalMiles: 15000 },
-  { key: 'brake_inspection', label: 'Brake Inspection', icon: Disc, defaultIntervalMiles: 25000 },
-  { key: 'transmission', label: 'Transmission Service', icon: Settings, defaultIntervalMiles: 30000 },
-  { key: 'air_filter', label: 'Air Filter', icon: Wind, defaultIntervalMiles: 15000 },
-  { key: 'coolant_flush', label: 'Coolant Flush', icon: Thermometer, defaultIntervalMiles: 30000 },
-  { key: 'def_system', label: 'DEF System', icon: Fuel, defaultIntervalMiles: 10000 },
-  { key: 'dot_inspection', label: 'DOT Inspection', icon: ClipboardCheck, defaultIntervalDays: 365 },
-  { key: 'pm_service', label: 'PM Service', icon: Wrench, defaultIntervalMiles: 25000 },
   { key: 'maintenance', label: 'Maintenance', icon: Cog },
   { key: 'repairs', label: 'Repairs', icon: Hammer },
   { key: 'tires', label: 'Tires', icon: CircleDot },
