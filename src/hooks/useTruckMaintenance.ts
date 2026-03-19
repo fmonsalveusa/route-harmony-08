@@ -77,6 +77,7 @@ export function useTruckMaintenance() {
 
     // Auto-create expense if cost > 0
     if (input.create_expense !== false && input.cost && input.cost > 0) {
+      const totalAmount = (input.cost || 0) + (input.tax_amount || 0);
       const { data: expData, error: expErr } = await supabase
         .from('expenses' as any)
         .insert({
@@ -86,8 +87,12 @@ export function useTruckMaintenance() {
           expense_type: 'maintenance',
           description: input.maintenance_type,
           amount: input.cost,
+          tax_amount: input.tax_amount || null,
+          total_amount: totalAmount || null,
           vendor: input.vendor || null,
-          payment_method: 'other',
+          payment_method: input.payment_method || 'other',
+          location: input.location || null,
+          invoice_number: input.invoice_number || null,
           source: 'maintenance',
         } as any)
         .select('id')
