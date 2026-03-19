@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { MAINTENANCE_TYPES } from './maintenanceConstants';
+import { PAYMENT_METHODS } from '@/components/expenses/expenseConstants';
 import type { DbTruck } from '@/hooks/useTrucks';
 import type { DbTruckMaintenance, MaintenanceInput } from '@/hooks/useTruckMaintenance';
 
@@ -33,7 +34,11 @@ export function MaintenanceFormDialog({ open, onOpenChange, trucks, drivers, onS
   const [intervalMiles, setIntervalMiles] = useState('');
   const [intervalDays, setIntervalDays] = useState('');
   const [cost, setCost] = useState('');
+  const [taxAmount, setTaxAmount] = useState('');
   const [vendor, setVendor] = useState('');
+  const [location, setLocation] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('other');
+  const [invoiceNumber, setInvoiceNumber] = useState('');
   const [description, setDescription] = useState('');
   const [createExpense, setCreateExpense] = useState(true);
   const [isRecurring, setIsRecurring] = useState(true);
@@ -51,7 +56,11 @@ export function MaintenanceFormDialog({ open, onOpenChange, trucks, drivers, onS
         setIntervalMiles(editItem.interval_miles ? String(editItem.interval_miles) : '');
         setIntervalDays(editItem.interval_days ? String(editItem.interval_days) : '');
         setCost(editItem.cost ? String(editItem.cost) : '');
+        setTaxAmount('');
         setVendor(editItem.vendor || '');
+        setLocation('');
+        setPaymentMethod('other');
+        setInvoiceNumber('');
         setDescription(editItem.description || '');
         setIsRecurring(!!(editItem.interval_miles || editItem.interval_days));
       } else {
@@ -63,7 +72,11 @@ export function MaintenanceFormDialog({ open, onOpenChange, trucks, drivers, onS
         setIntervalMiles('10000');
         setIntervalDays('');
         setCost('');
+        setTaxAmount('');
         setVendor('');
+        setLocation('');
+        setPaymentMethod('other');
+        setInvoiceNumber('');
         setDescription('');
         setCreateExpense(true);
         setIsRecurring(true);
@@ -84,6 +97,7 @@ export function MaintenanceFormDialog({ open, onOpenChange, trucks, drivers, onS
 
   const selectedTruck = trucks.find(t => t.id === truckId);
   const assignedDriver = selectedTruck ? drivers.find(d => d.truck_id === selectedTruck.id) : null;
+  const totalAmount = (parseFloat(cost) || 0) + (parseFloat(taxAmount) || 0);
 
   const handleSubmit = async () => {
     if (!truckId) return;
@@ -101,7 +115,11 @@ export function MaintenanceFormDialog({ open, onOpenChange, trucks, drivers, onS
       last_performed_at: performedAt,
       last_miles: Number(lastMiles) || 0,
       cost: cost ? Number(cost) : null,
+      tax_amount: taxAmount ? Number(taxAmount) : null,
       vendor: vendor || null,
+      payment_method: paymentMethod,
+      location: location || null,
+      invoice_number: invoiceNumber || null,
       create_expense: createExpense,
     });
     setSaving(false);
@@ -222,7 +240,7 @@ export function MaintenanceFormDialog({ open, onOpenChange, trucks, drivers, onS
           {/* Section 4: Cost Information */}
           <div>
             <h3 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">Cost Information</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <Label>Amount</Label>
                 <div className="relative">
@@ -232,13 +250,53 @@ export function MaintenanceFormDialog({ open, onOpenChange, trucks, drivers, onS
                 </div>
               </div>
               <div>
+                <Label>Tax Amount</Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                  <Input type="number" step="0.01" min="0" className="pl-7" value={taxAmount}
+                    onChange={e => setTaxAmount(e.target.value)} placeholder="0.00" />
+                </div>
+              </div>
+              <div>
+                <Label>Total Amount</Label>
+                <div className="h-10 flex items-center px-3 bg-muted rounded-md text-lg font-bold">
+                  ${totalAmount.toFixed(2)}
+                </div>
+              </div>
+              <div>
+                <Label>Payment Method</Label>
+                <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {PAYMENT_METHODS.map(p => (
+                      <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
                 <Label>Vendor</Label>
-                <Input value={vendor} onChange={e => setVendor(e.target.value)} placeholder="e.g. Shop name" />
+                <Input value={vendor} maxLength={100} onChange={e => setVendor(e.target.value)} placeholder="e.g. Shop name" />
+              </div>
+              <div>
+                <Label>Location</Label>
+                <Input value={location} maxLength={100} onChange={e => setLocation(e.target.value)} placeholder="City, State" />
+              </div>
+            </div>
+          </div>
+
+          {/* Section 5: Additional Information */}
+          <div>
+            <h3 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">Additional Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label>Invoice/Receipt Number</Label>
+                <Input value={invoiceNumber} maxLength={50} onChange={e => setInvoiceNumber(e.target.value)} placeholder="e.g., INV-12345" />
               </div>
               {Number(cost) > 0 && !editItem && (
-                <div className="md:col-span-2 flex items-center gap-2">
+                <div className="flex items-center gap-2 self-end pb-2">
                   <Switch checked={createExpense} onCheckedChange={setCreateExpense} />
-                  <Label className="cursor-pointer">Create expense record</Label>
+                  <Label className="cursor-pointer text-sm">Create expense record</Label>
                 </div>
               )}
             </div>

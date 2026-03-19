@@ -34,7 +34,11 @@ export interface MaintenanceInput {
   last_performed_at: string;
   last_miles: number;
   cost?: number | null;
+  tax_amount?: number | null;
   vendor?: string | null;
+  payment_method?: string;
+  location?: string | null;
+  invoice_number?: string | null;
   create_expense?: boolean;
 }
 
@@ -73,6 +77,7 @@ export function useTruckMaintenance() {
 
     // Auto-create expense if cost > 0
     if (input.create_expense !== false && input.cost && input.cost > 0) {
+      const totalAmount = (input.cost || 0) + (input.tax_amount || 0);
       const { data: expData, error: expErr } = await supabase
         .from('expenses' as any)
         .insert({
@@ -82,8 +87,12 @@ export function useTruckMaintenance() {
           expense_type: 'maintenance',
           description: input.maintenance_type,
           amount: input.cost,
+          tax_amount: input.tax_amount || null,
+          total_amount: totalAmount || null,
           vendor: input.vendor || null,
-          payment_method: 'other',
+          payment_method: input.payment_method || 'other',
+          location: input.location || null,
+          invoice_number: input.invoice_number || null,
           source: 'maintenance',
         } as any)
         .select('id')
@@ -220,7 +229,11 @@ export function useTruckMaintenance() {
     last_performed_at: string;
     last_miles: number;
     cost?: number | null;
+    tax_amount?: number | null;
     vendor?: string | null;
+    payment_method?: string;
+    location?: string | null;
+    invoice_number?: string | null;
     create_expense?: boolean;
   }) => {
     const item = maintenanceItems.find(m => m.id === id);
@@ -234,6 +247,7 @@ export function useTruckMaintenance() {
     let expense_id: string | null = null;
     if (input.create_expense !== false && input.cost && input.cost > 0) {
       const tenant_id = await getTenantId();
+      const totalAmount = (input.cost || 0) + (input.tax_amount || 0);
       const { data: expData } = await supabase
         .from('expenses' as any)
         .insert({
@@ -243,8 +257,12 @@ export function useTruckMaintenance() {
           expense_type: 'maintenance',
           description: item.maintenance_type,
           amount: input.cost,
+          tax_amount: input.tax_amount || null,
+          total_amount: totalAmount || null,
           vendor: input.vendor || null,
-          payment_method: 'other',
+          payment_method: input.payment_method || 'other',
+          location: input.location || null,
+          invoice_number: input.invoice_number || null,
           source: 'maintenance',
         } as any)
         .select('id')
