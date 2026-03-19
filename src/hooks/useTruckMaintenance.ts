@@ -130,8 +130,11 @@ export function useTruckMaintenance() {
   }, [invalidate, qc]);
 
   const updateMaintenance = useCallback(async (id: string, input: Partial<MaintenanceInput>) => {
-    const updates: Record<string, any> = { ...input };
-    delete updates.create_expense;
+    const updates: Record<string, any> = {};
+    const allowedKeys = ['truck_id', 'maintenance_type', 'description', 'interval_miles', 'interval_days', 'last_performed_at', 'last_miles', 'cost', 'vendor'];
+    for (const key of allowedKeys) {
+      if (key in input) updates[key] = (input as any)[key];
+    }
     if (input.interval_miles !== undefined && input.last_miles !== undefined) {
       updates.next_due_miles = input.interval_miles ? input.last_miles + input.interval_miles : null;
     }
