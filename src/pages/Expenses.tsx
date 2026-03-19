@@ -226,12 +226,20 @@ const Expenses = () => {
             </SelectContent>
           </Select>
           <Select value={filterTruck} onValueChange={v => { setFilterTruck(v); setPage(1); }}>
-            <SelectTrigger className="w-[140px] h-8 text-xs"><SelectValue placeholder="Truck" /></SelectTrigger>
+            <SelectTrigger className="w-[180px] h-8 text-xs"><SelectValue placeholder="Truck" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Trucks</SelectItem>
-              {trucks.map(t => (
-                <SelectItem key={t.id} value={t.id}>#{t.unit_number} {t.license_plate || ''}</SelectItem>
-              ))}
+              {trucks
+                .filter(t => {
+                  const driver = driverList.find(d => d.truck_id === t.id);
+                  return driver && driver.service_type === 'company_driver';
+                })
+                .map(t => {
+                  const driver = driverList.find(d => d.truck_id === t.id);
+                  return (
+                    <SelectItem key={t.id} value={t.id}>#{t.unit_number} - {driver?.name || 'No Driver'}</SelectItem>
+                  );
+                })}
             </SelectContent>
           </Select>
           <Select value={filterPayment} onValueChange={v => { setFilterPayment(v); setPage(1); }}>
