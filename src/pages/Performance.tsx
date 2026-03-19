@@ -434,9 +434,9 @@ export default function Performance() {
                          <TableCell className="text-right text-muted-foreground">{fmt(t.fixedCosts)}</TableCell>
                          <TableCell className="text-right text-muted-foreground">{fmt(t.driverPay)}</TableCell>
                          <TableCell className="text-right text-muted-foreground">{fmt(t.dispatcherPay)}</TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-right text-muted-foreground">
                           <div className="text-sm">{fmt(t.factoringAmount)}</div>
-                          <div className="text-[10px] text-muted-foreground">{fmtPct(t.factoringPct)}</div>
+                          <div className="text-[10px]">{fmtPct(t.factoringPct)}</div>
                         </TableCell>
                         <TableCell className="text-right text-destructive">{fmt(t.totalExpenses)}</TableCell>
                         <TableCell className={`text-right font-bold text-base ${t.netProfit >= 0 ? 'text-[hsl(152,60%,40%)]' : 'text-destructive'}`}>
