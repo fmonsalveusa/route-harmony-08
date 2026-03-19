@@ -10,19 +10,22 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, LabelList, Cell, LineChart, Line, PieChart, Pie, Tooltip, Legend } from 'recharts';
 import { DollarSign, Receipt, Trophy, Truck, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Eye, Download, Settings } from 'lucide-react';
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, isWithinInterval, parseISO, format, subMonths, subWeeks, subYears } from 'date-fns';
 
-type PeriodKey = 'week' | 'month' | 'year';
+type PeriodKey = 'week' | 'prev_week' | 'month' | 'prev_month' | 'last_3_months' | 'year';
 
 function getDateRange(period: PeriodKey) {
   const now = new Date();
   switch (period) {
     case 'week': return { start: startOfWeek(now, { weekStartsOn: 1 }), end: endOfWeek(now, { weekStartsOn: 1 }) };
+    case 'prev_week': { const p = subWeeks(now, 1); return { start: startOfWeek(p, { weekStartsOn: 1 }), end: endOfWeek(p, { weekStartsOn: 1 }) }; }
     case 'month': return { start: startOfMonth(now), end: endOfMonth(now) };
+    case 'prev_month': { const p = subMonths(now, 1); return { start: startOfMonth(p), end: endOfMonth(p) }; }
+    case 'last_3_months': return { start: startOfMonth(subMonths(now, 2)), end: endOfMonth(now) };
     case 'year': return { start: startOfYear(now), end: endOfYear(now) };
   }
 }
@@ -31,7 +34,10 @@ function getPrevDateRange(period: PeriodKey) {
   const now = new Date();
   switch (period) {
     case 'week': { const prev = subWeeks(now, 1); return { start: startOfWeek(prev, { weekStartsOn: 1 }), end: endOfWeek(prev, { weekStartsOn: 1 }) }; }
+    case 'prev_week': { const prev = subWeeks(now, 2); return { start: startOfWeek(prev, { weekStartsOn: 1 }), end: endOfWeek(prev, { weekStartsOn: 1 }) }; }
     case 'month': { const prev = subMonths(now, 1); return { start: startOfMonth(prev), end: endOfMonth(prev) }; }
+    case 'prev_month': { const prev = subMonths(now, 2); return { start: startOfMonth(prev), end: endOfMonth(prev) }; }
+    case 'last_3_months': { const prev = subMonths(now, 5); return { start: startOfMonth(prev), end: endOfMonth(subMonths(now, 3)) }; }
     case 'year': { const prev = subYears(now, 1); return { start: startOfYear(prev), end: endOfYear(prev) }; }
   }
 }
@@ -44,7 +50,14 @@ function pctChange(current: number, prev: number) {
 const fmt = (n: number) => '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fmtPct = (n: number) => n.toFixed(1) + '%';
 
-const periodLabels: Record<PeriodKey, string> = { week: 'This Week', month: 'This Month', year: 'This Year' };
+const periodOptions: { value: PeriodKey; label: string }[] = [
+  { value: 'week', label: 'This Week' },
+  { value: 'prev_week', label: 'Last Week' },
+  { value: 'month', label: 'This Month' },
+  { value: 'prev_month', label: 'Last Month' },
+  { value: 'last_3_months', label: 'Last 3 Months' },
+  { value: 'year', label: 'This Year' },
+];
 
 export default function Performance() {
   const { loads } = useLoads();
@@ -120,7 +133,8 @@ export default function Performance() {
       const driverPay = truckLoads.reduce((s, l) => s + (l.driver_pay_amount || 0), 0);
 
       // Fixed costs (period-adjusted)
-      const fixedCostsAmount = getPeriodFixedCosts(truck.id, period);
+      const fixedCostsPeriod = (period === 'prev_week' || period === 'week') ? 'week' : (period === 'year') ? 'year' : 'month';
+      const fixedCostsAmount = getPeriodFixedCosts(truck.id, fixedCostsPeriod) * (period === 'last_3_months' ? 3 : 1);
 
       // Factoring % from driver
       const factoringPct = driver?.factoring_percentage || 0;
@@ -304,13 +318,16 @@ export default function Performance() {
       </div>
 
       {/* Period Tabs */}
-      <Tabs value={period} onValueChange={v => setPeriod(v as PeriodKey)}>
-        <TabsList className="bg-muted">
-          <TabsTrigger value="week">This Week</TabsTrigger>
-          <TabsTrigger value="month">This Month</TabsTrigger>
-          <TabsTrigger value="year">This Year</TabsTrigger>
-        </TabsList>
-      </Tabs>
+      <Select value={period} onValueChange={v => setPeriod(v as PeriodKey)}>
+        <SelectTrigger className="w-[180px] h-9 text-sm">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {periodOptions.map(o => (
+            <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -387,7 +404,7 @@ export default function Performance() {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-lg">Truck Performance Summary</CardTitle>
-              <CardDescription>Company Drivers Only — {periodLabels[period]}</CardDescription>
+              <CardDescription>Company Drivers Only — {periodOptions.find(o => o.value === period)?.label}</CardDescription>
             </div>
             <Button variant="outline" size="sm" className="gap-2" onClick={() => setFixedCostsDialogOpen(true)}>
               <Settings className="h-4 w-4" />
