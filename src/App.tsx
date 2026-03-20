@@ -149,8 +149,8 @@ const DriverWrapper = () => {
     return <SuspendedScreen />;
   }
 
-  // Non-drivers should not access the driver app
-  if (role && role !== 'driver') {
+  // Non-drivers/investors should not access the driver app
+  if (role && role !== 'driver' && role !== 'investor') {
     if (isMasterAdmin) return <Navigate to="/master" replace />;
     return <Navigate to="/dashboard" replace />;
   }
