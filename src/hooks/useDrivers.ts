@@ -56,6 +56,7 @@ export interface DriverInput {
   dispatcher_id?: string | null;
   truck_id?: string | null;
   investor_name?: string | null;
+  investor_email?: string | null;
   pay_percentage: number;
   investor_pay_percentage?: number | null;
   factoring_percentage?: number;

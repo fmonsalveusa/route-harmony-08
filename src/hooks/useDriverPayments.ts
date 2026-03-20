@@ -16,71 +16,95 @@ export interface DriverPayment {
   destination?: string;
   net_amount?: number;
   total_adjustments?: number;
+  recipient_name?: string;
+}
+
+async function enrichPayments(data: any[]): Promise<DriverPayment[]> {
+  if (!data.length) return [];
+
+  const loadIds = [...new Set(data.map(p => p.load_id))];
+  const paymentIds = data.map(p => p.id);
+
+  const [{ data: loads }, { data: adjustments }] = await Promise.all([
+    supabase.from('loads').select('id, origin, destination').in('id', loadIds),
+    supabase.from('payment_adjustments').select('*').in('payment_id', paymentIds),
+  ]);
+
+  const loadMap = new Map((loads || []).map((l: any) => [l.id, l]));
+  const adjMap = new Map<string, number>();
+  for (const adj of (adjustments || []) as any[]) {
+    const current = adjMap.get(adj.payment_id) || 0;
+    const val = adj.adjustment_type === 'addition' ? adj.amount : -adj.amount;
+    adjMap.set(adj.payment_id, current + val);
+  }
+
+  return data.map(p => {
+    const load = loadMap.get(p.load_id);
+    const totalAdj = adjMap.get(p.id) || 0;
+    return {
+      ...p,
+      origin: load?.origin || '',
+      destination: load?.destination || '',
+      total_adjustments: totalAdj,
+      net_amount: p.amount + totalAdj,
+    };
+  });
 }
 
 export function useDriverPayments() {
   const { profile } = useAuth();
   const [payments, setPayments] = useState<DriverPayment[]>([]);
+  const [investorPayments, setInvestorPayments] = useState<DriverPayment[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchPayments = useCallback(async () => {
     if (!profile?.email) return;
     setLoading(true);
 
+    // 1. Find driver by email (for driver payments)
     const { data: driver } = await supabase
       .from('drivers')
       .select('id')
       .eq('email', profile.email)
       .maybeSingle();
 
-    if (!driver) { setLoading(false); return; }
+    // 2. Find drivers where this user is investor (investor_email match)
+    const { data: investorDrivers } = await supabase
+      .from('drivers')
+      .select('id, name')
+      .eq('investor_email' as any, profile.email);
 
-    const { data, error } = await supabase
-      .from('payments')
-      .select('*')
-      .eq('recipient_id', driver.id)
-      .eq('recipient_type', 'driver')
-      .order('created_at', { ascending: false });
-
-    if (!error && data) {
-      const loadIds = [...new Set((data as any[]).map(p => p.load_id))];
-      
-      // Fetch loads for origin/destination
-      const { data: loads } = await supabase
-        .from('loads')
-        .select('id, origin, destination')
-        .in('id', loadIds);
-      
-      const loadMap = new Map((loads || []).map((l: any) => [l.id, l]));
-
-      // Fetch payment adjustments
-      const paymentIds = (data as any[]).map(p => p.id);
-      const { data: adjustments } = await supabase
-        .from('payment_adjustments')
+    // Fetch driver payments
+    if (driver) {
+      const { data, error } = await supabase
+        .from('payments')
         .select('*')
-        .in('payment_id', paymentIds);
+        .eq('recipient_id', driver.id)
+        .eq('recipient_type', 'driver')
+        .order('created_at', { ascending: false });
 
-      const adjMap = new Map<string, number>();
-      for (const adj of (adjustments || []) as any[]) {
-        const current = adjMap.get(adj.payment_id) || 0;
-        const val = adj.adjustment_type === 'addition' ? adj.amount : -adj.amount;
-        adjMap.set(adj.payment_id, current + val);
+      if (!error && data) {
+        setPayments(await enrichPayments(data as any[]));
       }
-
-      const enriched: DriverPayment[] = (data as any[]).map(p => {
-        const load = loadMap.get(p.load_id);
-        const totalAdj = adjMap.get(p.id) || 0;
-        return {
-          ...p,
-          origin: load?.origin || '',
-          destination: load?.destination || '',
-          total_adjustments: totalAdj,
-          net_amount: p.amount + totalAdj,
-        };
-      });
-
-      setPayments(enriched);
     }
+
+    // Fetch investor payments
+    if (investorDrivers && investorDrivers.length > 0) {
+      const driverIds = investorDrivers.map(d => d.id);
+      const { data, error } = await supabase
+        .from('payments')
+        .select('*')
+        .in('recipient_id', driverIds)
+        .eq('recipient_type', 'investor')
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        setInvestorPayments(await enrichPayments(data as any[]));
+      }
+    } else {
+      setInvestorPayments([]);
+    }
+
     setLoading(false);
   }, [profile?.email]);
 
@@ -89,5 +113,13 @@ export function useDriverPayments() {
   const totalPending = payments.filter(p => p.status === 'pending').reduce((sum, p) => sum + (p.net_amount ?? p.amount), 0);
   const totalPaid = payments.filter(p => p.status === 'paid').reduce((sum, p) => sum + (p.net_amount ?? p.amount), 0);
 
-  return { payments, loading, totalPending, totalPaid, refetch: fetchPayments };
+  const investorTotalPending = investorPayments.filter(p => p.status === 'pending').reduce((sum, p) => sum + (p.net_amount ?? p.amount), 0);
+  const investorTotalPaid = investorPayments.filter(p => p.status === 'paid').reduce((sum, p) => sum + (p.net_amount ?? p.amount), 0);
+
+  return {
+    payments, investorPayments, loading,
+    totalPending, totalPaid,
+    investorTotalPending, investorTotalPaid,
+    refetch: fetchPayments,
+  };
 }
