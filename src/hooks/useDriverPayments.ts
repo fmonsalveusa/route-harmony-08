@@ -69,10 +69,10 @@ export function useDriverPayments() {
       .maybeSingle();
 
     // 2. Find drivers where this user is investor (investor_email match)
-    const { data: investorDrivers } = await supabase
-      .from('drivers')
+    const { data: investorDrivers } = await (supabase
+      .from('drivers') as any)
       .select('id, name')
-      .eq('investor_email' as any, profile.email);
+      .eq('investor_email', profile.email);
 
     // Fetch driver payments
     if (driver) {
