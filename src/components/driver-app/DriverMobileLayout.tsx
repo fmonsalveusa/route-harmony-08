@@ -168,7 +168,7 @@ export const DriverMobileLayout = ({ children }: { children: ReactNode }) => {
       <header className="flex items-center justify-between min-h-[64px] px-4 py-2 shadow-md bg-sidebar text-sidebar-foreground" style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 8px)' }}>
         <div className="flex items-center gap-2">
           <img src={logoImg} alt="Logo" className="h-8 w-8 rounded" />
-          <span className="text-base font-bold text-white">Dispatch Up Driver</span>
+          <span className="text-base font-bold text-white">{isInvestorOnly ? 'Dispatch Up Investor' : 'Dispatch Up Driver'}</span>
         </div>
         <div className="flex items-center gap-2">
           {/* GPS Tracking Indicator */}
