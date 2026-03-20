@@ -2122,6 +2122,7 @@ export type Database = {
         | "accounting"
         | "dispatcher"
         | "driver"
+        | "investor"
       subscription_plan: "basic" | "intermediate" | "pro"
       subscription_status:
         | "active"
@@ -2255,7 +2256,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["master_admin", "admin", "accounting", "dispatcher", "driver"],
+      app_role: [
+        "master_admin",
+        "admin",
+        "accounting",
+        "dispatcher",
+        "driver",
+        "investor",
+      ],
       subscription_plan: ["basic", "intermediate", "pro"],
       subscription_status: [
         "active",
