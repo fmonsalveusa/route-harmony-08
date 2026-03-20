@@ -1,4 +1,4 @@
-import { ReactNode, useState, useRef, useEffect, useCallback } from 'react';
+import { ReactNode, useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Package, DollarSign, User, LogOut, MapPin, Bell, CheckCheck, Navigation, MapPinCheck, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -11,12 +11,12 @@ import { isNativePlatform } from '@/lib/nativeTracking';
 import { initPushNotifications } from '@/lib/nativePushNotifications';
 import { useTheme } from 'next-themes';
 
-const tabs = [
-  { label: 'Home', icon: LayoutDashboard, path: '/driver' },
-  { label: 'Loads', icon: Package, path: '/driver/loads' },
-  { label: 'Tracking', icon: MapPin, path: '/driver/tracking' },
-  { label: 'Payments', icon: DollarSign, path: '/driver/payments' },
-  { label: 'Profile', icon: User, path: '/driver/profile' },
+const allTabs = [
+  { label: 'Home', icon: LayoutDashboard, path: '/driver', roles: ['driver'] },
+  { label: 'Loads', icon: Package, path: '/driver/loads', roles: ['driver'] },
+  { label: 'Tracking', icon: MapPin, path: '/driver/tracking', roles: ['driver'] },
+  { label: 'Payments', icon: DollarSign, path: '/driver/payments', roles: ['driver', 'investor'] },
+  { label: 'Profile', icon: User, path: '/driver/profile', roles: ['driver'] },
 ];
 
 const typeIcons: Record<string, string> = {
