@@ -40,8 +40,10 @@ interface Notification {
 export const DriverMobileLayout = ({ children }: { children: ReactNode }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { signOut, profile } = useAuth();
+  const { signOut, profile, role } = useAuth();
   const { tracking, nearbyStop, confirmArrival, dismissArrival } = useDriverTracking();
+  const isInvestorOnly = role === 'investor';
+  const tabs = useMemo(() => allTabs.filter(t => t.roles.includes(role || 'driver')), [role]);
   const { resolvedTheme } = useTheme();
   const [bellOpen, setBellOpen] = useState(false);
   const [confirming, setConfirming] = useState(false);
