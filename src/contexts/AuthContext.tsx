@@ -74,6 +74,7 @@ const rolePermissions: Record<AppRole, string[]> = {
     'drivers.view.own', 'fleet.view', 'tracking.*', 'reports.own',
   ],
   driver: ['dashboard.own', 'loads.view.own'],
+  investor: ['payments.investor'],
 };
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {

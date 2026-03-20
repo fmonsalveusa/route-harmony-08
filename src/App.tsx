@@ -175,6 +175,7 @@ const AppRoutes = () => {
   const getRedirectPath = () => {
     if (isMasterAdmin) return '/master';
     if (role === 'driver') return '/driver';
+    if (role === 'investor') return '/driver/payments';
     return '/dashboard';
   };
 

@@ -30,6 +30,7 @@ const roles = [
   { value: 'accounting', label: 'Accounting' },
   { value: 'dispatcher', label: 'Dispatcher' },
   { value: 'driver', label: 'Driver' },
+  { value: 'investor', label: 'Investor' },
 ];
 
 export const UserFormDialog = ({ open, onOpenChange, user, onSuccess }: UserFormDialogProps) => {
