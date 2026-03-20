@@ -165,6 +165,7 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
         <Info label="Dispatcher">{dispatcherName || 'Unassigned'}</Info>
         <Info label="Truck">{truckLabel || 'Unassigned'}</Info>
         <Info label="Investor">{driver.investor_name || '—'}</Info>
+        <Info label="Investor Email">{(driver as any).investor_email || '—'}</Info>
         <Info label="% Investor Pay">{driver.investor_pay_percentage ?? '—'}%</Info>
       </div>
 
