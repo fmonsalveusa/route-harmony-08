@@ -97,6 +97,7 @@ function PaymentList({ payments }: { payments: DriverPayment[] }) {
 }
 
 export default function DriverPayments() {
+  const { role } = useAuth();
   const {
     payments, investorPayments, loading,
     totalPending, totalPaid,
@@ -106,7 +107,21 @@ export default function DriverPayments() {
 
   if (loading) return <div className="flex items-center justify-center h-40"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" /></div>;
 
+  const isInvestorOnly = role === 'investor';
   const hasInvestorPayments = investorPayments.length > 0;
+
+  // Investor-only users: show only investor payments, no tabs
+  if (isInvestorOnly) {
+    return (
+      <PullToRefresh onRefresh={refetch}>
+        <div className="p-4 pb-[calc(72px+env(safe-area-inset-bottom,0px))] space-y-4">
+          <h1 className="text-xl font-bold">Investor Payments</h1>
+          <SummaryCards paid={investorTotalPaid} pending={investorTotalPending} />
+          <PaymentList payments={investorPayments} />
+        </div>
+      </PullToRefresh>
+    );
+  }
 
   return (
     <PullToRefresh onRefresh={refetch}>
