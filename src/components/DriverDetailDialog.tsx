@@ -88,6 +88,7 @@ export function DriverDetailDialog({ open, onOpenChange, driver, truckLabel, dis
               <Info label="Dispatcher">{dispatcherName || 'Unassigned'}</Info>
               <Info label="Truck">{truckLabel || 'Unassigned'}</Info>
               <Info label="Investor">{driver.investor_name || '—'}</Info>
+              <Info label="Investor Email">{(driver as any).investor_email || '—'}</Info>
             </div>
           </section>
 
