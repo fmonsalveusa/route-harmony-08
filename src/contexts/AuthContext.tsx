@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
 
-export type AppRole = 'master_admin' | 'admin' | 'accounting' | 'dispatcher' | 'driver';
+export type AppRole = 'master_admin' | 'admin' | 'accounting' | 'dispatcher' | 'driver' | 'investor';
 
 const isLovablePreview =
   typeof window !== 'undefined' &&
@@ -74,6 +74,7 @@ const rolePermissions: Record<AppRole, string[]> = {
     'drivers.view.own', 'fleet.view', 'tracking.*', 'reports.own',
   ],
   driver: ['dashboard.own', 'loads.view.own'],
+  investor: ['payments.investor'],
 };
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {

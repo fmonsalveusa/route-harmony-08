@@ -1,4 +1,4 @@
-import { ReactNode, useState, useRef, useEffect, useCallback } from 'react';
+import { ReactNode, useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Package, DollarSign, User, LogOut, MapPin, Bell, CheckCheck, Navigation, MapPinCheck, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -11,12 +11,12 @@ import { isNativePlatform } from '@/lib/nativeTracking';
 import { initPushNotifications } from '@/lib/nativePushNotifications';
 import { useTheme } from 'next-themes';
 
-const tabs = [
-  { label: 'Home', icon: LayoutDashboard, path: '/driver' },
-  { label: 'Loads', icon: Package, path: '/driver/loads' },
-  { label: 'Tracking', icon: MapPin, path: '/driver/tracking' },
-  { label: 'Payments', icon: DollarSign, path: '/driver/payments' },
-  { label: 'Profile', icon: User, path: '/driver/profile' },
+const allTabs = [
+  { label: 'Home', icon: LayoutDashboard, path: '/driver', roles: ['driver'] },
+  { label: 'Loads', icon: Package, path: '/driver/loads', roles: ['driver'] },
+  { label: 'Tracking', icon: MapPin, path: '/driver/tracking', roles: ['driver'] },
+  { label: 'Payments', icon: DollarSign, path: '/driver/payments', roles: ['driver', 'investor'] },
+  { label: 'Profile', icon: User, path: '/driver/profile', roles: ['driver'] },
 ];
 
 const typeIcons: Record<string, string> = {
@@ -40,8 +40,10 @@ interface Notification {
 export const DriverMobileLayout = ({ children }: { children: ReactNode }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { signOut, profile } = useAuth();
+  const { signOut, profile, role } = useAuth();
   const { tracking, nearbyStop, confirmArrival, dismissArrival } = useDriverTracking();
+  const isInvestorOnly = role === 'investor';
+  const tabs = useMemo(() => allTabs.filter(t => t.roles.includes(role || 'driver')), [role]);
   const { resolvedTheme } = useTheme();
   const [bellOpen, setBellOpen] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -166,7 +168,7 @@ export const DriverMobileLayout = ({ children }: { children: ReactNode }) => {
       <header className="flex items-center justify-between min-h-[64px] px-4 py-2 shadow-md bg-sidebar text-sidebar-foreground" style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 8px)' }}>
         <div className="flex items-center gap-2">
           <img src={logoImg} alt="Logo" className="h-8 w-8 rounded" />
-          <span className="text-base font-bold text-white">Dispatch Up Driver</span>
+          <span className="text-base font-bold text-white">{isInvestorOnly ? 'Dispatch Up Investor' : 'Dispatch Up Driver'}</span>
         </div>
         <div className="flex items-center gap-2">
           {/* GPS Tracking Indicator */}

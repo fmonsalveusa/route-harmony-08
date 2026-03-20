@@ -7,7 +7,7 @@ const corsHeaders = {
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const VALID_ROLES = ["admin", "accounting", "dispatcher", "driver"];
+const VALID_ROLES = ["admin", "accounting", "dispatcher", "driver", "investor"];
 
 function validateCreateInput(payload: Record<string, unknown>) {
   const errors: string[] = [];

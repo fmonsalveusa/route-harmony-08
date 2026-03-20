@@ -93,7 +93,7 @@ const ProtectedRoute = ({ children, masterOnly = false }: { children: React.Reac
   if (!user || !profile) return <Navigate to="/auth" replace />;
 
   // Drivers should always use the mobile app
-  if (role === 'driver') return <Navigate to="/driver" replace />;
+  if (role === 'driver' || role === 'investor') return <Navigate to="/driver" replace />;
 
   if (masterOnly && !isMasterAdmin) return <Navigate to="/" replace />;
 
@@ -149,8 +149,8 @@ const DriverWrapper = () => {
     return <SuspendedScreen />;
   }
 
-  // Non-drivers should not access the driver app
-  if (role && role !== 'driver') {
+  // Non-drivers/investors should not access the driver app
+  if (role && role !== 'driver' && role !== 'investor') {
     if (isMasterAdmin) return <Navigate to="/master" replace />;
     return <Navigate to="/dashboard" replace />;
   }
@@ -175,6 +175,7 @@ const AppRoutes = () => {
   const getRedirectPath = () => {
     if (isMasterAdmin) return '/master';
     if (role === 'driver') return '/driver';
+    if (role === 'investor') return '/driver/payments';
     return '/dashboard';
   };
 
