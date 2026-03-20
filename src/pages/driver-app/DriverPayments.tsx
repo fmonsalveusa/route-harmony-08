@@ -5,6 +5,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { TrendingUp, Clock, MapPin, Landmark } from 'lucide-react';
 import { formatDate } from '@/lib/dateUtils';
 import { PullToRefresh } from '@/components/driver-app/PullToRefresh';
+import { useAuth } from '@/contexts/AuthContext';
 
 function shortLocation(address: string): string {
   if (!address) return '—';
