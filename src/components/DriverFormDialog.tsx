@@ -60,7 +60,8 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
         medical_card_expiry: driver.medical_card_expiry, status: driver.status,
         service_type: driver.service_type, state: driver.state,
         dispatcher_id: driver.dispatcher_id, truck_id: driver.truck_id,
-        investor_name: driver.investor_name, pay_percentage: driver.pay_percentage,
+        investor_name: driver.investor_name, investor_email: (driver as any).investor_email,
+        pay_percentage: driver.pay_percentage,
         investor_pay_percentage: driver.investor_pay_percentage,
         factoring_percentage: driver.factoring_percentage ?? 2,
         hire_date: driver.hire_date,
@@ -234,6 +235,11 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
           <div className="space-y-2">
             <Label>Investor Name</Label>
             <Input value={form.investor_name || ''} onChange={e => set('investor_name', e.target.value)} placeholder="Investor name" />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Investor Email</Label>
+            <Input type="email" value={(form as any).investor_email || ''} onChange={e => set('investor_email' as any, e.target.value)} placeholder="investor@email.com" />
           </div>
 
           <div className="space-y-2">

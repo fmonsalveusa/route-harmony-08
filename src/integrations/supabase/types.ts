@@ -407,6 +407,7 @@ export type Database = {
           form_w9_url: string | null
           hire_date: string
           id: string
+          investor_email: string | null
           investor_name: string | null
           investor_pay_percentage: number | null
           leasing_agreement_url: string | null
@@ -447,6 +448,7 @@ export type Database = {
           form_w9_url?: string | null
           hire_date?: string
           id?: string
+          investor_email?: string | null
           investor_name?: string | null
           investor_pay_percentage?: number | null
           leasing_agreement_url?: string | null
@@ -487,6 +489,7 @@ export type Database = {
           form_w9_url?: string | null
           hire_date?: string
           id?: string
+          investor_email?: string | null
           investor_name?: string | null
           investor_pay_percentage?: number | null
           leasing_agreement_url?: string | null
