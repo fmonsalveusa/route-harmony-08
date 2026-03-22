@@ -78,6 +78,21 @@ export function useTruckMaintenance() {
     // Auto-create expense if cost > 0
     if (input.create_expense !== false && input.cost && input.cost > 0) {
       const totalAmount = (input.cost || 0) + (input.tax_amount || 0);
+
+      // Look up driver assigned to truck for expense metadata
+      let driverName: string | null = null;
+      let driverServiceType: string | null = null;
+      const { data: driverData } = await supabase
+        .from('drivers' as any)
+        .select('name, service_type')
+        .eq('truck_id', input.truck_id)
+        .limit(1)
+        .maybeSingle();
+      if (driverData) {
+        driverName = (driverData as any).name || null;
+        driverServiceType = (driverData as any).service_type || null;
+      }
+
       const { data: expData, error: expErr } = await supabase
         .from('expenses' as any)
         .insert({
@@ -86,6 +101,7 @@ export function useTruckMaintenance() {
           truck_id: input.truck_id,
           expense_type: 'maintenance',
           description: input.maintenance_type,
+          category: input.maintenance_type,
           amount: input.cost,
           tax_amount: input.tax_amount || null,
           total_amount: totalAmount || null,
@@ -94,11 +110,17 @@ export function useTruckMaintenance() {
           location: input.location || null,
           invoice_number: input.invoice_number || null,
           source: 'maintenance',
+          driver_name: driverName,
+          driver_service_type: driverServiceType,
         } as any)
         .select('id')
         .single();
-      if (expErr) console.error('Expense creation error:', expErr);
-      else expense_id = (expData as any)?.id || null;
+      if (expErr) {
+        console.error('Expense creation error:', expErr);
+        toastRef.current({ title: 'Error creating expense', description: expErr.message, variant: 'destructive' });
+      } else {
+        expense_id = (expData as any)?.id || null;
+      }
     }
 
     const { error } = await supabase.from('truck_maintenance' as any).insert({
@@ -251,7 +273,22 @@ export function useTruckMaintenance() {
     if (input.create_expense !== false && input.cost && input.cost > 0) {
       const tenant_id = await getTenantId();
       const totalAmount = (input.cost || 0) + (input.tax_amount || 0);
-      const { data: expData } = await supabase
+
+      // Look up driver assigned to truck for expense metadata
+      let driverName: string | null = null;
+      let driverServiceType: string | null = null;
+      const { data: driverData } = await supabase
+        .from('drivers' as any)
+        .select('name, service_type')
+        .eq('truck_id', item.truck_id)
+        .limit(1)
+        .maybeSingle();
+      if (driverData) {
+        driverName = (driverData as any).name || null;
+        driverServiceType = (driverData as any).service_type || null;
+      }
+
+      const { data: expData, error: expError } = await supabase
         .from('expenses' as any)
         .insert({
           tenant_id,
@@ -259,6 +296,7 @@ export function useTruckMaintenance() {
           truck_id: item.truck_id,
           expense_type: 'maintenance',
           description: item.maintenance_type,
+          category: item.maintenance_type,
           amount: input.cost,
           tax_amount: input.tax_amount || null,
           total_amount: totalAmount || null,
@@ -267,10 +305,17 @@ export function useTruckMaintenance() {
           location: input.location || null,
           invoice_number: input.invoice_number || null,
           source: 'maintenance',
+          driver_name: driverName,
+          driver_service_type: driverServiceType,
         } as any)
         .select('id')
         .single();
-      expense_id = (expData as any)?.id || null;
+      if (expError) {
+        console.error('Expense creation error:', expError);
+        toastRef.current({ title: 'Error creating expense', description: expError.message, variant: 'destructive' });
+      } else {
+        expense_id = (expData as any)?.id || null;
+      }
     }
 
     // Insert into service log history
