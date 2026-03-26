@@ -40,6 +40,9 @@ import Pricing from "./pages/Pricing";
 import Register from "./pages/Register";
 import Subscription from "./pages/Subscription";
 import Documents from "./pages/Documents";
+import SigningUpload from "./pages/signing/Upload";
+import SigningSign from "./pages/signing/Sign";
+import SigningComplete from "./pages/signing/Complete";
 
 import DriverDashboard from "./pages/driver-app/DriverDashboard";
 import DriverLoads from "./pages/driver-app/DriverLoads";
@@ -219,6 +222,9 @@ const AppRoutes = () => {
       <Route path="/brokers" element={<ProtectedRoute masterOnly><Brokers /></ProtectedRoute>} />
       <Route path="/subscription" element={<ProtectedRoute><Subscription /></ProtectedRoute>} />
       <Route path="/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
+      <Route path="/documents/upload" element={<ProtectedRoute><SigningUpload /></ProtectedRoute>} />
+      <Route path="/documents/sign/:id" element={<ProtectedRoute><SigningSign /></ProtectedRoute>} />
+      <Route path="/documents/complete/:id" element={<ProtectedRoute><SigningComplete /></ProtectedRoute>} />
 
       {/* Master Admin routes */}
       <Route path="/master" element={<ProtectedRoute masterOnly><MasterDashboard /></ProtectedRoute>} />
