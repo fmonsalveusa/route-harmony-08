@@ -59,13 +59,6 @@ export function HeroSection() {
               {tr.heroSubtitle}
             </p>
 
-            <a
-              href="#meeting"
-              className="inline-flex items-center gap-2 mb-8 border-2 border-primary bg-primary/10 hover:bg-primary/20 text-primary font-semibold px-6 py-3 rounded-lg text-base transition-colors shadow-sm"
-            >
-              <CalendarIcon size={18} />
-              {lang === "es" ? "📅 Agendar una Reunión" : "📅 Schedule a Meeting"}
-            </a>
 
             <form onSubmit={handleSubmit} className="bg-card rounded-2xl border p-6 shadow-sm space-y-4">
               <h3 className="font-bold text-foreground text-base flex items-center gap-2">
@@ -107,6 +100,13 @@ export function HeroSection() {
 
           <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6, delay: 0.2 }} className="hidden lg:block">
             <div>
+              <a
+                href="#meeting"
+                className="flex items-center justify-center gap-2 mb-4 bg-primary hover:bg-primary/90 text-primary-foreground font-bold px-6 py-3.5 rounded-xl text-lg transition-colors shadow-md"
+              >
+                <CalendarIcon size={20} className="text-primary-foreground" />
+                {lang === "es" ? "📅 Agendar una Reunión" : "📅 Schedule a Meeting"}
+              </a>
               <div className="rounded-2xl overflow-hidden shadow-2xl">
                 <img src={heroImg} alt="Dispatch Up Fleet" className="w-full h-auto max-h-[65vh] object-cover" />
               </div>
