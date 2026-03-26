@@ -130,7 +130,7 @@ export function MeetingSection() {
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar mode="single" selected={date} onSelect={(d) => { setDate(d); setForm(f => ({ ...f, meeting_time: "" })); }} disabled={(d) => { const today = new Date(); today.setHours(0,0,0,0); return d < today || d.getDay() === 0; }} initialFocus className="p-3 pointer-events-auto" />
+                      <Calendar mode="single" selected={date} onSelect={(d) => { setDate(d); setForm(f => ({ ...f, meeting_time: "" })); }} disabled={(d) => { const today = new Date(); today.setHours(0,0,0,0); return d < today || d.getDay() === 0 || d.getDay() === 6; }} initialFocus className="p-3 pointer-events-auto" />
                     </PopoverContent>
                   </Popover>
                 </div>
