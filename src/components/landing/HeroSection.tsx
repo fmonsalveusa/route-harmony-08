@@ -61,10 +61,10 @@ export function HeroSection() {
 
             <a
               href="#meeting"
-              className="inline-flex items-center gap-2 mb-8 bg-accent hover:bg-accent/90 text-accent-foreground font-semibold px-6 py-3 rounded-lg text-base transition-colors"
+              className="inline-flex items-center gap-2 mb-8 border-2 border-primary bg-primary/10 hover:bg-primary/20 text-primary font-semibold px-6 py-3 rounded-lg text-base transition-colors shadow-sm"
             >
               <CalendarIcon size={18} />
-              {lang === "es" ? "Agendar una Reunión" : "Schedule a Meeting"}
+              {lang === "es" ? "📅 Agendar una Reunión" : "📅 Schedule a Meeting"}
             </a>
 
             <form onSubmit={handleSubmit} className="bg-card rounded-2xl border p-6 shadow-sm space-y-4">
