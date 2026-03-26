@@ -18,20 +18,8 @@ import t from "./landingTranslations";
 
 const TRUCK_TYPES = ["Box Truck", "Hotshot", "Dry Van", "Flatbed", "Reefer"];
 
-function getTimeSlots(selectedDate: Date | undefined) {
-  if (!selectedDate) return [];
-  const day = selectedDate.getDay();
-  const startHour = day === 6 ? 9 : 10;
-  const endHour = day === 6 ? 12 : 17;
-  const slots: string[] = [];
-  for (let h = startHour; h < endHour; h++) {
-    for (const m of [0, 30]) {
-      const period = h >= 12 ? "PM" : "AM";
-      const displayHour = h > 12 ? h - 12 : h;
-      slots.push(`${displayHour}:${String(m).padStart(2, "0")} ${period}`);
-    }
-  }
-  return slots;
+function getTimeSlots() {
+  return ["4:30 PM", "5:00 PM", "5:30 PM", "6:00 PM"];
 }
 
 export function MeetingSection() {
