@@ -33,13 +33,12 @@ export default function Upload() {
   const [totalPages, setTotalPages] = useState(1);
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
   const [settingsField, setSettingsField] = useState<DocumentField | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [saving, setSaving] = useState(false);
   const [detecting, setDetecting] = useState(false);
   const [loading, setLoading] = useState(!!editId);
-  const viewerRef = useRef<HTMLDivElement>(null);
 
-  // Load existing document/template for editing
   useEffect(() => {
     if (!editId) return;
     (async () => {
@@ -69,9 +68,9 @@ export default function Upload() {
     })();
   }, [editId, isTemplate]);
 
-  const handleFileSelect = useCallback((data: string, name: string) => {
-    setFileData(data);
-    setFileName(name);
+  const handleFileSelect = useCallback((_file: File, dataUrl: string) => {
+    setFileData(dataUrl);
+    setFileName(_file.name);
     setFields([]);
     setCurrentPage(1);
   }, []);
@@ -99,6 +98,14 @@ export default function Upload() {
     setFields(prev => prev.filter(f => f.id !== id));
     if (selectedFieldId === id) setSelectedFieldId(null);
   }, [selectedFieldId]);
+
+  const duplicateField = useCallback((id: string) => {
+    setFields(prev => {
+      const original = prev.find(f => f.id === id);
+      if (!original) return prev;
+      return [...prev, { ...original, id: uuidv4(), x: original.x + 2, y: original.y + 2 }];
+    });
+  }, []);
 
   const handleDetectFields = async () => {
     if (!fileData) return;
@@ -188,15 +195,17 @@ export default function Upload() {
             <p className="text-sm text-muted-foreground">Sube un archivo PDF para comenzar</p>
           </div>
         </div>
-        <FileUpload onFileSelect={handleFileSelect} />
+        <FileUpload onFileSelected={handleFileSelect} />
       </div>
     );
   }
 
+  const pageFields = fields.filter(f => f.page === currentPage);
+
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate('/documents')}>
             <ArrowLeft className="h-5 w-5" />
@@ -208,7 +217,7 @@ export default function Upload() {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {isTemplate && (
             <div className="flex items-center gap-2">
               <Label className="text-sm">Nombre:</Label>
@@ -252,22 +261,30 @@ export default function Upload() {
             fieldCount={fields.length}
           />
         )}
-        <div ref={viewerRef} className="flex-1 relative border rounded-lg overflow-hidden bg-muted/30">
+        <div className="flex-1 relative border rounded-lg overflow-hidden bg-muted/30">
           <PdfViewer
             fileData={fileData}
             currentPage={currentPage}
+            totalPages={totalPages}
             onPageChange={setCurrentPage}
-            onTotalPages={setTotalPages}
-          />
-          <FieldOverlay
-            fields={fields.filter(f => f.page === currentPage)}
-            selectedFieldId={selectedFieldId}
-            onSelectField={setSelectedFieldId}
-            onUpdateField={updateField}
-            onDeleteField={deleteField}
-            onOpenSettings={setSettingsField}
-            containerRef={viewerRef}
-          />
+            onTotalPagesChange={setTotalPages}
+            onBackgroundClick={() => setSelectedFieldId(null)}
+          >
+            {pageFields.map(field => (
+              <FieldOverlay
+                key={field.id}
+                field={field}
+                editable
+                isSelected={selectedFieldId === field.id}
+                onSelect={setSelectedFieldId}
+                onRemove={deleteField}
+                onMove={(id, x, y) => updateField(id, { x, y })}
+                onResize={(id, w, h) => updateField(id, { width: w, height: h })}
+                onDuplicate={duplicateField}
+                onOpenSettings={(f) => { setSettingsField(f); setSettingsOpen(true); }}
+              />
+            ))}
+          </PdfViewer>
         </div>
       </div>
 
@@ -282,10 +299,12 @@ export default function Upload() {
       )}
 
       <FieldSettingsDialog
+        open={settingsOpen}
         field={settingsField}
-        onClose={() => setSettingsField(null)}
-        onUpdate={(id, updates) => {
-          updateField(id, updates);
+        onClose={() => { setSettingsOpen(false); setSettingsField(null); }}
+        onSave={(id, settings) => {
+          updateField(id, settings);
+          setSettingsOpen(false);
           setSettingsField(null);
         }}
       />

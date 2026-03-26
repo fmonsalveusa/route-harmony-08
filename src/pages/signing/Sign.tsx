@@ -1,11 +1,10 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, Loader2 } from 'lucide-react';
 import PdfViewer from '@/components/signing/PdfViewer';
 import GuidedForm from '@/components/signing/GuidedForm';
-import SignatureModal from '@/components/signing/SignatureModal';
 import { getDocument, saveDocument } from '@/store/signing-documents';
 import type { SignDocument, DocumentField } from '@/types/document';
 
@@ -14,12 +13,8 @@ export default function Sign() {
   const navigate = useNavigate();
   const [doc, setDoc] = useState<SignDocument | null>(null);
   const [loading, setLoading] = useState(true);
-  const [fields, setFields] = useState<DocumentField[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [signerName, setSignerName] = useState('');
-  const [showSigModal, setShowSigModal] = useState(false);
-  const [sigFieldId, setSigFieldId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -39,46 +34,20 @@ export default function Sign() {
         return;
       }
       setDoc(d);
-      setFields(d.fields);
       setLoading(false);
     })();
   }, [id, navigate]);
 
-  const updateFieldValue = useCallback((fieldId: string, value: string) => {
-    setFields(prev => prev.map(f => f.id === fieldId ? { ...f, value } : f));
-  }, []);
-
-  const openSignature = (fieldId: string) => {
-    setSigFieldId(fieldId);
-    setShowSigModal(true);
-  };
-
-  const handleSignatureSave = (dataUrl: string) => {
-    if (sigFieldId) {
-      updateFieldValue(sigFieldId, dataUrl);
-    }
-    setShowSigModal(false);
-    setSigFieldId(null);
-  };
-
-  const handleSubmit = async () => {
+  const handleFormComplete = async (updatedFields: DocumentField[]) => {
     if (!doc) return;
-    const required = fields.filter(f => f.required !== false);
-    const missing = required.filter(f => !f.value);
-    if (missing.length > 0) {
-      toast.error(`Faltan ${missing.length} campos requeridos`);
-      return;
-    }
-
     setSubmitting(true);
     try {
       const updated: SignDocument = {
         ...doc,
-        fields,
+        fields: updatedFields,
         status: 'signed',
         signedAt: Date.now(),
         signerData: {
-          name: signerName || undefined,
           date: new Date().toISOString(),
         },
       };
@@ -119,31 +88,16 @@ export default function Sign() {
         <PdfViewer
           fileData={doc.fileData}
           currentPage={currentPage}
+          totalPages={totalPages}
           onPageChange={setCurrentPage}
-          onTotalPages={setTotalPages}
+          onTotalPagesChange={setTotalPages}
         />
       </div>
 
-      {/* Form */}
+      {/* Guided Form */}
       <GuidedForm
-        fields={fields}
-        onUpdateValue={updateFieldValue}
-        onOpenSignature={openSignature}
-        signerName={signerName}
-        onSignerNameChange={setSignerName}
-      />
-
-      <div className="flex justify-end">
-        <Button onClick={handleSubmit} disabled={submitting} size="lg" className="gap-2">
-          {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckCircle2 className="h-5 w-5" />}
-          Firmar y enviar
-        </Button>
-      </div>
-
-      <SignatureModal
-        open={showSigModal}
-        onClose={() => setShowSigModal(false)}
-        onSave={handleSignatureSave}
+        fields={doc.fields}
+        onComplete={handleFormComplete}
       />
     </div>
   );

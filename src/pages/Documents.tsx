@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Table, TableHeader, TableHead, TableRow, TableBody, TableCell } from '@/components/ui/table';
 import { StatusBadge } from '@/components/StatusBadge';
-import { FileText, Copy, ExternalLink, Pencil, Eye, Download, Trash2, Plus, LayoutTemplate } from 'lucide-react';
+import { FileText, Copy, Pencil, Eye, Download, Trash2, Plus, LayoutTemplate } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { getDocuments, deleteDocument } from '@/store/signing-documents';
@@ -13,8 +14,6 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-
-const SIGNING_APP = 'https://signing-up.lovable.app';
 
 const Documents = () => {
   const [documents, setDocuments] = useState<SignDocument[]>([]);
