@@ -102,7 +102,7 @@ export function HeroSection() {
             <div>
               <a
                 href="#meeting"
-                className="flex items-center justify-center gap-2 mb-4 bg-primary hover:bg-primary/90 text-primary-foreground font-bold px-6 py-3.5 rounded-xl text-lg transition-colors shadow-md"
+                className="flex items-center justify-center gap-2 mb-4 bg-green-600 hover:bg-green-700 text-white font-bold px-6 py-3.5 rounded-xl text-lg transition-colors shadow-md"
               >
                 <CalendarIcon size={20} className="text-primary-foreground" />
                 {lang === "es" ? "📅 Agendar una Reunión" : "📅 Schedule a Meeting"}
