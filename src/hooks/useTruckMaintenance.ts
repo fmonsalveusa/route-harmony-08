@@ -93,9 +93,7 @@ export function useTruckMaintenance() {
         driverServiceType = (driverData as any).service_type || null;
       }
 
-      const { data: expData, error: expErr } = await supabase
-        .from('expenses' as any)
-        .insert({
+      const expensePayload = {
           tenant_id,
           expense_date: input.last_performed_at,
           truck_id: input.truck_id,
@@ -112,14 +110,21 @@ export function useTruckMaintenance() {
           source: 'maintenance',
           driver_name: driverName,
           driver_service_type: driverServiceType,
-        } as any)
-        .select('id')
-        .single();
+      };
+      console.log('[createMaintenance] expensePayload:', expensePayload);
+
+      const { data: expData, error: expErr } = await supabase
+        .from('expenses' as any)
+        .insert(expensePayload as any)
+        .select('id');
+
       if (expErr) {
         console.error('Expense creation error:', expErr);
         toastRef.current({ title: 'Error creating expense', description: expErr.message, variant: 'destructive' });
+      } else if (expData && (expData as any[]).length > 0) {
+        expense_id = (expData as any[])[0]?.id || null;
       } else {
-        expense_id = (expData as any)?.id || null;
+        console.warn('[createMaintenance] Expense insert returned no data but no error');
       }
     }
 
