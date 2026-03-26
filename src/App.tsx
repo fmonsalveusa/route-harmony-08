@@ -39,6 +39,7 @@ import Brokers from "./pages/Brokers";
 import Pricing from "./pages/Pricing";
 import Register from "./pages/Register";
 import Subscription from "./pages/Subscription";
+import Documents from "./pages/Documents";
 
 import DriverDashboard from "./pages/driver-app/DriverDashboard";
 import DriverLoads from "./pages/driver-app/DriverLoads";
