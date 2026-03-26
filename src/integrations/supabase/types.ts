@@ -344,6 +344,48 @@ export type Database = {
           },
         ]
       }
+      documents: {
+        Row: {
+          created_at: number
+          expires_at: number
+          fields: Json
+          file_data: string
+          file_name: string
+          id: string
+          recipient_email: string | null
+          signed_at: number | null
+          signed_file_data: string | null
+          signer_data: Json | null
+          status: string
+        }
+        Insert: {
+          created_at?: number
+          expires_at: number
+          fields?: Json
+          file_data: string
+          file_name: string
+          id?: string
+          recipient_email?: string | null
+          signed_at?: number | null
+          signed_file_data?: string | null
+          signer_data?: Json | null
+          status?: string
+        }
+        Update: {
+          created_at?: number
+          expires_at?: number
+          fields?: Json
+          file_data?: string
+          file_name?: string
+          id?: string
+          recipient_email?: string | null
+          signed_at?: number | null
+          signed_file_data?: string | null
+          signer_data?: Json | null
+          status?: string
+        }
+        Relationships: []
+      }
       driver_locations: {
         Row: {
           accuracy: number | null
@@ -1739,6 +1781,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      templates: {
+        Row: {
+          created_at: number
+          fields: Json
+          file_data: string
+          file_name: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: number
+          fields?: Json
+          file_data: string
+          file_name: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: number
+          fields?: Json
+          file_data?: string
+          file_name?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
       }
       tenants: {
         Row: {
