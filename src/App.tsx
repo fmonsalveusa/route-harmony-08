@@ -39,6 +39,7 @@ import Brokers from "./pages/Brokers";
 import Pricing from "./pages/Pricing";
 import Register from "./pages/Register";
 import Subscription from "./pages/Subscription";
+import Documents from "./pages/Documents";
 
 import DriverDashboard from "./pages/driver-app/DriverDashboard";
 import DriverLoads from "./pages/driver-app/DriverLoads";
@@ -217,6 +218,7 @@ const AppRoutes = () => {
       <Route path="/users" element={<ProtectedRoute><UsersPage /></ProtectedRoute>} />
       <Route path="/brokers" element={<ProtectedRoute masterOnly><Brokers /></ProtectedRoute>} />
       <Route path="/subscription" element={<ProtectedRoute><Subscription /></ProtectedRoute>} />
+      <Route path="/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
 
       {/* Master Admin routes */}
       <Route path="/master" element={<ProtectedRoute masterOnly><MasterDashboard /></ProtectedRoute>} />

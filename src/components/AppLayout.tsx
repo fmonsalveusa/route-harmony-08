@@ -5,7 +5,7 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Truck, Users, Package, MapPin, FileText,
   BarChart3, LogOut, DollarSign, UserCog,
-  Headphones, Menu, Building2, Crown, CreditCard, Settings, Plus, Receipt, Trophy, Wrench, X, Handshake, ChevronDown } from
+  Headphones, Menu, Building2, Crown, CreditCard, Settings, Plus, Receipt, Trophy, Wrench, X, Handshake, ChevronDown, FileSignature } from
 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -59,6 +59,7 @@ const profileItems: NavItem[] = [
 const bottomLevelItems: NavItem[] = [
   { label: 'Maintenance', icon: Wrench, path: '/maintenance', permission: 'fleet' },
   { label: 'Route History', icon: MapPin, path: '/driver-route-history', permission: 'tracking' },
+  { label: 'Documents', icon: FileSignature, path: '/documents', permission: 'dashboard' },
 ];
 
 // All items flat (for mobile menu)
@@ -75,6 +76,7 @@ const tenantNavItems: NavItem[] = [
   { label: 'Performance', icon: Trophy, path: '/performance', permission: 'performance' },
   { label: 'Invoices', icon: FileText, path: '/invoices', permission: 'invoices' },
   { label: 'Route History', icon: MapPin, path: '/driver-route-history', permission: 'tracking' },
+  { label: 'Documents', icon: FileSignature, path: '/documents', permission: 'dashboard' },
   { label: 'Companies', icon: Building2, path: '/companies', permission: 'companies' },
   { label: 'Brokers', icon: Handshake, path: '/brokers', permission: 'loads', masterOnly: true },
   { label: 'Users', icon: UserCog, path: '/users', permission: 'users' },
