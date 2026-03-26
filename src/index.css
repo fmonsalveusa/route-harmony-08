@@ -58,9 +58,12 @@ html, body {
     --success: 152 60% 40%;
     --success-foreground: 0 0% 100%;
     --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 100%;
+    --warning-foreground: 30 75% 26%;
+    --warning-bg: 42 100% 95%;
     --info: 217 78% 50%;
     --info-foreground: 0 0% 100%;
+    --danger-bg: 0 100% 94%;
+    --danger-text: 0 54% 41%;
   }
 
   .dark {
