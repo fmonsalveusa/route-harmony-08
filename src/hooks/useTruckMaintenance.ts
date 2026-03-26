@@ -53,6 +53,53 @@ async function fetchMaintenance(): Promise<DbTruckMaintenance[]> {
   return (data as any) ?? [];
 }
 
+async function getDriverMetaForTruck(truckId: string) {
+  const { data } = await supabase
+    .from('drivers' as any)
+    .select('name, service_type')
+    .eq('truck_id', truckId)
+    .limit(1)
+    .maybeSingle();
+
+  return {
+    driverName: (data as any)?.name || null,
+    driverServiceType: (data as any)?.service_type || null,
+  };
+}
+
+async function buildMaintenanceExpensePayload(params: {
+  tenant_id: string | null;
+  truck_id: string;
+  expense_date: string;
+  maintenance_type: string;
+  cost: number;
+  tax_amount?: number | null;
+  vendor?: string | null;
+  payment_method?: string;
+  location?: string | null;
+  invoice_number?: string | null;
+}) {
+  const { driverName, driverServiceType } = await getDriverMetaForTruck(params.truck_id);
+
+  return {
+    tenant_id: params.tenant_id,
+    expense_date: params.expense_date,
+    truck_id: params.truck_id,
+    expense_type: 'maintenance',
+    description: params.maintenance_type,
+    category: params.maintenance_type,
+    amount: params.cost,
+    tax_amount: params.tax_amount || null,
+    vendor: params.vendor || null,
+    payment_method: params.payment_method || 'other',
+    location: params.location || null,
+    invoice_number: params.invoice_number || null,
+    source: 'maintenance',
+    driver_name: driverName,
+    driver_service_type: driverServiceType,
+  };
+}
+
 export function useTruckMaintenance() {
   const { toast } = useToast();
   const toastRef = useRef(toast);
@@ -77,40 +124,18 @@ export function useTruckMaintenance() {
 
     // Auto-create expense if cost > 0
     if (input.create_expense !== false && input.cost && input.cost > 0) {
-      const totalAmount = (input.cost || 0) + (input.tax_amount || 0);
-
-      // Look up driver assigned to truck for expense metadata
-      let driverName: string | null = null;
-      let driverServiceType: string | null = null;
-      const { data: driverData } = await supabase
-        .from('drivers' as any)
-        .select('name, service_type')
-        .eq('truck_id', input.truck_id)
-        .limit(1)
-        .maybeSingle();
-      if (driverData) {
-        driverName = (driverData as any).name || null;
-        driverServiceType = (driverData as any).service_type || null;
-      }
-
-      const expensePayload = {
-          tenant_id,
-          expense_date: input.last_performed_at,
-          truck_id: input.truck_id,
-          expense_type: 'maintenance',
-          description: input.maintenance_type,
-          category: input.maintenance_type,
-          amount: input.cost,
-          tax_amount: input.tax_amount || null,
-          total_amount: totalAmount || null,
-          vendor: input.vendor || null,
-          payment_method: input.payment_method || 'other',
-          location: input.location || null,
-          invoice_number: input.invoice_number || null,
-          source: 'maintenance',
-          driver_name: driverName,
-          driver_service_type: driverServiceType,
-      };
+      const expensePayload = await buildMaintenanceExpensePayload({
+        tenant_id,
+        truck_id: input.truck_id,
+        expense_date: input.last_performed_at,
+        maintenance_type: input.maintenance_type,
+        cost: input.cost,
+        tax_amount: input.tax_amount,
+        vendor: input.vendor,
+        payment_method: input.payment_method,
+        location: input.location,
+        invoice_number: input.invoice_number,
+      });
       console.log('[createMaintenance] expensePayload:', expensePayload);
 
       const { data: expData, error: expErr } = await supabase
@@ -277,40 +302,18 @@ export function useTruckMaintenance() {
     let expense_id: string | null = null;
     if (input.create_expense !== false && input.cost && input.cost > 0) {
       const tenant_id = await getTenantId();
-      const totalAmount = (input.cost || 0) + (input.tax_amount || 0);
-
-      // Look up driver assigned to truck for expense metadata
-      let driverName: string | null = null;
-      let driverServiceType: string | null = null;
-      const { data: driverData } = await supabase
-        .from('drivers' as any)
-        .select('name, service_type')
-        .eq('truck_id', item.truck_id)
-        .limit(1)
-        .maybeSingle();
-      if (driverData) {
-        driverName = (driverData as any).name || null;
-        driverServiceType = (driverData as any).service_type || null;
-      }
-
-      const expensePayload = {
-          tenant_id,
-          expense_date: input.last_performed_at,
-          truck_id: item.truck_id,
-          expense_type: 'maintenance',
-          description: item.maintenance_type,
-          category: item.maintenance_type,
-          amount: input.cost,
-          tax_amount: input.tax_amount || null,
-          total_amount: totalAmount || null,
-          vendor: input.vendor || null,
-          payment_method: input.payment_method || 'other',
-          location: input.location || null,
-          invoice_number: input.invoice_number || null,
-          source: 'maintenance',
-          driver_name: driverName,
-          driver_service_type: driverServiceType,
-        };
+      const expensePayload = await buildMaintenanceExpensePayload({
+        tenant_id,
+        truck_id: item.truck_id,
+        expense_date: input.last_performed_at,
+        maintenance_type: item.maintenance_type,
+        cost: input.cost,
+        tax_amount: input.tax_amount,
+        vendor: input.vendor,
+        payment_method: input.payment_method,
+        location: input.location,
+        invoice_number: input.invoice_number,
+      });
       console.log('Creating expense from maintenance log:', expensePayload);
       const { data: expData, error: expError } = await supabase
         .from('expenses' as any)
