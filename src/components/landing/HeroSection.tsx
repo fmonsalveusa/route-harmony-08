@@ -55,9 +55,17 @@ export function HeroSection() {
               <span className="text-accent">{tr.heroTitle2}</span>
             </h1>
 
-            <p className="text-lg text-muted-foreground mb-8 leading-relaxed max-w-lg">
+            <p className="text-lg text-muted-foreground mb-6 leading-relaxed max-w-lg">
               {tr.heroSubtitle}
             </p>
+
+            <a
+              href="#meeting"
+              className="inline-flex items-center gap-2 mb-8 bg-accent hover:bg-accent/90 text-accent-foreground font-semibold px-6 py-3 rounded-lg text-base transition-colors"
+            >
+              <CalendarIcon size={18} />
+              {lang === "es" ? "Agendar una Reunión" : "Schedule a Meeting"}
+            </a>
 
             <form onSubmit={handleSubmit} className="bg-card rounded-2xl border p-6 shadow-sm space-y-4">
               <h3 className="font-bold text-foreground text-base flex items-center gap-2">
