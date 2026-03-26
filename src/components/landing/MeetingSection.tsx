@@ -18,20 +18,8 @@ import t from "./landingTranslations";
 
 const TRUCK_TYPES = ["Box Truck", "Hotshot", "Dry Van", "Flatbed", "Reefer"];
 
-function getTimeSlots(selectedDate: Date | undefined) {
-  if (!selectedDate) return [];
-  const day = selectedDate.getDay();
-  const startHour = day === 6 ? 9 : 10;
-  const endHour = day === 6 ? 12 : 17;
-  const slots: string[] = [];
-  for (let h = startHour; h < endHour; h++) {
-    for (const m of [0, 30]) {
-      const period = h >= 12 ? "PM" : "AM";
-      const displayHour = h > 12 ? h - 12 : h;
-      slots.push(`${displayHour}:${String(m).padStart(2, "0")} ${period}`);
-    }
-  }
-  return slots;
+function getTimeSlots() {
+  return ["4:30 PM", "5:00 PM", "5:30 PM", "6:00 PM"];
 }
 
 export function MeetingSection() {
@@ -142,7 +130,7 @@ export function MeetingSection() {
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar mode="single" selected={date} onSelect={(d) => { setDate(d); setForm(f => ({ ...f, meeting_time: "" })); }} disabled={(d) => { const today = new Date(); today.setHours(0,0,0,0); return d < today || d.getDay() === 0; }} initialFocus className="p-3 pointer-events-auto" />
+                      <Calendar mode="single" selected={date} onSelect={(d) => { setDate(d); setForm(f => ({ ...f, meeting_time: "" })); }} disabled={(d) => { const today = new Date(); today.setHours(0,0,0,0); return d < today || d.getDay() === 0 || d.getDay() === 6; }} initialFocus className="p-3 pointer-events-auto" />
                     </PopoverContent>
                   </Popover>
                 </div>
@@ -154,7 +142,7 @@ export function MeetingSection() {
                       <SelectValue placeholder={tr.meetTimePh} />
                     </SelectTrigger>
                     <SelectContent className="max-h-[200px]">
-                      {getTimeSlots(date).map((tt) => (<SelectItem key={tt} value={tt}>{tt}</SelectItem>))}
+                      {getTimeSlots().map((tt) => (<SelectItem key={tt} value={tt}>{tt}</SelectItem>))}
                     </SelectContent>
                   </Select>
                 </div>
