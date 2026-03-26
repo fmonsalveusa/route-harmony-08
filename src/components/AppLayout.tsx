@@ -76,6 +76,7 @@ const tenantNavItems: NavItem[] = [
   { label: 'Performance', icon: Trophy, path: '/performance', permission: 'performance' },
   { label: 'Invoices', icon: FileText, path: '/invoices', permission: 'invoices' },
   { label: 'Route History', icon: MapPin, path: '/driver-route-history', permission: 'tracking' },
+  { label: 'Documents', icon: FileSignature, path: '/documents', permission: 'dashboard' },
   { label: 'Companies', icon: Building2, path: '/companies', permission: 'companies' },
   { label: 'Brokers', icon: Handshake, path: '/brokers', permission: 'loads', masterOnly: true },
   { label: 'Users', icon: UserCog, path: '/users', permission: 'users' },
