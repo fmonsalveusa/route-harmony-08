@@ -42,8 +42,8 @@ export default function Complete() {
     <div className="max-w-lg mx-auto py-12 px-4 space-y-6">
       <Card>
         <CardHeader className="text-center">
-          <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
-            <CheckCircle2 className="h-8 w-8 text-green-600 dark:text-green-400" />
+          <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+            <CheckCircle2 className="h-8 w-8 text-primary" />
           </div>
           <CardTitle className="text-xl">
             {doc.status === 'signed' ? 'Documento firmado' : 'Detalles del documento'}

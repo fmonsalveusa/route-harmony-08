@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/alert-dialog';
 
 const Documents = () => {
+  const navigate = useNavigate();
   const [documents, setDocuments] = useState<SignDocument[]>([]);
   const [templates, setTemplates] = useState<SignTemplate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,8 +38,9 @@ const Documents = () => {
   useEffect(() => { fetchAll(); }, []);
 
   const copySignLink = (docId: string) => {
-    navigator.clipboard.writeText(`${SIGNING_APP}/sign/${docId}`);
-    toast.success('Sign link copied to clipboard');
+    const link = `${window.location.origin}/documents/sign/${docId}`;
+    navigator.clipboard.writeText(link);
+    toast.success('Enlace de firma copiado');
   };
 
   const handleDelete = async () => {
@@ -46,10 +48,10 @@ const Documents = () => {
     try {
       if (deleteTarget.type === 'doc') await deleteDocument(deleteTarget.id);
       else await deleteTemplate(deleteTarget.id);
-      toast.success(`${deleteTarget.type === 'doc' ? 'Document' : 'Template'} deleted`);
+      toast.success(`${deleteTarget.type === 'doc' ? 'Documento' : 'Plantilla'} eliminado`);
       fetchAll();
     } catch (e: any) {
-      toast.error('Error deleting', { description: e.message });
+      toast.error('Error al eliminar', { description: e.message });
     } finally {
       setDeleteTarget(null);
     }
@@ -61,18 +63,12 @@ const Documents = () => {
     return 'pending';
   };
 
-  const getStatusLabel = (status: string) => {
-    if (status === 'signed') return 'Signed';
-    if (status === 'expired') return 'Expired';
-    return 'Pending';
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Documents</h1>
-          <p className="text-sm text-muted-foreground">Manage electronic signature documents and templates</p>
+          <h1 className="text-2xl font-bold text-foreground">Documentos</h1>
+          <p className="text-sm text-muted-foreground">Gestiona documentos de firma electrónica y plantillas</p>
         </div>
       </div>
 
@@ -84,15 +80,14 @@ const Documents = () => {
           </TabsTrigger>
           <TabsTrigger value="templates" className="gap-2">
             <LayoutTemplate className="h-4 w-4" />
-            Templates
+            Plantillas
           </TabsTrigger>
         </TabsList>
 
-        {/* ── Dashboard Tab ── */}
         <TabsContent value="dashboard">
           <div className="flex justify-end mb-4">
-            <Button onClick={() => window.open(`${SIGNING_APP}/upload`, '_blank')} className="gap-2">
-              <Plus className="h-4 w-4" /> New Document
+            <Button onClick={() => navigate('/documents/upload')} className="gap-2">
+              <Plus className="h-4 w-4" /> Nuevo Documento
             </Button>
           </div>
 
@@ -103,19 +98,19 @@ const Documents = () => {
           ) : documents.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <FileText className="h-12 w-12 mx-auto mb-3 opacity-40" />
-              <p className="font-medium">No documents yet</p>
-              <p className="text-sm">Create your first document to get started</p>
+              <p className="font-medium">Sin documentos aún</p>
+              <p className="text-sm">Crea tu primer documento para comenzar</p>
             </div>
           ) : (
             <div className="border rounded-lg overflow-hidden">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>File</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Recipient</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead>Archivo</TableHead>
+                    <TableHead>Estado</TableHead>
+                    <TableHead>Destinatario</TableHead>
+                    <TableHead>Creado</TableHead>
+                    <TableHead className="text-right">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -135,17 +130,17 @@ const Documents = () => {
                         <div className="flex items-center justify-end gap-1">
                           {doc.status === 'pending' && (
                             <>
-                              <Button variant="ghost" size="icon" onClick={() => copySignLink(doc.id)} title="Copy sign link">
+                              <Button variant="ghost" size="icon" onClick={() => copySignLink(doc.id)} title="Copiar enlace">
                                 <Copy className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="icon" onClick={() => window.open(`${SIGNING_APP}/upload?edit=${doc.id}`, '_blank')} title="Edit">
+                              <Button variant="ghost" size="icon" onClick={() => navigate(`/documents/upload?edit=${doc.id}`)} title="Editar">
                                 <Pencil className="h-4 w-4" />
                               </Button>
                             </>
                           )}
                           {doc.status === 'signed' && (
                             <>
-                              <Button variant="ghost" size="icon" onClick={() => window.open(`${SIGNING_APP}/complete/${doc.id}`, '_blank')} title="View details">
+                              <Button variant="ghost" size="icon" onClick={() => navigate(`/documents/complete/${doc.id}`)} title="Ver detalles">
                                 <Eye className="h-4 w-4" />
                               </Button>
                               {doc.signedFileData && (
@@ -154,13 +149,13 @@ const Documents = () => {
                                   link.href = doc.signedFileData!;
                                   link.download = `signed-${doc.fileName}`;
                                   link.click();
-                                }} title="Download signed">
+                                }} title="Descargar firmado">
                                   <Download className="h-4 w-4" />
                                 </Button>
                               )}
                             </>
                           )}
-                          <Button variant="ghost" size="icon" onClick={() => setDeleteTarget({ type: 'doc', id: doc.id, name: doc.fileName })} title="Delete" className="text-destructive hover:text-destructive">
+                          <Button variant="ghost" size="icon" onClick={() => setDeleteTarget({ type: 'doc', id: doc.id, name: doc.fileName })} title="Eliminar" className="text-destructive hover:text-destructive">
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
@@ -173,11 +168,10 @@ const Documents = () => {
           )}
         </TabsContent>
 
-        {/* ── Templates Tab ── */}
         <TabsContent value="templates">
           <div className="flex justify-end mb-4">
-            <Button onClick={() => window.open(`${SIGNING_APP}/upload?mode=template`, '_blank')} className="gap-2">
-              <Plus className="h-4 w-4" /> Create Template
+            <Button onClick={() => navigate('/documents/upload?mode=template')} className="gap-2">
+              <Plus className="h-4 w-4" /> Crear Plantilla
             </Button>
           </div>
 
@@ -188,19 +182,19 @@ const Documents = () => {
           ) : templates.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <LayoutTemplate className="h-12 w-12 mx-auto mb-3 opacity-40" />
-              <p className="font-medium">No templates yet</p>
-              <p className="text-sm">Create reusable document templates</p>
+              <p className="font-medium">Sin plantillas aún</p>
+              <p className="text-sm">Crea plantillas reutilizables de documentos</p>
             </div>
           ) : (
             <div className="border rounded-lg overflow-hidden">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>File</TableHead>
-                    <TableHead>Fields</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead>Nombre</TableHead>
+                    <TableHead>Archivo</TableHead>
+                    <TableHead>Campos</TableHead>
+                    <TableHead>Creado</TableHead>
+                    <TableHead className="text-right">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -214,10 +208,10 @@ const Documents = () => {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center justify-end gap-1">
-                          <Button variant="ghost" size="icon" onClick={() => window.open(`${SIGNING_APP}/upload?mode=template&edit=${tpl.id}`, '_blank')} title="Edit template">
+                          <Button variant="ghost" size="icon" onClick={() => navigate(`/documents/upload?mode=template&edit=${tpl.id}`)} title="Editar plantilla">
                             <Pencil className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" onClick={() => setDeleteTarget({ type: 'tpl', id: tpl.id, name: tpl.name })} title="Delete" className="text-destructive hover:text-destructive">
+                          <Button variant="ghost" size="icon" onClick={() => setDeleteTarget({ type: 'tpl', id: tpl.id, name: tpl.name })} title="Eliminar" className="text-destructive hover:text-destructive">
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
@@ -231,19 +225,18 @@ const Documents = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Delete confirmation */}
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete {deleteTarget?.type === 'doc' ? 'Document' : 'Template'}</AlertDialogTitle>
+            <AlertDialogTitle>Eliminar {deleteTarget?.type === 'doc' ? 'Documento' : 'Plantilla'}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{deleteTarget?.name}"? This action cannot be undone.
+              ¿Estás seguro de eliminar "{deleteTarget?.name}"? Esta acción no se puede deshacer.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Delete
+              Eliminar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
