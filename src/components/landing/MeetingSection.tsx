@@ -142,7 +142,7 @@ export function MeetingSection() {
                       <SelectValue placeholder={tr.meetTimePh} />
                     </SelectTrigger>
                     <SelectContent className="max-h-[200px]">
-                      {getTimeSlots(date).map((tt) => (<SelectItem key={tt} value={tt}>{tt}</SelectItem>))}
+                      {getTimeSlots().map((tt) => (<SelectItem key={tt} value={tt}>{tt}</SelectItem>))}
                     </SelectContent>
                   </Select>
                 </div>
