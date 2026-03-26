@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
 
 @tailwind base;
 
@@ -57,9 +58,12 @@ html, body {
     --success: 152 60% 40%;
     --success-foreground: 0 0% 100%;
     --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 100%;
+    --warning-foreground: 30 75% 26%;
+    --warning-bg: 42 100% 95%;
     --info: 217 78% 50%;
     --info-foreground: 0 0% 100%;
+    --danger-bg: 0 100% 94%;
+    --danger-text: 0 54% 41%;
   }
 
   .dark {
@@ -298,4 +302,10 @@ html, body {
   0% { transform: scale(1); opacity: 0.6; }
   50% { transform: scale(1.5); opacity: 0.2; }
   100% { transform: scale(1); opacity: 0.6; }
+}
+
+@layer utilities {
+  .font-mono-id {
+    font-family: 'JetBrains Mono', monospace;
+  }
 }

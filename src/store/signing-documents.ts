@@ -1,65 +1,64 @@
-import { signingSupabase } from '@/integrations/signing/client';
-import type { SignDocument } from '@/types/document';
+import { supabase } from "@/integrations/supabase/client";
+import { SignDocument } from "@/types/document";
 
-const TABLE = 'documents';
-
-const mapRow = (row: any): SignDocument => ({
-  id: row.id,
-  fileName: row.file_name,
-  fileData: row.file_data,
-  signedFileData: row.signed_file_data ?? undefined,
-  status: row.status,
-  createdAt: new Date(row.created_at).getTime(),
-  signedAt: row.signed_at ? new Date(row.signed_at).getTime() : undefined,
-  expiresAt: new Date(row.expires_at).getTime(),
-  fields: row.fields ?? [],
-  signerData: row.signer_data ?? undefined,
-  recipientEmail: row.recipient_email ?? undefined,
-});
-
-export async function getDocuments(): Promise<SignDocument[]> {
-  const { data, error } = await signingSupabase
-    .from(TABLE)
-    .select('*')
-    .order('created_at', { ascending: false });
-  if (error) throw error;
-  return (data ?? []).map(mapRow);
+function rowToDoc(row: any): SignDocument {
+  return {
+    id: row.id,
+    fileName: row.file_name,
+    fileData: row.file_data,
+    signedFileData: row.signed_file_data ?? undefined,
+    status: row.status === "pending" && row.expires_at < Date.now() ? "expired" : row.status,
+    createdAt: row.created_at,
+    signedAt: row.signed_at ?? undefined,
+    expiresAt: row.expires_at,
+    fields: (row.fields as any[]) ?? [],
+    signerData: row.signer_data as any,
+    recipientEmail: row.recipient_email ?? undefined,
+  };
 }
 
-export async function getDocument(id: string): Promise<SignDocument | null> {
-  const { data, error } = await signingSupabase
-    .from(TABLE)
-    .select('*')
-    .eq('id', id)
+export async function getDocuments(): Promise<SignDocument[]> {
+  const { data, error } = await supabase
+    .from("documents" as any)
+    .select("*")
+    .order("created_at", { ascending: false });
+  if (error) { console.error(error); return []; }
+  return (data ?? []).map(rowToDoc);
+}
+
+export async function getDocument(id: string): Promise<SignDocument | undefined> {
+  const { data, error } = await supabase
+    .from("documents" as any)
+    .select("*")
+    .eq("id", id)
     .maybeSingle();
-  if (error) throw error;
-  return data ? mapRow(data) : null;
+  if (error || !data) return undefined;
+  return rowToDoc(data);
 }
 
 export async function saveDocument(doc: SignDocument): Promise<void> {
-  const payload = {
-    id: doc.id,
-    file_name: doc.fileName,
-    file_data: doc.fileData,
-    signed_file_data: doc.signedFileData ?? null,
-    status: doc.status,
-    created_at: new Date(doc.createdAt).toISOString(),
-    signed_at: doc.signedAt ? new Date(doc.signedAt).toISOString() : null,
-    expires_at: new Date(doc.expiresAt).toISOString(),
-    fields: doc.fields,
-    signer_data: doc.signerData ?? null,
-    recipient_email: doc.recipientEmail ?? null,
-  };
-  const { error } = await signingSupabase
-    .from(TABLE)
-    .upsert(payload as any);
-  if (error) throw error;
+  const { error } = await supabase
+    .from("documents" as any)
+    .upsert({
+      id: doc.id,
+      file_name: doc.fileName,
+      file_data: doc.fileData,
+      signed_file_data: doc.signedFileData ?? null,
+      status: doc.status,
+      created_at: doc.createdAt,
+      signed_at: doc.signedAt ?? null,
+      expires_at: doc.expiresAt,
+      fields: doc.fields as any,
+      signer_data: doc.signerData as any ?? null,
+      recipient_email: doc.recipientEmail ?? null,
+    } as any);
+  if (error) { console.error(error); throw error; }
 }
 
 export async function deleteDocument(id: string): Promise<void> {
-  const { error } = await signingSupabase
-    .from(TABLE)
+  const { error } = await supabase
+    .from("documents" as any)
     .delete()
-    .eq('id', id);
-  if (error) throw error;
+    .eq("id", id);
+  if (error) { console.error(error); throw error; }
 }
