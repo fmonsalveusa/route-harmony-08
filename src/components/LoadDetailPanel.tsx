@@ -65,20 +65,34 @@ async function drivingDistance(lat1: number, lon1: number, lat2: number, lon2: n
   return null;
 }
 
-// Get full route geometry for polyline
-async function drivingRoute(coords: [number, number][]): Promise<[number, number][] | null> {
+// Get full route with geometry AND per-leg distances in a single OSRM call
+async function drivingRouteWithLegs(coords: [number, number][]): Promise<{
+  geometry: [number, number][];
+  legDistancesMiles: number[];
+  totalMiles: number;
+} | null> {
   if (coords.length < 2) return null;
   try {
     const waypoints = coords.map(c => `${c[1]},${c[0]}`).join(';');
     const res = await fetch(
-      `https://router.project-osrm.org/route/v1/driving/${waypoints}?overview=full&geometries=geojson`
+      `https://router.project-osrm.org/route/v1/driving/${waypoints}?overview=full&geometries=geojson&steps=false`
     );
     const data = await res.json();
-    if (data.code === 'Ok' && data.routes?.[0]?.geometry?.coordinates) {
-      return data.routes[0].geometry.coordinates.map((c: number[]) => [c[1], c[0]] as [number, number]);
+    if (data.code === 'Ok' && data.routes?.[0]) {
+      const route = data.routes[0];
+      const geometry = route.geometry?.coordinates?.map((c: number[]) => [c[1], c[0]] as [number, number]) || [];
+      const legDistancesMiles = (route.legs || []).map((leg: any) => (leg.distance || 0) * 0.000621371);
+      const totalMiles = route.distance * 0.000621371;
+      return { geometry, legDistancesMiles, totalMiles };
     }
   } catch {}
   return null;
+}
+
+// Get full route geometry for polyline (used for deadhead lines)
+async function drivingRoute(coords: [number, number][]): Promise<[number, number][] | null> {
+  const result = await drivingRouteWithLegs(coords);
+  return result?.geometry || null;
 }
 
 function normalizeRouteGeometry(input: unknown): [number, number][] | null {
