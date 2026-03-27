@@ -1,18 +1,20 @@
 import { motion } from "framer-motion";
-import { UserPlus, Truck, DollarSign, TrendingUp, Shield, Clock, Globe, HeadphonesIcon, BarChart3 } from "lucide-react";
+import { UserPlus, Truck, DollarSign, TrendingUp, Shield, Clock, Globe, HeadphonesIcon, BarChart3, CalendarIcon } from "lucide-react";
 import { useLandingLang } from "@/contexts/LandingLanguageContext";
 import t from "./landingTranslations";
 
 const stepsEs = [
   { icon: UserPlus, num: "01", title: "Regístrate Gratis", desc: "Completa tu registro en menos de 2 minutos. 100% digital, sin costo." },
-  { icon: Truck, num: "02", title: "Te Asignamos Cargas", desc: "Nuestro equipo negocia las mejores tarifas y te asigna cargas bien pagadas." },
-  { icon: DollarSign, num: "03", title: "Gana Dinero", desc: "Recibe pagos semanales directos a tu cuenta. Sin sorpresas." },
+  { icon: CalendarIcon, num: "02", title: "Agenda una Reunión", desc: "Coordina una llamada con nuestro equipo para conocer tu negocio y necesidades." },
+  { icon: Truck, num: "03", title: "Te Asignamos Cargas", desc: "Nuestro equipo negocia las mejores tarifas y te asigna cargas bien pagadas." },
+  { icon: DollarSign, num: "04", title: "Gana Dinero", desc: "Recibe pagos semanales directos a tu cuenta. Sin sorpresas." },
 ];
 
 const stepsEn = [
   { icon: UserPlus, num: "01", title: "Register Free", desc: "Complete your registration in less than 2 minutes. 100% digital, no cost." },
-  { icon: Truck, num: "02", title: "We Assign Loads", desc: "Our team negotiates the best rates and assigns you well-paid loads." },
-  { icon: DollarSign, num: "03", title: "Earn Money", desc: "Receive weekly payments directly to your account. No surprises." },
+  { icon: CalendarIcon, num: "02", title: "Schedule a Meeting", desc: "Coordinate a call with our team to learn about your business and needs." },
+  { icon: Truck, num: "03", title: "We Assign Loads", desc: "Our team negotiates the best rates and assigns you well-paid loads." },
+  { icon: DollarSign, num: "04", title: "Earn Money", desc: "Receive weekly payments directly to your account. No surprises." },
 ];
 
 export function HowItWorks() {
@@ -38,12 +40,12 @@ export function HowItWorks() {
             {lang === "es" ? "Cómo Funciona" : "How It Works"}
           </span>
           <h2 className="text-3xl sm:text-4xl font-bold text-foreground mt-2">
-            {lang === "es" ? "3 Pasos para " : "3 Steps to "}
+            {lang === "es" ? "4 Pasos para " : "4 Steps to "}
             <span className="text-accent">{lang === "es" ? "Empezar" : "Get Started"}</span>
           </h2>
         </motion.div>
 
-        <div className="grid md:grid-cols-3 gap-8 mb-20 relative">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-20 relative">
           {/* Connecting line (desktop) */}
           <div className="hidden md:block absolute top-16 left-[20%] right-[20%] h-0.5 bg-gradient-to-r from-accent/20 via-accent/40 to-accent/20" />
 

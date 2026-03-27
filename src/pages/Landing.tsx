@@ -32,9 +32,9 @@ export default function Landing() {
         <LandingNavbar />
         <HeroSection />
         <StatsSection />
-        <TestimonialsSection />
-        <ServicesSection />
         <HowItWorks />
+        <ServicesSection />
+        <TestimonialsSection />
         <VehicleGallery />
         <MeetingSection />
         <OnboardingSection />
