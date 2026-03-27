@@ -68,7 +68,7 @@ export function HeroSection() {
             </a>
             <a
               href="#meeting"
-              className="inline-flex items-center justify-center gap-2 border-2 border-[hsl(152,60%,40%)] text-[hsl(152,60%,40%)] hover:bg-[hsl(152,60%,40%)] hover:text-white font-bold px-8 py-4 rounded-xl text-lg transition-all"
+              className="inline-flex items-center justify-center gap-2 bg-[hsl(152,60%,40%)] hover:bg-[hsl(152,60%,34%)] text-white font-bold px-8 py-4 rounded-xl text-lg transition-all shadow-lg shadow-[hsl(152,60%,40%)]/25"
             >
               <CalendarIcon size={20} />
               {lang === "es" ? "Agendar Reunión" : "Schedule Meeting"}
