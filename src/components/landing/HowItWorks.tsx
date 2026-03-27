@@ -40,7 +40,7 @@ export function HowItWorks() {
             {lang === "es" ? "Cómo Funciona" : "How It Works"}
           </span>
           <h2 className="text-3xl sm:text-4xl font-bold text-foreground mt-2">
-            {lang === "es" ? "3 Pasos para " : "3 Steps to "}
+            {lang === "es" ? "4 Pasos para " : "4 Steps to "}
             <span className="text-accent">{lang === "es" ? "Empezar" : "Get Started"}</span>
           </h2>
         </motion.div>
