@@ -4,15 +4,15 @@ import { useLandingLang } from "@/contexts/LandingLanguageContext";
 import t from "./landingTranslations";
 
 const stepsEs = [
-  { icon: UserPlus, num: "01", title: "Regístrate Gratis", desc: "Completa tu registro en menos de 2 minutos. 100% digital, sin costo." },
-  { icon: CalendarIcon, num: "02", title: "Agenda una Reunión", desc: "Coordina una llamada con nuestro equipo para conocer tu negocio y necesidades." },
+  { icon: CalendarIcon, num: "01", title: "Agenda una Reunión", desc: "Coordina una llamada con nuestro equipo para conocer tu negocio y necesidades.", link: "#meeting", btnLabel: "Agendar Reunión" },
+  { icon: UserPlus, num: "02", title: "Regístrate Gratis", desc: "Completa tu registro en menos de 2 minutos. 100% digital, sin costo.", link: "#registro", btnLabel: "Registrarse" },
   { icon: Truck, num: "03", title: "Te Asignamos Cargas", desc: "Nuestro equipo negocia las mejores tarifas y te asigna cargas bien pagadas." },
   { icon: DollarSign, num: "04", title: "Gana Dinero", desc: "Recibe pagos semanales directos a tu cuenta. Sin sorpresas." },
 ];
 
 const stepsEn = [
-  { icon: UserPlus, num: "01", title: "Register Free", desc: "Complete your registration in less than 2 minutes. 100% digital, no cost." },
-  { icon: CalendarIcon, num: "02", title: "Schedule a Meeting", desc: "Coordinate a call with our team to learn about your business and needs." },
+  { icon: CalendarIcon, num: "01", title: "Schedule a Meeting", desc: "Coordinate a call with our team to learn about your business and needs.", link: "#meeting", btnLabel: "Schedule Meeting" },
+  { icon: UserPlus, num: "02", title: "Register Free", desc: "Complete your registration in less than 2 minutes. 100% digital, no cost.", link: "#registro", btnLabel: "Register" },
   { icon: Truck, num: "03", title: "We Assign Loads", desc: "Our team negotiates the best rates and assigns you well-paid loads." },
   { icon: DollarSign, num: "04", title: "Earn Money", desc: "Receive weekly payments directly to your account. No surprises." },
 ];
