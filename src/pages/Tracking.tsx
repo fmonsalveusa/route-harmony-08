@@ -111,6 +111,14 @@ const Tracking = () => {
   const { drivers, refetch: refetchDrivers } = useDrivers();
   const { trucks } = useTrucks();
   const { dispatchers } = useDispatchers();
+  const { role, profile } = useAuth();
+
+  // If dispatcher role, find matching dispatcher ID by email
+  const userDispatcherId = useMemo(() => {
+    if (role !== 'dispatcher' || !profile?.email) return null;
+    const match = dispatchers.find(d => d.email.toLowerCase() === profile.email.toLowerCase());
+    return match?.id ?? null;
+  }, [role, profile?.email, dispatchers]);
 
   const [allStops, setAllStops] = useState<LoadStop[]>([]);
   const [selectedLoadId, setSelectedLoadId] = useState<string | null>(null);
