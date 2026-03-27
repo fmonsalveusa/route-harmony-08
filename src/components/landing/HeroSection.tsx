@@ -16,11 +16,11 @@ export function HeroSection() {
   ];
 
   return (
-    <section className="relative min-h-[90vh] flex items-center overflow-hidden">
+    <section className="relative min-h-[100vh] flex items-center overflow-hidden">
       {/* Background image with dark overlay */}
       <div className="absolute inset-0">
-        <img src={heroImg} alt="Fleet" className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[hsl(214,52%,12%)/0.92] via-[hsl(214,52%,12%)/0.8] to-[hsl(214,52%,12%)/0.5]" />
+        <img src={heroImg} alt="Fleet" className="w-full h-full object-cover object-center" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[hsl(214,52%,12%)/0.88] via-[hsl(214,52%,12%)/0.7] to-[hsl(214,52%,12%)/0.35]" />
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32 lg:py-40 w-full">
