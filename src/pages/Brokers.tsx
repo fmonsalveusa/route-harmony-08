@@ -50,6 +50,7 @@ export default function Brokers() {
   const openEdit = (broker: Broker) => {
     setEditBroker(broker);
     setForm({
+      name: broker.name,
       mc_number: broker.mc_number || '',
       dot_number: broker.dot_number || '',
       address: broker.address || '',
@@ -57,6 +58,11 @@ export default function Brokers() {
       days_to_pay: broker.days_to_pay?.toString() || '',
       notes: broker.notes || '',
     });
+  };
+
+  const openCreate = () => {
+    setShowCreate(true);
+    setForm({ name: '', mc_number: '', dot_number: '', address: '', rating: '', days_to_pay: '', notes: '' });
   };
 
   const handleFmcsaLookup = async () => {
