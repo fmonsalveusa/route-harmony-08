@@ -661,7 +661,23 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
         }));
 
         setResolvedStops(resolved);
-        setTotalMiles(Number(load.miles) > 0 ? Number(load.miles) : 0);
+        // Use load.miles if available, otherwise sum cached distances from stops
+        const loadMiles = Number(load.miles) || 0;
+        if (loadMiles > 0) {
+          setTotalMiles(loadMiles);
+        } else {
+          const sumFromStops = resolved.reduce((sum, s) => sum + (s.distanceFromPrev || 0), 0);
+          if (sumFromStops > 0) {
+            setTotalMiles(sumFromStops);
+            // Persist the recalculated miles
+            if (onMilesCalculated && !persistedRef.current) {
+              persistedRef.current = true;
+              onMilesCalculated(load.id, sumFromStops, cachedRoute);
+            }
+          } else {
+            setTotalMiles(0);
+          }
+        }
 
         if (cancelled) return;
 
