@@ -242,11 +242,12 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
   const mobileItems = useMasterNav
     ? masterNavItems
     : tenantNavItems;
-  const visibleMobileItems = mobileItems.filter((item) => hasPermission(item.permission) && (!item.masterOnly || isMasterAdmin));
+  const isDispatcher = role === 'dispatcher';
+  const visibleMobileItems = mobileItems.filter((item) => hasPermission(item.permission) && (!item.masterOnly || isMasterAdmin) && (!item.hideForDispatcher || !isDispatcher));
 
   // Desktop tenant: top-level + bottom-level (filtered)
-  const visibleTopLevel = topLevelItems.filter((i) => hasPermission(i.permission) && (!i.masterOnly || isMasterAdmin));
-  const visibleBottomLevel = bottomLevelItems.filter((i) => hasPermission(i.permission) && (!i.masterOnly || isMasterAdmin));
+  const visibleTopLevel = topLevelItems.filter((i) => hasPermission(i.permission) && (!i.masterOnly || isMasterAdmin) && (!i.hideForDispatcher || !isDispatcher));
+  const visibleBottomLevel = bottomLevelItems.filter((i) => hasPermission(i.permission) && (!i.masterOnly || isMasterAdmin) && (!i.hideForDispatcher || !isDispatcher));
 
   const initials = profile.full_name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
 
