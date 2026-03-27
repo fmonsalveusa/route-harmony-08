@@ -20,8 +20,14 @@ import { useToast } from '@/hooks/use-toast';
 import { useBrokerScores } from '@/hooks/useBrokerScores';
 import 'leaflet/dist/leaflet.css';
 
+// In-memory geocode cache to avoid repeated Nominatim calls
+const geocodeCache = new Map<string, [number, number] | null>();
+
 // Geocoding with progressive fallback: full address → without suite → city+state+zip
 async function geocode(place: string): Promise<[number, number] | null> {
+  const cacheKey = place.trim().toLowerCase();
+  if (geocodeCache.has(cacheKey)) return geocodeCache.get(cacheKey)!;
+
   const attempts = [place];
   // Remove suite/unit/apt info
   const noSuite = place.replace(/,?\s*(Suite|Ste|Unit|Apt|#)\s*\S*/gi, '').replace(/\s{2,}/g, ' ').trim();
@@ -43,11 +49,14 @@ async function geocode(place: string): Promise<[number, number] | null> {
       const data = await res.json();
       if (data.length > 0) {
         console.log(`[MAP] Geocoded "${query}" (from "${place}")`);
-        return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+        const result: [number, number] = [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+        geocodeCache.set(cacheKey, result);
+        return result;
       }
     } catch {}
   }
   console.warn(`[MAP] Failed to geocode: "${place}"`);
+  geocodeCache.set(cacheKey, null);
   return null;
 }
 
@@ -564,41 +573,57 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
           });
           L.marker(originCoords, { icon: deadheadIcon }).addTo(map).bindPopup(`<b>${label}</b><br/>${originAddress}`);
 
-          const deadheadRoute = await drivingRoute([originCoords, firstPickup.coords!]);
-          if (cancelled) return;
-
-          if (deadheadRoute) {
-            L.polyline(deadheadRoute, { color: 'hsl(38,92%,50%)', weight: 3, dashArray: '8 6', opacity: 0.8 }).addTo(map);
-          } else {
-            L.polyline([originCoords, firstPickup.coords!], { color: 'hsl(38,92%,50%)', weight: 3, dashArray: '8 6', opacity: 0.8 }).addTo(map);
-          }
-
+          // Draw straight line IMMEDIATELY, then upgrade to real route in background
+          const straightLine = L.polyline([originCoords, firstPickup.coords!], { color: 'hsl(38,92%,50%)', weight: 3, dashArray: '8 6', opacity: 0.8 }).addTo(map);
           bounds.push(originCoords);
-          map.fitBounds(bounds, { padding: [40, 40] });
+          try { map.fitBounds(bounds, { padding: [40, 40] }); } catch {}
+
+          // Upgrade to real route in background (non-blocking)
+          drivingRoute([originCoords, firstPickup.coords!]).then(deadheadRoute => {
+            if (cancelled || !deadheadRoute) return;
+            try {
+              map.removeLayer(straightLine);
+              L.polyline(deadheadRoute, { color: 'hsl(38,92%,50%)', weight: 3, dashArray: '8 6', opacity: 0.8 }).addTo(map);
+            } catch {}
+          });
         };
 
         const applyAndPersistDeadhead = async (originCoords: [number, number], originAddress: string, mapLabel?: string) => {
-          const dist = await drivingDistance(originCoords[0], originCoords[1], firstPickup.coords![0], firstPickup.coords![1]);
-          if (dist === null) return false;
+          // Use haversine for instant display, then refine with OSRM in background
+          const haversineDist = Math.round(haversineMiles(originCoords, firstPickup.coords!));
+          
+          // Show haversine estimate immediately
+          if (haversineDist > 0) {
+            setEmptyMiles(haversineDist);
+            setEmptyMilesOrigin(originAddress);
+          }
 
-          const roundedDist = Math.round(dist);
-          setEmptyMiles(roundedDist);
-          setEmptyMilesOrigin(originAddress);
+          // Draw marker + straight line immediately (drivingRoute upgrades in background)
+          drawDeadhead(originCoords, originAddress, mapLabel || 'Empty Miles Origin');
+
+          // Get accurate OSRM distance in background
+          const dist = await drivingDistance(originCoords[0], originCoords[1], firstPickup.coords![0], firstPickup.coords![1]);
+          const roundedDist = dist !== null ? Math.round(dist) : haversineDist;
+          
+          if (roundedDist > 0) {
+            setEmptyMiles(roundedDist);
+            setEmptyMilesOrigin(originAddress);
+          }
 
           const currentEmptyMiles = Number((load as any).empty_miles) || 0;
           const currentOrigin = (load as any).empty_miles_origin || null;
           const changed = roundedDist !== currentEmptyMiles || originAddress !== currentOrigin;
 
-          if (changed) {
-            await supabase.from('loads').update({
+          if (changed && roundedDist > 0) {
+            supabase.from('loads').update({
               empty_miles: roundedDist,
               empty_miles_origin: originAddress,
-            } as any).eq('id', load.id);
-            queryClient.invalidateQueries({ queryKey: ['loads'] });
+            } as any).eq('id', load.id).then(() => {
+              queryClient.invalidateQueries({ queryKey: ['loads'] });
+            });
           }
 
-          await drawDeadhead(originCoords, originAddress, mapLabel || 'Empty Miles Origin');
-          return true;
+          return roundedDist > 0;
         };
 
         // 1) Manual location has top priority (where driver starts empty)
@@ -837,11 +862,10 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
         }
 
         if (!cancelled) {
-          try {
-            await calculateEmptyMiles(L, map, resolved, bounds);
-          } catch (error) {
+          // Fire empty miles calculation concurrently - don't block map ready
+          calculateEmptyMiles(L, map, resolved, bounds).catch(error => {
             console.error('[MAP] Empty miles calculation failed (fast path):', error);
-          }
+          });
           setMapReady(true);
         }
         return;
@@ -951,11 +975,10 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
           onMilesCalculated(load.id, rounded, routeCoords || undefined);
         }
 
-        try {
-          await calculateEmptyMiles(L, map, resolved, bounds);
-        } catch (error) {
+        // Fire empty miles calculation concurrently - don't block map ready
+        calculateEmptyMiles(L, map, resolved, bounds).catch(error => {
           console.error('[MAP] Empty miles calculation failed (slow path):', error);
-        }
+        });
         setMapReady(true);
       }
     };
