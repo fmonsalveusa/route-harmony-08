@@ -4,15 +4,15 @@ import { useLandingLang } from "@/contexts/LandingLanguageContext";
 import t from "./landingTranslations";
 
 const stepsEs = [
-  { icon: UserPlus, num: "01", title: "Regístrate Gratis", desc: "Completa tu registro en menos de 2 minutos. 100% digital, sin costo." },
-  { icon: CalendarIcon, num: "02", title: "Agenda una Reunión", desc: "Coordina una llamada con nuestro equipo para conocer tu negocio y necesidades." },
+  { icon: CalendarIcon, num: "01", title: "Agenda una Reunión", desc: "Coordina una llamada con nuestro equipo para conocer tu negocio y necesidades.", link: "#meeting", btnLabel: "Agendar Reunión" },
+  { icon: UserPlus, num: "02", title: "Regístrate Gratis", desc: "Completa tu registro en menos de 2 minutos. 100% digital, sin costo.", link: "#registro", btnLabel: "Registrarse" },
   { icon: Truck, num: "03", title: "Te Asignamos Cargas", desc: "Nuestro equipo negocia las mejores tarifas y te asigna cargas bien pagadas." },
   { icon: DollarSign, num: "04", title: "Gana Dinero", desc: "Recibe pagos semanales directos a tu cuenta. Sin sorpresas." },
 ];
 
 const stepsEn = [
-  { icon: UserPlus, num: "01", title: "Register Free", desc: "Complete your registration in less than 2 minutes. 100% digital, no cost." },
-  { icon: CalendarIcon, num: "02", title: "Schedule a Meeting", desc: "Coordinate a call with our team to learn about your business and needs." },
+  { icon: CalendarIcon, num: "01", title: "Schedule a Meeting", desc: "Coordinate a call with our team to learn about your business and needs.", link: "#meeting", btnLabel: "Schedule Meeting" },
+  { icon: UserPlus, num: "02", title: "Register Free", desc: "Complete your registration in less than 2 minutes. 100% digital, no cost.", link: "#registro", btnLabel: "Register" },
   { icon: Truck, num: "03", title: "We Assign Loads", desc: "Our team negotiates the best rates and assigns you well-paid loads." },
   { icon: DollarSign, num: "04", title: "Earn Money", desc: "Receive weekly payments directly to your account. No surprises." },
 ];
@@ -58,14 +58,35 @@ export function HowItWorks() {
               transition={{ delay: i * 0.15 }}
               className="relative text-center"
             >
-              <div className="relative z-10 mx-auto w-20 h-20 rounded-2xl bg-accent/10 border-2 border-accent/20 flex items-center justify-center mb-6">
-                <step.icon size={32} className="text-accent" />
-                <span className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-accent text-accent-foreground text-xs font-bold flex items-center justify-center shadow-md">
-                  {step.num}
-                </span>
-              </div>
+              {step.link ? (
+                <a
+                  href={step.link}
+                  className="relative z-10 mx-auto w-20 h-20 rounded-2xl bg-accent text-accent-foreground flex items-center justify-center mb-6 shadow-lg hover:scale-105 transition-transform cursor-pointer"
+                >
+                  <step.icon size={32} />
+                  <span className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-foreground text-background text-xs font-bold flex items-center justify-center shadow-md">
+                    {step.num}
+                  </span>
+                </a>
+              ) : (
+                <div className="relative z-10 mx-auto w-20 h-20 rounded-2xl bg-accent/10 border-2 border-accent/20 flex items-center justify-center mb-6">
+                  <step.icon size={32} className="text-accent" />
+                  <span className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-accent text-accent-foreground text-xs font-bold flex items-center justify-center shadow-md">
+                    {step.num}
+                  </span>
+                </div>
+              )}
               <h3 className="text-lg font-bold text-foreground mb-2">{step.title}</h3>
-              <p className="text-muted-foreground text-sm leading-relaxed max-w-xs mx-auto">{step.desc}</p>
+              <p className="text-muted-foreground text-sm leading-relaxed max-w-xs mx-auto mb-3">{step.desc}</p>
+              {step.link && step.btnLabel && (
+                <a
+                  href={step.link}
+                  className="inline-flex items-center gap-2 px-5 py-2 rounded-lg bg-accent text-accent-foreground text-sm font-semibold shadow-md hover:opacity-90 transition-opacity"
+                >
+                  <step.icon size={16} />
+                  {step.btnLabel}
+                </a>
+              )}
             </motion.div>
           ))}
         </div>
