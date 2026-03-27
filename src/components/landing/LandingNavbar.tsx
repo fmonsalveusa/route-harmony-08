@@ -198,6 +198,13 @@ export function LandingNavbar() {
             <a href="/auth" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-2">
               {tr.navLogin}
             </a>
+            <a
+              href="#meeting"
+              className="inline-flex items-center gap-1.5 border border-[hsl(152,60%,40%)] text-[hsl(152,60%,40%)] hover:bg-[hsl(152,60%,40%)] hover:text-white px-4 py-2 rounded-lg text-sm font-bold transition-all"
+            >
+              <CalendarIcon size={14} />
+              {lang === "es" ? "Agendar Reunión" : "Schedule Meeting"}
+            </a>
             <a href="#onboarding" className="bg-accent text-accent-foreground px-5 py-2 rounded-lg text-sm font-bold hover:brightness-110 transition shadow-sm">
               {tr.navRegister}
             </a>
