@@ -16,10 +16,10 @@ export function HeroSection() {
   ];
 
   return (
-    <section className="relative min-h-[85vh] flex items-center overflow-hidden bg-[hsl(214,52%,12%)]">
-      {/* Background image with dark overlay */}
+    <section className="relative flex items-center overflow-hidden bg-[hsl(214,52%,12%)]" style={{ minHeight: 'max(500px, 56vw)' }}>
+      {/* Background image — aspect-ratio aware height so full image is visible */}
       <div className="absolute inset-0">
-        <img src={heroImg} alt="Fleet" className="w-full h-full object-cover object-[center_40%]" />
+        <img src={heroImg} alt="Fleet" className="w-full h-full object-contain object-top sm:object-cover sm:object-[center_30%]" />
         <div className="absolute inset-0 bg-gradient-to-r from-[hsl(214,52%,12%)/0.88] via-[hsl(214,52%,12%)/0.7] to-[hsl(214,52%,12%)/0.35]" />
       </div>
 
@@ -44,7 +44,7 @@ export function HeroSection() {
             </p>
           </motion.div>
 
-          {/* Dual CTAs */}
+          {/* Single CTA */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -59,19 +59,6 @@ export function HeroSection() {
               <ArrowRight size={20} />
             </a>
           </motion.div>
-
-          {/* Subtle meeting link */}
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.7, delay: 0.3 }}
-            className="text-white/50 text-sm mb-10"
-          >
-            {lang === "es" ? "¿Prefieres hablar primero?" : "Prefer to talk first?"}{" "}
-            <a href="#meeting" className="text-[hsl(152,60%,55%)] hover:text-[hsl(152,60%,65%)] underline underline-offset-2 transition-colors font-medium">
-              {lang === "es" ? "Agenda una reunión" : "Schedule a meeting"}
-            </a>
-          </motion.p>
 
           {/* Trust badges */}
           <motion.div
