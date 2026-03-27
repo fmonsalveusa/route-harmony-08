@@ -42,7 +42,7 @@ export function OnboardingSection() {
   const trustItems = [
     { icon: Shield, text: lang === "es" ? "Sin costo" : "No cost" },
     { icon: Zap, text: lang === "es" ? "100% Digital" : "100% Digital" },
-    { icon: Clock, text: lang === "es" ? "Activación 24-48h" : "24-48h Activation" },
+    { icon: Clock, text: lang === "es" ? "Activación Inmediata" : "Immediate Activation" },
   ];
 
   return (
