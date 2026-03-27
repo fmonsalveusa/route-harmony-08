@@ -27,6 +27,7 @@ interface NavItem {
   path: string;
   permission: string;
   masterOnly?: boolean;
+  hideForDispatcher?: boolean;
 }
 
 // Desktop top-level items (not grouped)
@@ -57,9 +58,9 @@ const profileItems: NavItem[] = [
 ];
 
 const bottomLevelItems: NavItem[] = [
-  { label: 'Maintenance', icon: Wrench, path: '/maintenance', permission: 'fleet' },
+  { label: 'Maintenance', icon: Wrench, path: '/maintenance', permission: 'fleet', hideForDispatcher: true },
   { label: 'Route History', icon: MapPin, path: '/driver-route-history', permission: 'tracking' },
-  { label: 'Documents', icon: FileSignature, path: '/documents', permission: 'dashboard' },
+  { label: 'Documents', icon: FileSignature, path: '/documents', permission: 'dashboard', hideForDispatcher: true },
 ];
 
 // All items flat (for mobile menu)
@@ -72,11 +73,11 @@ const tenantNavItems: NavItem[] = [
   { label: 'Dispatchers', icon: Headphones, path: '/dispatchers', permission: 'dispatchers' },
   { label: 'Payments', icon: DollarSign, path: '/payments', permission: 'payments.drivers' },
   { label: 'Expenses', icon: Receipt, path: '/expenses', permission: 'expenses' },
-  { label: 'Maintenance', icon: Wrench, path: '/maintenance', permission: 'fleet' },
+  { label: 'Maintenance', icon: Wrench, path: '/maintenance', permission: 'fleet', hideForDispatcher: true },
   { label: 'Performance', icon: Trophy, path: '/performance', permission: 'performance' },
   { label: 'Invoices', icon: FileText, path: '/invoices', permission: 'invoices' },
   { label: 'Route History', icon: MapPin, path: '/driver-route-history', permission: 'tracking' },
-  { label: 'Documents', icon: FileSignature, path: '/documents', permission: 'dashboard' },
+  { label: 'Documents', icon: FileSignature, path: '/documents', permission: 'dashboard', hideForDispatcher: true },
   { label: 'Companies', icon: Building2, path: '/companies', permission: 'companies' },
   { label: 'Brokers', icon: Handshake, path: '/brokers', permission: 'loads', masterOnly: true },
   { label: 'Users', icon: UserCog, path: '/users', permission: 'users' },
@@ -241,11 +242,12 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
   const mobileItems = useMasterNav
     ? masterNavItems
     : tenantNavItems;
-  const visibleMobileItems = mobileItems.filter((item) => hasPermission(item.permission) && (!item.masterOnly || isMasterAdmin));
+  const isDispatcher = role === 'dispatcher';
+  const visibleMobileItems = mobileItems.filter((item) => hasPermission(item.permission) && (!item.masterOnly || isMasterAdmin) && (!item.hideForDispatcher || !isDispatcher));
 
   // Desktop tenant: top-level + bottom-level (filtered)
-  const visibleTopLevel = topLevelItems.filter((i) => hasPermission(i.permission) && (!i.masterOnly || isMasterAdmin));
-  const visibleBottomLevel = bottomLevelItems.filter((i) => hasPermission(i.permission) && (!i.masterOnly || isMasterAdmin));
+  const visibleTopLevel = topLevelItems.filter((i) => hasPermission(i.permission) && (!i.masterOnly || isMasterAdmin) && (!i.hideForDispatcher || !isDispatcher));
+  const visibleBottomLevel = bottomLevelItems.filter((i) => hasPermission(i.permission) && (!i.masterOnly || isMasterAdmin) && (!i.hideForDispatcher || !isDispatcher));
 
   const initials = profile.full_name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
 
