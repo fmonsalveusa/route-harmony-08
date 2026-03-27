@@ -897,7 +897,7 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
       if (mapInstanceRef.current) { mapInstanceRef.current.remove(); mapInstanceRef.current = null; }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [load.id, load.origin, load.destination, stopsLoading, routeGeometryLoading, stopSignature, routeSignature]);
+  }, [load.id, load.origin, load.destination, stopsLoading, stopSignature, routeSignature]);
 
   // === Driver GPS Live Marker ===
   useEffect(() => {
