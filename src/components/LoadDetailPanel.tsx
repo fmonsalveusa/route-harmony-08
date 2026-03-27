@@ -961,11 +961,10 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
           onMilesCalculated(load.id, rounded, routeCoords || undefined);
         }
 
-        try {
-          await calculateEmptyMiles(L, map, resolved, bounds);
-        } catch (error) {
+        // Fire empty miles calculation concurrently - don't block map ready
+        calculateEmptyMiles(L, map, resolved, bounds).catch(error => {
           console.error('[MAP] Empty miles calculation failed (slow path):', error);
-        }
+        });
         setMapReady(true);
       }
     };
