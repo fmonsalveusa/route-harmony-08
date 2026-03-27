@@ -77,10 +77,18 @@ async function drivingRouteWithLegs(coords: [number, number][]): Promise<RouteWi
   return null;
 }
 
-// Convenience wrappers for backward-compatible usage
+// Lightweight distance-only call (no geometry download)
 async function drivingDistance(lat1: number, lon1: number, lat2: number, lon2: number): Promise<number | null> {
-  const result = await drivingRouteWithLegs([[lat1, lon1], [lat2, lon2]]);
-  return result ? result.totalDistanceMiles : null;
+  try {
+    const res = await fetch(
+      `https://router.project-osrm.org/route/v1/driving/${lon1},${lat1};${lon2},${lat2}?overview=false`
+    );
+    const data = await res.json();
+    if (data.code === 'Ok' && data.routes?.[0]) {
+      return data.routes[0].distance * 0.000621371;
+    }
+  } catch {}
+  return null;
 }
 
 async function drivingRoute(coords: [number, number][]): Promise<[number, number][] | null> {
@@ -661,7 +669,23 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
         }));
 
         setResolvedStops(resolved);
-        setTotalMiles(Number(load.miles) > 0 ? Number(load.miles) : 0);
+        // Use load.miles if available, otherwise sum cached distances from stops
+        const loadMiles = Number(load.miles) || 0;
+        if (loadMiles > 0) {
+          setTotalMiles(loadMiles);
+        } else {
+          const sumFromStops = resolved.reduce((sum, s) => sum + (s.distanceFromPrev || 0), 0);
+          if (sumFromStops > 0) {
+            setTotalMiles(sumFromStops);
+            // Persist the recalculated miles
+            if (onMilesCalculated && !persistedRef.current) {
+              persistedRef.current = true;
+              onMilesCalculated(load.id, sumFromStops, cachedRoute);
+            }
+          } else {
+            setTotalMiles(0);
+          }
+        }
 
         if (cancelled) return;
 
