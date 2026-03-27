@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, CalendarIcon } from "lucide-react";
 import heroImg from "@/assets/landing-hero.jpg";
 import { useLandingLang } from "@/contexts/LandingLanguageContext";
 import t from "./landingTranslations";
@@ -16,7 +16,7 @@ export function HeroSection() {
   ];
 
   return (
-    <section className="relative mt-16 lg:mt-[6.5rem] flex items-center overflow-hidden bg-[hsl(214,52%,12%)]" style={{ minHeight: 'max(540px, calc(56vw - 6.5rem))' }}>
+    <section className="relative mt-16 flex items-center overflow-hidden bg-[hsl(214,52%,12%)]" style={{ minHeight: 'max(540px, calc(56vw - 4rem))' }}>
       <div className="absolute inset-0">
         <img
           src={heroImg}
@@ -28,27 +28,28 @@ export function HeroSection() {
           alt="Fleet"
           className="absolute inset-0 w-full h-full object-contain object-center"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-[hsl(214,52%,12%)/0.84] via-[hsl(214,52%,12%)/0.55] to-[hsl(214,52%,12%)/0.22]" />
+        <div className="absolute inset-0 bg-[hsl(214,52%,12%)/0.7]" />
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-28 lg:py-36 w-full">
-        <div className="max-w-2xl">
+        <div className="max-w-3xl mx-auto text-center">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7 }}
           >
-            <span className="inline-block bg-[hsl(28,92%,52%)]/20 text-[hsl(28,92%,60%)] border border-[hsl(28,92%,52%)]/30 px-4 py-1.5 rounded-full text-sm font-semibold mb-6 backdrop-blur-sm">
-              {tr.heroBadge}
-            </span>
-
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-extrabold text-white leading-[1.1] mb-6">
-              {tr.heroTitle1}{" "}
-              <span className="text-[hsl(28,92%,52%)]">{tr.heroTitle2}</span>
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-extrabold text-white leading-[1.1] mb-4">
+              {lang === "es" ? "Dispatch & Transporte" : "Dispatch & Transport"}
             </h1>
 
-            <p className="text-lg sm:text-xl text-white/70 mb-10 leading-relaxed max-w-xl">
-              {tr.heroSubtitle}
+            <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-[hsl(28,92%,52%)] mb-6">
+              {lang === "es" ? "Tu Socio en el Camino al Éxito" : "Your Partner on the Road to Success"}
+            </p>
+
+            <p className="text-lg sm:text-xl text-white/70 mb-10 leading-relaxed max-w-2xl mx-auto">
+              {lang === "es"
+                ? "Dispatch profesional, leasing de MC#, tracking en tiempo real y asesoría completa para tu negocio de transporte."
+                : "Professional dispatch, MC# leasing, real-time tracking and full advisory for your transport business."}
             </p>
           </motion.div>
 
@@ -56,14 +57,21 @@ export function HeroSection() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.2 }}
-            className="flex flex-col sm:flex-row gap-4 mb-10"
+            className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-10"
           >
             <a
               href="#onboarding"
               className="inline-flex items-center justify-center gap-2 bg-[hsl(28,92%,52%)] hover:bg-[hsl(28,92%,46%)] text-white font-bold px-8 py-4 rounded-xl text-lg transition-all shadow-lg shadow-[hsl(28,92%,52%)]/25 hover:shadow-xl hover:shadow-[hsl(28,92%,52%)]/30 hover:-translate-y-0.5"
             >
-              {tr.heroSubmit}
+              {lang === "es" ? "Comenzar Registro" : "Start Registration"}
               <ArrowRight size={20} />
+            </a>
+            <a
+              href="#meeting"
+              className="inline-flex items-center justify-center gap-2 border-2 border-[hsl(152,60%,40%)] text-[hsl(152,60%,40%)] hover:bg-[hsl(152,60%,40%)] hover:text-white font-bold px-8 py-4 rounded-xl text-lg transition-all"
+            >
+              <CalendarIcon size={20} />
+              {lang === "es" ? "Agendar Reunión" : "Schedule Meeting"}
             </a>
           </motion.div>
 
@@ -71,7 +79,7 @@ export function HeroSection() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.7, delay: 0.4 }}
-            className="flex flex-wrap gap-3"
+            className="flex flex-wrap justify-center gap-3"
           >
             {badges.map((b) => (
               <span
