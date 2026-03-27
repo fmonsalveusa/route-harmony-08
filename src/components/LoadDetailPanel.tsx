@@ -573,17 +573,19 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
           });
           L.marker(originCoords, { icon: deadheadIcon }).addTo(map).bindPopup(`<b>${label}</b><br/>${originAddress}`);
 
-          const deadheadRoute = await drivingRoute([originCoords, firstPickup.coords!]);
-          if (cancelled) return;
-
-          if (deadheadRoute) {
-            L.polyline(deadheadRoute, { color: 'hsl(38,92%,50%)', weight: 3, dashArray: '8 6', opacity: 0.8 }).addTo(map);
-          } else {
-            L.polyline([originCoords, firstPickup.coords!], { color: 'hsl(38,92%,50%)', weight: 3, dashArray: '8 6', opacity: 0.8 }).addTo(map);
-          }
-
+          // Draw straight line IMMEDIATELY, then upgrade to real route in background
+          const straightLine = L.polyline([originCoords, firstPickup.coords!], { color: 'hsl(38,92%,50%)', weight: 3, dashArray: '8 6', opacity: 0.8 }).addTo(map);
           bounds.push(originCoords);
-          map.fitBounds(bounds, { padding: [40, 40] });
+          try { map.fitBounds(bounds, { padding: [40, 40] }); } catch {}
+
+          // Upgrade to real route in background (non-blocking)
+          drivingRoute([originCoords, firstPickup.coords!]).then(deadheadRoute => {
+            if (cancelled || !deadheadRoute) return;
+            try {
+              map.removeLayer(straightLine);
+              L.polyline(deadheadRoute, { color: 'hsl(38,92%,50%)', weight: 3, dashArray: '8 6', opacity: 0.8 }).addTo(map);
+            } catch {}
+          });
         };
 
         const applyAndPersistDeadhead = async (originCoords: [number, number], originAddress: string, mapLabel?: string) => {
