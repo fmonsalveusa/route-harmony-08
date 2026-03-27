@@ -287,10 +287,11 @@ const Tracking = () => {
   }, [loads]);
 
   const availableDrivers = useMemo(() => {
+    const effectiveDispatcherFilter = userDispatcherId ?? dispatcherFilter;
     return drivers
       .filter(d => d.status !== 'inactive' && !driversWithActiveLoad.has(d.id))
-      .filter(d => dispatcherFilter === 'all' || d.dispatcher_id === dispatcherFilter);
-  }, [drivers, driversWithActiveLoad, dispatcherFilter]);
+      .filter(d => effectiveDispatcherFilter === 'all' || d.dispatcher_id === effectiveDispatcherFilter);
+  }, [drivers, driversWithActiveLoad, dispatcherFilter, userDispatcherId]);
 
   // Fetch last delivery location for available drivers
   useEffect(() => {
