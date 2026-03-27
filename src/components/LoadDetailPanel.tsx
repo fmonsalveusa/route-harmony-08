@@ -732,32 +732,40 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
       let accumulatedMiles = 0;
 
       // Single OSRM call for geometry + per-leg distances (slow path optimization)
-      if (bounds.length >= 2 && !hasCachedRoute) {
-        const routeResult = await drivingRouteWithLegs(bounds);
-        if (cancelled) return;
-        if (routeResult) {
-          routeCoords = routeResult.geometry;
-          // Apply leg distances to stops that don't have cached distances
-          let legIdx = 0;
+      if (bounds.length >= 2) {
+        if (hasCachedRoute) {
+          routeCoords = effectiveRouteGeometry!;
+        }
+        // Check if any distances need calculating
+        const needsDistCalc = !hasCachedRoute || resolved.some((_, i) => i > 0 && resolved[i].coords && resolved[i - 1].coords && stopSources[i].cachedDist == null);
+        
+        if (!hasCachedRoute || needsDistCalc) {
+          const routeResult = await drivingRouteWithLegs(bounds);
+          if (cancelled) return;
+          if (routeResult) {
+            if (!hasCachedRoute) routeCoords = routeResult.geometry;
+            // Map legs to resolved stops: bounds[j] matches resolved stops that have coords
+            // bounds has bounds.length entries, routeResult has bounds.length-1 legs
+            let legIdx = 0;
+            for (let i = 1; i < resolved.length; i++) {
+              if (!resolved[i].coords || !resolved[i - 1].coords) continue;
+              if (stopSources[i].cachedDist != null) {
+                resolved[i].distanceFromPrev = Math.round(Number(stopSources[i].cachedDist));
+                accumulatedMiles += Number(stopSources[i].cachedDist);
+              } else if (legIdx < routeResult.legDistancesMiles.length) {
+                resolved[i].distanceFromPrev = Math.round(routeResult.legDistancesMiles[legIdx]);
+                accumulatedMiles += routeResult.legDistancesMiles[legIdx];
+              }
+              legIdx++;
+            }
+          }
+        } else {
+          // All distances cached
           for (let i = 1; i < resolved.length; i++) {
-            if (!resolved[i].coords || !resolved[i - 1].coords) continue;
-            if (stopSources[i].cachedDist != null) {
+            if (stopSources[i].cachedDist != null && resolved[i].coords && resolved[i - 1].coords) {
               resolved[i].distanceFromPrev = Math.round(Number(stopSources[i].cachedDist));
               accumulatedMiles += Number(stopSources[i].cachedDist);
-            } else if (legIdx < routeResult.legDistancesMiles.length) {
-              resolved[i].distanceFromPrev = Math.round(routeResult.legDistancesMiles[legIdx]);
-              accumulatedMiles += routeResult.legDistancesMiles[legIdx];
             }
-            legIdx++;
-          }
-        }
-      } else if (hasCachedRoute) {
-        routeCoords = effectiveRouteGeometry!;
-        // Use cached distances
-        for (let i = 1; i < resolved.length; i++) {
-          if (stopSources[i].cachedDist != null && resolved[i].coords && resolved[i - 1].coords) {
-            resolved[i].distanceFromPrev = Math.round(Number(stopSources[i].cachedDist));
-            accumulatedMiles += Number(stopSources[i].cachedDist);
           }
         }
       }
