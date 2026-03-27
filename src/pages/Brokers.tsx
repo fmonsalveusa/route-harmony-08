@@ -185,6 +185,14 @@ export default function Brokers() {
           <Badge variant="secondary" className="text-xs">{brokers.length}</Badge>
         </div>
         <div className="flex items-center gap-2">
+           <Button
+            size="sm"
+            className="gap-2"
+            onClick={openCreate}
+          >
+            <Plus className="h-4 w-4" />
+            Agregar Broker
+          </Button>
           <Button
             variant="outline"
             size="sm"
