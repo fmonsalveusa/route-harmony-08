@@ -38,11 +38,11 @@ export function HeroSection() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7 }}
           >
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-extrabold text-white leading-[1.1] mb-4">
+            <h1 className="text-5xl sm:text-6xl lg:text-7xl xl:text-8xl font-extrabold text-white leading-[1.1] mb-4">
               {lang === "es" ? "Dispatch & Transporte" : "Dispatch & Transport"}
             </h1>
 
-            <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-[hsl(28,92%,52%)] mb-6">
+            <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[hsl(28,92%,52%)] mb-6">
               {lang === "es" ? "Tu Socio en el Camino al Éxito" : "Your Partner on the Road to Success"}
             </p>
 
