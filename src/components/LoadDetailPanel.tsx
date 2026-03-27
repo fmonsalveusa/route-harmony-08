@@ -580,12 +580,10 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
           }
         }
 
-        // 2) For terminal loads, keep cached deadhead if present
-        const terminalStatuses = new Set(['delivered', 'paid', 'tonu', 'cancelled']);
-        const hasCachedEmptyMiles = Number((load as any).empty_miles) > 0 || Boolean((load as any).empty_miles_origin);
-        const isTerminalLoad = terminalStatuses.has(String(load.status || '').toLowerCase());
+        // 2) If we already have cached empty miles, use them (any status)
+        const hasCachedEmptyMiles = Number((load as any).empty_miles) > 0 && Boolean((load as any).empty_miles_origin);
 
-        if (hasCachedEmptyMiles && isTerminalLoad) {
+        if (hasCachedEmptyMiles) {
           setEmptyMiles(Number((load as any).empty_miles));
           setEmptyMilesOrigin((load as any).empty_miles_origin || null);
 
@@ -668,23 +666,43 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
           distanceFromPrev: s.cachedDist != null ? Math.round(Number(s.cachedDist)) : undefined,
         }));
 
+        // If any stop is missing distance_from_prev, calculate via OSRM
+        const missingDists = resolved.some((_, i) => i > 0 && resolved[i].coords && resolved[i - 1].coords && stopSources[i].cachedDist == null);
+        if (missingDists) {
+          console.log('[MAP] Fast path: computing missing distances via OSRM');
+          const coordsForRoute = resolved.filter(s => s.coords).map(s => s.coords!);
+          const routeResult = await drivingRouteWithLegs(coordsForRoute);
+          if (cancelled) return;
+          if (routeResult) {
+            let legIdx = 0;
+            for (let i = 1; i < resolved.length; i++) {
+              if (!resolved[i].coords || !resolved[i - 1].coords) continue;
+              if (stopSources[i].cachedDist == null && legIdx < routeResult.legDistancesMiles.length) {
+                resolved[i].distanceFromPrev = Math.round(routeResult.legDistancesMiles[legIdx]);
+                // Persist to DB for next time
+                if (stopSources[i].id) {
+                  updateStopGeodata(stopSources[i].id, resolved[i].coords![0], resolved[i].coords![1], routeResult.legDistancesMiles[legIdx]);
+                }
+              }
+              legIdx++;
+            }
+          }
+        }
+
         setResolvedStops(resolved);
-        // Use load.miles if available, otherwise sum cached distances from stops
+        // Calculate total miles: load.miles > sum from stops > OSRM
         const loadMiles = Number(load.miles) || 0;
+        const sumFromStops = resolved.reduce((sum, s) => sum + (s.distanceFromPrev || 0), 0);
         if (loadMiles > 0) {
           setTotalMiles(loadMiles);
-        } else {
-          const sumFromStops = resolved.reduce((sum, s) => sum + (s.distanceFromPrev || 0), 0);
-          if (sumFromStops > 0) {
-            setTotalMiles(sumFromStops);
-            // Persist the recalculated miles
-            if (onMilesCalculated && !persistedRef.current) {
-              persistedRef.current = true;
-              onMilesCalculated(load.id, sumFromStops, cachedRoute);
-            }
-          } else {
-            setTotalMiles(0);
+        } else if (sumFromStops > 0) {
+          setTotalMiles(sumFromStops);
+          if (onMilesCalculated && !persistedRef.current) {
+            persistedRef.current = true;
+            onMilesCalculated(load.id, sumFromStops, cachedRoute);
           }
+        } else {
+          setTotalMiles(0);
         }
 
         if (cancelled) return;
