@@ -1,99 +1,60 @@
 
+Objetivo: devolver el detalle de la carga al comportamiento estable de ayer: mapa rápido, paradas visibles de inmediato, millas calculadas, RPM visible y punto de origen de empty miles apareciendo sin demoras innecesarias.
 
-## Analysis of Current Landing Page (dispatch-up.com)
+1. Restaurar el flujo estable del mapa en `LoadDetailPanel`
+- Quitar la dependencia fuerte del `fetch` separado de `route_geometry` antes de renderizar.
+- Volver a pintar primero con lo que ya existe en `dbStops` y/o `load.route_geometry`, sin esperar una segunda consulta.
+- Mantener el “fast path” real: si ya hay coordenadas de stops, mostrar marcadores y ruta inmediatamente.
 
-### Current Issues Identified
+2. Revertir la parte riesgosa de la optimización reciente
+- Deshacer el cambio donde una sola llamada `drivingRouteWithLegs` pasó a ser responsable tanto de la geometría como de las millas.
+- Recuperar el comportamiento anterior:
+  - ruta: usar caché si existe; si no, calcularla;
+  - millas: calcularlas por separado con fallback confiable cuando `distance_from_prev` falte.
+- Si la llamada optimizada falla o no llena legs correctamente, usar fallback inmediato para que nunca queden `Miles` y `RPM` en blanco.
 
-1. **Hero section is cluttered**: Two competing CTAs (registration form + "Agendar Reunion" button) fight for attention. The form dominates the left column making the value proposition hard to scan.
-2. **Flat visual hierarchy**: All sections use the same bg-background / bg-secondary alternation with minimal contrast. No bold visual breaks.
-3. **Services grid feels catalog-like**: Small cards with tiny images don't create excitement. Users must click each to understand value.
-4. **Stats section is isolated**: Just numbers floating in space without context or visual anchoring.
-5. **Advantages section (HowItWorks)** is a basic icon+text grid. Forgettable.
-6. **Vehicle gallery** duplicates info already in the navbar dropdown.
-7. **Two registration forms** (Hero + Onboarding) are redundant and confusing.
-8. **Meeting section** is buried at the bottom -- hard to find despite being a key conversion point.
-9. **No social proof**: No testimonials, client logos, or real success stories.
-10. **No video or motion**: Static page with minimal dynamism beyond fade-in animations.
+3. Corregir el cálculo de millas para cargas como la 591799
+- Caso confirmado: la carga tiene `route_geometry` y `empty_miles`, pero `loads.miles = 0` y `load_stops.distance_from_prev = null`.
+- Ajustar la lógica para que:
+  - si `load.miles` es 0 pero hay stops con coords, se calculen y persistan las distancias faltantes;
+  - si no se pueden persistir de inmediato, igual se calcule `totalMiles` en memoria para mostrar `Miles` y `RPM` en la UI;
+  - `onMilesCalculated` nunca guarde 0 cuando ya existe una ruta válida o distancias derivables.
 
----
+4. Acelerar el punto de origen de empty miles
+- Mostrar primero el marcador/origen con los datos ya guardados (`empty_miles_origin`, coords previas si existen) antes de hacer geocoding o ruta.
+- Dejar el cálculo de la polilínea del deadhead como mejora progresiva: primero marcador, luego línea.
+- Evitar que el origen dependa de búsquedas adicionales del último load si ya hay origen cacheado.
 
-### Proposed Redesign (Bold, Modern, High-Conversion)
+5. Restaurar la ruta del deadhead sin bloquear el mapa
+- Dibujar la ruta principal de la carga primero.
+- Después resolver la ruta del punto de origen a pickup.
+- Si OSRM tarda o falla, usar línea recta temporal para no dejar el mapa “vacío”.
 
-#### 1. Hero: Full-Width Cinematic Hero with Floating CTA
-- **Remove the form from the hero entirely.** Replace with a bold headline, a short 1-line value prop, and TWO clear buttons: "Registrate Gratis" (orange) + "Agendar Reunion" (green).
-- Add a subtle looping background video or a parallax hero image with a dark gradient overlay.
-- Below the buttons, show a horizontal strip of "trust badges" (5,000+ cargas, 48 estados, 24/7, ES/EN) as small pill badges -- not a separate section.
-- The registration form moves to a dedicated section lower on the page (Onboarding section).
+6. Proteger el rendimiento y evitar nuevas regresiones
+- Separar claramente:
+  - render inicial del mapa,
+  - cálculo de millas,
+  - cálculo de empty miles.
+- Evitar recalcular todo cuando solo cambia `route_geometry` o cuando llega un refetch menor.
+- Mantener firmas/guards para no destruir y recrear el mapa innecesariamente.
 
-#### 2. Social Proof Bar (NEW Section)
-- Right after the hero, add a horizontal scrolling bar of broker/partner logos or a "Trusted by 200+ owner-operators" banner.
-- Include 2-3 short testimonial cards with driver photos, name, truck type, and a 1-line quote. Auto-carousel with dot indicators.
+7. Limpieza secundaria
+- Corregir los warnings de refs en `PickupPicturesSection` y `PodUploadSection`, porque no parecen ser la causa principal del problema, pero sí ensucian el ciclo de render y deben quedar resueltos después del rollback funcional.
 
-#### 3. Services: Interactive Showcase with Large Visuals
-- Replace the small card grid with a **tabbed showcase**: clicking a service tab reveals a large split-view (big image left + description/benefits/CTA right).
-- Animate transitions between services with slide effects.
-- Each service shows price preview directly (no need to click "Ver Precios" in a dialog).
-- Keep the dialog for detailed info but make the main view much richer.
+Diagnóstico resumido
+- La regresión viene del cambio reciente en `LoadDetailPanel`: ahora el detalle espera más de lo necesario para renderizar y además depende demasiado de la nueva ruta optimizada.
+- En el caso real inspeccionado (`591799`), la ruta está guardada, pero las millas no, y el flujo actual no está recuperando bien esas distancias.
+- También el origen de empty miles se está dibujando tarde porque hoy depende de pasos extra antes de mostrar algo en el mapa.
 
-#### 4. Stats: Embedded in a Bold Banner
-- Merge stats into a full-width dark-bg banner with large animated counters, positioned between Hero and Services.
-- Add subtle particle or gradient animation behind the numbers.
+Resultado esperado tras implementar
+- Al abrir una carga:
+  - las paradas aparecen rápido,
+  - la ruta aparece rápido,
+  - `Miles` y `RPM` se muestran aunque haya que reconstruirlos,
+  - el punto de la última parada/origen de empty miles aparece primero y su ruta se completa después,
+  - se recupera el comportamiento estable que tenías ayer.
 
-#### 5. "How It Works" (NEW -- Replace Advantages)
-- Replace the generic advantages grid with a **3-step visual process**: (1) Registrate (2) Te Asignamos Cargas (3) Gana Dinero.
-- Use large numbered circles with connecting lines/arrows and icons. Much easier to understand for new visitors.
-- Keep the current advantages as smaller supporting points underneath.
-
-#### 6. Meeting Section: Elevated with Calendar Preview
-- Move it higher on the page (after Services, before FAQ).
-- Add a visual mockup of a video call or a photo of the team to humanize it.
-- Simplify the form: reduce fields to Name, Phone, Date, Time only. Move city/state/truck type to optional.
-
-#### 7. Onboarding/Registration: Single Clear CTA Section
-- Consolidate into one final CTA section with the registration form.
-- Add a progress indicator showing "3 simple steps" to reduce friction.
-- Show trust indicators inline: "Sin costo", "Digital", "24-48h activacion".
-
-#### 8. FAQ: Add Search + Categories
-- Add a search bar above the accordion.
-- Group FAQs by category (Servicios, Pagos, Requisitos).
-
-#### 9. Floating Elements
-- Keep the AI chat widget but make it more prominent with a pulsing animation.
-- Add a sticky bottom bar on mobile with two buttons: "Llamar" + "WhatsApp".
-
----
-
-### Technical Implementation Plan
-
-**Files to modify:**
-- `src/pages/Landing.tsx` -- Reorder sections
-- `src/components/landing/HeroSection.tsx` -- Full redesign: remove form, add video/parallax bg, dual CTA buttons, inline trust badges
-- `src/components/landing/StatsSection.tsx` -- Dark banner style with gradient bg
-- `src/components/landing/ServicesSection.tsx` -- Tabbed showcase layout instead of card grid
-- `src/components/landing/HowItWorks.tsx` -- 3-step process + supporting advantages
-- `src/components/landing/MeetingSection.tsx` -- Simplified form, team photo
-- `src/components/landing/OnboardingSection.tsx` -- Remove CTA toggle, always show form with progress steps
-- `src/components/landing/FAQSection.tsx` -- Add search/categories
-- `src/components/landing/VehicleGallery.tsx` -- Consider removing or merging into services
-- `src/components/landing/landingTranslations.ts` -- Add new translation keys
-
-**New files to create:**
-- `src/components/landing/TestimonialsSection.tsx` -- Social proof carousel
-- `src/components/landing/MobileStickyBar.tsx` -- Mobile-only sticky CTA bar
-
-**New section order:**
-1. LandingNavbar
-2. HeroSection (cinematic, no form)
-3. StatsSection (dark banner)
-4. TestimonialsSection (NEW)
-5. ServicesSection (tabbed showcase)
-6. HowItWorks (3-step process + advantages)
-7. VehicleGallery (optional, could merge)
-8. MeetingSection (simplified, moved up)
-9. OnboardingSection (registration form)
-10. FAQSection (with search)
-11. LandingFooter
-12. MobileStickyBar (NEW, mobile only)
-13. AIChatWidget
-
+Detalles técnicos
+- Archivos principales: `src/components/LoadDetailPanel.tsx`, revisión menor en `src/pages/Loads.tsx`.
+- No parece requerir cambios de base de datos.
+- En vez de “seguir parchando” la optimización reciente, la forma más segura es un rollback parcial de esa lógica y luego reintroducir solo las mejoras que no rompan el fast path.
