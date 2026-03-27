@@ -589,27 +589,41 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
         };
 
         const applyAndPersistDeadhead = async (originCoords: [number, number], originAddress: string, mapLabel?: string) => {
-          const dist = await drivingDistance(originCoords[0], originCoords[1], firstPickup.coords![0], firstPickup.coords![1]);
-          if (dist === null) return false;
+          // Use haversine for instant display, then refine with OSRM in background
+          const haversineDist = Math.round(haversineMiles(originCoords, firstPickup.coords!));
+          
+          // Show haversine estimate immediately
+          if (haversineDist > 0) {
+            setEmptyMiles(haversineDist);
+            setEmptyMilesOrigin(originAddress);
+          }
 
-          const roundedDist = Math.round(dist);
-          setEmptyMiles(roundedDist);
-          setEmptyMilesOrigin(originAddress);
+          // Draw marker + straight line immediately (drivingRoute upgrades in background)
+          drawDeadhead(originCoords, originAddress, mapLabel || 'Empty Miles Origin');
+
+          // Get accurate OSRM distance in background
+          const dist = await drivingDistance(originCoords[0], originCoords[1], firstPickup.coords![0], firstPickup.coords![1]);
+          const roundedDist = dist !== null ? Math.round(dist) : haversineDist;
+          
+          if (roundedDist > 0) {
+            setEmptyMiles(roundedDist);
+            setEmptyMilesOrigin(originAddress);
+          }
 
           const currentEmptyMiles = Number((load as any).empty_miles) || 0;
           const currentOrigin = (load as any).empty_miles_origin || null;
           const changed = roundedDist !== currentEmptyMiles || originAddress !== currentOrigin;
 
-          if (changed) {
-            await supabase.from('loads').update({
+          if (changed && roundedDist > 0) {
+            supabase.from('loads').update({
               empty_miles: roundedDist,
               empty_miles_origin: originAddress,
-            } as any).eq('id', load.id);
-            queryClient.invalidateQueries({ queryKey: ['loads'] });
+            } as any).eq('id', load.id).then(() => {
+              queryClient.invalidateQueries({ queryKey: ['loads'] });
+            });
           }
 
-          await drawDeadhead(originCoords, originAddress, mapLabel || 'Empty Miles Origin');
-          return true;
+          return roundedDist > 0;
         };
 
         // 1) Manual location has top priority (where driver starts empty)
