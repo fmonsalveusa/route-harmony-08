@@ -587,9 +587,27 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
           setEmptyMilesOrigin((load as any).empty_miles_origin || null);
 
           if ((load as any).empty_miles_origin) {
+            // Show straight-line marker immediately via geocode, then enhance with route
             const cachedCoords = await geocode((load as any).empty_miles_origin);
-            if (cachedCoords) {
-              await drawDeadhead(cachedCoords, (load as any).empty_miles_origin);
+            if (cachedCoords && !cancelled) {
+              // Draw marker immediately
+              const deadheadIcon = L.divIcon({
+                html: '<div style="background:hsl(38,92%,50%);color:white;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:10px;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,.3)">E</div>',
+                className: '', iconSize: [24, 24], iconAnchor: [12, 12],
+              });
+              L.marker(cachedCoords, { icon: deadheadIcon }).addTo(map).bindPopup(`<b>Empty Miles Origin</b><br/>${(load as any).empty_miles_origin}`);
+              // Draw straight line first
+              const straightLine = L.polyline([cachedCoords, firstPickup.coords!], { color: 'hsl(38,92%,50%)', weight: 3, dashArray: '8 6', opacity: 0.8 }).addTo(map);
+              bounds.push(cachedCoords);
+              map.fitBounds(bounds, { padding: [40, 40] });
+              // Then upgrade to real route in background
+              drivingRoute([cachedCoords, firstPickup.coords!]).then(route => {
+                if (cancelled || !route) return;
+                try {
+                  map.removeLayer(straightLine);
+                  L.polyline(route, { color: 'hsl(38,92%,50%)', weight: 3, dashArray: '8 6', opacity: 0.8 }).addTo(map);
+                } catch {}
+              });
             }
           }
           return;
