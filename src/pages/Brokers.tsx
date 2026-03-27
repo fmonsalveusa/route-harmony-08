@@ -366,6 +366,58 @@ export default function Brokers() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Create Dialog */}
+      <Dialog open={showCreate} onOpenChange={open => !open && setShowCreate(false)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Agregar Broker</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Nombre *</Label>
+              <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Nombre del broker" />
+            </div>
+            <div>
+              <Label>MC#</Label>
+              <Input value={form.mc_number} onChange={e => setForm(f => ({ ...f, mc_number: e.target.value }))} placeholder="MC Number" />
+            </div>
+            <div>
+              <Label>DOT#</Label>
+              <Input value={form.dot_number} onChange={e => setForm(f => ({ ...f, dot_number: e.target.value }))} placeholder="DOT Number" />
+            </div>
+            <div>
+              <Label>Dirección</Label>
+              <Input value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} placeholder="Dirección física" />
+            </div>
+            <div>
+              <Label>Rating (RTS Score)</Label>
+              <Select value={form.rating} onValueChange={handleRatingChange}>
+                <SelectTrigger className={form.rating === 'F' ? 'bg-black text-white' : ''}>
+                  <SelectValue placeholder="Seleccionar rating" />
+                </SelectTrigger>
+                <SelectContent>
+                  {['A', 'B', 'C', 'D', 'N', 'E', 'F'].map(r => (
+                    <SelectItem key={r} value={r}>{r}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Días de Pago</Label>
+              <Input type="number" value={form.days_to_pay} onChange={e => setForm(f => ({ ...f, days_to_pay: e.target.value }))} placeholder="30" />
+            </div>
+            <div>
+              <Label>Notas</Label>
+              <Textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={3} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreate(false)}>Cancelar</Button>
+            <Button onClick={handleCreate} disabled={createBroker.isPending}>Crear</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
