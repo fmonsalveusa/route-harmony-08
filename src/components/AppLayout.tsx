@@ -27,6 +27,7 @@ interface NavItem {
   path: string;
   permission: string;
   masterOnly?: boolean;
+  hideForDispatcher?: boolean;
 }
 
 // Desktop top-level items (not grouped)
