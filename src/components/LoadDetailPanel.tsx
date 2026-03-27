@@ -477,9 +477,8 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
 
   useEffect(() => {
     persistedRef.current = false;
-    if (stopsLoading || routeGeometryLoading) return;
-    // Wait for route_geometry fetch to complete (or proceed without it)
-    // We use a small flag check - if cachedRouteGeometry is still loading, we wait
+    if (stopsLoading) return;
+    // Don't wait for routeGeometryLoading - render immediately with what we have
     let cancelled = false;
 
     // Build stop info from db or fallback
