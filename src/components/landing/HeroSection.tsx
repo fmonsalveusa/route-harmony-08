@@ -60,18 +60,18 @@ export function HeroSection() {
             className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-10"
           >
             <a
-              href="#onboarding"
-              className="inline-flex items-center justify-center gap-2 bg-[hsl(28,92%,52%)] hover:bg-[hsl(28,92%,46%)] text-white font-bold px-8 py-4 rounded-xl text-lg transition-all shadow-lg shadow-[hsl(28,92%,52%)]/25 hover:shadow-xl hover:shadow-[hsl(28,92%,52%)]/30 hover:-translate-y-0.5"
-            >
-              {lang === "es" ? "Comenzar Registro" : "Start Registration"}
-              <ArrowRight size={20} />
-            </a>
-            <a
               href="#meeting"
-              className="inline-flex items-center justify-center gap-2 bg-[hsl(152,60%,40%)] hover:bg-[hsl(152,60%,34%)] text-white font-bold px-8 py-4 rounded-xl text-lg transition-all shadow-lg shadow-[hsl(152,60%,40%)]/25"
+              className="inline-flex items-center justify-center gap-2 bg-[hsl(152,60%,40%)] hover:bg-[hsl(152,60%,34%)] text-white font-bold px-8 py-4 rounded-xl text-lg transition-all shadow-lg shadow-[hsl(152,60%,40%)]/25 hover:shadow-xl hover:shadow-[hsl(152,60%,40%)]/30 hover:-translate-y-0.5"
             >
               <CalendarIcon size={20} />
               {lang === "es" ? "Agendar Reunión" : "Schedule Meeting"}
+            </a>
+            <a
+              href="#onboarding"
+              className="inline-flex items-center justify-center gap-2 bg-[hsl(28,92%,52%)] hover:bg-[hsl(28,92%,46%)] text-white font-bold px-8 py-4 rounded-xl text-lg transition-all shadow-lg shadow-[hsl(28,92%,52%)]/25"
+            >
+              {lang === "es" ? "Comenzar Registro" : "Start Registration"}
+              <ArrowRight size={20} />
             </a>
           </motion.div>
 
