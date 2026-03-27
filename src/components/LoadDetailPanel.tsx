@@ -77,10 +77,18 @@ async function drivingRouteWithLegs(coords: [number, number][]): Promise<RouteWi
   return null;
 }
 
-// Convenience wrappers for backward-compatible usage
+// Lightweight distance-only call (no geometry download)
 async function drivingDistance(lat1: number, lon1: number, lat2: number, lon2: number): Promise<number | null> {
-  const result = await drivingRouteWithLegs([[lat1, lon1], [lat2, lon2]]);
-  return result ? result.totalDistanceMiles : null;
+  try {
+    const res = await fetch(
+      `https://router.project-osrm.org/route/v1/driving/${lon1},${lat1};${lon2},${lat2}?overview=false`
+    );
+    const data = await res.json();
+    if (data.code === 'Ok' && data.routes?.[0]) {
+      return data.routes[0].distance * 0.000621371;
+    }
+  } catch {}
+  return null;
 }
 
 async function drivingRoute(coords: [number, number][]): Promise<[number, number][] | null> {
