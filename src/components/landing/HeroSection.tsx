@@ -58,14 +58,20 @@ export function HeroSection() {
               {tr.heroSubmit}
               <ArrowRight size={20} />
             </a>
-            <a
-              href="#meeting"
-              className="inline-flex items-center justify-center gap-2 bg-[hsl(152,60%,40%)] hover:bg-[hsl(152,60%,35%)] text-white font-bold px-8 py-4 rounded-xl text-lg transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
-            >
-              <CalendarIcon size={20} />
-              {lang === "es" ? "Agendar Reunión" : "Schedule Meeting"}
-            </a>
           </motion.div>
+
+          {/* Subtle meeting link */}
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.7, delay: 0.3 }}
+            className="text-white/50 text-sm mb-10"
+          >
+            {lang === "es" ? "¿Prefieres hablar primero?" : "Prefer to talk first?"}{" "}
+            <a href="#meeting" className="text-[hsl(152,60%,55%)] hover:text-[hsl(152,60%,65%)] underline underline-offset-2 transition-colors font-medium">
+              {lang === "es" ? "Agenda una reunión" : "Schedule a meeting"}
+            </a>
+          </motion.p>
 
           {/* Trust badges */}
           <motion.div

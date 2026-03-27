@@ -305,9 +305,17 @@ export function LandingNavbar() {
                   {tr.navLogin}
                 </a>
                 <a
+                  href="#meeting"
+                  onClick={() => setOpen(false)}
+                  className="inline-flex items-center justify-center gap-1.5 border border-[hsl(152,60%,40%)] text-[hsl(152,60%,40%)] px-4 py-3 rounded-lg text-sm font-bold text-center transition mt-2"
+                >
+                  <CalendarIcon size={14} />
+                  {lang === "es" ? "Agendar Reunión" : "Schedule Meeting"}
+                </a>
+                <a
                   href="#onboarding"
                   onClick={() => setOpen(false)}
-                  className="bg-accent text-accent-foreground px-4 py-3 rounded-lg text-sm font-bold text-center hover:brightness-110 transition mt-2"
+                  className="bg-accent text-accent-foreground px-4 py-3 rounded-lg text-sm font-bold text-center hover:brightness-110 transition"
                 >
                   {tr.navRegister}
                 </a>
