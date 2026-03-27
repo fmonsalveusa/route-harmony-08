@@ -83,23 +83,8 @@ export function LandingNavbar() {
 
   return (
     <>
-      {/* Top CTA bar above navbar */}
-      <div className="fixed top-0 left-0 right-0 z-[51] bg-[hsl(214,52%,12%)] hidden lg:block">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-end gap-3 h-10">
-          <a
-            href="#meeting"
-            className="inline-flex items-center gap-1.5 border border-[hsl(152,60%,40%)] text-[hsl(152,60%,40%)] hover:bg-[hsl(152,60%,40%)] hover:text-white px-4 py-1 rounded-md text-xs font-bold transition-all"
-          >
-            <CalendarIcon size={12} />
-            {lang === "es" ? "Agendar Reunión" : "Schedule Meeting"}
-          </a>
-          <a href="#onboarding" className="inline-flex items-center gap-1.5 bg-accent text-accent-foreground px-4 py-1 rounded-md text-xs font-bold hover:brightness-110 transition shadow-sm">
-            🚛 {tr.navRegister}
-          </a>
-        </div>
-      </div>
       <nav
-        className={`fixed top-0 lg:top-10 left-0 right-0 z-50 transition-all duration-300 ${
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
           scrolled
             ? "bg-card/95 backdrop-blur-md shadow-md border-b border-border"
             : "bg-card/80 backdrop-blur-sm"
