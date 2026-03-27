@@ -958,24 +958,31 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [load.id, load.origin, load.destination, stopsLoading, stopSignature]);
 
-  // When route_geometry loads after initial render, add polyline to existing map
+  // When fresh route geometry arrives, replace any temporary straight line with the stored route
   useEffect(() => {
-    if (!cachedRouteGeometry || cachedRouteGeometry.length < 2 || !mapInstanceRef.current || !mapReady) return;
+    if (!effectiveRouteGeometry || effectiveRouteGeometry.length < 2 || !mapInstanceRef.current || !mapReady) return;
     (async () => {
       const L = (await import('leaflet')).default;
       const map = mapInstanceRef.current;
       if (!map) return;
-      // Remove any dashed straight-line polylines and add the real route
+
       map.eachLayer((layer: any) => {
-        if (layer instanceof L.Polyline && !(layer instanceof L.Polygon) && layer.options?.dashArray === '8 4') {
-          map.removeLayer(layer);
+        if (
+          layer instanceof L.Polyline &&
+          !(layer instanceof L.Polygon) &&
+          (layer.options?.dashArray === '8 4' || layer.options?.color === 'hsl(215,70%,50%)')
+        ) {
+          try {
+            map.removeLayer(layer);
+          } catch {}
         }
       });
+
       try {
-        L.polyline(cachedRouteGeometry, { color: 'hsl(215,70%,50%)', weight: 3 }).addTo(map);
+        L.polyline(effectiveRouteGeometry, { color: 'hsl(215,70%,50%)', weight: 3 }).addTo(map);
       } catch {}
     })();
-  }, [cachedRouteGeometry, mapReady]);
+  }, [effectiveRouteGeometry, mapReady]);
 
   useEffect(() => {
     if (!load.driver_id || !mapInstanceRef.current || !mapReady) return;
