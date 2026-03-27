@@ -292,7 +292,7 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
     setTotalMiles(Number(load.miles) || 0);
   }, [load.id, (load as any).empty_miles, (load as any).empty_miles_origin, load.miles]);
 
-  // Fetch route_geometry separately (not in main loads query to keep it light)
+  // Fetch fresh route/miles data for the expanded detail row so it doesn't depend on the list cache
   useEffect(() => {
     let active = true;
     const requestKey = `${load.id}:${Date.now()}`;
@@ -303,17 +303,30 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
     (async () => {
       const { data, error } = await supabase
         .from('loads')
-        .select('route_geometry')
+        .select('route_geometry, miles, empty_miles, empty_miles_origin')
         .eq('id', load.id)
         .maybeSingle();
 
       if (!active || routeFetchKeyRef.current !== requestKey) return;
 
       if (error) {
-        console.error('[MAP] Error fetching route_geometry:', error);
+        console.error('[MAP] Error fetching route/miles data:', error);
         setCachedRouteGeometry(null);
       } else {
-        setCachedRouteGeometry(normalizeRouteGeometry(data?.route_geometry ?? null));
+        const normalizedGeometry = normalizeRouteGeometry(data?.route_geometry ?? null);
+        const freshMiles = Math.round(Number(data?.miles) || 0);
+        const freshEmptyMiles = Math.round(Number(data?.empty_miles) || 0);
+        const derivedMiles = Math.round(estimateMilesFromGeometry(normalizedGeometry));
+
+        setCachedRouteGeometry(normalizedGeometry);
+
+        if (freshMiles > 0) setTotalMiles(freshMiles);
+        else if (derivedMiles > 0) setTotalMiles(derivedMiles);
+
+        if (freshEmptyMiles > 0 || data?.empty_miles === 0) setEmptyMiles(freshEmptyMiles);
+        if (typeof data?.empty_miles_origin === 'string' || data?.empty_miles_origin === null) {
+          setEmptyMilesOrigin(data?.empty_miles_origin ?? null);
+        }
       }
       setRouteGeometryLoading(false);
     })();
