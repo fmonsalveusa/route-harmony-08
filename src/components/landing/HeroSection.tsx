@@ -38,11 +38,11 @@ export function HeroSection() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7 }}
           >
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-extrabold text-white leading-[1.1] mb-4">
+            <h1 className="text-5xl sm:text-6xl lg:text-7xl xl:text-8xl font-extrabold text-white leading-[1.1] mb-4">
               {lang === "es" ? "Dispatch & Transporte" : "Dispatch & Transport"}
             </h1>
 
-            <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-[hsl(28,92%,52%)] mb-6">
+            <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[hsl(28,92%,52%)] mb-6">
               {lang === "es" ? "Tu Socio en el Camino al Éxito" : "Your Partner on the Road to Success"}
             </p>
 
@@ -68,7 +68,7 @@ export function HeroSection() {
             </a>
             <a
               href="#meeting"
-              className="inline-flex items-center justify-center gap-2 border-2 border-[hsl(152,60%,40%)] text-[hsl(152,60%,40%)] hover:bg-[hsl(152,60%,40%)] hover:text-white font-bold px-8 py-4 rounded-xl text-lg transition-all"
+              className="inline-flex items-center justify-center gap-2 bg-[hsl(152,60%,40%)] hover:bg-[hsl(152,60%,34%)] text-white font-bold px-8 py-4 rounded-xl text-lg transition-all shadow-lg shadow-[hsl(152,60%,40%)]/25"
             >
               <CalendarIcon size={20} />
               {lang === "es" ? "Agendar Reunión" : "Schedule Meeting"}
@@ -84,7 +84,7 @@ export function HeroSection() {
             {badges.map((b) => (
               <span
                 key={b.text}
-                className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/10 text-white/80 px-4 py-2 rounded-full text-sm font-medium"
+                className="inline-flex items-center gap-2 bg-black/40 backdrop-blur-sm border border-white/10 text-white/90 px-4 py-2 rounded-full text-sm font-medium"
               >
                 {b.emoji} {b.text}
               </span>
