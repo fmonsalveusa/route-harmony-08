@@ -126,7 +126,7 @@ const NavDropdownGroup = ({
   unratedBrokers: number;
 }) => {
   const location = useLocation();
-  const visible = items.filter((i) => hasPermission(i.permission) && (!i.masterOnly || isMasterAdmin));
+  const visible = items.filter((i) => hasPermission(i.permission) && (!i.masterOnly || isMasterAdmin) && (!i.hideForDispatcher || role !== 'dispatcher'));
   if (visible.length === 0) return null;
 
   const isGroupActive = visible.some((i) => location.pathname === i.path);
