@@ -45,7 +45,7 @@ export function HowItWorks() {
           </h2>
         </motion.div>
 
-        <div className="grid md:grid-cols-3 gap-8 mb-20 relative">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-20 relative">
           {/* Connecting line (desktop) */}
           <div className="hidden md:block absolute top-16 left-[20%] right-[20%] h-0.5 bg-gradient-to-r from-accent/20 via-accent/40 to-accent/20" />
 
