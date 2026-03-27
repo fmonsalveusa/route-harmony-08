@@ -217,7 +217,10 @@ const DriverRouteHistory = () => {
         // Draw deadhead connector from previous load's last stop
         if (prevLastCoords && resolvedStops.length > 0) {
           const firstCoords = resolvedStops[0].coords;
-          L.polyline([prevLastCoords, firstCoords], {
+          const deadheadGeometry = await drivingRoute([prevLastCoords, firstCoords]);
+          if (cancelled) return;
+          const deadheadPath = deadheadGeometry || [prevLastCoords, firstCoords];
+          L.polyline(deadheadPath, {
             color: '#9ca3af',
             weight: 2,
             opacity: 0.5,
