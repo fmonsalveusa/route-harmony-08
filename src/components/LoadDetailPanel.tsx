@@ -848,11 +848,10 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
         }
 
         if (!cancelled) {
-          try {
-            await calculateEmptyMiles(L, map, resolved, bounds);
-          } catch (error) {
+          // Fire empty miles calculation concurrently - don't block map ready
+          calculateEmptyMiles(L, map, resolved, bounds).catch(error => {
             console.error('[MAP] Empty miles calculation failed (fast path):', error);
-          }
+          });
           setMapReady(true);
         }
         return;
