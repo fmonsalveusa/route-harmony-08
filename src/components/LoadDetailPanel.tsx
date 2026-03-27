@@ -112,6 +112,32 @@ function normalizeRouteGeometry(input: unknown): [number, number][] | null {
   return normalized.length >= 2 ? normalized : null;
 }
 
+function haversineMiles(a: [number, number], b: [number, number]) {
+  const toRad = (value: number) => (value * Math.PI) / 180;
+  const earthRadiusMiles = 3958.7613;
+  const dLat = toRad(b[0] - a[0]);
+  const dLng = toRad(b[1] - a[1]);
+  const lat1 = toRad(a[0]);
+  const lat2 = toRad(b[0]);
+
+  const h =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+
+  return 2 * earthRadiusMiles * Math.asin(Math.sqrt(h));
+}
+
+function estimateMilesFromGeometry(geometry: [number, number][] | null | undefined) {
+  if (!geometry || geometry.length < 2) return 0;
+
+  let total = 0;
+  for (let i = 1; i < geometry.length; i++) {
+    total += haversineMiles(geometry[i - 1], geometry[i]);
+  }
+
+  return total;
+}
+
 interface ResolvedStop {
   type: 'pickup' | 'delivery';
   address: string;
@@ -266,7 +292,7 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
     setTotalMiles(Number(load.miles) || 0);
   }, [load.id, (load as any).empty_miles, (load as any).empty_miles_origin, load.miles]);
 
-  // Fetch route_geometry separately (not in main loads query to keep it light)
+  // Fetch fresh route/miles data for the expanded detail row so it doesn't depend on the list cache
   useEffect(() => {
     let active = true;
     const requestKey = `${load.id}:${Date.now()}`;
@@ -277,17 +303,30 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
     (async () => {
       const { data, error } = await supabase
         .from('loads')
-        .select('route_geometry')
+        .select('route_geometry, miles, empty_miles, empty_miles_origin')
         .eq('id', load.id)
         .maybeSingle();
 
       if (!active || routeFetchKeyRef.current !== requestKey) return;
 
       if (error) {
-        console.error('[MAP] Error fetching route_geometry:', error);
+        console.error('[MAP] Error fetching route/miles data:', error);
         setCachedRouteGeometry(null);
       } else {
-        setCachedRouteGeometry(normalizeRouteGeometry(data?.route_geometry ?? null));
+        const normalizedGeometry = normalizeRouteGeometry(data?.route_geometry ?? null);
+        const freshMiles = Math.round(Number(data?.miles) || 0);
+        const freshEmptyMiles = Math.round(Number(data?.empty_miles) || 0);
+        const derivedMiles = Math.round(estimateMilesFromGeometry(normalizedGeometry));
+
+        setCachedRouteGeometry(normalizedGeometry);
+
+        if (freshMiles > 0) setTotalMiles(freshMiles);
+        else if (derivedMiles > 0) setTotalMiles(derivedMiles);
+
+        if (freshEmptyMiles > 0 || data?.empty_miles === 0) setEmptyMiles(freshEmptyMiles);
+        if (typeof data?.empty_miles_origin === 'string' || data?.empty_miles_origin === null) {
+          setEmptyMilesOrigin(data?.empty_miles_origin ?? null);
+        }
       }
       setRouteGeometryLoading(false);
     })();
@@ -471,6 +510,24 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
     const last = effectiveRouteGeometry[effectiveRouteGeometry.length - 1];
     return `${effectiveRouteGeometry.length}:${first[0]},${first[1]}:${last[0]},${last[1]}`;
   }, [effectiveRouteGeometry]);
+  const derivedRouteMiles = useMemo(
+    () => Math.round(estimateMilesFromGeometry(effectiveRouteGeometry)),
+    [effectiveRouteGeometry]
+  );
+
+  useEffect(() => {
+    if (totalMiles > 0) return;
+
+    const stopMiles = dbStops.reduce((sum, stop, index) => {
+      if (index === 0) return sum;
+      return sum + Math.round(Number(stop.distance_from_prev) || 0);
+    }, 0);
+
+    const bestAvailableMiles = stopMiles > 0 ? stopMiles : derivedRouteMiles;
+    if (bestAvailableMiles > 0) {
+      setTotalMiles(bestAvailableMiles);
+    }
+  }, [dbStops, derivedRouteMiles, totalMiles]);
 
   // Check if all stops have cached geodata
   const allStopsCached = dbStops.length > 0 && dbStops.every(s => s.lat != null && s.lng != null);
@@ -901,24 +958,31 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [load.id, load.origin, load.destination, stopsLoading, stopSignature]);
 
-  // When route_geometry loads after initial render, add polyline to existing map
+  // When fresh route geometry arrives, replace any temporary straight line with the stored route
   useEffect(() => {
-    if (!cachedRouteGeometry || cachedRouteGeometry.length < 2 || !mapInstanceRef.current || !mapReady) return;
+    if (!effectiveRouteGeometry || effectiveRouteGeometry.length < 2 || !mapInstanceRef.current || !mapReady) return;
     (async () => {
       const L = (await import('leaflet')).default;
       const map = mapInstanceRef.current;
       if (!map) return;
-      // Remove any dashed straight-line polylines and add the real route
+
       map.eachLayer((layer: any) => {
-        if (layer instanceof L.Polyline && !(layer instanceof L.Polygon) && layer.options?.dashArray === '8 4') {
-          map.removeLayer(layer);
+        if (
+          layer instanceof L.Polyline &&
+          !(layer instanceof L.Polygon) &&
+          (layer.options?.dashArray === '8 4' || layer.options?.color === 'hsl(215,70%,50%)')
+        ) {
+          try {
+            map.removeLayer(layer);
+          } catch {}
         }
       });
+
       try {
-        L.polyline(cachedRouteGeometry, { color: 'hsl(215,70%,50%)', weight: 3 }).addTo(map);
+        L.polyline(effectiveRouteGeometry, { color: 'hsl(215,70%,50%)', weight: 3 }).addTo(map);
       } catch {}
     })();
-  }, [cachedRouteGeometry, mapReady]);
+  }, [effectiveRouteGeometry, mapReady]);
 
   useEffect(() => {
     if (!load.driver_id || !mapInstanceRef.current || !mapReady) return;
