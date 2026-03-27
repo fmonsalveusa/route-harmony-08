@@ -99,7 +99,7 @@ export function LandingNavbar() {
         </div>
       </div>
       <nav
-        className={`fixed top-10 left-0 right-0 z-50 transition-all duration-300 lg:top-10 ${
+        className={`fixed top-0 lg:top-10 left-0 right-0 z-50 transition-all duration-300 ${
           scrolled
             ? "bg-card/95 backdrop-blur-md shadow-md border-b border-border"
             : "bg-card/80 backdrop-blur-sm"
