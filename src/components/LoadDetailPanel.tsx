@@ -654,10 +654,10 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
         className: '', iconSize: [28, 28], iconAnchor: [14, 14],
       });
 
-      // FAST PATH: all stop geodata cached + route geometry cached
-      if (allStopsCached && hasCachedRoute) {
-        console.log('[MAP] Using cached stop + route geometry');
-        const cachedRoute = effectiveRouteGeometry!;
+      // FAST PATH: all stop geodata cached
+      if (allStopsCached) {
+        console.log('[MAP] Using cached stop geodata' + (hasCachedRoute ? ' + route geometry' : ''));
+        const cachedRoute = effectiveRouteGeometry;
         const resolved: ResolvedStop[] = stopSources.map(s => ({
           type: s.type,
           address: s.address,
@@ -665,47 +665,9 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
           distanceFromPrev: s.cachedDist != null ? Math.round(Number(s.cachedDist)) : undefined,
         }));
 
-        // If any stop is missing distance_from_prev, calculate via OSRM
-        const missingDists = resolved.some((_, i) => i > 0 && resolved[i].coords && resolved[i - 1].coords && stopSources[i].cachedDist == null);
-        if (missingDists) {
-          console.log('[MAP] Fast path: computing missing distances via OSRM');
-          const coordsForRoute = resolved.filter(s => s.coords).map(s => s.coords!);
-          const routeResult = await drivingRouteWithLegs(coordsForRoute);
-          if (cancelled) return;
-          if (routeResult) {
-            let legIdx = 0;
-            for (let i = 1; i < resolved.length; i++) {
-              if (!resolved[i].coords || !resolved[i - 1].coords) continue;
-              if (stopSources[i].cachedDist == null && legIdx < routeResult.legDistancesMiles.length) {
-                resolved[i].distanceFromPrev = Math.round(routeResult.legDistancesMiles[legIdx]);
-                // Persist to DB for next time
-                if (stopSources[i].id) {
-                  updateStopGeodata(stopSources[i].id, resolved[i].coords![0], resolved[i].coords![1], routeResult.legDistancesMiles[legIdx]);
-                }
-              }
-              legIdx++;
-            }
-          }
-        }
-
         setResolvedStops(resolved);
-        // Calculate total miles: load.miles > sum from stops > OSRM
-        const loadMiles = Number(load.miles) || 0;
-        const sumFromStops = resolved.reduce((sum, s) => sum + (s.distanceFromPrev || 0), 0);
-        if (loadMiles > 0) {
-          setTotalMiles(loadMiles);
-        } else if (sumFromStops > 0) {
-          setTotalMiles(sumFromStops);
-          if (onMilesCalculated && !persistedRef.current) {
-            persistedRef.current = true;
-            onMilesCalculated(load.id, sumFromStops, cachedRoute);
-          }
-        } else {
-          setTotalMiles(0);
-        }
 
-        if (cancelled) return;
-
+        // Render markers + route IMMEDIATELY (no waiting for OSRM)
         const bounds: [number, number][] = [];
         resolved.forEach(stop => {
           if (!stop.coords) return;
@@ -718,17 +680,73 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
           bounds.push([lat, lng]);
         });
 
-        try {
-          L.polyline(cachedRoute, { color: 'hsl(215,70%,50%)', weight: 3 }).addTo(map);
-        } catch (e) {
-          console.warn('[MAP] Cached polyline failed, using straight segments fallback:', e);
-          if (bounds.length >= 2) {
-            L.polyline(bounds, { color: 'hsl(215,70%,50%)', weight: 3, dashArray: '8 4' }).addTo(map);
+        if (cachedRoute && cachedRoute.length >= 2) {
+          try {
+            L.polyline(cachedRoute, { color: 'hsl(215,70%,50%)', weight: 3 }).addTo(map);
+          } catch (e) {
+            console.warn('[MAP] Cached polyline failed:', e);
+            if (bounds.length >= 2) L.polyline(bounds, { color: 'hsl(215,70%,50%)', weight: 3, dashArray: '8 4' }).addTo(map);
           }
+        } else if (bounds.length >= 2) {
+          // No route geometry yet - draw straight lines, calculate route in background
+          L.polyline(bounds, { color: 'hsl(215,70%,50%)', weight: 3, dashArray: '8 4' }).addTo(map);
         }
 
         if (bounds.length >= 2) map.fitBounds(bounds, { padding: [40, 40] });
         else if (bounds.length === 1) map.setView(bounds[0], 10);
+
+        // Calculate total miles from what we have NOW
+        const loadMiles = Number(load.miles) || 0;
+        const sumFromStops = resolved.reduce((sum, s) => sum + (s.distanceFromPrev || 0), 0);
+        if (loadMiles > 0) {
+          setTotalMiles(loadMiles);
+        } else if (sumFromStops > 0) {
+          setTotalMiles(sumFromStops);
+          if (onMilesCalculated && !persistedRef.current) {
+            persistedRef.current = true;
+            onMilesCalculated(load.id, sumFromStops, cachedRoute || undefined);
+          }
+        }
+
+        // BACKGROUND: calculate missing distances without blocking UI
+        const missingDists = resolved.some((_, i) => i > 0 && resolved[i].coords && resolved[i - 1].coords && stopSources[i].cachedDist == null);
+        if (missingDists && loadMiles === 0 && sumFromStops === 0) {
+          (async () => {
+            const coordsForRoute = resolved.filter(s => s.coords).map(s => s.coords!);
+            const routeResult = await drivingRouteWithLegs(coordsForRoute);
+            if (cancelled) return;
+            if (routeResult) {
+              let legIdx = 0;
+              let totalFromLegs = 0;
+              for (let i = 1; i < resolved.length; i++) {
+                if (!resolved[i].coords || !resolved[i - 1].coords) continue;
+                if (stopSources[i].cachedDist == null && legIdx < routeResult.legDistancesMiles.length) {
+                  resolved[i].distanceFromPrev = Math.round(routeResult.legDistancesMiles[legIdx]);
+                  totalFromLegs += routeResult.legDistancesMiles[legIdx];
+                  if (stopSources[i].id) {
+                    updateStopGeodata(stopSources[i].id, resolved[i].coords![0], resolved[i].coords![1], routeResult.legDistancesMiles[legIdx]);
+                  }
+                }
+                legIdx++;
+              }
+              const rounded = Math.round(totalFromLegs);
+              if (rounded > 0 && !cancelled) {
+                setTotalMiles(rounded);
+                setResolvedStops([...resolved]);
+                if (onMilesCalculated && !persistedRef.current) {
+                  persistedRef.current = true;
+                  onMilesCalculated(load.id, rounded, routeResult.geometry || cachedRoute || undefined);
+                }
+              }
+              // Also persist route geometry if we didn't have one
+              if (!cachedRoute && routeResult.geometry && routeResult.geometry.length >= 2 && !cancelled) {
+                try {
+                  L.polyline(routeResult.geometry, { color: 'hsl(215,70%,50%)', weight: 3 }).addTo(map);
+                } catch {}
+              }
+            }
+          })();
+        }
 
         if (!cancelled) {
           try {
