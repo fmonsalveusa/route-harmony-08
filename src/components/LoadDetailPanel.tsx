@@ -477,9 +477,8 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
 
   useEffect(() => {
     persistedRef.current = false;
-    if (stopsLoading || routeGeometryLoading) return;
-    // Wait for route_geometry fetch to complete (or proceed without it)
-    // We use a small flag check - if cachedRouteGeometry is still loading, we wait
+    if (stopsLoading) return;
+    // Don't wait for routeGeometryLoading - render immediately with what we have
     let cancelled = false;
 
     // Build stop info from db or fallback
@@ -588,9 +587,27 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
           setEmptyMilesOrigin((load as any).empty_miles_origin || null);
 
           if ((load as any).empty_miles_origin) {
+            // Show straight-line marker immediately via geocode, then enhance with route
             const cachedCoords = await geocode((load as any).empty_miles_origin);
-            if (cachedCoords) {
-              await drawDeadhead(cachedCoords, (load as any).empty_miles_origin);
+            if (cachedCoords && !cancelled) {
+              // Draw marker immediately
+              const deadheadIcon = L.divIcon({
+                html: '<div style="background:hsl(38,92%,50%);color:white;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:10px;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,.3)">E</div>',
+                className: '', iconSize: [24, 24], iconAnchor: [12, 12],
+              });
+              L.marker(cachedCoords, { icon: deadheadIcon }).addTo(map).bindPopup(`<b>Empty Miles Origin</b><br/>${(load as any).empty_miles_origin}`);
+              // Draw straight line first
+              const straightLine = L.polyline([cachedCoords, firstPickup.coords!], { color: 'hsl(38,92%,50%)', weight: 3, dashArray: '8 6', opacity: 0.8 }).addTo(map);
+              bounds.push(cachedCoords);
+              map.fitBounds(bounds, { padding: [40, 40] });
+              // Then upgrade to real route in background
+              drivingRoute([cachedCoords, firstPickup.coords!]).then(route => {
+                if (cancelled || !route) return;
+                try {
+                  map.removeLayer(straightLine);
+                  L.polyline(route, { color: 'hsl(38,92%,50%)', weight: 3, dashArray: '8 6', opacity: 0.8 }).addTo(map);
+                } catch {}
+              });
             }
           }
           return;
@@ -655,10 +672,10 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
         className: '', iconSize: [28, 28], iconAnchor: [14, 14],
       });
 
-      // FAST PATH: all stop geodata cached + route geometry cached
-      if (allStopsCached && hasCachedRoute) {
-        console.log('[MAP] Using cached stop + route geometry');
-        const cachedRoute = effectiveRouteGeometry!;
+      // FAST PATH: all stop geodata cached
+      if (allStopsCached) {
+        console.log('[MAP] Using cached stop geodata' + (hasCachedRoute ? ' + route geometry' : ''));
+        const cachedRoute = effectiveRouteGeometry;
         const resolved: ResolvedStop[] = stopSources.map(s => ({
           type: s.type,
           address: s.address,
@@ -666,47 +683,9 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
           distanceFromPrev: s.cachedDist != null ? Math.round(Number(s.cachedDist)) : undefined,
         }));
 
-        // If any stop is missing distance_from_prev, calculate via OSRM
-        const missingDists = resolved.some((_, i) => i > 0 && resolved[i].coords && resolved[i - 1].coords && stopSources[i].cachedDist == null);
-        if (missingDists) {
-          console.log('[MAP] Fast path: computing missing distances via OSRM');
-          const coordsForRoute = resolved.filter(s => s.coords).map(s => s.coords!);
-          const routeResult = await drivingRouteWithLegs(coordsForRoute);
-          if (cancelled) return;
-          if (routeResult) {
-            let legIdx = 0;
-            for (let i = 1; i < resolved.length; i++) {
-              if (!resolved[i].coords || !resolved[i - 1].coords) continue;
-              if (stopSources[i].cachedDist == null && legIdx < routeResult.legDistancesMiles.length) {
-                resolved[i].distanceFromPrev = Math.round(routeResult.legDistancesMiles[legIdx]);
-                // Persist to DB for next time
-                if (stopSources[i].id) {
-                  updateStopGeodata(stopSources[i].id, resolved[i].coords![0], resolved[i].coords![1], routeResult.legDistancesMiles[legIdx]);
-                }
-              }
-              legIdx++;
-            }
-          }
-        }
-
         setResolvedStops(resolved);
-        // Calculate total miles: load.miles > sum from stops > OSRM
-        const loadMiles = Number(load.miles) || 0;
-        const sumFromStops = resolved.reduce((sum, s) => sum + (s.distanceFromPrev || 0), 0);
-        if (loadMiles > 0) {
-          setTotalMiles(loadMiles);
-        } else if (sumFromStops > 0) {
-          setTotalMiles(sumFromStops);
-          if (onMilesCalculated && !persistedRef.current) {
-            persistedRef.current = true;
-            onMilesCalculated(load.id, sumFromStops, cachedRoute);
-          }
-        } else {
-          setTotalMiles(0);
-        }
 
-        if (cancelled) return;
-
+        // Render markers + route IMMEDIATELY (no waiting for OSRM)
         const bounds: [number, number][] = [];
         resolved.forEach(stop => {
           if (!stop.coords) return;
@@ -719,17 +698,73 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
           bounds.push([lat, lng]);
         });
 
-        try {
-          L.polyline(cachedRoute, { color: 'hsl(215,70%,50%)', weight: 3 }).addTo(map);
-        } catch (e) {
-          console.warn('[MAP] Cached polyline failed, using straight segments fallback:', e);
-          if (bounds.length >= 2) {
-            L.polyline(bounds, { color: 'hsl(215,70%,50%)', weight: 3, dashArray: '8 4' }).addTo(map);
+        if (cachedRoute && cachedRoute.length >= 2) {
+          try {
+            L.polyline(cachedRoute, { color: 'hsl(215,70%,50%)', weight: 3 }).addTo(map);
+          } catch (e) {
+            console.warn('[MAP] Cached polyline failed:', e);
+            if (bounds.length >= 2) L.polyline(bounds, { color: 'hsl(215,70%,50%)', weight: 3, dashArray: '8 4' }).addTo(map);
           }
+        } else if (bounds.length >= 2) {
+          // No route geometry yet - draw straight lines, calculate route in background
+          L.polyline(bounds, { color: 'hsl(215,70%,50%)', weight: 3, dashArray: '8 4' }).addTo(map);
         }
 
         if (bounds.length >= 2) map.fitBounds(bounds, { padding: [40, 40] });
         else if (bounds.length === 1) map.setView(bounds[0], 10);
+
+        // Calculate total miles from what we have NOW
+        const loadMiles = Number(load.miles) || 0;
+        const sumFromStops = resolved.reduce((sum, s) => sum + (s.distanceFromPrev || 0), 0);
+        if (loadMiles > 0) {
+          setTotalMiles(loadMiles);
+        } else if (sumFromStops > 0) {
+          setTotalMiles(sumFromStops);
+          if (onMilesCalculated && !persistedRef.current) {
+            persistedRef.current = true;
+            onMilesCalculated(load.id, sumFromStops, cachedRoute || undefined);
+          }
+        }
+
+        // BACKGROUND: calculate missing distances without blocking UI
+        const missingDists = resolved.some((_, i) => i > 0 && resolved[i].coords && resolved[i - 1].coords && stopSources[i].cachedDist == null);
+        if (missingDists && loadMiles === 0 && sumFromStops === 0) {
+          (async () => {
+            const coordsForRoute = resolved.filter(s => s.coords).map(s => s.coords!);
+            const routeResult = await drivingRouteWithLegs(coordsForRoute);
+            if (cancelled) return;
+            if (routeResult) {
+              let legIdx = 0;
+              let totalFromLegs = 0;
+              for (let i = 1; i < resolved.length; i++) {
+                if (!resolved[i].coords || !resolved[i - 1].coords) continue;
+                if (stopSources[i].cachedDist == null && legIdx < routeResult.legDistancesMiles.length) {
+                  resolved[i].distanceFromPrev = Math.round(routeResult.legDistancesMiles[legIdx]);
+                  totalFromLegs += routeResult.legDistancesMiles[legIdx];
+                  if (stopSources[i].id) {
+                    updateStopGeodata(stopSources[i].id, resolved[i].coords![0], resolved[i].coords![1], routeResult.legDistancesMiles[legIdx]);
+                  }
+                }
+                legIdx++;
+              }
+              const rounded = Math.round(totalFromLegs);
+              if (rounded > 0 && !cancelled) {
+                setTotalMiles(rounded);
+                setResolvedStops([...resolved]);
+                if (onMilesCalculated && !persistedRef.current) {
+                  persistedRef.current = true;
+                  onMilesCalculated(load.id, rounded, routeResult.geometry || cachedRoute || undefined);
+                }
+              }
+              // Also persist route geometry if we didn't have one
+              if (!cachedRoute && routeResult.geometry && routeResult.geometry.length >= 2 && !cancelled) {
+                try {
+                  L.polyline(routeResult.geometry, { color: 'hsl(215,70%,50%)', weight: 3 }).addTo(map);
+                } catch {}
+              }
+            }
+          })();
+        }
 
         if (!cancelled) {
           try {
@@ -862,7 +897,7 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
       if (mapInstanceRef.current) { mapInstanceRef.current.remove(); mapInstanceRef.current = null; }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [load.id, load.origin, load.destination, stopsLoading, routeGeometryLoading, stopSignature, routeSignature]);
+  }, [load.id, load.origin, load.destination, stopsLoading, stopSignature, routeSignature]);
 
   // === Driver GPS Live Marker ===
   useEffect(() => {
