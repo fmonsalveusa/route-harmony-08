@@ -754,20 +754,12 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
             if (routeResult) {
               routeCoords = routeResult.geometry;
               accumulatedMiles = routeResult.totalMiles;
-              // Assign per-leg distances back to resolved stops
-              for (let i = 0; i < routeResult.legDistancesMiles.length && i + 1 < resolved.length; i++) {
-                const legIdx = i + 1; // leg i corresponds to resolved[i+1] since first stop has no prev
-                // Find the matching resolved stop index for this leg
-                let resolvedIdx = -1;
-                let boundsCounter = 0;
-                for (let r = 0; r < resolved.length; r++) {
-                  if (resolved[r].coords) {
-                    if (boundsCounter === i + 1) { resolvedIdx = r; break; }
-                    boundsCounter++;
-                  }
-                }
-                if (resolvedIdx > 0) {
-                  resolved[resolvedIdx].distanceFromPrev = Math.round(routeResult.legDistancesMiles[i]);
+              // Assign per-leg distances to stops that have coords (bounds order matches legs)
+              const stopsWithCoords = resolved.map((r, idx) => ({ r, idx })).filter(x => x.r.coords);
+              for (let i = 0; i < routeResult.legDistancesMiles.length; i++) {
+                const targetIdx = stopsWithCoords[i + 1]?.idx;
+                if (targetIdx != null && targetIdx > 0) {
+                  resolved[targetIdx].distanceFromPrev = Math.round(routeResult.legDistancesMiles[i]);
                 }
               }
             }
