@@ -190,23 +190,13 @@ export function LandingNavbar() {
           </div>
 
           <div className="hidden lg:flex items-center gap-3">
-            <a href="tel:+19807668815" className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <a href="tel:+19807668815" className="flex items-center gap-2 text-sm font-semibold text-foreground whitespace-nowrap">
               <Phone size={16} className="text-accent" />
               (980) 766-8815
             </a>
             <LangToggle />
             <a href="/auth" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-2">
               {tr.navLogin}
-            </a>
-            <a
-              href="#meeting"
-              className="inline-flex items-center gap-1.5 border border-[hsl(152,60%,40%)] text-[hsl(152,60%,40%)] hover:bg-[hsl(152,60%,40%)] hover:text-white px-4 py-2 rounded-lg text-sm font-bold transition-all"
-            >
-              <CalendarIcon size={14} />
-              {lang === "es" ? "Agendar Reunión" : "Schedule Meeting"}
-            </a>
-            <a href="#onboarding" className="bg-accent text-accent-foreground px-5 py-2 rounded-lg text-sm font-bold hover:brightness-110 transition shadow-sm">
-              {tr.navRegister}
             </a>
           </div>
 
