@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, Pencil, Handshake, Loader2, Globe, Trash2 } from 'lucide-react';
+import { Search, Pencil, Handshake, Loader2, Globe, Trash2, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const ratingColors: Record<string, string> = {
@@ -32,12 +32,13 @@ const factoringLabel = (rating: string | null) => {
 };
 
 export default function Brokers() {
-  const { brokers, isLoading, updateBroker, deleteBroker } = useBrokers();
+  const { brokers, isLoading, updateBroker, deleteBroker, createBroker } = useBrokers();
   const { toast } = useToast();
   const [search, setSearch] = useState('');
   const [editBroker, setEditBroker] = useState<Broker | null>(null);
   const [deletingBroker, setDeletingBroker] = useState<Broker | null>(null);
-  const [form, setForm] = useState({ mc_number: '', dot_number: '', address: '', rating: '', days_to_pay: '', notes: '' });
+  const [showCreate, setShowCreate] = useState(false);
+  const [form, setForm] = useState({ name: '', mc_number: '', dot_number: '', address: '', rating: '', days_to_pay: '', notes: '' });
   const [lookingUp, setLookingUp] = useState(false);
   const [bulkProgress, setBulkProgress] = useState<{ current: number; total: number } | null>(null);
 
@@ -49,6 +50,7 @@ export default function Brokers() {
   const openEdit = (broker: Broker) => {
     setEditBroker(broker);
     setForm({
+      name: broker.name,
       mc_number: broker.mc_number || '',
       dot_number: broker.dot_number || '',
       address: broker.address || '',
@@ -56,6 +58,11 @@ export default function Brokers() {
       days_to_pay: broker.days_to_pay?.toString() || '',
       notes: broker.notes || '',
     });
+  };
+
+  const openCreate = () => {
+    setShowCreate(true);
+    setForm({ name: '', mc_number: '', dot_number: '', address: '', rating: '', days_to_pay: '', notes: '' });
   };
 
   const handleFmcsaLookup = async () => {
@@ -112,6 +119,23 @@ export default function Brokers() {
     setEditBroker(null);
   };
 
+  const handleCreate = () => {
+    if (!form.name.trim()) {
+      toast({ title: 'Error', description: 'El nombre del broker es requerido', variant: 'destructive' });
+      return;
+    }
+    createBroker.mutate({
+      name: form.name.trim(),
+      mc_number: form.mc_number || null,
+      dot_number: form.dot_number || null,
+      address: form.address || null,
+      rating: form.rating || null,
+      days_to_pay: form.days_to_pay ? parseInt(form.days_to_pay) : null,
+      notes: form.notes || null,
+    });
+    setShowCreate(false);
+  };
+
   const handleDelete = () => {
     if (!deletingBroker) return;
     deleteBroker.mutate(deletingBroker.id);
@@ -161,6 +185,14 @@ export default function Brokers() {
           <Badge variant="secondary" className="text-xs">{brokers.length}</Badge>
         </div>
         <div className="flex items-center gap-2">
+           <Button
+            size="sm"
+            className="gap-2"
+            onClick={openCreate}
+          >
+            <Plus className="h-4 w-4" />
+            Agregar Broker
+          </Button>
           <Button
             variant="outline"
             size="sm"
@@ -334,6 +366,58 @@ export default function Brokers() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Create Dialog */}
+      <Dialog open={showCreate} onOpenChange={open => !open && setShowCreate(false)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Agregar Broker</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Nombre *</Label>
+              <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Nombre del broker" />
+            </div>
+            <div>
+              <Label>MC#</Label>
+              <Input value={form.mc_number} onChange={e => setForm(f => ({ ...f, mc_number: e.target.value }))} placeholder="MC Number" />
+            </div>
+            <div>
+              <Label>DOT#</Label>
+              <Input value={form.dot_number} onChange={e => setForm(f => ({ ...f, dot_number: e.target.value }))} placeholder="DOT Number" />
+            </div>
+            <div>
+              <Label>Dirección</Label>
+              <Input value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} placeholder="Dirección física" />
+            </div>
+            <div>
+              <Label>Rating (RTS Score)</Label>
+              <Select value={form.rating} onValueChange={handleRatingChange}>
+                <SelectTrigger className={form.rating === 'F' ? 'bg-black text-white' : ''}>
+                  <SelectValue placeholder="Seleccionar rating" />
+                </SelectTrigger>
+                <SelectContent>
+                  {['A', 'B', 'C', 'D', 'N', 'E', 'F'].map(r => (
+                    <SelectItem key={r} value={r}>{r}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Días de Pago</Label>
+              <Input type="number" value={form.days_to_pay} onChange={e => setForm(f => ({ ...f, days_to_pay: e.target.value }))} placeholder="30" />
+            </div>
+            <div>
+              <Label>Notas</Label>
+              <Textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={3} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreate(false)}>Cancelar</Button>
+            <Button onClick={handleCreate} disabled={createBroker.isPending}>Crear</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
