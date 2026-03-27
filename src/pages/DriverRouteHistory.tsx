@@ -68,7 +68,7 @@ async function drivingRoute(coords: [number, number][]): Promise<[number, number
     const str = coords.map(c => `${c[1]},${c[0]}`).join(';');
     const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${str}?overview=full&geometries=geojson`);
     const data = await res.json();
-    if (data.routes?.[0]) return data.routes[0].geometry.coordinates.map((c: number[]) => [c[1], c[0]] as [number, number]);
+    if (data.code === 'Ok' && data.routes?.[0]) return data.routes[0].geometry.coordinates.map((c: number[]) => [c[1], c[0]] as [number, number]);
   } catch {}
   return null;
 }
@@ -217,7 +217,10 @@ const DriverRouteHistory = () => {
         // Draw deadhead connector from previous load's last stop
         if (prevLastCoords && resolvedStops.length > 0) {
           const firstCoords = resolvedStops[0].coords;
-          L.polyline([prevLastCoords, firstCoords], {
+          const deadheadGeometry = await drivingRoute([prevLastCoords, firstCoords]);
+          if (cancelled) return;
+          const deadheadPath = deadheadGeometry || [prevLastCoords, firstCoords];
+          L.polyline(deadheadPath, {
             color: '#9ca3af',
             weight: 2,
             opacity: 0.5,
