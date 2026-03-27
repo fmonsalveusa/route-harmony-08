@@ -83,8 +83,23 @@ export function LandingNavbar() {
 
   return (
     <>
+      {/* Top CTA bar above navbar */}
+      <div className="fixed top-0 left-0 right-0 z-[51] bg-[hsl(214,52%,12%)] hidden lg:block">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-end gap-3 h-10">
+          <a
+            href="#meeting"
+            className="inline-flex items-center gap-1.5 border border-[hsl(152,60%,40%)] text-[hsl(152,60%,40%)] hover:bg-[hsl(152,60%,40%)] hover:text-white px-4 py-1 rounded-md text-xs font-bold transition-all"
+          >
+            <CalendarIcon size={12} />
+            {lang === "es" ? "Agendar Reunión" : "Schedule Meeting"}
+          </a>
+          <a href="#onboarding" className="inline-flex items-center gap-1.5 bg-accent text-accent-foreground px-4 py-1 rounded-md text-xs font-bold hover:brightness-110 transition shadow-sm">
+            🚛 {tr.navRegister}
+          </a>
+        </div>
+      </div>
       <nav
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        className={`fixed top-0 lg:top-10 left-0 right-0 z-50 transition-all duration-300 ${
           scrolled
             ? "bg-card/95 backdrop-blur-md shadow-md border-b border-border"
             : "bg-card/80 backdrop-blur-sm"
@@ -93,7 +108,7 @@ export function LandingNavbar() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
           <a href="/" className="flex items-center gap-2">
             <img src={logo} alt="Dispatch Up" className="h-8 w-auto" />
-            <span className="text-foreground font-bold text-lg tracking-tight">Dispatch Up</span>
+            <span className="text-foreground font-bold text-lg tracking-tight whitespace-nowrap">Dispatch Up</span>
           </a>
 
           {/* Desktop nav */}
@@ -190,23 +205,13 @@ export function LandingNavbar() {
           </div>
 
           <div className="hidden lg:flex items-center gap-3">
-            <a href="tel:+19807668815" className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <a href="tel:+19807668815" className="flex items-center gap-2 text-sm font-semibold text-foreground whitespace-nowrap">
               <Phone size={16} className="text-accent" />
               (980) 766-8815
             </a>
             <LangToggle />
             <a href="/auth" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-2">
               {tr.navLogin}
-            </a>
-            <a
-              href="#meeting"
-              className="inline-flex items-center gap-1.5 border border-[hsl(152,60%,40%)] text-[hsl(152,60%,40%)] hover:bg-[hsl(152,60%,40%)] hover:text-white px-4 py-2 rounded-lg text-sm font-bold transition-all"
-            >
-              <CalendarIcon size={14} />
-              {lang === "es" ? "Agendar Reunión" : "Schedule Meeting"}
-            </a>
-            <a href="#onboarding" className="bg-accent text-accent-foreground px-5 py-2 rounded-lg text-sm font-bold hover:brightness-110 transition shadow-sm">
-              {tr.navRegister}
             </a>
           </div>
 
