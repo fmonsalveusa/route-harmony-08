@@ -3,6 +3,7 @@ import { useLoads, DbLoad } from '@/hooks/useLoads';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useTrucks } from '@/hooks/useTrucks';
 import { useDispatchers } from '@/hooks/useDispatchers';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -111,6 +112,14 @@ const Tracking = () => {
   const { drivers, refetch: refetchDrivers } = useDrivers();
   const { trucks } = useTrucks();
   const { dispatchers } = useDispatchers();
+  const { role, profile } = useAuth();
+
+  // If dispatcher role, find matching dispatcher ID by email
+  const userDispatcherId = useMemo(() => {
+    if (role !== 'dispatcher' || !profile?.email) return null;
+    const match = dispatchers.find(d => d.email.toLowerCase() === profile.email.toLowerCase());
+    return match?.id ?? null;
+  }, [role, profile?.email, dispatchers]);
 
   const [allStops, setAllStops] = useState<LoadStop[]>([]);
   const [selectedLoadId, setSelectedLoadId] = useState<string | null>(null);
@@ -278,10 +287,11 @@ const Tracking = () => {
   }, [loads]);
 
   const availableDrivers = useMemo(() => {
+    const effectiveDispatcherFilter = userDispatcherId ?? dispatcherFilter;
     return drivers
       .filter(d => d.status !== 'inactive' && !driversWithActiveLoad.has(d.id))
-      .filter(d => dispatcherFilter === 'all' || d.dispatcher_id === dispatcherFilter);
-  }, [drivers, driversWithActiveLoad, dispatcherFilter]);
+      .filter(d => effectiveDispatcherFilter === 'all' || d.dispatcher_id === effectiveDispatcherFilter);
+  }, [drivers, driversWithActiveLoad, dispatcherFilter, userDispatcherId]);
 
   // Fetch last delivery location for available drivers
   useEffect(() => {
