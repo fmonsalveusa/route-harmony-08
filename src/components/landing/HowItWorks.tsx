@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { UserPlus, Truck, DollarSign, TrendingUp, Shield, Clock, Globe, HeadphonesIcon, BarChart3 } from "lucide-react";
+import { UserPlus, Truck, DollarSign, TrendingUp, Shield, Clock, Globe, HeadphonesIcon, BarChart3, CalendarIcon } from "lucide-react";
 import { useLandingLang } from "@/contexts/LandingLanguageContext";
 import t from "./landingTranslations";
 
