@@ -84,7 +84,7 @@ export function HeroSection() {
             {badges.map((b) => (
               <span
                 key={b.text}
-                className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/10 text-white/80 px-4 py-2 rounded-full text-sm font-medium"
+                className="inline-flex items-center gap-2 bg-black/40 backdrop-blur-sm border border-white/10 text-white/90 px-4 py-2 rounded-full text-sm font-medium"
               >
                 {b.emoji} {b.text}
               </span>
