@@ -16,7 +16,7 @@ export function HeroSection() {
   ];
 
   return (
-    <section className="relative mt-16 flex items-center overflow-hidden bg-[hsl(214,52%,12%)]" style={{ minHeight: 'max(540px, calc(56vw - 4rem))' }}>
+    <section className="relative mt-[6.5rem] lg:mt-[6.5rem] flex items-center overflow-hidden bg-[hsl(214,52%,12%)]" style={{ minHeight: 'max(540px, calc(56vw - 6.5rem))' }}>
       <div className="absolute inset-0">
         <img
           src={heroImg}
