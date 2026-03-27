@@ -899,9 +899,27 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
       if (mapInstanceRef.current) { mapInstanceRef.current.remove(); mapInstanceRef.current = null; }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [load.id, load.origin, load.destination, stopsLoading, stopSignature, routeSignature]);
+  }, [load.id, load.origin, load.destination, stopsLoading, stopSignature]);
 
-  // === Driver GPS Live Marker ===
+  // When route_geometry loads after initial render, add polyline to existing map
+  useEffect(() => {
+    if (!cachedRouteGeometry || cachedRouteGeometry.length < 2 || !mapInstanceRef.current || !mapReady) return;
+    (async () => {
+      const L = (await import('leaflet')).default;
+      const map = mapInstanceRef.current;
+      if (!map) return;
+      // Remove any dashed straight-line polylines and add the real route
+      map.eachLayer((layer: any) => {
+        if (layer instanceof L.Polyline && !(layer instanceof L.Polygon) && layer.options?.dashArray === '8 4') {
+          map.removeLayer(layer);
+        }
+      });
+      try {
+        L.polyline(cachedRouteGeometry, { color: 'hsl(215,70%,50%)', weight: 3 }).addTo(map);
+      } catch {}
+    })();
+  }, [cachedRouteGeometry, mapReady]);
+
   useEffect(() => {
     if (!load.driver_id || !mapInstanceRef.current || !mapReady) return;
 
