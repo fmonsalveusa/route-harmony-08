@@ -20,8 +20,14 @@ import { useToast } from '@/hooks/use-toast';
 import { useBrokerScores } from '@/hooks/useBrokerScores';
 import 'leaflet/dist/leaflet.css';
 
+// In-memory geocode cache to avoid repeated Nominatim calls
+const geocodeCache = new Map<string, [number, number] | null>();
+
 // Geocoding with progressive fallback: full address → without suite → city+state+zip
 async function geocode(place: string): Promise<[number, number] | null> {
+  const cacheKey = place.trim().toLowerCase();
+  if (geocodeCache.has(cacheKey)) return geocodeCache.get(cacheKey)!;
+
   const attempts = [place];
   // Remove suite/unit/apt info
   const noSuite = place.replace(/,?\s*(Suite|Ste|Unit|Apt|#)\s*\S*/gi, '').replace(/\s{2,}/g, ' ').trim();
@@ -43,11 +49,14 @@ async function geocode(place: string): Promise<[number, number] | null> {
       const data = await res.json();
       if (data.length > 0) {
         console.log(`[MAP] Geocoded "${query}" (from "${place}")`);
-        return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+        const result: [number, number] = [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+        geocodeCache.set(cacheKey, result);
+        return result;
       }
     } catch {}
   }
   console.warn(`[MAP] Failed to geocode: "${place}"`);
+  geocodeCache.set(cacheKey, null);
   return null;
 }
 
