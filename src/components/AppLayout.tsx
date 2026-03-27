@@ -58,9 +58,9 @@ const profileItems: NavItem[] = [
 ];
 
 const bottomLevelItems: NavItem[] = [
-  { label: 'Maintenance', icon: Wrench, path: '/maintenance', permission: 'fleet' },
+  { label: 'Maintenance', icon: Wrench, path: '/maintenance', permission: 'fleet', hideForDispatcher: true },
   { label: 'Route History', icon: MapPin, path: '/driver-route-history', permission: 'tracking' },
-  { label: 'Documents', icon: FileSignature, path: '/documents', permission: 'dashboard' },
+  { label: 'Documents', icon: FileSignature, path: '/documents', permission: 'dashboard', hideForDispatcher: true },
 ];
 
 // All items flat (for mobile menu)
