@@ -728,7 +728,7 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
 
         // BACKGROUND: calculate missing distances without blocking UI
         const missingDists = resolved.some((_, i) => i > 0 && resolved[i].coords && resolved[i - 1].coords && stopSources[i].cachedDist == null);
-        if (missingDists && loadMiles === 0 && sumFromStops === 0) {
+        if (missingDists) {
           (async () => {
             const coordsForRoute = resolved.filter(s => s.coords).map(s => s.coords!);
             const routeResult = await drivingRouteWithLegs(coordsForRoute);
@@ -744,6 +744,8 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
                   if (stopSources[i].id) {
                     updateStopGeodata(stopSources[i].id, resolved[i].coords![0], resolved[i].coords![1], routeResult.legDistancesMiles[legIdx]);
                   }
+                } else if (stopSources[i].cachedDist != null) {
+                  totalFromLegs += Number(stopSources[i].cachedDist);
                 }
                 legIdx++;
               }
