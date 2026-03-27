@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ArrowRight, CalendarIcon, Play } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import heroImg from "@/assets/landing-hero.jpg";
 import { useLandingLang } from "@/contexts/LandingLanguageContext";
 import t from "./landingTranslations";
@@ -16,14 +16,22 @@ export function HeroSection() {
   ];
 
   return (
-    <section className="relative flex items-center overflow-hidden bg-[hsl(214,52%,12%)]" style={{ minHeight: 'max(500px, 56vw)' }}>
-      {/* Background image — aspect-ratio aware height so full image is visible */}
+    <section className="relative flex items-center overflow-hidden bg-[hsl(214,52%,12%)]" style={{ minHeight: 'max(540px, 56vw)' }}>
       <div className="absolute inset-0">
-        <img src={heroImg} alt="Fleet" className="w-full h-full object-contain object-top sm:object-cover sm:object-[center_30%]" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[hsl(214,52%,12%)/0.88] via-[hsl(214,52%,12%)/0.7] to-[hsl(214,52%,12%)/0.35]" />
+        <img
+          src={heroImg}
+          alt="Fleet"
+          className="absolute inset-0 w-full h-full object-cover object-center scale-105 opacity-35 blur-sm"
+        />
+        <img
+          src={heroImg}
+          alt="Fleet"
+          className="absolute inset-0 w-full h-full object-contain object-center"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-[hsl(214,52%,12%)/0.84] via-[hsl(214,52%,12%)/0.55] to-[hsl(214,52%,12%)/0.22]" />
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32 lg:py-40 w-full">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-28 lg:py-36 w-full">
         <div className="max-w-2xl">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -44,7 +52,6 @@ export function HeroSection() {
             </p>
           </motion.div>
 
-          {/* Single CTA */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -60,7 +67,6 @@ export function HeroSection() {
             </a>
           </motion.div>
 
-          {/* Trust badges */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -79,7 +85,6 @@ export function HeroSection() {
         </div>
       </div>
 
-      {/* Scroll indicator */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
