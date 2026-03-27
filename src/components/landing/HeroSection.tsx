@@ -1,12 +1,5 @@
-import { useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowRight, CalendarIcon, Loader2, Truck } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "sonner";
+import { ArrowRight, CalendarIcon, Play } from "lucide-react";
 import heroImg from "@/assets/landing-hero.jpg";
 import { useLandingLang } from "@/contexts/LandingLanguageContext";
 import t from "./landingTranslations";
@@ -14,124 +7,100 @@ import t from "./landingTranslations";
 export function HeroSection() {
   const { lang } = useLandingLang();
   const tr = t[lang];
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({ name: "", email: "", phone: "", truck_type: "Box Truck" });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.name || !form.email || !form.phone) {
-      toast.error(tr.heroErrorRequired);
-      return;
-    }
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("create-onboarding-token", {
-        body: { name: form.name, email: form.email, phone: form.phone, truck_type: form.truck_type },
-      });
-      if (error || !data?.token) throw new Error(data?.error || tr.heroErrorCreate);
-      toast.success(tr.heroSuccess);
-      navigate(`/onboarding/${data.token}`);
-    } catch (err: any) {
-      toast.error(err.message || tr.heroErrorGeneric);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const badges = [
+    { emoji: "🚛", text: lang === "es" ? "5,000+ Cargas" : "5,000+ Loads" },
+    { emoji: "🇺🇸", text: lang === "es" ? "48 Estados" : "48 States" },
+    { emoji: "📞", text: "24/7" },
+    { emoji: "🌐", text: "ES / EN" },
+  ];
 
   return (
-    <section className="relative pt-16 bg-background">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
-          <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }}>
-            <div className="flex items-center gap-2 mb-6">
-              <span className="inline-block bg-accent/10 text-accent px-3 py-1 rounded-full text-sm font-semibold border border-accent/20">
-                {tr.heroBadge}
-              </span>
-            </div>
+    <section className="relative min-h-[90vh] flex items-center overflow-hidden">
+      {/* Background image with dark overlay */}
+      <div className="absolute inset-0">
+        <img src={heroImg} alt="Fleet" className="w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[hsl(214,52%,12%)/0.92] via-[hsl(214,52%,12%)/0.8] to-[hsl(214,52%,12%)/0.5]" />
+      </div>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-[3.5rem] font-extrabold text-foreground leading-tight mb-6">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32 lg:py-40 w-full">
+        <div className="max-w-2xl">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7 }}
+          >
+            <span className="inline-block bg-[hsl(28,92%,52%)]/20 text-[hsl(28,92%,60%)] border border-[hsl(28,92%,52%)]/30 px-4 py-1.5 rounded-full text-sm font-semibold mb-6 backdrop-blur-sm">
+              {tr.heroBadge}
+            </span>
+
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-extrabold text-white leading-[1.1] mb-6">
               {tr.heroTitle1}{" "}
-              <span className="text-accent">{tr.heroTitle2}</span>
+              <span className="text-[hsl(28,92%,52%)]">{tr.heroTitle2}</span>
             </h1>
 
-            <p className="text-lg text-muted-foreground mb-6 leading-relaxed max-w-lg">
+            <p className="text-lg sm:text-xl text-white/70 mb-10 leading-relaxed max-w-xl">
               {tr.heroSubtitle}
             </p>
-
-
-            <form onSubmit={handleSubmit} className="bg-card rounded-2xl border p-6 shadow-sm space-y-4">
-              <h3 className="font-bold text-foreground text-base flex items-center gap-2">
-                <Truck className="text-accent" size={20} />
-                {tr.heroFormTitle}
-              </h3>
-              <div className="grid sm:grid-cols-2 gap-3">
-                <Input placeholder={tr.heroName} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
-                <Input type="email" placeholder={tr.heroEmail} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
-              </div>
-              <div className="grid sm:grid-cols-2 gap-3">
-                <Input type="tel" placeholder={tr.heroPhone} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} required />
-                <Select value={form.truck_type} onValueChange={(v) => setForm({ ...form, truck_type: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Box Truck">Box Truck</SelectItem>
-                    <SelectItem value="Hotshot">Hotshot</SelectItem>
-                    <SelectItem value="Dry Van">Dry Van</SelectItem>
-                    <SelectItem value="Flatbed">Flatbed</SelectItem>
-                    <SelectItem value="Reefer">Reefer</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button type="submit" disabled={loading} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-bold text-base py-3 h-auto">
-                {loading ? <Loader2 className="animate-spin mr-2" size={18} /> : null}
-                {loading ? tr.heroProcessing : tr.heroSubmit}
-                {!loading && <ArrowRight className="ml-2" size={18} />}
-              </Button>
-            </form>
-
-            <div className="flex flex-wrap gap-3 mt-6">
-              {["Box Truck", "Hotshot", "Dry Van", "Flatbed"].map((v) => (
-                <span key={v} className="inline-flex items-center gap-1.5 bg-secondary text-secondary-foreground px-3 py-1.5 rounded-full text-xs font-medium">
-                  🚛 {v}
-                </span>
-              ))}
-            </div>
           </motion.div>
 
-          <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6, delay: 0.2 }} className="hidden lg:block">
-            <div>
-              <a
-                href="#meeting"
-                className="flex items-center justify-center gap-2 mb-4 bg-green-600 hover:bg-green-700 text-white font-bold px-6 py-3.5 rounded-xl text-lg transition-colors shadow-md"
+          {/* Dual CTAs */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.2 }}
+            className="flex flex-col sm:flex-row gap-4 mb-10"
+          >
+            <a
+              href="#onboarding"
+              className="inline-flex items-center justify-center gap-2 bg-[hsl(28,92%,52%)] hover:bg-[hsl(28,92%,46%)] text-white font-bold px-8 py-4 rounded-xl text-lg transition-all shadow-lg shadow-[hsl(28,92%,52%)]/25 hover:shadow-xl hover:shadow-[hsl(28,92%,52%)]/30 hover:-translate-y-0.5"
+            >
+              {tr.heroSubmit}
+              <ArrowRight size={20} />
+            </a>
+            <a
+              href="#meeting"
+              className="inline-flex items-center justify-center gap-2 bg-[hsl(152,60%,40%)] hover:bg-[hsl(152,60%,35%)] text-white font-bold px-8 py-4 rounded-xl text-lg transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+            >
+              <CalendarIcon size={20} />
+              {lang === "es" ? "Agendar Reunión" : "Schedule Meeting"}
+            </a>
+          </motion.div>
+
+          {/* Trust badges */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.7, delay: 0.4 }}
+            className="flex flex-wrap gap-3"
+          >
+            {badges.map((b) => (
+              <span
+                key={b.text}
+                className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/10 text-white/80 px-4 py-2 rounded-full text-sm font-medium"
               >
-                <CalendarIcon size={20} className="text-primary-foreground" />
-                {lang === "es" ? "📅 Agendar una Reunión" : "📅 Schedule a Meeting"}
-              </a>
-              <div className="rounded-2xl overflow-hidden shadow-2xl">
-                <img src={heroImg} alt="Dispatch Up Fleet" className="w-full h-auto max-h-[65vh] object-cover" />
-              </div>
-              <div className="mt-4 bg-card rounded-xl p-4 border shadow-sm">
-                <div className="flex items-center justify-between">
-                  <div className="text-center flex-1">
-                    <p className="text-xs text-muted-foreground">{tr.heroOperating}</p>
-                    <p className="font-bold text-foreground">{tr.heroStates}</p>
-                  </div>
-                  <div className="h-8 w-px bg-border" />
-                  <div className="text-center flex-1">
-                    <p className="text-xs text-muted-foreground">{tr.heroSupport}</p>
-                    <p className="font-bold text-foreground">24/7</p>
-                  </div>
-                  <div className="h-8 w-px bg-border" />
-                  <div className="text-center flex-1">
-                    <p className="text-xs text-muted-foreground">{tr.heroLanguages}</p>
-                    <p className="font-bold text-foreground">ES / EN</p>
-                  </div>
-                </div>
-              </div>
-            </div>
+                {b.emoji} {b.text}
+              </span>
+            ))}
           </motion.div>
         </div>
       </div>
+
+      {/* Scroll indicator */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1.2 }}
+        className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10"
+      >
+        <motion.div
+          animate={{ y: [0, 8, 0] }}
+          transition={{ repeat: Infinity, duration: 2 }}
+          className="w-6 h-10 rounded-full border-2 border-white/30 flex items-start justify-center p-1.5"
+        >
+          <div className="w-1.5 h-1.5 rounded-full bg-white/60" />
+        </motion.div>
+      </motion.div>
     </section>
   );
 }

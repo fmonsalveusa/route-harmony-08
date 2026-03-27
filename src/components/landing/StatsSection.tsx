@@ -29,7 +29,7 @@ function AnimatedNumber({ value, suffix }: { value: number; suffix: string }) {
   }, [inView, value]);
 
   return (
-    <div ref={ref} className="text-4xl sm:text-5xl font-extrabold text-accent">
+    <div ref={ref} className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white">
       {display.toLocaleString()}{suffix}
     </div>
   );
@@ -47,13 +47,26 @@ export function StatsSection() {
   ];
 
   return (
-    <section className="py-16 bg-secondary/60">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-          {stats.map((s) => (
-            <motion.div key={s.label} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center">
+    <section className="relative py-20 overflow-hidden" style={{ background: "linear-gradient(135deg, hsl(214, 52%, 18%) 0%, hsl(214, 52%, 10%) 100%)" }}>
+      {/* Subtle decorative elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-[hsl(28,92%,52%)]/5 blur-3xl" />
+        <div className="absolute -bottom-24 -left-24 w-96 h-96 rounded-full bg-[hsl(217,78%,50%)]/5 blur-3xl" />
+      </div>
+
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
+          {stats.map((s, i) => (
+            <motion.div
+              key={s.label}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.1 }}
+              className="text-center"
+            >
               <AnimatedNumber value={s.value} suffix={s.suffix} />
-              <p className="text-muted-foreground text-sm font-medium mt-2">{s.label}</p>
+              <p className="text-white/50 text-sm font-medium mt-3 uppercase tracking-wider">{s.label}</p>
             </motion.div>
           ))}
         </div>
