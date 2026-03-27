@@ -119,6 +119,23 @@ export default function Brokers() {
     setEditBroker(null);
   };
 
+  const handleCreate = () => {
+    if (!form.name.trim()) {
+      toast({ title: 'Error', description: 'El nombre del broker es requerido', variant: 'destructive' });
+      return;
+    }
+    createBroker.mutate({
+      name: form.name.trim(),
+      mc_number: form.mc_number || null,
+      dot_number: form.dot_number || null,
+      address: form.address || null,
+      rating: form.rating || null,
+      days_to_pay: form.days_to_pay ? parseInt(form.days_to_pay) : null,
+      notes: form.notes || null,
+    });
+    setShowCreate(false);
+  };
+
   const handleDelete = () => {
     if (!deletingBroker) return;
     deleteBroker.mutate(deletingBroker.id);
