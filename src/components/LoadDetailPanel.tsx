@@ -65,34 +65,20 @@ async function drivingDistance(lat1: number, lon1: number, lat2: number, lon2: n
   return null;
 }
 
-// Get full route with geometry AND per-leg distances in a single OSRM call
-async function drivingRouteWithLegs(coords: [number, number][]): Promise<{
-  geometry: [number, number][];
-  legDistancesMiles: number[];
-  totalMiles: number;
-} | null> {
+// Get full route geometry for polyline
+async function drivingRoute(coords: [number, number][]): Promise<[number, number][] | null> {
   if (coords.length < 2) return null;
   try {
     const waypoints = coords.map(c => `${c[1]},${c[0]}`).join(';');
     const res = await fetch(
-      `https://router.project-osrm.org/route/v1/driving/${waypoints}?overview=full&geometries=geojson&steps=false`
+      `https://router.project-osrm.org/route/v1/driving/${waypoints}?overview=full&geometries=geojson`
     );
     const data = await res.json();
-    if (data.code === 'Ok' && data.routes?.[0]) {
-      const route = data.routes[0];
-      const geometry = route.geometry?.coordinates?.map((c: number[]) => [c[1], c[0]] as [number, number]) || [];
-      const legDistancesMiles = (route.legs || []).map((leg: any) => (leg.distance || 0) * 0.000621371);
-      const totalMiles = route.distance * 0.000621371;
-      return { geometry, legDistancesMiles, totalMiles };
+    if (data.code === 'Ok' && data.routes?.[0]?.geometry?.coordinates) {
+      return data.routes[0].geometry.coordinates.map((c: number[]) => [c[1], c[0]] as [number, number]);
     }
   } catch {}
   return null;
-}
-
-// Get full route geometry for polyline (used for deadhead lines)
-async function drivingRoute(coords: [number, number][]): Promise<[number, number][] | null> {
-  const result = await drivingRouteWithLegs(coords);
-  return result?.geometry || null;
 }
 
 function normalizeRouteGeometry(input: unknown): [number, number][] | null {
@@ -707,7 +693,7 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
         return;
       }
 
-      // SLOW PATH: Calculate from scratch — single OSRM call for route + distances
+      // SLOW PATH: Calculate from scratch
       console.log('[MAP] Calculating from scratch');
       const coords = await Promise.all(
         stopSources.map(s =>
@@ -722,6 +708,27 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
         type: s.type, address: s.address, coords: coords[i],
       }));
 
+      let accumulatedMiles = 0;
+      for (let i = 1; i < resolved.length; i++) {
+        const prev = resolved[i - 1].coords;
+        const curr = resolved[i].coords;
+        if (prev && curr) {
+          if (stopSources[i].cachedDist != null) {
+            resolved[i].distanceFromPrev = Math.round(Number(stopSources[i].cachedDist));
+            accumulatedMiles += Number(stopSources[i].cachedDist);
+          } else {
+            const dist = await drivingDistance(prev[0], prev[1], curr[0], curr[1]);
+            if (cancelled) return;
+            if (dist !== null) {
+              resolved[i].distanceFromPrev = Math.round(dist);
+              accumulatedMiles += dist;
+            }
+          }
+        }
+      }
+
+      if (cancelled) return;
+
       const bounds: [number, number][] = [];
       try {
         resolved.forEach(stop => {
@@ -732,39 +739,13 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
         });
       } catch (e) { console.warn('[MAP] Error adding markers:', e); }
 
-      // Single OSRM call: gets route geometry + per-leg distances at once
       let routeCoords: [number, number][] | null = null;
-      let accumulatedMiles = 0;
-
       try {
         if (bounds.length >= 2) {
-          if (hasCachedRoute) {
-            routeCoords = effectiveRouteGeometry!;
-            // Use cached distances if available
-            for (let i = 1; i < resolved.length; i++) {
-              if (stopSources[i].cachedDist != null) {
-                resolved[i].distanceFromPrev = Math.round(Number(stopSources[i].cachedDist));
-                accumulatedMiles += Number(stopSources[i].cachedDist);
-              }
-            }
-          } else {
-            // One single OSRM call replaces N drivingDistance calls + 1 drivingRoute call
-            const routeResult = await drivingRouteWithLegs(bounds);
-            if (cancelled) return;
-            if (routeResult) {
-              routeCoords = routeResult.geometry;
-              accumulatedMiles = routeResult.totalMiles;
-              // Assign per-leg distances to stops that have coords (bounds order matches legs)
-              const stopsWithCoords = resolved.map((r, idx) => ({ r, idx })).filter(x => x.r.coords);
-              for (let i = 0; i < routeResult.legDistancesMiles.length; i++) {
-                const targetIdx = stopsWithCoords[i + 1]?.idx;
-                if (targetIdx != null && targetIdx > 0) {
-                  resolved[targetIdx].distanceFromPrev = Math.round(routeResult.legDistancesMiles[i]);
-                }
-              }
-            }
-          }
-
+          routeCoords = hasCachedRoute
+            ? effectiveRouteGeometry!
+            : await drivingRoute(bounds);
+          if (cancelled) return;
           if (routeCoords) {
             L.polyline(routeCoords, { color: 'hsl(215,70%,50%)', weight: 3 }).addTo(map);
           } else {
