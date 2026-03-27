@@ -35,6 +35,7 @@ export default function Landing() {
         <StatsSection />
         <TestimonialsSection />
         <ServicesSection />
+        <MeetingBanner />
         <HowItWorks />
         <VehicleGallery />
         <MeetingSection />
