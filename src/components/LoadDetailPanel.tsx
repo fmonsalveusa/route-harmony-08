@@ -510,6 +510,24 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
     const last = effectiveRouteGeometry[effectiveRouteGeometry.length - 1];
     return `${effectiveRouteGeometry.length}:${first[0]},${first[1]}:${last[0]},${last[1]}`;
   }, [effectiveRouteGeometry]);
+  const derivedRouteMiles = useMemo(
+    () => Math.round(estimateMilesFromGeometry(effectiveRouteGeometry)),
+    [effectiveRouteGeometry]
+  );
+
+  useEffect(() => {
+    if (totalMiles > 0) return;
+
+    const stopMiles = dbStops.reduce((sum, stop, index) => {
+      if (index === 0) return sum;
+      return sum + Math.round(Number(stop.distance_from_prev) || 0);
+    }, 0);
+
+    const bestAvailableMiles = stopMiles > 0 ? stopMiles : derivedRouteMiles;
+    if (bestAvailableMiles > 0) {
+      setTotalMiles(bestAvailableMiles);
+    }
+  }, [dbStops, derivedRouteMiles, totalMiles]);
 
   // Check if all stops have cached geodata
   const allStopsCached = dbStops.length > 0 && dbStops.every(s => s.lat != null && s.lng != null);
