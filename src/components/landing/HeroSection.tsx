@@ -16,10 +16,10 @@ export function HeroSection() {
   ];
 
   return (
-    <section className="relative min-h-[100vh] flex items-center overflow-hidden">
+    <section className="relative min-h-[85vh] flex items-center overflow-hidden bg-[hsl(214,52%,12%)]">
       {/* Background image with dark overlay */}
       <div className="absolute inset-0">
-        <img src={heroImg} alt="Fleet" className="w-full h-full object-cover object-center" />
+        <img src={heroImg} alt="Fleet" className="w-full h-full object-cover object-[center_40%]" />
         <div className="absolute inset-0 bg-gradient-to-r from-[hsl(214,52%,12%)/0.88] via-[hsl(214,52%,12%)/0.7] to-[hsl(214,52%,12%)/0.35]" />
       </div>
 
