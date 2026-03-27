@@ -112,6 +112,32 @@ function normalizeRouteGeometry(input: unknown): [number, number][] | null {
   return normalized.length >= 2 ? normalized : null;
 }
 
+function haversineMiles(a: [number, number], b: [number, number]) {
+  const toRad = (value: number) => (value * Math.PI) / 180;
+  const earthRadiusMiles = 3958.7613;
+  const dLat = toRad(b[0] - a[0]);
+  const dLng = toRad(b[1] - a[1]);
+  const lat1 = toRad(a[0]);
+  const lat2 = toRad(b[0]);
+
+  const h =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+
+  return 2 * earthRadiusMiles * Math.asin(Math.sqrt(h));
+}
+
+function estimateMilesFromGeometry(geometry: [number, number][] | null | undefined) {
+  if (!geometry || geometry.length < 2) return 0;
+
+  let total = 0;
+  for (let i = 1; i < geometry.length; i++) {
+    total += haversineMiles(geometry[i - 1], geometry[i]);
+  }
+
+  return total;
+}
+
 interface ResolvedStop {
   type: 'pickup' | 'delivery';
   address: string;
