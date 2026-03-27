@@ -93,7 +93,7 @@ export function LandingNavbar() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
           <a href="/" className="flex items-center gap-2">
             <img src={logo} alt="Dispatch Up" className="h-8 w-auto" />
-            <span className="text-foreground font-bold text-lg tracking-tight">Dispatch Up</span>
+            <span className="text-foreground font-bold text-lg tracking-tight whitespace-nowrap">Dispatch Up</span>
           </a>
 
           {/* Desktop nav */}
