@@ -16,11 +16,11 @@ export function HeroSection() {
   ];
 
   return (
-    <section className="relative min-h-[90vh] flex items-center overflow-hidden">
+    <section className="relative min-h-[100vh] flex items-center overflow-hidden">
       {/* Background image with dark overlay */}
       <div className="absolute inset-0">
-        <img src={heroImg} alt="Fleet" className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[hsl(214,52%,12%)/0.92] via-[hsl(214,52%,12%)/0.8] to-[hsl(214,52%,12%)/0.5]" />
+        <img src={heroImg} alt="Fleet" className="w-full h-full object-cover object-center" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[hsl(214,52%,12%)/0.88] via-[hsl(214,52%,12%)/0.7] to-[hsl(214,52%,12%)/0.35]" />
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32 lg:py-40 w-full">
@@ -58,14 +58,20 @@ export function HeroSection() {
               {tr.heroSubmit}
               <ArrowRight size={20} />
             </a>
-            <a
-              href="#meeting"
-              className="inline-flex items-center justify-center gap-2 bg-[hsl(152,60%,40%)] hover:bg-[hsl(152,60%,35%)] text-white font-bold px-8 py-4 rounded-xl text-lg transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
-            >
-              <CalendarIcon size={20} />
-              {lang === "es" ? "Agendar Reunión" : "Schedule Meeting"}
-            </a>
           </motion.div>
+
+          {/* Subtle meeting link */}
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.7, delay: 0.3 }}
+            className="text-white/50 text-sm mb-10"
+          >
+            {lang === "es" ? "¿Prefieres hablar primero?" : "Prefer to talk first?"}{" "}
+            <a href="#meeting" className="text-[hsl(152,60%,55%)] hover:text-[hsl(152,60%,65%)] underline underline-offset-2 transition-colors font-medium">
+              {lang === "es" ? "Agenda una reunión" : "Schedule a meeting"}
+            </a>
+          </motion.p>
 
           {/* Trust badges */}
           <motion.div
