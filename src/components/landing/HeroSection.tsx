@@ -49,22 +49,23 @@ export function HeroSection() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.2 }}
-            className="flex flex-col sm:flex-row gap-4 mb-10"
+            className="flex flex-col gap-4 mb-10"
           >
-            <a
-              href="#onboarding"
-              className="inline-flex items-center justify-center gap-2 bg-[hsl(28,92%,52%)] hover:bg-[hsl(28,92%,46%)] text-white font-bold px-8 py-4 rounded-xl text-lg transition-all shadow-lg shadow-[hsl(28,92%,52%)]/25 hover:shadow-xl hover:shadow-[hsl(28,92%,52%)]/30 hover:-translate-y-0.5"
-            >
-              {tr.heroSubmit}
-              <ArrowRight size={20} />
-            </a>
-            <a
-              href="#meeting"
-              className="inline-flex items-center justify-center gap-2 bg-[hsl(152,60%,40%)] hover:bg-[hsl(152,60%,35%)] text-white font-bold px-8 py-4 rounded-xl text-lg transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
-            >
-              <CalendarIcon size={20} />
-              {lang === "es" ? "Agendar Reunión" : "Schedule Meeting"}
-            </a>
+            <div>
+              <a
+                href="#onboarding"
+                className="inline-flex items-center justify-center gap-2 bg-[hsl(28,92%,52%)] hover:bg-[hsl(28,92%,46%)] text-white font-bold px-8 py-4 rounded-xl text-lg transition-all shadow-lg shadow-[hsl(28,92%,52%)]/25 hover:shadow-xl hover:shadow-[hsl(28,92%,52%)]/30 hover:-translate-y-0.5"
+              >
+                {tr.heroSubmit}
+                <ArrowRight size={20} />
+              </a>
+            </div>
+            <p className="text-white/50 text-sm">
+              {lang === "es" ? "¿Prefieres hablar primero?" : "Prefer to talk first?"}{" "}
+              <a href="#meeting" className="text-[hsl(152,60%,60%)] hover:text-[hsl(152,60%,70%)] underline underline-offset-2 transition-colors">
+                {lang === "es" ? "Agenda una reunión" : "Schedule a meeting"}
+              </a>
+            </p>
           </motion.div>
 
           {/* Trust badges */}
