@@ -580,12 +580,10 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
           }
         }
 
-        // 2) For terminal loads, keep cached deadhead if present
-        const terminalStatuses = new Set(['delivered', 'paid', 'tonu', 'cancelled']);
-        const hasCachedEmptyMiles = Number((load as any).empty_miles) > 0 || Boolean((load as any).empty_miles_origin);
-        const isTerminalLoad = terminalStatuses.has(String(load.status || '').toLowerCase());
+        // 2) If we already have cached empty miles, use them (any status)
+        const hasCachedEmptyMiles = Number((load as any).empty_miles) > 0 && Boolean((load as any).empty_miles_origin);
 
-        if (hasCachedEmptyMiles && isTerminalLoad) {
+        if (hasCachedEmptyMiles) {
           setEmptyMiles(Number((load as any).empty_miles));
           setEmptyMilesOrigin((load as any).empty_miles_origin || null);
 
