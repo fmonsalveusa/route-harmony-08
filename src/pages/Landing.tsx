@@ -13,6 +13,7 @@ import { FAQSection } from "@/components/landing/FAQSection";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { AIChatWidget } from "@/components/landing/AIChatWidget";
 import { MobileStickyBar } from "@/components/landing/MobileStickyBar";
+import { MeetingBanner } from "@/components/landing/MeetingBanner";
 import { LandingLanguageProvider } from "@/contexts/LandingLanguageContext";
 
 export default function Landing() {
@@ -34,6 +35,7 @@ export default function Landing() {
         <StatsSection />
         <TestimonialsSection />
         <ServicesSection />
+        <MeetingBanner />
         <HowItWorks />
         <VehicleGallery />
         <MeetingSection />
