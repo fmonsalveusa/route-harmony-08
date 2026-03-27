@@ -715,26 +715,8 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
         type: s.type, address: s.address, coords: coords[i],
       }));
 
-      let accumulatedMiles = 0;
-      for (let i = 1; i < resolved.length; i++) {
-        const prev = resolved[i - 1].coords;
-        const curr = resolved[i].coords;
-        if (prev && curr) {
-          if (stopSources[i].cachedDist != null) {
-            resolved[i].distanceFromPrev = Math.round(Number(stopSources[i].cachedDist));
-            accumulatedMiles += Number(stopSources[i].cachedDist);
-          } else {
-            const dist = await drivingDistance(prev[0], prev[1], curr[0], curr[1]);
-            if (cancelled) return;
-            if (dist !== null) {
-              resolved[i].distanceFromPrev = Math.round(dist);
-              accumulatedMiles += dist;
-            }
-          }
-        }
-      }
-
-      if (cancelled) return;
+      // Check if all distances are already cached
+      const allDistsCached = resolved.every((_, i) => i === 0 || !resolved[i].coords || !resolved[i - 1].coords || stopSources[i].cachedDist != null);
 
       const bounds: [number, number][] = [];
       try {
@@ -747,13 +729,44 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
       } catch (e) { console.warn('[MAP] Error adding markers:', e); }
 
       let routeCoords: [number, number][] | null = null;
+      let accumulatedMiles = 0;
+
+      // Single OSRM call for geometry + per-leg distances (slow path optimization)
+      if (bounds.length >= 2 && !hasCachedRoute) {
+        const routeResult = await drivingRouteWithLegs(bounds);
+        if (cancelled) return;
+        if (routeResult) {
+          routeCoords = routeResult.geometry;
+          // Apply leg distances to stops that don't have cached distances
+          let legIdx = 0;
+          for (let i = 1; i < resolved.length; i++) {
+            if (!resolved[i].coords || !resolved[i - 1].coords) continue;
+            if (stopSources[i].cachedDist != null) {
+              resolved[i].distanceFromPrev = Math.round(Number(stopSources[i].cachedDist));
+              accumulatedMiles += Number(stopSources[i].cachedDist);
+            } else if (legIdx < routeResult.legDistancesMiles.length) {
+              resolved[i].distanceFromPrev = Math.round(routeResult.legDistancesMiles[legIdx]);
+              accumulatedMiles += routeResult.legDistancesMiles[legIdx];
+            }
+            legIdx++;
+          }
+        }
+      } else if (hasCachedRoute) {
+        routeCoords = effectiveRouteGeometry!;
+        // Use cached distances
+        for (let i = 1; i < resolved.length; i++) {
+          if (stopSources[i].cachedDist != null && resolved[i].coords && resolved[i - 1].coords) {
+            resolved[i].distanceFromPrev = Math.round(Number(stopSources[i].cachedDist));
+            accumulatedMiles += Number(stopSources[i].cachedDist);
+          }
+        }
+      }
+
+      if (cancelled) return;
+
       try {
         if (bounds.length >= 2) {
-          routeCoords = hasCachedRoute
-            ? effectiveRouteGeometry!
-            : await drivingRoute(bounds);
-          if (cancelled) return;
-          if (routeCoords) {
+          if (routeCoords && routeCoords.length >= 2) {
             L.polyline(routeCoords, { color: 'hsl(215,70%,50%)', weight: 3 }).addTo(map);
           } else {
             L.polyline(bounds, { color: 'hsl(215,70%,50%)', weight: 3, dashArray: '8 4' }).addTo(map);
