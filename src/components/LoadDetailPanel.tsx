@@ -682,28 +682,35 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
           .lte('delivery_date', load.pickup_date)
           .order('delivery_date', { ascending: false })
           .order('created_at', { ascending: false })
-          .limit(1);
+          .limit(10);
 
         if (!prevLoads || prevLoads.length === 0) return;
 
+        const prevLoadIds = prevLoads.map((prevLoad) => prevLoad.id);
+
         const { data: prevStops } = await supabase
           .from('load_stops')
-          .select('*')
-          .eq('load_id', prevLoads[0].id)
+          .select('load_id, address, lat, lng, stop_order')
+          .in('load_id', prevLoadIds)
           .eq('stop_type', 'delivery')
           .order('stop_order', { ascending: false })
-          .limit(1);
+          .limit(50);
 
         if (!prevStops || prevStops.length === 0) return;
 
-        const prevStop = prevStops[0];
-        const prevCoords = (prevStop.lat != null && prevStop.lng != null)
-          ? [prevStop.lat, prevStop.lng] as [number, number]
-          : await geocode(prevStop.address);
+        for (const prevLoad of prevLoads) {
+          const prevStop = prevStops.find((stop) => stop.load_id === prevLoad.id);
+          if (!prevStop) continue;
 
-        if (!prevCoords) return;
+          const prevCoords = (prevStop.lat != null && prevStop.lng != null)
+            ? [prevStop.lat, prevStop.lng] as [number, number]
+            : await geocode(prevStop.address);
 
-        await applyAndPersistDeadhead(prevCoords, prevStop.address);
+          if (!prevCoords) continue;
+
+          const applied = await applyAndPersistDeadhead(prevCoords, prevStop.address);
+          if (applied) return;
+        }
       };
 
       delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -785,12 +792,16 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
 
         // BACKGROUND: calculate missing distances without blocking UI
         const missingDists = resolved.some((_, i) => i > 0 && resolved[i].coords && resolved[i - 1].coords && stopSources[i].cachedDist == null);
-        if (missingDists) {
+        const needsRouteGeometry = !cachedRoute && resolved.filter(s => s.coords).length >= 2;
+        if (missingDists || needsRouteGeometry) {
           (async () => {
             const coordsForRoute = resolved.filter(s => s.coords).map(s => s.coords!);
             const routeResult = await drivingRouteWithLegs(coordsForRoute);
             if (cancelled) return;
             if (routeResult) {
+              if (routeResult.geometry && routeResult.geometry.length >= 2 && !cancelled) {
+                setCachedRouteGeometry(routeResult.geometry);
+              }
               let legIdx = 0;
               let totalFromLegs = 0;
               for (let i = 1; i < resolved.length; i++) {
