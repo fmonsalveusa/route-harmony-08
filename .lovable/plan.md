@@ -1,46 +1,99 @@
 
 
-## Plan: Fix Log Service Not Creating Expense in Maintenance
+## Analysis of Current Landing Page (dispatch-up.com)
 
-### Root Cause
+### Current Issues Identified
 
-The two most recent maintenance service logs (2026-03-22 and 2026-03-24) both have `expense_id = NULL` despite having cost values ($350 and $306.60). The error handling fix we added should surface the real error, but based on the pattern, the most likely cause is:
+1. **Hero section is cluttered**: Two competing CTAs (registration form + "Agendar Reunion" button) fight for attention. The form dominates the left column making the value proposition hard to scan.
+2. **Flat visual hierarchy**: All sections use the same bg-background / bg-secondary alternation with minimal contrast. No bold visual breaks.
+3. **Services grid feels catalog-like**: Small cards with tiny images don't create excitement. Users must click each to understand value.
+4. **Stats section is isolated**: Just numbers floating in space without context or visual anchoring.
+5. **Advantages section (HowItWorks)** is a basic icon+text grid. Forgettable.
+6. **Vehicle gallery** duplicates info already in the navbar dropdown.
+7. **Two registration forms** (Hero + Onboarding) are redundant and confusing.
+8. **Meeting section** is buried at the bottom -- hard to find despite being a key conversion point.
+9. **No social proof**: No testimonials, client logos, or real success stories.
+10. **No video or motion**: Static page with minimal dynamism beyond fade-in animations.
 
-1. The `.select('id').single()` chain after `.insert()` may fail if RLS blocks the subsequent SELECT (insert succeeds but reading back fails, causing `expData` to be null and `expense_id` to remain null).
-2. The expense may actually be created but the returned `id` is lost, so `expense_id` is never linked to the service log.
+---
 
-### Changes (1 file)
+### Proposed Redesign (Bold, Modern, High-Conversion)
 
-**`src/hooks/useTruckMaintenance.ts`** — Make the expense creation more robust:
+#### 1. Hero: Full-Width Cinematic Hero with Floating CTA
+- **Remove the form from the hero entirely.** Replace with a bold headline, a short 1-line value prop, and TWO clear buttons: "Registrate Gratis" (orange) + "Agendar Reunion" (green).
+- Add a subtle looping background video or a parallax hero image with a dark gradient overlay.
+- Below the buttons, show a horizontal strip of "trust badges" (5,000+ cargas, 48 estados, 24/7, ES/EN) as small pill badges -- not a separate section.
+- The registration form moves to a dedicated section lower on the page (Onboarding section).
 
-1. Remove `.select('id').single()` from the insert chain and instead use `.select()` to avoid single-row errors.
-2. Add a fallback: if the insert returns no data but no error, query the expense by matching fields to get the `id`.
-3. Add `console.log` before the insert to debug the payload being sent.
-4. If `expense_id` remains null after a successful insert (no error), log a warning and still show success toast.
+#### 2. Social Proof Bar (NEW Section)
+- Right after the hero, add a horizontal scrolling bar of broker/partner logos or a "Trusted by 200+ owner-operators" banner.
+- Include 2-3 short testimonial cards with driver photos, name, truck type, and a 1-line quote. Auto-carousel with dot indicators.
 
-### Technical Detail
+#### 3. Services: Interactive Showcase with Large Visuals
+- Replace the small card grid with a **tabbed showcase**: clicking a service tab reveals a large split-view (big image left + description/benefits/CTA right).
+- Animate transitions between services with slide effects.
+- Each service shows price preview directly (no need to click "Ver Precios" in a dialog).
+- Keep the dialog for detailed info but make the main view much richer.
 
-```typescript
-// Change from:
-const { data: expData, error: expError } = await supabase
-  .from('expenses' as any)
-  .insert({...})
-  .select('id')
-  .single();
+#### 4. Stats: Embedded in a Bold Banner
+- Merge stats into a full-width dark-bg banner with large animated counters, positioned between Hero and Services.
+- Add subtle particle or gradient animation behind the numbers.
 
-// To:
-const { data: expData, error: expError } = await supabase
-  .from('expenses' as any)
-  .insert({...} as any)
-  .select('id');
+#### 5. "How It Works" (NEW -- Replace Advantages)
+- Replace the generic advantages grid with a **3-step visual process**: (1) Registrate (2) Te Asignamos Cargas (3) Gana Dinero.
+- Use large numbered circles with connecting lines/arrows and icons. Much easier to understand for new visitors.
+- Keep the current advantages as smaller supporting points underneath.
 
-if (expError) {
-  console.error('Expense creation error:', expError);
-  toastRef.current({ title: 'Error creating expense', description: expError.message, variant: 'destructive' });
-} else if (expData && (expData as any[]).length > 0) {
-  expense_id = (expData as any[])[0]?.id || null;
-}
-```
+#### 6. Meeting Section: Elevated with Calendar Preview
+- Move it higher on the page (after Services, before FAQ).
+- Add a visual mockup of a video call or a photo of the team to humanize it.
+- Simplify the form: reduce fields to Name, Phone, Date, Time only. Move city/state/truck type to optional.
 
-This avoids the `.single()` issue where PostgREST might fail if RLS prevents reading back the inserted row, while the insert itself succeeds.
+#### 7. Onboarding/Registration: Single Clear CTA Section
+- Consolidate into one final CTA section with the registration form.
+- Add a progress indicator showing "3 simple steps" to reduce friction.
+- Show trust indicators inline: "Sin costo", "Digital", "24-48h activacion".
+
+#### 8. FAQ: Add Search + Categories
+- Add a search bar above the accordion.
+- Group FAQs by category (Servicios, Pagos, Requisitos).
+
+#### 9. Floating Elements
+- Keep the AI chat widget but make it more prominent with a pulsing animation.
+- Add a sticky bottom bar on mobile with two buttons: "Llamar" + "WhatsApp".
+
+---
+
+### Technical Implementation Plan
+
+**Files to modify:**
+- `src/pages/Landing.tsx` -- Reorder sections
+- `src/components/landing/HeroSection.tsx` -- Full redesign: remove form, add video/parallax bg, dual CTA buttons, inline trust badges
+- `src/components/landing/StatsSection.tsx` -- Dark banner style with gradient bg
+- `src/components/landing/ServicesSection.tsx` -- Tabbed showcase layout instead of card grid
+- `src/components/landing/HowItWorks.tsx` -- 3-step process + supporting advantages
+- `src/components/landing/MeetingSection.tsx` -- Simplified form, team photo
+- `src/components/landing/OnboardingSection.tsx` -- Remove CTA toggle, always show form with progress steps
+- `src/components/landing/FAQSection.tsx` -- Add search/categories
+- `src/components/landing/VehicleGallery.tsx` -- Consider removing or merging into services
+- `src/components/landing/landingTranslations.ts` -- Add new translation keys
+
+**New files to create:**
+- `src/components/landing/TestimonialsSection.tsx` -- Social proof carousel
+- `src/components/landing/MobileStickyBar.tsx` -- Mobile-only sticky CTA bar
+
+**New section order:**
+1. LandingNavbar
+2. HeroSection (cinematic, no form)
+3. StatsSection (dark banner)
+4. TestimonialsSection (NEW)
+5. ServicesSection (tabbed showcase)
+6. HowItWorks (3-step process + advantages)
+7. VehicleGallery (optional, could merge)
+8. MeetingSection (simplified, moved up)
+9. OnboardingSection (registration form)
+10. FAQSection (with search)
+11. LandingFooter
+12. MobileStickyBar (NEW, mobile only)
+13. AIChatWidget
 
