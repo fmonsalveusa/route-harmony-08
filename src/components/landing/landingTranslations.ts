@@ -159,8 +159,8 @@ const t = {
     // Onboarding
     obTitle1: "¿Listo para",
     obTitle2: "Empezar",
-    obSubtitle: "Regístrate en menos de 2 minutos. Proceso 100% digital, sin costo de registro y con activación en 24-48 horas.",
-    obBenefits: ["Sin costo de registro", "Proceso 100% digital", "Activación en 24-48 horas", "Soporte en español"],
+    obSubtitle: "Regístrate en menos de 2 minutos. Proceso 100% digital, sin costo de registro y con activación inmediata.",
+    obBenefits: ["Sin costo de registro", "Proceso 100% digital", "Activación Inmediata", "Soporte en español"],
     obCta: "Regístrate como Driver",
     obFormSubtitle: "Llena este formulario rápido y te redirigiremos al proceso completo de onboarding.",
     obFormTitle: "Registro Rápido",
