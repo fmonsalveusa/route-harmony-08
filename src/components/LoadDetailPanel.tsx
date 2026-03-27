@@ -707,7 +707,7 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
         return;
       }
 
-      // SLOW PATH: Calculate from scratch
+      // SLOW PATH: Calculate from scratch — single OSRM call for route + distances
       console.log('[MAP] Calculating from scratch');
       const coords = await Promise.all(
         stopSources.map(s =>
@@ -722,27 +722,6 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
         type: s.type, address: s.address, coords: coords[i],
       }));
 
-      let accumulatedMiles = 0;
-      for (let i = 1; i < resolved.length; i++) {
-        const prev = resolved[i - 1].coords;
-        const curr = resolved[i].coords;
-        if (prev && curr) {
-          if (stopSources[i].cachedDist != null) {
-            resolved[i].distanceFromPrev = Math.round(Number(stopSources[i].cachedDist));
-            accumulatedMiles += Number(stopSources[i].cachedDist);
-          } else {
-            const dist = await drivingDistance(prev[0], prev[1], curr[0], curr[1]);
-            if (cancelled) return;
-            if (dist !== null) {
-              resolved[i].distanceFromPrev = Math.round(dist);
-              accumulatedMiles += dist;
-            }
-          }
-        }
-      }
-
-      if (cancelled) return;
-
       const bounds: [number, number][] = [];
       try {
         resolved.forEach(stop => {
@@ -753,13 +732,47 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
         });
       } catch (e) { console.warn('[MAP] Error adding markers:', e); }
 
+      // Single OSRM call: gets route geometry + per-leg distances at once
       let routeCoords: [number, number][] | null = null;
+      let accumulatedMiles = 0;
+
       try {
         if (bounds.length >= 2) {
-          routeCoords = hasCachedRoute
-            ? effectiveRouteGeometry!
-            : await drivingRoute(bounds);
-          if (cancelled) return;
+          if (hasCachedRoute) {
+            routeCoords = effectiveRouteGeometry!;
+            // Use cached distances if available
+            for (let i = 1; i < resolved.length; i++) {
+              if (stopSources[i].cachedDist != null) {
+                resolved[i].distanceFromPrev = Math.round(Number(stopSources[i].cachedDist));
+                accumulatedMiles += Number(stopSources[i].cachedDist);
+              }
+            }
+          } else {
+            // One single OSRM call replaces N drivingDistance calls + 1 drivingRoute call
+            const routeResult = await drivingRouteWithLegs(bounds);
+            if (cancelled) return;
+            if (routeResult) {
+              routeCoords = routeResult.geometry;
+              accumulatedMiles = routeResult.totalMiles;
+              // Assign per-leg distances back to resolved stops
+              for (let i = 0; i < routeResult.legDistancesMiles.length && i + 1 < resolved.length; i++) {
+                const legIdx = i + 1; // leg i corresponds to resolved[i+1] since first stop has no prev
+                // Find the matching resolved stop index for this leg
+                let resolvedIdx = -1;
+                let boundsCounter = 0;
+                for (let r = 0; r < resolved.length; r++) {
+                  if (resolved[r].coords) {
+                    if (boundsCounter === i + 1) { resolvedIdx = r; break; }
+                    boundsCounter++;
+                  }
+                }
+                if (resolvedIdx > 0) {
+                  resolved[resolvedIdx].distanceFromPrev = Math.round(routeResult.legDistancesMiles[i]);
+                }
+              }
+            }
+          }
+
           if (routeCoords) {
             L.polyline(routeCoords, { color: 'hsl(215,70%,50%)', weight: 3 }).addTo(map);
           } else {
