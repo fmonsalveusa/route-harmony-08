@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, Pencil, Handshake, Loader2, Globe, Trash2 } from 'lucide-react';
+import { Search, Pencil, Handshake, Loader2, Globe, Trash2, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const ratingColors: Record<string, string> = {

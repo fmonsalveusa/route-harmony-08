@@ -72,5 +72,24 @@ export function useBrokers() {
     },
   });
 
-  return { brokers, isLoading, updateBroker, deleteBroker };
+  const createBroker = useMutation({
+    mutationFn: async (input: { name: string; mc_number?: string | null; dot_number?: string | null; address?: string | null; rating?: string | null; days_to_pay?: number | null; notes?: string | null }) => {
+      const { data, error } = await supabase
+        .from('brokers' as any)
+        .insert(input as any)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+      toast({ title: 'Broker creado' });
+    },
+    onError: () => {
+      toast({ title: 'Error', description: 'No se pudo crear el broker', variant: 'destructive' });
+    },
+  });
+
+  return { brokers, isLoading, updateBroker, deleteBroker, createBroker };
 }
