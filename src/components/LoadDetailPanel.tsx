@@ -51,22 +51,14 @@ async function geocode(place: string): Promise<[number, number] | null> {
   return null;
 }
 
-// Get driving distance in miles between two points using OSRM
-async function drivingDistance(lat1: number, lon1: number, lat2: number, lon2: number): Promise<number | null> {
-  try {
-    const res = await fetch(
-      `https://router.project-osrm.org/route/v1/driving/${lon1},${lat1};${lon2},${lat2}?overview=false`
-    );
-    const data = await res.json();
-    if (data.code === 'Ok' && data.routes?.[0]) {
-      return data.routes[0].distance * 0.000621371;
-    }
-  } catch {}
-  return null;
+// Single OSRM call returning route geometry + per-leg distances
+interface RouteWithLegs {
+  geometry: [number, number][];
+  legDistancesMiles: number[]; // one per leg (coords.length - 1)
+  totalDistanceMiles: number;
 }
 
-// Get full route geometry for polyline
-async function drivingRoute(coords: [number, number][]): Promise<[number, number][] | null> {
+async function drivingRouteWithLegs(coords: [number, number][]): Promise<RouteWithLegs | null> {
   if (coords.length < 2) return null;
   try {
     const waypoints = coords.map(c => `${c[1]},${c[0]}`).join(';');
@@ -74,11 +66,26 @@ async function drivingRoute(coords: [number, number][]): Promise<[number, number
       `https://router.project-osrm.org/route/v1/driving/${waypoints}?overview=full&geometries=geojson`
     );
     const data = await res.json();
-    if (data.code === 'Ok' && data.routes?.[0]?.geometry?.coordinates) {
-      return data.routes[0].geometry.coordinates.map((c: number[]) => [c[1], c[0]] as [number, number]);
+    if (data.code === 'Ok' && data.routes?.[0]) {
+      const route = data.routes[0];
+      const geometry = route.geometry?.coordinates?.map((c: number[]) => [c[1], c[0]] as [number, number]) || [];
+      const legDistancesMiles = (route.legs || []).map((leg: any) => (leg.distance || 0) * 0.000621371);
+      const totalDistanceMiles = route.distance * 0.000621371;
+      return { geometry, legDistancesMiles, totalDistanceMiles };
     }
   } catch {}
   return null;
+}
+
+// Convenience wrappers for backward-compatible usage
+async function drivingDistance(lat1: number, lon1: number, lat2: number, lon2: number): Promise<number | null> {
+  const result = await drivingRouteWithLegs([[lat1, lon1], [lat2, lon2]]);
+  return result ? result.totalDistanceMiles : null;
+}
+
+async function drivingRoute(coords: [number, number][]): Promise<[number, number][] | null> {
+  const result = await drivingRouteWithLegs(coords);
+  return result ? result.geometry : null;
 }
 
 function normalizeRouteGeometry(input: unknown): [number, number][] | null {
