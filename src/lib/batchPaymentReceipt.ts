@@ -15,7 +15,9 @@ export async function generateBatchPaymentReceipt(
   companyName?: string,
 ) {
   const doc = new jsPDF();
-  const date = new Date().toISOString().split('T')[0];
+  const rawDate = new Date().toISOString().split('T')[0];
+  const dateParts = rawDate.split('-');
+  const date = `${dateParts[1]}/${dateParts[2]}/${dateParts[0]}`;
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 20;
   let y = 20;
