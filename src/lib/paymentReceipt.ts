@@ -42,7 +42,9 @@ export async function generatePaymentReceipt(
   companyName?: string,
 ) {
   const doc = new jsPDF();
-  const date = payment.payment_date || new Date().toISOString().split('T')[0];
+  const rawDate = payment.payment_date || new Date().toISOString().split('T')[0];
+  const dateParts = rawDate.split('T')[0].split('-');
+  const date = dateParts.length === 3 ? `${dateParts[1]}/${dateParts[2]}/${dateParts[0]}` : rawDate;
   const baseAmount = Number(payment.amount);
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 20;
