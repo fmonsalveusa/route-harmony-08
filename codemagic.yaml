@@ -9,8 +9,6 @@ workflows:
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.dispatchup.driver
-        certificate: Dispatch Up Driver Distribution
-        provisioning_profile: Dispatch Up Driver AppStore Profile
     scripts:
       - name: Install dependencies
         script: npm install
@@ -34,4 +32,4 @@ workflows:
             CODE_SIGN_IDENTITY="Apple Distribution" \
             PROVISIONING_PROFILE_SPECIFIER="Dispatch Up Driver AppStore"
     artifacts:
-      - ios/App/App.xcarchive  - ios/App/App.xcarchive
+      - ios/App/App.xcarchive
