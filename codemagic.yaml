@@ -1,26 +1,4 @@
 workflows:
-  android-workflow:
-    name: Android Build
-    max_build_duration: 120
-    environment:
-      java: 17
-      node: 22
-    scripts:
-      - name: Install dependencies
-        script: npm install
-      - name: Build web app
-        script: npm run build
-      - name: Sync Capacitor
-        script: npx cap sync android
-      - name: Fix gradlew permissions
-        script: chmod +x android/gradlew
-      - name: Build Android
-        script: |
-          cd android
-          ./gradlew bundleRelease
-    artifacts:
-      - android/app/build/outputs/**/*.aab
-
   ios-workflow:
     name: iOS Build
     max_build_duration: 120
@@ -28,6 +6,13 @@ workflows:
       node: 22
       xcode: latest
       cocoapods: default
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.dispatchup.driver
+      vars:
+        APP_STORE_CONNECT_ISSUER_ID: $APP_STORE_CONNECT_ISSUER_ID
+        APP_STORE_CONNECT_KEY_IDENTIFIER: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        APP_STORE_CONNECT_PRIVATE_KEY: $APP_STORE_CONNECT_PRIVATE_KEY
     scripts:
       - name: Install dependencies
         script: npm install
@@ -45,6 +30,8 @@ workflows:
             -scheme App \
             -configuration Release \
             -archivePath ios/App/App.xcarchive \
-            archive
+            archive \
+            CODE_SIGN_STYLE=Automatic \
+            DEVELOPMENT_TEAM=$DEVELOPMENT_TEAM
     artifacts:
       - ios/App/App.xcarchive
