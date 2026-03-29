@@ -12,6 +12,8 @@ workflows:
         script: npm run build
       - name: Sync Capacitor
         script: npx cap sync android
+      - name: Fix gradlew permissions
+        script: chmod +x android/gradlew
       - name: Build Android
         script: |
           cd android
