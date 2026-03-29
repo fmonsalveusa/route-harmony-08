@@ -1,0 +1,1 @@
+ALTER TABLE dispatchers ADD COLUMN commission_2_percentage numeric NOT NULL DEFAULT 0;

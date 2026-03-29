@@ -1,0 +1,272 @@
+import { useState, useEffect, useRef } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Upload, FileCheck, X } from 'lucide-react';
+
+import type { DbTruck, TruckInput } from '@/hooks/useTrucks';
+import { toast } from 'sonner';
+
+const TRUCK_TYPES = ['Box Truck', 'Hotshot', 'Flatbed', 'Dry Van'];
+const STATUSES = ['active', 'inactive', 'maintenance'];
+
+const DOC_FIELDS: { key: string; label: string; urlKey: keyof DbTruck }[] = [
+  { key: 'registration_photo', label: 'Registration Photo', urlKey: 'registration_photo_url' },
+  { key: 'insurance_photo', label: 'Insurance Photo', urlKey: 'insurance_photo_url' },
+  { key: 'rear_truck_photo', label: 'Rear Truck Photo', urlKey: 'rear_truck_photo_url' },
+  { key: 'truck_side_photo', label: 'Truck Side Photo', urlKey: 'truck_side_photo_url' },
+  { key: 'truck_plate_photo', label: 'Truck Plate Photo', urlKey: 'truck_plate_photo_url' },
+  { key: 'cargo_area_photo', label: 'Cargo Area Photo', urlKey: 'cargo_area_photo_url' },
+];
+
+interface Props {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  truck?: DbTruck | null;
+  onSave: (input: TruckInput, files: Record<string, File>) => Promise<boolean>;
+}
+
+export function TruckFormDialog({ open, onOpenChange, truck, onSave }: Props) {
+  const [form, setForm] = useState<TruckInput>({
+    unit_number: '', truck_type: 'Dry Van', make: '', model: '', year: new Date().getFullYear(),
+    max_payload_lbs: null, vin: '', license_plate: '', status: 'active',
+    insurance_expiry: null, registration_expiry: null,
+    cargo_length_ft: null, cargo_width_in: null, cargo_height_in: null,
+    rear_door_width_in: null, rear_door_height_in: null,
+    trailer_length_ft: null, mega_ramp: null,
+  });
+  const [files, setFiles] = useState<Record<string, File>>({});
+  const [deletedDocs, setDeletedDocs] = useState<Set<string>>(new Set());
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setFiles({});
+      setDeletedDocs(new Set());
+      if (truck) {
+        setForm({
+          unit_number: truck.unit_number, truck_type: truck.truck_type, make: truck.make || '',
+          model: truck.model || '', year: truck.year || new Date().getFullYear(),
+          max_payload_lbs: truck.max_payload_lbs, vin: truck.vin || '',
+          license_plate: truck.license_plate || '', status: truck.status,
+          insurance_expiry: truck.insurance_expiry, registration_expiry: truck.registration_expiry,
+          cargo_length_ft: truck.cargo_length_ft, cargo_width_in: truck.cargo_width_in,
+          cargo_height_in: truck.cargo_height_in, rear_door_width_in: truck.rear_door_width_in,
+          rear_door_height_in: truck.rear_door_height_in,
+          trailer_length_ft: truck.trailer_length_ft, mega_ramp: truck.mega_ramp,
+        });
+      } else {
+        setForm({
+          unit_number: '', truck_type: 'Dry Van', make: '', model: '', year: new Date().getFullYear(),
+          max_payload_lbs: null, vin: '', license_plate: '', status: 'active',
+          insurance_expiry: null, registration_expiry: null,
+          cargo_length_ft: null, cargo_width_in: null, cargo_height_in: null,
+          rear_door_width_in: null, rear_door_height_in: null,
+          trailer_length_ft: null, mega_ramp: null,
+        });
+      }
+    }
+  }, [open, truck]);
+
+  const set = (key: keyof TruckInput, val: any) => setForm(p => ({ ...p, [key]: val }));
+
+  const handleSubmit = async () => {
+    if (!form.unit_number.trim()) {
+      toast.error('Required field: Unit #');
+      return;
+    }
+    setSaving(true);
+    // Include deleted doc URLs as null in form
+    const deletedUpdates: Record<string, null> = {};
+    deletedDocs.forEach(urlKey => {
+      const docField = DOC_FIELDS.find(d => d.urlKey === urlKey);
+      if (docField && !files[docField.key]) {
+        deletedUpdates[urlKey] = null;
+      }
+    });
+    const finalForm = { ...form, ...deletedUpdates } as any;
+    const ok = await onSave(finalForm, files);
+    setSaving(false);
+    if (ok) onOpenChange(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{truck ? 'Edit Truck' : 'New Truck'}</DialogTitle>
+          <DialogDescription>Complete the truck information</DialogDescription>
+        </DialogHeader>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
+          <div className="space-y-2">
+            <Label>Unit #</Label>
+            <Input value={form.unit_number} onChange={e => set('unit_number', e.target.value)} placeholder="e.g. 101" />
+          </div>
+          <div className="space-y-2">
+            <Label>Truck Type</Label>
+            <Select value={form.truck_type} onValueChange={v => set('truck_type', v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{TRUCK_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Make</Label>
+            <Input value={form.make || ''} onChange={e => set('make', e.target.value)} placeholder="e.g. Freightliner" />
+          </div>
+          <div className="space-y-2">
+            <Label>Model</Label>
+            <Input value={form.model || ''} onChange={e => set('model', e.target.value)} placeholder="e.g. Cascadia" />
+          </div>
+          <div className="space-y-2">
+            <Label>Year</Label>
+            <Input type="number" value={form.year || ''} onChange={e => set('year', e.target.value ? parseInt(e.target.value) : null)} />
+          </div>
+          <div className="space-y-2">
+            <Label>Max Payload (lbs)</Label>
+            <Input type="number" value={form.max_payload_lbs ?? ''} onChange={e => set('max_payload_lbs', e.target.value ? parseFloat(e.target.value) : null)} />
+          </div>
+          <div className="space-y-2">
+            <Label>VIN</Label>
+            <Input value={form.vin || ''} onChange={e => set('vin', e.target.value)} placeholder="Vehicle Identification Number" />
+          </div>
+          <div className="space-y-2">
+            <Label>License Plate</Label>
+            <Input value={form.license_plate || ''} onChange={e => set('license_plate', e.target.value)} placeholder="Ej: TX-4521" />
+          </div>
+          <div className="space-y-2">
+            <Label>Status</Label>
+            <Select value={form.status} onValueChange={v => set('status', v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{STATUSES.map(s => <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <DateField label="Insurance Expiry" value={form.insurance_expiry} onChange={v => set('insurance_expiry', v)} />
+          <DateField label="Registration Expiry" value={form.registration_expiry} onChange={v => set('registration_expiry', v)} />
+        </div>
+
+        {/* Box Truck dimensions */}
+        {form.truck_type === 'Box Truck' && (
+          <div className="border-t pt-4 space-y-2">
+            <Label className="text-base font-semibold">Box Truck Dimensions</Label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Cargo Length (ft)</Label>
+                <Input type="number" value={form.cargo_length_ft ?? ''} onChange={e => set('cargo_length_ft', e.target.value ? parseFloat(e.target.value) : null)} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Cargo Width (in)</Label>
+                <Input type="number" value={form.cargo_width_in ?? ''} onChange={e => set('cargo_width_in', e.target.value ? parseFloat(e.target.value) : null)} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Cargo Height (in)</Label>
+                <Input type="number" value={form.cargo_height_in ?? ''} onChange={e => set('cargo_height_in', e.target.value ? parseFloat(e.target.value) : null)} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Rear Door Width (in)</Label>
+                <Input type="number" value={form.rear_door_width_in ?? ''} onChange={e => set('rear_door_width_in', e.target.value ? parseFloat(e.target.value) : null)} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Rear Door Height (in)</Label>
+                <Input type="number" value={form.rear_door_height_in ?? ''} onChange={e => set('rear_door_height_in', e.target.value ? parseFloat(e.target.value) : null)} />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Hotshot dimensions */}
+        {form.truck_type === 'Hotshot' && (
+          <div className="border-t pt-4 space-y-2">
+            <Label className="text-base font-semibold">Hotshot Dimensions</Label>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Trailer Length (ft)</Label>
+                <Input type="number" value={form.trailer_length_ft ?? ''} onChange={e => set('trailer_length_ft', e.target.value ? parseFloat(e.target.value) : null)} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Mega Ramp</Label>
+                <Select value={form.mega_ramp || ''} onValueChange={v => set('mega_ramp', v)}>
+                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                  <SelectContent className="bg-popover z-50">
+                    <SelectItem value="SI">SI</SelectItem>
+                    <SelectItem value="NO">NO</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Document uploads */}
+        <div className="space-y-3 border-t pt-4">
+          <Label className="text-base font-semibold">Documents & Photos</Label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {DOC_FIELDS.map(doc => (
+              <FileUploadField
+                key={doc.key}
+                label={doc.label}
+                existingUrl={deletedDocs.has(doc.urlKey) ? null : (truck?.[doc.urlKey] as string | null)}
+                file={files[doc.key]}
+                onFileChange={f => {
+                  setFiles(prev => ({ ...prev, [doc.key]: f }));
+                  setDeletedDocs(prev => { const n = new Set(prev); n.delete(doc.urlKey); return n; });
+                }}
+                onDelete={() => setDeletedDocs(prev => new Set(prev).add(doc.urlKey))}
+                isDeleted={deletedDocs.has(doc.urlKey) && !files[doc.key]}
+                onUndoDelete={() => setDeletedDocs(prev => { const n = new Set(prev); n.delete(doc.urlKey); return n; })}
+              />
+            ))}
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={handleSubmit} disabled={saving || !form.unit_number.trim()}>
+            {saving ? 'Saving...' : truck ? 'Update' : 'Create'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function DateField({ label, value, onChange }: { label: string; value: string | null | undefined; onChange: (v: string | null) => void }) {
+  return (
+    <div className="space-y-2">
+      <Label>{label}</Label>
+      <Input type="date" value={value || ''} onChange={e => onChange(e.target.value || null)} />
+    </div>
+  );
+}
+
+function FileUploadField({ label, existingUrl, file, onFileChange, onDelete, isDeleted, onUndoDelete }: {
+  label: string; existingUrl: string | null | undefined; file?: File; onFileChange: (f: File) => void;
+  onDelete?: () => void; isDeleted?: boolean; onUndoDelete?: () => void;
+}) {
+  const ref = useRef<HTMLInputElement>(null);
+  const hasFile = !!file || !!existingUrl;
+  return (
+    <div className="space-y-1">
+      <Label className="text-xs">{label}</Label>
+      <input ref={ref} type="file" accept="image/*,.pdf" className="hidden" onChange={e => { if (e.target.files?.[0]) onFileChange(e.target.files[0]); }} />
+      <div className="flex items-center gap-1">
+        <Button type="button" variant="outline" size="sm" className="flex-1 justify-start gap-2 text-xs" onClick={() => ref.current?.click()}>
+          {hasFile ? <FileCheck className="h-3.5 w-3.5 text-primary" /> : <Upload className="h-3.5 w-3.5" />}
+          {file ? file.name : isDeleted ? 'Marked for deletion' : existingUrl ? 'Document uploaded ✓' : 'Upload file'}
+        </Button>
+        {existingUrl && !file && !isDeleted && onDelete && (
+          <Button type="button" variant="ghost" size="sm" className="text-destructive hover:text-destructive h-8 px-2 shrink-0" onClick={onDelete}>
+            <X className="h-3.5 w-3.5" />
+          </Button>
+        )}
+        {isDeleted && onUndoDelete && (
+          <Button type="button" variant="ghost" size="sm" className="text-muted-foreground h-8 px-2 text-xs shrink-0" onClick={onUndoDelete}>
+            Undo
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Dispatch Up Driver</string>
+    <string name="title_activity_main">Dispatch Up Driver</string>
+    <string name="package_name">com.dispatchup.driver</string>
+    <string name="custom_url_scheme">com.dispatchup.driver</string>
+</resources>

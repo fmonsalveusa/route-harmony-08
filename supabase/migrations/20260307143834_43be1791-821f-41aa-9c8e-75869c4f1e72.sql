@@ -1,0 +1,1 @@
+ALTER TABLE public.broker_credit_scores ADD COLUMN mc_number text;

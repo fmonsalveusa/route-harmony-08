@@ -1,0 +1,1 @@
+ALTER TABLE public.drivers ADD COLUMN state TEXT NULL;

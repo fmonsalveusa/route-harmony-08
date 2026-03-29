@@ -1,0 +1,311 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+
+html, body {
+  height: 100%;
+}
+#root {
+  height: 100dvh;
+  min-height: 100dvh;
+}
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 40% 98%;
+    --foreground: 220 35% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 35% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 35% 12%;
+
+    --primary: 214 52% 25%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 220 30% 20%;
+
+    --muted: 210 33% 97%;
+    --muted-foreground: 218 15% 48%;
+
+    --accent: 28 92% 52%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 216 18% 88%;
+    --input: 216 18% 88%;
+    --ring: 217 78% 42%;
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 210 52% 24%;
+    --sidebar-foreground: 215 20% 78%;
+    --sidebar-primary: 28 92% 52%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 7% 90%;
+    --sidebar-accent-foreground: 211 84% 19%;
+    --sidebar-border: 220 28% 20%;
+    --sidebar-ring: 28 92% 52%;
+    --sidebar-muted: 218 15% 48%;
+
+    --success: 152 60% 40%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 30 75% 26%;
+    --warning-bg: 42 100% 95%;
+    --info: 217 78% 50%;
+    --info-foreground: 0 0% 100%;
+    --danger-bg: 0 100% 94%;
+    --danger-text: 0 54% 41%;
+  }
+
+  .dark {
+    --background: 222 32% 7%;
+    --foreground: 215 20% 95%;
+    --card: 222 28% 11%;
+    --card-foreground: 215 20% 95%;
+    --popover: 222 28% 11%;
+    --popover-foreground: 215 20% 95%;
+    --primary: 217 78% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 28% 16%;
+    --secondary-foreground: 215 20% 90%;
+    --muted: 220 28% 16%;
+    --muted-foreground: 218 15% 55%;
+    --accent: 28 92% 52%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 28% 18%;
+    --input: 220 28% 18%;
+    --ring: 217 78% 50%;
+    --sidebar-background: 222 32% 5%;
+    --sidebar-foreground: 215 20% 78%;
+    --sidebar-primary: 28 92% 52%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 28% 12%;
+    --sidebar-accent-foreground: 215 20% 92%;
+    --sidebar-border: 220 28% 12%;
+    --sidebar-ring: 28 92% 52%;
+    --sidebar-muted: 218 15% 48%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+}
+
+@layer components {
+  .stat-card {
+    @apply bg-card rounded-lg border p-5 shadow-sm transition-all duration-200 hover:shadow-md;
+  }
+  .page-header {
+    @apply text-2xl font-bold tracking-tight text-foreground;
+  }
+  .page-description {
+    @apply text-sm text-muted-foreground mt-1;
+  }
+  .status-badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors;
+  }
+  .status-active { @apply bg-[hsl(152,60%,40%)] text-white; }
+  .status-pending { @apply bg-[hsl(38,92%,50%)] text-white; }
+  .status-transit { @apply bg-[hsl(205,85%,50%)] text-white; }
+  .status-delivered { @apply bg-[hsl(152,60%,40%)] text-white; }
+  .status-cancelled { @apply bg-destructive text-destructive-foreground; }
+  .status-paid { @apply bg-[hsl(152,60%,40%)] text-white; }
+  .table-container {
+    @apply rounded-lg border bg-card overflow-hidden;
+  }
+
+  /* ── Glassmorphism utilities ── */
+  .glass-card {
+    @apply rounded-lg shadow-sm bg-card border;
+  }
+  .dark .glass-card {
+    @apply bg-card border;
+  }
+
+  .glass-table-header {
+    @apply bg-muted/80;
+  }
+  .dark .glass-table-header {
+    @apply bg-muted/50;
+  }
+
+  .glass-row {
+    @apply transition-all duration-200;
+  }
+  .glass-row:hover {
+    background: hsla(var(--muted), 0.35);
+  }
+  .dark .glass-row:hover {
+    background: hsla(var(--muted), 0.25);
+  }
+
+  .glass-row-expanded {
+    background: hsla(var(--muted), 0.25);
+  }
+  .dark .glass-row-expanded {
+    background: hsla(var(--muted), 0.18);
+  }
+
+  .glass-action-btn {
+    @apply h-8 px-2 text-xs gap-1 font-medium rounded-md transition-all duration-200 bg-card border;
+  }
+  .glass-action-btn:hover {
+    @apply bg-muted shadow-sm;
+  }
+  .dark .glass-action-btn {
+    @apply bg-secondary border-border;
+  }
+  .dark .glass-action-btn:hover {
+    @apply bg-secondary/80;
+  }
+
+  /* Semantic tints for glass action buttons */
+  .glass-action-btn.tint-blue { @apply text-[hsl(205,85%,50%)]; }
+  .glass-action-btn.tint-green { @apply text-[hsl(152,60%,40%)]; }
+  .glass-action-btn.tint-amber { @apply text-[hsl(38,92%,50%)]; }
+  .glass-action-btn.tint-red { @apply text-[hsl(0,72%,51%)]; }
+  .glass-action-btn.tint-purple { @apply text-[hsl(270,55%,50%)]; }
+
+  /* ── Sidebar & Header glassmorphism ── */
+  .glass-sidebar {
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    background: linear-gradient(
+      180deg,
+      hsla(var(--sidebar-background), 0.92) 0%,
+      hsla(var(--sidebar-background), 0.85) 100%
+    );
+    border-right: 1px solid hsla(0, 0%, 100%, 0.06);
+  }
+  .dark .glass-sidebar {
+    background: linear-gradient(
+      180deg,
+      hsla(var(--sidebar-background), 0.95) 0%,
+      hsla(var(--sidebar-background), 0.88) 100%
+    );
+  }
+
+  .glass-header {
+    @apply bg-card border-b border-border;
+  }
+  .dark .glass-header {
+    @apply bg-card border-border;
+  }
+
+  .nav-item-active {
+    border-left: 2px solid hsl(var(--sidebar-primary));
+    background: hsla(var(--sidebar-accent), 0.15);
+  }
+  .dark .nav-item-active {
+    background: hsla(var(--sidebar-accent), 0.1);
+  }
+
+  /* Dialog overlay & content - solid */
+  .glass-dialog-overlay {
+    @apply bg-black/50;
+  }
+  .glass-dialog-content {
+    @apply bg-card border shadow-lg;
+  }
+  .dark .glass-dialog-content {
+    @apply bg-card border-border;
+  }
+
+  .safe-area-pb {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .safe-area-pt {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  /* ── Top Navigation (Chase-style) ── */
+  .top-header {
+    background: hsl(214, 52%, 25%);
+    color: white;
+  }
+  .dark .top-header {
+    background: hsl(214, 52%, 18%);
+  }
+
+  .top-nav {
+    @apply bg-card border-b border-border;
+  }
+  .top-nav-item {
+    @apply px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap;
+    color: hsl(214, 52%, 25%);
+    border-bottom: 3px solid transparent;
+  }
+  .top-nav-item:hover {
+    color: hsl(214, 52%, 35%);
+    background: hsl(215, 20%, 96%);
+  }
+  .top-nav-item-active {
+    border-bottom-color: hsl(214, 52%, 25%);
+    font-weight: 600;
+  }
+  .dark .top-nav-item {
+    color: hsl(215, 20%, 78%);
+  }
+  .dark .top-nav-item:hover {
+    color: hsl(215, 20%, 95%);
+    background: hsl(220, 28%, 16%);
+  }
+  .dark .top-nav-item-active {
+    color: hsl(217, 78%, 60%);
+    border-bottom-color: hsl(217, 78%, 50%);
+  }
+}
+
+/* Android driver app text scaling – reduce all text ~20% */
+.android-driver-app {
+  font-size: 14px;
+}
+.android-driver-app h1 { font-size: 1.25rem !important; line-height: 1.625rem !important; }
+.android-driver-app h2 { font-size: 1rem !important; line-height: 1.375rem !important; }
+.android-driver-app .text-3xl { font-size: 1.5rem !important; line-height: 2rem !important; }
+.android-driver-app .text-2xl { font-size: 1.25rem !important; line-height: 1.625rem !important; }
+.android-driver-app .text-xl { font-size: 1.125rem !important; line-height: 1.5rem !important; }
+.android-driver-app .text-lg { font-size: 1rem !important; line-height: 1.375rem !important; }
+.android-driver-app .text-base { font-size: 0.875rem !important; line-height: 1.25rem !important; }
+.android-driver-app .text-sm { font-size: 0.8125rem !important; line-height: 1.125rem !important; }
+.android-driver-app .text-xs { font-size: 0.7rem !important; line-height: 0.975rem !important; }
+
+/* Fix Leaflet map z-index so it doesn't overlap dialogs/modals */
+.leaflet-container {
+  z-index: 0 !important;
+}
+.leaflet-pane,
+.leaflet-top,
+.leaflet-bottom {
+  z-index: 0 !important;
+}
+
+/* GPS Live marker pulse animation */
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.5); opacity: 0.2; }
+  100% { transform: scale(1); opacity: 0.6; }
+}
+
+@layer utilities {
+  .font-mono-id {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}

@@ -1,0 +1,1 @@
+ALTER TABLE public.drivers ADD COLUMN factoring_percentage numeric NOT NULL DEFAULT 2;
