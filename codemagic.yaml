@@ -37,7 +37,7 @@ workflows:
         script: npx cap sync ios
       - name: Install CocoaPods
         script: |
-          cd ios/App
+          cd ios
           pod install
       - name: Build iOS
         script: |
