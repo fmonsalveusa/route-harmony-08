@@ -3,49 +3,59 @@
 <plist version="1.0">
 <dict>
     <key>CAPACITOR_DEBUG</key>
-	<string>$(CAPACITOR_DEBUG)</string>
-	<key>CFBundleDevelopmentRegion</key>
-	<string>en</string>
-	<key>CFBundleDisplayName</key>
-        <string>Dispatch Up Driver</string>
-	<key>CFBundleExecutable</key>
-	<string>$(EXECUTABLE_NAME)</string>
-	<key>CFBundleIdentifier</key>
-	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
-	<key>CFBundleInfoDictionaryVersion</key>
-	<string>6.0</string>
-	<key>CFBundleName</key>
-	<string>$(PRODUCT_NAME)</string>
-	<key>CFBundlePackageType</key>
-	<string>APPL</string>
-	<key>CFBundleShortVersionString</key>
-	<string>$(MARKETING_VERSION)</string>
-	<key>CFBundleVersion</key>
-	<string>$(CURRENT_PROJECT_VERSION)</string>
-	<key>LSRequiresIPhoneOS</key>
-	<true/>
-	<key>UILaunchStoryboardName</key>
-	<string>LaunchScreen</string>
-	<key>UIMainStoryboardFile</key>
-	<string>Main</string>
-	<key>UIRequiredDeviceCapabilities</key>
-	<array>
+    <string>$(CAPACITOR_DEBUG)</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>This app requires access to your photo library to upload delivery documents and photos.</string>
+    <key>NSCameraUsageDescription</key>
+    <string>This app requires camera access to capture delivery photos and documents.</string>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>This app uses your location to navigate to pickup and delivery addresses.</string>
+    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+    <string>This app uses your location in the background to track active deliveries.</string>
+    <key>NSLocationAlwaysUsageDescription</key>
+    <string>This app uses your location in the background to track active deliveries.</string>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>en</string>
+    <key>CFBundleDisplayName</key>
+    <string>Dispatch Up Driver</string>
+    <key>CFBundleExecutable</key>
+    <string>$(EXECUTABLE_NAME)</string>
+    <key>CFBundleIdentifier</key>
+    <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>$(PRODUCT_NAME)</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>$(MARKETING_VERSION)</string>
+    <key>CFBundleVersion</key>
+    <string>$(CURRENT_PROJECT_VERSION)</string>
+    <key>LSRequiresIPhoneOS</key>
+    <true/>
+    <key>UILaunchStoryboardName</key>
+    <string>LaunchScreen</string>
+    <key>UIMainStoryboardFile</key>
+    <string>Main</string>
+    <key>UIRequiredDeviceCapabilities</key>
+    <array>
 		<string>armv7</string>
-	</array>
-	<key>UISupportedInterfaceOrientations</key>
-	<array>
+    </array>
+    <key>UISupportedInterfaceOrientations</key>
+    <array>
 		<string>UIInterfaceOrientationPortrait</string>
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
-	</array>
-	<key>UISupportedInterfaceOrientations~ipad</key>
-	<array>
+    </array>
+    <key>UISupportedInterfaceOrientations~ipad</key>
+    <array>
 		<string>UIInterfaceOrientationPortrait</string>
 		<string>UIInterfaceOrientationPortraitUpsideDown</string>
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
-	</array>
-	<key>UIViewControllerBasedStatusBarAppearance</key>
+    </array>
+    <key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
 </dict>
 </plist>
