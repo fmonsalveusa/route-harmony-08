@@ -30,6 +30,10 @@ workflows:
             --create
           keychain add-certificates
           xcode-project use-profiles
+      - name: Install provisioning profile manually
+        script: |
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          echo "$PROVISIONING_PROFILE" | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/919ea03f-6af7-41b2-87cf-b36e36867bb0.mobileprovision
       - name: Build iOS
         script: |
           xcodebuild -workspace ios/App/App.xcworkspace \
