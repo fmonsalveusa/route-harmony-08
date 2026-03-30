@@ -295,7 +295,9 @@
 			baseConfigurationReference = 958DCC722DB07C7200EA8C5F /* debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_STYLE = Manual;
+				PROVISIONING_PROFILE = "919ea03f-6af7-41b2-87cf-b36e36867bb0";
+				PROVISIONING_PROFILE_SPECIFIER = "Dispatch Up Driver AppStore";
 				DEVELOPMENT_TEAM = AY3TN9N54Z;
 				CURRENT_PROJECT_VERSION = 1;
 				INFOPLIST_FILE = App/Info.plist;
@@ -318,7 +320,9 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_STYLE = Manual;
+				PROVISIONING_PROFILE = "919ea03f-6af7-41b2-87cf-b36e36867bb0";
+				PROVISIONING_PROFILE_SPECIFIER = "Dispatch Up Driver AppStore";
 				DEVELOPMENT_TEAM = AY3TN9N54Z;			
 				CURRENT_PROJECT_VERSION = 1;
 				INFOPLIST_FILE = App/Info.plist;
