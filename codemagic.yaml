@@ -20,12 +20,14 @@ workflows:
         script: |
           cd ios/App
           pod install
-      - name: Build iOS
+          - name: Build iOS
         script: |
           xcodebuild -workspace ios/App/App.xcworkspace \
             -scheme App \
             -configuration Release \
             -archivePath ios/App/App.xcarchive \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath $CM_KEYCHAIN_PATH \
             archive \
             CODE_SIGN_STYLE=Automatic \
             DEVELOPMENT_TEAM=AY3TN9N54Z
