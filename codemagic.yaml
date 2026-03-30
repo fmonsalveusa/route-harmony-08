@@ -47,5 +47,26 @@ workflows:
             DEVELOPMENT_TEAM=AY3TN9N54Z \
             CODE_SIGN_IDENTITY="Apple Distribution" \
             PROVISIONING_PROFILE_SPECIFIER="919ea03f-6af7-41b2-87cf-b36e36867bb0"
+      - name: Export IPA
+        script: |
+          xcodebuild -exportArchive \
+            -archivePath ios/App/App.xcarchive \
+            -exportOptionsPlist /dev/stdin \
+            -exportPath ios/App/App.ipa <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>app-store-connect</string>
+            <key>teamID</key>
+            <string>AY3TN9N54Z</string>
+          </dict>
+          </plist>
+          EOF
     artifacts:
-      - ios/App/App.xcarchive
+      - ios/App/App.ipa/*.ipa
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
