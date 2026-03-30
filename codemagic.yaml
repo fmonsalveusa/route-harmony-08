@@ -49,10 +49,7 @@ workflows:
             PROVISIONING_PROFILE_SPECIFIER="919ea03f-6af7-41b2-87cf-b36e36867bb0"
       - name: Export IPA
         script: |
-          xcodebuild -exportArchive \
-            -archivePath ios/App/App.xcarchive \
-            -exportOptionsPlist /dev/stdin \
-            -exportPath ios/App/App.ipa <<EOF
+          cat > /tmp/ExportOptions.plist << EOF
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0">
@@ -61,9 +58,22 @@ workflows:
             <string>app-store-connect</string>
             <key>teamID</key>
             <string>AY3TN9N54Z</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>com.dispatchup.driver</key>
+              <string>919ea03f-6af7-41b2-87cf-b36e36867bb0</string>
+            </dict>
+            <key>signingCertificate</key>
+            <string>Apple Distribution</string>
+            <key>signingStyle</key>
+            <string>manual</string>
           </dict>
           </plist>
           EOF
+          xcodebuild -exportArchive \
+            -archivePath ios/App/App.xcarchive \
+            -exportOptionsPlist /tmp/ExportOptions.plist \
+            -exportPath ios/App/output
     artifacts:
       - ios/App/App.ipa/*.ipa
     publishing:
