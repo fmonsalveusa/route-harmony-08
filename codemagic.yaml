@@ -8,9 +8,6 @@ workflows:
       node: 22
       xcode: latest
       cocoapods: default
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.dispatchup.driver
     scripts:
       - name: Install dependencies
         script: npm install
@@ -22,19 +19,25 @@ workflows:
         script: |
           cd ios/App
           pod install
+      - name: Set up code signing
+        script: |
+          keychain initialize
+          app-store-connect fetch-signing-files com.dispatchup.driver \
+            --type IOS_APP_STORE \
+            --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
+            --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
+            --private-key "$APP_STORE_CONNECT_PRIVATE_KEY" \
+            --create
+          keychain add-certificates
+          xcode-project use-profiles
       - name: Build iOS
         script: |
-          echo "$APP_STORE_CONNECT_PRIVATE_KEY" > /tmp/auth_key.p8
           xcodebuild -workspace ios/App/App.xcworkspace \
             -scheme App \
             -configuration Release \
             -archivePath ios/App/App.xcarchive \
-            -allowProvisioningUpdates \
-            -authenticationKeyID "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
-            -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID" \
-            -authenticationKeyPath /tmp/auth_key.p8 \
             archive \
-            CODE_SIGN_STYLE=Automatic \
+            CODE_SIGN_STYLE=Manual \
             DEVELOPMENT_TEAM=AY3TN9N54Z
     artifacts:
       - ios/App/App.xcarchive
