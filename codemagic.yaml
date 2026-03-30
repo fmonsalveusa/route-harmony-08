@@ -99,10 +99,12 @@ workflows:
         script: npm run build
       - name: Sync Capacitor Android
         script: npx cap sync android
-      - name: Fix Java version in capacitor-android
+      - name: Fix Java version globally
         script: |
-          find android -name "*.gradle" -exec sed -i 's/JavaVersion.VERSION_21/JavaVersion.VERSION_17/g' {} \;
-          find node_modules/@capacitor/android -name "*.gradle" -exec sed -i 's/JavaVersion.VERSION_21/JavaVersion.VERSION_17/g' {} \;
+          find . -name "*.gradle" -not -path "*/\.*" | xargs grep -l "VERSION_21" | xargs sed -i 's/JavaVersion.VERSION_21/JavaVersion.VERSION_17/g'
+          cat >> android/gradle.properties << EOF
+          org.gradle.java.home=/usr/lib/jvm/java-17-openjdk-amd64
+          EOF
       - name: Fix gradlew permissions
         script: chmod +x android/gradlew
       - name: Build Android
