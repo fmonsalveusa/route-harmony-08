@@ -83,3 +83,28 @@ workflows:
         key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
         issuer_id: $APP_STORE_CONNECT_ISSUER_ID
         submit_to_testflight: true
+
+  android-workflow:
+    name: Android Build
+    max_build_duration: 120
+    environment:
+      groups:
+        - ios-credentials
+      java: 17
+      node: 22
+    scripts:
+      - name: Install dependencies
+        script: npm install
+      - name: Build web app
+        script: npm run build
+      - name: Sync Capacitor Android
+        script: npx cap sync android
+      - name: Fix gradlew permissions
+        script: chmod +x android/gradlew
+      - name: Build Android
+        script: |
+          cd android
+          ./gradlew bundleRelease
+    artifacts:
+      - android/app/build/outputs/**/*.aab
+   
