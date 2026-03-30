@@ -3,6 +3,8 @@ workflows:
     name: iOS Build
     max_build_duration: 120
     environment:
+      groups:
+        - ios-credentials
       node: 22
       xcode: latest
       cocoapods: default
@@ -28,8 +30,8 @@ workflows:
             -configuration Release \
             -archivePath ios/App/App.xcarchive \
             -allowProvisioningUpdates \
-            -authenticationKeyID $APP_STORE_CONNECT_KEY_IDENTIFIER \
-            -authenticationKeyIssuerID $APP_STORE_CONNECT_ISSUER_ID \
+            -authenticationKeyID "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
+            -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID" \
             -authenticationKeyPath /tmp/auth_key.p8 \
             archive \
             CODE_SIGN_STYLE=Automatic \
