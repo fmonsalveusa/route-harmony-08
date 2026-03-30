@@ -22,6 +22,7 @@ workflows:
           pod install
       - name: Build iOS
         script: |
+          echo "$APP_STORE_CONNECT_PRIVATE_KEY" > /tmp/auth_key.p8
           xcodebuild -workspace ios/App/App.xcworkspace \
             -scheme App \
             -configuration Release \
@@ -29,7 +30,7 @@ workflows:
             -allowProvisioningUpdates \
             -authenticationKeyID $APP_STORE_CONNECT_KEY_IDENTIFIER \
             -authenticationKeyIssuerID $APP_STORE_CONNECT_ISSUER_ID \
-            -authenticationKeyPath <(echo "$APP_STORE_CONNECT_PRIVATE_KEY") \
+            -authenticationKeyPath /tmp/auth_key.p8 \
             archive \
             CODE_SIGN_STYLE=Automatic \
             DEVELOPMENT_TEAM=AY3TN9N54Z
