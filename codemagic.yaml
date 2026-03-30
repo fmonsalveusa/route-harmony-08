@@ -101,10 +101,13 @@ workflows:
         script: npx cap sync android
       - name: Fix Java version globally
         script: |
-          find . -name "*.gradle" -not -path "*/\.*" | xargs grep -l "VERSION_21" | xargs sed -i 's/JavaVersion.VERSION_21/JavaVersion.VERSION_17/g'
-          cat >> android/gradle.properties << EOF
-          org.gradle.java.home=/usr/lib/jvm/java-17-openjdk-amd64
-          EOF
+          find . -name "*.gradle" -not -path "*/\.*" | while read f; do
+            sed -i 's/JavaVersion.VERSION_21/JavaVersion.VERSION_17/g' "$f"
+            sed -i 's/sourceCompatibility = 21/sourceCompatibility = 17/g' "$f"
+            sed -i 's/targetCompatibility = 21/targetCompatibility = 17/g' "$f"
+          done
+          echo "kotlin.jvm.target.validation.mode=WARNING" >> android/gradle.properties
+          echo "org.gradle.jvmargs=-Xmx4g" >> android/gradle.properties
       - name: Fix gradlew permissions
         script: chmod +x android/gradlew
       - name: Build Android
