@@ -84,7 +84,7 @@ workflows:
         issuer_id: $APP_STORE_CONNECT_ISSUER_ID
         submit_to_testflight: true
 
-android-workflow:
+  android-workflow:
     name: Android Build
     max_build_duration: 120
     environment:
