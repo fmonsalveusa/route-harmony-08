@@ -90,7 +90,7 @@ workflows:
     environment:
       groups:
         - ios-credentials
-      java: 17
+      java: 21
       node: 22
     scripts:
       - name: Install dependencies
