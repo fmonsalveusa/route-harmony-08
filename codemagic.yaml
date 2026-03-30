@@ -20,14 +20,16 @@ workflows:
         script: |
           cd ios/App
           pod install
-          - name: Build iOS
+      - name: Build iOS
         script: |
           xcodebuild -workspace ios/App/App.xcworkspace \
             -scheme App \
             -configuration Release \
             -archivePath ios/App/App.xcarchive \
             -allowProvisioningUpdates \
-            -authenticationKeyPath $CM_KEYCHAIN_PATH \
+            -authenticationKeyID $APP_STORE_CONNECT_KEY_IDENTIFIER \
+            -authenticationKeyIssuerID $APP_STORE_CONNECT_ISSUER_ID \
+            -authenticationKeyPath <(echo "$APP_STORE_CONNECT_PRIVATE_KEY") \
             archive \
             CODE_SIGN_STYLE=Automatic \
             DEVELOPMENT_TEAM=AY3TN9N54Z
