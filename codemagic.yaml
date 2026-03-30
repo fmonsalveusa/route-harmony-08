@@ -38,6 +38,7 @@ workflows:
             -archivePath ios/App/App.xcarchive \
             archive \
             CODE_SIGN_STYLE=Manual \
-            DEVELOPMENT_TEAM=AY3TN9N54Z
+            DEVELOPMENT_TEAM=AY3TN9N54Z \
+            PROVISIONING_PROFILE_SPECIFIER="919ea03f-6af7-41b2-87cf-b36e36867bb0"
     artifacts:
       - ios/App/App.xcarchive
