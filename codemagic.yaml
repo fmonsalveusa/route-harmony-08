@@ -84,7 +84,7 @@ workflows:
         issuer_id: $APP_STORE_CONNECT_ISSUER_ID
         submit_to_testflight: true
 
-  android-workflow:
+android-workflow:
     name: Android Build
     max_build_duration: 120
     environment:
@@ -110,10 +110,16 @@ workflows:
           echo "org.gradle.jvmargs=-Xmx4g" >> android/gradle.properties
       - name: Fix gradlew permissions
         script: chmod +x android/gradlew
+      - name: Set up Android keystore
+        script: |
+          echo "$ANDROID_KEYSTORE" | base64 --decode > $CM_BUILD_DIR/dispatch-up-driver.keystore
       - name: Build Android
         script: |
           cd android
-          ./gradlew bundleRelease
+          ./gradlew bundleRelease \
+            -Pandroid.injected.signing.store.file=$CM_BUILD_DIR/dispatch-up-driver.keystore \
+            -Pandroid.injected.signing.store.password=$ANDROID_KEYSTORE_PASSWORD \
+            -Pandroid.injected.signing.key.alias=$ANDROID_KEY_ALIAS \
+            -Pandroid.injected.signing.key.password=$ANDROID_KEY_PASSWORD
     artifacts:
       - android/app/build/outputs/**/*.aab
-   
