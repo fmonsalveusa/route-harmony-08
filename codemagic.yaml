@@ -75,10 +75,12 @@ workflows:
             -exportOptionsPlist /tmp/ExportOptions.plist \
             -exportPath ios/App/output
     artifacts:
-      - ios/App/App.ipa/*.ipa
+      - ios/App/output/**/*.ipa
+      - ios/App/App.xcarchive/**
     publishing:
       app_store_connect:
         api_key: $APP_STORE_CONNECT_PRIVATE_KEY
         key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
         issuer_id: $APP_STORE_CONNECT_ISSUER_ID
         submit_to_testflight: true
+        cancel_previous_submissions: true
