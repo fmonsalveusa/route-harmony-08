@@ -16,21 +16,41 @@ const isNativeApp = (() => {
   }
 })();
 
+const isInIframe = (() => {
+  try {
+    return window.self !== window.top;
+  } catch {
+    return true;
+  }
+})();
+
+const isPreviewHost =
+  typeof window !== "undefined" && window.location.hostname.includes("id-preview--");
+
+const cleanupServiceWorkers = async () => {
+  try {
+    if (
+      "serviceWorker" in navigator &&
+      typeof navigator.serviceWorker.getRegistrations === "function"
+    ) {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      await Promise.allSettled(registrations.map((registration) => registration.unregister()));
+    }
+
+    if ("caches" in window) {
+      const cacheKeys = await window.caches.keys();
+      await Promise.allSettled(cacheKeys.map((cacheKey) => window.caches.delete(cacheKey)));
+    }
+  } catch (error) {
+    console.warn("Service worker cleanup skipped:", error);
+  }
+};
+
 const setupServiceWorker = async () => {
   if (typeof window === "undefined") return;
 
-  if (isNativeApp) {
-    try {
-      if (
-        "serviceWorker" in navigator &&
-        typeof navigator.serviceWorker.getRegistrations === "function"
-      ) {
-        const registrations = await navigator.serviceWorker.getRegistrations();
-        await Promise.allSettled(registrations.map((registration) => registration.unregister()));
-      }
-    } catch (error) {
-      console.warn("Skipping service worker cleanup on native platform:", error);
-    }
+  if (isNativeApp || isInIframe || isPreviewHost) {
+    await cleanupServiceWorkers();
     return;
   }
 
@@ -40,8 +60,8 @@ const setupServiceWorker = async () => {
     const { registerSW } = await import("virtual:pwa-register");
     const updateSW = registerSW({
       onNeedRefresh() {
-        console.log("New version available - notifying user");
-        window.dispatchEvent(new CustomEvent("sw-update-available"));
+        console.log("New version available - updating now");
+        void updateSW(true);
       },
       onOfflineReady() {
         console.log("App ready for offline use");
@@ -53,9 +73,16 @@ const setupServiceWorker = async () => {
       void updateSW(true);
     });
 
-    window.setInterval(() => {
+    const checkForUpdates = () => {
       void updateSW();
-    }, 5 * 60 * 1000);
+    };
+
+    window.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") checkForUpdates();
+    });
+
+    window.addEventListener("focus", checkForUpdates);
+    window.setInterval(checkForUpdates, 5 * 60 * 1000);
   } catch (error) {
     console.error("Service worker setup failed:", error);
   }
