@@ -25,9 +25,9 @@ export default defineConfig(({ mode }) => ({
       registerType: "autoUpdate",
       includeAssets: ["favicon.png", "favicon.ico"],
       manifest: {
-        name: "Load Up Driver",
-        short_name: "LoadUp",
-        description: "Driver mobile app for Load Up TMS",
+        name: "Dispatch Up Driver",
+        short_name: "DispatchUp",
+        description: "Driver mobile app for Dispatch Up TMS",
         theme_color: "#1e3a5f",
         background_color: "#f5f7fa",
         display: "standalone",
