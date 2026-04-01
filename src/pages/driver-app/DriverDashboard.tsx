@@ -89,6 +89,9 @@ export default function DriverDashboard() {
     return colors[status] || 'border-l-accent';
   };
 
+  // Investors see their dedicated dashboard
+  if (role === 'investor') return <InvestorDashboard />;
+
   return (
     <PullToRefresh onRefresh={fetchData}>
       <div className="p-5 space-y-4 pb-[calc(72px+env(safe-area-inset-bottom,0px))]">
