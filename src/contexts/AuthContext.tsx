@@ -4,14 +4,6 @@ import { User, Session } from '@supabase/supabase-js';
 
 export type AppRole = 'master_admin' | 'admin' | 'accounting' | 'dispatcher' | 'driver' | 'investor';
 
-const isLovablePreview =
-  typeof window !== 'undefined' &&
-  (window.location.hostname.includes('lovableproject.com') ||
-    window.location.hostname.includes('lovable.app') ||
-    window.location.search.includes('__lovable_token'));
-
-const PREVIEW_LOGIN_RELOAD_KEY = 'lovable_preview_login_reload_done';
-
 export interface Profile {
   id: string;
   full_name: string;
@@ -108,28 +100,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setSubscription(null);
   };
 
-  const forcePreviewHardReloadAfterLogin = () => {
-    if (!isLovablePreview) return false;
-
-    try {
-      if (sessionStorage.getItem(PREVIEW_LOGIN_RELOAD_KEY) === '1') return false;
-      sessionStorage.setItem(PREVIEW_LOGIN_RELOAD_KEY, '1');
-
-      const url = new URL(window.location.href);
-      url.searchParams.set('__preview_nocache', String(Date.now()));
-      window.location.replace(url.toString());
-      return true;
-    } catch (error) {
-      console.warn('[AuthContext] Preview hard reload fallback:', error);
-      window.location.reload();
-      return true;
-    }
-  };
-
   const fetchUserData = async (userId: string, retries = 3): Promise<boolean> => {
     for (let attempt = 1; attempt <= retries; attempt++) {
       try {
-        // Fetch profile
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('*')
@@ -138,7 +111,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         if (profileError) throw profileError;
 
-        // If auth user exists but profile does not, stop infinite "Connecting" loop
         if (!profileData) {
           console.error('[AuthContext] Profile not found for authenticated user');
           clearUserState();
@@ -151,7 +123,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         profileLoadedRef.current = true;
         setProfile(profileData as Profile);
 
-        // Fetch role
         const { data: roleData } = await supabase
           .from('user_roles')
           .select('role')
@@ -161,7 +132,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const userRole = (roleData?.role as AppRole) || (profileData.is_master_admin ? 'master_admin' : 'admin');
         setRole(userRole);
 
-        // Fetch tenant info if user has a tenant
         if (profileData.tenant_id) {
           const { data: tenantData } = await supabase
             .from('tenants')
@@ -171,7 +141,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
           if (tenantData) setTenant(tenantData as TenantInfo);
 
-          // Fetch subscription
           const { data: subData } = await supabase
             .from('subscriptions')
             .select('plan, status, max_users, max_trucks, price_monthly, next_payment_date')
@@ -181,18 +150,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           if (subData) setSubscription(subData as SubscriptionInfo);
         }
 
-        return true; // success – exit loop
+        return true;
       } catch (err) {
         console.warn(`[AuthContext] fetchUserData attempt ${attempt}/${retries} failed:`, err);
         if (attempt < retries) {
-          await new Promise(r => setTimeout(r, 2000 * attempt)); // backoff 2s, 4s
+          await new Promise(r => setTimeout(r, 2000 * attempt));
         } else {
           console.error('[AuthContext] All retry attempts exhausted');
         }
       }
     }
 
-    // Hard fail fallback: avoid getting stuck on AppLayout "Connecting..."
     clearUserState();
     setUser(null);
     setSession(null);
@@ -224,45 +192,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return result;
     };
 
-    // First, get the initial session synchronously
     supabase.auth.getSession().then(({ data: { session } }) => {
       initialSessionHandled = true;
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        if (forcePreviewHardReloadAfterLogin()) return;
         fetchWithTimeout(session.user.id).finally(() => setLoading(false));
       } else {
         setLoading(false);
       }
     });
 
-    // Then listen for future auth changes (sign in, sign out, token refresh)
     const { data: { subscription: authSub } } = supabase.auth.onAuthStateChange((event, session) => {
       console.log('[AuthContext] onAuthStateChange event:', event);
 
-      // Skip the initial INITIAL_SESSION event since we handle it above
       if (!initialSessionHandled && event === 'INITIAL_SESSION') {
         return;
       }
 
-      // Token refresh and repeated SIGNED_IN (tab switch) should NOT reset loading
-      // This prevents dialogs/forms from being unmounted when switching tabs
       if (event === 'TOKEN_REFRESHED') {
         setSession(session);
         return;
       }
 
-      // If user is already signed in and we get another SIGNED_IN event
-      // (happens when switching tabs), just update session silently
       if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
-        if (event === 'SIGNED_IN' && session?.user && forcePreviewHardReloadAfterLogin()) {
-          return;
-        }
-
         setSession(session);
         setUser(session?.user ?? null);
-        // Only fetch data if we haven't loaded a profile yet (first sign in)
         if (!profileLoadedRef.current && session?.user) {
           setLoading(true);
           setTimeout(() => {
@@ -272,7 +227,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
-      // SIGNED_OUT or other events
       setSession(session);
       setUser(session?.user ?? null);
 
@@ -312,9 +266,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
-    if (isLovablePreview) {
-      sessionStorage.removeItem(PREVIEW_LOGIN_RELOAD_KEY);
-    }
     await supabase.auth.signOut();
   };
 
@@ -328,7 +279,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (p === permission) return true;
       if (p.endsWith('.*') && permission.startsWith(p.replace('.*', ''))) return true;
       if (p.endsWith('*') && permission.startsWith(p.replace('*', ''))) return true;
-      // Also match if a role permission starts with the requested permission (e.g. 'dashboard.full' matches 'dashboard')
       if (p.startsWith(permission + '.') || p.startsWith(permission + '*')) return true;
       return false;
     });
