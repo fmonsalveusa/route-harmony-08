@@ -347,7 +347,7 @@ const Loads = () => {
               <thead><tr className="border-b glass-table-header">
                 <th className="w-8 p-3"></th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Load #</th>
-                <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Driver/Truck</th>
+                <th className="text-left p-3 font-medium text-muted-foreground">Driver/Truck</th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Broker</th>
                 <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Origin</th>
                 <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Destination</th>
