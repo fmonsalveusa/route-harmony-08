@@ -445,6 +445,7 @@ export type Database = {
           email: string
           emergency_contact_name: string | null
           emergency_phone: string | null
+          employment_contract_url: string | null
           factoring_percentage: number
           form_w9_url: string | null
           hire_date: string
@@ -486,6 +487,7 @@ export type Database = {
           email: string
           emergency_contact_name?: string | null
           emergency_phone?: string | null
+          employment_contract_url?: string | null
           factoring_percentage?: number
           form_w9_url?: string | null
           hire_date?: string
@@ -527,6 +529,7 @@ export type Database = {
           email?: string
           emergency_contact_name?: string | null
           emergency_phone?: string | null
+          employment_contract_url?: string | null
           factoring_percentage?: number
           form_w9_url?: string | null
           hire_date?: string
@@ -1272,6 +1275,7 @@ export type Database = {
           driver_phone: string | null
           expires_at: string
           id: string
+          service_type: string
           status: string
           tenant_id: string
           token: string
@@ -1286,6 +1290,7 @@ export type Database = {
           driver_phone?: string | null
           expires_at?: string
           id?: string
+          service_type?: string
           status?: string
           tenant_id: string
           token?: string
@@ -1300,6 +1305,7 @@ export type Database = {
           driver_phone?: string | null
           expires_at?: string
           id?: string
+          service_type?: string
           status?: string
           tenant_id?: string
           token?: string

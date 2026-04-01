@@ -10,9 +10,10 @@ import { Button } from '@/components/ui/button';
 import { LoadProgressBar } from '@/components/driver-app/LoadProgressBar';
 import { PullToRefresh } from '@/components/driver-app/PullToRefresh';
 import { format, isPast, addDays } from 'date-fns';
+import InvestorDashboard from './InvestorDashboard';
 
 export default function DriverDashboard() {
-  const { profile } = useAuth();
+  const { profile, role } = useAuth();
   const navigate = useNavigate();
   const [driver, setDriver] = useState<any>(null);
   const [activeLoads, setActiveLoads] = useState<any[]>([]);
@@ -87,6 +88,9 @@ export default function DriverDashboard() {
     };
     return colors[status] || 'border-l-accent';
   };
+
+  // Investors see their dedicated dashboard
+  if (role === 'investor') return <InvestorDashboard />;
 
   return (
     <PullToRefresh onRefresh={fetchData}>

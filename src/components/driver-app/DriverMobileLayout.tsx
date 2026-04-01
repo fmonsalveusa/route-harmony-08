@@ -12,7 +12,7 @@ import { initPushNotifications } from '@/lib/nativePushNotifications';
 import { useTheme } from 'next-themes';
 
 const allTabs = [
-  { label: 'Home', icon: LayoutDashboard, path: '/driver', roles: ['driver'] },
+  { label: 'Home', icon: LayoutDashboard, path: '/driver', roles: ['driver', 'investor'] },
   { label: 'Loads', icon: Package, path: '/driver/loads', roles: ['driver'] },
   { label: 'Tracking', icon: MapPin, path: '/driver/tracking', roles: ['driver'] },
   { label: 'Payments', icon: DollarSign, path: '/driver/payments', roles: ['driver', 'investor'] },
