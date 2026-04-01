@@ -57,8 +57,8 @@ function PaymentList({ payments }: { payments: DriverPayment[] }) {
                   {p.status === 'paid' ? 'Paid' : 'Pending'}
                 </Badge>
               </div>
-              {p.recipient_name && (
-                <p className="text-xs text-muted-foreground">Driver: {p.recipient_name}</p>
+              {(p.driver_name || p.recipient_name) && (
+                <p className="text-xs text-muted-foreground">Driver: {p.driver_name || p.recipient_name}</p>
               )}
               <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                 <MapPin className="h-3.5 w-3.5 shrink-0" />
