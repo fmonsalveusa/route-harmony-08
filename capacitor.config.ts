@@ -8,7 +8,7 @@ const config: CapacitorConfig = {
     useLegacyBridge: true,
   },
   server: {
-    url: 'https://091db514-2f77-4b42-adb8-8401c76bdec5.lovableproject.com?forceHideBadge=true',
+    url: 'https://www.dispatch-up.com/',
     cleartext: true,
   },
   plugins: {
