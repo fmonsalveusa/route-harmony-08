@@ -63,6 +63,20 @@ const queryClient = new QueryClient({
   },
 });
 
+const withTimeout = <T,>(promise: PromiseLike<T>, fallback: T, label: string, timeoutMs = 8000) =>
+  Promise.race<T>([
+    Promise.resolve(promise).catch((error) => {
+      console.warn(`[App] ${label} failed:`, error);
+      return fallback;
+    }),
+    new Promise<T>((resolve) => {
+      window.setTimeout(() => {
+        console.warn(`[App] ${label} timed out`);
+        resolve(fallback);
+      }, timeoutMs);
+    }),
+  ]);
+
 const LoadingScreen = () => (
   <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-background text-foreground">
     <div className="animate-spin rounded-full h-8 w-8 border-2 border-muted border-t-foreground" />
@@ -76,18 +90,39 @@ const ProtectedRoute = ({ children, masterOnly = false }: { children: React.Reac
   const currentPath = window.location.pathname;
 
   useEffect(() => {
+    let cancelled = false;
+
     const check = async () => {
       if (!profile?.tenant_id || profile.is_master_admin) {
-        setCompanyCheck({ loaded: true, hasCompany: true });
+        if (!cancelled) setCompanyCheck({ loaded: true, hasCompany: true });
         return;
       }
-      const { count } = await supabase
-        .from('companies')
-        .select('id', { count: 'exact', head: true })
-        .eq('tenant_id', profile.tenant_id);
-      setCompanyCheck({ loaded: true, hasCompany: (count ?? 0) > 0 });
+
+      if (!cancelled) setCompanyCheck({ loaded: false, hasCompany: true });
+
+      const result = await withTimeout(
+        supabase
+          .from("companies")
+          .select("id", { count: "exact", head: true })
+          .eq("tenant_id", profile.tenant_id),
+        { count: 1, error: new Error("company_check_timeout") } as { count: number | null; error: Error | null },
+        "company check"
+      );
+
+      if (cancelled) return;
+
+      if (result.error) {
+        console.warn("[App] Company check fallback used:", result.error);
+      }
+
+      setCompanyCheck({ loaded: true, hasCompany: (result.count ?? 1) > 0 });
     };
-    if (profile) check();
+
+    void check();
+
+    return () => {
+      cancelled = true;
+    };
   }, [profile?.tenant_id, profile?.is_master_admin]);
 
   if (loading || !companyCheck.loaded) {
@@ -124,22 +159,47 @@ const SuspendedScreen = () => (
 );
 
 const DriverWrapper = () => {
-  const { user, loading, role, isMasterAdmin, tenant, profile } = useAuth();
+  const { user, loading, role, isMasterAdmin, profile } = useAuth();
   const [subStatus, setSubStatus] = useState<string | null>(null);
   const [subLoading, setSubLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
+
     const checkSub = async () => {
-      if (!profile?.tenant_id) { setSubLoading(false); return; }
-      const { data } = await supabase
-        .from('tenants')
-        .select('subscription_status')
-        .eq('id', profile.tenant_id)
-        .maybeSingle();
-      setSubStatus((data as any)?.subscription_status || null);
+      if (!profile?.tenant_id) {
+        if (!cancelled) setSubLoading(false);
+        return;
+      }
+
+      const result = await withTimeout(
+        supabase
+          .from("tenants")
+          .select("subscription_status")
+          .eq("id", profile.tenant_id)
+          .maybeSingle(),
+        { data: null, error: new Error("subscription_check_timeout") } as {
+          data: { subscription_status?: string } | null;
+          error: Error | null;
+        },
+        "subscription check"
+      );
+
+      if (cancelled) return;
+
+      if (result.error) {
+        console.warn("[App] Subscription check fallback used:", result.error);
+      }
+
+      setSubStatus(result.data?.subscription_status || null);
       setSubLoading(false);
     };
-    checkSub();
+
+    void checkSub();
+
+    return () => {
+      cancelled = true;
+    };
   }, [profile?.tenant_id]);
 
   if (loading || subLoading) {
@@ -243,7 +303,7 @@ const App = () => {
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
-      <UpdatePrompt />
+          <UpdatePrompt />
           <Toaster />
           <Sonner />
           <AuthProvider>
