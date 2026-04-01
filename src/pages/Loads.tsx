@@ -378,7 +378,7 @@ const Loads = () => {
                             {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                           </td>
                           <td className="p-3 font-medium text-primary">{load.reference_number}</td>
-                          <td className="p-3 hidden md:table-cell">
+                          <td className="p-3">
                             <div className="text-base font-bold text-foreground">{driver?.name || <span className="text-muted-foreground italic font-normal">Sin asignar</span>}</div>
                             <div className="text-muted-foreground text-xs">{trucks.find(t => t.id === load.truck_id)?.unit_number ? `Unit #${trucks.find(t => t.id === load.truck_id)!.unit_number}` : '—'}</div>
                           </td>
