@@ -84,8 +84,8 @@ function RecentPayments({ payments }: { payments: DriverPayment[] }) {
             <CardContent className="p-3 flex items-center justify-between">
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-bold">Load #{p.load_reference}</p>
-                {p.recipient_name && (
-                  <p className="text-xs text-muted-foreground truncate">Driver: {p.recipient_name}</p>
+                {(p.driver_name || p.recipient_name) && (
+                  <p className="text-xs text-muted-foreground truncate">Driver: {p.driver_name || p.recipient_name}</p>
                 )}
               </div>
               <div className="text-right flex flex-col items-end gap-1">

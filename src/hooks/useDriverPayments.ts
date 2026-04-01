@@ -17,6 +17,7 @@ export interface DriverPayment {
   net_amount?: number;
   total_adjustments?: number;
   recipient_name?: string;
+  driver_name?: string;
 }
 
 async function enrichPayments(data: any[]): Promise<DriverPayment[]> {
@@ -26,11 +27,19 @@ async function enrichPayments(data: any[]): Promise<DriverPayment[]> {
   const paymentIds = data.map(p => p.id);
 
   const [{ data: loads }, { data: adjustments }] = await Promise.all([
-    supabase.from('loads').select('id, origin, destination').in('id', loadIds),
+    supabase.from('loads').select('id, origin, destination, driver_id').in('id', loadIds),
     supabase.from('payment_adjustments').select('*').in('payment_id', paymentIds),
   ]);
 
   const loadMap = new Map((loads || []).map((l: any) => [l.id, l]));
+
+  // Fetch driver names for loads
+  const driverIds = [...new Set((loads || []).map((l: any) => l.driver_id).filter(Boolean))];
+  const { data: drivers } = driverIds.length
+    ? await supabase.from('drivers').select('id, name').in('id', driverIds)
+    : { data: [] as any[] };
+  const driverMap = new Map((drivers || []).map((d: any) => [d.id, d.name]));
+
   const adjMap = new Map<string, number>();
   for (const adj of (adjustments || []) as any[]) {
     const current = adjMap.get(adj.payment_id) || 0;
@@ -45,6 +54,7 @@ async function enrichPayments(data: any[]): Promise<DriverPayment[]> {
       ...p,
       origin: load?.origin || '',
       destination: load?.destination || '',
+      driver_name: load ? driverMap.get(load.driver_id) || '' : '',
       total_adjustments: totalAdj,
       net_amount: p.amount + totalAdj,
     };
