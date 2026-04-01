@@ -1,18 +1,30 @@
 
 
-## Mostrar columna de Driver en la tabla de Loads en todas las pantallas
+## Layout móvil optimizado para administrador
 
 ### Problema
-La columna "Driver/Truck" en la tabla de Loads tiene la clase `hidden md:table-cell`, lo que la oculta en pantallas menores a 768px. Como el administrador usa el layout web estándar (no el layout móvil optimizado), al entrar desde un teléfono esta columna desaparece.
+Cuando un admin usa la app desde el teléfono, ve el dashboard web completo con menú hamburguesa. La experiencia no es nativa — no hay barra de navegación inferior como la de los drivers.
 
 ### Solución
-Hacer que la columna Driver siempre sea visible, independientemente del tamaño de pantalla. Se mantendrá el nombre del truck como dato secundario pero se simplificará en pantallas pequeñas.
+Agregar una barra de navegación inferior (bottom tab bar) en `AppLayout` que aparezca solo en pantallas móviles (`< 768px`), con las 5 secciones más usadas por el admin. El menú hamburguesa seguirá disponible para acceder a todas las demás páginas.
 
 ### Cambios
 
-**`src/pages/Loads.tsx`**
-1. En el header de la tabla (línea 350): quitar `hidden md:table-cell` de la columna "Driver/Truck" para que siempre sea visible
-2. En la celda de datos (línea 381): quitar `hidden md:table-cell` para que siempre se muestre el nombre del driver y truck
+**`src/components/AppLayout.tsx`**
+1. Importar `useIsMobile` desde `@/hooks/use-mobile`
+2. Agregar una barra de tabs inferior visible solo en móvil (`lg:hidden`) con 5 tabs principales:
+   - Dashboard (`/dashboard`)
+   - Loads (`/loads`)
+   - Fleet (`/fleet`)
+   - Payments (`/payments`)
+   - More (abre el menú hamburguesa existente)
+3. Para rutas master, los tabs serán: Dashboard (`/master`), Companies (`/master/tenants`), Stats (`/master/stats`), Billing (`/master/billing`), Settings (`/master/settings`)
+4. Agregar `pb-[72px] lg:pb-0` al `<main>` para dejar espacio al bottom bar en móvil
+5. Estilo similar al `DriverMobileLayout`: barra fija abajo, iconos + labels, indicador naranja activo, `safe-area-pb`
 
-Esto asegura que el nombre del driver siempre aparezca en la tabla, tanto en desktop como en móvil.
+### Detalle técnico
+- La barra solo se renderiza en `< lg` (móvil/tablet)
+- El botón "More" reutiliza `setMobileMenuOpen(true)` para abrir el overlay existente
+- No se modifica ninguna otra página — solo `AppLayout`
+- Los tabs se filtran por permisos igual que la nav actual
 
