@@ -454,9 +454,57 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
       )}
 
       {/* ── Main content ── */}
-      <main className="flex-1 overflow-y-auto p-4 lg:p-6">
+      <main className="flex-1 overflow-y-auto p-4 lg:p-6 pb-[88px] lg:pb-6">
         {children}
       </main>
+
+      {/* ── Bottom tab bar (mobile only) ── */}
+      <nav
+        className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-card border-t border-border flex items-end justify-around"
+        style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom, 0.5rem))' }}
+      >
+        {(useMasterNav
+          ? [
+              { label: 'Dashboard', icon: LayoutDashboard, path: '/master', perm: 'master' },
+              { label: 'Companies', icon: Building2, path: '/master/tenants', perm: 'master' },
+              { label: 'Stats', icon: BarChart3, path: '/master/stats', perm: 'master' },
+              { label: 'Billing', icon: CreditCard, path: '/master/billing', perm: 'master' },
+              { label: 'Settings', icon: Settings, path: '/master/settings', perm: 'master' },
+            ]
+          : [
+              { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', perm: 'dashboard' },
+              { label: 'Loads', icon: Package, path: '/loads', perm: 'loads' },
+              { label: 'Fleet', icon: Truck, path: '/fleet', perm: 'fleet' },
+              { label: 'Payments', icon: DollarSign, path: '/payments', perm: 'payments.drivers' },
+            ]
+        )
+          .filter((t) => hasPermission(t.perm))
+          .map((tab) => {
+            const active = location.pathname === tab.path;
+            return (
+              <Link
+                key={tab.path}
+                to={tab.path}
+                className={`flex flex-col items-center gap-0.5 pt-2 px-3 min-w-[56px] transition-colors ${
+                  active ? 'text-primary' : 'text-muted-foreground'
+                }`}
+              >
+                <tab.icon className="h-5 w-5" />
+                <span className="text-[10px] font-medium leading-tight">{tab.label}</span>
+                {active && <span className="block h-0.5 w-5 rounded-full bg-primary mt-0.5" />}
+              </Link>
+            );
+          })}
+        {!useMasterNav && (
+          <button
+            onClick={() => setMobileMenuOpen(true)}
+            className="flex flex-col items-center gap-0.5 pt-2 px-3 min-w-[56px] text-muted-foreground"
+          >
+            <MoreHorizontal className="h-5 w-5" />
+            <span className="text-[10px] font-medium leading-tight">More</span>
+          </button>
+        )}
+      </nav>
 
       <LoadFormDialog
         open={loadDialogOpen}
