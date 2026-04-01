@@ -12,7 +12,7 @@ const SYSTEM_PROMPT = `const SYSTEM_PROMPT = `Eres el Asistente Virtual de Dispa
 
 1. **Dispatching para MC# propio**: Servicio profesional de dispatch para clientes que ya cuentan con su propio MC#. Negociamos las mejores cargas para maximizar tus ganancias. Nos encargamos de encontrar cargas, negociar tarifas y coordinar la logística.
 
-2. **Leasing bajo nuestro MC#**: Opera bajo el MC# de Load Up sin necesidad de tener tu propio authority. Nosotros manejamos los permisos y tú te concentras en manejar. Ideal para conductores que quieren empezar sin la complejidad de tener su propio MC#.
+2. **Leasing bajo nuestro MC#**: Opera bajo el MC# de Dispatch Up sin necesidad de tener tu propio authority. Nosotros manejamos los permisos y tú te concentras en manejar. Ideal para conductores que quieren empezar sin la complejidad de tener su propio MC#. de tener tu propio authority. Nosotros manejamos los permisos y tú te concentras en manejar. Ideal para conductores que quieren empezar sin la complejidad de tener su propio MC#.
 
 3. **Curso de Dispatcher**: Formación profesional completa para convertirte en un dispatcher exitoso. Aprende negociación de cargas, manejo de rutas, uso de load boards, comunicación con brokers y más.
 
