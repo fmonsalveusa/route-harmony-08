@@ -1,23 +1,18 @@
 
 
-## Corregir nombre de la app de "Load Up" a "Dispatch Up"
+## Mostrar columna de Driver en la tabla de Loads en todas las pantallas
 
-El nombre "Load Up" aparece en varios lugares que controlan cómo se muestra la app al instalarla como PWA en iPhone y Android. Se necesita actualizar a "Dispatch Up" en todos ellos.
+### Problema
+La columna "Driver/Truck" en la tabla de Loads tiene la clase `hidden md:table-cell`, lo que la oculta en pantallas menores a 768px. Como el administrador usa el layout web estándar (no el layout móvil optimizado), al entrar desde un teléfono esta columna desaparece.
+
+### Solución
+Hacer que la columna Driver siempre sea visible, independientemente del tamaño de pantalla. Se mantendrá el nombre del truck como dato secundario pero se simplificará en pantallas pequeñas.
 
 ### Cambios
 
-**1. `vite.config.ts`** — Manifest PWA
-- `name`: "Load Up Driver" → "Dispatch Up Driver"
-- `short_name`: "LoadUp" → "DispatchUp"
-- `description`: "Driver mobile app for Load Up TMS" → "Driver mobile app for Dispatch Up TMS"
+**`src/pages/Loads.tsx`**
+1. En el header de la tabla (línea 350): quitar `hidden md:table-cell` de la columna "Driver/Truck" para que siempre sea visible
+2. En la celda de datos (línea 381): quitar `hidden md:table-cell` para que siempre se muestre el nombre del driver y truck
 
-**2. `index.html`** — Meta tags
-- `apple-mobile-web-app-title`: "Load Up Driver" → "Dispatch Up Driver"
-- `og:title`: "Load Up TMS" → "Dispatch Up TMS"
-
-**3. `ios/App/App/public/manifest.webmanifest`** (copia estática para iOS nativo)
-- `name`: "Load Up Driver" → "Dispatch Up Driver"
-- `short_name`: "LoadUp" → "DispatchUp"
-
-Nota: después de publicar, los usuarios que ya instalaron la PWA con el nombre anterior necesitarán desinstalar y reinstalar para ver el nuevo nombre.
+Esto asegura que el nombre del driver siempre aparezca en la tabla, tanto en desktop como en móvil.
 
