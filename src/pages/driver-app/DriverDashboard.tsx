@@ -10,15 +10,10 @@ import { Button } from '@/components/ui/button';
 import { LoadProgressBar } from '@/components/driver-app/LoadProgressBar';
 import { PullToRefresh } from '@/components/driver-app/PullToRefresh';
 import { format, isPast, addDays } from 'date-fns';
+import InvestorDashboard from './InvestorDashboard';
 
 export default function DriverDashboard() {
   const { profile, role } = useAuth();
-
-  // Investors see their dedicated dashboard
-  if (role === 'investor') {
-    const InvestorDashboard = require('./InvestorDashboard').default;
-    return <InvestorDashboard />;
-  }
   const navigate = useNavigate();
   const [driver, setDriver] = useState<any>(null);
   const [activeLoads, setActiveLoads] = useState<any[]>([]);
