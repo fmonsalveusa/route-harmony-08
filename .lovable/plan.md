@@ -1,30 +1,20 @@
 
 
-## Layout móvil optimizado para administrador
+## Actualizar el chatbot de la landing a "Dispatch Up"
 
 ### Problema
-Cuando un admin usa la app desde el teléfono, ve el dashboard web completo con menú hamburguesa. La experiencia no es nativa — no hay barra de navegación inferior como la de los drivers.
+El archivo `supabase/functions/landing-chat/index.ts` todavía usa "Load Up" en el prompt del sistema del chatbot AI. Es el único lugar donde queda el nombre viejo en el código. Los componentes de la landing ya dicen "Dispatch Up" correctamente.
 
-### Solución
-Agregar una barra de navegación inferior (bottom tab bar) en `AppLayout` que aparezca solo en pantallas móviles (`< 768px`), con las 5 secciones más usadas por el admin. El menú hamburguesa seguirá disponible para acceder a todas las demás páginas.
+Si en el preview ves "Load Up" en la landing misma, es un tema de caché del navegador — un hard refresh (Ctrl+Shift+R) lo resuelve.
 
-### Cambios
+### Cambio
 
-**`src/components/AppLayout.tsx`**
-1. Importar `useIsMobile` desde `@/hooks/use-mobile`
-2. Agregar una barra de tabs inferior visible solo en móvil (`lg:hidden`) con 5 tabs principales:
-   - Dashboard (`/dashboard`)
-   - Loads (`/loads`)
-   - Fleet (`/fleet`)
-   - Payments (`/payments`)
-   - More (abre el menú hamburguesa existente)
-3. Para rutas master, los tabs serán: Dashboard (`/master`), Companies (`/master/tenants`), Stats (`/master/stats`), Billing (`/master/billing`), Settings (`/master/settings`)
-4. Agregar `pb-[72px] lg:pb-0` al `<main>` para dejar espacio al bottom bar en móvil
-5. Estilo similar al `DriverMobileLayout`: barra fija abajo, iconos + labels, indicador naranja activo, `safe-area-pb`
+**`supabase/functions/landing-chat/index.ts`**
+- Reemplazar todas las menciones de "Load Up" por "Dispatch Up" en el `SYSTEM_PROMPT` (líneas 9, 15, 25, 32):
+  - "Asistente Virtual de **Dispatch Up**"
+  - "Opera bajo el MC# de **Dispatch Up**"
+  - "**Dispatch Up** TMS"
+  - "Responde SOLO sobre los servicios de **Dispatch Up**"
 
-### Detalle técnico
-- La barra solo se renderiza en `< lg` (móvil/tablet)
-- El botón "More" reutiliza `setMobileMenuOpen(true)` para abrir el overlay existente
-- No se modifica ninguna otra página — solo `AppLayout`
-- Los tabs se filtran por permisos igual que la nav actual
+Esto es un cambio backend (edge function) que se despliega automáticamente.
 
