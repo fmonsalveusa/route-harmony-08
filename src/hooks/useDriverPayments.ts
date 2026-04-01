@@ -17,6 +17,7 @@ export interface DriverPayment {
   net_amount?: number;
   total_adjustments?: number;
   recipient_name?: string;
+  driver_name?: string;
 }
 
 async function enrichPayments(data: any[]): Promise<DriverPayment[]> {
