@@ -157,19 +157,30 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
 
   const triggerCamera = async () => {
     if (isNativeCamera()) {
-      const dataUrl = await takeNativePhoto();
-      if (!dataUrl) return;
-      setProcessing(true);
       try {
-        const resized = await resizeForCrop(dataUrl);
-        setCropImage(resized);
-        setCropCorners({ ...DEFAULT_CORNERS });
-        setProcessing(false);
-        detectEdges(resized);
-      } catch (err) {
-        console.error('Error processing native camera image:', err);
-        toast({ title: 'Error procesando imagen', variant: 'destructive' });
-        setProcessing(false);
+        const dataUrl = await takeNativePhoto();
+        if (!dataUrl) return;
+        setProcessing(true);
+        try {
+          const resized = await resizeForCrop(dataUrl);
+          setCropImage(resized);
+          setCropCorners({ ...DEFAULT_CORNERS });
+          setProcessing(false);
+          detectEdges(resized);
+        } catch (err) {
+          console.error('Error processing native camera image:', err);
+          toast({ title: 'Error procesando imagen', variant: 'destructive' });
+          setProcessing(false);
+        }
+      } catch (err: any) {
+        console.error('Camera access error:', err);
+        toast({
+          title: 'Error de cámara',
+          description: err?.message?.includes('PERMISSION_DENIED')
+            ? 'Permiso de cámara denegado. Habilítalo en Configuración > Privacidad > Cámara.'
+            : `No se pudo abrir la cámara: ${err?.message || 'Error desconocido'}`,
+          variant: 'destructive',
+        });
       }
       return;
     }
@@ -178,19 +189,30 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
 
   const triggerGallery = async () => {
     if (isNativeCamera()) {
-      const urls = await pickFromGallery();
-      if (urls.length === 0) return;
-      setProcessing(true);
       try {
-        const resized = await resizeForCrop(urls[0]);
-        setCropImage(resized);
-        setCropCorners({ ...DEFAULT_CORNERS });
-        setProcessing(false);
-        detectEdges(resized);
-      } catch (err) {
-        console.error('Error processing native gallery image:', err);
-        toast({ title: 'Error procesando imagen', variant: 'destructive' });
-        setProcessing(false);
+        const urls = await pickFromGallery();
+        if (urls.length === 0) return;
+        setProcessing(true);
+        try {
+          const resized = await resizeForCrop(urls[0]);
+          setCropImage(resized);
+          setCropCorners({ ...DEFAULT_CORNERS });
+          setProcessing(false);
+          detectEdges(resized);
+        } catch (err) {
+          console.error('Error processing native gallery image:', err);
+          toast({ title: 'Error procesando imagen', variant: 'destructive' });
+          setProcessing(false);
+        }
+      } catch (err: any) {
+        console.error('Gallery access error:', err);
+        toast({
+          title: 'Error de galería',
+          description: err?.message?.includes('PERMISSION_DENIED')
+            ? 'Permiso de fotos denegado. Habilítalo en Configuración > Privacidad > Fotos.'
+            : `No se pudo abrir la galería: ${err?.message || 'Error desconocido'}`,
+          variant: 'destructive',
+        });
       }
       return;
     }
@@ -414,15 +436,15 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
       {/* Actions */}
       <div className="flex flex-wrap gap-2 px-4 pt-3 bg-black/90 justify-center" style={{ paddingBottom: bottomSafePadding }}>
         <Button variant="outline" size="sm" onClick={triggerCamera}
-          className="gap-1.5 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20">
-          <Camera className="h-4 w-4" />
-          {pages.length === 0 ? 'Cámara' : '+ Cámara'}
+          className="gap-1.5 text-xs bg-white/10 border-white/20 !text-white hover:bg-white/20 min-h-[44px] min-w-[44px]">
+          <Camera className="h-5 w-5 text-white" />
+          <span className="text-white">{pages.length === 0 ? 'Cámara' : '+ Cámara'}</span>
         </Button>
 
         <Button variant="outline" size="sm" onClick={triggerGallery}
-          className="gap-1.5 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20">
-          <ImageIcon className="h-4 w-4" />
-          {pages.length === 0 ? 'Galería' : '+ Galería'}
+          className="gap-1.5 text-xs bg-white/10 border-white/20 !text-white hover:bg-white/20 min-h-[44px] min-w-[44px]">
+          <ImageIcon className="h-5 w-5 text-white" />
+          <span className="text-white">{pages.length === 0 ? 'Galería' : '+ Galería'}</span>
         </Button>
 
         {currentPage && (
