@@ -157,19 +157,30 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
 
   const triggerCamera = async () => {
     if (isNativeCamera()) {
-      const dataUrl = await takeNativePhoto();
-      if (!dataUrl) return;
-      setProcessing(true);
       try {
-        const resized = await resizeForCrop(dataUrl);
-        setCropImage(resized);
-        setCropCorners({ ...DEFAULT_CORNERS });
-        setProcessing(false);
-        detectEdges(resized);
-      } catch (err) {
-        console.error('Error processing native camera image:', err);
-        toast({ title: 'Error procesando imagen', variant: 'destructive' });
-        setProcessing(false);
+        const dataUrl = await takeNativePhoto();
+        if (!dataUrl) return;
+        setProcessing(true);
+        try {
+          const resized = await resizeForCrop(dataUrl);
+          setCropImage(resized);
+          setCropCorners({ ...DEFAULT_CORNERS });
+          setProcessing(false);
+          detectEdges(resized);
+        } catch (err) {
+          console.error('Error processing native camera image:', err);
+          toast({ title: 'Error procesando imagen', variant: 'destructive' });
+          setProcessing(false);
+        }
+      } catch (err: any) {
+        console.error('Camera access error:', err);
+        toast({
+          title: 'Error de cámara',
+          description: err?.message?.includes('PERMISSION_DENIED')
+            ? 'Permiso de cámara denegado. Habilítalo en Configuración > Privacidad > Cámara.'
+            : `No se pudo abrir la cámara: ${err?.message || 'Error desconocido'}`,
+          variant: 'destructive',
+        });
       }
       return;
     }
@@ -178,19 +189,30 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
 
   const triggerGallery = async () => {
     if (isNativeCamera()) {
-      const urls = await pickFromGallery();
-      if (urls.length === 0) return;
-      setProcessing(true);
       try {
-        const resized = await resizeForCrop(urls[0]);
-        setCropImage(resized);
-        setCropCorners({ ...DEFAULT_CORNERS });
-        setProcessing(false);
-        detectEdges(resized);
-      } catch (err) {
-        console.error('Error processing native gallery image:', err);
-        toast({ title: 'Error procesando imagen', variant: 'destructive' });
-        setProcessing(false);
+        const urls = await pickFromGallery();
+        if (urls.length === 0) return;
+        setProcessing(true);
+        try {
+          const resized = await resizeForCrop(urls[0]);
+          setCropImage(resized);
+          setCropCorners({ ...DEFAULT_CORNERS });
+          setProcessing(false);
+          detectEdges(resized);
+        } catch (err) {
+          console.error('Error processing native gallery image:', err);
+          toast({ title: 'Error procesando imagen', variant: 'destructive' });
+          setProcessing(false);
+        }
+      } catch (err: any) {
+        console.error('Gallery access error:', err);
+        toast({
+          title: 'Error de galería',
+          description: err?.message?.includes('PERMISSION_DENIED')
+            ? 'Permiso de fotos denegado. Habilítalo en Configuración > Privacidad > Fotos.'
+            : `No se pudo abrir la galería: ${err?.message || 'Error desconocido'}`,
+          variant: 'destructive',
+        });
       }
       return;
     }
