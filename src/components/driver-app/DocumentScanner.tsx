@@ -382,7 +382,7 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
             <div className="flex items-start gap-2 bg-white/5 rounded-lg p-3 text-left">
               <Info className="h-4 w-4 mt-0.5 flex-shrink-0 text-primary" />
               <p className="text-xs text-white/60">
-                <strong className="text-white/80">Tip:</strong> Para mejor calidad, escanea con tu app de cámara (Google, Samsung) o Adobe Scan, y luego usa <strong className="text-white/80">Galería</strong>.
+                <strong className="text-white/80">Tip:</strong> Para mejor calidad, escanea con la app de Cámara nativa de iOS o un escáner profesional, y luego usa <strong className="text-white/80">Galería</strong>.
               </p>
             </div>
           </div>
