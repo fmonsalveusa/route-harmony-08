@@ -436,15 +436,15 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
       {/* Actions */}
       <div className="flex flex-wrap gap-2 px-4 pt-3 bg-black/90 justify-center" style={{ paddingBottom: bottomSafePadding }}>
         <Button variant="outline" size="sm" onClick={triggerCamera}
-          className="gap-1.5 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20">
-          <Camera className="h-4 w-4" />
-          {pages.length === 0 ? 'Cámara' : '+ Cámara'}
+          className="gap-1.5 text-xs bg-white/10 border-white/20 !text-white hover:bg-white/20 min-h-[44px] min-w-[44px]">
+          <Camera className="h-5 w-5 text-white" />
+          <span className="text-white">{pages.length === 0 ? 'Cámara' : '+ Cámara'}</span>
         </Button>
 
         <Button variant="outline" size="sm" onClick={triggerGallery}
-          className="gap-1.5 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20">
-          <ImageIcon className="h-4 w-4" />
-          {pages.length === 0 ? 'Galería' : '+ Galería'}
+          className="gap-1.5 text-xs bg-white/10 border-white/20 !text-white hover:bg-white/20 min-h-[44px] min-w-[44px]">
+          <ImageIcon className="h-5 w-5 text-white" />
+          <span className="text-white">{pages.length === 0 ? 'Galería' : '+ Galería'}</span>
         </Button>
 
         {currentPage && (

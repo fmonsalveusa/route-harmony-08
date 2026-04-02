@@ -6,6 +6,7 @@ export function isNativeCamera(): boolean {
 
 /**
  * Take a photo using the native camera. Returns a data URL or null if cancelled/unavailable.
+ * Includes iPad-specific handling (popover presentation).
  */
 export async function takeNativePhoto(): Promise<string | null> {
   if (!isNativeCamera()) return null;
@@ -15,26 +16,46 @@ export async function takeNativePhoto(): Promise<string | null> {
       '@capacitor/camera'
     );
 
+    // Request permissions first (required on iPad)
+    const perms = await Camera.requestPermissions({ permissions: ['camera'] });
+    if (perms.camera === 'denied') {
+      throw new Error('PERMISSION_DENIED: Camera permission was denied. Please enable it in Settings.');
+    }
+
     const photo = await Camera.getPhoto({
       quality: 100,
       resultType: CameraResultType.DataUrl,
       source: CameraSource.Camera,
       correctOrientation: true,
+      // iPad requires explicit prompt labels
+      promptLabelHeader: 'Photo',
+      promptLabelPhoto: 'From Photos',
+      promptLabelPicture: 'Take Picture',
+      promptLabelCancel: 'Cancel',
     });
 
     return photo.dataUrl ?? null;
   } catch (e: any) {
     // User cancelled
-    if (e?.message?.includes('cancelled') || e?.message?.includes('User')) {
+    if (
+      e?.message?.includes('cancelled') ||
+      e?.message?.includes('User') ||
+      e?.message?.includes('cancel')
+    ) {
       return null;
     }
     console.error('Native camera error:', e);
-    return null;
+    // Re-throw permission errors so the caller can show a toast
+    if (e?.message?.includes('PERMISSION_DENIED')) {
+      throw e;
+    }
+    throw new Error(`Camera error: ${e?.message || 'Unknown error'}`);
   }
 }
 
 /**
  * Pick image(s) from the gallery. Returns an array of data URLs.
+ * Includes iPad-specific handling.
  */
 export async function pickFromGallery(): Promise<string[]> {
   if (!isNativeCamera()) return [];
@@ -44,21 +65,35 @@ export async function pickFromGallery(): Promise<string[]> {
       '@capacitor/camera'
     );
 
-    // Single pick via getPhoto (multi-pick not well supported across platforms)
+    // Request permissions first (required on iPad)
+    const perms = await Camera.requestPermissions({ permissions: ['photos'] });
+    if (perms.photos === 'denied') {
+      throw new Error('PERMISSION_DENIED: Photo library permission was denied. Please enable it in Settings.');
+    }
+
     const photo = await Camera.getPhoto({
       quality: 100,
       resultType: CameraResultType.DataUrl,
       source: CameraSource.Photos,
       correctOrientation: true,
+      promptLabelHeader: 'Photo',
+      promptLabelCancel: 'Cancel',
     });
 
     return photo.dataUrl ? [photo.dataUrl] : [];
   } catch (e: any) {
-    if (e?.message?.includes('cancelled') || e?.message?.includes('User')) {
+    if (
+      e?.message?.includes('cancelled') ||
+      e?.message?.includes('User') ||
+      e?.message?.includes('cancel')
+    ) {
       return [];
     }
     console.error('Native gallery error:', e);
-    return [];
+    if (e?.message?.includes('PERMISSION_DENIED')) {
+      throw e;
+    }
+    throw new Error(`Gallery error: ${e?.message || 'Unknown error'}`);
   }
 }
 
