@@ -1,20 +1,37 @@
 
 
-## Actualizar el chatbot de la landing a "Dispatch Up"
+## Diagnóstico
 
-### Problema
-El archivo `supabase/functions/landing-chat/index.ts` todavía usa "Load Up" en el prompt del sistema del chatbot AI. Es el único lugar donde queda el nombre viejo en el código. Los componentes de la landing ya dicen "Dispatch Up" correctamente.
+Los botones de **Cámara** y **Galería** (tanto en StopCard como en DocumentScanner) no funcionan porque:
 
-Si en el preview ves "Load Up" en la landing misma, es un tema de caché del navegador — un hard refresh (Ctrl+Shift+R) lo resuelve.
+1. **En la app nativa iOS**: `handleNativeCamera` y `handleNativeGallery` en StopCard **no tienen try-catch** — si el plugin de Capacitor Camera falla o lanza un error, el botón no hace nada y no muestra ningún mensaje de error al usuario.
 
-### Cambio
+2. **En Safari web (pruebas)**: `Capacitor.isNativePlatform()` retorna `false`, así que los botones renderizan `<label>` con `<input type="file">`. El atributo `capture="environment"` puede causar problemas en ciertas versiones de iOS Safari, y en iframes (como el preview de Lovable) los inputs de archivo programáticos pueden ser bloqueados.
 
-**`supabase/functions/landing-chat/index.ts`**
-- Reemplazar todas las menciones de "Load Up" por "Dispatch Up" en el `SYSTEM_PROMPT` (líneas 9, 15, 25, 32):
-  - "Asistente Virtual de **Dispatch Up**"
-  - "Opera bajo el MC# de **Dispatch Up**"
-  - "**Dispatch Up** TMS"
-  - "Responde SOLO sobre los servicios de **Dispatch Up**"
+3. **En DocumentScanner**: `triggerCamera()` y `triggerGallery()` usan `.click()` programático en inputs ocultos (fallback web), lo cual iOS Safari puede bloquear fuera de un evento de usuario directo.
 
-Esto es un cambio backend (edge function) que se despliega automáticamente.
+## Plan de corrección
+
+### 1. Agregar manejo de errores robusto en StopCard
+- Envolver `handleNativeCamera` y `handleNativeGallery` en try-catch con toasts de error visibles
+- Si el plugin nativo falla, hacer **fallback automático** al `<input type="file">` del navegador (web fallback)
+
+### 2. Agregar fallback web en StopCard cuando la cámara nativa falle
+- Mantener un `ref` a inputs de archivo ocultos (camera + gallery) como respaldo
+- Si `takeNativePhoto()` o `pickFromGallery()` lanzan error (no cancelación), disparar el input de archivo como alternativa
+
+### 3. Mejorar DocumentScanner con el mismo patrón
+- Agregar try-catch con toast en `triggerCamera()` y `triggerGallery()` 
+- Asegurar que los refs de input se disparen correctamente como fallback
+
+### 4. Remover `capture="environment"` del input de cámara web
+- En iOS Safari, este atributo puede causar que el input no responda. Usar solo `accept="image/*"` para máxima compatibilidad.
+
+### Archivos a modificar
+- `src/components/driver-app/StopCard.tsx` — error handling + fallback refs
+- `src/components/driver-app/DocumentScanner.tsx` — error handling mejorado  
+- `src/lib/nativeCamera.ts` — sin cambios necesarios (ya tiene error handling interno)
+
+### Resultado esperado
+Los botones mostrarán un mensaje de error si algo falla, e intentarán abrir la cámara/galería del navegador como alternativa. Esto funciona tanto en la app nativa como en Safari.
 
