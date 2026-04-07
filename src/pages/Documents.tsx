@@ -19,6 +19,36 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 
+function dataUriToBlob(dataUri: string): Blob {
+  const [header, base64] = dataUri.split(',');
+  const mime = header.match(/:(.*?);/)?.[1] || 'application/pdf';
+  const bytes = atob(base64);
+  const arr = new Uint8Array(bytes.length);
+  for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+  return new Blob([arr], { type: mime });
+}
+
+function PdfBlobIframe({ dataUri }: { dataUri: string }) {
+  const blobUrl = useMemo(() => {
+    if (!dataUri) return '';
+    return URL.createObjectURL(dataUriToBlob(dataUri));
+  }, [dataUri]);
+
+  useEffect(() => {
+    return () => { if (blobUrl) URL.revokeObjectURL(blobUrl); };
+  }, [blobUrl]);
+
+  if (!blobUrl) return null;
+  return (
+    <iframe
+      src={blobUrl}
+      className="w-full rounded border"
+      style={{ height: '75vh' }}
+      title="PDF Preview"
+    />
+  );
+}
+
 const Documents = () => {
   const navigate = useNavigate();
   const [documents, setDocuments] = useState<SignDocument[]>([]);
