@@ -180,16 +180,15 @@ const Documents = () => {
                               <Button variant="ghost" size="icon" onClick={() => navigate(`/documents/complete/${doc.id}`)} title="Ver detalles">
                                 <FileText className="h-4 w-4" />
                               </Button>
-                              {doc.signedFileData && (
-                                <Button variant="ghost" size="icon" onClick={() => {
-                                  const link = document.createElement('a');
-                                  link.href = doc.signedFileData!;
-                                  link.download = `signed-${doc.fileName}`;
-                                  link.click();
-                                }} title="Descargar firmado">
-                                  <Download className="h-4 w-4" />
-                                </Button>
-                              )}
+                              <Button variant="ghost" size="icon" onClick={() => {
+                                const pdfData = doc.signedFileData || doc.fileData;
+                                const link = document.createElement('a');
+                                link.href = pdfData;
+                                link.download = `signed-${doc.fileName}`;
+                                link.click();
+                              }} title="Descargar PDF">
+                                <Download className="h-4 w-4" />
+                              </Button>
                             </>
                           )}
                           <Button variant="ghost" size="icon" onClick={() => setDeleteTarget({ type: 'doc', id: doc.id, name: doc.fileName })} title="Eliminar" className="text-destructive hover:text-destructive">
