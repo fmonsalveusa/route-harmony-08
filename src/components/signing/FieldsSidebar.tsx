@@ -59,7 +59,7 @@ export default function FieldsSidebar({ onAddField, onClose, fieldCount }: Field
       <div className="flex-1 overflow-y-auto px-2 pb-4 space-y-4">
         {fieldCategories.map((cat) => (
           <div key={cat.label}>
-            <p className="text-[10px] font-semibold tracking-wider text-primary/80 px-2 mb-1.5">{cat.label}</p>
+            <p className="text-[11px] font-semibold tracking-wider text-white/50 px-2 mb-1.5">{cat.label}</p>
             <div className="space-y-0.5">
               {cat.fields.map((f) => (
                 <button key={f.type} onClick={() => onAddField(f.type)} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-white/10 transition-colors text-left">
