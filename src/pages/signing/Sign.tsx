@@ -7,6 +7,7 @@ import { CheckCircle2, Loader2 } from 'lucide-react';
 import PdfViewer from '@/components/signing/PdfViewer';
 import GuidedForm from '@/components/signing/GuidedForm';
 import { getDocument, saveDocument } from '@/store/signing-documents';
+import { generateSignedPdf } from '@/lib/generateSignedPdf';
 import type { SignDocument, DocumentField } from '@/types/document';
 
 export default function Sign() {
@@ -48,11 +49,15 @@ export default function Sign() {
     if (!doc) return;
     setSubmitting(true);
     try {
+      // Generate signed PDF with field values stamped on
+      const signedPdfData = await generateSignedPdf(doc.fileData, updatedFields);
+
       const updated: SignDocument = {
         ...doc,
         fields: updatedFields,
         status: 'signed',
         signedAt: Date.now(),
+        signedFileData: signedPdfData,
         signerData: {
           date: new Date().toISOString(),
         },
