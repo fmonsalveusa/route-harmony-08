@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
 
@@ -69,6 +69,10 @@ const rolePermissions: Record<AppRole, string[]> = {
   investor: ['payments.investor'],
 };
 
+const isAbortLikeError = (error: unknown) => {
+  return error instanceof Error && (error.name === 'AbortError' || error.message.toLowerCase().includes('signal is aborted'));
+};
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -77,27 +81,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [tenant, setTenant] = useState<TenantInfo | null>(null);
   const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
   const [loading, setLoading] = useState(true);
-  const profileLoadedRef = React.useRef(false);
-
-  // Failsafe: avoid permanent blank screen if auth initialization gets stuck
-  useEffect(() => {
-    const fallbackTimer = setTimeout(() => {
-      setLoading((prev) => {
-        if (!prev) return prev;
-        console.warn('[AuthContext] Loading fallback triggered');
-        return false;
-      });
-    }, 8000);
-
-    return () => clearTimeout(fallbackTimer);
-  }, []);
+  const profileLoadedRef = useRef(false);
+  const loadedUserIdRef = useRef<string | null>(null);
 
   const clearUserState = () => {
     profileLoadedRef.current = false;
+    loadedUserIdRef.current = null;
     setProfile(null);
     setRole(null);
     setTenant(null);
     setSubscription(null);
+  };
+
+  const applySignedOutState = () => {
+    clearUserState();
+    setUser(null);
+    setSession(null);
+  };
+
+  const safeSignOut = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.warn('[AuthContext] signOut failed:', error);
+    }
   };
 
   const fetchUserData = async (userId: string, retries = 3): Promise<boolean> => {
@@ -112,140 +119,170 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (profileError) throw profileError;
 
         if (!profileData) {
-          console.error('[AuthContext] Profile not found for authenticated user');
+          console.warn('[AuthContext] Profile not found for authenticated user');
           clearUserState();
-          setUser(null);
-          setSession(null);
-          await supabase.auth.signOut();
           return false;
         }
 
-        profileLoadedRef.current = true;
-        setProfile(profileData as Profile);
-
-        const { data: roleData } = await supabase
+        const { data: roleData, error: roleError } = await supabase
           .from('user_roles')
           .select('role')
           .eq('user_id', userId)
           .maybeSingle();
 
-        const userRole = (roleData?.role as AppRole) || (profileData.is_master_admin ? 'master_admin' : 'admin');
-        setRole(userRole);
+        if (roleError) throw roleError;
+
+        let tenantData: TenantInfo | null = null;
+        let subData: SubscriptionInfo | null = null;
 
         if (profileData.tenant_id) {
-          const { data: tenantData } = await supabase
-            .from('tenants')
-            .select('id, name, logo_url, is_active')
-            .eq('id', profileData.tenant_id)
-            .maybeSingle();
+          const [{ data: tenantResult, error: tenantError }, { data: subscriptionResult, error: subscriptionError }] = await Promise.all([
+            supabase
+              .from('tenants')
+              .select('id, name, logo_url, is_active')
+              .eq('id', profileData.tenant_id)
+              .maybeSingle(),
+            supabase
+              .from('subscriptions')
+              .select('plan, status, max_users, max_trucks, price_monthly, next_payment_date')
+              .eq('tenant_id', profileData.tenant_id)
+              .maybeSingle(),
+          ]);
 
-          if (tenantData) setTenant(tenantData as TenantInfo);
+          if (tenantError) throw tenantError;
+          if (subscriptionError) throw subscriptionError;
 
-          const { data: subData } = await supabase
-            .from('subscriptions')
-            .select('plan, status, max_users, max_trucks, price_monthly, next_payment_date')
-            .eq('tenant_id', profileData.tenant_id)
-            .maybeSingle();
-
-          if (subData) setSubscription(subData as SubscriptionInfo);
+          tenantData = (tenantResult as TenantInfo | null) ?? null;
+          subData = (subscriptionResult as SubscriptionInfo | null) ?? null;
         }
 
+        profileLoadedRef.current = true;
+        loadedUserIdRef.current = userId;
+        setProfile(profileData as Profile);
+        setRole((roleData?.role as AppRole) || (profileData.is_master_admin ? 'master_admin' : 'admin'));
+        setTenant(tenantData);
+        setSubscription(subData);
+
         return true;
-      } catch (err) {
-        console.warn(`[AuthContext] fetchUserData attempt ${attempt}/${retries} failed:`, err);
+      } catch (error) {
+        console.warn(`[AuthContext] fetchUserData attempt ${attempt}/${retries} failed:`, error);
+
+        if (isAbortLikeError(error)) {
+          break;
+        }
+
         if (attempt < retries) {
-          await new Promise(r => setTimeout(r, 2000 * attempt));
-        } else {
-          console.error('[AuthContext] All retry attempts exhausted');
+          await new Promise((resolve) => setTimeout(resolve, 1200 * attempt));
         }
       }
     }
 
     clearUserState();
-    setUser(null);
-    setSession(null);
-    await supabase.auth.signOut();
     return false;
   };
 
   const refreshProfile = async () => {
-    if (user) await fetchUserData(user.id);
+    if (!user) return;
+    setLoading(true);
+    const success = await fetchUserData(user.id);
+    if (!success) {
+      applySignedOutState();
+      await safeSignOut();
+    }
+    setLoading(false);
   };
 
   useEffect(() => {
-    let initialSessionHandled = false;
+    let mounted = true;
+    let initialSessionEventReceived = false;
 
-    const fetchWithTimeout = async (userId: string) => {
-      const result = await Promise.race<boolean>([
-        fetchUserData(userId),
-        new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 10000)),
-      ]);
-
-      if (!result) {
-        console.warn('[AuthContext] fetchWithTimeout expired, cleaning session');
-        clearUserState();
-        setUser(null);
-        setSession(null);
-        await supabase.auth.signOut();
-      }
-
-      return result;
+    const setLoadingIfMounted = (value: boolean) => {
+      if (mounted) setLoading(value);
     };
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      initialSessionHandled = true;
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchWithTimeout(session.user.id).finally(() => setLoading(false));
-      } else {
-        setLoading(false);
-      }
-    });
+    const processSession = async (nextSession: Session | null, forceRefresh = false) => {
+      if (!mounted) return;
 
-    const { data: { subscription: authSub } } = supabase.auth.onAuthStateChange((event, session) => {
+      setSession(nextSession);
+      setUser(nextSession?.user ?? null);
+
+      if (!nextSession?.user) {
+        applySignedOutState();
+        setLoadingIfMounted(false);
+        return;
+      }
+
+      if (!forceRefresh && profileLoadedRef.current && loadedUserIdRef.current === nextSession.user.id) {
+        setLoadingIfMounted(false);
+        return;
+      }
+
+      setLoadingIfMounted(true);
+
+      const success = await Promise.race<boolean>([
+        fetchUserData(nextSession.user.id),
+        new Promise<boolean>((resolve) => {
+          window.setTimeout(() => resolve(false), 10000);
+        }),
+      ]).catch((error) => {
+        console.warn('[AuthContext] session processing failed:', error);
+        return false;
+      });
+
+      if (!mounted) return;
+
+      if (!success) {
+        applySignedOutState();
+        await safeSignOut();
+      }
+
+      setLoadingIfMounted(false);
+    };
+
+    const { data: { subscription: authSub } } = supabase.auth.onAuthStateChange((event, nextSession) => {
       console.log('[AuthContext] onAuthStateChange event:', event);
 
-      if (!initialSessionHandled && event === 'INITIAL_SESSION') {
-        return;
+      if (!mounted) return;
+
+      if (event === 'INITIAL_SESSION') {
+        initialSessionEventReceived = true;
       }
 
       if (event === 'TOKEN_REFRESHED') {
-        setSession(session);
+        setSession(nextSession);
+        setUser(nextSession?.user ?? null);
         return;
       }
 
-      if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
-        setSession(session);
-        setUser(session?.user ?? null);
-        if (!profileLoadedRef.current && session?.user) {
-          setLoading(true);
-          setTimeout(() => {
-            fetchWithTimeout(session.user.id).finally(() => setLoading(false));
-          }, 0);
-        }
-        return;
-      }
-
-      setSession(session);
-      setUser(session?.user ?? null);
-
-      if (session?.user) {
-        setLoading(true);
-        setTimeout(() => {
-          fetchWithTimeout(session.user.id).finally(() => setLoading(false));
-        }, 0);
-      } else {
-        profileLoadedRef.current = false;
-        setProfile(null);
-        setRole(null);
-        setTenant(null);
-        setSubscription(null);
-        setLoading(false);
-      }
+      void processSession(nextSession, event !== 'INITIAL_SESSION');
     });
 
-    return () => authSub.unsubscribe();
+    const bootstrapAuth = async () => {
+      try {
+        const sessionResult = await Promise.race([
+          supabase.auth.getSession(),
+          new Promise<never>((_, reject) => {
+            window.setTimeout(() => reject(new Error('getSession timeout')), 8000);
+          }),
+        ]);
+
+        if (!mounted || initialSessionEventReceived) return;
+
+        await processSession(sessionResult.data.session, false);
+      } catch (error) {
+        console.warn('[AuthContext] bootstrap failed:', error);
+        if (!mounted) return;
+        applySignedOutState();
+        setLoadingIfMounted(false);
+      }
+    };
+
+    void bootstrapAuth();
+
+    return () => {
+      mounted = false;
+      authSub.unsubscribe();
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {
@@ -266,7 +303,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    await safeSignOut();
   };
 
   const isMasterAdmin = profile?.is_master_admin === true || role === 'master_admin';
@@ -275,7 +312,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!role) return false;
     if (isMasterAdmin) return permission.startsWith('master') || true;
     const perms = rolePermissions[role] || [];
-    return perms.some(p => {
+    return perms.some((p) => {
       if (p === permission) return true;
       if (p.endsWith('.*') && permission.startsWith(p.replace('.*', ''))) return true;
       if (p.endsWith('*') && permission.startsWith(p.replace('*', ''))) return true;
