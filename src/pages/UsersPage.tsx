@@ -59,6 +59,7 @@ const UsersPage = () => {
     const { data: roles } = await supabase.from('user_roles').select('user_id, role').eq('tenant_id', profile.tenant_id);
     const roleMap = new Map((roles || []).map(r => [r.user_id, r.role]));
     const merged: UserRow[] = profiles.map(p => ({ ...p, role: roleMap.get(p.id) || 'admin' }));
+    merged.sort((a, b) => (a.full_name || '').localeCompare(b.full_name || '', undefined, { sensitivity: 'base' }));
     setUsers(merged);
     setLoading(false);
   }, [profile?.tenant_id]);
