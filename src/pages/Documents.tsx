@@ -56,6 +56,7 @@ const Documents = () => {
   const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'doc' | 'tpl'; id: string; name: string } | null>(null);
   const [previewDoc, setPreviewDoc] = useState<SignDocument | null>(null);
+  const [editingRecipient, setEditingRecipient] = useState<{ id: string; email: string } | null>(null);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
