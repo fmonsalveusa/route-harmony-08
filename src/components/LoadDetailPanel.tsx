@@ -3,11 +3,11 @@ import { useQueryClient } from '@tanstack/react-query';
 import { formatDate } from '@/lib/dateUtils';
 import { MapPin, Calendar, Weight, DollarSign, User, Truck, Route, Navigation, FileText, Download, ExternalLink, Pencil, Loader2, Copy, Check, Building2, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useDrivers } from '@/hooks/useDrivers';
-import { useDispatchers } from '@/hooks/useDispatchers';
-import { useTrucks } from '@/hooks/useTrucks';
 import { useCompanies } from '@/hooks/useCompanies';
 import type { DbLoad } from '@/hooks/useLoads';
+import type { DbDriver } from '@/hooks/useDrivers';
+import type { DbTruck } from '@/hooks/useTrucks';
+import type { DbDispatcher } from '@/hooks/useDispatchers';
 import { useLoadStops } from '@/hooks/useLoadStops';
 import { supabase } from '@/integrations/supabase/client';
 import { PodUploadSection } from '@/components/PodUploadSection';
@@ -156,6 +156,9 @@ interface ResolvedStop {
 
 interface LoadDetailPanelProps {
   load: DbLoad & { route_geometry?: [number, number][] | null };
+  drivers: DbDriver[];
+  trucks: DbTruck[];
+  dispatchers: DbDispatcher[];
   onMilesCalculated?: (loadId: string, miles: number, routeGeometry?: [number, number][]) => void;
   onLoadDataUpdated?: () => void;
 }
@@ -272,7 +275,7 @@ function BrokerScoreRow({ brokerName }: { brokerName: string | null | undefined 
   );
 }
 
-export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: LoadDetailPanelProps) => {
+export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, onMilesCalculated, onLoadDataUpdated }: LoadDetailPanelProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const persistedRef = useRef(false);
@@ -345,9 +348,6 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
     };
   }, [load.id]);
 
-  const { drivers } = useDrivers();
-  const { dispatchers } = useDispatchers();
-  const { trucks } = useTrucks();
   const driver = drivers.find(d => d.id === load.driver_id);
   const dispatcher = dispatchers.find(d => d.id === load.dispatcher_id);
   const truck = trucks.find(t => t.id === load.truck_id);

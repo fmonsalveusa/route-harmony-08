@@ -542,6 +542,9 @@ const Loads = () => {
                             <td colSpan={17} className="p-0">
                               <LoadDetailPanel
                                 load={load}
+                                drivers={drivers}
+                                trucks={trucks}
+                                dispatchers={dispatchers}
                                 onMilesCalculated={async (loadId, miles, routeGeometry) => {
                                   const updateData: any = { miles };
                                   if (routeGeometry) {

@@ -102,13 +102,7 @@ export function useLoads() {
         }
       });
 
-    // Polling fallback: refetch every 2 min in case Realtime misses events
-    const pollId = setInterval(() => {
-      queryClient.invalidateQueries({ queryKey: LOADS_QUERY_KEY });
-    }, 120000);
-
     return () => {
-      clearInterval(pollId);
       supabase.removeChannel(channel);
     };
   }, [queryClient]);
