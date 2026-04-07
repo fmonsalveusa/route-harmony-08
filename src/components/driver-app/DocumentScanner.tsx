@@ -327,7 +327,7 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
     return (
       <div className="fixed inset-0 z-[100] bg-black flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 bg-black/90">
+        <div className="flex items-center justify-between px-4 py-3 bg-black/90" style={{ paddingTop: 'max(12px, env(safe-area-inset-top))' }}>
           <h2 className="text-white font-semibold text-sm">
             Escanear {docLabel} ({pages.length} pág.)
           </h2>
@@ -381,7 +381,7 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
   return (
     <div className="fixed inset-0 z-[100] bg-black flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-black/90">
+      <div className="flex items-center justify-between px-4 py-3 bg-black/90" style={{ paddingTop: 'max(12px, env(safe-area-inset-top))' }}>
         <h2 className="text-white font-semibold text-sm">
           Escanear {docLabel} ({pages.length} pág.)
         </h2>
