@@ -695,9 +695,45 @@ export const LoadDetailPanel = ({ load, onMilesCalculated, onLoadDataUpdated }: 
           return;
         }
 
-        // 3) Otherwise use the last delivery stop from previous DELIVERED/PAID load
+        // 3) Check active loads dispatched BEFORE this one (same driver) — use their last delivery as origin
         if (!load.driver_id || !load.pickup_date) return;
 
+        const activeStatuses = ['dispatched', 'planned', 'in_transit', 'on_site_pickup', 'picked_up', 'on_site_delivery'];
+        const { data: activeLoads } = await supabase
+          .from('loads')
+          .select('id, pickup_date, created_at')
+          .eq('driver_id', load.driver_id)
+          .neq('id', load.id)
+          .in('status', activeStatuses)
+          .lt('created_at', load.created_at)
+          .order('created_at', { ascending: false })
+          .limit(5);
+
+        if (activeLoads && activeLoads.length > 0) {
+          const activeIds = activeLoads.map(l => l.id);
+          const { data: activeStops } = await supabase
+            .from('load_stops')
+            .select('load_id, address, lat, lng, stop_order')
+            .in('load_id', activeIds)
+            .eq('stop_type', 'delivery')
+            .order('stop_order', { ascending: false })
+            .limit(20);
+
+          if (activeStops && activeStops.length > 0) {
+            for (const aLoad of activeLoads) {
+              const aStop = activeStops.find(s => s.load_id === aLoad.id);
+              if (!aStop) continue;
+              const aCoords = (aStop.lat != null && aStop.lng != null)
+                ? [aStop.lat, aStop.lng] as [number, number]
+                : await geocode(aStop.address);
+              if (!aCoords) continue;
+              const applied = await applyAndPersistDeadhead(aCoords, aStop.address);
+              if (applied) return;
+            }
+          }
+        }
+
+        // 4) Fallback: last delivery stop from previous DELIVERED/PAID load
         const { data: prevLoads } = await supabase
           .from('loads')
           .select('id, delivery_date, created_at')
