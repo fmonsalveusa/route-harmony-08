@@ -538,7 +538,7 @@ const Loads = () => {
                           </td>
                         </tr>
                         {isExpanded && (
-                          <tr>
+                          <tr id={`load-detail-${load.id}`}>
                             <td colSpan={17} className="p-0">
                               <LoadDetailPanel
                                 load={load}
