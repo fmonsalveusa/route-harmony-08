@@ -448,12 +448,15 @@ export type Database = {
           employment_contract_url: string | null
           factoring_percentage: number
           form_w9_url: string | null
+          hide_payments: boolean
           hire_date: string
           id: string
           investor_email: string | null
           investor_name: string | null
           investor_pay_percentage: number | null
+          leasing_agreement_58_url: string | null
           leasing_agreement_url: string | null
+          leasing_agreement_venco_url: string | null
           license: string
           license_expiry: string | null
           license_photo_url: string | null
@@ -490,12 +493,15 @@ export type Database = {
           employment_contract_url?: string | null
           factoring_percentage?: number
           form_w9_url?: string | null
+          hide_payments?: boolean
           hire_date?: string
           id?: string
           investor_email?: string | null
           investor_name?: string | null
           investor_pay_percentage?: number | null
+          leasing_agreement_58_url?: string | null
           leasing_agreement_url?: string | null
+          leasing_agreement_venco_url?: string | null
           license: string
           license_expiry?: string | null
           license_photo_url?: string | null
@@ -532,12 +538,15 @@ export type Database = {
           employment_contract_url?: string | null
           factoring_percentage?: number
           form_w9_url?: string | null
+          hide_payments?: boolean
           hire_date?: string
           id?: string
           investor_email?: string | null
           investor_name?: string | null
           investor_pay_percentage?: number | null
+          leasing_agreement_58_url?: string | null
           leasing_agreement_url?: string | null
+          leasing_agreement_venco_url?: string | null
           license?: string
           license_expiry?: string | null
           license_photo_url?: string | null
