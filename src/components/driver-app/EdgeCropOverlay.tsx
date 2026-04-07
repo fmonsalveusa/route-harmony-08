@@ -169,7 +169,7 @@ export const EdgeCropOverlay = ({
 
   return (
     <div className="fixed inset-0 z-[100] bg-black flex flex-col">
-      <div className="px-4 py-3 bg-black/90 text-center flex-shrink-0">
+      <div className="px-4 py-3 bg-black/90 text-center flex-shrink-0" style={{ paddingTop: 'max(12px, env(safe-area-inset-top))' }}>
         <h2 className="text-white font-semibold text-sm">
           {detecting ? 'Detectando bordes...' : 'Ajusta las esquinas del documento'}
         </h2>
