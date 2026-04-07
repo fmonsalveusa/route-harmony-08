@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { generateSignedPdf } from "@/lib/generateSignedPdf";
 import { SignDocument } from "@/types/document";
 
 function rowToDoc(row: any): SignDocument {
@@ -17,13 +18,43 @@ function rowToDoc(row: any): SignDocument {
   };
 }
 
+async function hydrateSignedPdf(doc: SignDocument): Promise<SignDocument> {
+  const hasFilledFields = doc.fields.some((field) => !!field.value);
+
+  if (doc.status !== "signed" || doc.signedFileData || !hasFilledFields) {
+    return doc;
+  }
+
+  try {
+    const signedFileData = await generateSignedPdf(doc.fileData, doc.fields);
+
+    const { error } = await supabase
+      .from("documents" as any)
+      .update({ signed_file_data: signedFileData } as any)
+      .eq("id", doc.id);
+
+    if (error) {
+      console.error("Failed to persist regenerated signed PDF:", error);
+      return doc;
+    }
+
+    return {
+      ...doc,
+      signedFileData,
+    };
+  } catch (error) {
+    console.error("Failed to regenerate signed PDF:", error);
+    return doc;
+  }
+}
+
 export async function getDocuments(): Promise<SignDocument[]> {
   const { data, error } = await supabase
     .from("documents" as any)
     .select("*")
     .order("created_at", { ascending: false });
   if (error) { console.error(error); return []; }
-  return (data ?? []).map(rowToDoc);
+  return Promise.all((data ?? []).map((row) => hydrateSignedPdf(rowToDoc(row))));
 }
 
 export async function getDocument(id: string): Promise<SignDocument | undefined> {
@@ -33,7 +64,7 @@ export async function getDocument(id: string): Promise<SignDocument | undefined>
     .eq("id", id)
     .maybeSingle();
   if (error || !data) return undefined;
-  return rowToDoc(data);
+  return hydrateSignedPdf(rowToDoc(data));
 }
 
 export async function saveDocument(doc: SignDocument): Promise<void> {
