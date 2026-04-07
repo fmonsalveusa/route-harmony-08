@@ -278,6 +278,25 @@ const Documents = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* PDF Preview Dialog */}
+      <Dialog open={!!previewDoc} onOpenChange={(open) => !open && setPreviewDoc(null)}>
+        <DialogContent className="max-w-4xl max-h-[90vh] p-0 overflow-hidden">
+          <DialogHeader className="p-4 pb-2">
+            <DialogTitle className="truncate">{previewDoc?.fileName}</DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-auto px-4 pb-4" style={{ maxHeight: 'calc(90vh - 80px)' }}>
+            {previewDoc && (
+              <iframe
+                src={previewDoc.signedFileData || previewDoc.fileData}
+                className="w-full rounded border"
+                style={{ height: '75vh' }}
+                title="PDF Preview"
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
