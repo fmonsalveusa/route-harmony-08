@@ -372,7 +372,16 @@ const Loads = () => {
                       <Fragment key={load.id}>
                         <tr
                           className={`border-b last:border-0 glass-row cursor-pointer ${isExpanded ? 'glass-row-expanded' : ''}`}
-                          onClick={() => setExpandedId(isExpanded ? null : load.id)}
+                          onClick={() => {
+                            const newId = isExpanded ? null : load.id;
+                            setExpandedId(newId);
+                            if (newId) {
+                              setTimeout(() => {
+                                document.getElementById(`load-detail-${newId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                              }, 100);
+                            }
+                          }}
+                        >
                         >
                           <td className="p-3 text-muted-foreground">
                             {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
