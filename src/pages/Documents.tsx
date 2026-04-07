@@ -285,14 +285,8 @@ const Documents = () => {
             <DialogTitle className="truncate">{previewDoc?.fileName}</DialogTitle>
           </DialogHeader>
           <div className="flex-1 overflow-auto px-4 pb-4" style={{ maxHeight: 'calc(90vh - 80px)' }}>
-            {previewDoc && (
-              <iframe
-                src={previewDoc.signedFileData || previewDoc.fileData}
-                className="w-full rounded border"
-                style={{ height: '75vh' }}
-                title="PDF Preview"
-              />
-            )}
+            {previewDoc && <PdfBlobIframe dataUri={previewDoc.signedFileData || previewDoc.fileData} />}
+          </div>
           </div>
         </DialogContent>
       </Dialog>
