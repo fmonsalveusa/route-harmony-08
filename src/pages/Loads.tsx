@@ -382,7 +382,6 @@ const Loads = () => {
                             }
                           }}
                         >
-                        >
                           <td className="p-3 text-muted-foreground">
                             {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                           </td>
