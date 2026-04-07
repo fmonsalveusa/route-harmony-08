@@ -559,9 +559,8 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
                 <FileText className="h-16 w-16 mx-auto opacity-60" />
                 <p className="text-sm">{stopPods[previewIndex].file_name}</p>
                 <Button
-                  variant="outline"
                   size="sm"
-                  className="text-white border-white/30"
+                  className="bg-white text-black hover:bg-white/90 font-medium"
                   onClick={() => handleOpenPod(stopPods[previewIndex])}
                 >
                   Open File
