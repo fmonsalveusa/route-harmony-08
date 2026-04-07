@@ -98,7 +98,7 @@ const Documents = () => {
   }, [fetchAll]);
 
   const copySignLink = (docId: string) => {
-    const link = `${window.location.origin}/documents/sign/${docId}`;
+    const link = getSigningUrl(docId);
     navigator.clipboard.writeText(link);
     toast.success('Enlace de firma copiado');
   };
