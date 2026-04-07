@@ -117,13 +117,13 @@ Deno.serve(async (req) => {
     const { data: callerRole } = await supabaseAdmin
       .from("user_roles")
       .select("role")
-      .eq("user_id", caller.id)
+      .eq("user_id", callerId)
       .maybeSingle();
 
     const { data: callerProfile } = await supabaseAdmin
       .from("profiles")
       .select("tenant_id, is_master_admin")
-      .eq("id", caller.id)
+      .eq("id", callerId)
       .single();
 
     const isAdmin = callerProfile?.is_master_admin || callerRole?.role === "admin";
@@ -212,7 +212,7 @@ Deno.serve(async (req) => {
       }
 
       // Prevent self-deletion
-      if (user_id === caller.id) {
+      if (user_id === callerId) {
         throw new Error("Cannot delete your own account");
       }
 
