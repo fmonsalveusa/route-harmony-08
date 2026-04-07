@@ -198,7 +198,30 @@ const Documents = () => {
                         <StatusBadge status={getStatusLabel(doc.status)} />
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {doc.recipientEmail || '—'}
+                        {editingRecipient?.id === doc.id ? (
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="email"
+                              className="border rounded px-2 py-1 text-sm w-48 bg-background text-foreground"
+                              value={editingRecipient.email}
+                              onChange={e => setEditingRecipient({ ...editingRecipient, email: e.target.value })}
+                              onKeyDown={e => { if (e.key === 'Enter') saveRecipientEmail(); if (e.key === 'Escape') setEditingRecipient(null); }}
+                              autoFocus
+                              placeholder="email@ejemplo.com"
+                            />
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={saveRecipientEmail}>
+                              <Pencil className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <span
+                            className="cursor-pointer hover:text-foreground hover:underline"
+                            onClick={() => setEditingRecipient({ id: doc.id, email: doc.recipientEmail || '' })}
+                            title="Click para editar"
+                          >
+                            {doc.recipientEmail || '—'}
+                          </span>
+                        )}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {format(new Date(doc.createdAt), 'MMM dd, yyyy')}
