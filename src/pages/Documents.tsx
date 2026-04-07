@@ -10,6 +10,7 @@ import { format } from 'date-fns';
 import { getDocuments, deleteDocument } from '@/store/signing-documents';
 import { getTemplates, deleteTemplate } from '@/store/signing-templates';
 import { supabase } from '@/integrations/supabase/client';
+import { getSigningUrl } from '@/lib/signing-url';
 import type { SignDocument, SignTemplate } from '@/types/document';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -97,7 +98,7 @@ const Documents = () => {
   }, [fetchAll]);
 
   const copySignLink = (docId: string) => {
-    const link = `${window.location.origin}/documents/sign/${docId}`;
+    const link = getSigningUrl(docId);
     navigator.clipboard.writeText(link);
     toast.success('Enlace de firma copiado');
   };
