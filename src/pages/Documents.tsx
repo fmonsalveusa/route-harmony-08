@@ -126,16 +126,12 @@ const Documents = () => {
     setPreviewDoc(doc);
   };
 
-  const saveRecipientEmail = async () => {
+  const saveRecipientName = async () => {
     if (!editingRecipient) return;
-    const email = editingRecipient.email.trim();
-    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      toast.error('Email inválido');
-      return;
-    }
-    const { error } = await supabase.from('documents').update({ recipient_email: email || null }).eq('id', editingRecipient.id);
+    const name = editingRecipient.email.trim();
+    const { error } = await supabase.from('documents').update({ recipient_email: name || null }).eq('id', editingRecipient.id);
     if (error) { toast.error('Error al guardar'); return; }
-    setDocuments(prev => prev.map(d => d.id === editingRecipient.id ? { ...d, recipientEmail: email || null } : d));
+    setDocuments(prev => prev.map(d => d.id === editingRecipient.id ? { ...d, recipientEmail: name || null } : d));
     setEditingRecipient(null);
     toast.success('Destinatario actualizado');
   };
@@ -201,15 +197,15 @@ const Documents = () => {
                         {editingRecipient?.id === doc.id ? (
                           <div className="flex items-center gap-1">
                             <input
-                              type="email"
+                              type="text"
                               className="border rounded px-2 py-1 text-sm w-48 bg-background text-foreground"
                               value={editingRecipient.email}
                               onChange={e => setEditingRecipient({ ...editingRecipient, email: e.target.value })}
-                              onKeyDown={e => { if (e.key === 'Enter') saveRecipientEmail(); if (e.key === 'Escape') setEditingRecipient(null); }}
+                              onKeyDown={e => { if (e.key === 'Enter') saveRecipientName(); if (e.key === 'Escape') setEditingRecipient(null); }}
                               autoFocus
-                              placeholder="email@ejemplo.com"
+                              placeholder="Nombre del destinatario"
                             />
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={saveRecipientEmail}>
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={saveRecipientName}>
                               <Pencil className="h-3 w-3" />
                             </Button>
                           </div>
