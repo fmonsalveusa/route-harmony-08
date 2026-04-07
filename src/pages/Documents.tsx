@@ -126,6 +126,20 @@ const Documents = () => {
     setPreviewDoc(doc);
   };
 
+  const saveRecipientEmail = async () => {
+    if (!editingRecipient) return;
+    const email = editingRecipient.email.trim();
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error('Email inválido');
+      return;
+    }
+    const { error } = await supabase.from('documents').update({ recipient_email: email || null }).eq('id', editingRecipient.id);
+    if (error) { toast.error('Error al guardar'); return; }
+    setDocuments(prev => prev.map(d => d.id === editingRecipient.id ? { ...d, recipientEmail: email || null } : d));
+    setEditingRecipient(null);
+    toast.success('Destinatario actualizado');
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
