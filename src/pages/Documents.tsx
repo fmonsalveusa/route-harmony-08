@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -9,11 +9,15 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { getDocuments, deleteDocument } from '@/store/signing-documents';
 import { getTemplates, deleteTemplate } from '@/store/signing-templates';
+import { supabase } from '@/integrations/supabase/client';
 import type { SignDocument, SignTemplate } from '@/types/document';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
 
 const Documents = () => {
   const navigate = useNavigate();
@@ -21,8 +25,9 @@ const Documents = () => {
   const [templates, setTemplates] = useState<SignTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'doc' | 'tpl'; id: string; name: string } | null>(null);
+  const [previewDoc, setPreviewDoc] = useState<SignDocument | null>(null);
 
-  const fetchAll = async () => {
+  const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
       const [docs, tpls] = await Promise.all([getDocuments(), getTemplates()]);
@@ -33,9 +38,32 @@ const Documents = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  useEffect(() => { fetchAll(); }, []);
+  useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  // Realtime: listen for document status changes to "signed"
+  useEffect(() => {
+    const channel = supabase
+      .channel('documents-signing-updates')
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'documents',
+      }, (payload) => {
+        const row = payload.new as any;
+        if (row.status === 'signed') {
+          toast.success('📄 Documento firmado', {
+            description: `"${row.file_name}" ha sido firmado exitosamente.`,
+            duration: 8000,
+          });
+          fetchAll();
+        }
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [fetchAll]);
 
   const copySignLink = (docId: string) => {
     const link = `${window.location.origin}/documents/sign/${docId}`;
@@ -57,10 +85,14 @@ const Documents = () => {
     }
   };
 
-  const getStatusKey = (status: string) => {
-    if (status === 'signed') return 'delivered';
+  const getStatusLabel = (status: string) => {
+    if (status === 'signed') return 'completed';
     if (status === 'expired') return 'cancelled';
     return 'pending';
+  };
+
+  const openPdfPreview = (doc: SignDocument) => {
+    setPreviewDoc(doc);
   };
 
   return (
@@ -118,7 +150,7 @@ const Documents = () => {
                     <TableRow key={doc.id}>
                       <TableCell className="font-medium">{doc.fileName}</TableCell>
                       <TableCell>
-                        <StatusBadge status={getStatusKey(doc.status)} />
+                        <StatusBadge status={getStatusLabel(doc.status)} />
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {doc.recipientEmail || '—'}
@@ -140,8 +172,13 @@ const Documents = () => {
                           )}
                           {doc.status === 'signed' && (
                             <>
+                              {(doc.signedFileData || doc.fileData) && (
+                                <Button variant="ghost" size="icon" onClick={() => openPdfPreview(doc)} title="Ver PDF">
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                              )}
                               <Button variant="ghost" size="icon" onClick={() => navigate(`/documents/complete/${doc.id}`)} title="Ver detalles">
-                                <Eye className="h-4 w-4" />
+                                <FileText className="h-4 w-4" />
                               </Button>
                               {doc.signedFileData && (
                                 <Button variant="ghost" size="icon" onClick={() => {
@@ -241,6 +278,25 @@ const Documents = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* PDF Preview Dialog */}
+      <Dialog open={!!previewDoc} onOpenChange={(open) => !open && setPreviewDoc(null)}>
+        <DialogContent className="max-w-4xl max-h-[90vh] p-0 overflow-hidden">
+          <DialogHeader className="p-4 pb-2">
+            <DialogTitle className="truncate">{previewDoc?.fileName}</DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-auto px-4 pb-4" style={{ maxHeight: 'calc(90vh - 80px)' }}>
+            {previewDoc && (
+              <iframe
+                src={previewDoc.signedFileData || previewDoc.fileData}
+                className="w-full rounded border"
+                style={{ height: '75vh' }}
+                title="PDF Preview"
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

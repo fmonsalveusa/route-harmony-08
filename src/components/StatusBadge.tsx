@@ -31,6 +31,8 @@ const statusConfig: Record<string, { label: string; className: string }> = {
   invoice_pending: { label: 'Pending', className: 'bg-[hsl(38,92%,50%)] text-white' },
   invoice_sent: { label: 'Sent', className: 'bg-[hsl(205,85%,50%)] text-white' },
   invoice_paid: { label: 'Paid', className: 'bg-[hsl(152,60%,40%)] text-white' },
+  // Document statuses
+  completed: { label: 'Completado', className: 'bg-[hsl(152,60%,40%)] text-white' },
 };
 
 export const StatusBadge = ({ status, className: extraClass }: { status: string; className?: string }) => {
