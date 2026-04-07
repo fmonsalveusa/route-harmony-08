@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -286,7 +286,6 @@ const Documents = () => {
           </DialogHeader>
           <div className="flex-1 overflow-auto px-4 pb-4" style={{ maxHeight: 'calc(90vh - 80px)' }}>
             {previewDoc && <PdfBlobIframe dataUri={previewDoc.signedFileData || previewDoc.fileData} />}
-          </div>
           </div>
         </DialogContent>
       </Dialog>
