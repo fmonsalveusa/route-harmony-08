@@ -10,6 +10,7 @@ import { format } from 'date-fns';
 import { getDocuments, deleteDocument } from '@/store/signing-documents';
 import { getTemplates, deleteTemplate } from '@/store/signing-templates';
 import { supabase } from '@/integrations/supabase/client';
+import { getSigningUrl } from '@/lib/signing-url';
 import type { SignDocument, SignTemplate } from '@/types/document';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
