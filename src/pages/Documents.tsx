@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,36 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
+
+function dataUriToBlob(dataUri: string): Blob {
+  const [header, base64] = dataUri.split(',');
+  const mime = header.match(/:(.*?);/)?.[1] || 'application/pdf';
+  const bytes = atob(base64);
+  const arr = new Uint8Array(bytes.length);
+  for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+  return new Blob([arr], { type: mime });
+}
+
+function PdfBlobIframe({ dataUri }: { dataUri: string }) {
+  const blobUrl = useMemo(() => {
+    if (!dataUri) return '';
+    return URL.createObjectURL(dataUriToBlob(dataUri));
+  }, [dataUri]);
+
+  useEffect(() => {
+    return () => { if (blobUrl) URL.revokeObjectURL(blobUrl); };
+  }, [blobUrl]);
+
+  if (!blobUrl) return null;
+  return (
+    <iframe
+      src={blobUrl}
+      className="w-full rounded border"
+      style={{ height: '75vh' }}
+      title="PDF Preview"
+    />
+  );
+}
 
 const Documents = () => {
   const navigate = useNavigate();
@@ -285,14 +315,7 @@ const Documents = () => {
             <DialogTitle className="truncate">{previewDoc?.fileName}</DialogTitle>
           </DialogHeader>
           <div className="flex-1 overflow-auto px-4 pb-4" style={{ maxHeight: 'calc(90vh - 80px)' }}>
-            {previewDoc && (
-              <iframe
-                src={previewDoc.signedFileData || previewDoc.fileData}
-                className="w-full rounded border"
-                style={{ height: '75vh' }}
-                title="PDF Preview"
-              />
-            )}
+            {previewDoc && <PdfBlobIframe dataUri={previewDoc.signedFileData || previewDoc.fileData} />}
           </div>
         </DialogContent>
       </Dialog>
