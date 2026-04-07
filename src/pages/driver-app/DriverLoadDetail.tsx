@@ -176,20 +176,29 @@ export default function DriverLoadDetail() {
             className="w-full gap-2 border-primary/30 text-primary hover:bg-primary/5"
             onClick={async (e) => {
               e.stopPropagation();
-              const win = window.open('', '_blank');
               try {
-                const path = load.pdf_url.includes('driver-documents/') 
-                  ? load.pdf_url.split('driver-documents/')[1] 
-                  : load.pdf_url;
-                const { data } = await supabase.storage.from('driver-documents').createSignedUrl(path, 3600);
-                if (data?.signedUrl && win) {
-                  win.location.href = data.signedUrl;
-                } else {
-                  win?.close();
-                  toast({ title: 'Could not open document', variant: 'destructive' });
+                let url = load.pdf_url;
+                // Only generate signed URL if it's a relative storage path (not already a full URL)
+                if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                  const path = url.includes('driver-documents/') 
+                    ? url.split('driver-documents/')[1] 
+                    : url;
+                  const { data, error } = await supabase.storage.from('driver-documents').createSignedUrl(path, 3600);
+                  if (error || !data?.signedUrl) {
+                    toast({ title: 'Could not open document', variant: 'destructive' });
+                    return;
+                  }
+                  url = data.signedUrl;
                 }
+                // Use anchor element to avoid popup blockers on iOS WKWebView
+                const a = document.createElement('a');
+                a.href = url;
+                a.target = '_blank';
+                a.rel = 'noopener noreferrer';
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => document.body.removeChild(a), 100);
               } catch {
-                win?.close();
                 toast({ title: 'Error opening document', variant: 'destructive' });
               }
             }}
