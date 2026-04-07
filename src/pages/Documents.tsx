@@ -56,6 +56,7 @@ const Documents = () => {
   const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'doc' | 'tpl'; id: string; name: string } | null>(null);
   const [previewDoc, setPreviewDoc] = useState<SignDocument | null>(null);
+  const [editingRecipient, setEditingRecipient] = useState<{ id: string; email: string } | null>(null);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -125,6 +126,20 @@ const Documents = () => {
     setPreviewDoc(doc);
   };
 
+  const saveRecipientEmail = async () => {
+    if (!editingRecipient) return;
+    const email = editingRecipient.email.trim();
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error('Email inválido');
+      return;
+    }
+    const { error } = await supabase.from('documents').update({ recipient_email: email || null }).eq('id', editingRecipient.id);
+    if (error) { toast.error('Error al guardar'); return; }
+    setDocuments(prev => prev.map(d => d.id === editingRecipient.id ? { ...d, recipientEmail: email || null } : d));
+    setEditingRecipient(null);
+    toast.success('Destinatario actualizado');
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -183,7 +198,30 @@ const Documents = () => {
                         <StatusBadge status={getStatusLabel(doc.status)} />
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {doc.recipientEmail || '—'}
+                        {editingRecipient?.id === doc.id ? (
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="email"
+                              className="border rounded px-2 py-1 text-sm w-48 bg-background text-foreground"
+                              value={editingRecipient.email}
+                              onChange={e => setEditingRecipient({ ...editingRecipient, email: e.target.value })}
+                              onKeyDown={e => { if (e.key === 'Enter') saveRecipientEmail(); if (e.key === 'Escape') setEditingRecipient(null); }}
+                              autoFocus
+                              placeholder="email@ejemplo.com"
+                            />
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={saveRecipientEmail}>
+                              <Pencil className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <span
+                            className="cursor-pointer hover:text-foreground hover:underline"
+                            onClick={() => setEditingRecipient({ id: doc.id, email: doc.recipientEmail || '' })}
+                            title="Click para editar"
+                          >
+                            {doc.recipientEmail || '—'}
+                          </span>
+                        )}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {format(new Date(doc.createdAt), 'MMM dd, yyyy')}
