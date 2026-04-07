@@ -374,13 +374,7 @@ const Loads = () => {
                           id={`load-row-${load.id}`}
                           className={`border-b last:border-0 glass-row cursor-pointer ${isExpanded ? 'glass-row-expanded' : ''}`}
                           onClick={() => {
-                            const newId = isExpanded ? null : load.id;
-                            setExpandedId(newId);
-                            if (newId) {
-                              setTimeout(() => {
-                                document.getElementById(`load-row-${newId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                              }, 100);
-                            }
+                            setExpandedId(isExpanded ? null : load.id);
                           }}
                         >
                           <td className="p-3 text-muted-foreground">
