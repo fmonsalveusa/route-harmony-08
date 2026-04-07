@@ -176,7 +176,7 @@ export const EdgeCropOverlay = ({
         <p className="text-white/50 text-xs mt-1">Arrastra los puntos para ajustar el área de recorte</p>
       </div>
 
-      <div className="absolute left-0 right-0 top-[60px] z-20 px-4 py-3">
+      <div className="absolute left-0 right-0 z-20 px-4 py-3" style={{ top: 'calc(max(12px, env(safe-area-inset-top)) + 50px)' }}>
         <div className="flex gap-3 justify-center">
           <Button
             variant="outline"
