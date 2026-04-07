@@ -284,6 +284,7 @@ const AppRoutes = () => {
       <Route path="/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
       <Route path="/documents/upload" element={<ProtectedRoute><SigningUpload /></ProtectedRoute>} />
       <Route path="/documents/sign/:id" element={<SigningSign />} />
+      <Route path="/sign/:id" element={<SigningSign />} />
       <Route path="/documents/complete/:id" element={<SigningComplete />} />
 
       {/* Master Admin routes */}
