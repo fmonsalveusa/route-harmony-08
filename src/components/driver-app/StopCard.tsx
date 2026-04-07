@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { MapPin, Navigation, Camera, Check, Clock, Image, Loader2, Trash2, PackageCheck, CheckCircle2, ImagePlus, ScanLine, ChevronLeft, ChevronRight, X, FileText } from 'lucide-react';
 import { DocumentScanner } from './DocumentScanner';
 import { Button } from '@/components/ui/button';
@@ -192,17 +192,32 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
     onUpdate();
   };
 
+  const cameraFallbackRef = useRef<HTMLInputElement>(null);
+  const galleryFallbackRef = useRef<HTMLInputElement>(null);
+
   const handleNativeCamera = async () => {
-    const dataUrl = await takeNativePhoto();
-    if (dataUrl) {
-      await uploadDataUrl(dataUrl, `camera_${Date.now()}.jpg`);
+    try {
+      const dataUrl = await takeNativePhoto();
+      if (dataUrl) {
+        await uploadDataUrl(dataUrl, `camera_${Date.now()}.jpg`);
+      }
+    } catch (err: any) {
+      console.error('Native camera failed:', err);
+      toast({ title: 'Error de cámara', description: 'Intentando abrir selector de archivos...', variant: 'destructive' });
+      cameraFallbackRef.current?.click();
     }
   };
 
   const handleNativeGallery = async () => {
-    const urls = await pickFromGallery();
-    for (const dataUrl of urls) {
-      await uploadDataUrl(dataUrl, `gallery_${Date.now()}.jpg`);
+    try {
+      const urls = await pickFromGallery();
+      for (const dataUrl of urls) {
+        await uploadDataUrl(dataUrl, `gallery_${Date.now()}.jpg`);
+      }
+    } catch (err: any) {
+      console.error('Native gallery failed:', err);
+      toast({ title: 'Error de galería', description: 'Intentando abrir selector de archivos...', variant: 'destructive' });
+      galleryFallbackRef.current?.click();
     }
   };
 
@@ -442,7 +457,6 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
                 <input
                   type="file"
                   accept="image/*"
-                  capture="environment"
                   className="hidden"
                   onChange={handleFileUpload}
                   disabled={uploading}
@@ -474,6 +488,10 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
                 />
               </label>
             )}
+
+            {/* Hidden fallback inputs for native camera/gallery errors */}
+            <input ref={cameraFallbackRef} type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
+            <input ref={galleryFallbackRef} type="file" accept="image/*,application/pdf" multiple className="hidden" onChange={handleFileUpload} />
           </div>
 
           {/* Scanner button - all platforms */}
