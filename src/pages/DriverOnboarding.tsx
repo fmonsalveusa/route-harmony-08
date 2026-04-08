@@ -31,7 +31,8 @@ const TRUCK_DOC_FIELDS = [
   { key: 'cargo_area_photo', label: 'Cargo Area Photo' },
 ];
 
-const STEP_LABELS = ['Driver Info', 'Truck Info', 'Documents', 'Review'];
+const STEP_LABELS_OO = ['Driver Info', 'Truck Info', 'Documents', 'Review'];
+const STEP_LABELS_CD = ['Driver Info', 'Documents', 'Review'];
 
 export default function DriverOnboarding() {
   const { token } = useParams<{ token: string }>();
@@ -73,7 +74,7 @@ export default function DriverOnboarding() {
   const [truckFiles, setTruckFiles] = useState<Record<string, File>>({});
 
   // Signed documents
-  const [signedDocs, setSignedDocs] = useState<SignedDocs>({ w9: null, leasing: null, service: null });
+  const [signedDocs, setSignedDocs] = useState<SignedDocs>({ w9: null, leasing: null, service: null, employment: null });
 
   useEffect(() => {
     if (!token) return;
@@ -127,24 +128,33 @@ export default function DriverOnboarding() {
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
+      const isOO = tokenData?.service_type !== 'company_driver';
       const formData = new FormData();
       formData.append('token', token!);
       formData.append('driver_data', JSON.stringify(driver));
-      formData.append('truck_data', JSON.stringify(truck));
+      if (isOO) {
+        formData.append('truck_data', JSON.stringify(truck));
+      }
 
       // Append driver files
       for (const [key, file] of Object.entries(driverFiles)) {
         formData.append(`driver_${key}`, file);
       }
-      // Append truck files
-      for (const [key, file] of Object.entries(truckFiles)) {
-        formData.append(`truck_${key}`, file);
+      // Append truck files (only for OO)
+      if (isOO) {
+        for (const [key, file] of Object.entries(truckFiles)) {
+          formData.append(`truck_${key}`, file);
+        }
       }
 
       // Append signed document PDFs
-      if (signedDocs.w9) formData.append('driver_form_w9', signedDocs.w9, 'w9_signed.pdf');
-      if (signedDocs.leasing) formData.append('driver_leasing_agreement', signedDocs.leasing, 'leasing_agreement_signed.pdf');
-      if (signedDocs.service) formData.append('driver_service_agreement', signedDocs.service, 'service_agreement_signed.pdf');
+      if (isOO) {
+        if (signedDocs.w9) formData.append('driver_form_w9', signedDocs.w9, 'w9_signed.pdf');
+        if (signedDocs.leasing) formData.append('driver_leasing_agreement', signedDocs.leasing, 'leasing_agreement_signed.pdf');
+        if (signedDocs.service) formData.append('driver_service_agreement', signedDocs.service, 'service_agreement_signed.pdf');
+      } else {
+        if (signedDocs.employment) formData.append('driver_employment_contract', signedDocs.employment, 'employment_contract_signed.pdf');
+      }
 
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const res = await fetch(`${supabaseUrl}/functions/v1/driver-onboarding`, {
@@ -158,13 +168,15 @@ export default function DriverOnboarding() {
       // Generate summary PDF before clearing state
       try {
         const driverDocNames = DRIVER_DOC_FIELDS.filter(d => driverFiles[d.key]).map(d => d.label);
-        const truckDocNames = TRUCK_DOC_FIELDS.filter(d => truckFiles[d.key]).map(d => d.label);
+        const truckDocNames = isOO ? TRUCK_DOC_FIELDS.filter(d => truckFiles[d.key]).map(d => d.label) : [];
         const blob = generateOnboardingSummaryPdf({
           driverData: driver,
-          truckData: truck,
+          truckData: isOO ? truck : undefined,
           driverDocs: driverDocNames,
           truckDocs: truckDocNames,
-          signedDocs: { w9: !!signedDocs.w9, leasing: !!signedDocs.leasing, service: !!signedDocs.service },
+          signedDocs: isOO
+            ? { w9: !!signedDocs.w9, leasing: !!signedDocs.leasing, service: !!signedDocs.service }
+            : { employment: !!signedDocs.employment },
           date: format(new Date(), 'MM/dd/yyyy'),
         });
         setSummaryPdfBlob(blob);
@@ -238,6 +250,15 @@ export default function DriverOnboarding() {
     );
   }
 
+  const isOO = tokenData?.service_type !== 'company_driver';
+  const totalSteps = isOO ? 4 : 3;
+  const stepLabels = isOO ? STEP_LABELS_OO : STEP_LABELS_CD;
+
+  // Map logical steps for company driver: 1=Info, 2=Docs, 3=Review
+  // For OO: 1=Info, 2=Truck, 3=Docs, 4=Review
+  const docStep = isOO ? 3 : 2;
+  const reviewStep = isOO ? 4 : 3;
+
   return (
     <div className="min-h-screen bg-muted/30 py-6 px-4">
       <div className="max-w-2xl mx-auto space-y-6">
@@ -245,12 +266,16 @@ export default function DriverOnboarding() {
         <div className="text-center space-y-2">
           <img src={logoImg} alt="Logo" className="h-12 mx-auto" />
           <h1 className="text-2xl font-bold">Driver Onboarding</h1>
-          <p className="text-sm text-muted-foreground">Complete the form below to register your profile and truck information.</p>
+          <p className="text-sm text-muted-foreground">
+            {isOO
+              ? 'Complete the form below to register your profile and truck information.'
+              : 'Complete the form below to register your profile.'}
+          </p>
         </div>
 
         {/* Step indicator */}
         <div className="flex items-center justify-center gap-2">
-          {[1, 2, 3, 4].map(s => (
+          {Array.from({ length: totalSteps }, (_, i) => i + 1).map(s => (
             <div key={s} className="flex items-center gap-2">
               <div className={cn(
                 "w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-colors",
@@ -259,12 +284,12 @@ export default function DriverOnboarding() {
               )}>
                 {s < step ? '✓' : s}
               </div>
-              {s < 4 && <div className={cn("w-8 h-0.5", s < step ? "bg-green-500" : "bg-muted")} />}
+              {s < totalSteps && <div className={cn("w-8 h-0.5", s < step ? "bg-green-500" : "bg-muted")} />}
             </div>
           ))}
         </div>
         <div className="flex justify-center gap-4 text-xs text-muted-foreground">
-          {STEP_LABELS.map(l => <span key={l}>{l}</span>)}
+          {stepLabels.map(l => <span key={l}>{l}</span>)}
         </div>
 
         {/* Step 1: Driver Info */}
@@ -366,16 +391,16 @@ export default function DriverOnboarding() {
               </div>
 
               <div className="flex justify-end pt-2">
-                <Button onClick={() => { if (validateStep1()) setStep(2); }}>
-                  Next: Truck Info →
+                <Button onClick={() => { if (validateStep1()) setStep(isOO ? 2 : docStep); }}>
+                  {isOO ? 'Next: Truck Info →' : 'Next: Documents →'}
                 </Button>
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Step 2: Truck Info */}
-        {step === 2 && (
+        {/* Step 2: Truck Info (Owner Operator only) */}
+        {isOO && step === 2 && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2"><Truck className="h-5 w-5" /> Truck Information</CardTitle>
@@ -481,20 +506,21 @@ export default function DriverOnboarding() {
           </Card>
         )}
 
-        {/* Step 3: Document Signing */}
-        {step === 3 && (
+        {/* Document Signing Step */}
+        {step === docStep && (
           <DocumentSigningStep
+            serviceType={isOO ? 'owner_operator' : 'company_driver'}
             driverData={driver}
             truckData={truck}
             signedDocs={signedDocs}
             onSignedDocsChange={setSignedDocs}
-            onNext={() => setStep(4)}
-            onBack={() => setStep(2)}
+            onNext={() => setStep(reviewStep)}
+            onBack={() => setStep(isOO ? 2 : 1)}
           />
         )}
 
-        {/* Step 4: Review */}
-        {step === 4 && (
+        {/* Review Step */}
+        {step === reviewStep && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2"><Send className="h-5 w-5" /> Review & Submit</CardTitle>
@@ -519,31 +545,39 @@ export default function DriverOnboarding() {
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <h3 className="font-semibold flex items-center gap-2"><Truck className="h-4 w-4" /> Truck Information</h3>
-                <div className="grid grid-cols-2 gap-2 text-sm bg-muted/50 p-4 rounded-lg">
-                  <div><span className="text-muted-foreground">Unit #:</span> {truck.unit_number}</div>
-                  <div><span className="text-muted-foreground">Type:</span> {truck.truck_type}</div>
-                  {truck.make && <div><span className="text-muted-foreground">Make:</span> {truck.make}</div>}
-                  {truck.model && <div><span className="text-muted-foreground">Model:</span> {truck.model}</div>}
-                  {truck.year && <div><span className="text-muted-foreground">Year:</span> {truck.year}</div>}
-                  {truck.vin && <div><span className="text-muted-foreground">VIN:</span> {truck.vin}</div>}
-                  {truck.license_plate && <div><span className="text-muted-foreground">Plate:</span> {truck.license_plate}</div>}
-                  <div className="col-span-2"><span className="text-muted-foreground">Documents:</span> {Object.keys(truckFiles).length} file(s)</div>
+              {isOO && (
+                <div className="space-y-3">
+                  <h3 className="font-semibold flex items-center gap-2"><Truck className="h-4 w-4" /> Truck Information</h3>
+                  <div className="grid grid-cols-2 gap-2 text-sm bg-muted/50 p-4 rounded-lg">
+                    <div><span className="text-muted-foreground">Unit #:</span> {truck.unit_number}</div>
+                    <div><span className="text-muted-foreground">Type:</span> {truck.truck_type}</div>
+                    {truck.make && <div><span className="text-muted-foreground">Make:</span> {truck.make}</div>}
+                    {truck.model && <div><span className="text-muted-foreground">Model:</span> {truck.model}</div>}
+                    {truck.year && <div><span className="text-muted-foreground">Year:</span> {truck.year}</div>}
+                    {truck.vin && <div><span className="text-muted-foreground">VIN:</span> {truck.vin}</div>}
+                    {truck.license_plate && <div><span className="text-muted-foreground">Plate:</span> {truck.license_plate}</div>}
+                    <div className="col-span-2"><span className="text-muted-foreground">Documents:</span> {Object.keys(truckFiles).length} file(s)</div>
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div className="space-y-3">
                 <h3 className="font-semibold">📝 Signed Documents</h3>
                 <div className="grid grid-cols-1 gap-2 text-sm bg-muted/50 p-4 rounded-lg">
-                  <div className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-green-500" /> W-9 Form</div>
-                  <div className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-green-500" /> Leasing Agreement</div>
-                  <div className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-green-500" /> Service Agreement</div>
+                  {isOO ? (
+                    <>
+                      <div className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-green-500" /> W-9 Form</div>
+                      <div className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-green-500" /> Leasing Agreement</div>
+                      <div className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-green-500" /> Service Agreement</div>
+                    </>
+                  ) : (
+                    <div className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-green-500" /> Employment Contract</div>
+                  )}
                 </div>
               </div>
 
               <div className="flex justify-between pt-2">
-                <Button variant="outline" onClick={() => setStep(3)}>← Back</Button>
+                <Button variant="outline" onClick={() => setStep(docStep)}>← Back</Button>
                 <Button onClick={handleSubmit} disabled={submitting} className="gap-2">
                   {submitting ? 'Submitting...' : '✓ Submit Onboarding'}
                 </Button>

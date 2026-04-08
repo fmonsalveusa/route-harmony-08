@@ -566,7 +566,7 @@ export interface OnboardingSummaryData {
     name: string; email: string; phone: string; license: string;
     state: string | null; license_expiry: string | null; medical_card_expiry: string | null;
   };
-  truckData: {
+  truckData?: {
     unit_number: string; truck_type: string; make?: string | null; model?: string | null;
     year?: number | null; vin?: string | null; license_plate?: string | null;
     max_payload_lbs?: number | null;
@@ -577,7 +577,7 @@ export interface OnboardingSummaryData {
   };
   driverDocs: string[];
   truckDocs: string[];
-  signedDocs: { w9: boolean; leasing: boolean; service: boolean };
+  signedDocs: { w9?: boolean; leasing?: boolean; service?: boolean; employment?: boolean };
   date: string;
 }
 
@@ -642,57 +642,60 @@ export function generateOnboardingSummaryPdf(data: OnboardingSummaryData): Blob 
   doc.line(m, yRef.y, 190, yRef.y);
   yRef.y += 8;
 
-  // TRUCK INFORMATION
-  yRef.y = writeHeading(doc, 'TRUCK INFORMATION', m, yRef.y, 11);
-  yRef.y += 2;
-  field('Unit #:', data.truckData.unit_number, yRef);
-  field('Type:', data.truckData.truck_type, yRef);
-  field('Make:', data.truckData.make, yRef);
-  field('Model:', data.truckData.model, yRef);
-  field('Year:', data.truckData.year, yRef);
-  field('VIN:', data.truckData.vin, yRef);
-  field('License Plate:', data.truckData.license_plate, yRef);
-  if (data.truckData.max_payload_lbs) {
-    field('Max Payload:', `${data.truckData.max_payload_lbs.toLocaleString()} lbs`, yRef);
-  }
-  field('Insurance Exp:', data.truckData.insurance_expiry, yRef);
-  field('Registration Exp:', data.truckData.registration_expiry, yRef);
-
-  // Dimensions
-  const dims: string[] = [];
-  if (data.truckData.cargo_length_ft) dims.push(`Cargo: ${data.truckData.cargo_length_ft}ft L`);
-  if (data.truckData.cargo_width_in) dims.push(`${data.truckData.cargo_width_in}in W`);
-  if (data.truckData.cargo_height_in) dims.push(`${data.truckData.cargo_height_in}in H`);
-  if (data.truckData.rear_door_width_in) dims.push(`Door: ${data.truckData.rear_door_width_in}in W`);
-  if (data.truckData.rear_door_height_in) dims.push(`${data.truckData.rear_door_height_in}in H`);
-  if (data.truckData.trailer_length_ft) dims.push(`Trailer: ${data.truckData.trailer_length_ft}ft`);
-  if (dims.length) field('Dimensions:', dims.join(' × '), yRef);
-  if (data.truckData.mega_ramp) field('Mega Ramp:', data.truckData.mega_ramp, yRef);
-
-  if (data.truckDocs.length > 0) {
+  // TRUCK INFORMATION (only if present)
+  if (data.truckData) {
+    yRef.y = writeHeading(doc, 'TRUCK INFORMATION', m, yRef.y, 11);
     yRef.y += 2;
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    doc.text('Documents:', m, yRef.y);
-    yRef.y += 5;
-    for (const docName of data.truckDocs) {
-      doc.text(`  ✓ ${docName}`, m + 5, yRef.y);
-      yRef.y += 5;
-      if (yRef.y > 275) { doc.addPage(); yRef.y = 20; }
+    field('Unit #:', data.truckData.unit_number, yRef);
+    field('Type:', data.truckData.truck_type, yRef);
+    field('Make:', data.truckData.make, yRef);
+    field('Model:', data.truckData.model, yRef);
+    field('Year:', data.truckData.year, yRef);
+    field('VIN:', data.truckData.vin, yRef);
+    field('License Plate:', data.truckData.license_plate, yRef);
+    if (data.truckData.max_payload_lbs) {
+      field('Max Payload:', `${data.truckData.max_payload_lbs.toLocaleString()} lbs`, yRef);
     }
-  }
+    field('Insurance Exp:', data.truckData.insurance_expiry, yRef);
+    field('Registration Exp:', data.truckData.registration_expiry, yRef);
 
-  yRef.y += 4;
-  doc.line(m, yRef.y, 190, yRef.y);
-  yRef.y += 8;
+    // Dimensions
+    const dims: string[] = [];
+    if (data.truckData.cargo_length_ft) dims.push(`Cargo: ${data.truckData.cargo_length_ft}ft L`);
+    if (data.truckData.cargo_width_in) dims.push(`${data.truckData.cargo_width_in}in W`);
+    if (data.truckData.cargo_height_in) dims.push(`${data.truckData.cargo_height_in}in H`);
+    if (data.truckData.rear_door_width_in) dims.push(`Door: ${data.truckData.rear_door_width_in}in W`);
+    if (data.truckData.rear_door_height_in) dims.push(`${data.truckData.rear_door_height_in}in H`);
+    if (data.truckData.trailer_length_ft) dims.push(`Trailer: ${data.truckData.trailer_length_ft}ft`);
+    if (dims.length) field('Dimensions:', dims.join(' × '), yRef);
+    if (data.truckData.mega_ramp) field('Mega Ramp:', data.truckData.mega_ramp, yRef);
+
+    if (data.truckDocs.length > 0) {
+      yRef.y += 2;
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Documents:', m, yRef.y);
+      yRef.y += 5;
+      for (const docName of data.truckDocs) {
+        doc.text(`  ✓ ${docName}`, m + 5, yRef.y);
+        yRef.y += 5;
+        if (yRef.y > 275) { doc.addPage(); yRef.y = 20; }
+      }
+    }
+
+    yRef.y += 4;
+    doc.line(m, yRef.y, 190, yRef.y);
+    yRef.y += 8;
+  }
 
   // SIGNED DOCUMENTS
   yRef.y = writeHeading(doc, 'SIGNED DOCUMENTS', m, yRef.y, 11);
   yRef.y += 2;
   const signedItems = [
-    { label: 'W-9 Form', signed: data.signedDocs.w9 },
-    { label: 'Leasing Agreement', signed: data.signedDocs.leasing },
-    { label: 'Service Agreement', signed: data.signedDocs.service },
+    ...(data.signedDocs.w9 !== undefined ? [{ label: 'W-9 Form', signed: data.signedDocs.w9 }] : []),
+    ...(data.signedDocs.leasing !== undefined ? [{ label: 'Leasing Agreement', signed: data.signedDocs.leasing }] : []),
+    ...(data.signedDocs.service !== undefined ? [{ label: 'Service Agreement', signed: data.signedDocs.service }] : []),
+    ...(data.signedDocs.employment !== undefined ? [{ label: 'Employment Contract', signed: data.signedDocs.employment }] : []),
   ];
   for (const item of signedItems) {
     doc.setFontSize(9);
@@ -803,6 +806,58 @@ export function generateTerminationLetterPdf(data: {
   doc.text('Authorized Representative', m, y);
   y += 5;
   doc.text(co, m, y);
+
+  return doc.output('blob');
+}
+
+/** Generate Employment Contract PDF for Company Drivers */
+export function generateEmploymentContractPdf(data: { driverName: string; signatureDataUrl: string; date: string }): Blob {
+  const doc = new jsPDF({ unit: 'mm', format: 'letter' });
+  const m = 20;
+  const maxW = 170;
+  let y = 25;
+
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text('EMPLOYMENT CONTRACT', 105, y, { align: 'center' });
+  y += 6;
+  doc.setFontSize(11);
+  doc.text('CONTRATO DE TRABAJO', 105, y, { align: 'center' });
+  y += 10;
+
+  const sections = [
+    { title: '1. POSITION & DUTIES / PUESTO Y FUNCIONES', body: 'The Employee is hired as a Company Driver responsible for operating commercial motor vehicles for the transportation of goods. The Employee agrees to follow all DOT/FMCSA regulations, company policies, and applicable laws.\n\nEl Empleado es contratado como Conductor de Empresa responsable de operar vehículos motorizados comerciales para el transporte de mercancías.' },
+    { title: '2. COMPENSATION / COMPENSACIÓN', body: 'The Employee will receive compensation as determined by the Company\'s pay schedule. Payment details will be provided separately.\n\nEl Empleado recibirá compensación según lo determinado por el calendario de pagos de la Empresa.' },
+    { title: '3. EMPLOYMENT RELATIONSHIP / RELACIÓN LABORAL', body: 'The Employee acknowledges that they are an employee of the Company, not an independent contractor. The Company will provide the vehicle, insurance, and necessary equipment for operations.\n\nEl Empleado reconoce que es un empleado de la Empresa, no un contratista independiente.' },
+    { title: '4. TERMINATION / TERMINACIÓN', body: 'Either party may terminate this Agreement with written notice. The Company reserves the right to terminate immediately for cause, including but not limited to: safety violations, failed drug tests, or material breach of this Agreement.\n\nCualquiera de las partes puede terminar este Acuerdo con notificación por escrito.' },
+  ];
+
+  y = writeBlock(doc, `This Employment Contract is entered into on ${data.date}, between the Company and ${data.driverName} ("Employee").`, m, y, 9, maxW);
+  y += 3;
+  y = writeBlock(doc, `Este Contrato de Trabajo se celebra el ${data.date}, entre la Empresa y ${data.driverName} ("Empleado").`, m, y, 9, maxW);
+  y += 6;
+
+  for (const s of sections) {
+    y = writeHeading(doc, s.title, m, y, 9);
+    y = writeBlock(doc, s.body, m, y, 8, maxW, false, 3.5);
+    y += 4;
+  }
+
+  y += 6;
+  if (y > 240) { doc.addPage(); y = 25; }
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Date / Fecha: ${data.date}`, m, y);
+  y += 8;
+  doc.text('Employee Signature / Firma del Empleado:', m, y);
+  y += 4;
+  if (data.signatureDataUrl) {
+    addSignatureImage(doc, data.signatureDataUrl, m, y, 50, 15);
+    y += 18;
+  }
+  doc.text(data.driverName, m, y);
+  y += 5;
+  doc.text('Print Name / Nombre Impreso', m, y);
 
   return doc.output('blob');
 }

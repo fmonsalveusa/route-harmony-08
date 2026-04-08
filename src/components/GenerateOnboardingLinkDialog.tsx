@@ -19,6 +19,7 @@ interface Props {
 export function GenerateOnboardingLinkDialog({ open, onOpenChange, dispatchers }: Props) {
   const tenantId = useTenantId();
   const [driverName, setDriverName] = useState('');
+  const [serviceType, setServiceType] = useState<'owner_operator' | 'company_driver'>('owner_operator');
   const [dispatcherId, setDispatcherId] = useState<string | null>(null);
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
@@ -36,6 +37,7 @@ export function GenerateOnboardingLinkDialog({ open, onOpenChange, dispatchers }
         .insert({
           tenant_id: tenantId,
           driver_name: driverName.trim() || null,
+          service_type: serviceType,
           dispatcher_id: dispatcherId,
         })
         .select('token')
@@ -64,6 +66,7 @@ export function GenerateOnboardingLinkDialog({ open, onOpenChange, dispatchers }
   const handleClose = (v: boolean) => {
     if (!v) {
       setDriverName('');
+      setServiceType('owner_operator');
       setDispatcherId(null);
       setGeneratedLink(null);
       setCopied(false);
@@ -92,6 +95,16 @@ export function GenerateOnboardingLinkDialog({ open, onOpenChange, dispatchers }
                 onChange={e => setDriverName(e.target.value)}
                 placeholder="e.g. John Smith"
               />
+            </div>
+            <div className="space-y-2">
+              <Label>Service Type</Label>
+              <Select value={serviceType} onValueChange={v => setServiceType(v as any)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="owner_operator">Owner Operator</SelectItem>
+                  <SelectItem value="company_driver">Company Driver</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label>Pre-assign Dispatcher (optional)</Label>
