@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -20,24 +21,30 @@ export interface DriverPayment {
   driver_name?: string;
 }
 
+interface DriverPaymentsResult {
+  payments: DriverPayment[];
+  investorPayments: DriverPayment[];
+}
+
 async function enrichPayments(data: any[]): Promise<DriverPayment[]> {
   if (!data.length) return [];
 
   const loadIds = [...new Set(data.map(p => p.load_id))];
   const paymentIds = data.map(p => p.id);
 
+  // Cargas, ajustes y drivers en paralelo — antes eran secuenciales
   const [{ data: loads }, { data: adjustments }] = await Promise.all([
     supabase.from('loads').select('id, origin, destination, driver_id').in('id', loadIds),
     supabase.from('payment_adjustments').select('*').in('payment_id', paymentIds),
   ]);
 
   const loadMap = new Map((loads || []).map((l: any) => [l.id, l]));
-
-  // Fetch driver names for loads
   const driverIds = [...new Set((loads || []).map((l: any) => l.driver_id).filter(Boolean))];
+
   const { data: drivers } = driverIds.length
     ? await supabase.from('drivers').select('id, name').in('id', driverIds)
     : { data: [] as any[] };
+
   const driverMap = new Map((drivers || []).map((d: any) => [d.id, d.name]));
 
   const adjMap = new Map<string, number>();
@@ -61,75 +68,81 @@ async function enrichPayments(data: any[]): Promise<DriverPayment[]> {
   });
 }
 
+async function fetchDriverPaymentsFromDb(email: string): Promise<DriverPaymentsResult> {
+  // Buscar driver e investor drivers EN PARALELO — antes era secuencial
+  const [{ data: driver }, { data: investorDrivers }] = await Promise.all([
+    supabase.from('drivers').select('id').eq('email', email).maybeSingle(),
+    (supabase.from('drivers') as any).select('id, name').eq('investor_email', email),
+  ]);
+
+  // Buscar pagos de driver e investor EN PARALELO
+  const [driverPaymentsRaw, investorPaymentsRaw] = await Promise.all([
+    driver
+      ? supabase
+          .from('payments')
+          .select('*')
+          .eq('recipient_id', driver.id)
+          .eq('recipient_type', 'driver')
+          .order('created_at', { ascending: false })
+      : Promise.resolve({ data: [], error: null }),
+
+    investorDrivers && investorDrivers.length > 0
+      ? supabase
+          .from('payments')
+          .select('*')
+          .in('recipient_id', investorDrivers.map((d: any) => d.id))
+          .eq('recipient_type', 'investor')
+          .order('created_at', { ascending: false })
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+
+  // Enriquecer pagos con datos de loads y ajustes EN PARALELO
+  const [payments, investorPayments] = await Promise.all([
+    enrichPayments((driverPaymentsRaw.data as any[]) || []),
+    enrichPayments((investorPaymentsRaw.data as any[]) || []),
+  ]);
+
+  return { payments, investorPayments };
+}
+
 export function useDriverPayments() {
   const { profile } = useAuth();
-  const [payments, setPayments] = useState<DriverPayment[]>([]);
-  const [investorPayments, setInvestorPayments] = useState<DriverPayment[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const email = profile?.email ?? '';
 
-  const fetchPayments = useCallback(async () => {
-    if (!profile?.email) return;
-    setLoading(true);
+  const { data, isLoading: loading } = useQuery({
+    queryKey: ['driver_payments', email],
+    queryFn: () => fetchDriverPaymentsFromDb(email),
+    enabled: !!email,
+  });
 
-    // 1. Find driver by email (for driver payments)
-    const { data: driver } = await supabase
-      .from('drivers')
-      .select('id')
-      .eq('email', profile.email)
-      .maybeSingle();
+  const payments = data?.payments ?? [];
+  const investorPayments = data?.investorPayments ?? [];
 
-    // 2. Find drivers where this user is investor (investor_email match)
-    const { data: investorDrivers } = await (supabase
-      .from('drivers') as any)
-      .select('id, name')
-      .eq('investor_email', profile.email);
+  const refetch = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: ['driver_payments', email] });
+  }, [queryClient, email]);
 
-    // Fetch driver payments
-    if (driver) {
-      const { data, error } = await supabase
-        .from('payments')
-        .select('*')
-        .eq('recipient_id', driver.id)
-        .eq('recipient_type', 'driver')
-        .order('created_at', { ascending: false });
+  const totalPending = payments
+    .filter(p => p.status === 'pending')
+    .reduce((sum, p) => sum + (p.net_amount ?? p.amount), 0);
 
-      if (!error && data) {
-        setPayments(await enrichPayments(data as any[]));
-      }
-    }
+  const totalPaid = payments
+    .filter(p => p.status === 'paid')
+    .reduce((sum, p) => sum + (p.net_amount ?? p.amount), 0);
 
-    // Fetch investor payments
-    if (investorDrivers && investorDrivers.length > 0) {
-      const driverIds = investorDrivers.map(d => d.id);
-      const { data, error } = await supabase
-        .from('payments')
-        .select('*')
-        .in('recipient_id', driverIds)
-        .eq('recipient_type', 'investor')
-        .order('created_at', { ascending: false });
+  const investorTotalPending = investorPayments
+    .filter(p => p.status === 'pending')
+    .reduce((sum, p) => sum + (p.net_amount ?? p.amount), 0);
 
-      if (!error && data) {
-        setInvestorPayments(await enrichPayments(data as any[]));
-      }
-    } else {
-      setInvestorPayments([]);
-    }
-
-    setLoading(false);
-  }, [profile?.email]);
-
-  useEffect(() => { fetchPayments(); }, [fetchPayments]);
-
-  const totalPending = payments.filter(p => p.status === 'pending').reduce((sum, p) => sum + (p.net_amount ?? p.amount), 0);
-  const totalPaid = payments.filter(p => p.status === 'paid').reduce((sum, p) => sum + (p.net_amount ?? p.amount), 0);
-
-  const investorTotalPending = investorPayments.filter(p => p.status === 'pending').reduce((sum, p) => sum + (p.net_amount ?? p.amount), 0);
-  const investorTotalPaid = investorPayments.filter(p => p.status === 'paid').reduce((sum, p) => sum + (p.net_amount ?? p.amount), 0);
+  const investorTotalPaid = investorPayments
+    .filter(p => p.status === 'paid')
+    .reduce((sum, p) => sum + (p.net_amount ?? p.amount), 0);
 
   return {
     payments, investorPayments, loading,
     totalPending, totalPaid,
     investorTotalPending, investorTotalPaid,
-    refetch: fetchPayments,
+    refetch,
   };
 }

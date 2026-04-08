@@ -559,11 +559,8 @@ const Loads = () => {
                                 companies={companies}
                                 onMilesCalculated={async (loadId, miles, routeGeometry) => {
                                   const updateData: any = { miles };
-                                  if (routeGeometry) {
-                                    updateData.route_geometry = routeGeometry;
-                                  }
-                                  await supabase.from('loads').update(updateData).eq('id', loadId);
-                                  await fetchLoads();
+                                  if (routeGeometry) updateData.route_geometry = routeGeometry;
+                                  await updateLoad(loadId, updateData);
                                 }}
                                 onLoadDataUpdated={async () => { await fetchLoads(); }}
                               />

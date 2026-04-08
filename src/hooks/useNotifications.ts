@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect, useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { getTenantId } from '@/hooks/useTenantId';
 
@@ -14,53 +15,73 @@ export interface Notification {
   created_at: string;
 }
 
+const NOTIFICATIONS_QUERY_KEY = ['notifications'];
+
+async function fetchNotificationsFromDb(): Promise<Notification[]> {
+  const { data, error } = await supabase
+    .from('notifications')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(50);
+
+  if (error) throw error;
+  return (data as Notification[]) ?? [];
+}
+
 export function useNotifications() {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const queryClient = useQueryClient();
 
-  const fetchNotifications = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('notifications')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(50);
+  const { data: notifications = [] } = useQuery({
+    queryKey: NOTIFICATIONS_QUERY_KEY,
+    queryFn: fetchNotificationsFromDb,
+  });
 
-    if (!error && data) {
-      setNotifications(data as any);
-      setUnreadCount((data as any).filter((n: any) => !n.is_read).length);
-    }
-  }, []);
+  const unreadCount = notifications.filter(n => !n.is_read).length;
+
+  // Real-time: agrega notificaciones nuevas al caché directamente
+  // Channel name único para evitar conflictos si el hook se monta en varios lugares
+  useEffect(() => {
+    const channelName = `notifications-realtime-${Math.random().toString(36).slice(2)}`;
+    const channel = supabase
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'notifications' },
+        (payload) => {
+          const newNotification = payload.new as Notification;
+          queryClient.setQueryData<Notification[]>(NOTIFICATIONS_QUERY_KEY, (old = []) =>
+            [newNotification, ...old].slice(0, 50)
+          );
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   const markAsRead = useCallback(async (id: string) => {
     await supabase.from('notifications').update({ is_read: true } as any).eq('id', id);
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
-    setUnreadCount(prev => Math.max(0, prev - 1));
-  }, []);
+    queryClient.setQueryData<Notification[]>(NOTIFICATIONS_QUERY_KEY, (old = []) =>
+      old.map(n => n.id === id ? { ...n, is_read: true } : n)
+    );
+  }, [queryClient]);
 
   const markAllAsRead = useCallback(async () => {
     const unreadIds = notifications.filter(n => !n.is_read).map(n => n.id);
     if (unreadIds.length === 0) return;
     await supabase.from('notifications').update({ is_read: true } as any).in('id', unreadIds);
-    setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
-    setUnreadCount(0);
-  }, [notifications]);
+    queryClient.setQueryData<Notification[]>(NOTIFICATIONS_QUERY_KEY, (old = []) =>
+      old.map(n => ({ ...n, is_read: true }))
+    );
+  }, [notifications, queryClient]);
 
-  useEffect(() => {
-    fetchNotifications();
+  const refetch = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_QUERY_KEY });
+  }, [queryClient]);
 
-    const channel = supabase
-      .channel('notifications-realtime')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, (payload) => {
-        const newNotification = payload.new as Notification;
-        setNotifications(prev => [newNotification, ...prev].slice(0, 50));
-        setUnreadCount(prev => prev + 1);
-      })
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
-  }, [fetchNotifications]);
-
-  return { notifications, unreadCount, markAsRead, markAllAsRead, refetch: fetchNotifications };
+  return { notifications, unreadCount, markAsRead, markAllAsRead, refetch };
 }
 
 export async function createNotification(params: {
