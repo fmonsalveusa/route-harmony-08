@@ -83,6 +83,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const profileLoadedRef = useRef(false);
   const loadedUserIdRef = useRef<string | null>(null);
+  // Previene que dos eventos de auth procesen sesión al mismo tiempo
+  const processingSessionRef = useRef(false);
 
   const clearUserState = () => {
     profileLoadedRef.current = false;
@@ -172,7 +174,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
 
         if (attempt < retries) {
-          await new Promise((resolve) => setTimeout(resolve, 1200 * attempt));
+          await new Promise((resolve) => setTimeout(resolve, 600 * attempt));
         }
       }
     }
@@ -203,6 +205,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const processSession = async (nextSession: Session | null, forceRefresh = false) => {
       if (!mounted) return;
 
+      // Si ya hay un processSession en curso, ignorar este evento
+      // (evita que bootstrapAuth y onAuthStateChange corran simultáneamente)
+      if (processingSessionRef.current) {
+        console.log('[AuthContext] processSession already in progress — skipping');
+        return;
+      }
+
       setSession(nextSession);
       setUser(nextSession?.user ?? null);
 
@@ -217,12 +226,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
+      processingSessionRef.current = true;
       setLoadingIfMounted(true);
 
       const success = await Promise.race<boolean>([
         fetchUserData(nextSession.user.id),
         new Promise<boolean>((resolve) => {
-          window.setTimeout(() => resolve(false), 10000);
+          window.setTimeout(() => resolve(false), 5000);
         }),
       ]).catch((error) => {
         console.warn('[AuthContext] session processing failed:', error);
@@ -236,6 +246,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         await safeSignOut();
       }
 
+      processingSessionRef.current = false;
       setLoadingIfMounted(false);
     };
 
@@ -262,7 +273,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const sessionResult = await Promise.race([
           supabase.auth.getSession(),
           new Promise<never>((_, reject) => {
-            window.setTimeout(() => reject(new Error('getSession timeout')), 8000);
+            window.setTimeout(() => reject(new Error('getSession timeout')), 4000);
           }),
         ]);
 
