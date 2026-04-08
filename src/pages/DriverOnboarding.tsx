@@ -31,7 +31,8 @@ const TRUCK_DOC_FIELDS = [
   { key: 'cargo_area_photo', label: 'Cargo Area Photo' },
 ];
 
-const STEP_LABELS = ['Driver Info', 'Truck Info', 'Documents', 'Review'];
+const STEP_LABELS_OO = ['Driver Info', 'Truck Info', 'Documents', 'Review'];
+const STEP_LABELS_CD = ['Driver Info', 'Documents', 'Review'];
 
 export default function DriverOnboarding() {
   const { token } = useParams<{ token: string }>();
@@ -73,7 +74,7 @@ export default function DriverOnboarding() {
   const [truckFiles, setTruckFiles] = useState<Record<string, File>>({});
 
   // Signed documents
-  const [signedDocs, setSignedDocs] = useState<SignedDocs>({ w9: null, leasing: null, service: null });
+  const [signedDocs, setSignedDocs] = useState<SignedDocs>({ w9: null, leasing: null, service: null, employment: null });
 
   useEffect(() => {
     if (!token) return;
