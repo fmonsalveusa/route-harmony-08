@@ -266,19 +266,29 @@ async function applyRecurringDeductions(payments: any[], tenant_id: string | nul
   }
 }
 
-/** Delete all payments for a load (when status reverts from delivered) */
+/** Delete only PENDING payments for a load (paid payments are preserved as accounting record) */
 export async function deletePaymentsForLoad(loadId: string) {
   const { data: existing } = await supabase
     .from('payments')
-    .select('id')
+    .select('id, status')
     .eq('load_id', loadId);
 
   if (!existing || existing.length === 0) return;
 
-  const { error } = await supabase.from('payments').delete().eq('load_id', loadId);
+  // Only delete pending payments — paid payments stay as accounting record
+  const pendingIds = (existing as any[])
+    .filter(p => p.status !== 'paid')
+    .map(p => p.id);
+
+  if (pendingIds.length === 0) {
+    toast({ title: 'Pagos ya procesados — no se eliminaron registros pagados' });
+    return;
+  }
+
+  const { error } = await supabase.from('payments').delete().in('id', pendingIds);
   if (error) {
     toast({ title: 'Error deleting payments', description: error.message, variant: 'destructive' });
   } else {
-    toast({ title: `${existing.length} payment(s) deleted automatically` });
+    toast({ title: `${pendingIds.length} pago(s) pendiente(s) eliminados` });
   }
 }

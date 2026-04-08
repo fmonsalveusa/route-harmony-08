@@ -434,11 +434,15 @@ const Loads = () => {
                               if (val === 'delivered') {
                                 if (!load.delivery_date) updates.delivery_date = todayET();
                                 if (!load.factoring) updates.factoring = 'pending';
+                              } else if (val === 'tonu') {
+                                // TONU: driver still gets paid — activate factoring flow same as delivered
+                                if (!load.factoring) updates.factoring = 'pending';
                               }
                               await updateLoad(load.id, updates);
                               if (val === 'delivered') {
                                 setPodUploadLoadId(load.id);
-                              } else if (prevStatus === 'delivered' && val !== 'tonu') {
+                              } else if (['delivered', 'tonu'].includes(prevStatus) && !['delivered', 'tonu'].includes(val)) {
+                                // Reverting from a terminal status — remove only pending payments
                                 await deletePaymentsForLoad(load.id);
                               }
                             }}>
