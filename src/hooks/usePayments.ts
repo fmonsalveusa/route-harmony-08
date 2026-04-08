@@ -56,6 +56,9 @@ export function usePayments() {
   return { payments, loading, updatePaymentStatus, refetch: fetchPayments };
 }
 
+// Tracks load IDs currently being processed — prevents duplicate payments from double-clicks
+const inFlightPaymentGenerations = new Set<string>();
+
 /** Generate payments for a delivered load */
 export async function generatePaymentsForLoad(load: {
   id: string;
@@ -76,6 +79,14 @@ export async function generatePaymentsForLoad(load: {
   commission_percentage: number;
   dispatch_service_percentage?: number;
 } | null) {
+  // Prevent concurrent executions for the same load (e.g. double-click on "ready")
+  if (inFlightPaymentGenerations.has(load.id)) {
+    console.warn(`[Payments] Generation already in progress for load ${load.id} — skipping`);
+    return;
+  }
+  inFlightPaymentGenerations.add(load.id);
+
+  try {
   const paymentsToInsert: any[] = [];
   const totalRate = Number(load.total_rate);
 
@@ -182,6 +193,10 @@ export async function generatePaymentsForLoad(load: {
       // ─── Auto-apply recurring deductions ───
       await applyRecurringDeductions(createdPayments as any[], tenant_id);
     }
+  }
+  } finally {
+    // Always release the lock, even if an error occurred
+    inFlightPaymentGenerations.delete(load.id);
   }
 }
 

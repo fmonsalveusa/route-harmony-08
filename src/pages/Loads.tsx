@@ -92,6 +92,8 @@ const Loads = () => {
   const [showImportWizard, setShowImportWizard] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
+  // Tracks which load IDs are currently generating payments (prevents double-click)
+  const [generatingPaymentIds, setGeneratingPaymentIds] = useState<Set<string>>(new Set());
 
   const handleGenerateInvoice = async (load: DbLoad) => {
     if (!load.broker_client) { toast.error('Esta carga no tiene broker asignado'); return; }
@@ -477,19 +479,29 @@ const Loads = () => {
                             {load.status === 'delivered' ? formatDate(load.delivery_date) : '—'}
                           </td>
                           <td className="p-3 hidden lg:table-cell" onClick={e => e.stopPropagation()}>
-                            <Select value={load.factoring || ''} onValueChange={async (val) => {
-                              const prevFactoring = load.factoring;
-                              await updateLoad(load.id, { factoring: val });
-                              if (val === 'ready') {
-                                // Always attempt to generate — generatePaymentsForLoad already
-                                // checks for existing driver/investor payments and skips if found
-                                const driverData = drivers.find(d => d.id === load.driver_id) || null;
-                                const dispatcherData = dispatchers.find(d => d.id === load.dispatcher_id) || null;
-                                await generatePaymentsForLoad(load, driverData, dispatcherData);
-                              } else if (prevFactoring === 'ready' && val !== 'ready') {
-                                await deletePaymentsForLoad(load.id);
-                              }
-                            }}>
+                            <Select
+                              value={load.factoring || ''}
+                              disabled={generatingPaymentIds.has(load.id)}
+                              onValueChange={async (val) => {
+                                const prevFactoring = load.factoring;
+                                await updateLoad(load.id, { factoring: val });
+                                if (val === 'ready') {
+                                  setGeneratingPaymentIds(prev => new Set(prev).add(load.id));
+                                  try {
+                                    const driverData = drivers.find(d => d.id === load.driver_id) || null;
+                                    const dispatcherData = dispatchers.find(d => d.id === load.dispatcher_id) || null;
+                                    await generatePaymentsForLoad(load, driverData, dispatcherData);
+                                  } finally {
+                                    setGeneratingPaymentIds(prev => {
+                                      const next = new Set(prev);
+                                      next.delete(load.id);
+                                      return next;
+                                    });
+                                  }
+                                } else if (prevFactoring === 'ready' && val !== 'ready') {
+                                  await deletePaymentsForLoad(load.id);
+                                }
+                              }}>
                               <SelectTrigger className="h-8 w-[145px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:hidden bg-transparent">
                                 <span className="flex items-center justify-between w-full gap-1">
                                   {load.factoring ? <StatusBadge status={`${load.factoring}_factoring`} className="text-[11px] px-3 py-1.5" /> : <span className="text-muted-foreground">—</span>}
