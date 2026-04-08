@@ -556,6 +556,7 @@ const Loads = () => {
                                 drivers={drivers}
                                 trucks={trucks}
                                 dispatchers={dispatchers}
+                                companies={companies}
                                 onMilesCalculated={async (loadId, miles, routeGeometry) => {
                                   const updateData: any = { miles };
                                   if (routeGeometry) {

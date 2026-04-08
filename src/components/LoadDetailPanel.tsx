@@ -3,11 +3,11 @@ import { useQueryClient } from '@tanstack/react-query';
 import { formatDate } from '@/lib/dateUtils';
 import { MapPin, Calendar, Weight, DollarSign, User, Truck, Route, Navigation, FileText, Download, ExternalLink, Pencil, Loader2, Copy, Check, Building2, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useCompanies } from '@/hooks/useCompanies';
 import type { DbLoad } from '@/hooks/useLoads';
 import type { DbDriver } from '@/hooks/useDrivers';
 import type { DbTruck } from '@/hooks/useTrucks';
 import type { DbDispatcher } from '@/hooks/useDispatchers';
+import type { Company } from '@/hooks/useCompanies';
 import { useLoadStops } from '@/hooks/useLoadStops';
 import { supabase } from '@/integrations/supabase/client';
 import { PodUploadSection } from '@/components/PodUploadSection';
@@ -159,6 +159,7 @@ interface LoadDetailPanelProps {
   drivers: DbDriver[];
   trucks: DbTruck[];
   dispatchers: DbDispatcher[];
+  companies: Company[];
   onMilesCalculated?: (loadId: string, miles: number, routeGeometry?: [number, number][]) => void;
   onLoadDataUpdated?: () => void;
 }
@@ -275,7 +276,7 @@ function BrokerScoreRow({ brokerName }: { brokerName: string | null | undefined 
   );
 }
 
-export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, onMilesCalculated, onLoadDataUpdated }: LoadDetailPanelProps) => {
+export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies, onMilesCalculated, onLoadDataUpdated }: LoadDetailPanelProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const persistedRef = useRef(false);
@@ -290,7 +291,6 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, onMilesCal
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { stops: dbStops, loading: stopsLoading, updateStopGeodata } = useLoadStops(load.id);
-  const { companies } = useCompanies();
   const [mapReady, setMapReady] = useState(false);
   const [gpsStatus, setGpsStatus] = useState<'active' | 'stale' | 'none'>('none');
   const [cachedRouteGeometry, setCachedRouteGeometry] = useState<[number, number][] | null>(null);
