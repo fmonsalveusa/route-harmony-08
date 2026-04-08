@@ -1,5 +1,4 @@
-import { useEffect, useCallback } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { getTenantId } from '@/hooks/useTenantId';
@@ -21,51 +20,43 @@ export interface DbPayment {
   updated_at: string;
 }
 
-const PAYMENTS_QUERY_KEY = ['payments'];
-
-async function fetchPaymentsFromDb(): Promise<DbPayment[]> {
-  const { data, error } = await supabase
-    .from('payments')
-    .select('*')
-    .order('created_at', { ascending: false });
-  if (error) throw error;
-  return (data as DbPayment[]) ?? [];
-}
-
 export function usePayments() {
-  const queryClient = useQueryClient();
+  const [payments, setPayments] = useState<DbPayment[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const { data: payments = [], isLoading: loading } = useQuery({
-    queryKey: PAYMENTS_QUERY_KEY,
-    queryFn: fetchPaymentsFromDb,
-  });
+  const fetchPayments = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('payments')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      setPayments((data as DbPayment[]) ?? []);
+    } catch (e: any) {
+      console.error('Error fetching payments:', e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  // Real-time subscription — página de Pagos se actualiza automáticamente
-  // cuando se generan pagos desde la página de Loads u otra sesión
+  useEffect(() => {
+    fetchPayments();
+  }, [fetchPayments]);
+
+  // Real-time subscription
   useEffect(() => {
     const channel = supabase
       .channel('payments-realtime')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'payments' },
-        () => {
-          queryClient.invalidateQueries({ queryKey: PAYMENTS_QUERY_KEY });
-        }
+        () => { fetchPayments(); }
       )
-      .subscribe((status) => {
-        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-          queryClient.invalidateQueries({ queryKey: PAYMENTS_QUERY_KEY });
-        }
-      });
+      .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [queryClient]);
-
-  const fetchPayments = useCallback(async () => {
-    await queryClient.invalidateQueries({ queryKey: PAYMENTS_QUERY_KEY });
-  }, [queryClient]);
+    return () => { supabase.removeChannel(channel); };
+  }, [fetchPayments]);
 
   const updatePaymentStatus = async (id: string, status: string) => {
     const updates: any = { status };
@@ -76,7 +67,7 @@ export function usePayments() {
       return false;
     }
     toast({ title: 'Payment updated' });
-    await queryClient.invalidateQueries({ queryKey: PAYMENTS_QUERY_KEY });
+    await fetchPayments();
     return true;
   };
 
