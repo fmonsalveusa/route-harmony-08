@@ -19,7 +19,6 @@
 		}
 	},
 	"packageClassList": [
-		"BackgroundGeolocation",
 		"AppPlugin",
 		"CAPBrowserPlugin",
 		"CAPCameraPlugin",
