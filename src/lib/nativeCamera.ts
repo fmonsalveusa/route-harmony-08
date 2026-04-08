@@ -6,7 +6,8 @@ export function isNativeCamera(): boolean {
 
 /**
  * Take a photo using the native camera. Returns a data URL or null if cancelled/unavailable.
- * Includes iPad-specific handling (popover presentation).
+ * Uses CameraResultType.Uri + webPath fetch to avoid iOS memory issues with DataUrl on
+ * high-resolution photos (12MP+ can be 15MB base64 string, causing silent failures on iOS).
  */
 export async function takeNativePhoto(): Promise<string | null> {
   if (!isNativeCamera()) return null;
@@ -22,19 +23,35 @@ export async function takeNativePhoto(): Promise<string | null> {
       throw new Error('PERMISSION_DENIED: Camera permission was denied. Please enable it in Settings.');
     }
 
+    // Use Uri instead of DataUrl — avoids iOS memory crash with large photos.
+    // webPath is a Capacitor-served URL (capacitor://localhost/...) that can be fetched.
     const photo = await Camera.getPhoto({
-      quality: 100,
-      resultType: CameraResultType.DataUrl,
+      quality: 90,
+      resultType: CameraResultType.Uri,
       source: CameraSource.Camera,
       correctOrientation: true,
-      // iPad requires explicit prompt labels
       promptLabelHeader: 'Photo',
       promptLabelPhoto: 'From Photos',
       promptLabelPicture: 'Take Picture',
       promptLabelCancel: 'Cancel',
     });
 
-    return photo.dataUrl ?? null;
+    const webPath = photo.webPath;
+    if (!webPath) {
+      console.warn('[nativeCamera] webPath is empty — falling back to dataUrl');
+      return photo.dataUrl ?? null;
+    }
+
+    // Fetch the file from the Capacitor-served URL and convert to data URL
+    const response = await fetch(webPath);
+    const blob = await response.blob();
+
+    return new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(new Error('FileReader error reading native photo'));
+      reader.readAsDataURL(blob);
+    });
   } catch (e: any) {
     // User cancelled
     if (
@@ -55,7 +72,7 @@ export async function takeNativePhoto(): Promise<string | null> {
 
 /**
  * Pick image(s) from the gallery. Returns an array of data URLs.
- * Includes iPad-specific handling.
+ * Uses CameraResultType.Uri + webPath fetch to avoid iOS memory issues.
  */
 export async function pickFromGallery(): Promise<string[]> {
   if (!isNativeCamera()) return [];
@@ -72,15 +89,32 @@ export async function pickFromGallery(): Promise<string[]> {
     }
 
     const photo = await Camera.getPhoto({
-      quality: 100,
-      resultType: CameraResultType.DataUrl,
+      quality: 90,
+      resultType: CameraResultType.Uri,
       source: CameraSource.Photos,
       correctOrientation: true,
       promptLabelHeader: 'Photo',
       promptLabelCancel: 'Cancel',
     });
 
-    return photo.dataUrl ? [photo.dataUrl] : [];
+    const webPath = photo.webPath;
+    if (!webPath) {
+      console.warn('[nativeCamera] gallery webPath is empty — falling back to dataUrl');
+      return photo.dataUrl ? [photo.dataUrl] : [];
+    }
+
+    // Fetch the file and convert to data URL
+    const response = await fetch(webPath);
+    const blob = await response.blob();
+
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(new Error('FileReader error reading gallery photo'));
+      reader.readAsDataURL(blob);
+    });
+
+    return [dataUrl];
   } catch (e: any) {
     if (
       e?.message?.includes('cancelled') ||
