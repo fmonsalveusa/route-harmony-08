@@ -642,57 +642,60 @@ export function generateOnboardingSummaryPdf(data: OnboardingSummaryData): Blob 
   doc.line(m, yRef.y, 190, yRef.y);
   yRef.y += 8;
 
-  // TRUCK INFORMATION
-  yRef.y = writeHeading(doc, 'TRUCK INFORMATION', m, yRef.y, 11);
-  yRef.y += 2;
-  field('Unit #:', data.truckData.unit_number, yRef);
-  field('Type:', data.truckData.truck_type, yRef);
-  field('Make:', data.truckData.make, yRef);
-  field('Model:', data.truckData.model, yRef);
-  field('Year:', data.truckData.year, yRef);
-  field('VIN:', data.truckData.vin, yRef);
-  field('License Plate:', data.truckData.license_plate, yRef);
-  if (data.truckData.max_payload_lbs) {
-    field('Max Payload:', `${data.truckData.max_payload_lbs.toLocaleString()} lbs`, yRef);
-  }
-  field('Insurance Exp:', data.truckData.insurance_expiry, yRef);
-  field('Registration Exp:', data.truckData.registration_expiry, yRef);
-
-  // Dimensions
-  const dims: string[] = [];
-  if (data.truckData.cargo_length_ft) dims.push(`Cargo: ${data.truckData.cargo_length_ft}ft L`);
-  if (data.truckData.cargo_width_in) dims.push(`${data.truckData.cargo_width_in}in W`);
-  if (data.truckData.cargo_height_in) dims.push(`${data.truckData.cargo_height_in}in H`);
-  if (data.truckData.rear_door_width_in) dims.push(`Door: ${data.truckData.rear_door_width_in}in W`);
-  if (data.truckData.rear_door_height_in) dims.push(`${data.truckData.rear_door_height_in}in H`);
-  if (data.truckData.trailer_length_ft) dims.push(`Trailer: ${data.truckData.trailer_length_ft}ft`);
-  if (dims.length) field('Dimensions:', dims.join(' × '), yRef);
-  if (data.truckData.mega_ramp) field('Mega Ramp:', data.truckData.mega_ramp, yRef);
-
-  if (data.truckDocs.length > 0) {
+  // TRUCK INFORMATION (only if present)
+  if (data.truckData) {
+    yRef.y = writeHeading(doc, 'TRUCK INFORMATION', m, yRef.y, 11);
     yRef.y += 2;
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    doc.text('Documents:', m, yRef.y);
-    yRef.y += 5;
-    for (const docName of data.truckDocs) {
-      doc.text(`  ✓ ${docName}`, m + 5, yRef.y);
-      yRef.y += 5;
-      if (yRef.y > 275) { doc.addPage(); yRef.y = 20; }
+    field('Unit #:', data.truckData.unit_number, yRef);
+    field('Type:', data.truckData.truck_type, yRef);
+    field('Make:', data.truckData.make, yRef);
+    field('Model:', data.truckData.model, yRef);
+    field('Year:', data.truckData.year, yRef);
+    field('VIN:', data.truckData.vin, yRef);
+    field('License Plate:', data.truckData.license_plate, yRef);
+    if (data.truckData.max_payload_lbs) {
+      field('Max Payload:', `${data.truckData.max_payload_lbs.toLocaleString()} lbs`, yRef);
     }
-  }
+    field('Insurance Exp:', data.truckData.insurance_expiry, yRef);
+    field('Registration Exp:', data.truckData.registration_expiry, yRef);
 
-  yRef.y += 4;
-  doc.line(m, yRef.y, 190, yRef.y);
-  yRef.y += 8;
+    // Dimensions
+    const dims: string[] = [];
+    if (data.truckData.cargo_length_ft) dims.push(`Cargo: ${data.truckData.cargo_length_ft}ft L`);
+    if (data.truckData.cargo_width_in) dims.push(`${data.truckData.cargo_width_in}in W`);
+    if (data.truckData.cargo_height_in) dims.push(`${data.truckData.cargo_height_in}in H`);
+    if (data.truckData.rear_door_width_in) dims.push(`Door: ${data.truckData.rear_door_width_in}in W`);
+    if (data.truckData.rear_door_height_in) dims.push(`${data.truckData.rear_door_height_in}in H`);
+    if (data.truckData.trailer_length_ft) dims.push(`Trailer: ${data.truckData.trailer_length_ft}ft`);
+    if (dims.length) field('Dimensions:', dims.join(' × '), yRef);
+    if (data.truckData.mega_ramp) field('Mega Ramp:', data.truckData.mega_ramp, yRef);
+
+    if (data.truckDocs.length > 0) {
+      yRef.y += 2;
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Documents:', m, yRef.y);
+      yRef.y += 5;
+      for (const docName of data.truckDocs) {
+        doc.text(`  ✓ ${docName}`, m + 5, yRef.y);
+        yRef.y += 5;
+        if (yRef.y > 275) { doc.addPage(); yRef.y = 20; }
+      }
+    }
+
+    yRef.y += 4;
+    doc.line(m, yRef.y, 190, yRef.y);
+    yRef.y += 8;
+  }
 
   // SIGNED DOCUMENTS
   yRef.y = writeHeading(doc, 'SIGNED DOCUMENTS', m, yRef.y, 11);
   yRef.y += 2;
   const signedItems = [
-    { label: 'W-9 Form', signed: data.signedDocs.w9 },
-    { label: 'Leasing Agreement', signed: data.signedDocs.leasing },
-    { label: 'Service Agreement', signed: data.signedDocs.service },
+    ...(data.signedDocs.w9 !== undefined ? [{ label: 'W-9 Form', signed: data.signedDocs.w9 }] : []),
+    ...(data.signedDocs.leasing !== undefined ? [{ label: 'Leasing Agreement', signed: data.signedDocs.leasing }] : []),
+    ...(data.signedDocs.service !== undefined ? [{ label: 'Service Agreement', signed: data.signedDocs.service }] : []),
+    ...(data.signedDocs.employment !== undefined ? [{ label: 'Employment Contract', signed: data.signedDocs.employment }] : []),
   ];
   for (const item of signedItems) {
     doc.setFontSize(9);
