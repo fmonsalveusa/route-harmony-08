@@ -233,18 +233,20 @@ Deno.serve(async (req) => {
       await supabaseAdmin.from("drivers").update(driverDocUrls).eq("id", driverId);
     }
 
-    // 4. Upload truck documents
-    const truckDocKeys = ["registration_photo", "insurance_photo", "license_photo", "rear_truck_photo", "truck_side_photo", "truck_plate_photo", "cargo_area_photo"];
-    const truckDocUrls: Record<string, string> = {};
-    for (const key of truckDocKeys) {
-      const file = formData.get(`truck_${key}`) as File | null;
-      if (file && file instanceof File) {
-        const path = await uploadFile(file, truckId, `truck_${key}`);
-        if (path) truckDocUrls[`${key}_url`] = path;
+    // 4. Upload truck documents (only for OO)
+    if (isOO && truckId) {
+      const truckDocKeys = ["registration_photo", "insurance_photo", "license_photo", "rear_truck_photo", "truck_side_photo", "truck_plate_photo", "cargo_area_photo"];
+      const truckDocUrls: Record<string, string> = {};
+      for (const key of truckDocKeys) {
+        const file = formData.get(`truck_${key}`) as File | null;
+        if (file && file instanceof File) {
+          const path = await uploadFile(file, truckId, `truck_${key}`);
+          if (path) truckDocUrls[`${key}_url`] = path;
+        }
       }
-    }
-    if (Object.keys(truckDocUrls).length > 0) {
-      await supabaseAdmin.from("trucks").update(truckDocUrls).eq("id", truckId);
+      if (Object.keys(truckDocUrls).length > 0) {
+        await supabaseAdmin.from("trucks").update(truckDocUrls).eq("id", truckId);
+      }
     }
 
     // 4b. Create notification for admins
