@@ -23,6 +23,7 @@
 		"CAPBrowserPlugin",
 		"CAPCameraPlugin",
 		"FilesystemPlugin",
+		"GeolocationPlugin",
 		"HapticsPlugin",
 		"PushNotificationsPlugin",
 		"SplashScreenPlugin",
