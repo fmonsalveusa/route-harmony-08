@@ -254,7 +254,9 @@ Deno.serve(async (req) => {
       tenant_id: tenantId,
       type: "new_driver_onboarded",
       title: "New Driver Registered",
-      message: `${driverData.name} completed onboarding — Unit ${truckData.unit_number}`,
+      message: isOO
+        ? `${driverData.name} completed onboarding — Unit ${truckData.unit_number}`
+        : `${driverData.name} completed onboarding (Company Driver)`,
       driver_id: driverId,
     });
 
