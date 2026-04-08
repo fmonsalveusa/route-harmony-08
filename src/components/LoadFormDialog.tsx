@@ -631,10 +631,12 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
               <SelectTrigger><SelectValue placeholder="Seleccionar driver" /></SelectTrigger>
               <SelectContent>
                 {drivers
-                  .filter(d => d.status !== 'inactive')
+                  .filter(d => d.status === 'available' || d.id === selectedDriver)
                   .filter(d => dispatcherId ? d.dispatcher_id === dispatcherId : true)
                   .map(d => (
-                  <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                  <SelectItem key={d.id} value={d.id}>
+                    {d.name}{d.id === selectedDriver && d.status !== 'available' ? ' (asignado)' : ''}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
