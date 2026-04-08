@@ -36,14 +36,27 @@ const Auth = () => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
-    const { error } = await signIn(email, password);
-    if (error) {
-      if (error.message.includes('Invalid login')) {
-        setError('Invalid credentials. Please check your email and password.');
-      } else if (error.message.includes('Email not confirmed')) {
-        setError('Please confirm your email before signing in.');
+    try {
+      const { error } = await signIn(email, password);
+      if (error) {
+        if (error.message.includes('Failed to fetch')) {
+          // Clear stale session that causes infinite refresh loops
+          try { localStorage.removeItem('sb-rycwycqlbfcnkjiqmzyt-auth-token'); } catch {}
+          setError('Connection error. Please try using the published app URL or reload the page.');
+        } else if (error.message.includes('Invalid login')) {
+          setError('Invalid credentials. Please check your email and password.');
+        } else if (error.message.includes('Email not confirmed')) {
+          setError('Please confirm your email before signing in.');
+        } else {
+          setError(error.message);
+        }
+      }
+    } catch (err: any) {
+      if (err?.message?.includes('Failed to fetch')) {
+        try { localStorage.removeItem('sb-rycwycqlbfcnkjiqmzyt-auth-token'); } catch {}
+        setError('Connection error. Please try using the published app URL or reload the page.');
       } else {
-        setError(error.message);
+        setError(err?.message || 'An unexpected error occurred.');
       }
     }
     setIsLoading(false);
