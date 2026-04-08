@@ -6,14 +6,17 @@ import { cn } from '@/lib/utils';
 import W9FormDialog from './W9FormDialog';
 import LeasingAgreementDialog from './LeasingAgreementDialog';
 import ServiceAgreementDialog from './ServiceAgreementDialog';
+import EmploymentContractDialog from './EmploymentContractDialog';
 
 export interface SignedDocs {
   w9: Blob | null;
   leasing: Blob | null;
   service: Blob | null;
+  employment: Blob | null;
 }
 
 interface DocumentSigningStepProps {
+  serviceType: 'owner_operator' | 'company_driver';
   driverData: { name: string; email: string; phone: string; license: string; state: string | null };
   truckData: { make: string; model: string; vin: string; year: number; unit_number: string };
   signedDocs: SignedDocs;
@@ -22,17 +25,26 @@ interface DocumentSigningStepProps {
   onBack: () => void;
 }
 
-const DOCS = [
+const OO_DOCS = [
   { key: 'w9' as const, title: 'W-9 Form', desc: 'Federal tax classification form' },
   { key: 'leasing' as const, title: 'Leasing Agreement', desc: 'Owner Operator lease + ELD & HOS policies' },
   { key: 'service' as const, title: 'Service Agreement', desc: 'Dispatch services contract (Bilingual)' },
 ];
 
-export default function DocumentSigningStep({ driverData, truckData, signedDocs, onSignedDocsChange, onNext, onBack }: DocumentSigningStepProps) {
-  const [openDialog, setOpenDialog] = useState<'w9' | 'leasing' | 'service' | null>(null);
-  const allSigned = signedDocs.w9 && signedDocs.leasing && signedDocs.service;
+const CD_DOCS = [
+  { key: 'employment' as const, title: 'Employment Contract', desc: 'Bilingual employment agreement' },
+];
 
-  const handleSigned = (key: 'w9' | 'leasing' | 'service', blob: Blob) => {
+export default function DocumentSigningStep({ serviceType, driverData, truckData, signedDocs, onSignedDocsChange, onNext, onBack }: DocumentSigningStepProps) {
+  const [openDialog, setOpenDialog] = useState<'w9' | 'leasing' | 'service' | 'employment' | null>(null);
+
+  const isOO = serviceType === 'owner_operator';
+  const docs = isOO ? OO_DOCS : CD_DOCS;
+  const allSigned = isOO
+    ? (signedDocs.w9 && signedDocs.leasing && signedDocs.service)
+    : !!signedDocs.employment;
+
+  const handleSigned = (key: 'w9' | 'leasing' | 'service' | 'employment', blob: Blob) => {
     onSignedDocsChange({ ...signedDocs, [key]: blob });
     setOpenDialog(null);
   };
@@ -42,11 +54,13 @@ export default function DocumentSigningStep({ driverData, truckData, signedDocs,
       <CardContent className="pt-6 space-y-4">
         <div className="text-center mb-2">
           <h2 className="text-lg font-semibold flex items-center justify-center gap-2"><PenLine className="h-5 w-5" /> Document Signing</h2>
-          <p className="text-sm text-muted-foreground">Review and sign all 3 documents to continue.</p>
+          <p className="text-sm text-muted-foreground">
+            Review and sign {isOO ? 'all 3 documents' : 'the employment contract'} to continue.
+          </p>
         </div>
 
         <div className="space-y-3">
-          {DOCS.map(doc => {
+          {docs.map(doc => {
             const signed = !!signedDocs[doc.key];
             return (
               <div key={doc.key} className={cn(
@@ -73,6 +87,7 @@ export default function DocumentSigningStep({ driverData, truckData, signedDocs,
           <Button onClick={onNext} disabled={!allSigned}>Next: Review →</Button>
         </div>
 
+        {/* Owner Operator dialogs */}
         <W9FormDialog
           open={openDialog === 'w9'}
           onOpenChange={o => !o && setOpenDialog(null)}
@@ -91,6 +106,13 @@ export default function DocumentSigningStep({ driverData, truckData, signedDocs,
           onOpenChange={o => !o && setOpenDialog(null)}
           driverName={driverData.name}
           onSigned={blob => handleSigned('service', blob)}
+        />
+        {/* Company Driver dialog */}
+        <EmploymentContractDialog
+          open={openDialog === 'employment'}
+          onOpenChange={o => !o && setOpenDialog(null)}
+          driverName={driverData.name}
+          onSigned={blob => handleSigned('employment', blob)}
         />
       </CardContent>
     </Card>

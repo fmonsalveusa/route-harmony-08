@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -63,7 +63,7 @@ export default function EmploymentContractDialog({ open, onOpenChange, driverNam
         </ScrollArea>
 
         <div className="border-t pt-4 space-y-3">
-          <SignaturePad onSave={setSignature} savedSignature={signature} />
+          <SignaturePad onSignatureChange={setSignature} />
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
             <Button onClick={handleSign} disabled={!signature || signing}>

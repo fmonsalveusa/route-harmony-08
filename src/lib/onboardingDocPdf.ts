@@ -806,3 +806,55 @@ export function generateTerminationLetterPdf(data: {
 
   return doc.output('blob');
 }
+
+/** Generate Employment Contract PDF for Company Drivers */
+export function generateEmploymentContractPdf(data: { driverName: string; signatureDataUrl: string; date: string }): Blob {
+  const doc = new jsPDF({ unit: 'mm', format: 'letter' });
+  const m = 20;
+  const maxW = 170;
+  let y = 25;
+
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text('EMPLOYMENT CONTRACT', 105, y, { align: 'center' });
+  y += 6;
+  doc.setFontSize(11);
+  doc.text('CONTRATO DE TRABAJO', 105, y, { align: 'center' });
+  y += 10;
+
+  const sections = [
+    { title: '1. POSITION & DUTIES / PUESTO Y FUNCIONES', body: 'The Employee is hired as a Company Driver responsible for operating commercial motor vehicles for the transportation of goods. The Employee agrees to follow all DOT/FMCSA regulations, company policies, and applicable laws.\n\nEl Empleado es contratado como Conductor de Empresa responsable de operar vehículos motorizados comerciales para el transporte de mercancías.' },
+    { title: '2. COMPENSATION / COMPENSACIÓN', body: 'The Employee will receive compensation as determined by the Company\'s pay schedule. Payment details will be provided separately.\n\nEl Empleado recibirá compensación según lo determinado por el calendario de pagos de la Empresa.' },
+    { title: '3. EMPLOYMENT RELATIONSHIP / RELACIÓN LABORAL', body: 'The Employee acknowledges that they are an employee of the Company, not an independent contractor. The Company will provide the vehicle, insurance, and necessary equipment for operations.\n\nEl Empleado reconoce que es un empleado de la Empresa, no un contratista independiente.' },
+    { title: '4. TERMINATION / TERMINACIÓN', body: 'Either party may terminate this Agreement with written notice. The Company reserves the right to terminate immediately for cause, including but not limited to: safety violations, failed drug tests, or material breach of this Agreement.\n\nCualquiera de las partes puede terminar este Acuerdo con notificación por escrito.' },
+  ];
+
+  y = writeBlock(doc, `This Employment Contract is entered into on ${data.date}, between the Company and ${data.driverName} ("Employee").`, m, y, 9, maxW);
+  y += 3;
+  y = writeBlock(doc, `Este Contrato de Trabajo se celebra el ${data.date}, entre la Empresa y ${data.driverName} ("Empleado").`, m, y, 9, maxW);
+  y += 6;
+
+  for (const s of sections) {
+    y = writeHeading(doc, s.title, m, y, 9);
+    y = writeBlock(doc, s.body, m, y, 8, maxW, false, 3.5);
+    y += 4;
+  }
+
+  y += 6;
+  if (y > 240) { doc.addPage(); y = 25; }
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Date / Fecha: ${data.date}`, m, y);
+  y += 8;
+  doc.text('Employee Signature / Firma del Empleado:', m, y);
+  y += 4;
+  if (data.signatureDataUrl) {
+    addSignatureImage(doc, data.signatureDataUrl, m, y, 50, 15);
+    y += 18;
+  }
+  doc.text(data.driverName, m, y);
+  y += 5;
+  doc.text('Print Name / Nombre Impreso', m, y);
+
+  return doc.output('blob');
+}
