@@ -391,16 +391,16 @@ export default function DriverOnboarding() {
               </div>
 
               <div className="flex justify-end pt-2">
-                <Button onClick={() => { if (validateStep1()) setStep(2); }}>
-                  Next: Truck Info →
+                <Button onClick={() => { if (validateStep1()) setStep(isOO ? 2 : docStep); }}>
+                  {isOO ? 'Next: Truck Info →' : 'Next: Documents →'}
                 </Button>
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Step 2: Truck Info */}
-        {step === 2 && (
+        {/* Step 2: Truck Info (Owner Operator only) */}
+        {isOO && step === 2 && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2"><Truck className="h-5 w-5" /> Truck Information</CardTitle>
@@ -506,20 +506,21 @@ export default function DriverOnboarding() {
           </Card>
         )}
 
-        {/* Step 3: Document Signing */}
-        {step === 3 && (
+        {/* Document Signing Step */}
+        {step === docStep && (
           <DocumentSigningStep
+            serviceType={isOO ? 'owner_operator' : 'company_driver'}
             driverData={driver}
             truckData={truck}
             signedDocs={signedDocs}
             onSignedDocsChange={setSignedDocs}
-            onNext={() => setStep(4)}
-            onBack={() => setStep(2)}
+            onNext={() => setStep(reviewStep)}
+            onBack={() => setStep(isOO ? 2 : 1)}
           />
         )}
 
-        {/* Step 4: Review */}
-        {step === 4 && (
+        {/* Review Step */}
+        {step === reviewStep && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2"><Send className="h-5 w-5" /> Review & Submit</CardTitle>
@@ -544,31 +545,39 @@ export default function DriverOnboarding() {
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <h3 className="font-semibold flex items-center gap-2"><Truck className="h-4 w-4" /> Truck Information</h3>
-                <div className="grid grid-cols-2 gap-2 text-sm bg-muted/50 p-4 rounded-lg">
-                  <div><span className="text-muted-foreground">Unit #:</span> {truck.unit_number}</div>
-                  <div><span className="text-muted-foreground">Type:</span> {truck.truck_type}</div>
-                  {truck.make && <div><span className="text-muted-foreground">Make:</span> {truck.make}</div>}
-                  {truck.model && <div><span className="text-muted-foreground">Model:</span> {truck.model}</div>}
-                  {truck.year && <div><span className="text-muted-foreground">Year:</span> {truck.year}</div>}
-                  {truck.vin && <div><span className="text-muted-foreground">VIN:</span> {truck.vin}</div>}
-                  {truck.license_plate && <div><span className="text-muted-foreground">Plate:</span> {truck.license_plate}</div>}
-                  <div className="col-span-2"><span className="text-muted-foreground">Documents:</span> {Object.keys(truckFiles).length} file(s)</div>
+              {isOO && (
+                <div className="space-y-3">
+                  <h3 className="font-semibold flex items-center gap-2"><Truck className="h-4 w-4" /> Truck Information</h3>
+                  <div className="grid grid-cols-2 gap-2 text-sm bg-muted/50 p-4 rounded-lg">
+                    <div><span className="text-muted-foreground">Unit #:</span> {truck.unit_number}</div>
+                    <div><span className="text-muted-foreground">Type:</span> {truck.truck_type}</div>
+                    {truck.make && <div><span className="text-muted-foreground">Make:</span> {truck.make}</div>}
+                    {truck.model && <div><span className="text-muted-foreground">Model:</span> {truck.model}</div>}
+                    {truck.year && <div><span className="text-muted-foreground">Year:</span> {truck.year}</div>}
+                    {truck.vin && <div><span className="text-muted-foreground">VIN:</span> {truck.vin}</div>}
+                    {truck.license_plate && <div><span className="text-muted-foreground">Plate:</span> {truck.license_plate}</div>}
+                    <div className="col-span-2"><span className="text-muted-foreground">Documents:</span> {Object.keys(truckFiles).length} file(s)</div>
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div className="space-y-3">
                 <h3 className="font-semibold">📝 Signed Documents</h3>
                 <div className="grid grid-cols-1 gap-2 text-sm bg-muted/50 p-4 rounded-lg">
-                  <div className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-green-500" /> W-9 Form</div>
-                  <div className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-green-500" /> Leasing Agreement</div>
-                  <div className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-green-500" /> Service Agreement</div>
+                  {isOO ? (
+                    <>
+                      <div className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-green-500" /> W-9 Form</div>
+                      <div className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-green-500" /> Leasing Agreement</div>
+                      <div className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-green-500" /> Service Agreement</div>
+                    </>
+                  ) : (
+                    <div className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-green-500" /> Employment Contract</div>
+                  )}
                 </div>
               </div>
 
               <div className="flex justify-between pt-2">
-                <Button variant="outline" onClick={() => setStep(3)}>← Back</Button>
+                <Button variant="outline" onClick={() => setStep(docStep)}>← Back</Button>
                 <Button onClick={handleSubmit} disabled={submitting} className="gap-2">
                   {submitting ? 'Submitting...' : '✓ Submit Onboarding'}
                 </Button>
