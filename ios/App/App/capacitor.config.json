@@ -19,7 +19,9 @@
 		}
 	},
 	"packageClassList": [
+		"BackgroundGeolocation",
 		"AppPlugin",
+		"CAPBrowserPlugin",
 		"CAPCameraPlugin",
 		"FilesystemPlugin",
 		"HapticsPlugin",

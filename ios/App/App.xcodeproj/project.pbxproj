@@ -299,14 +299,14 @@
 				PROVISIONING_PROFILE = "919ea03f-6af7-41b2-87cf-b36e36867bb0";
 				PROVISIONING_PROFILE_SPECIFIER = "Dispatch Up Driver AppStore";
 				DEVELOPMENT_TEAM = AY3TN9N54Z;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 10;
 				INFOPLIST_FILE = App/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 1.2;
 				OTHER_SWIFT_FLAGS = "$(inherited) \"-D\" \"COCOAPODS\" \"-DDEBUG\"";
 				PRODUCT_BUNDLE_IDENTIFIER = com.dispatchup.driver;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -324,14 +324,14 @@
 				PROVISIONING_PROFILE = "919ea03f-6af7-41b2-87cf-b36e36867bb0";
 				PROVISIONING_PROFILE_SPECIFIER = "Dispatch Up Driver AppStore";
 				DEVELOPMENT_TEAM = AY3TN9N54Z;			
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 10;
 				INFOPLIST_FILE = App/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.dispatchup.driver;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
