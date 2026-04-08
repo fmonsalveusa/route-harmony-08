@@ -250,13 +250,17 @@ Deno.serve(async (req) => {
     }
 
     // 4b. Create notification for admins
+    const truckTypeLabel = isOO ? ((truckData.truck_type as string) || "Dry Van") : null;
+    const serviceTypeLabel = isOO ? "Owner Operator" : "Company Driver";
+    const notifMessage = isOO
+      ? `${driverData.name} completó el onboarding · ${serviceTypeLabel} · ${truckTypeLabel}`
+      : `${driverData.name} completó el onboarding · ${serviceTypeLabel}`;
+
     await supabaseAdmin.from("notifications").insert({
       tenant_id: tenantId,
       type: "new_driver_onboarded",
-      title: "New Driver Registered",
-      message: isOO
-        ? `${driverData.name} completed onboarding — Unit ${truckData.unit_number}`
-        : `${driverData.name} completed onboarding (Company Driver)`,
+      title: "🚛 Nuevo Driver Registrado",
+      message: notifMessage,
       driver_id: driverId,
     });
 

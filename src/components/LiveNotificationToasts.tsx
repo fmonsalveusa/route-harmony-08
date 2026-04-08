@@ -55,7 +55,8 @@ function showBrowserNotification(title: string, body: string) {
 
 export function LiveNotificationToasts() {
   const [toasts, setToasts] = useState<LiveToast[]>([]);
-  const { profile } = useAuth();
+  const { profile, role, isMasterAdmin } = useAuth();
+  const isAdmin = role === 'admin' || isMasterAdmin;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -74,6 +75,9 @@ export function LiveNotificationToasts() {
         (payload) => {
           const n = payload.new as any;
           if (n.tenant_id !== profile.tenant_id) return;
+
+          // Notificaciones de onboarding solo para administradores
+          if (n.type === 'new_driver_onboarded' && !isAdmin) return;
 
           const toast: LiveToast = {
             id: n.id,
@@ -94,8 +98,8 @@ export function LiveNotificationToasts() {
             }, 500);
           }
 
-          // Browser push notification for maintenance alerts
-          if (n.type === 'maintenance') {
+          // Browser push notification para maintenance y nuevo onboarding (solo admin)
+          if (n.type === 'maintenance' || (n.type === 'new_driver_onboarded' && isAdmin)) {
             showBrowserNotification(n.title, n.message);
           }
         }
