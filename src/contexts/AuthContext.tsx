@@ -280,8 +280,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (!mounted || initialSessionEventReceived) return;
 
         await processSession(sessionResult.data.session, false);
-      } catch (error) {
+      } catch (error: any) {
         console.warn('[AuthContext] bootstrap failed:', error);
+        // Clear stale token if fetch is being blocked (preview proxy issue)
+        if (error?.message?.includes('Failed to fetch') || error?.message?.includes('getSession timeout')) {
+          try { localStorage.removeItem('sb-rycwycqlbfcnkjiqmzyt-auth-token'); } catch {}
+        }
         if (!mounted) return;
         applySignedOutState();
         setLoadingIfMounted(false);
