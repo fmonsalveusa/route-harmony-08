@@ -21,9 +21,9 @@ Deno.serve(async (req) => {
     const formData = await req.formData();
     const token = formData.get("token") as string;
     const driverDataStr = formData.get("driver_data") as string;
-    const truckDataStr = formData.get("truck_data") as string;
+    const truckDataStr = formData.get("truck_data") as string | null;
 
-    if (!token || !driverDataStr || !truckDataStr) {
+    if (!token || !driverDataStr) {
       return new Response(
         JSON.stringify({ error: "Missing required fields" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -58,13 +58,15 @@ Deno.serve(async (req) => {
     }
 
     const tenantId = tokenRecord.tenant_id;
+    const serviceType = tokenRecord.service_type || "owner_operator";
+    const isOO = serviceType !== "company_driver";
 
     // Parse and validate JSON data
     let driverData: Record<string, unknown>;
-    let truckData: Record<string, unknown>;
+    let truckData: Record<string, unknown> = {};
     try {
       driverData = JSON.parse(driverDataStr);
-      truckData = JSON.parse(truckDataStr);
+      if (truckDataStr) truckData = JSON.parse(truckDataStr);
     } catch {
       return new Response(
         JSON.stringify({ error: "Invalid JSON in driver_data or truck_data" }),
@@ -80,8 +82,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Validate required truck fields
-    if (!truckData.unit_number) {
+    // Validate required truck fields (only for OO)
+    if (isOO && !truckData.unit_number) {
       return new Response(
         JSON.stringify({ error: "Truck requires: unit_number" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -93,10 +95,12 @@ Deno.serve(async (req) => {
     const ALLOWED_EXTENSIONS = ["jpg", "jpeg", "png", "pdf", "webp"];
     const allFileKeys = [
       "driver_license_photo", "driver_medical_card_photo", "driver_form_w9",
-      "driver_leasing_agreement", "driver_service_agreement",
-      "truck_registration_photo", "truck_insurance_photo", "truck_license_photo",
-      "truck_rear_truck_photo", "truck_truck_side_photo", "truck_truck_plate_photo",
-      "truck_cargo_area_photo",
+      "driver_leasing_agreement", "driver_service_agreement", "driver_employment_contract",
+      ...(isOO ? [
+        "truck_registration_photo", "truck_insurance_photo", "truck_license_photo",
+        "truck_rear_truck_photo", "truck_truck_side_photo", "truck_truck_plate_photo",
+        "truck_cargo_area_photo",
+      ] : []),
     ];
     for (const key of allFileKeys) {
       const file = formData.get(key) as File | null;
@@ -132,42 +136,44 @@ Deno.serve(async (req) => {
       return path;
     };
 
-    // 1. Create truck
-    const { data: newTruck, error: truckError } = await supabaseAdmin
-      .from("trucks")
-      .insert({
-        tenant_id: tenantId,
-        unit_number: truckData.unit_number,
-        truck_type: truckData.truck_type || "Dry Van",
-        make: truckData.make || null,
-        model: truckData.model || null,
-        year: truckData.year || null,
-        max_payload_lbs: truckData.max_payload_lbs || null,
-        vin: truckData.vin || null,
-        license_plate: truckData.license_plate || null,
-        status: "active",
-        insurance_expiry: truckData.insurance_expiry || null,
-        registration_expiry: truckData.registration_expiry || null,
-        cargo_length_ft: truckData.cargo_length_ft || null,
-        cargo_width_in: truckData.cargo_width_in || null,
-        cargo_height_in: truckData.cargo_height_in || null,
-        rear_door_width_in: truckData.rear_door_width_in || null,
-        rear_door_height_in: truckData.rear_door_height_in || null,
-        trailer_length_ft: truckData.trailer_length_ft || null,
-        mega_ramp: truckData.mega_ramp || null,
-      })
-      .select("id")
-      .single();
+    // 1. Create truck (only for Owner Operator)
+    let truckId: string | null = null;
+    if (isOO) {
+      const { data: newTruck, error: truckError } = await supabaseAdmin
+        .from("trucks")
+        .insert({
+          tenant_id: tenantId,
+          unit_number: truckData.unit_number,
+          truck_type: truckData.truck_type || "Dry Van",
+          make: truckData.make || null,
+          model: truckData.model || null,
+          year: truckData.year || null,
+          max_payload_lbs: truckData.max_payload_lbs || null,
+          vin: truckData.vin || null,
+          license_plate: truckData.license_plate || null,
+          status: "active",
+          insurance_expiry: truckData.insurance_expiry || null,
+          registration_expiry: truckData.registration_expiry || null,
+          cargo_length_ft: truckData.cargo_length_ft || null,
+          cargo_width_in: truckData.cargo_width_in || null,
+          cargo_height_in: truckData.cargo_height_in || null,
+          rear_door_width_in: truckData.rear_door_width_in || null,
+          rear_door_height_in: truckData.rear_door_height_in || null,
+          trailer_length_ft: truckData.trailer_length_ft || null,
+          mega_ramp: truckData.mega_ramp || null,
+        })
+        .select("id")
+        .single();
 
-    if (truckError) {
-      console.error("Truck creation error:", truckError);
-      return new Response(
-        JSON.stringify({ error: "Failed to create truck", detail: truckError.message }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      if (truckError) {
+        console.error("Truck creation error:", truckError);
+        return new Response(
+          JSON.stringify({ error: "Failed to create truck", detail: truckError.message }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      truckId = newTruck.id;
     }
-
-    const truckId = newTruck.id;
 
     // 2. Create driver
     const { data: newDriver, error: driverError } = await supabaseAdmin
@@ -181,7 +187,7 @@ Deno.serve(async (req) => {
         license_expiry: driverData.license_expiry || null,
         medical_card_expiry: driverData.medical_card_expiry || null,
         status: "pending",
-        service_type: "owner_operator",
+        service_type: serviceType,
         dispatcher_id: tokenRecord.dispatcher_id || null,
         truck_id: truckId,
         hire_date: new Date().toISOString().split("T")[0],
@@ -198,8 +204,8 @@ Deno.serve(async (req) => {
 
     if (driverError) {
       console.error("Driver creation error:", driverError);
-      // Rollback truck
-      await supabaseAdmin.from("trucks").delete().eq("id", truckId);
+      // Rollback truck if created
+      if (truckId) await supabaseAdmin.from("trucks").delete().eq("id", truckId);
       return new Response(
         JSON.stringify({ error: "Failed to create driver", detail: driverError.message }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -208,11 +214,13 @@ Deno.serve(async (req) => {
 
     const driverId = newDriver.id;
 
-    // Link truck to driver
-    await supabaseAdmin.from("trucks").update({ driver_id: driverId }).eq("id", truckId);
+    // Link truck to driver (only for OO)
+    if (truckId) {
+      await supabaseAdmin.from("trucks").update({ driver_id: driverId }).eq("id", truckId);
+    }
 
     // 3. Upload driver documents
-    const driverDocKeys = ["license_photo", "medical_card_photo", "form_w9", "leasing_agreement", "service_agreement"];
+    const driverDocKeys = ["license_photo", "medical_card_photo", "form_w9", "leasing_agreement", "service_agreement", "employment_contract"];
     const driverDocUrls: Record<string, string> = {};
     for (const key of driverDocKeys) {
       const file = formData.get(`driver_${key}`) as File | null;
