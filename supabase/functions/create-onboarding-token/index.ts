@@ -17,7 +17,7 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { name, email, phone, truck_type } = await req.json();
+    const { name, email, phone, truck_type, service_type } = await req.json();
 
     if (!name || !email || !phone) {
       return new Response(
@@ -55,6 +55,7 @@ Deno.serve(async (req) => {
         driver_email: email,
         driver_phone: phone,
         truck_type: truck_type || null,
+        service_type: service_type || "owner_operator",
         status: "pending",
         expires_at: expiresAt.toISOString(),
       })

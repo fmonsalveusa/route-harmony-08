@@ -16,7 +16,7 @@ export function OnboardingSection() {
   const tr = t[lang];
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({ name: "", email: "", phone: "", truck_type: "Box Truck" });
+  const [form, setForm] = useState({ name: "", email: "", phone: "", truck_type: "Box Truck", service_type: "owner_operator" });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,7 +27,7 @@ export function OnboardingSection() {
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("create-onboarding-token", {
-        body: { name: form.name, email: form.email, phone: form.phone, truck_type: form.truck_type },
+        body: { name: form.name, email: form.email, phone: form.phone, truck_type: form.truck_type, service_type: form.service_type },
       });
       if (error || !data?.token) throw new Error(data?.error || tr.obErrorCreate);
       toast.success(tr.obSuccess);
@@ -123,18 +123,30 @@ export function OnboardingSection() {
                 <Input id="ob-phone" type="tel" placeholder={tr.heroPhone} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} required />
               </div>
               <div>
-                <Label>{tr.obTruck}</Label>
-                <Select value={form.truck_type} onValueChange={(v) => setForm({ ...form, truck_type: v })}>
+                <Label>{lang === "es" ? "Tipo de Servicio" : "Service Type"}</Label>
+                <Select value={form.service_type} onValueChange={(v) => setForm({ ...form, service_type: v })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Box Truck">Box Truck</SelectItem>
-                    <SelectItem value="Hotshot">Hotshot</SelectItem>
-                    <SelectItem value="Dry Van">Dry Van</SelectItem>
-                    <SelectItem value="Flatbed">Flatbed</SelectItem>
-                    <SelectItem value="Reefer">Reefer</SelectItem>
+                    <SelectItem value="owner_operator">Owner Operator</SelectItem>
+                    <SelectItem value="company_driver">Company Driver</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+              {form.service_type === "owner_operator" && (
+                <div>
+                  <Label>{tr.obTruck}</Label>
+                  <Select value={form.truck_type} onValueChange={(v) => setForm({ ...form, truck_type: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Box Truck">Box Truck</SelectItem>
+                      <SelectItem value="Hotshot">Hotshot</SelectItem>
+                      <SelectItem value="Dry Van">Dry Van</SelectItem>
+                      <SelectItem value="Flatbed">Flatbed</SelectItem>
+                      <SelectItem value="Reefer">Reefer</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <Button type="submit" disabled={loading} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-bold py-3.5 text-base h-auto">
                 {loading ? <Loader2 className="animate-spin mr-2" size={18} /> : null}
                 {loading ? tr.obProcessing : tr.obSubmit}
