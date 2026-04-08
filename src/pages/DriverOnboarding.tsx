@@ -250,6 +250,15 @@ export default function DriverOnboarding() {
     );
   }
 
+  const isOO = tokenData?.service_type !== 'company_driver';
+  const totalSteps = isOO ? 4 : 3;
+  const stepLabels = isOO ? STEP_LABELS_OO : STEP_LABELS_CD;
+
+  // Map logical steps for company driver: 1=Info, 2=Docs, 3=Review
+  // For OO: 1=Info, 2=Truck, 3=Docs, 4=Review
+  const docStep = isOO ? 3 : 2;
+  const reviewStep = isOO ? 4 : 3;
+
   return (
     <div className="min-h-screen bg-muted/30 py-6 px-4">
       <div className="max-w-2xl mx-auto space-y-6">
@@ -257,12 +266,16 @@ export default function DriverOnboarding() {
         <div className="text-center space-y-2">
           <img src={logoImg} alt="Logo" className="h-12 mx-auto" />
           <h1 className="text-2xl font-bold">Driver Onboarding</h1>
-          <p className="text-sm text-muted-foreground">Complete the form below to register your profile and truck information.</p>
+          <p className="text-sm text-muted-foreground">
+            {isOO
+              ? 'Complete the form below to register your profile and truck information.'
+              : 'Complete the form below to register your profile.'}
+          </p>
         </div>
 
         {/* Step indicator */}
         <div className="flex items-center justify-center gap-2">
-          {[1, 2, 3, 4].map(s => (
+          {Array.from({ length: totalSteps }, (_, i) => i + 1).map(s => (
             <div key={s} className="flex items-center gap-2">
               <div className={cn(
                 "w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-colors",
@@ -271,12 +284,12 @@ export default function DriverOnboarding() {
               )}>
                 {s < step ? '✓' : s}
               </div>
-              {s < 4 && <div className={cn("w-8 h-0.5", s < step ? "bg-green-500" : "bg-muted")} />}
+              {s < totalSteps && <div className={cn("w-8 h-0.5", s < step ? "bg-green-500" : "bg-muted")} />}
             </div>
           ))}
         </div>
         <div className="flex justify-center gap-4 text-xs text-muted-foreground">
-          {STEP_LABELS.map(l => <span key={l}>{l}</span>)}
+          {stepLabels.map(l => <span key={l}>{l}</span>)}
         </div>
 
         {/* Step 1: Driver Info */}
