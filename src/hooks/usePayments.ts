@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect, useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { getTenantId } from '@/hooks/useTenantId';
@@ -20,25 +21,51 @@ export interface DbPayment {
   updated_at: string;
 }
 
+const PAYMENTS_QUERY_KEY = ['payments'];
+
+async function fetchPaymentsFromDb(): Promise<DbPayment[]> {
+  const { data, error } = await supabase
+    .from('payments')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data as DbPayment[]) ?? [];
+}
+
 export function usePayments() {
-  const [payments, setPayments] = useState<DbPayment[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+
+  const { data: payments = [], isLoading: loading } = useQuery({
+    queryKey: PAYMENTS_QUERY_KEY,
+    queryFn: fetchPaymentsFromDb,
+  });
+
+  // Real-time subscription — página de Pagos se actualiza automáticamente
+  // cuando se generan pagos desde la página de Loads u otra sesión
+  useEffect(() => {
+    const channel = supabase
+      .channel('payments-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'payments' },
+        () => {
+          queryClient.invalidateQueries({ queryKey: PAYMENTS_QUERY_KEY });
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          queryClient.invalidateQueries({ queryKey: PAYMENTS_QUERY_KEY });
+        }
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   const fetchPayments = useCallback(async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('payments')
-      .select('*')
-      .order('created_at', { ascending: false });
-    if (error) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
-    } else {
-      setPayments((data as any) || []);
-    }
-    setLoading(false);
-  }, []);
-
-  useEffect(() => { fetchPayments(); }, [fetchPayments]);
+    await queryClient.invalidateQueries({ queryKey: PAYMENTS_QUERY_KEY });
+  }, [queryClient]);
 
   const updatePaymentStatus = async (id: string, status: string) => {
     const updates: any = { status };
@@ -49,7 +76,7 @@ export function usePayments() {
       return false;
     }
     toast({ title: 'Payment updated' });
-    fetchPayments();
+    await queryClient.invalidateQueries({ queryKey: PAYMENTS_QUERY_KEY });
     return true;
   };
 
