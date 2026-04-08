@@ -566,7 +566,7 @@ export interface OnboardingSummaryData {
     name: string; email: string; phone: string; license: string;
     state: string | null; license_expiry: string | null; medical_card_expiry: string | null;
   };
-  truckData: {
+  truckData?: {
     unit_number: string; truck_type: string; make?: string | null; model?: string | null;
     year?: number | null; vin?: string | null; license_plate?: string | null;
     max_payload_lbs?: number | null;
@@ -577,7 +577,7 @@ export interface OnboardingSummaryData {
   };
   driverDocs: string[];
   truckDocs: string[];
-  signedDocs: { w9: boolean; leasing: boolean; service: boolean };
+  signedDocs: { w9?: boolean; leasing?: boolean; service?: boolean; employment?: boolean };
   date: string;
 }
 
