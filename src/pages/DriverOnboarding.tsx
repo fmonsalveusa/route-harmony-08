@@ -128,24 +128,33 @@ export default function DriverOnboarding() {
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
+      const isOO = tokenData?.service_type !== 'company_driver';
       const formData = new FormData();
       formData.append('token', token!);
       formData.append('driver_data', JSON.stringify(driver));
-      formData.append('truck_data', JSON.stringify(truck));
+      if (isOO) {
+        formData.append('truck_data', JSON.stringify(truck));
+      }
 
       // Append driver files
       for (const [key, file] of Object.entries(driverFiles)) {
         formData.append(`driver_${key}`, file);
       }
-      // Append truck files
-      for (const [key, file] of Object.entries(truckFiles)) {
-        formData.append(`truck_${key}`, file);
+      // Append truck files (only for OO)
+      if (isOO) {
+        for (const [key, file] of Object.entries(truckFiles)) {
+          formData.append(`truck_${key}`, file);
+        }
       }
 
       // Append signed document PDFs
-      if (signedDocs.w9) formData.append('driver_form_w9', signedDocs.w9, 'w9_signed.pdf');
-      if (signedDocs.leasing) formData.append('driver_leasing_agreement', signedDocs.leasing, 'leasing_agreement_signed.pdf');
-      if (signedDocs.service) formData.append('driver_service_agreement', signedDocs.service, 'service_agreement_signed.pdf');
+      if (isOO) {
+        if (signedDocs.w9) formData.append('driver_form_w9', signedDocs.w9, 'w9_signed.pdf');
+        if (signedDocs.leasing) formData.append('driver_leasing_agreement', signedDocs.leasing, 'leasing_agreement_signed.pdf');
+        if (signedDocs.service) formData.append('driver_service_agreement', signedDocs.service, 'service_agreement_signed.pdf');
+      } else {
+        if (signedDocs.employment) formData.append('driver_employment_contract', signedDocs.employment, 'employment_contract_signed.pdf');
+      }
 
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const res = await fetch(`${supabaseUrl}/functions/v1/driver-onboarding`, {
@@ -159,13 +168,15 @@ export default function DriverOnboarding() {
       // Generate summary PDF before clearing state
       try {
         const driverDocNames = DRIVER_DOC_FIELDS.filter(d => driverFiles[d.key]).map(d => d.label);
-        const truckDocNames = TRUCK_DOC_FIELDS.filter(d => truckFiles[d.key]).map(d => d.label);
+        const truckDocNames = isOO ? TRUCK_DOC_FIELDS.filter(d => truckFiles[d.key]).map(d => d.label) : [];
         const blob = generateOnboardingSummaryPdf({
           driverData: driver,
-          truckData: truck,
+          truckData: isOO ? truck : undefined,
           driverDocs: driverDocNames,
           truckDocs: truckDocNames,
-          signedDocs: { w9: !!signedDocs.w9, leasing: !!signedDocs.leasing, service: !!signedDocs.service },
+          signedDocs: isOO
+            ? { w9: !!signedDocs.w9, leasing: !!signedDocs.leasing, service: !!signedDocs.service }
+            : { employment: !!signedDocs.employment },
           date: format(new Date(), 'MM/dd/yyyy'),
         });
         setSummaryPdfBlob(blob);
