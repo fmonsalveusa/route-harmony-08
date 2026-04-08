@@ -223,7 +223,7 @@ const Drivers = () => {
                         </div>
                       </td>
                       <td className="p-3 pl-0" onClick={e => e.stopPropagation()}>
-                        <Button variant="ghost" size="sm" className="glass-action-btn tint-blue" onClick={() => copyDriverInfo(driver)} title="Copy">
+                        <Button variant="ghost" size="sm" className="glass-action-btn tint-blue shadow-[0_2px_4px_rgba(0,0,0,0.25),0_-1px_0_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.15)] active:shadow-[0_1px_2px_rgba(0,0,0,0.2),inset_0_1px_3px_rgba(0,0,0,0.15)] active:translate-y-px transition-all" onClick={() => copyDriverInfo(driver)} title="Copy">
                           <Copy className="h-3 w-3" /> Copy
                         </Button>
                       </td>
