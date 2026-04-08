@@ -20,7 +20,7 @@ interface BackgroundGeolocationPlugin {
   removeWatcher(options: { id: string }): Promise<void>;
 }
 
-const NATIVE_GPS_ENABLED = false; // Stability mode: keep native GPS off until Android native setup is fully verified
+const NATIVE_GPS_ENABLED = true; // Background geolocation plugin now installed and configured for iOS
 const WATCHER_ID_KEY = 'native_bg_watcher_id';
 const PLUGIN_AVAILABLE_KEY = 'native_gps_plugin_available';
 const BATTERY_SAVER_KEY = 'gps_battery_saver';
