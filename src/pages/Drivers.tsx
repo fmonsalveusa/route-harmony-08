@@ -187,6 +187,7 @@ const Drivers = () => {
                 <th className="w-[60px] p-3"></th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Phone</th>
                 <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Truck</th>
+                <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Dispatcher</th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
                 <th className="text-right p-3 font-medium text-muted-foreground">Actions</th>
               </tr>
@@ -238,6 +239,12 @@ const Drivers = () => {
                           <span>{truckLabel || <span className="text-muted-foreground italic">Unassigned</span>}</span>
                         </div>
                       </td>
+                      <td className="p-3 hidden lg:table-cell text-sm">
+                        {dispatcher
+                          ? <span className="font-medium">{dispatcher.name}</span>
+                          : <span className="text-muted-foreground italic">Unassigned</span>
+                        }
+                      </td>
                       <td className="p-3" onClick={e => e.stopPropagation()}>
                         <Select value={driver.status} onValueChange={v => updateDriver(driver.id, { status: v })}>
                           <SelectTrigger className="h-8 w-[155px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:hidden bg-transparent">
@@ -280,7 +287,7 @@ const Drivers = () => {
                     </tr>
                     {isExpanded && (
                       <tr key={`${driver.id}-detail`}>
-                        <td colSpan={7} className="p-0">
+                        <td colSpan={8} className="p-0">
                           <DriverDetailPanel driver={driver} truckLabel={truckLabel} dispatcherName={dispatcher?.name || null} getDocSignedUrl={getDocSignedUrl} truck={getTruck(driver.truck_id)} />
                         </td>
                       </tr>
