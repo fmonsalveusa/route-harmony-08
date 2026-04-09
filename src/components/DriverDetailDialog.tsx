@@ -67,7 +67,29 @@ export function DriverDetailDialog({ open, onOpenChange, driver, truckLabel, dis
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3">
               <Info label="Email">{driver.email}</Info>
               <Info label="Phone">{driver.phone}</Info>
+              <Info label="Birthday">{formatDate((driver as any).birthday) || '—'}</Info>
               <Info label="Hire Date">{formatDate(driver.hire_date)}</Info>
+              <Info label="Service Type">{driver.service_type?.replace(/_/g, ' ')}</Info>
+            </div>
+          </section>
+
+          {/* Address */}
+          <section className="space-y-2 border-t pt-4">
+            <h3 className="font-semibold text-sm border-b pb-1">Address</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3">
+              <Info label="Address">{(driver as any).address || '—'}</Info>
+              <Info label="City">{(driver as any).city || '—'}</Info>
+              <Info label="State">{driver.state || '—'}</Info>
+              <Info label="Zip">{(driver as any).zip || '—'}</Info>
+            </div>
+          </section>
+
+          {/* Emergency Contact */}
+          <section className="space-y-2 border-t pt-4">
+            <h3 className="font-semibold text-sm border-b pb-1">Emergency Contact</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3">
+              <Info label="Name">{(driver as any).emergency_contact_name || '—'}</Info>
+              <Info label="Phone">{(driver as any).emergency_phone || '—'}</Info>
             </div>
           </section>
 
@@ -75,9 +97,10 @@ export function DriverDetailDialog({ open, onOpenChange, driver, truckLabel, dis
           <section className="space-y-2 border-t pt-4">
             <h3 className="font-semibold text-sm border-b pb-1">License & Medical Card</h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3">
-              <Info label="Driver License #">{driver.license}</Info>
+              <Info label="Driver License #">{driver.license}{driver.state ? ` (${driver.state})` : ''}</Info>
               <Info label="License Expiry">{formatDate(driver.license_expiry)}</Info>
               <Info label="Medical Card Expiry">{formatDate(driver.medical_card_expiry)}</Info>
+              <Info label="Factoring %">{driver.factoring_percentage ?? 2}%</Info>
             </div>
           </section>
 
@@ -96,8 +119,11 @@ export function DriverDetailDialog({ open, onOpenChange, driver, truckLabel, dis
           <section className="space-y-2 border-t pt-4">
             <h3 className="font-semibold text-sm border-b pb-1">Payments & Performance</h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3">
-              <Info label="% Investor Pay">{driver.investor_pay_percentage ?? '—'}%</Info>
               <Info label="% Driver Pay">{driver.pay_percentage}%</Info>
+              <Info label="% Investor Pay">{driver.investor_pay_percentage ?? '—'}%</Info>
+              {(driver as any).service_type === 'dispatch_service' && (
+                <Info label="% Dispatch Service">{(driver as any).dispatch_service_percentage ?? 0}%</Info>
+              )}
               <Info label="Loads This Month">{driver.loads_this_month}</Info>
               <Info label="Earned This Month">${Number(driver.earnings_this_month).toLocaleString()}</Info>
             </div>

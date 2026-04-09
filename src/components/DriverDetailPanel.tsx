@@ -147,13 +147,31 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
           <ExpiryBadge date={driver.medical_card_expiry} label="Medical Card" />
         </div>
       )}
+
+      {/* Personal Info */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3">
         <Info label="Email">{driver.email}</Info>
         <Info label="Phone">{driver.phone}</Info>
+        <Info label="Birthday">{formatDate((driver as any).birthday) || '—'}</Info>
         <Info label="Hire Date">{formatDate(driver.hire_date)}</Info>
-        <Info label="Service Type">{driver.service_type}</Info>
+        <Info label="Service Type">{driver.service_type?.replace(/_/g, ' ')}</Info>
       </div>
 
+      {/* Address */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3 border-t pt-3">
+        <Info label="Address">{(driver as any).address || '—'}</Info>
+        <Info label="City">{(driver as any).city || '—'}</Info>
+        <Info label="State">{driver.state || '—'}</Info>
+        <Info label="Zip">{(driver as any).zip || '—'}</Info>
+      </div>
+
+      {/* Emergency Contact */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3 border-t pt-3">
+        <Info label="Emergency Contact">{(driver as any).emergency_contact_name || '—'}</Info>
+        <Info label="Emergency Phone">{(driver as any).emergency_phone || '—'}</Info>
+      </div>
+
+      {/* License & Medical */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3 border-t pt-3">
         <Info label="Driver License #">{driver.license}{driver.state ? ` (${driver.state})` : ''}</Info>
         <Info label="License Expiry">{formatDate(driver.license_expiry)}</Info>
@@ -161,6 +179,7 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
         <Info label="Factoring %">{driver.factoring_percentage}%</Info>
       </div>
 
+      {/* Assignments */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3 border-t pt-3">
         <Info label="Dispatcher">{dispatcherName || 'Unassigned'}</Info>
         <Info label="Truck">{truckLabel || 'Unassigned'}</Info>
@@ -169,6 +188,7 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
         <Info label="% Investor Pay">{driver.investor_pay_percentage ?? '—'}%</Info>
       </div>
 
+      {/* Pay & Performance */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3 border-t pt-3">
         <Info label="% Driver Pay">{driver.pay_percentage}%</Info>
         {driver.service_type === 'dispatch_service' && (
