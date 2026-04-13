@@ -110,11 +110,11 @@ const Fleet = () => {
               <tr className="border-b glass-table-header">
                 <th className="w-8 p-3"></th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Unit #</th>
+                <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Driver</th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Type</th>
                 <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Make / Model</th>
                 <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">VIN</th>
                 <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">License Plate</th>
-                <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Driver</th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
                 <th className="text-right p-3 font-medium text-muted-foreground">Actions</th>
               </tr>
@@ -145,6 +145,15 @@ const Fleet = () => {
                           </div>
                         </div>
                       </td>
+                      <td className="p-3 hidden md:table-cell">
+                        <span className="flex items-center gap-1">
+                          {driverName ? (
+                            <><User className="h-3 w-3 text-primary" />{driverName}</>
+                          ) : (
+                            <span className="text-destructive font-medium">Unassigned</span>
+                          )}
+                        </span>
+                      </td>
                       <td className="p-3">{truck.truck_type}</td>
                       <td className="p-3 hidden lg:table-cell">
                         <span className="text-sm">{[truck.make, truck.model].filter(Boolean).join(' ') || '—'}</span>
@@ -155,15 +164,6 @@ const Fleet = () => {
                       </td>
                       <td className="p-3 hidden md:table-cell">
                         <span className="text-sm">{truck.license_plate || '—'}</span>
-                      </td>
-                      <td className="p-3 hidden md:table-cell">
-                        <span className="flex items-center gap-1">
-                          {driverName ? (
-                            <><User className="h-3 w-3 text-primary" />{driverName}</>
-                          ) : (
-                            <span className="text-destructive font-medium">Unassigned</span>
-                          )}
-                        </span>
                       </td>
                       <td className="p-3" onClick={e => e.stopPropagation()}>
                         <Select value={truck.status} onValueChange={v => updateTruck(truck.id, { status: v })}>
