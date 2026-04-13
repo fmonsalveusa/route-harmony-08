@@ -35,8 +35,19 @@ const Fleet = () => {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [searchQuery, setSearchQuery] = useState('');
-  const [vinFilter, setVinFilter] = useState('');
-  const [plateFilter, setPlateFilter] = useState('');
+  const [vinFilter, setVinFilter] = useState('all');
+  const [plateFilter, setPlateFilter] = useState('all');
+
+  // Build unique VIN and plate lists from ALL trucks (any status)
+  const uniqueVins = useMemo(() => {
+    const vins = trucks.map(t => t.vin).filter(Boolean) as string[];
+    return [...new Set(vins)].sort();
+  }, [trucks]);
+
+  const uniquePlates = useMemo(() => {
+    const plates = trucks.map(t => t.license_plate).filter(Boolean) as string[];
+    return [...new Set(plates)].sort();
+  }, [trucks]);
 
   const openNew = () => { setEditTruck(null); setDialogOpen(true); };
   const openEdit = (t: DbTruck) => { setEditTruck(t); setDialogOpen(true); };
@@ -76,13 +87,11 @@ const Fleet = () => {
         t.truck_type.toLowerCase().includes(q)
       );
     }
-    if (vinFilter.trim()) {
-      const v = vinFilter.toLowerCase();
-      filtered = filtered.filter(t => t.vin && t.vin.toLowerCase().includes(v));
+    if (vinFilter !== 'all') {
+      filtered = filtered.filter(t => t.vin === vinFilter);
     }
-    if (plateFilter.trim()) {
-      const p = plateFilter.toLowerCase();
-      filtered = filtered.filter(t => t.license_plate && t.license_plate.toLowerCase().includes(p));
+    if (plateFilter !== 'all') {
+      filtered = filtered.filter(t => t.license_plate === plateFilter);
     }
     return filtered;
   };
@@ -248,18 +257,30 @@ const Fleet = () => {
             className="pl-9 h-9"
           />
         </div>
-        <Input
-          placeholder="Filter by VIN"
-          value={vinFilter}
-          onChange={e => { setVinFilter(e.target.value); setPage(1); }}
-          className="h-9 w-full sm:w-44"
-        />
-        <Input
-          placeholder="Filter by Plate"
-          value={plateFilter}
-          onChange={e => { setPlateFilter(e.target.value); setPage(1); }}
-          className="h-9 w-full sm:w-44"
-        />
+        <Select value={vinFilter} onValueChange={v => { setVinFilter(v); setPage(1); }}>
+          <SelectTrigger className="h-9 w-full sm:w-52">
+            <SelectValue placeholder="Filter by VIN" />
+          </SelectTrigger>
+          <SelectContent className="max-h-60">
+            <SelectItem value="all">All VINs</SelectItem>
+            {uniqueVins.map(vin => (
+              <SelectItem key={vin} value={vin}>
+                <span className="font-mono text-xs">{vin}</span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={plateFilter} onValueChange={v => { setPlateFilter(v); setPage(1); }}>
+          <SelectTrigger className="h-9 w-full sm:w-44">
+            <SelectValue placeholder="Filter by Plate" />
+          </SelectTrigger>
+          <SelectContent className="max-h-60">
+            <SelectItem value="all">All Plates</SelectItem>
+            {uniquePlates.map(plate => (
+              <SelectItem key={plate} value={plate}>{plate}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {loading ? (
@@ -273,7 +294,7 @@ const Fleet = () => {
           </TabsList>
           {['active', 'inactive', 'all'].map(tab => (
             <TabsContent key={tab} value={tab}>
-              {getFilteredByTab(tab).length === 0 && !searchQuery && !vinFilter && !plateFilter ? (
+              {getFilteredByTab(tab).length === 0 && !searchQuery && vinFilter === 'all' && plateFilter === 'all' ? (
                 <p className="text-muted-foreground text-center py-12">No trucks found.</p>
               ) : (
                 renderTrucksTable(getFilteredByTab(tab))
