@@ -48,11 +48,6 @@ async function drivingRoute(coords: [number, number][]): Promise<[number, number
   return _mapboxRoute(coords);
 }
 
-async function drivingRoute(coords: [number, number][]): Promise<[number, number][] | null> {
-  const result = await drivingRouteWithLegs(coords);
-  return result ? result.geometry : null;
-}
-
 function normalizeRouteGeometry(input: unknown): [number, number][] | null {
   if (!Array.isArray(input)) return null;
   const normalized = input
