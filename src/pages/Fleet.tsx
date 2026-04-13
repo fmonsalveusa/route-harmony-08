@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useTrucks, DbTruck, TruckInput } from '@/hooks/useTrucks';
 import { useDrivers } from '@/hooks/useDrivers';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -6,9 +6,9 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { TruckFormDialog } from '@/components/TruckFormDialog';
 import { TruckDetailDialog } from '@/components/TruckDetailDialog';
 import { TruckDetailPanel } from '@/components/TruckDetailPanel';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Truck as TruckIcon, Pencil, Trash2, Eye, User, ChevronDown, ChevronUp } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Plus, Truck as TruckIcon, Pencil, Trash2, Eye, User, ChevronDown, ChevronUp, Search } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ExpiryIndicators } from '@/components/ExpiryIndicators';
 
@@ -17,9 +17,6 @@ const STATUS_OPTIONS = [
   { value: 'inactive', label: 'Inactive', bg: 'bg-red-600 text-white' },
   { value: 'maintenance', label: 'Maintenance', bg: 'bg-orange-500 text-white' },
 ];
-
-const getStatusStyle = (status: string) =>
-  STATUS_OPTIONS.find(s => s.value === status)?.bg || '';
 
 const PAGE_SIZES = [25, 50, 100];
 
@@ -37,6 +34,9 @@ const Fleet = () => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [vinFilter, setVinFilter] = useState('');
+  const [plateFilter, setPlateFilter] = useState('');
 
   const openNew = () => { setEditTruck(null); setDialogOpen(true); };
   const openEdit = (t: DbTruck) => { setEditTruck(t); setDialogOpen(true); };
@@ -63,9 +63,35 @@ const Fleet = () => {
     return trucks;
   };
 
+  const applyFilters = (list: DbTruck[]) => {
+    let filtered = list;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(t =>
+        t.unit_number.toLowerCase().includes(q) ||
+        (t.make && t.make.toLowerCase().includes(q)) ||
+        (t.model && t.model.toLowerCase().includes(q)) ||
+        (t.vin && t.vin.toLowerCase().includes(q)) ||
+        (t.license_plate && t.license_plate.toLowerCase().includes(q)) ||
+        t.truck_type.toLowerCase().includes(q)
+      );
+    }
+    if (vinFilter.trim()) {
+      const v = vinFilter.toLowerCase();
+      filtered = filtered.filter(t => t.vin && t.vin.toLowerCase().includes(v));
+    }
+    if (plateFilter.trim()) {
+      const p = plateFilter.toLowerCase();
+      filtered = filtered.filter(t => t.license_plate && t.license_plate.toLowerCase().includes(p));
+    }
+    return filtered;
+  };
+
   const renderTrucksTable = (trucksList: DbTruck[]) => {
-    const totalPages = Math.max(1, Math.ceil(trucksList.length / pageSize));
-    const paged = trucksList.slice((page - 1) * pageSize, page * pageSize);
+    const filtered = applyFilters(trucksList);
+    const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+    const paged = filtered.slice((page - 1) * pageSize, page * pageSize);
+    const colSpan = 9;
     return (
     <div className="glass-card overflow-hidden">
       <div className="p-0">
@@ -76,13 +102,18 @@ const Fleet = () => {
                 <th className="w-8 p-3"></th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Unit #</th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Type</th>
+                <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Make / Model</th>
+                <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">VIN</th>
+                <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">License Plate</th>
                 <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Driver</th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
                 <th className="text-right p-3 font-medium text-muted-foreground">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {paged.map(truck => {
+              {paged.length === 0 ? (
+                <tr><td colSpan={colSpan} className="text-center text-muted-foreground py-8">No trucks match the filters.</td></tr>
+              ) : paged.map(truck => {
                 const isExpanded = expandedId === truck.id;
                 const driverName = getDriverName(truck.id);
                 return (
@@ -106,6 +137,16 @@ const Fleet = () => {
                         </div>
                       </td>
                       <td className="p-3">{truck.truck_type}</td>
+                      <td className="p-3 hidden lg:table-cell">
+                        <span className="text-sm">{[truck.make, truck.model].filter(Boolean).join(' ') || '—'}</span>
+                        {truck.year && <span className="text-xs text-muted-foreground ml-1">({truck.year})</span>}
+                      </td>
+                      <td className="p-3 hidden lg:table-cell">
+                        <span className="text-sm font-mono">{truck.vin || '—'}</span>
+                      </td>
+                      <td className="p-3 hidden md:table-cell">
+                        <span className="text-sm">{truck.license_plate || '—'}</span>
+                      </td>
                       <td className="p-3 hidden md:table-cell">
                         <span className="flex items-center gap-1">
                           {driverName ? (
@@ -148,7 +189,7 @@ const Fleet = () => {
                     </tr>
                     {isExpanded && (
                       <tr key={`${truck.id}-detail`}>
-                        <td colSpan={6} className="p-0">
+                        <td colSpan={colSpan} className="p-0">
                           <TruckDetailPanel truck={truck} driverName={driverName} getDocSignedUrl={getDocSignedUrl} />
                         </td>
                       </tr>
@@ -163,7 +204,7 @@ const Fleet = () => {
         {/* Pagination Footer */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border-t">
           <div className="text-sm text-muted-foreground">
-            {trucksList.length} trucks
+            {filtered.length} trucks
           </div>
           <div className="flex items-center gap-3 mt-2 sm:mt-0">
             <Select value={String(pageSize)} onValueChange={v => { setPageSize(Number(v)); setPage(1); }}>
@@ -196,6 +237,31 @@ const Fleet = () => {
         </Button>
       </div>
 
+      {/* Search & Filters */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search unit, make, model, VIN..."
+            value={searchQuery}
+            onChange={e => { setSearchQuery(e.target.value); setPage(1); }}
+            className="pl-9 h-9"
+          />
+        </div>
+        <Input
+          placeholder="Filter by VIN"
+          value={vinFilter}
+          onChange={e => { setVinFilter(e.target.value); setPage(1); }}
+          className="h-9 w-full sm:w-44"
+        />
+        <Input
+          placeholder="Filter by Plate"
+          value={plateFilter}
+          onChange={e => { setPlateFilter(e.target.value); setPage(1); }}
+          className="h-9 w-full sm:w-44"
+        />
+      </div>
+
       {loading ? (
         <p className="text-muted-foreground text-center py-12">Loading trucks...</p>
       ) : (
@@ -207,7 +273,7 @@ const Fleet = () => {
           </TabsList>
           {['active', 'inactive', 'all'].map(tab => (
             <TabsContent key={tab} value={tab}>
-              {getFilteredByTab(tab).length === 0 ? (
+              {getFilteredByTab(tab).length === 0 && !searchQuery && !vinFilter && !plateFilter ? (
                 <p className="text-muted-foreground text-center py-12">No trucks found.</p>
               ) : (
                 renderTrucksTable(getFilteredByTab(tab))
@@ -222,11 +288,5 @@ const Fleet = () => {
     </div>
   );
 };
-const Row = ({ label, value }: { label: string; value: string }) => (
-  <div className="flex justify-between text-[15px]">
-    <span className="text-muted-foreground">{label}</span>
-    <span className="font-medium">{value}</span>
-  </div>
-);
 
 export default Fleet;
