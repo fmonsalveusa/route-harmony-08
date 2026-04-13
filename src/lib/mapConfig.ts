@@ -9,7 +9,7 @@
 export const MAPBOX_TOKEN = 'pk.eyJ1IjoiZm1vbnNhbHZlIiwiYSI6ImNtbm5nMDg1ODFzenAycW9kYTRvcXZxdWEifQ.jLMyrT5fQG2yfx16RR_MXA';
 
 /** URL base de tiles para Leaflet (Mapbox Streets v12) */
-export const MAPBOX_TILE_URL = `https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/tiles/{z}/{x}/{y}?access_token=${MAPBOX_TOKEN}`;
+export const MAPBOX_TILE_URL = `https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/{z}/{x}/{y}?access_token=${MAPBOX_TOKEN}`;
 
 export const MAPBOX_TILE_OPTIONS = {
   attribution: '© <a href="https://www.mapbox.com/">Mapbox</a> © <a href="https://www.openstreetmap.org/copyright">OSM</a>',
