@@ -17,6 +17,7 @@ import { DriversTimelineCard } from '@/components/dashboard/DriversTimelineCard'
 import { MapContainer, TileLayer, Marker, Popup, Polyline, Tooltip as LeafletTooltip, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { MAPBOX_TILE_URL, MAPBOX_TILE_OPTIONS, mapboxGeocode } from '@/lib/mapConfig';
 import { LoadStop } from '@/hooks/useLoadStops';
 import { format, parseISO, isToday } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
@@ -139,25 +140,14 @@ const Tracking = () => {
     if (!editLocationDriver || !locationInput.trim()) return;
     setSavingLocation(true);
     try {
-      const mapboxToken = 'pk.eyJ1IjoiZm1vbnNhbHZlIiwiYSI6ImNtbm5nMDg1ODFzenAycW9kYTRvcXZxdWEifQ.jLMyrT5fQG2yfx16RR_MXA' as string;
-      const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(locationInput.trim())}.json?access_token=${mapboxToken}&country=us&limit=1&types=address,place,postcode,locality`);
-      const data = await res.json();
-      if (!data.features?.length) {
+      const coords = await mapboxGeocode(locationInput.trim());
+      if (!coords) {
         toast({ title: 'Location not found', description: 'Try a different address or city, state format.', variant: 'destructive' });
         setSavingLocation(false);
         return;
       }
-      const feature = data.features[0];
-      const [lng, lat] = feature.center;
-      // Extract city, state, zip from Mapbox context
-      const context = feature.context || [];
-      const placeCtx = context.find((c: any) => c.id?.startsWith('place.'));
-      const regionCtx = context.find((c: any) => c.id?.startsWith('region.'));
-      const postcodeCtx = context.find((c: any) => c.id?.startsWith('postcode.'));
-      const city = placeCtx?.text || feature.text || '';
-      const stateAbbr = regionCtx?.short_code?.replace('US-', '') || regionCtx?.text || '';
-      const zip = postcodeCtx?.text || '';
-      const displayName = [city, stateAbbr].filter(Boolean).join(', ') + (zip ? `. ${zip}` : '');
+      const [lat, lng] = coords;
+      const displayName = locationInput.trim();
 
       await supabase.from('drivers' as any).update({
         manual_location_address: displayName,
@@ -251,11 +241,9 @@ const Tracking = () => {
       for (const stop of stopsToGeocode) {
         if (cancelled) break;
         try {
-          const mapboxToken = 'pk.eyJ1IjoiZm1vbnNhbHZlIiwiYSI6ImNtbm5nMDg1ODFzenAycW9kYTRvcXZxdWEifQ.jLMyrT5fQG2yfx16RR_MXA' as string;
-          const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(stop.address)}.json?access_token=${mapboxToken}&country=us&limit=1&types=address,place,postcode,locality`);
-          const data = await res.json();
-          if (data.features?.length > 0) {
-            const [lng, lat] = data.features[0].center;
+          const coords = await mapboxGeocode(stop.address);
+          if (coords) {
+            const [lat, lng] = coords;
             await supabase.from('load_stops').update({ lat, lng }).eq('id', stop.id);
             updated.push({ ...stop, lat, lng });
           }
@@ -463,8 +451,10 @@ const Tracking = () => {
               scrollWheelZoom
             >
               <TileLayer
-                attribution='&copy; <a href="https://www.mapbox.com/">Mapbox</a> &copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
-                url={`https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/{z}/{x}/{y}?access_token=${'pk.eyJ1IjoiZm1vbnNhbHZlIiwiYSI6ImNtbm5nMDg1ODFzenAycW9kYTRvcXZxdWEifQ.jLMyrT5fQG2yfx16RR_MXA'}`}
+                attribution={MAPBOX_TILE_OPTIONS.attribution}
+                url={MAPBOX_TILE_URL}
+                tileSize={MAPBOX_TILE_OPTIONS.tileSize}
+                zoomOffset={MAPBOX_TILE_OPTIONS.zoomOffset}
               />
               <MapFlyTo center={mapCenter} zoom={mapZoom} />
 

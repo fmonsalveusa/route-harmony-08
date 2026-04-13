@@ -20,91 +20,32 @@ import { useToast } from '@/hooks/use-toast';
 import { useBrokerScores } from '@/hooks/useBrokerScores';
 import 'leaflet/dist/leaflet.css';
 
-// Mapbox public token (pk.* tokens are safe to include in client-side code)
-const MAPBOX_TOKEN = 'pk.eyJ1IjoiZm1vbnNhbHZlIiwiYSI6ImNtbm5nMDg1ODFzenAycW9kYTRvcXZxdWEifQ.jLMyrT5fQG2yfx16RR_MXA';
+// Mapbox — configuración centralizada en src/lib/mapConfig.ts
+import { MAPBOX_TOKEN, mapboxGeocode, mapboxRouteWithLegs, mapboxDrivingDistance, mapboxRoute as _mapboxRoute, MAPBOX_TILE_URL, MAPBOX_TILE_OPTIONS } from '@/lib/mapConfig';
 
-// In-memory geocode cache to avoid repeated API calls
+// In-memory geocode cache para evitar llamadas repetidas a Mapbox
 const geocodeCache = new Map<string, [number, number] | null>();
 
-// Geocoding with Mapbox — progressive fallback: full address → without suite → city+state+zip
 async function geocode(place: string): Promise<[number, number] | null> {
   const cacheKey = place.trim().toLowerCase();
   if (geocodeCache.has(cacheKey)) return geocodeCache.get(cacheKey)!;
-
-  const attempts = [place];
-  // Remove suite/unit/apt info
-  const noSuite = place.replace(/,?\s*(Suite|Ste|Unit|Apt|#)\s*\S*/gi, '').replace(/\s{2,}/g, ' ').trim();
-  if (noSuite !== place) attempts.push(noSuite);
-  // Try just city, state, zip
-  const parts = place.split(',').map(p => p.trim());
-  if (parts.length >= 2) {
-    attempts.push(parts.slice(-2).join(', ')); // e.g. "Middletown, PA 17057"
-  }
-  if (parts.length === 1) {
-    const m = place.match(/([A-Za-z\s]+)\s+([A-Z]{2})\s+(\d{5})/);
-    if (m) attempts.push(`${m[1].trim()}, ${m[2]} ${m[3]}`);
-  }
-
-  for (const query of attempts) {
-    try {
-      const res = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${MAPBOX_TOKEN}&country=us&limit=1&types=address,place,postcode,locality`
-      );
-      const data = await res.json();
-      if (data.features?.length > 0) {
-        const [lng, lat] = data.features[0].center;
-        console.log(`[MAP] Geocoded "${query}" (from "${place}")`);
-        const result: [number, number] = [lat, lng];
-        geocodeCache.set(cacheKey, result);
-        return result;
-      }
-    } catch {}
-  }
-  console.warn(`[MAP] Failed to geocode: "${place}"`);
-  geocodeCache.set(cacheKey, null);
-  return null;
+  const result = await mapboxGeocode(place);
+  geocodeCache.set(cacheKey, result);
+  if (result) console.log(`[MAP] Geocoded "${place}"`);
+  else console.warn(`[MAP] Failed to geocode: "${place}"`);
+  return result;
 }
 
-// Single Mapbox Directions call returning route geometry + per-leg distances
+// Alias locales que delegan en mapConfig.ts
 interface RouteWithLegs {
   geometry: [number, number][];
-  legDistancesMiles: number[]; // one per leg (coords.length - 1)
+  legDistancesMiles: number[];
   totalDistanceMiles: number;
 }
-
-async function drivingRouteWithLegs(coords: [number, number][]): Promise<RouteWithLegs | null> {
-  if (coords.length < 2) return null;
-  try {
-    // Mapbox expects lng,lat order
-    const waypoints = coords.map(c => `${c[1]},${c[0]}`).join(';');
-    const res = await fetch(
-      `https://api.mapbox.com/directions/v5/mapbox/driving/${waypoints}?access_token=${MAPBOX_TOKEN}&geometries=geojson&overview=full`
-    );
-    const data = await res.json();
-    if (data.code === 'Ok' && data.routes?.[0]) {
-      const route = data.routes[0];
-      // Mapbox GeoJSON coordinates are [lng, lat] — convert to [lat, lng] for Leaflet
-      const geometry = route.geometry?.coordinates?.map((c: number[]) => [c[1], c[0]] as [number, number]) || [];
-      const legDistancesMiles = (route.legs || []).map((leg: any) => (leg.distance || 0) * 0.000621371);
-      const totalDistanceMiles = route.distance * 0.000621371;
-      return { geometry, legDistancesMiles, totalDistanceMiles };
-    }
-  } catch {}
-  return null;
-}
-
-// Lightweight distance-only call using Mapbox Directions
-async function drivingDistance(lat1: number, lon1: number, lat2: number, lon2: number): Promise<number | null> {
-  try {
-    const res = await fetch(
-      `https://api.mapbox.com/directions/v5/mapbox/driving/${lon1},${lat1};${lon2},${lat2}?access_token=${MAPBOX_TOKEN}&overview=false`
-    );
-    const data = await res.json();
-    if (data.code === 'Ok' && data.routes?.[0]) {
-      return data.routes[0].distance * 0.000621371;
-    }
-  } catch {}
-  return null;
+const drivingRouteWithLegs = mapboxRouteWithLegs;
+const drivingDistance = mapboxDrivingDistance;
+async function drivingRoute(coords: [number, number][]): Promise<[number, number][] | null> {
+  return _mapboxRoute(coords);
 }
 
 async function drivingRoute(coords: [number, number][]): Promise<[number, number][] | null> {
@@ -793,7 +734,7 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
 
       const map = L.map(mapRef.current).setView([39.8283, -98.5795], 4);
       mapInstanceRef.current = map;
-      L.tileLayer(`https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/{z}/{x}/{y}?access_token=${MAPBOX_TOKEN}`, { attribution: '© <a href="https://www.mapbox.com/">Mapbox</a> © <a href="https://www.openstreetmap.org/copyright">OSM</a>', tileSize: 512, zoomOffset: -1 }).addTo(map);
+      L.tileLayer(MAPBOX_TILE_URL, MAPBOX_TILE_OPTIONS).addTo(map);
 
       const pickupIcon = L.divIcon({
         html: '<div style="background:hsl(152,60%,40%);color:white;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:12px;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,.3)">P</div>',
