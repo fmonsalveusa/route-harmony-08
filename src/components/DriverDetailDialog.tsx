@@ -27,8 +27,11 @@ const docFields = [
   { key: 'license_photo_url', label: 'License Photo' },
   { key: 'medical_card_photo_url', label: 'Medical Card Photo' },
   { key: 'form_w9_url', label: 'Form W9' },
-  { key: 'leasing_agreement_url', label: 'Leasing Agreement' },
+  { key: 'leasing_agreement_url', label: 'Leasing Agreement (AG-AR)' },
+  { key: 'leasing_agreement_venco_url', label: 'Leasing Agreement (VENCO)' },
+  { key: 'leasing_agreement_58_url', label: 'Leasing Agreement (58 LOGISTICS)' },
   { key: 'service_agreement_url', label: 'Service Agreement' },
+  { key: 'employment_contract_url', label: 'Employment Contract' },
 ];
 
 export function DriverDetailDialog({ open, onOpenChange, driver, truckLabel, dispatcherName, getDocSignedUrl }: DriverDetailDialogProps) {
