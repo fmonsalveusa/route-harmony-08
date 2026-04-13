@@ -227,6 +227,15 @@ Deno.serve(async (req) => {
       if (file && file instanceof File) {
         const path = await uploadFile(file, driverId, key);
         if (path) driverDocUrls[`${key}_url`] = path;
+
+        // For leasing_agreement, also upload copies for VENCO and 58 LOGISTICS
+        if (key === "leasing_agreement") {
+          const vencoPath = await uploadFile(file, driverId, "leasing_agreement_venco");
+          if (vencoPath) driverDocUrls["leasing_agreement_venco_url"] = vencoPath;
+
+          const path58 = await uploadFile(file, driverId, "leasing_agreement_58");
+          if (path58) driverDocUrls["leasing_agreement_58_url"] = path58;
+        }
       }
     }
     if (Object.keys(driverDocUrls).length > 0) {
