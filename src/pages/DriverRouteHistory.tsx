@@ -46,6 +46,9 @@ function getDateRange(period: string): { from: string; to: string } {
   return { from: format(start, 'yyyy-MM-dd'), to: format(end, 'yyyy-MM-dd') };
 }
 
+// Mapbox public token (pk.* tokens are safe to include in client-side code)
+const MAPBOX_TOKEN = 'pk.eyJ1IjoiZm1vbnNhbHZlIiwiYSI6ImNtbm5nMDg1ODFzenAycW9kYTRvcXZxdWEifQ.jLMyrT5fQG2yfx16RR_MXA';
+
 async function geocode(place: string): Promise<[number, number] | null> {
   const attempts = [place];
   const cleaned = place.replace(/\b(suite|ste|unit|apt|#)\s*\S+/gi, '').trim();
@@ -54,9 +57,12 @@ async function geocode(place: string): Promise<[number, number] | null> {
   if (parts.length >= 2) attempts.push(parts.slice(-2).join(',').trim());
   for (const query of attempts) {
     try {
-      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`);
+      const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${MAPBOX_TOKEN}&country=us&limit=1&types=address,place,postcode,locality`);
       const data = await res.json();
-      if (data.length > 0) return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+      if (data.features?.length > 0) {
+        const [lng, lat] = data.features[0].center;
+        return [lat, lng];
+      }
     } catch {}
   }
   return null;
@@ -65,8 +71,9 @@ async function geocode(place: string): Promise<[number, number] | null> {
 async function drivingRoute(coords: [number, number][]): Promise<[number, number][] | null> {
   if (coords.length < 2) return null;
   try {
+    // Mapbox expects lng,lat order
     const str = coords.map(c => `${c[1]},${c[0]}`).join(';');
-    const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${str}?overview=full&geometries=geojson`);
+    const res = await fetch(`https://api.mapbox.com/directions/v5/mapbox/driving/${str}?access_token=${MAPBOX_TOKEN}&geometries=geojson&overview=full`);
     const data = await res.json();
     if (data.code === 'Ok' && data.routes?.[0]) return data.routes[0].geometry.coordinates.map((c: number[]) => [c[1], c[0]] as [number, number]);
   } catch {}
@@ -169,8 +176,10 @@ const DriverRouteHistory = () => {
     const map = L.map(mapRef.current, { zoomControl: true }).setView([39.8283, -98.5795], 4);
     mapInstanceRef.current = map;
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap',
+    L.tileLayer(`https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/{z}/{x}/{y}?access_token=${MAPBOX_TOKEN}`, {
+      attribution: '© <a href="https://www.mapbox.com/">Mapbox</a> © <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+      tileSize: 512,
+      zoomOffset: -1,
     }).addTo(map);
 
     if (loads.length === 0 || mapLoading) return;

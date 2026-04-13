@@ -140,7 +140,7 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
 
   const handleDelivered = async () => {
     setChangingStatus(true);
-    await supabase.from('loads').update({ status: 'delivered', factoring: 'Pending' }).eq('id', stop.load_id);
+    await supabase.from('loads').update({ status: 'delivered', factoring: 'pending' }).eq('id', stop.load_id);
     await createNotification({
       type: 'status_changed',
       title: `Delivered - ${driverName}`,

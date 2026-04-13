@@ -139,24 +139,24 @@ const Tracking = () => {
     if (!editLocationDriver || !locationInput.trim()) return;
     setSavingLocation(true);
     try {
-      const addr = encodeURIComponent(locationInput.trim());
-      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${addr}&countrycodes=us&limit=1&addressdetails=1`);
-      const results = await res.json();
-      if (results.length === 0) {
+      const mapboxToken = 'pk.eyJ1IjoiZm1vbnNhbHZlIiwiYSI6ImNtbm5nMDg1ODFzenAycW9kYTRvcXZxdWEifQ.jLMyrT5fQG2yfx16RR_MXA' as string;
+      const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(locationInput.trim())}.json?access_token=${mapboxToken}&country=us&limit=1&types=address,place,postcode,locality`);
+      const data = await res.json();
+      if (!data.features?.length) {
         toast({ title: 'Location not found', description: 'Try a different address or city, state format.', variant: 'destructive' });
         setSavingLocation(false);
         return;
       }
-      const lat = parseFloat(results[0].lat);
-      const lng = parseFloat(results[0].lon);
-      const a = results[0].address || {};
-      const city = a.city || a.town || a.village || a.hamlet || '';
-      const stateFull = a.state || '';
-      const zip = a.postcode || '';
-      const stateAbbrevMap: Record<string, string> = {
-        'Alabama':'AL','Alaska':'AK','Arizona':'AZ','Arkansas':'AR','California':'CA','Colorado':'CO','Connecticut':'CT','Delaware':'DE','Florida':'FL','Georgia':'GA','Hawaii':'HI','Idaho':'ID','Illinois':'IL','Indiana':'IN','Iowa':'IA','Kansas':'KS','Kentucky':'KY','Louisiana':'LA','Maine':'ME','Maryland':'MD','Massachusetts':'MA','Michigan':'MI','Minnesota':'MN','Mississippi':'MS','Missouri':'MO','Montana':'MT','Nebraska':'NE','Nevada':'NV','New Hampshire':'NH','New Jersey':'NJ','New Mexico':'NM','New York':'NY','North Carolina':'NC','North Dakota':'ND','Ohio':'OH','Oklahoma':'OK','Oregon':'OR','Pennsylvania':'PA','Rhode Island':'RI','South Carolina':'SC','South Dakota':'SD','Tennessee':'TN','Texas':'TX','Utah':'UT','Vermont':'VT','Virginia':'VA','Washington':'WA','West Virginia':'WV','Wisconsin':'WI','Wyoming':'WY','District of Columbia':'DC',
-      };
-      const stateAbbr = stateAbbrevMap[stateFull] || stateFull;
+      const feature = data.features[0];
+      const [lng, lat] = feature.center;
+      // Extract city, state, zip from Mapbox context
+      const context = feature.context || [];
+      const placeCtx = context.find((c: any) => c.id?.startsWith('place.'));
+      const regionCtx = context.find((c: any) => c.id?.startsWith('region.'));
+      const postcodeCtx = context.find((c: any) => c.id?.startsWith('postcode.'));
+      const city = placeCtx?.text || feature.text || '';
+      const stateAbbr = regionCtx?.short_code?.replace('US-', '') || regionCtx?.text || '';
+      const zip = postcodeCtx?.text || '';
       const displayName = [city, stateAbbr].filter(Boolean).join(', ') + (zip ? `. ${zip}` : '');
 
       await supabase.from('drivers' as any).update({
@@ -251,17 +251,14 @@ const Tracking = () => {
       for (const stop of stopsToGeocode) {
         if (cancelled) break;
         try {
-          const addr = encodeURIComponent(stop.address);
-          const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${addr}&countrycodes=us&limit=1`);
-          const results = await res.json();
-          if (results.length > 0) {
-            const lat = parseFloat(results[0].lat);
-            const lng = parseFloat(results[0].lon);
+          const mapboxToken = 'pk.eyJ1IjoiZm1vbnNhbHZlIiwiYSI6ImNtbm5nMDg1ODFzenAycW9kYTRvcXZxdWEifQ.jLMyrT5fQG2yfx16RR_MXA' as string;
+          const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(stop.address)}.json?access_token=${mapboxToken}&country=us&limit=1&types=address,place,postcode,locality`);
+          const data = await res.json();
+          if (data.features?.length > 0) {
+            const [lng, lat] = data.features[0].center;
             await supabase.from('load_stops').update({ lat, lng }).eq('id', stop.id);
             updated.push({ ...stop, lat, lng });
           }
-          // Small delay to respect Nominatim rate limits
-          await new Promise(r => setTimeout(r, 1100));
         } catch { /* ignore */ }
       }
       if (!cancelled && updated.length > 0) {
@@ -466,8 +463,8 @@ const Tracking = () => {
               scrollWheelZoom
             >
               <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                attribution='&copy; <a href="https://www.mapbox.com/">Mapbox</a> &copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
+                url={`https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/{z}/{x}/{y}?access_token=${'pk.eyJ1IjoiZm1vbnNhbHZlIiwiYSI6ImNtbm5nMDg1ODFzenAycW9kYTRvcXZxdWEifQ.jLMyrT5fQG2yfx16RR_MXA'}`}
               />
               <MapFlyTo center={mapCenter} zoom={mapZoom} />
 
