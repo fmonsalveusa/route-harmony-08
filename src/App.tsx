@@ -36,7 +36,6 @@ import DriverOnboarding from "./pages/DriverOnboarding";
 import Install from "./pages/Install";
 import Landing from "./pages/Landing";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
-import Brokers from "./pages/Brokers";
 import Pricing from "./pages/Pricing";
 import Register from "./pages/Register";
 import Subscription from "./pages/Subscription";
@@ -280,7 +279,6 @@ const AppRoutes = () => {
       <Route path="/performance" element={<ProtectedRoute><Performance /></ProtectedRoute>} />
       <Route path="/maintenance" element={<ProtectedRoute><Maintenance /></ProtectedRoute>} />
       <Route path="/users" element={<ProtectedRoute><UsersPage /></ProtectedRoute>} />
-      <Route path="/brokers" element={<ProtectedRoute masterOnly><Brokers /></ProtectedRoute>} />
       <Route path="/subscription" element={<ProtectedRoute><Subscription /></ProtectedRoute>} />
       <Route path="/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
       <Route path="/documents/upload" element={<ProtectedRoute><SigningUpload /></ProtectedRoute>} />

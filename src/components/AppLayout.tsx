@@ -42,7 +42,6 @@ const teamItems: NavItem[] = [
   { label: 'Fleet', icon: Truck, path: '/fleet', permission: 'fleet' },
   { label: 'Drivers', icon: Users, path: '/drivers', permission: 'drivers' },
   { label: 'Dispatchers', icon: Headphones, path: '/dispatchers', permission: 'dispatchers' },
-  { label: 'Brokers', icon: Handshake, path: '/brokers', permission: 'loads', masterOnly: true },
 ];
 
 const accountingItems: NavItem[] = [
@@ -80,7 +79,6 @@ const tenantNavItems: NavItem[] = [
   { label: 'Route History', icon: MapPin, path: '/driver-route-history', permission: 'tracking' },
   { label: 'Documents', icon: FileSignature, path: '/documents', permission: 'dashboard', hideForDispatcher: true },
   { label: 'Companies', icon: Building2, path: '/companies', permission: 'companies' },
-  { label: 'Brokers', icon: Handshake, path: '/brokers', permission: 'loads', masterOnly: true },
   { label: 'Users', icon: UserCog, path: '/users', permission: 'users' },
   { label: 'Subscription', icon: CreditCard, path: '/subscription', permission: 'settings' },
 ];
@@ -116,7 +114,6 @@ const NavDropdownGroup = ({
   hasPermission,
   isMasterAdmin,
   pendingDrivers,
-  unratedBrokers,
 }: {
   label: string;
   icon: any;
@@ -124,7 +121,6 @@ const NavDropdownGroup = ({
   hasPermission: (p: string) => boolean;
   isMasterAdmin: boolean;
   pendingDrivers: number;
-  unratedBrokers: number;
 }) => {
   const location = useLocation();
   const visible = items.filter((i) => hasPermission(i.permission) && (!i.masterOnly || isMasterAdmin));
@@ -159,11 +155,6 @@ const NavDropdownGroup = ({
                     {pendingDrivers}
                   </span>
                 )}
-                {item.path === '/brokers' && unratedBrokers > 0 && (
-                  <span className="ml-auto inline-flex items-center justify-center h-4 min-w-[16px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold leading-none">
-                    {unratedBrokers}
-                  </span>
-                )}
               </Link>
             </DropdownMenuItem>
           );
@@ -179,7 +170,6 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loadDialogOpen, setLoadDialogOpen] = useState(false);
   const [pendingDrivers, setPendingDrivers] = useState(0);
-  const [unratedBrokers, setUnratedBrokers] = useState(0);
   const { createLoad } = useLoads();
 
   useEffect(() => {
@@ -200,21 +190,6 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
     return () => { supabase.removeChannel(channel); };
   }, [profile?.tenant_id]);
 
-  useEffect(() => {
-    const fetchUnrated = async () => {
-      const { count } = await supabase
-        .from('brokers' as any)
-        .select('*', { count: 'exact', head: true })
-        .is('rating', null);
-      setUnratedBrokers(count || 0);
-    };
-    fetchUnrated();
-    const channel = supabase
-      .channel('unrated-brokers-nav')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'brokers' }, () => fetchUnrated())
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, []);
 
   if (!profile) {
     return (
@@ -265,11 +240,6 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
         {item.path === '/drivers' && pendingDrivers > 0 && (
           <span className="inline-flex items-center justify-center h-4 min-w-[16px] px-1 rounded-full bg-orange-500 text-white text-[10px] font-bold leading-none">
             {pendingDrivers}
-          </span>
-        )}
-        {item.path === '/brokers' && unratedBrokers > 0 && (
-          <span className="inline-flex items-center justify-center h-4 min-w-[16px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold leading-none">
-            {unratedBrokers}
           </span>
         )}
       </Link>
@@ -364,7 +334,6 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
               hasPermission={hasPermission}
               isMasterAdmin={isMasterAdmin}
               pendingDrivers={pendingDrivers}
-              unratedBrokers={unratedBrokers}
             />
 
             {/* Accounting dropdown */}
@@ -375,7 +344,6 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
               hasPermission={hasPermission}
               isMasterAdmin={isMasterAdmin}
               pendingDrivers={pendingDrivers}
-              unratedBrokers={unratedBrokers}
             />
 
             {/* Remaining top-level links */}
@@ -389,7 +357,6 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
               hasPermission={hasPermission}
               isMasterAdmin={isMasterAdmin}
               pendingDrivers={pendingDrivers}
-              unratedBrokers={unratedBrokers}
             />
           </>
         )}
@@ -426,11 +393,6 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
                     {item.path === '/drivers' && pendingDrivers > 0 && (
                       <span className="ml-auto inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-orange-500 text-white text-[11px] font-bold leading-none">
                         {pendingDrivers}
-                      </span>
-                    )}
-                    {item.path === '/brokers' && unratedBrokers > 0 && (
-                      <span className="ml-auto inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-destructive text-destructive-foreground text-[11px] font-bold leading-none">
-                        {unratedBrokers}
                       </span>
                     )}
                   </Link>
