@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { formatDate } from '@/lib/dateUtils';
 import { MapPin, Calendar, Weight, DollarSign, User, Truck, Route, Navigation, FileText, Download, ExternalLink, Pencil, Loader2, Copy, Check, Building2, Plus } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import type { DbLoad } from '@/hooks/useLoads';
 import type { DbDriver } from '@/hooks/useDrivers';
@@ -233,6 +234,8 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
   const [bolDialogOpen, setBolDialogOpen] = useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { role, isMasterAdmin } = useAuth();
+  const canSeeGrossRate = role === 'admin' || role === 'accounting' || isMasterAdmin;
   const { stops: dbStops, loading: stopsLoading, updateStopGeodata } = useLoadStops(load.id);
   const [mapReady, setMapReady] = useState(false);
   const [gpsStatus, setGpsStatus] = useState<'active' | 'stale' | 'none'>('none');
@@ -420,6 +423,32 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
   const openOriginalPdf = async () => {
     const url = await resolveDriverDocsUrl(load.pdf_url || '');
     if (url) window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  const openRcOriginalPdf = async () => {
+    const url = await resolveDriverDocsUrl((load as any).rc_original_url || '');
+    if (url) window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  const downloadRcOriginalPdf = async () => {
+    const url = await resolveDriverDocsUrl((load as any).rc_original_url || '');
+    if (!url) return;
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = `RC_Original_${load.reference_number}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+    } catch (e) {
+      console.error('Error downloading RC original PDF:', e);
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
   };
 
   const downloadOriginalPdf = async () => {
@@ -1265,12 +1294,21 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
             </tr>
 
             {/* Dispatcher / Rate row */}
-            <tr>
+            <tr className={canSeeGrossRate && (load as any).gross_rate ? 'border-b' : ''}>
               <td className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Dispatcher:</td>
               <td className="px-3 py-2 font-medium border-r">{dispatcher?.name || '—'}</td>
               <td className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">$ Rate:</td>
               <td className="px-3 py-2 font-bold text-primary">${Number(load.total_rate).toLocaleString()}</td>
             </tr>
+            {/* Gross Rate row — solo Admin / Accounting / Master Admin */}
+            {canSeeGrossRate && (load as any).gross_rate && (
+              <tr>
+                <td className="px-3 py-2 bg-amber-500/10 font-medium text-amber-700 dark:text-amber-400 whitespace-nowrap border-r text-xs">Gross Rate:</td>
+                <td className="px-3 py-2 font-bold text-amber-700 dark:text-amber-400 border-r">${Number((load as any).gross_rate).toLocaleString()}</td>
+                <td className="px-3 py-2 bg-amber-500/10 font-medium text-amber-700 dark:text-amber-400 whitespace-nowrap border-r text-xs">Comisión broker:</td>
+                <td className="px-3 py-2 font-bold text-amber-700 dark:text-amber-400">${(Number((load as any).gross_rate) - Number(load.total_rate)).toLocaleString()}</td>
+              </tr>
+            )}
             </tbody>
           </table>
 
@@ -1342,6 +1380,23 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
               </Button>
             </div>
           </div>
+
+          {/* RC Original — solo Admin / Accounting / Master Admin */}
+          {canSeeGrossRate && (load as any).rc_original_url && (
+            <div className="p-2.5 rounded-lg border-2 border-amber-500/40 bg-amber-500/5 text-sm">
+              <h5 className="font-semibold mb-1.5 flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
+                <FileText className="h-3 w-3" /> RC Original (Gross Rate) — Solo Admin
+              </h5>
+              <div className="flex gap-1.5">
+                <Button variant="outline" size="sm" className="gap-1 text-[11px] h-7 px-2 border-amber-500/40 text-amber-600 hover:bg-amber-500/10" onClick={() => { void openRcOriginalPdf(); }}>
+                  <ExternalLink className="h-3 w-3" /> Ver
+                </Button>
+                <Button variant="outline" size="sm" className="gap-1 text-[11px] h-7 px-2 border-amber-500/40 text-amber-600 hover:bg-amber-500/10" onClick={() => { void downloadRcOriginalPdf(); }}>
+                  <Download className="h-3 w-3" /> Descargar
+                </Button>
+              </div>
+            </div>
+          )}
           <BolFormDialog
             open={bolDialogOpen}
             onOpenChange={setBolDialogOpen}

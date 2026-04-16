@@ -16,6 +16,7 @@ import { useCompanies } from '@/hooks/useCompanies';
 import { useLoadStops } from '@/hooks/useLoadStops';
 import type { DbLoad, CreateLoadInput } from '@/hooks/useLoads';
 import { createNotification } from '@/hooks/useNotifications';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface StopEntry {
   stop_type: 'pickup' | 'delivery';
@@ -52,12 +53,15 @@ const emptyForm: LoadFormData = {
 
 export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatcherId }: LoadFormDialogProps) => {
   const { toast } = useToast();
+  const { role, isMasterAdmin } = useAuth();
+  const canSeeGrossRate = role === 'admin' || role === 'accounting' || isMasterAdmin;
   const { trucks } = useTrucks();
   const { drivers } = useDrivers();
   const { dispatchers } = useDispatchers();
   const { companies } = useCompanies();
   const { stops: existingStops, fetchStops, saveStops } = useLoadStops(editLoad?.id);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const rcOriginalFileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState<LoadFormData>(emptyForm);
   const [selectedDriver, setSelectedDriver] = useState('');
   const [selectedTruck, setSelectedTruck] = useState('');
@@ -73,6 +77,12 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
   const [uploadedPdfPath, setUploadedPdfPath] = useState<string | null>(null);
   const [uploadedPdfSignedUrl, setUploadedPdfSignedUrl] = useState<string | null>(null);
+  // RC Original (gross rate) — solo Admin / Accounting / Master Admin
+  const [grossRate, setGrossRate] = useState<number>(0);
+  const [rcOriginalFile, setRcOriginalFile] = useState<File | null>(null);
+  const [rcOriginalPreviewUrl, setRcOriginalPreviewUrl] = useState<string | null>(null);
+  const [rcOriginalUploadedUrl, setRcOriginalUploadedUrl] = useState<string | null>(null);
+  const [rcOriginalFileName, setRcOriginalFileName] = useState('');
   const [stopEntries, setStopEntries] = useState<StopEntry[]>([
     { stop_type: 'pickup', address: '', date: '' },
     { stop_type: 'delivery', address: '', date: '' },
@@ -105,6 +115,11 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       setPdfPreviewUrl(editLoad.pdf_url || null);
       setUploadedPdfPath(null);
       setUploadedPdfSignedUrl(editLoad.pdf_url || null);
+      setGrossRate((editLoad as any).gross_rate || 0);
+      setRcOriginalUploadedUrl((editLoad as any).rc_original_url || null);
+      setRcOriginalPreviewUrl((editLoad as any).rc_original_url || null);
+      setRcOriginalFile(null);
+      setRcOriginalFileName((editLoad as any).rc_original_url ? 'RC Original.pdf' : '');
     } else {
       setFormData(emptyForm);
       setSelectedDriver('');
@@ -119,6 +134,11 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       setPdfPreviewUrl(null);
       setUploadedPdfPath(null);
       setUploadedPdfSignedUrl(null);
+      setGrossRate(0);
+      setRcOriginalFile(null);
+      setRcOriginalPreviewUrl(null);
+      setRcOriginalUploadedUrl(null);
+      setRcOriginalFileName('');
       setStopEntries([
         { stop_type: 'pickup', address: '', date: '' },
         { stop_type: 'delivery', address: '', date: '' },
@@ -334,6 +354,31 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
     setExtractionStatus('idle');
   };
 
+  // Upload RC Original PDF (solo Admin/Accounting/MasterAdmin)
+  const handleRcOriginalUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.type !== 'application/pdf') {
+      toast({ title: 'Error', description: 'Only PDF files are allowed', variant: 'destructive' });
+      return;
+    }
+    setRcOriginalFile(file);
+    setRcOriginalFileName(file.name);
+    const localUrl = URL.createObjectURL(file);
+    setRcOriginalPreviewUrl(localUrl);
+    setRcOriginalUploadedUrl(null); // will upload on submit
+  };
+
+  const removeRcOriginal = () => {
+    if (rcOriginalPreviewUrl && rcOriginalPreviewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(rcOriginalPreviewUrl);
+    }
+    setRcOriginalFile(null);
+    setRcOriginalFileName('');
+    setRcOriginalPreviewUrl(null);
+    setRcOriginalUploadedUrl(null);
+  };
+
   const selectedDriverObj = drivers.find(d => d.id === selectedDriver);
   const selectedDispatcherObj = dispatchers.find(d => d.id === selectedDispatcher);
 
@@ -400,7 +445,24 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       status: selectedStatus,
       service_type: selectedServiceType || undefined,
       company_id: selectedCompany || undefined,
+      gross_rate: grossRate > 0 ? grossRate : null,
     } as any;
+
+    // Upload RC Original PDF if a new file was selected
+    let rcOriginalUrl: string | undefined = rcOriginalUploadedUrl || (editLoad as any)?.rc_original_url || undefined;
+    if (rcOriginalFile) {
+      const rcFileName = `driver-documents/loads/rc_original_${Date.now()}_${rcOriginalFile.name}`;
+      const { error: rcUploadError } = await supabase.storage
+        .from('driver-documents')
+        .upload(rcFileName, rcOriginalFile, { contentType: 'application/pdf' });
+      if (!rcUploadError) {
+        const { data: rcUrlData } = await supabase.storage
+          .from('driver-documents')
+          .createSignedUrl(rcFileName, 60 * 60 * 24 * 365);
+        rcOriginalUrl = rcUrlData?.signedUrl || undefined;
+      }
+    }
+    (payload as any).rc_original_url = rcOriginalUrl || null;
 
     const result = await onSubmit(payload);
 
@@ -526,6 +588,92 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
             <div className="rounded border bg-background h-40 overflow-hidden">
               <iframe src={pdfPreviewUrl} className="w-full h-full" title="PDF Preview" />
             </div>
+          </div>
+        )}
+
+        {/* RC Original — solo Admin / Accounting / Master Admin */}
+        {canSeeGrossRate && (
+          <div className="mt-2 p-4 rounded-lg border-2 border-dashed border-amber-500/40 bg-amber-500/5">
+            <div className="flex items-center gap-3 mb-3">
+              <FileText className="h-5 w-5 text-amber-500" />
+              <div>
+                <h4 className="text-sm font-semibold text-amber-600 dark:text-amber-400">RC Original (Gross Rate) — Solo Admin</h4>
+                <p className="text-xs text-muted-foreground">PDF con el monto original del broker. No visible para el driver.</p>
+              </div>
+            </div>
+
+            {/* Gross Rate input */}
+            <div className="mb-3 flex items-center gap-2">
+              <Label className="text-xs whitespace-nowrap">$ Gross Rate:</Label>
+              <Input
+                type="number"
+                min={0}
+                step={0.01}
+                placeholder="0.00"
+                value={grossRate || ''}
+                onChange={e => setGrossRate(parseFloat(e.target.value) || 0)}
+                className="h-8 text-sm w-36"
+              />
+              {grossRate > 0 && formData.totalRate > 0 && (
+                <span className="text-xs text-muted-foreground">
+                  Comisión broker: <strong className="text-amber-600">${(grossRate - formData.totalRate).toLocaleString()}</strong>
+                </span>
+              )}
+            </div>
+
+            {/* RC Original PDF upload */}
+            <input
+              ref={rcOriginalFileInputRef}
+              type="file"
+              accept=".pdf"
+              onChange={handleRcOriginalUpload}
+              className="hidden"
+            />
+            {!rcOriginalPreviewUrl ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full gap-2 border-amber-500/40 text-amber-600 hover:bg-amber-500/10"
+                onClick={() => rcOriginalFileInputRef.current?.click()}
+              >
+                <Upload className="h-4 w-4" /> Subir RC Original PDF
+              </Button>
+            ) : (
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <FileText className="h-4 w-4 text-amber-500" />
+                    <span className="text-xs truncate max-w-[200px]">{rcOriginalFileName || 'RC Original.pdf'}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" asChild>
+                      <a href={rcOriginalPreviewUrl} target="_blank" rel="noopener noreferrer">
+                        <Eye className="h-3.5 w-3.5" /> Ver
+                      </a>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 gap-1 text-xs"
+                      onClick={() => rcOriginalFileInputRef.current?.click()}
+                    >
+                      Cambiar
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs text-destructive"
+                      onClick={removeRcOriginal}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+                <div className="rounded border bg-background h-32 overflow-hidden">
+                  <iframe src={rcOriginalPreviewUrl} className="w-full h-full" title="RC Original Preview" />
+                </div>
+              </div>
+            )}
           </div>
         )}
 
