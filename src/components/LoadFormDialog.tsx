@@ -480,14 +480,11 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       company_id: selectedCompany || undefined,
     } as any;
 
-    // RC Original / Gross Rate — solo Admin / Accounting / Master Admin
+    // Prepare RC Original data (upload PDF if new file selected) — before main submit
+    let rcOriginalUrl: string | null = null;
     if (canSeeGrossRate) {
-      (payload as any).gross_rate = grossRate > 0 ? grossRate : null;
-
-      // Upload RC Original PDF if a new file was selected
-      let rcOriginalUrl: string | null = rcOriginalUploadedUrl || (editLoad as any)?.rc_original_url || null;
+      rcOriginalUrl = rcOriginalUploadedUrl || (editLoad as any)?.rc_original_url || null;
       if (rcOriginalFile) {
-        // Path within the 'driver-documents' bucket (no bucket prefix in the path)
         const rcStoragePath = `loads/rc_original_${Date.now()}_${rcOriginalFile.name}`;
         const { error: rcUploadError } = await supabase.storage
           .from('driver-documents')
@@ -501,13 +498,22 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
           console.error('RC Original upload error:', rcUploadError);
         }
       }
-      (payload as any).rc_original_url = rcOriginalUrl;
     }
 
+    // Submit main payload (without gross_rate / rc_original_url to avoid schema cache issues)
     const result = await onSubmit(payload);
 
     // Save stops to load_stops table
     const loadId = editLoad?.id || result?.id;
+
+    // Update RC Original fields via RPC (bypasses PostgREST schema cache)
+    if (canSeeGrossRate && loadId) {
+      await supabase.rpc('update_load_rc_data' as any, {
+        p_load_id: loadId,
+        p_gross_rate: grossRate > 0 ? grossRate : null,
+        p_rc_original_url: rcOriginalUrl,
+      });
+    }
     if (loadId && stopEntries.some(s => s.address)) {
       const validStops = stopEntries.filter(s => s.address.trim());
       await saveStops(loadId, validStops.map((s, i) => ({
