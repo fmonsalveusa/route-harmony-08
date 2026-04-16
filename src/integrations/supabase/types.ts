@@ -1017,6 +1017,7 @@ export type Database = {
           empty_miles: number | null
           empty_miles_origin: string | null
           factoring: string | null
+          gross_rate: number | null
           id: string
           investor_pay_amount: number | null
           miles: number | null
@@ -1024,6 +1025,7 @@ export type Database = {
           origin: string
           pdf_url: string | null
           pickup_date: string | null
+          rc_original_url: string | null
           reference_number: string
           route_geometry: Json | null
           service_type: string | null
@@ -1050,6 +1052,7 @@ export type Database = {
           empty_miles?: number | null
           empty_miles_origin?: string | null
           factoring?: string | null
+          gross_rate?: number | null
           id?: string
           investor_pay_amount?: number | null
           miles?: number | null
@@ -1057,6 +1060,7 @@ export type Database = {
           origin: string
           pdf_url?: string | null
           pickup_date?: string | null
+          rc_original_url?: string | null
           reference_number: string
           route_geometry?: Json | null
           service_type?: string | null
@@ -1083,6 +1087,7 @@ export type Database = {
           empty_miles?: number | null
           empty_miles_origin?: string | null
           factoring?: string | null
+          gross_rate?: number | null
           id?: string
           investor_pay_amount?: number | null
           miles?: number | null
@@ -1090,6 +1095,7 @@ export type Database = {
           origin?: string
           pdf_url?: string | null
           pickup_date?: string | null
+          rc_original_url?: string | null
           reference_number?: string
           route_geometry?: Json | null
           service_type?: string | null
