@@ -498,7 +498,7 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
           <Button
             variant="default"
             size="sm"
-            className="w-full gap-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white border-0 shadow-md"
+            className="w-full gap-1.5 text-sm bg-[#266aad] hover:bg-[#1f5a99] text-white border-0 shadow-md"
             onClick={() => setScannerOpen(true)}
           >
             <ScanLine className="h-4 w-4" />

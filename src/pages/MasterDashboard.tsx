@@ -55,7 +55,7 @@ const MasterDashboard = () => {
   const planBadge = (plan: string) => {
     const styles: Record<string, string> = {
       basic: 'bg-green-100 text-green-700',
-      intermediate: 'bg-blue-100 text-blue-700',
+      intermediate: 'bg-[#266aad]/20 text-[#266aad]',
       pro: 'bg-amber-100 text-amber-700',
     };
     return <Badge className={styles[plan] || 'bg-muted text-muted-foreground'}>{plan?.toUpperCase()}</Badge>;

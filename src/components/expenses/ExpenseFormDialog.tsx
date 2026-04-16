@@ -153,7 +153,7 @@ export function ExpenseFormDialog({ open, onOpenChange, onSubmit, trucks, driver
                   <div className="flex items-center gap-2 mt-1">
                     <span className="text-sm">{assignedDriver?.name || 'No driver assigned'}</span>
                     {assignedDriver && (
-                      <Badge variant="outline" className={assignedDriver.service_type === 'company_driver' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}>
+                      <Badge variant="outline" className={assignedDriver.service_type === 'company_driver' ? 'bg-green-100 text-green-800' : 'bg-[#266aad]/20 text-[#266aad]'}>
                         {assignedDriver.service_type === 'company_driver' ? 'Company Driver' : 'Owner Operator'}
                       </Badge>
                     )}

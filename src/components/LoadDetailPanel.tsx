@@ -173,7 +173,7 @@ function BrokerScoreRow({ brokerName }: { brokerName: string | null | undefined 
       <div className="flex items-center gap-2 flex-wrap">
         <span className="font-medium">{brokerName || '—'}</span>
         {existing?.mc_number && (
-          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-600/10 text-blue-600 border border-blue-600/20">
+          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#266aad]/10 text-[#266aad] border border-[#266aad]/20">
             MC# {existing.mc_number}
           </span>
         )}
@@ -827,14 +827,14 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
 
         if (cachedRoute && cachedRoute.length >= 2) {
           try {
-            L.polyline(cachedRoute, { color: 'hsl(215,70%,50%)', weight: 3 }).addTo(map);
+            L.polyline(cachedRoute, { color: '#266aad', weight: 3 }).addTo(map);
           } catch (e) {
             console.warn('[MAP] Cached polyline failed:', e);
-            if (bounds.length >= 2) L.polyline(bounds, { color: 'hsl(215,70%,50%)', weight: 3, dashArray: '8 4' }).addTo(map);
+            if (bounds.length >= 2) L.polyline(bounds, { color: '#266aad', weight: 3, dashArray: '8 4' }).addTo(map);
           }
         } else if (bounds.length >= 2) {
           // No route geometry yet - draw straight lines, calculate route in background
-          L.polyline(bounds, { color: 'hsl(215,70%,50%)', weight: 3, dashArray: '8 4' }).addTo(map);
+          L.polyline(bounds, { color: '#266aad', weight: 3, dashArray: '8 4' }).addTo(map);
         }
 
         if (bounds.length >= 2) map.fitBounds(bounds, { padding: [40, 40] });
@@ -892,7 +892,7 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
               // Also persist route geometry if we didn't have one
               if (!cachedRoute && routeResult.geometry && routeResult.geometry.length >= 2 && !cancelled) {
                 try {
-                  L.polyline(routeResult.geometry, { color: 'hsl(215,70%,50%)', weight: 3 }).addTo(map);
+                  L.polyline(routeResult.geometry, { color: '#266aad', weight: 3 }).addTo(map);
                 } catch {}
               }
             }
@@ -984,9 +984,9 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
       try {
         if (bounds.length >= 2) {
           if (routeCoords && routeCoords.length >= 2) {
-            L.polyline(routeCoords, { color: 'hsl(215,70%,50%)', weight: 3 }).addTo(map);
+            L.polyline(routeCoords, { color: '#266aad', weight: 3 }).addTo(map);
           } else {
-            L.polyline(bounds, { color: 'hsl(215,70%,50%)', weight: 3, dashArray: '8 4' }).addTo(map);
+            L.polyline(bounds, { color: '#266aad', weight: 3, dashArray: '8 4' }).addTo(map);
           }
           map.fitBounds(bounds, { padding: [40, 40] });
         } else if (bounds.length === 1) {
@@ -1042,7 +1042,7 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
         if (
           layer instanceof L.Polyline &&
           !(layer instanceof L.Polygon) &&
-          (layer.options?.dashArray === '8 4' || layer.options?.color === 'hsl(215,70%,50%)')
+          (layer.options?.dashArray === '8 4' || layer.options?.color === '#266aad')
         ) {
           try {
             map.removeLayer(layer);
@@ -1051,7 +1051,7 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
       });
 
       try {
-        L.polyline(effectiveRouteGeometry, { color: 'hsl(215,70%,50%)', weight: 3 }).addTo(map);
+        L.polyline(effectiveRouteGeometry, { color: '#266aad', weight: 3 }).addTo(map);
       } catch {}
     })();
   }, [effectiveRouteGeometry, mapReady]);
@@ -1090,7 +1090,7 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
 
       const statusLabel = active ? '🛰 GPS Live' : '📍 Last Known';
       const statusColor = active ? 'hsl(142,70%,40%)' : 'hsl(30,80%,50%)';
-      const markerBg = active ? 'hsl(215,70%,50%)' : 'hsl(30,80%,50%)';
+      const markerBg = active ? '#266aad' : 'hsl(30,80%,50%)';
       const pulseBg = active ? 'hsl(215,70%,50%,0.25)' : 'hsl(30,80%,50%,0.15)';
       const pulseAnim = active ? 'animation:pulse 2s infinite' : '';
 
@@ -1421,11 +1421,11 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
             )}
 
             {/* Bill of Lading */}
-            <div className="p-2.5 rounded-lg text-sm" style={{ backgroundColor: '#1e50bd' }}>
+            <div className="p-2.5 rounded-lg text-sm" style={{ backgroundColor: '#266aad' }}>
               <h5 className="font-semibold mb-1.5 flex items-center gap-1.5 text-xs text-white">
                 <FileText className="h-3 w-3 text-white" /> Bill of Lading (BOL)
               </h5>
-              <Button variant="outline" size="sm" className="gap-1 text-[11px] h-7 px-2 bg-white border-white hover:bg-blue-50" style={{ color: '#1e50bd' }} onClick={() => setBolDialogOpen(true)}>
+              <Button variant="outline" size="sm" className="gap-1 text-[11px] h-7 px-2 bg-white border-white hover:bg-blue-50" style={{ color: '#266aad' }} onClick={() => setBolDialogOpen(true)}>
                 <Download className="h-3 w-3" /> Generar BOL
               </Button>
             </div>

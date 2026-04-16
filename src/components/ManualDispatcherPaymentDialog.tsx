@@ -443,7 +443,7 @@ export const ManualDispatcherPaymentDialog = ({ open, onOpenChange, onComplete }
                                 const { commissionLabel } = calcCommission(l);
                                 const svcLabel = l.service_type === 'dispatch_service' ? 'DS' : l.service_type === 'owner_operator' ? 'OO' : 'CD';
                                 const svcColor = l.service_type === 'dispatch_service'
-                                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
+                                  ? 'bg-[#266aad]/20 text-[#266aad]'
                                   : l.service_type === 'owner_operator'
                                   ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300'
                                   : 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300';

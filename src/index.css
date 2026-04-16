@@ -24,7 +24,7 @@ html, body {
     --popover: 0 0% 100%;
     --popover-foreground: 220 35% 12%;
 
-    --primary: 214 52% 25%;
+    --primary: 210 64% 41%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 210 40% 96%;
@@ -41,16 +41,16 @@ html, body {
 
     --border: 216 18% 88%;
     --input: 216 18% 88%;
-    --ring: 217 78% 42%;
+    --ring: 210 64% 41%;
 
     --radius: 0.5rem;
 
-    --sidebar-background: 210 52% 24%;
+    --sidebar-background: 210 64% 30%;
     --sidebar-foreground: 215 20% 78%;
     --sidebar-primary: 28 92% 52%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 210 7% 90%;
-    --sidebar-accent-foreground: 211 84% 19%;
+    --sidebar-accent-foreground: 210 64% 41%;
     --sidebar-border: 220 28% 20%;
     --sidebar-ring: 28 92% 52%;
     --sidebar-muted: 218 15% 48%;
@@ -60,7 +60,7 @@ html, body {
     --warning: 38 92% 50%;
     --warning-foreground: 30 75% 26%;
     --warning-bg: 42 100% 95%;
-    --info: 217 78% 50%;
+    --info: 210 64% 41%;
     --info-foreground: 0 0% 100%;
     --danger-bg: 0 100% 94%;
     --danger-text: 0 54% 41%;
@@ -73,7 +73,7 @@ html, body {
     --card-foreground: 215 20% 95%;
     --popover: 222 28% 11%;
     --popover-foreground: 215 20% 95%;
-    --primary: 217 78% 50%;
+    --primary: 210 64% 41%;
     --primary-foreground: 0 0% 100%;
     --secondary: 220 28% 16%;
     --secondary-foreground: 215 20% 90%;
@@ -85,7 +85,7 @@ html, body {
     --destructive-foreground: 0 0% 100%;
     --border: 220 28% 18%;
     --input: 220 28% 18%;
-    --ring: 217 78% 50%;
+    --ring: 210 64% 41%;
     --sidebar-background: 222 32% 5%;
     --sidebar-foreground: 215 20% 78%;
     --sidebar-primary: 28 92% 52%;
@@ -123,7 +123,7 @@ html, body {
   }
   .status-active { @apply bg-[hsl(152,60%,40%)] text-white; }
   .status-pending { @apply bg-[hsl(38,92%,50%)] text-white; }
-  .status-transit { @apply bg-[hsl(205,85%,50%)] text-white; }
+  .status-transit { @apply bg-[#266aad] text-white; }
   .status-delivered { @apply bg-[hsl(152,60%,40%)] text-white; }
   .status-cancelled { @apply bg-destructive text-destructive-foreground; }
   .status-paid { @apply bg-[hsl(152,60%,40%)] text-white; }
@@ -177,7 +177,7 @@ html, body {
   }
 
   /* Semantic tints for glass action buttons */
-  .glass-action-btn.tint-blue { @apply text-[hsl(205,85%,50%)]; }
+  .glass-action-btn.tint-blue { @apply text-[#266aad]; }
   .glass-action-btn.tint-green { @apply text-[hsl(152,60%,40%)]; }
   .glass-action-btn.tint-amber { @apply text-[hsl(38,92%,50%)]; }
   .glass-action-btn.tint-red { @apply text-[hsl(0,72%,51%)]; }
@@ -237,11 +237,11 @@ html, body {
 
   /* ── Top Navigation (Chase-style) ── */
   .top-header {
-    background: hsl(214, 52%, 25%);
+    background: #266aad;
     color: white;
   }
   .dark .top-header {
-    background: hsl(214, 52%, 18%);
+    background: #266aad;
   }
 
   .top-nav {
@@ -249,15 +249,15 @@ html, body {
   }
   .top-nav-item {
     @apply px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap;
-    color: hsl(214, 52%, 25%);
+    color: #266aad;
     border-bottom: 3px solid transparent;
   }
   .top-nav-item:hover {
-    color: hsl(214, 52%, 35%);
+    color: #266aad;
     background: hsl(215, 20%, 96%);
   }
   .top-nav-item-active {
-    border-bottom-color: hsl(214, 52%, 25%);
+    border-bottom-color: #266aad;
     font-weight: 600;
   }
   .dark .top-nav-item {
@@ -268,8 +268,8 @@ html, body {
     background: hsl(220, 28%, 16%);
   }
   .dark .top-nav-item-active {
-    color: hsl(217, 78%, 60%);
-    border-bottom-color: hsl(217, 78%, 50%);
+    color: #266aad;
+    border-bottom-color: #266aad;
   }
 }
 

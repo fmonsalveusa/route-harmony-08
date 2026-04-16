@@ -6,8 +6,8 @@ import { DbDriver } from '@/hooks/useDrivers';
 import { getISOWeek } from '@/lib/dateUtils';
 
 const BAR_COLORS = [
-  '#2563eb', '#e85d04', '#16a34a', '#9333ea', '#dc2626',
-  '#0891b2', '#ca8a04', '#6366f1', '#059669', '#d946ef',
+  '#266aad', '#e85d04', '#16a34a', '#9333ea', '#dc2626',
+  '#266aad', '#ca8a04', '#6366f1', '#059669', '#d946ef',
 ];
 
 interface Props {

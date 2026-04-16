@@ -40,7 +40,7 @@ interface Props {
   drivers: DriverInfo[];
 }
 
-const DONUT_COLORS = ['#22c55e', '#3b82f6', '#f97316', '#8b5cf6', '#6b7280', '#ec4899', '#14b8a6', '#eab308'];
+const DONUT_COLORS = ['#22c55e', '#266aad', '#f97316', '#8b5cf6', '#6b7280', '#ec4899', '#14b8a6', '#eab308'];
 
 export function ExpenseSummaryDashboard({ expenses, trucks, drivers }: Props) {
   const [open, setOpen] = useState(true);
@@ -281,7 +281,7 @@ export function ExpenseSummaryDashboard({ expenses, trucks, drivers }: Props) {
                       Export Current View to Excel
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={exportToCSV} className="gap-2">
-                      <FileDown className="h-4 w-4 text-blue-600" />
+                      <FileDown className="h-4 w-4 text-[#266aad]" />
                       Export All Data to CSV
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={exportTruckBreakdown} className="gap-2">
@@ -303,7 +303,7 @@ export function ExpenseSummaryDashboard({ expenses, trucks, drivers }: Props) {
               </div>
             </div>
             {/* Filter state badge */}
-            <Badge variant="outline" className={`self-start text-xs ${companyDriverOnly ? 'border-amber-300 bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400' : 'border-blue-300 bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400'}`}>
+            <Badge variant="outline" className={`self-start text-xs ${companyDriverOnly ? 'border-amber-300 bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400' : 'border-[#266aad]/40 bg-[#266aad]/10 text-[#266aad]'}`}>
               {companyDriverOnly
                 ? `Filtered: Company Drivers Only (${filteredTruckCount} trucks)`
                 : `Showing: All Trucks (${filteredTruckCount} trucks)`
@@ -317,10 +317,10 @@ export function ExpenseSummaryDashboard({ expenses, trucks, drivers }: Props) {
             {/* Summary Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Total */}
-              <Card className="bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/20 border-blue-200 dark:border-blue-800">
+              <Card className="bg-gradient-to-br from-[#266aad]/5 to-[#266aad]/10 border-[#266aad]/20">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3 mb-2">
-                    <div className="p-2 rounded-lg bg-blue-500/10"><DollarSign className="h-5 w-5 text-blue-600" /></div>
+                    <div className="p-2 rounded-lg bg-[#266aad]/10"><DollarSign className="h-5 w-5 text-[#266aad]" /></div>
                     <span className="text-xs text-muted-foreground font-medium">Total Expenses</span>
                   </div>
                   <p className="text-2xl font-bold">${fmt(totalExpenses)}</p>
@@ -439,7 +439,7 @@ export function ExpenseSummaryDashboard({ expenses, trucks, drivers }: Props) {
                           {truckBarData.map((entry, i) => (
                             <Cell key={i} fill={entry.color} />
                           ))}
-                          <LabelList dataKey="total" position="right" fill="#1e3a5f" fontSize={12} fontWeight={700} formatter={(v: number) => `$${fmt(v)}`} />
+                          <LabelList dataKey="total" position="right" fill="#266aad" fontSize={12} fontWeight={700} formatter={(v: number) => `$${fmt(v)}`} />
                         </Bar>
                       </BarChart>
                     </ResponsiveContainer>

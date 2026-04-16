@@ -93,7 +93,7 @@ const MasterBilling = () => {
               {subs.map(s => (
                 <tr key={s.id} className="border-b last:border-0 hover:bg-muted/30">
                   <td className="p-3 font-medium">{(s.tenants as any)?.name || '—'}</td>
-                  <td className="p-3"><Badge className={s.plan === 'pro' ? 'bg-amber-100 text-amber-700' : s.plan === 'intermediate' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}>{s.plan?.toUpperCase()}</Badge></td>
+                  <td className="p-3"><Badge className={s.plan === 'pro' ? 'bg-amber-100 text-amber-700' : s.plan === 'intermediate' ? 'bg-[#266aad]/20 text-[#266aad]' : 'bg-green-100 text-green-700'}>{s.plan?.toUpperCase()}</Badge></td>
                   <td className="p-3 text-right font-semibold">${Number(s.price_monthly).toLocaleString()}</td>
                   <td className="p-3 text-muted-foreground">{s.next_payment_date ? new Date(s.next_payment_date).toLocaleDateString() : '—'}</td>
                   <td className="p-3">

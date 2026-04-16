@@ -16,7 +16,7 @@ const typeIcons: Record<string, typeof Bell> = {
 };
 
 const typeColors: Record<string, string> = {
-  driver_arrived: 'text-blue-500',
+  driver_arrived: 'text-[#266aad]',
   pod_uploaded: 'text-emerald-500',
   status_changed: 'text-amber-500',
   load_assigned: 'text-violet-500',

@@ -26,7 +26,7 @@ import { DriverLimitDialog } from '@/components/DriverLimitDialog';
 const driverStatusColor = (status: string) => {
   switch (status) {
     case 'available': return 'bg-green-600';
-    case 'assigned': return 'bg-blue-600';
+    case 'assigned': return 'bg-[#266aad]';
     case 'resting': return 'bg-orange-500';
     case 'inactive': return 'bg-red-600';
     case 'pending': return 'bg-yellow-500';

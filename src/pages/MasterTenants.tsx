@@ -35,7 +35,7 @@ interface TenantForm {
 
 const planDetails = {
   basic: { label: 'Básico', price: 199, maxUsers: 1, maxTrucks: 5, color: 'border-green-300 bg-green-50' },
-  intermediate: { label: 'Intermedio', price: 399, maxUsers: 2, maxTrucks: 15, color: 'border-blue-300 bg-blue-50' },
+  intermediate: { label: 'Intermedio', price: 399, maxUsers: 2, maxTrucks: 15, color: 'border-[#266aad]/40 bg-[#266aad]/10' },
   pro: { label: 'Pro', price: 799, maxUsers: 20, maxTrucks: 100, color: 'border-amber-300 bg-amber-50' },
 };
 
@@ -238,7 +238,7 @@ const MasterTenants = () => {
   };
 
   const planBadge = (plan: string) => {
-    const s: Record<string, string> = { basic: 'bg-green-100 text-green-700', intermediate: 'bg-blue-100 text-blue-700', pro: 'bg-amber-100 text-amber-700' };
+    const s: Record<string, string> = { basic: 'bg-green-100 text-green-700', intermediate: 'bg-[#266aad]/20 text-[#266aad]', pro: 'bg-amber-100 text-amber-700' };
     return <Badge className={s[plan] || ''}>{plan?.toUpperCase()}</Badge>;
   };
 

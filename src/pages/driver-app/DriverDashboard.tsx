@@ -83,8 +83,8 @@ export default function DriverDashboard() {
       dispatched: 'border-l-[hsl(80,60%,45%)]',
       in_transit: 'border-l-[hsl(152,60%,40%)]',
       on_site_pickup: 'border-l-[hsl(174,60%,42%)]',
-      picked_up: 'border-l-[hsl(217,78%,50%)]',
-      on_site_delivery: 'border-l-[hsl(245,58%,52%)]',
+      picked_up: 'border-l-[#266aad]',
+      on_site_delivery: 'border-l-[#266aad]',
     };
     return colors[status] || 'border-l-accent';
   };

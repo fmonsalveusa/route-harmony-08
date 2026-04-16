@@ -16,8 +16,8 @@ interface Props {
 }
 
 const BAR_COLORS = [
-  '#9333ea', '#e85d04', '#2563eb', '#16a34a', '#dc2626',
-  '#0891b2', '#ca8a04', '#6366f1', '#059669', '#d946ef',
+  '#9333ea', '#e85d04', '#266aad', '#16a34a', '#dc2626',
+  '#266aad', '#ca8a04', '#6366f1', '#059669', '#d946ef',
 ];
 
 const renderTopLabel = (props: any) => {

@@ -78,8 +78,8 @@ export default function DriverLoadDetail() {
       dispatched: 'linear-gradient(135deg, hsl(80,60%,45%,0.1), hsl(80,60%,45%,0.03))',
       in_transit: 'linear-gradient(135deg, hsl(152,60%,40%,0.1), hsl(152,60%,40%,0.03))',
       on_site_pickup: 'linear-gradient(135deg, hsl(174,60%,42%,0.1), hsl(174,60%,42%,0.03))',
-      picked_up: 'linear-gradient(135deg, hsl(217,78%,50%,0.1), hsl(217,78%,50%,0.03))',
-      on_site_delivery: 'linear-gradient(135deg, hsl(245,58%,52%,0.1), hsl(245,58%,52%,0.03))',
+      picked_up: 'linear-gradient(135deg, rgba(38,106,173,0.1), rgba(38,106,173,0.03))',
+      on_site_delivery: 'linear-gradient(135deg, rgba(38,106,173,0.1), rgba(38,106,173,0.03))',
       delivered: 'linear-gradient(135deg, hsl(270,50%,55%,0.1), hsl(270,50%,55%,0.03))',
       paid: 'linear-gradient(135deg, hsl(152,60%,40%,0.1), hsl(152,60%,40%,0.03))',
     };

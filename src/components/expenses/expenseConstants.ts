@@ -24,7 +24,7 @@ export const EXPENSE_TYPE_LABELS: Record<string, string> = {
 
 export const EXPENSE_TYPE_COLORS: Record<string, string> = {
   fuel: 'bg-emerald-100 text-emerald-800',
-  maintenance: 'bg-blue-100 text-blue-800',
+  maintenance: 'bg-[#266aad]/20 text-[#266aad]',
   materials: 'bg-lime-100 text-lime-800',
   repairs: 'bg-amber-100 text-amber-800',
   tires: 'bg-violet-100 text-violet-800',

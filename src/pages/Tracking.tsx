@@ -61,8 +61,8 @@ const statusColors: Record<string, string> = {
   dispatched: 'hsl(270,60%,50%)',
   in_transit: '#5ee14c',
   on_site_pickup: 'hsl(170,60%,40%)',
-  picked_up: 'hsl(200,70%,48%)',
-  on_site_delivery: 'hsl(230,60%,50%)',
+  picked_up: '#266aad',
+  on_site_delivery: '#266aad',
 };
 
 const statusLabels: Record<string, string> = {
@@ -83,7 +83,7 @@ const createTruckIcon = (heading?: number | null) => {
   const rotation = heading != null ? heading : 0;
   return new L.DivIcon({
     html: `<div style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;">
-      <div style="width:28px;height:28px;border-radius:50%;background:hsl(217,91%,60%);border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;animation:pulse 2s infinite;">
+      <div style="width:28px;height:28px;border-radius:50%;background:#266aad;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;animation:pulse 2s infinite;">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(${rotation}deg)">
           <path d="M12 2L19 21L12 17L5 21Z"/>
         </svg>
@@ -460,7 +460,7 @@ const Tracking = () => {
 
               {filteredLoads.map(load => {
                 const isSelected = load.id === selectedLoadId;
-                const color = isSelected ? '#2563eb' : (statusColors[load.status] || '#888');
+                const color = isSelected ? '#266aad' : (statusColors[load.status] || '#888');
                 const driver = drivers.find(d => d.id === load.driver_id);
 
                 return (
