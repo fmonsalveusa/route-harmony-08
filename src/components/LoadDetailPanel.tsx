@@ -1421,11 +1421,11 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
             )}
 
             {/* Bill of Lading */}
-            <div className="p-2.5 rounded-lg text-sm" style={{ backgroundColor: '#0b153a' }}>
+            <div className="p-2.5 rounded-lg text-sm" style={{ backgroundColor: '#1e50bd' }}>
               <h5 className="font-semibold mb-1.5 flex items-center gap-1.5 text-xs text-white">
                 <FileText className="h-3 w-3 text-white" /> Bill of Lading (BOL)
               </h5>
-              <Button variant="outline" size="sm" className="gap-1 text-[11px] h-7 px-2 bg-white border-white hover:bg-blue-50" style={{ color: '#0b153a' }} onClick={() => setBolDialogOpen(true)}>
+              <Button variant="outline" size="sm" className="gap-1 text-[11px] h-7 px-2 bg-white border-white hover:bg-blue-50" style={{ color: '#1e50bd' }} onClick={() => setBolDialogOpen(true)}>
                 <Download className="h-3 w-3" /> Generar BOL
               </Button>
             </div>
