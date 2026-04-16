@@ -449,6 +449,9 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       toast({ title: 'Required fields', description: missing.join(', '), variant: 'destructive' });
       return;
     }
+
+    // Cerrar el diálogo inmediatamente — las operaciones continúan en el fondo
+    onOpenChange(false);
     // Derive origin/destination from stops
     const origin = pickups[0]?.address || formData.origin;
     const destination = deliveries[deliveries.length - 1]?.address || formData.destination;
@@ -569,8 +572,6 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
         driver_id: assignedDriverId,
       });
     }
-
-    onOpenChange(false);
   };
 
   const dispatcherDriverIds = dispatcherId
