@@ -51,6 +51,22 @@ const emptyForm: LoadFormData = {
   miles: 0, notes: '',
 };
 
+/** Extrae el path del bucket desde una URL firmada de Supabase y genera una nueva URL válida */
+async function refreshSignedUrl(url: string): Promise<string> {
+  if (!url) return url;
+  // Extraer el path relativo al bucket driver-documents
+  const match = url.match(/\/storage\/v1\/object\/sign\/driver-documents\/([^?]+)/);
+  if (match?.[1]) {
+    let storagePath = match[1];
+    try { storagePath = decodeURIComponent(storagePath); } catch {}
+    const { data, error } = await supabase.storage
+      .from('driver-documents')
+      .createSignedUrl(storagePath, 3600); // 1 hora para preview
+    if (!error && data?.signedUrl) return data.signedUrl;
+  }
+  return url; // Si no se pudo refrescar, devuelve la URL original
+}
+
 export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatcherId }: LoadFormDialogProps) => {
   const { toast } = useToast();
   const { role, isMasterAdmin } = useAuth();
@@ -112,6 +128,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       const editCompanyId = (editLoad as any).company_id || '';
       const primaryCompanyId = companies.find(c => c.is_primary)?.id ?? '';
       setSelectedCompany(editCompanyId || primaryCompanyId);
+      // Set initial URLs and then refresh them in the background
       setPdfPreviewUrl(editLoad.pdf_url || null);
       setUploadedPdfPath(null);
       setUploadedPdfSignedUrl(editLoad.pdf_url || null);
@@ -120,6 +137,22 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       setRcOriginalPreviewUrl((editLoad as any).rc_original_url || null);
       setRcOriginalFile(null);
       setRcOriginalFileName((editLoad as any).rc_original_url ? 'RC Original.pdf' : '');
+
+      // Refresh signed URLs so previews don't show broken icons
+      const refreshUrls = async () => {
+        if (editLoad.pdf_url) {
+          const fresh = await refreshSignedUrl(editLoad.pdf_url);
+          setPdfPreviewUrl(fresh);
+          setUploadedPdfSignedUrl(fresh);
+        }
+        const rcUrl = (editLoad as any).rc_original_url;
+        if (rcUrl) {
+          const freshRc = await refreshSignedUrl(rcUrl);
+          setRcOriginalPreviewUrl(freshRc);
+          setRcOriginalUploadedUrl(freshRc);
+        }
+      };
+      void refreshUrls();
     } else {
       setFormData(emptyForm);
       setSelectedDriver('');
