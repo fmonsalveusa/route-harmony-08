@@ -508,11 +508,17 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
 
     // Update RC Original fields via RPC (bypasses PostgREST schema cache)
     if (canSeeGrossRate && loadId) {
-      await supabase.rpc('update_load_rc_data' as any, {
+      const { error: rcRpcError } = await supabase.rpc('update_load_rc_data' as any, {
         p_load_id: loadId,
         p_gross_rate: grossRate > 0 ? grossRate : null,
         p_rc_original_url: rcOriginalUrl,
       });
+      if (rcRpcError) {
+        console.error('RC RPC update error:', rcRpcError);
+        toast({ title: 'Error al guardar RC', description: rcRpcError.message, variant: 'destructive' });
+      } else {
+        console.log('RC data saved OK — gross_rate:', grossRate, 'url:', rcOriginalUrl);
+      }
     }
     if (loadId && stopEntries.some(s => s.address)) {
       const validStops = stopEntries.filter(s => s.address.trim());

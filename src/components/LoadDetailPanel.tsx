@@ -250,7 +250,12 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
 
   useEffect(() => {
     if (!canSeeGrossRate) return;
-    supabase.rpc('get_load_rc_data' as any, { p_load_id: load.id }).then(({ data }) => {
+    supabase.rpc('get_load_rc_data' as any, { p_load_id: load.id }).then(({ data, error }) => {
+      if (error) {
+        console.error('RC RPC read error:', error);
+        return;
+      }
+      console.log('RC RPC read result:', data);
       const row = Array.isArray(data) ? data[0] : data;
       setRcGrossRate(row?.gross_rate ?? null);
       setRcOriginalUrl(row?.rc_original_url ?? null);
