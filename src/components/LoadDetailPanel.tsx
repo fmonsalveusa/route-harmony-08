@@ -1382,7 +1382,7 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
             )}
           </div>
 
-          {/* PDF + BOL + RC Original — misma fila */}
+          {/* PDF + RC Original + BOL — misma fila */}
           <div className={`grid gap-3 ${canSeeGrossRate && rcOriginalUrl ? 'grid-cols-3' : 'grid-cols-2'}`}>
             {/* Documento Original */}
             {load.pdf_url ? (
@@ -1403,6 +1403,23 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
               <div />
             )}
 
+            {/* RC Original — solo Admin / Accounting / Master Admin */}
+            {canSeeGrossRate && rcOriginalUrl && (
+              <div className="p-2.5 rounded-lg bg-red-600 text-sm">
+                <h5 className="font-semibold mb-1.5 flex items-center gap-1.5 text-xs text-white">
+                  <FileText className="h-3 w-3 text-white" /> RC Original — Solo Admin
+                </h5>
+                <div className="flex gap-1.5">
+                  <Button variant="outline" size="sm" className="gap-1 text-[11px] h-7 px-2 bg-white border-white text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => { void openRcOriginalPdf(); }}>
+                    <ExternalLink className="h-3 w-3" /> Ver
+                  </Button>
+                  <Button variant="outline" size="sm" className="gap-1 text-[11px] h-7 px-2 bg-white border-white text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => { void downloadRcOriginalPdf(); }}>
+                    <Download className="h-3 w-3" /> Descargar
+                  </Button>
+                </div>
+              </div>
+            )}
+
             {/* Bill of Lading */}
             <div className="p-2.5 rounded-lg bg-card border text-sm">
               <h5 className="font-semibold mb-1.5 flex items-center gap-1.5 text-xs">
@@ -1412,23 +1429,6 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
                 <Download className="h-3 w-3" /> Generar BOL
               </Button>
             </div>
-
-            {/* RC Original — solo Admin / Accounting / Master Admin */}
-            {canSeeGrossRate && rcOriginalUrl && (
-              <div className="p-2.5 rounded-lg border-2 border-amber-500/40 bg-amber-500/5 text-sm">
-                <h5 className="font-semibold mb-1.5 flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
-                  <FileText className="h-3 w-3" /> RC Original — Solo Admin
-                </h5>
-                <div className="flex gap-1.5">
-                  <Button variant="outline" size="sm" className="gap-1 text-[11px] h-7 px-2 border-amber-500/40 text-amber-600 hover:bg-amber-500/10" onClick={() => { void openRcOriginalPdf(); }}>
-                    <ExternalLink className="h-3 w-3" /> Ver
-                  </Button>
-                  <Button variant="outline" size="sm" className="gap-1 text-[11px] h-7 px-2 border-amber-500/40 text-amber-600 hover:bg-amber-500/10" onClick={() => { void downloadRcOriginalPdf(); }}>
-                    <Download className="h-3 w-3" /> Descargar
-                  </Button>
-                </div>
-              </div>
-            )}
           </div>
           <BolFormDialog
             open={bolDialogOpen}
