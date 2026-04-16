@@ -1407,7 +1407,7 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
             {canSeeGrossRate && rcOriginalUrl && (
               <div className="p-2.5 rounded-lg bg-red-600 text-sm">
                 <h5 className="font-semibold mb-1.5 flex items-center gap-1.5 text-xs text-white">
-                  <FileText className="h-3 w-3 text-white" /> RC Original — Solo Admin
+                  <FileText className="h-3 w-3 text-white" /> RC Original FACTORING — Solo Admin
                 </h5>
                 <div className="flex gap-1.5">
                   <Button variant="outline" size="sm" className="gap-1 text-[11px] h-7 px-2 bg-white border-white text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => { void openRcOriginalPdf(); }}>
