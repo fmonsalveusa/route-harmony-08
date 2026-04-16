@@ -244,22 +244,33 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
   const [routeGeometryLoading, setRouteGeometryLoading] = useState(false);
   const routeFetchKeyRef = useRef<string | null>(null);
 
-  // RC Original fields — fetched via RPC (bypasses PostgREST schema cache issue)
+  // RC Original fields — fetched from Storage JSON (bypasses PostgREST schema cache completely)
   const [rcGrossRate, setRcGrossRate] = useState<number | null>(null);
   const [rcOriginalUrl, setRcOriginalUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!canSeeGrossRate) return;
-    supabase.rpc('get_load_rc_data' as any, { p_load_id: load.id }).then(({ data, error }) => {
-      if (error) {
-        console.error('RC RPC read error:', error);
-        return;
-      }
-      console.log('RC RPC read result:', data);
-      const row = Array.isArray(data) ? data[0] : data;
-      setRcGrossRate(row?.gross_rate ?? null);
-      setRcOriginalUrl(row?.rc_original_url ?? null);
-    });
+    setRcGrossRate(null);
+    setRcOriginalUrl(null);
+    supabase.storage
+      .from('driver-documents')
+      .download(`rc_metadata/${load.id}.json`)
+      .then(({ data: metaBlob, error }) => {
+        if (error || !metaBlob) {
+          // No metadata file yet — RC data not saved yet, not an error
+          return;
+        }
+        metaBlob.text().then(text => {
+          try {
+            const meta = JSON.parse(text);
+            setRcGrossRate(meta.gross_rate ?? null);
+            setRcOriginalUrl(meta.rc_original_url ?? null);
+            console.log('RC metadata loaded — gross_rate:', meta.gross_rate);
+          } catch {
+            // JSON parse error — ignore silently
+          }
+        });
+      });
   }, [load.id, canSeeGrossRate, rcRefreshKey]);
 
   // Sync local state when load prop changes (after refetch)

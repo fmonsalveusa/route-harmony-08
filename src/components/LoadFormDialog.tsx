@@ -132,24 +132,38 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       setPdfPreviewUrl(editLoad.pdf_url || null);
       setUploadedPdfPath(null);
       setUploadedPdfSignedUrl(editLoad.pdf_url || null);
-      setGrossRate((editLoad as any).gross_rate || 0);
-      setRcOriginalUploadedUrl((editLoad as any).rc_original_url || null);
-      setRcOriginalPreviewUrl((editLoad as any).rc_original_url || null);
+      setGrossRate(0);
+      setRcOriginalUploadedUrl(null);
+      setRcOriginalPreviewUrl(null);
       setRcOriginalFile(null);
-      setRcOriginalFileName((editLoad as any).rc_original_url ? 'RC Original.pdf' : '');
+      setRcOriginalFileName('');
 
-      // Refresh signed URLs so previews don't show broken icons
+      // Refresh signed URLs + load RC metadata from Storage (bypasses PostgREST schema cache)
       const refreshUrls = async () => {
         if (editLoad.pdf_url) {
           const fresh = await refreshSignedUrl(editLoad.pdf_url);
           setPdfPreviewUrl(fresh);
           setUploadedPdfSignedUrl(fresh);
         }
-        const rcUrl = (editLoad as any).rc_original_url;
-        if (rcUrl) {
-          const freshRc = await refreshSignedUrl(rcUrl);
-          setRcOriginalPreviewUrl(freshRc);
-          setRcOriginalUploadedUrl(freshRc);
+        // Read RC metadata from Storage JSON
+        if (canSeeGrossRate) {
+          const { data: metaBlob } = await supabase.storage
+            .from('driver-documents')
+            .download(`rc_metadata/${editLoad.id}.json`);
+          if (metaBlob) {
+            try {
+              const meta = JSON.parse(await metaBlob.text());
+              setGrossRate(meta.gross_rate || 0);
+              if (meta.rc_original_url) {
+                const freshRc = await refreshSignedUrl(meta.rc_original_url);
+                setRcOriginalPreviewUrl(freshRc);
+                setRcOriginalUploadedUrl(freshRc);
+                setRcOriginalFileName('RC Original.pdf');
+              }
+            } catch {
+              // JSON parse error — ignore silently
+            }
+          }
         }
       };
       void refreshUrls();
@@ -506,18 +520,21 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
     // Save stops to load_stops table
     const loadId = editLoad?.id || result?.id;
 
-    // Update RC Original fields via RPC (bypasses PostgREST schema cache)
+    // Save RC metadata to Storage JSON (completely bypasses PostgREST schema cache)
     if (canSeeGrossRate && loadId) {
-      const { error: rcRpcError } = await supabase.rpc('update_load_rc_data' as any, {
-        p_load_id: loadId,
-        p_gross_rate: grossRate > 0 ? grossRate : null,
-        p_rc_original_url: rcOriginalUrl,
-      });
-      if (rcRpcError) {
-        console.error('RC RPC update error:', rcRpcError);
-        toast({ title: 'Error al guardar RC', description: rcRpcError.message, variant: 'destructive' });
+      const rcMetadata = {
+        gross_rate: grossRate > 0 ? grossRate : null,
+        rc_original_url: rcOriginalUrl,
+      };
+      const rcBlob = new Blob([JSON.stringify(rcMetadata)], { type: 'application/json' });
+      const { error: rcStorageError } = await supabase.storage
+        .from('driver-documents')
+        .upload(`rc_metadata/${loadId}.json`, rcBlob, { contentType: 'application/json', upsert: true });
+      if (rcStorageError) {
+        console.error('RC Storage save error:', rcStorageError);
+        toast({ title: 'Error al guardar RC', description: rcStorageError.message, variant: 'destructive' });
       } else {
-        console.log('RC data saved OK — gross_rate:', grossRate, 'url:', rcOriginalUrl);
+        console.log('RC metadata saved to Storage — gross_rate:', grossRate, 'url:', rcOriginalUrl);
       }
     }
     if (loadId && stopEntries.some(s => s.address)) {
