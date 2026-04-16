@@ -32,6 +32,8 @@ export interface DbLoad {
   empty_miles: number;
   empty_miles_origin: string | null;
   company_id: string | null;
+  gross_rate: number | null;
+  rc_original_url: string | null;
 }
 
 export interface CreateLoadInput {
@@ -56,6 +58,8 @@ export interface CreateLoadInput {
   pdf_url?: string;
   notes?: string;
   company_id?: string;
+  gross_rate?: number | null;
+  rc_original_url?: string | null;
 }
 
 const LOADS_QUERY_KEY = ['loads'];
@@ -63,7 +67,7 @@ const LOADS_QUERY_KEY = ['loads'];
 async function fetchLoadsFromDb(): Promise<DbLoad[]> {
   const { data, error } = await supabase
     .from('loads')
-    .select('id,reference_number,origin,destination,pickup_date,delivery_date,weight,cargo_type,total_rate,status,driver_id,truck_id,dispatcher_id,broker_client,driver_pay_amount,investor_pay_amount,dispatcher_pay_amount,company_profit,miles,factoring,pdf_url,notes,created_at,empty_miles,empty_miles_origin,service_type,tenant_id,updated_at,company_id')
+    .select('id,reference_number,origin,destination,pickup_date,delivery_date,weight,cargo_type,total_rate,status,driver_id,truck_id,dispatcher_id,broker_client,driver_pay_amount,investor_pay_amount,dispatcher_pay_amount,company_profit,miles,factoring,pdf_url,notes,created_at,empty_miles,empty_miles_origin,service_type,tenant_id,updated_at,company_id,gross_rate,rc_original_url')
     .order('pickup_date', { ascending: false, nullsFirst: false });
 
   if (error) {

@@ -445,24 +445,31 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       status: selectedStatus,
       service_type: selectedServiceType || undefined,
       company_id: selectedCompany || undefined,
-      gross_rate: grossRate > 0 ? grossRate : null,
     } as any;
 
-    // Upload RC Original PDF if a new file was selected
-    let rcOriginalUrl: string | undefined = rcOriginalUploadedUrl || (editLoad as any)?.rc_original_url || undefined;
-    if (rcOriginalFile) {
-      const rcFileName = `driver-documents/loads/rc_original_${Date.now()}_${rcOriginalFile.name}`;
-      const { error: rcUploadError } = await supabase.storage
-        .from('driver-documents')
-        .upload(rcFileName, rcOriginalFile, { contentType: 'application/pdf' });
-      if (!rcUploadError) {
-        const { data: rcUrlData } = await supabase.storage
+    // RC Original / Gross Rate — solo Admin / Accounting / Master Admin
+    if (canSeeGrossRate) {
+      (payload as any).gross_rate = grossRate > 0 ? grossRate : null;
+
+      // Upload RC Original PDF if a new file was selected
+      let rcOriginalUrl: string | null = rcOriginalUploadedUrl || (editLoad as any)?.rc_original_url || null;
+      if (rcOriginalFile) {
+        // Path within the 'driver-documents' bucket (no bucket prefix in the path)
+        const rcStoragePath = `loads/rc_original_${Date.now()}_${rcOriginalFile.name}`;
+        const { error: rcUploadError } = await supabase.storage
           .from('driver-documents')
-          .createSignedUrl(rcFileName, 60 * 60 * 24 * 365);
-        rcOriginalUrl = rcUrlData?.signedUrl || undefined;
+          .upload(rcStoragePath, rcOriginalFile, { contentType: 'application/pdf' });
+        if (!rcUploadError) {
+          const { data: rcUrlData } = await supabase.storage
+            .from('driver-documents')
+            .createSignedUrl(rcStoragePath, 60 * 60 * 24 * 365);
+          rcOriginalUrl = rcUrlData?.signedUrl || null;
+        } else {
+          console.error('RC Original upload error:', rcUploadError);
+        }
       }
+      (payload as any).rc_original_url = rcOriginalUrl;
     }
-    (payload as any).rc_original_url = rcOriginalUrl || null;
 
     const result = await onSubmit(payload);
 
