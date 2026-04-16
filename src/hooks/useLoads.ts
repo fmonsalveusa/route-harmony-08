@@ -157,7 +157,7 @@ export function useLoads() {
 
     if (error) {
       console.error('Error updating load:', error);
-      toastRef.current({ title: 'Error', description: 'Failed to update load', variant: 'destructive' });
+      toastRef.current({ title: 'Error al guardar', description: error.message || 'Failed to update load', variant: 'destructive' });
       return false;
     }
 
