@@ -243,6 +243,19 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
   const [routeGeometryLoading, setRouteGeometryLoading] = useState(false);
   const routeFetchKeyRef = useRef<string | null>(null);
 
+  // RC Original fields — fetched via RPC (bypasses PostgREST schema cache issue)
+  const [rcGrossRate, setRcGrossRate] = useState<number | null>(null);
+  const [rcOriginalUrl, setRcOriginalUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!canSeeGrossRate) return;
+    supabase.rpc('get_load_rc_data' as any, { p_load_id: load.id }).then(({ data }) => {
+      const row = Array.isArray(data) ? data[0] : data;
+      setRcGrossRate(row?.gross_rate ?? null);
+      setRcOriginalUrl(row?.rc_original_url ?? null);
+    });
+  }, [load.id, canSeeGrossRate]);
+
   // Sync local state when load prop changes (after refetch)
   useEffect(() => {
     setEmptyMiles(Number((load as any).empty_miles) || 0);
@@ -426,12 +439,12 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
   };
 
   const openRcOriginalPdf = async () => {
-    const url = await resolveDriverDocsUrl((load as any).rc_original_url || '');
+    const url = await resolveDriverDocsUrl(rcOriginalUrl || '');
     if (url) window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   const downloadRcOriginalPdf = async () => {
-    const url = await resolveDriverDocsUrl((load as any).rc_original_url || '');
+    const url = await resolveDriverDocsUrl(rcOriginalUrl || '');
     if (!url) return;
     try {
       const res = await fetch(url);
@@ -1294,19 +1307,19 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
             </tr>
 
             {/* Dispatcher / Rate row */}
-            <tr className={canSeeGrossRate && (load as any).gross_rate ? 'border-b' : ''}>
+            <tr className={canSeeGrossRate && rcGrossRate ? 'border-b' : ''}>
               <td className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Dispatcher:</td>
               <td className="px-3 py-2 font-medium border-r">{dispatcher?.name || '—'}</td>
               <td className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">$ Rate:</td>
               <td className="px-3 py-2 font-bold text-primary">${Number(load.total_rate).toLocaleString()}</td>
             </tr>
             {/* Gross Rate row — solo Admin / Accounting / Master Admin */}
-            {canSeeGrossRate && (load as any).gross_rate && (
+            {canSeeGrossRate && rcGrossRate && (
               <tr>
                 <td className="px-3 py-2 bg-amber-500/10 font-medium text-amber-700 dark:text-amber-400 whitespace-nowrap border-r text-xs">Gross Rate:</td>
-                <td className="px-3 py-2 font-bold text-amber-700 dark:text-amber-400 border-r">${Number((load as any).gross_rate).toLocaleString()}</td>
+                <td className="px-3 py-2 font-bold text-amber-700 dark:text-amber-400 border-r">${Number(rcGrossRate).toLocaleString()}</td>
                 <td className="px-3 py-2 bg-amber-500/10 font-medium text-amber-700 dark:text-amber-400 whitespace-nowrap border-r text-xs">Comisión broker:</td>
-                <td className="px-3 py-2 font-bold text-amber-700 dark:text-amber-400">${(Number((load as any).gross_rate) - Number(load.total_rate)).toLocaleString()}</td>
+                <td className="px-3 py-2 font-bold text-amber-700 dark:text-amber-400">${(Number(rcGrossRate) - Number(load.total_rate)).toLocaleString()}</td>
               </tr>
             )}
             </tbody>
@@ -1382,7 +1395,7 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
           </div>
 
           {/* RC Original — solo Admin / Accounting / Master Admin */}
-          {canSeeGrossRate && (load as any).rc_original_url && (
+          {canSeeGrossRate && rcOriginalUrl && (
             <div className="p-2.5 rounded-lg border-2 border-amber-500/40 bg-amber-500/5 text-sm">
               <h5 className="font-semibold mb-1.5 flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
                 <FileText className="h-3 w-3" /> RC Original (Gross Rate) — Solo Admin
