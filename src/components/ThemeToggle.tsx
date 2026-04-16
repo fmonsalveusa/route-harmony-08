@@ -21,7 +21,7 @@ export const ThemeToggle = () => {
       <TooltipTrigger asChild>
         <button
           onClick={cycle}
-          className="p-2 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+          className="p-2 rounded-md text-white hover:bg-white/20 transition-colors"
         >
           <Icon className="h-4 w-4" />
         </button>

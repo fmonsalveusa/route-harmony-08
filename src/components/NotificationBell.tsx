@@ -50,7 +50,7 @@ export const NotificationBell = () => {
     <div className="relative" ref={panelRef}>
       <button
         onClick={() => setOpen(!open)}
-        className="relative p-2 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+        className="relative p-2 rounded-md text-white hover:bg-white/20 transition-colors"
       >
         <Bell className="h-5 w-5" />
         {unreadCount > 0 && (
