@@ -86,6 +86,7 @@ const Loads = () => {
   const [filterFactoring, setFilterFactoring] = useState<string>('all');
   const [showForm, setShowForm] = useState(false);
   const [editLoad, setEditLoad] = useState<DbLoad | null>(null);
+  const [rcRefreshKey, setRcRefreshKey] = useState(0);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<DbLoad | null>(null);
   const [podUploadLoadId, setPodUploadLoadId] = useState<string | null>(null);
@@ -557,6 +558,7 @@ const Loads = () => {
                                 trucks={trucks}
                                 dispatchers={dispatchers}
                                 companies={companies}
+                                rcRefreshKey={rcRefreshKey}
                                 onMilesCalculated={async (loadId, miles, routeGeometry) => {
                                   const updateData: any = { miles };
                                   if (routeGeometry) updateData.route_geometry = routeGeometry;
@@ -605,7 +607,7 @@ const Loads = () => {
       {/* Form Dialog */}
       <LoadFormDialog
         open={showForm}
-        onOpenChange={(open) => { setShowForm(open); if (!open) { setEditLoad(null); fetchLoads(); } }}
+        onOpenChange={(open) => { setShowForm(open); if (!open) { setEditLoad(null); fetchLoads(); setRcRefreshKey(k => k + 1); } }}
         editLoad={editLoad}
         dispatcherId={(user as any)?.dispatcher_id || undefined}
         onSubmit={async (input) => {

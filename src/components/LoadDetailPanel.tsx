@@ -104,6 +104,7 @@ interface LoadDetailPanelProps {
   trucks: DbTruck[];
   dispatchers: DbDispatcher[];
   companies: Company[];
+  rcRefreshKey?: number;
   onMilesCalculated?: (loadId: string, miles: number, routeGeometry?: [number, number][]) => void;
   onLoadDataUpdated?: () => void;
 }
@@ -220,7 +221,7 @@ function BrokerScoreRow({ brokerName }: { brokerName: string | null | undefined 
   );
 }
 
-export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies, onMilesCalculated, onLoadDataUpdated }: LoadDetailPanelProps) => {
+export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies, rcRefreshKey = 0, onMilesCalculated, onLoadDataUpdated }: LoadDetailPanelProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const persistedRef = useRef(false);
@@ -254,7 +255,7 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
       setRcGrossRate(row?.gross_rate ?? null);
       setRcOriginalUrl(row?.rc_original_url ?? null);
     });
-  }, [load.id, canSeeGrossRate]);
+  }, [load.id, canSeeGrossRate, rcRefreshKey]);
 
   // Sync local state when load prop changes (after refetch)
   useEffect(() => {
