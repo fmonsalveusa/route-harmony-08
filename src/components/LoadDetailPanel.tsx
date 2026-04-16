@@ -1386,15 +1386,15 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
           <div className={`grid gap-3 ${canSeeGrossRate && rcOriginalUrl ? 'grid-cols-3' : 'grid-cols-2'}`}>
             {/* Documento Original */}
             {load.pdf_url ? (
-              <div className="p-2.5 rounded-lg bg-card border text-sm">
-                <h5 className="font-semibold mb-1.5 flex items-center gap-1.5 text-xs">
-                  <FileText className="h-3 w-3 text-primary" /> Documento Original (PDF)
+              <div className="p-2.5 rounded-lg bg-green-800 text-sm">
+                <h5 className="font-semibold mb-1.5 flex items-center gap-1.5 text-xs text-white">
+                  <FileText className="h-3 w-3 text-white" /> Documento Original (PDF)
                 </h5>
                 <div className="flex gap-1.5">
-                  <Button variant="outline" size="sm" className="gap-1 text-[11px] h-7 px-2" onClick={() => { void openOriginalPdf(); }}>
+                  <Button variant="outline" size="sm" className="gap-1 text-[11px] h-7 px-2 bg-white border-white text-green-800 hover:bg-green-50 hover:text-green-900" onClick={() => { void openOriginalPdf(); }}>
                     <ExternalLink className="h-3 w-3" /> Ver
                   </Button>
-                  <Button variant="outline" size="sm" className="gap-1 text-[11px] h-7 px-2" onClick={() => { void downloadOriginalPdf(); }}>
+                  <Button variant="outline" size="sm" className="gap-1 text-[11px] h-7 px-2 bg-white border-white text-green-800 hover:bg-green-50 hover:text-green-900" onClick={() => { void downloadOriginalPdf(); }}>
                     <Download className="h-3 w-3" /> Descargar
                   </Button>
                 </div>
