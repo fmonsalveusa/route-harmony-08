@@ -5,7 +5,7 @@ const statusConfig: Record<string, { label: string; className: string }> = {
   dispatched: { label: 'Dispatched', className: 'bg-[hsl(80,65%,45%)] text-white' },
   in_transit: { label: 'In Transit', className: 'bg-[hsl(140,60%,40%)] text-white' },
   on_site_pickup: { label: 'On Site - Pickup', className: 'bg-[hsl(170,60%,40%)] text-white' },
-  picked_up: { label: 'Picked Up', className: 'bg-[#266aad] text-white' },
+  picked_up: { label: 'Picked Up', className: 'bg-[#15babd] text-white' },
   on_site_delivery: { label: 'On Site - Delivery', className: 'bg-[#266aad] text-white' },
   delivered: { label: 'Delivered', className: 'bg-[hsl(270,55%,50%)] text-white' },
   tonu: { label: 'TONU', className: 'bg-[hsl(25,85%,50%)] text-white' },
