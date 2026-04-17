@@ -452,6 +452,7 @@ export type Database = {
           hire_date: string
           id: string
           investor_email: string | null
+          investor_id: string | null
           investor_name: string | null
           investor_pay_percentage: number | null
           leasing_agreement_58_url: string | null
@@ -497,6 +498,7 @@ export type Database = {
           hire_date?: string
           id?: string
           investor_email?: string | null
+          investor_id?: string | null
           investor_name?: string | null
           investor_pay_percentage?: number | null
           leasing_agreement_58_url?: string | null
@@ -542,6 +544,7 @@ export type Database = {
           hire_date?: string
           id?: string
           investor_email?: string | null
+          investor_id?: string | null
           investor_name?: string | null
           investor_pay_percentage?: number | null
           leasing_agreement_58_url?: string | null
@@ -570,6 +573,13 @@ export type Database = {
           zip?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "drivers_investor_id_fkey"
+            columns: ["investor_id"]
+            isOneToOne: false
+            referencedRelation: "investors"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "drivers_tenant_id_fkey"
             columns: ["tenant_id"]
@@ -815,6 +825,50 @@ export type Database = {
             columns: ["truck_id"]
             isOneToOne: false
             referencedRelation: "trucks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      investors: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          pay_percentage: number
+          phone: string | null
+          tenant_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          pay_percentage?: number
+          phone?: string | null
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          pay_percentage?: number
+          phone?: string | null
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "investors_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
