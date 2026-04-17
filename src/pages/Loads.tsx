@@ -68,7 +68,7 @@ const Loads = () => {
     return { city: address, state: '' };
   };
   const { user, role, profile } = useAuth();
-  const { loads: dbLoads, loading: loadsLoading, createLoad, updateLoad, deleteLoad, fetchLoads, createLoadsBulk } = useLoads();
+  const { loads: dbLoads, loading: loadsLoading, createLoad, updateLoad, updateLoadMiles, deleteLoad, fetchLoads, createLoadsBulk } = useLoads();
   const { drivers } = useDrivers();
   const { trucks } = useTrucks();
   const { dispatchers } = useDispatchers();
@@ -563,10 +563,8 @@ const Loads = () => {
                                 dispatchers={dispatchers}
                                 companies={companies}
                                 rcRefreshKey={rcRefreshKey}
-                                onMilesCalculated={async (loadId, miles, routeGeometry) => {
-                                  const updateData: any = { miles };
-                                  if (routeGeometry) updateData.route_geometry = routeGeometry;
-                                  await updateLoad(loadId, updateData);
+                                onMilesCalculated={(loadId, miles, routeGeometry) => {
+                                  updateLoadMiles(loadId, miles, routeGeometry);
                                 }}
                                 onLoadDataUpdated={async () => { await fetchLoads(); }}
                               />

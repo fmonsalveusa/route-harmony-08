@@ -166,6 +166,27 @@ export function useLoads() {
     return true;
   }, [queryClient]);
 
+  /**
+   * Silent update specifically for auto-calculated miles/route_geometry.
+   * - No toast (user didn't trigger this)
+   * - Uses setQueryData for instant local update (no full DB refetch)
+   */
+  const updateLoadMiles = useCallback(async (id: string, miles: number, routeGeometry?: any) => {
+    const payload: any = { miles };
+    if (routeGeometry) payload.route_geometry = routeGeometry;
+
+    const { error } = await supabase.from('loads').update(payload).eq('id', id);
+    if (error) {
+      console.error('Error saving miles:', error);
+      return;
+    }
+
+    // Instant cache update — no round-trip, no toast
+    queryClient.setQueryData<DbLoad[]>(LOADS_QUERY_KEY, (old) =>
+      (old ?? []).map(l => l.id === id ? { ...l, ...payload } : l)
+    );
+  }, [queryClient]);
+
   const deleteLoad = useCallback(async (id: string) => {
     const { error } = await supabase
       .from('loads')
@@ -209,5 +230,5 @@ export function useLoads() {
     return { success, errors };
   }, [queryClient]);
 
-  return { loads, loading, fetchLoads, createLoad, updateLoad, deleteLoad, createLoadsBulk };
+  return { loads, loading, fetchLoads, createLoad, updateLoad, updateLoadMiles, deleteLoad, createLoadsBulk };
 }
