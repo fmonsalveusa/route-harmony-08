@@ -15,6 +15,7 @@ import Dashboard from "./pages/Dashboard";
 import Loads from "./pages/Loads";
 import Fleet from "./pages/Fleet";
 import Drivers from "./pages/Drivers";
+import Investors from "./pages/Investors";
 import Dispatchers from "./pages/Dispatchers";
 import Payments from "./pages/Payments";
 import Invoices from "./pages/Invoices";
@@ -268,6 +269,7 @@ const AppRoutes = () => {
       <Route path="/loads" element={<ProtectedRoute><Loads /></ProtectedRoute>} />
       <Route path="/fleet" element={<ProtectedRoute><Fleet /></ProtectedRoute>} />
       <Route path="/drivers" element={<ProtectedRoute><Drivers /></ProtectedRoute>} />
+      <Route path="/investors" element={<ProtectedRoute><Investors /></ProtectedRoute>} />
       <Route path="/dispatchers" element={<ProtectedRoute><Dispatchers /></ProtectedRoute>} />
       <Route path="/payments" element={<ProtectedRoute><Payments /></ProtectedRoute>} />
       <Route path="/invoices" element={<ProtectedRoute><Invoices /></ProtectedRoute>} />

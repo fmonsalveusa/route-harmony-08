@@ -90,6 +90,7 @@ export async function generatePaymentsForLoad(load: {
   pay_percentage: number;
   investor_pay_percentage?: number | null;
   investor_name?: string | null;
+  investor_id?: string | null;
   service_type?: string;
 } | null, dispatcher: {
   id: string;
@@ -129,7 +130,8 @@ export async function generatePaymentsForLoad(load: {
     paymentsToInsert.push({
       load_id: load.id,
       recipient_type: 'investor',
-      recipient_id: driver.id,
+      // Use investor_id when available (new drivers) — fallback to driver.id for legacy records
+      recipient_id: driver.investor_id || driver.id,
       recipient_name: driver.investor_name,
       load_reference: load.reference_number,
       amount: Math.round(investorAmount * 100) / 100,

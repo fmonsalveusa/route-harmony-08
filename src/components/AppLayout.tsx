@@ -5,7 +5,7 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Truck, Users, Package, MapPin, FileText,
   BarChart3, LogOut, DollarSign, UserCog,
-  Headphones, Menu, Building2, Crown, CreditCard, Settings, Plus, Receipt, Trophy, Wrench, X, FileSignature, MoreHorizontal, ChevronLeft, ChevronRight } from
+  Headphones, Menu, Building2, Crown, CreditCard, Settings, Plus, Receipt, Trophy, Wrench, X, FileSignature, MoreHorizontal, ChevronLeft, ChevronRight, Landmark } from
 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -37,6 +37,7 @@ const topLevelItems: NavItem[] = [
 const teamItems: NavItem[] = [
   { label: 'Fleet', icon: Truck, path: '/fleet', permission: 'fleet' },
   { label: 'Drivers', icon: Users, path: '/drivers', permission: 'drivers' },
+  { label: 'Investors', icon: Landmark, path: '/investors', permission: 'drivers' },
   { label: 'Dispatchers', icon: Headphones, path: '/dispatchers', permission: 'dispatchers' },
 ];
 

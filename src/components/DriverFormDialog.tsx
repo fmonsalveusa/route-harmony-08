@@ -9,6 +9,7 @@ import { todayET } from '@/lib/dateUtils';
 import { DbDriver, DriverInput } from '@/hooks/useDrivers';
 import { DbTruck } from '@/hooks/useTrucks';
 import { DbDispatcher } from '@/hooks/useDispatchers';
+import { DbInvestor } from '@/hooks/useInvestors';
 import { toast } from 'sonner';
 import { US_STATES } from '@/lib/usStates';
 
@@ -19,6 +20,7 @@ interface DriverFormDialogProps {
   onSubmit: (data: DriverInput, files: Record<string, File | null>) => Promise<void>;
   trucks: DbTruck[];
   dispatchers: DbDispatcher[];
+  investors?: DbInvestor[];
 }
 
 const emptyForm: DriverInput = {
@@ -26,7 +28,7 @@ const emptyForm: DriverInput = {
   license_expiry: null, medical_card_expiry: null,
   status: 'available', service_type: 'owner_operator',
   dispatcher_id: null, truck_id: null,
-  investor_name: null, pay_percentage: 0, investor_pay_percentage: 0,
+  investor_id: null, investor_name: null, pay_percentage: 0, investor_pay_percentage: 0,
   factoring_percentage: 2,
   hire_date: todayET(),
   state: null,
@@ -45,7 +47,7 @@ const docFields: { key: DocKey; label: string; urlKey: string }[] = [
   { key: 'service_agreement', label: 'Service Agreement', urlKey: 'service_agreement_url' },
 ];
 
-export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks, dispatchers }: DriverFormDialogProps) {
+export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks, dispatchers, investors = [] }: DriverFormDialogProps) {
   const [form, setForm] = useState<DriverInput>(emptyForm);
   const [files, setFiles] = useState<Record<string, File | null>>({});
   const [deletedDocs, setDeletedDocs] = useState<Set<string>>(new Set());
@@ -60,6 +62,7 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
         medical_card_expiry: driver.medical_card_expiry, status: driver.status,
         service_type: driver.service_type, state: driver.state,
         dispatcher_id: driver.dispatcher_id, truck_id: driver.truck_id,
+        investor_id: (driver as any).investor_id || null,
         investor_name: driver.investor_name, investor_email: (driver as any).investor_email,
         pay_percentage: driver.pay_percentage,
         investor_pay_percentage: driver.investor_pay_percentage,
@@ -232,19 +235,55 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
             </Select>
           </div>
 
-          <div className="space-y-2">
-            <Label>Investor Name</Label>
-            <Input value={form.investor_name || ''} onChange={e => set('investor_name', e.target.value)} placeholder="Investor name" />
-          </div>
-
-          <div className="space-y-2">
-            <Label>Investor Email</Label>
-            <Input type="email" value={(form as any).investor_email || ''} onChange={e => set('investor_email' as any, e.target.value)} placeholder="investor@email.com" />
+          <div className="space-y-2 p-3 rounded-lg border-2 border-violet-400/50 bg-violet-50 dark:bg-violet-950/20 md:col-span-2">
+            <Label className="font-semibold text-violet-700 dark:text-violet-300">Investor ⭐</Label>
+            <Select
+              value={(form as any).investor_id || 'none'}
+              onValueChange={v => {
+                if (v === 'none') {
+                  set('investor_id' as any, null);
+                  set('investor_name', null);
+                  set('investor_pay_percentage', 0);
+                } else {
+                  const inv = investors.find(i => i.id === v);
+                  set('investor_id' as any, v);
+                  set('investor_name', inv?.name || null);
+                  // Auto-fill pay % from investor definition
+                  set('investor_pay_percentage', inv?.pay_percentage ?? 0);
+                }
+              }}
+            >
+              <SelectTrigger><SelectValue placeholder="No investor assigned" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">— No investor —</SelectItem>
+                {investors.map(inv => (
+                  <SelectItem key={inv.id} value={inv.id}>
+                    {inv.name} · {inv.pay_percentage}%{inv.email ? ` · ${inv.email}` : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {investors.length === 0 && (
+              <p className="text-xs text-violet-600 dark:text-violet-400">
+                No investors yet — go to the Investors page to create them first.
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
             <Label>% Investor Pay</Label>
-            <Input type="number" value={form.investor_pay_percentage ?? ''} onChange={e => set('investor_pay_percentage', Number(e.target.value))} />
+            <Input
+              type="number"
+              min={0} max={100} step={0.5}
+              value={form.investor_pay_percentage ?? ''}
+              onChange={e => set('investor_pay_percentage', Number(e.target.value))}
+              placeholder="Auto-filled from investor"
+            />
+            {(form as any).investor_id && (
+              <p className="text-xs text-muted-foreground">
+                Auto-filled from investor. Edit only if this driver has a different rate.
+              </p>
+            )}
           </div>
           <div className="space-y-2">
             <Label>% Driver Pay</Label>

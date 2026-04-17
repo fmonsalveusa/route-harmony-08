@@ -36,6 +36,7 @@ export interface DbDriver {
   emergency_contact_name: string | null;
   emergency_phone: string | null;
   investor_email: string | null;
+  investor_id: string | null;
   manual_location_address: string | null;
   manual_location_lat: number | null;
   manual_location_lng: number | null;
@@ -57,6 +58,7 @@ export interface DriverInput {
   truck_id?: string | null;
   investor_name?: string | null;
   investor_email?: string | null;
+  investor_id?: string | null;
   pay_percentage: number;
   investor_pay_percentage?: number | null;
   factoring_percentage?: number;
