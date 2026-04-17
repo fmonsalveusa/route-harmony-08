@@ -131,6 +131,15 @@ html, body {
   .status-delivered { @apply bg-[hsl(152,60%,40%)] text-white; }
   .status-cancelled { @apply bg-destructive text-destructive-foreground; }
   .status-paid { @apply bg-[hsl(152,60%,40%)] text-white; }
+  /* Sombra unificada para wrappers de filtros con ícono */
+  .filter-wrapper {
+    box-shadow: 0 4px 24px 0 hsl(214 68% 8% / 0.5);
+    @apply rounded-md transition-shadow duration-200;
+  }
+  .filter-wrapper:focus-within {
+    box-shadow: 0 8px 32px 0 hsl(214 68% 8% / 0.65);
+  }
+
   .table-container {
     @apply rounded-lg border bg-card overflow-hidden;
     box-shadow: 0 4px 24px 0 hsl(214 68% 8% / 0.5);
