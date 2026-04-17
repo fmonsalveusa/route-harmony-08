@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useDrivers } from '@/hooks/useDrivers';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { StatCard } from '@/components/StatCard';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -81,15 +82,37 @@ interface StopRow {
 
 const DriverRouteHistory = () => {
   const { drivers, loading: driversLoading } = useDrivers();
+  const { profile, role } = useAuth();
   const [selectedDriverId, setSelectedDriverId] = useState<string>('');
   const [period, setPeriod] = useState('this_week');
   const [loads, setLoads] = useState<LoadRow[]>([]);
   const [stops, setStops] = useState<StopRow[]>([]);
   const [mapLoading, setMapLoading] = useState(false);
+  const [myDispatcherId, setMyDispatcherId] = useState<string | null>(null);
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
 
-  const activeDrivers = useMemo(() => drivers.filter(d => d.status !== 'inactive'), [drivers]);
+  // Si el usuario es dispatcher, buscar su registro en la tabla dispatchers por email
+  useEffect(() => {
+    if (role !== 'dispatcher' || !profile?.email) return;
+    supabase
+      .from('dispatchers' as any)
+      .select('id')
+      .eq('email', profile.email)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) setMyDispatcherId((data as any).id);
+      });
+  }, [role, profile?.email]);
+
+  // Filtrar drivers: si es dispatcher, solo los asignados a él; si no, todos los activos
+  const activeDrivers = useMemo(() => {
+    const all = drivers.filter(d => d.status !== 'inactive');
+    if (role === 'dispatcher' && myDispatcherId) {
+      return all.filter(d => d.dispatcher_id === myDispatcherId);
+    }
+    return all;
+  }, [drivers, role, myDispatcherId]);
 
   // Fetch loads for selected driver + period
   useEffect(() => {
