@@ -321,10 +321,22 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
       <Tabs value={statusFilter} onValueChange={setStatusFilter}>
         <div className="flex items-center gap-4 flex-wrap">
           <TabsList>
-            <TabsTrigger value="pending">Pending ({pendingCount})</TabsTrigger>
-            <TabsTrigger value="in_process">In Process ({inProcessCount})</TabsTrigger>
-            <TabsTrigger value="paid">Paid ({paidCount})</TabsTrigger>
-            <TabsTrigger value="all">All ({allTypePayments.length})</TabsTrigger>
+            <TabsTrigger value="pending">
+              Pending
+              <span className={`ml-1.5 inline-flex items-center justify-center rounded-full text-[11px] font-semibold min-w-[20px] h-5 px-1.5 ${pendingCount > 0 ? 'bg-destructive text-destructive-foreground' : 'bg-primary text-primary-foreground'}`}>{pendingCount}</span>
+            </TabsTrigger>
+            <TabsTrigger value="in_process">
+              In Process
+              <span className={`ml-1.5 inline-flex items-center justify-center rounded-full text-[11px] font-semibold min-w-[20px] h-5 px-1.5 ${inProcessCount > 0 ? 'bg-destructive text-destructive-foreground' : 'bg-primary text-primary-foreground'}`}>{inProcessCount}</span>
+            </TabsTrigger>
+            <TabsTrigger value="paid">
+              Paid
+              <span className="ml-1.5 inline-flex items-center justify-center rounded-full text-[11px] font-semibold min-w-[20px] h-5 px-1.5 bg-primary text-primary-foreground">{paidCount}</span>
+            </TabsTrigger>
+            <TabsTrigger value="all">
+              All
+              <span className="ml-1.5 inline-flex items-center justify-center rounded-full text-[11px] font-semibold min-w-[20px] h-5 px-1.5 bg-primary text-primary-foreground">{allTypePayments.length}</span>
+            </TabsTrigger>
           </TabsList>
           {onCreateManual && (
             <div className="ml-24">
