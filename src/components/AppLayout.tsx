@@ -387,7 +387,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
               <Button
                 size="sm"
                 onClick={() => setLoadDialogOpen(true)}
-                className="gap-1.5 h-8 text-xs bg-white/15 hover:bg-white/25 text-white border-white/20 border"
+                className="gap-1.5 h-8 text-xs bg-white hover:bg-white/90 text-[#266aad] border-[#266aad] border shadow-[0_0_0_2px_#266aad33]"
                 variant="outline"
               >
                 <Plus className="h-3.5 w-3.5" />
