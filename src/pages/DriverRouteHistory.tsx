@@ -348,7 +348,7 @@ const DriverRouteHistory = () => {
 
       <div
         ref={mapRef}
-        className="w-full rounded-lg border shadow-sm bg-muted"
+        className="w-full rounded-xl border border-border/50 shadow-md bg-muted"
         style={{ height: 'calc(100vh - 320px)', minHeight: 400 }}
       />
 

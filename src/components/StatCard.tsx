@@ -10,7 +10,7 @@ interface StatCardProps {
 }
 
 export const StatCard = ({ title, value, subtitle, icon: Icon, trend, iconClassName = 'bg-primary/10 text-primary' }: StatCardProps) => (
-  <div className="bg-card rounded-lg border p-5 shadow-sm animate-fade-in group hover:shadow-xl transition-all duration-300">
+  <div className="bg-card rounded-xl border border-border/50 p-5 shadow-md hover:shadow-lg animate-fade-in group transition-shadow duration-200">
     <div className="flex items-start justify-between">
       <div className="space-y-1">
         <p className="text-sm text-muted-foreground">{title}</p>
