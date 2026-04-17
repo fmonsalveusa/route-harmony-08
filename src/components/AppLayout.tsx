@@ -210,7 +210,9 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
             : <img src={logoImg} alt="Dispatch Up" className="h-7 w-7 rounded flex-shrink-0 object-cover" />
           }
           {!collapsed && (
-            <span className="text-sm font-semibold truncate">{tenant?.name || 'Dispatch Up TMS'}</span>
+            <span className="text-base font-extrabold tracking-tight truncate bg-gradient-to-r from-primary via-primary to-accent bg-clip-text text-transparent drop-shadow-sm">
+              Dispatch Up TMS
+            </span>
           )}
         </div>
 
