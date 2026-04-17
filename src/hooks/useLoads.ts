@@ -74,7 +74,7 @@ async function fetchLoadsFromDb(): Promise<DbLoad[]> {
     console.error('Error fetching loads:', error);
     throw error;
   }
-  return (data as DbLoad[]) ?? [];
+  return ((data as unknown) as DbLoad[]) ?? [];
 }
 
 export function useLoads() {
@@ -142,7 +142,7 @@ export function useLoads() {
       return null;
     }
 
-    const newLoad = data as DbLoad;
+    const newLoad = (data as unknown) as DbLoad;
     queryClient.setQueryData<DbLoad[]>(LOADS_QUERY_KEY, (old) => [newLoad, ...(old ?? [])]);
 
     toastRef.current({ title: 'Load created', description: `Reference: ${input.reference_number}` });
