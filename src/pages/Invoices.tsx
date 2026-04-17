@@ -168,9 +168,18 @@ const Invoices = () => {
 
       <Tabs value={statusFilter} onValueChange={setStatusFilter}>
         <TabsList>
-          <TabsTrigger value="pending">Pending ({pending.length})</TabsTrigger>
-          <TabsTrigger value="paid">Paid ({paid.length})</TabsTrigger>
-          <TabsTrigger value="all">All ({invoices.length})</TabsTrigger>
+          <TabsTrigger value="pending">
+            Pending
+            <span className={`ml-1.5 inline-flex items-center justify-center rounded-full text-[11px] font-semibold min-w-[20px] h-5 px-1.5 ${pending.length > 0 ? 'bg-destructive text-destructive-foreground' : 'bg-primary text-primary-foreground'}`}>{pending.length}</span>
+          </TabsTrigger>
+          <TabsTrigger value="paid">
+            Paid
+            <span className="ml-1.5 inline-flex items-center justify-center rounded-full text-[11px] font-semibold min-w-[20px] h-5 px-1.5 bg-primary text-primary-foreground">{paid.length}</span>
+          </TabsTrigger>
+          <TabsTrigger value="all">
+            All
+            <span className="ml-1.5 inline-flex items-center justify-center rounded-full text-[11px] font-semibold min-w-[20px] h-5 px-1.5 bg-primary text-primary-foreground">{invoices.length}</span>
+          </TabsTrigger>
         </TabsList>
       </Tabs>
 

@@ -336,7 +336,11 @@ const Loads = () => {
           >
             {tab.label}
             <span className={`text-xs rounded-full px-2 py-0.5 font-semibold ${
-              activeTab === tab.key ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+              tab.key === 'active' && tab.count > 0
+                ? 'bg-destructive text-destructive-foreground'
+                : activeTab === tab.key
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground'
             }`}>{tab.count}</span>
           </button>
         ))}
