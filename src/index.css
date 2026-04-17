@@ -110,7 +110,11 @@ html, body {
 
 @layer components {
   .stat-card {
-    @apply bg-card rounded-lg border p-5 shadow-sm transition-all duration-200 hover:shadow-md;
+    @apply bg-card rounded-lg border p-5 transition-all duration-200;
+    box-shadow: 0 4px 24px 0 hsl(214 68% 8% / 0.5);
+  }
+  .stat-card:hover {
+    box-shadow: 0 8px 32px 0 hsl(214 68% 8% / 0.65);
   }
   .page-header {
     @apply text-2xl font-bold tracking-tight text-foreground;
@@ -129,14 +133,17 @@ html, body {
   .status-paid { @apply bg-[hsl(152,60%,40%)] text-white; }
   .table-container {
     @apply rounded-lg border bg-card overflow-hidden;
+    box-shadow: 0 4px 24px 0 hsl(214 68% 8% / 0.5);
   }
 
   /* ── Glassmorphism utilities ── */
   .glass-card {
-    @apply rounded-lg shadow-sm bg-card border;
+    @apply rounded-lg bg-card border;
+    box-shadow: 0 4px 24px 0 hsl(214 68% 8% / 0.5);
   }
   .dark .glass-card {
     @apply bg-card border;
+    box-shadow: 0 4px 24px 0 hsl(214 68% 8% / 0.5);
   }
 
   .glass-table-header {
@@ -309,29 +316,11 @@ html, body {
     font-family: 'JetBrains Mono', monospace;
   }
 
-  /* Sombra 3D pronunciada para cards */
+  /* Sombra unificada para todos los cards */
   .shadow-card {
-    box-shadow:
-      0 4px 6px -1px rgba(0, 0, 0, 0.18),
-      0 8px 16px -4px rgba(0, 0, 0, 0.16),
-      0 2px 4px 0px rgba(0, 0, 0, 0.10);
+    box-shadow: 0 4px 24px 0 hsl(214 68% 8% / 0.5);
   }
   .shadow-card-hover {
-    box-shadow:
-      0 8px 16px -2px rgba(0, 0, 0, 0.22),
-      0 16px 32px -6px rgba(0, 0, 0, 0.18),
-      0 4px 8px 0px rgba(0, 0, 0, 0.12);
-  }
-  .dark .shadow-card {
-    box-shadow:
-      0 4px 6px -1px rgba(0, 0, 0, 0.45),
-      0 8px 16px -4px rgba(0, 0, 0, 0.40),
-      0 2px 4px 0px rgba(0, 0, 0, 0.25);
-  }
-  .dark .shadow-card-hover {
-    box-shadow:
-      0 8px 20px -2px rgba(0, 0, 0, 0.55),
-      0 18px 36px -6px rgba(0, 0, 0, 0.45),
-      0 4px 8px 0px rgba(0, 0, 0, 0.30);
+    box-shadow: 0 8px 32px 0 hsl(214 68% 8% / 0.65);
   }
 }
