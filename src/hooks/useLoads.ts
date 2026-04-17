@@ -32,8 +32,8 @@ export interface DbLoad {
   empty_miles: number;
   empty_miles_origin: string | null;
   company_id: string | null;
-  gross_rate: number | null;
-  rc_original_url: string | null;
+  gross_rate?: number | null;
+  rc_original_url?: string | null;
 }
 
 export interface CreateLoadInput {
