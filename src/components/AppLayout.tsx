@@ -402,6 +402,11 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
                 Master Panel
               </Badge>
             )}
+            {tenant?.name && (
+              <span className="hidden lg:inline text-sm font-semibold text-white truncate max-w-[200px]">
+                {tenant.name}
+              </span>
+            )}
             <ThemeToggle />
             <NotificationBell />
             <Badge className={`text-[10px] hidden sm:inline-flex ${roleBadgeStyles[role || 'admin']}`}>
