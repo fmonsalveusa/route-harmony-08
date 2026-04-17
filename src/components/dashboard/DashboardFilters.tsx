@@ -33,7 +33,7 @@ export function DashboardFilters({
   dispatchers, drivers, hideDispatcherFilter,
 }: DashboardFiltersProps) {
   return (
-    <div className="flex flex-wrap gap-2 items-center glass-card px-4 py-3">
+    <div className="flex flex-wrap gap-2 items-center">
       <Filter className="h-4 w-4 text-muted-foreground" />
       <Select value={year} onValueChange={onYearChange}>
         <SelectTrigger className="w-[120px] h-8 text-xs">
