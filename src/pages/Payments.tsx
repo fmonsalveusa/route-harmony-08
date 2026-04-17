@@ -258,9 +258,11 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
   };
 
   const selectedPayments = payments.filter(p => selectedIds.has(p.id));
-  // Use recipient_name (not recipient_id) — investor payments store driver.id as recipient_id
-  // so two payments from the same investor via different drivers would fail the recipient_id check.
-  const canBatchPay = selectedPayments.length > 0 && new Set(selectedPayments.map(p => p.recipient_name)).size === 1;
+  // Normalize names: trim + lowercase so minor spacing/casing differences don't break grouping.
+  // Also note: investor payments store driver.id as recipient_id, so we always compare by name.
+  const selectedNamesNormalized = selectedPayments.map(p => (p.recipient_name || '').trim().toLowerCase());
+  const uniqueSelectedNames = [...new Set(selectedPayments.map(p => p.recipient_name || ''))];
+  const canBatchPay = selectedPayments.length > 0 && new Set(selectedNamesNormalized).size === 1;
   const selectedTotal = selectedPayments.reduce((s, p) => s + Number(p.amount) + (adjMap[p.id] || 0), 0);
 
   const handleBatchPayAndReceipt = async () => {
@@ -483,8 +485,16 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
           <span className="text-sm font-medium">{selectedIds.size} selected</span>
           <span className="text-sm text-muted-foreground">•</span>
           <span className="text-sm font-semibold">${selectedTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+          {selectedPayments.length > 0 && canBatchPay && (
+            <span className="text-xs text-primary font-medium ml-1">— {uniqueSelectedNames[0]}</span>
+          )}
           {!canBatchPay && selectedPayments.length > 0 && (
-            <span className="text-xs text-destructive ml-2">⚠ Select payments from the same beneficiary</span>
+            <span className="text-xs text-destructive ml-2">
+              ⚠ Different beneficiaries: {uniqueSelectedNames.join(' · ')}
+            </span>
+          )}
+          {selectedPayments.length === 0 && selectedIds.size > 0 && (
+            <span className="text-xs text-muted-foreground ml-2">⚠ Selected items not visible in current filter</span>
           )}
           <div className="ml-auto flex items-center gap-2">
             <Button size="sm" variant="outline" className="gap-1.5" onClick={handleBatchReceiptOnly} disabled={!canBatchPay}>
