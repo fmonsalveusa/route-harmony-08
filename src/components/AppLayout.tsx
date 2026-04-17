@@ -211,8 +211,8 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
           }
           {!collapsed && (
             <span
-              className="text-lg font-extrabold tracking-tight truncate text-primary"
-              style={{ textShadow: '0 1px 2px hsl(var(--primary) / 0.35), 0 4px 12px hsl(var(--primary) / 0.25)' }}
+              className="text-lg font-extrabold tracking-tight truncate text-foreground"
+              style={{ textShadow: '0 1px 2px hsl(var(--primary) / 0.5), 0 2px 8px hsl(var(--primary) / 0.3)' }}
             >
               Dispatch Up TMS
             </span>
