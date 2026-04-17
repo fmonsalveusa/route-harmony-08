@@ -217,7 +217,31 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
         {/* Nav items */}
         <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
           {useMasterNav ? (
-            masterNavItems.filter(i => hasPermission(i.permission)).map(renderSidebarLink)
+            <>
+              {masterNavItems.filter(i => hasPermission(i.permission)).map(renderSidebarLink)}
+              {renderSectionLabel('')}
+              {collapsed ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Link
+                      to="/dashboard"
+                      className="flex justify-center items-center p-2.5 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                    >
+                      <Truck className="h-5 w-5" />
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">Go to App</TooltipContent>
+                </Tooltip>
+              ) : (
+                <Link
+                  to="/dashboard"
+                  className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                >
+                  <Truck className="h-4 w-4" />
+                  <span>Go to App</span>
+                </Link>
+              )}
+            </>
           ) : (
             <>
               {filterVisible(topLevelItems).map(renderSidebarLink)}
