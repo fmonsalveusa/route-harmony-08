@@ -258,7 +258,9 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
   };
 
   const selectedPayments = payments.filter(p => selectedIds.has(p.id));
-  const canBatchPay = selectedPayments.length > 0 && new Set(selectedPayments.map(p => p.recipient_id)).size === 1;
+  // Use recipient_name (not recipient_id) — investor payments store driver.id as recipient_id
+  // so two payments from the same investor via different drivers would fail the recipient_id check.
+  const canBatchPay = selectedPayments.length > 0 && new Set(selectedPayments.map(p => p.recipient_name)).size === 1;
   const selectedTotal = selectedPayments.reduce((s, p) => s + Number(p.amount) + (adjMap[p.id] || 0), 0);
 
   const handleBatchPayAndReceipt = async () => {
@@ -269,9 +271,12 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
     setBatchProcessing(true);
     try {
       const today = new Date().toISOString().split('T')[0];
-      for (const p of selectedPayments) {
-        await supabase.from('payments').update({ status: 'paid', payment_date: today }).eq('id', p.id);
-      }
+      // Update all payments in parallel (faster than sequential await)
+      await Promise.all(
+        selectedPayments.map(p =>
+          supabase.from('payments').update({ status: 'paid', payment_date: today }).eq('id', p.id)
+        )
+      );
       const items = selectedPayments.map(p => ({
         payment: p,
         adjustment: adjMap[p.id] || 0,
