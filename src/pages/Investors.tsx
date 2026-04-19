@@ -1,4 +1,6 @@
 import { useState, useMemo } from 'react';
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import { useInvestors, DbInvestor, InvestorInput } from '@/hooks/useInvestors';
 import { useDrivers } from '@/hooks/useDrivers';
 import { usePayments } from '@/hooks/usePayments';
@@ -134,9 +136,15 @@ const InvestorFormDialog = ({
 
 // ─── Main Page ───────────────────────────────────────────────
 const Investors = () => {
+  const { role, isMasterAdmin } = useAuth();
+  const isAllowed = role === 'admin' || role === 'accounting' || isMasterAdmin;
+
   const { investors, loading, createInvestor, updateInvestor, deleteInvestor } = useInvestors();
   const { drivers } = useDrivers();
   const { payments } = usePayments();
+
+  // Redirect unauthorized roles to dashboard
+  if (!isAllowed) return <Navigate to="/dashboard" replace />;
 
   const [search, setSearch] = useState('');
   const [formOpen, setFormOpen] = useState(false);

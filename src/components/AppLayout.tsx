@@ -26,6 +26,7 @@ interface NavItem {
   permission: string;
   masterOnly?: boolean;
   hideForDispatcher?: boolean;
+  adminAndAccountingOnly?: boolean;
 }
 
 const topLevelItems: NavItem[] = [
@@ -37,7 +38,7 @@ const topLevelItems: NavItem[] = [
 const teamItems: NavItem[] = [
   { label: 'Fleet', icon: Truck, path: '/fleet', permission: 'fleet' },
   { label: 'Drivers', icon: Users, path: '/drivers', permission: 'drivers' },
-  { label: 'Investors', icon: Landmark, path: '/investors', permission: 'drivers' },
+  { label: 'Investors', icon: Landmark, path: '/investors', permission: 'drivers', adminAndAccountingOnly: true },
   { label: 'Dispatchers', icon: Headphones, path: '/dispatchers', permission: 'dispatchers' },
 ];
 
@@ -141,7 +142,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
 
   // Mobile items
   const mobileItems = (useMasterNav ? masterNavItems : tenantNavItems).filter(
-    (i) => hasPermission(i.permission) && (!i.masterOnly || isMasterAdmin) && (!i.hideForDispatcher || !isDispatcher)
+    (i) => hasPermission(i.permission) && (!i.masterOnly || isMasterAdmin) && (!i.hideForDispatcher || !isDispatcher) && (!i.adminAndAccountingOnly || isAdminOrAccounting)
   );
 
   // Sidebar section render helpers
@@ -192,8 +193,15 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
     );
   };
 
+  const isAdminOrAccounting = role === 'admin' || role === 'accounting' || isMasterAdmin;
+
   const filterVisible = (items: NavItem[]) =>
-    items.filter((i) => hasPermission(i.permission) && (!i.masterOnly || isMasterAdmin) && (!i.hideForDispatcher || !isDispatcher));
+    items.filter((i) =>
+      hasPermission(i.permission) &&
+      (!i.masterOnly || isMasterAdmin) &&
+      (!i.hideForDispatcher || !isDispatcher) &&
+      (!i.adminAndAccountingOnly || isAdminOrAccounting)
+    );
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
