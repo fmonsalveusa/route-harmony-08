@@ -66,4 +66,26 @@ export default defineConfig(({ mode }) => ({
     },
     dedupe: ["react", "react-dom", "react/jsx-runtime", "react-leaflet", "@react-leaflet/core"],
   },
+  build: {
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Core React
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          // Supabase
+          'vendor-supabase': ['@supabase/supabase-js'],
+          // UI components & icons
+          'vendor-ui': ['lucide-react', '@radix-ui/react-dialog', '@radix-ui/react-select',
+            '@radix-ui/react-tabs', '@radix-ui/react-tooltip', '@radix-ui/react-dropdown-menu'],
+          // Charts
+          'vendor-charts': ['recharts'],
+          // Maps
+          'vendor-maps': ['leaflet', 'react-leaflet', '@react-leaflet/core'],
+          // Data & utilities
+          'vendor-utils': ['@tanstack/react-query', 'date-fns', 'jspdf', 'jspdf-autotable'],
+        },
+      },
+    },
+  },
 }));
