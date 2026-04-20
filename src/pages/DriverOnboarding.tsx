@@ -150,7 +150,12 @@ export default function DriverOnboarding() {
       // Append signed document PDFs
       if (isOO) {
         if (signedDocs.w9) formData.append('driver_form_w9', signedDocs.w9, 'w9_signed.pdf');
-        if (signedDocs.leasing) formData.append('driver_leasing_agreement', signedDocs.leasing, 'leasing_agreement_signed.pdf');
+        if (signedDocs.leasing) {
+          // Send all 3 carrier-specific PDFs separately
+          formData.append('driver_leasing_agreement', signedDocs.leasing.main, 'leasing_agreement_signed.pdf');
+          formData.append('driver_leasing_agreement_venco', signedDocs.leasing.venco, 'leasing_agreement_venco_signed.pdf');
+          formData.append('driver_leasing_agreement_58', signedDocs.leasing.logistics58, 'leasing_agreement_58_signed.pdf');
+        }
         if (signedDocs.service) formData.append('driver_service_agreement', signedDocs.service, 'service_agreement_signed.pdf');
       } else {
         if (signedDocs.employment) formData.append('driver_employment_contract', signedDocs.employment, 'employment_contract_signed.pdf');

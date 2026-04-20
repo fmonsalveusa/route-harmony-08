@@ -7,14 +7,20 @@ import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import SignaturePad from './SignaturePad';
-import { generateLeasingPdf } from '@/lib/onboardingDocPdf';
+import { generateLeasingPdf, CARRIER_AG_AR, CARRIER_VENCO, CARRIER_58_LOGISTICS } from '@/lib/onboardingDocPdf';
+
+export interface LeasingBlobs {
+  main: Blob;      // AG-AR Transportation
+  venco: Blob;     // VENCO
+  logistics58: Blob; // 58 LOGISTICS LLC
+}
 
 interface LeasingAgreementDialogProps {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   driverName: string;
   truckData: { make: string; model: string; vin: string; year: number; unit_number: string };
-  onSigned: (blob: Blob) => void;
+  onSigned: (blobs: LeasingBlobs) => void;
 }
 
 export default function LeasingAgreementDialog({ open, onOpenChange, driverName, truckData, onSigned }: LeasingAgreementDialogProps) {
@@ -28,7 +34,7 @@ export default function LeasingAgreementDialog({ open, onOpenChange, driverName,
       toast.error('All 3 signatures are required');
       return;
     }
-    const blob = generateLeasingPdf({
+    const pdfData = {
       driverName,
       companyName,
       make: truckData.make,
@@ -37,9 +43,13 @@ export default function LeasingAgreementDialog({ open, onOpenChange, driverName,
       year: truckData.year,
       date: format(new Date(), 'MM/dd/yyyy'),
       signatures: signatures as { contract: string; eld: string; hos: string },
-    });
-    onSigned(blob);
-    toast.success('Leasing Agreement signed');
+    };
+    // Generate one PDF per carrier company
+    const main = generateLeasingPdf({ ...pdfData, carrier: CARRIER_AG_AR });
+    const venco = generateLeasingPdf({ ...pdfData, carrier: CARRIER_VENCO });
+    const logistics58 = generateLeasingPdf({ ...pdfData, carrier: CARRIER_58_LOGISTICS });
+    onSigned({ main, venco, logistics58 });
+    toast.success('Leasing Agreement signed (3 copies generated)');
   };
 
   const today = format(new Date(), 'MM/dd/yyyy');
@@ -48,7 +58,7 @@ export default function LeasingAgreementDialog({ open, onOpenChange, driverName,
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Owner Operator Lease Agreement</DialogTitle>
+          <DialogTitle>Owner Operator Lease Agreement (3 copies — AG-AR, VENCO & 58 Logistics)</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 text-sm">
           {/* Pre-filled info */}

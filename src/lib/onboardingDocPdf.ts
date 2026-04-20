@@ -1,5 +1,34 @@
 import jsPDF from 'jspdf';
 
+// ─── Carrier company info (used in Leasing Agreement) ───
+export interface CarrierInfo {
+  name: string;
+  dot: string;
+  mc: string;
+  address: string;
+}
+
+export const CARRIER_AG_AR: CarrierInfo = {
+  name: 'AG-AR TRANSPORTATION LLC',
+  dot: 'XXXXXXX',       // TODO: replace with real DOT number
+  mc: 'XXXXXXX',        // TODO: replace with real MC number
+  address: 'XXXXXX, Charlotte, NC XXXXX', // TODO: replace with real address
+};
+
+export const CARRIER_VENCO: CarrierInfo = {
+  name: 'VENCO LLC',
+  dot: 'XXXXXXX',       // TODO: replace with real DOT number
+  mc: 'XXXXXXX',        // TODO: replace with real MC number
+  address: 'XXXXXX, Charlotte, NC XXXXX', // TODO: replace with real address
+};
+
+export const CARRIER_58_LOGISTICS: CarrierInfo = {
+  name: '58 LOGISTICS LLC',
+  dot: '4364896',
+  mc: '1708664',
+  address: '1634 N Wind Pl. Apt 206. Charlotte, NC. 28210',
+};
+
 function addSignatureImage(doc: jsPDF, sigDataUrl: string, x: number, y: number, w: number, h: number) {
   try {
     doc.addImage(sigDataUrl, 'PNG', x, y, w, h);
@@ -116,7 +145,9 @@ export function generateLeasingPdf(data: {
   driverName: string; companyName: string;
   make: string; model: string; vin: string; year: number;
   date: string; signatures: { contract: string; eld: string; hos: string };
+  carrier?: CarrierInfo;
 }): Blob {
+  const carrier = data.carrier ?? CARRIER_58_LOGISTICS;
   const doc = new jsPDF();
   const m = 20;
   const w = 170;
@@ -130,7 +161,7 @@ export function generateLeasingPdf(data: {
 
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
-  y = writeBlock(doc, `THIS agreement, entered into this day ${data.date} Between 58 LOGISTICS LLC DOT#: 4364896 MC#: 1708664 Address: 1634 N Wind Pl. Apt 206. Charlotte, NC. 28210 (Hereinafter designated as "Carrier"), and the Owner Operator Company Name: ${data.companyName || '_______________'}`, m, y, 9, w);
+  y = writeBlock(doc, `THIS agreement, entered into this day ${data.date} Between ${carrier.name} DOT#: ${carrier.dot} MC#: ${carrier.mc} Address: ${carrier.address} (Hereinafter designated as "Carrier"), and the Owner Operator Company Name: ${data.companyName || '_______________'}`, m, y, 9, w);
   y += 2;
   y = writeBlock(doc, `Owner Operator Name: ${data.driverName}`, m, y, 9, w, true);
   y += 2;
@@ -316,7 +347,7 @@ export function generateLeasingPdf(data: {
   }
   y += 4;
 
-  y = writeBlock(doc, 'I understand that my signature below acknowledges that I have read and understand the regulations & rules of 58 LOGISTICS LLC regarding Electronic Logging Device. I also understand that failure to comply with the above mentioned, can result in termination of my employment.', m, y, 8, w, true);
+  y = writeBlock(doc, `I understand that my signature below acknowledges that I have read and understand the regulations & rules of ${carrier.name} regarding Electronic Logging Device. I also understand that failure to comply with the above mentioned, can result in termination of my employment.`, m, y, 8, w, true);
   y += 6;
 
   doc.setFontSize(9);

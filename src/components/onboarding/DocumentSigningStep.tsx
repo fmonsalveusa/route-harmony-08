@@ -4,13 +4,13 @@ import { Button } from '@/components/ui/button';
 import { CheckCircle2, FileText, PenLine } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import W9FormDialog from './W9FormDialog';
-import LeasingAgreementDialog from './LeasingAgreementDialog';
+import LeasingAgreementDialog, { LeasingBlobs } from './LeasingAgreementDialog';
 import ServiceAgreementDialog from './ServiceAgreementDialog';
 import EmploymentContractDialog from './EmploymentContractDialog';
 
 export interface SignedDocs {
   w9: Blob | null;
-  leasing: Blob | null;
+  leasing: LeasingBlobs | null;
   service: Blob | null;
   employment: Blob | null;
 }
@@ -44,8 +44,13 @@ export default function DocumentSigningStep({ serviceType, driverData, truckData
     ? (signedDocs.w9 && signedDocs.leasing && signedDocs.service)
     : !!signedDocs.employment;
 
-  const handleSigned = (key: 'w9' | 'leasing' | 'service' | 'employment', blob: Blob) => {
+  const handleSigned = (key: 'w9' | 'service' | 'employment', blob: Blob) => {
     onSignedDocsChange({ ...signedDocs, [key]: blob });
+    setOpenDialog(null);
+  };
+
+  const handleLeasingSigned = (blobs: LeasingBlobs) => {
+    onSignedDocsChange({ ...signedDocs, leasing: blobs });
     setOpenDialog(null);
   };
 
@@ -99,7 +104,7 @@ export default function DocumentSigningStep({ serviceType, driverData, truckData
           onOpenChange={o => !o && setOpenDialog(null)}
           driverName={driverData.name}
           truckData={truckData}
-          onSigned={blob => handleSigned('leasing', blob)}
+          onSigned={handleLeasingSigned}
         />
         <ServiceAgreementDialog
           open={openDialog === 'service'}
