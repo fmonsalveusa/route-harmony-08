@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { StatusBadge } from '@/components/StatusBadge';
 import { DbDriver } from '@/hooks/useDrivers';
 import { FileText, ExternalLink, Loader2 } from 'lucide-react';
 import { formatDate } from '@/lib/dateUtils';
+import { supabase } from '@/integrations/supabase/client';
 
 interface DriverDetailDialogProps {
   open: boolean;
@@ -27,15 +28,23 @@ const docFields = [
   { key: 'license_photo_url', label: 'License Photo' },
   { key: 'medical_card_photo_url', label: 'Medical Card Photo' },
   { key: 'form_w9_url', label: 'Form W9' },
-  { key: 'leasing_agreement_url', label: 'Leasing Agreement (AG-AR)' },
-  { key: 'leasing_agreement_venco_url', label: 'Leasing Agreement (VENCO)' },
-  { key: 'leasing_agreement_58_url', label: 'Leasing Agreement (58 LOGISTICS)' },
   { key: 'service_agreement_url', label: 'Service Agreement' },
   { key: 'employment_contract_url', label: 'Employment Contract' },
 ];
 
 export function DriverDetailDialog({ open, onOpenChange, driver, truckLabel, dispatcherName, getDocSignedUrl }: DriverDetailDialogProps) {
   const [loadingDoc, setLoadingDoc] = useState<string | null>(null);
+  const [leasingDocs, setLeasingDocs] = useState<Array<{ id: string; company_name: string; file_url: string }>>([]);
+
+  useEffect(() => {
+    if (!driver) return;
+    supabase
+      .from('driver_leasing_agreements' as any)
+      .select('id, company_name, file_url')
+      .eq('driver_id', driver.id)
+      .order('company_name')
+      .then(({ data }) => setLeasingDocs((data as any) || []));
+  }, [driver?.id]);
 
   if (!driver) return null;
 
@@ -156,6 +165,21 @@ export function DriverDetailDialog({ open, onOpenChange, driver, truckLabel, dis
                   </div>
                 );
               })}
+
+              {/* Dynamic Leasing Agreements */}
+              {leasingDocs.map(doc => (
+                <div key={doc.id} className="flex items-center gap-3 p-2 border rounded-md text-sm">
+                  <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span className="font-medium flex-1">Leasing Agreement ({doc.company_name})</span>
+                  <button
+                    onClick={() => handleViewDoc(doc.file_url, doc.id)}
+                    className="text-primary underline flex items-center gap-1 text-xs hover:text-primary/80"
+                    disabled={loadingDoc === doc.id}
+                  >
+                    {loadingDoc === doc.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <>View <ExternalLink className="h-3 w-3" /></>}
+                  </button>
+                </div>
+              ))}
             </div>
           </section>
         </div>

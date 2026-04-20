@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { DbDriver } from '@/hooks/useDrivers';
 import { FileText, ExternalLink, Loader2, Download, Trash2 } from 'lucide-react';
 import { formatDate } from '@/lib/dateUtils';
@@ -22,9 +22,6 @@ const docFields = [
   { key: 'license_photo_url', label: 'License Photo' },
   { key: 'medical_card_photo_url', label: 'Medical Card Photo' },
   { key: 'form_w9_url', label: 'Form W9' },
-  { key: 'leasing_agreement_url', label: 'Leasing Agreement (AG-AR)' },
-  { key: 'leasing_agreement_venco_url', label: 'Leasing Agreement (VENCO)' },
-  { key: 'leasing_agreement_58_url', label: 'Leasing Agreement (58 LOGISTICS)' },
   { key: 'service_agreement_url', label: 'Service Agreement' },
   { key: 'employment_contract_url', label: 'Employment Contract' },
   { key: 'termination_letter_url', label: 'Termination Letter' },
@@ -42,6 +39,16 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
   const [loadingDoc, setLoadingDoc] = useState<string | null>(null);
   const [deletingTermination, setDeletingTermination] = useState(false);
   const [termLetterDeleted, setTermLetterDeleted] = useState(false);
+  const [leasingDocs, setLeasingDocs] = useState<Array<{ id: string; company_name: string; file_url: string }>>([]);
+
+  useEffect(() => {
+    supabase
+      .from('driver_leasing_agreements' as any)
+      .select('id, company_name, file_url')
+      .eq('driver_id', driver.id)
+      .order('company_name')
+      .then(({ data }) => setLeasingDocs((data as any) || []));
+  }, [driver.id]);
 
   const handleDeleteTerminationLetter = async () => {
     if (!confirm('Are you sure you want to delete the termination letter?')) return;
@@ -243,6 +250,21 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
               </div>
             );
           })}
+
+          {/* Dynamic Leasing Agreements (per carrier company) */}
+          {leasingDocs.map(doc => (
+            <div key={doc.id} className="flex items-center gap-1.5 px-2.5 py-1.5 border rounded-md text-xs bg-background">
+              <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="font-medium">Leasing Agreement ({doc.company_name})</span>
+              <button
+                onClick={e => { e.stopPropagation(); handleViewDoc(doc.file_url, doc.id); }}
+                className="text-primary underline flex items-center gap-0.5 hover:text-primary/80"
+                disabled={loadingDoc === doc.id}
+              >
+                {loadingDoc === doc.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <>View <ExternalLink className="h-3 w-3" /></>}
+              </button>
+            </div>
+          ))}
         </div>
       </div>
     </div>

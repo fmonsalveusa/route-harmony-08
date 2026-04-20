@@ -151,10 +151,10 @@ export default function DriverOnboarding() {
       if (isOO) {
         if (signedDocs.w9) formData.append('driver_form_w9', signedDocs.w9, 'w9_signed.pdf');
         if (signedDocs.leasing) {
-          // Send all 3 carrier-specific PDFs separately
-          formData.append('driver_leasing_agreement', signedDocs.leasing.main, 'leasing_agreement_signed.pdf');
-          formData.append('driver_leasing_agreement_venco', signedDocs.leasing.venco, 'leasing_agreement_venco_signed.pdf');
-          formData.append('driver_leasing_agreement_58', signedDocs.leasing.logistics58, 'leasing_agreement_58_signed.pdf');
+          // Send one file per active carrier company (dynamic)
+          for (const { companyId, companyName, blob } of signedDocs.leasing) {
+            formData.append(`driver_leasing_${companyId}`, blob, `leasing_${companyName.replace(/\s+/g, '_')}_signed.pdf`);
+          }
         }
         if (signedDocs.service) formData.append('driver_service_agreement', signedDocs.service, 'service_agreement_signed.pdf');
       } else {
@@ -517,6 +517,7 @@ export default function DriverOnboarding() {
             serviceType={isOO ? 'owner_operator' : 'company_driver'}
             driverData={driver}
             truckData={truck}
+            tenantId={tokenData?.tenant_id ?? ''}
             signedDocs={signedDocs}
             onSignedDocsChange={setSignedDocs}
             onNext={() => setStep(reviewStep)}

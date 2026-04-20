@@ -18,6 +18,7 @@ export interface Company {
   website: string | null;
   logo_url: string | null;
   is_primary: boolean;
+  leasing_agreement_active: boolean;
   created_at: string;
   updated_at: string;
 }

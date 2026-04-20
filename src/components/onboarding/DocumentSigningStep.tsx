@@ -4,13 +4,13 @@ import { Button } from '@/components/ui/button';
 import { CheckCircle2, FileText, PenLine } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import W9FormDialog from './W9FormDialog';
-import LeasingAgreementDialog, { LeasingBlobs } from './LeasingAgreementDialog';
+import LeasingAgreementDialog, { LeasingBlobsArray } from './LeasingAgreementDialog';
 import ServiceAgreementDialog from './ServiceAgreementDialog';
 import EmploymentContractDialog from './EmploymentContractDialog';
 
 export interface SignedDocs {
   w9: Blob | null;
-  leasing: LeasingBlobs | null;
+  leasing: LeasingBlobsArray | null;
   service: Blob | null;
   employment: Blob | null;
 }
@@ -19,6 +19,7 @@ interface DocumentSigningStepProps {
   serviceType: 'owner_operator' | 'company_driver';
   driverData: { name: string; email: string; phone: string; license: string; state: string | null };
   truckData: { make: string; model: string; vin: string; year: number; unit_number: string };
+  tenantId: string;
   signedDocs: SignedDocs;
   onSignedDocsChange: (docs: SignedDocs) => void;
   onNext: () => void;
@@ -35,7 +36,7 @@ const CD_DOCS = [
   { key: 'employment' as const, title: 'Employment Contract', desc: 'Bilingual employment agreement' },
 ];
 
-export default function DocumentSigningStep({ serviceType, driverData, truckData, signedDocs, onSignedDocsChange, onNext, onBack }: DocumentSigningStepProps) {
+export default function DocumentSigningStep({ serviceType, driverData, truckData, tenantId, signedDocs, onSignedDocsChange, onNext, onBack }: DocumentSigningStepProps) {
   const [openDialog, setOpenDialog] = useState<'w9' | 'leasing' | 'service' | 'employment' | null>(null);
 
   const isOO = serviceType === 'owner_operator';
@@ -49,7 +50,7 @@ export default function DocumentSigningStep({ serviceType, driverData, truckData
     setOpenDialog(null);
   };
 
-  const handleLeasingSigned = (blobs: LeasingBlobs) => {
+  const handleLeasingSigned = (blobs: LeasingBlobsArray) => {
     onSignedDocsChange({ ...signedDocs, leasing: blobs });
     setOpenDialog(null);
   };
@@ -103,6 +104,7 @@ export default function DocumentSigningStep({ serviceType, driverData, truckData
           open={openDialog === 'leasing'}
           onOpenChange={o => !o && setOpenDialog(null)}
           driverName={driverData.name}
+          tenantId={tenantId}
           truckData={truckData}
           onSigned={handleLeasingSigned}
         />

@@ -1,37 +1,71 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { Building2 } from 'lucide-react';
 import SignaturePad from './SignaturePad';
-import { generateLeasingPdf, CARRIER_AG_AR, CARRIER_VENCO, CARRIER_58_LOGISTICS } from '@/lib/onboardingDocPdf';
+import { generateLeasingPdf } from '@/lib/onboardingDocPdf';
+import { supabase } from '@/integrations/supabase/client';
 
-export interface LeasingBlobs {
-  main: Blob;      // AG-AR Transportation
-  venco: Blob;     // VENCO
-  logistics58: Blob; // 58 LOGISTICS LLC
+// Dynamic array — one entry per active carrier company
+export type LeasingBlobsArray = Array<{ companyId: string; companyName: string; blob: Blob }>;
+
+// Keep backward-compat alias
+export type LeasingBlobs = LeasingBlobsArray;
+
+interface ActiveCompany {
+  id: string;
+  name: string;
+  dot_number: string | null;
+  mc_number: string | null;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  zip: string | null;
 }
 
 interface LeasingAgreementDialogProps {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   driverName: string;
+  tenantId: string;
   truckData: { make: string; model: string; vin: string; year: number; unit_number: string };
-  onSigned: (blobs: LeasingBlobs) => void;
+  onSigned: (blobs: LeasingBlobsArray) => void;
 }
 
-export default function LeasingAgreementDialog({ open, onOpenChange, driverName, truckData, onSigned }: LeasingAgreementDialogProps) {
+export default function LeasingAgreementDialog({ open, onOpenChange, driverName, tenantId, truckData, onSigned }: LeasingAgreementDialogProps) {
   const [companyName, setCompanyName] = useState('');
   const [signatures, setSignatures] = useState<{ contract: string | null; eld: string | null; hos: string | null }>({
     contract: null, eld: null, hos: null,
   });
+  const [activeCompanies, setActiveCompanies] = useState<ActiveCompany[]>([]);
+
+  // Fetch active leasing companies when dialog opens
+  useEffect(() => {
+    if (!open || !tenantId) return;
+    supabase
+      .from('companies')
+      .select('id, name, dot_number, mc_number, address, city, state, zip')
+      .eq('tenant_id', tenantId)
+      .eq('leasing_agreement_active', true)
+      .order('name')
+      .then(({ data }) => {
+        setActiveCompanies(data || []);
+      });
+  }, [open, tenantId]);
 
   const handleSubmit = () => {
     if (!signatures.contract || !signatures.eld || !signatures.hos) {
       toast.error('All 3 signatures are required');
+      return;
+    }
+    if (activeCompanies.length === 0) {
+      toast.error('No hay empresas configuradas para Leasing Agreement. Actívalas en la sección de Empresas.');
       return;
     }
     const pdfData = {
@@ -44,12 +78,22 @@ export default function LeasingAgreementDialog({ open, onOpenChange, driverName,
       date: format(new Date(), 'MM/dd/yyyy'),
       signatures: signatures as { contract: string; eld: string; hos: string },
     };
-    // Generate one PDF per carrier company
-    const main = generateLeasingPdf({ ...pdfData, carrier: CARRIER_AG_AR });
-    const venco = generateLeasingPdf({ ...pdfData, carrier: CARRIER_VENCO });
-    const logistics58 = generateLeasingPdf({ ...pdfData, carrier: CARRIER_58_LOGISTICS });
-    onSigned({ main, venco, logistics58 });
-    toast.success('Leasing Agreement signed (3 copies generated)');
+    // Generate one PDF per active carrier company
+    const blobs: LeasingBlobsArray = activeCompanies.map(co => {
+      const fullAddress = [co.address, co.city, co.state, co.zip].filter(Boolean).join(', ');
+      const blob = generateLeasingPdf({
+        ...pdfData,
+        carrier: {
+          name: co.name,
+          dot: co.dot_number || '',
+          mc: co.mc_number || '',
+          address: fullAddress,
+        },
+      });
+      return { companyId: co.id, companyName: co.name, blob };
+    });
+    onSigned(blobs);
+    toast.success(`Leasing Agreement firmado — ${blobs.length} ${blobs.length === 1 ? 'copia generada' : 'copias generadas'}`);
   };
 
   const today = format(new Date(), 'MM/dd/yyyy');
@@ -58,7 +102,7 @@ export default function LeasingAgreementDialog({ open, onOpenChange, driverName,
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Owner Operator Lease Agreement (3 copies — AG-AR, VENCO & 58 Logistics)</DialogTitle>
+          <DialogTitle>Owner Operator Lease Agreement</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 text-sm">
           {/* Pre-filled info */}
@@ -69,6 +113,25 @@ export default function LeasingAgreementDialog({ open, onOpenChange, driverName,
             <div><span className="text-muted-foreground">Date:</span> {today}</div>
           </div>
 
+          {/* Active companies indicator */}
+          {activeCompanies.length > 0 ? (
+            <div className="flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50 p-3 text-xs">
+              <Building2 className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
+              <div>
+                <p className="font-semibold text-blue-800">Se generarán {activeCompanies.length} {activeCompanies.length === 1 ? 'copia' : 'copias'} del acuerdo:</p>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {activeCompanies.map(co => (
+                    <Badge key={co.id} variant="secondary" className="text-xs">{co.name}</Badge>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+              ⚠️ No hay empresas configuradas para Leasing Agreement. Ve a <strong>Empresas</strong> y activa el toggle "Incluir en Leasing Agreement".
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label>Owner Operator Company Name</Label>
             <Input value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="Your company name (if applicable)" />
@@ -78,7 +141,7 @@ export default function LeasingAgreementDialog({ open, onOpenChange, driverName,
           <div className="border rounded-lg p-4 space-y-3 text-xs leading-relaxed max-h-[400px] overflow-y-auto bg-white">
             <h3 className="font-bold text-sm text-center">OWNER OPERATOR LEASE AGREEMENT</h3>
 
-            <p>THIS agreement, entered into this day {today} Between 58 LOGISTICS LLC DOT#: 4364896 MC#: 1708664 Address: 1634 N Wind Pl. Apt 206. Charlotte, NC. 28210 (Hereinafter designated as "Carrier"), and the Owner Operator Company Name: <strong>{companyName || '_______________'}</strong></p>
+            <p>THIS agreement, entered into this day {today} Between [Carrier — see generated PDF] (Hereinafter designated as "Carrier"), and the Owner Operator Company Name: <strong>{companyName || '_______________'}</strong></p>
             <p>Owner Operator Name: <strong>{driverName}</strong></p>
             <p>On this agreement is included a Vehicle:</p>
             <table className="w-full border-collapse text-xs mb-2">
