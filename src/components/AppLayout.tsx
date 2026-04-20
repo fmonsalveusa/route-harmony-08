@@ -138,6 +138,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
   const isMasterRoute = location.pathname.startsWith('/master');
   const useMasterNav = isMasterAdmin && isMasterRoute;
   const isDispatcher = role === 'dispatcher';
+  const isAdminOrAccounting = role === 'admin' || role === 'accounting' || isMasterAdmin;
   const initials = profile.full_name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
 
   // Mobile items
@@ -192,8 +193,6 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
       </p>
     );
   };
-
-  const isAdminOrAccounting = role === 'admin' || role === 'accounting' || isMasterAdmin;
 
   const filterVisible = (items: NavItem[]) =>
     items.filter((i) =>
