@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Pencil, Building2, Star, FileSignature } from 'lucide-react';
+import { Pencil, Building2, Star, FileSignature, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { StatCard } from '@/components/StatCard';
 
@@ -46,6 +46,17 @@ const Companies = () => {
 
   const toggleLeasing = async (c: Company) => {
     await updateCompany(c.id, { leasing_agreement_active: !c.leasing_agreement_active } as any);
+  };
+
+  const handleDelete = async (c: Company) => {
+    if (!confirm(`¿Eliminar "${c.name}"? Esta acción no se puede deshacer.`)) return;
+    await deleteCompany(c.id);
+  };
+
+  const openNew = () => {
+    setEditId(null);
+    setForm(emptyForm);
+    setShowForm(true);
   };
 
   const handleSave = async () => {
@@ -99,9 +110,12 @@ const Companies = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="page-header">Mi Empresa</h1>
-          <p className="page-description">Información de tu empresa de trucking</p>
+          <h1 className="page-header">Empresas</h1>
+          <p className="page-description">Gestiona tus empresas carrier para facturas, documentos y leasing agreements</p>
         </div>
+        <Button className="gap-2 self-start sm:self-auto" onClick={openNew}>
+          <Plus className="h-4 w-4" /> Add New Company
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -156,6 +170,9 @@ const Companies = () => {
                       <div className="flex justify-end gap-1.5">
                         <button className="glass-action-btn tint-amber inline-flex items-center" onClick={() => openEdit(c)} title="Editar">
                           <Pencil className="h-4 w-4" /> Editar
+                        </button>
+                        <button className="glass-action-btn tint-red inline-flex items-center" onClick={() => handleDelete(c)} title="Eliminar">
+                          <Trash2 className="h-4 w-4" /> Eliminar
                         </button>
                       </div>
                     </td>
