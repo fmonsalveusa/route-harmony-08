@@ -83,7 +83,7 @@ export default defineConfig(({ mode }) => ({
           // Maps
           'vendor-maps': ['leaflet', 'react-leaflet', '@react-leaflet/core'],
           // Data & utilities
-          'vendor-utils': ['@tanstack/react-query', 'date-fns', 'jspdf', 'jspdf-autotable'],
+          'vendor-utils': ['@tanstack/react-query', 'date-fns', 'jspdf'],
         },
       },
     },
