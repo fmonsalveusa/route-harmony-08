@@ -2,6 +2,7 @@ import { useState, useRef, useMemo, Fragment, useEffect, useCallback } from 'rea
 
 import { formatDate, todayET } from '@/lib/dateUtils';
 import { useAuth } from '@/contexts/AuthContext';
+import { useDispatcherDriverIds } from '@/hooks/useDispatcherDriverIds';
 import { mockDrivers, mockDispatchers } from '@/data/mockData';
 import { StatusBadge } from '@/components/StatusBadge';
 import { useLoads } from '@/hooks/useLoads';
@@ -127,8 +128,14 @@ const Loads = () => {
   };
 
   const isDispatcher = role === 'dispatcher';
-  // RLS already filters loads for dispatchers at the database level
-  let baseLoads = dbLoads;
+
+  // Resolve dispatcher scope via server-side SQL function (reliable, no JS email matching)
+  const { driverIds: dispatcherDriverIds } = useDispatcherDriverIds();
+
+  // If the user is a dispatcher, restrict to loads belonging to their drivers
+  let baseLoads = dispatcherDriverIds
+    ? dbLoads.filter((l) => l.driver_id && dispatcherDriverIds.has(l.driver_id))
+    : dbLoads;
 
   if (search) baseLoads = baseLoads.filter(l =>
     l.reference_number.toLowerCase().includes(search.toLowerCase()) ||
@@ -143,13 +150,16 @@ const Loads = () => {
   if (filterDispatcher !== 'all') baseLoads = baseLoads.filter(l => l.dispatcher_id === filterDispatcher);
   if (filterBroker !== 'all') baseLoads = baseLoads.filter(l => l.broker_client === filterBroker);
   if (filterFactoring !== 'all') baseLoads = baseLoads.filter(l => (l.factoring || '') === filterFactoring);
+  // Parse "YYYY-MM-DD" as local time (appending T00:00:00 prevents UTC midnight shift)
+  const parseLocalDate = (s: string | null) => s ? new Date(s + 'T00:00:00') : null;
+
   if (filterMonth !== 'all') {
     const monthIdx = parseInt(filterMonth);
     const year = new Date().getFullYear();
     const startOfMonth = new Date(year, monthIdx, 1);
     const endOfMonth = new Date(year, monthIdx + 1, 1);
     baseLoads = baseLoads.filter(l => {
-      const d = l.pickup_date ? new Date(l.pickup_date) : null;
+      const d = parseLocalDate(l.pickup_date);
       return d && d >= startOfMonth && d < endOfMonth;
     });
   }
@@ -164,7 +174,7 @@ const Loads = () => {
     const endOfWeek = new Date(startOfWeek);
     endOfWeek.setDate(startOfWeek.getDate() + 7);
     baseLoads = baseLoads.filter(l => {
-      const d = l.pickup_date ? new Date(l.pickup_date) : null;
+      const d = parseLocalDate(l.pickup_date);
       return d && d >= startOfWeek && d < endOfWeek;
     });
   }
@@ -225,7 +235,10 @@ const Loads = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Drivers</SelectItem>
-              {drivers.map(d => (
+              {(dispatcherDriverIds
+                ? drivers.filter((d) => dispatcherDriverIds.has(d.id))
+                : drivers
+              ).map(d => (
                 <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
               ))}
             </SelectContent>
@@ -241,6 +254,7 @@ const Loads = () => {
               ))}
             </SelectContent>
           </Select>
+          {!isDispatcher && (
           <Select value={filterDispatcher} onValueChange={setFilterDispatcher}>
             <SelectTrigger className="w-[160px] h-8 text-xs">
               <SelectValue placeholder="Dispatcher" />
@@ -252,6 +266,7 @@ const Loads = () => {
               ))}
             </SelectContent>
           </Select>
+          )}
           <Select value={filterMonth} onValueChange={setFilterMonth}>
             <SelectTrigger className="w-[150px] h-8 text-xs">
               <SelectValue placeholder="Month" />
