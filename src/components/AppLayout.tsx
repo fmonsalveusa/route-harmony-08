@@ -4,8 +4,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Truck, Users, Package, MapPin, FileText,
-  BarChart3, LogOut, DollarSign, UserCog,
-  Headphones, Menu, Building2, Crown, CreditCard, Settings, Plus, Receipt, Trophy, Wrench, X, FileSignature, MoreHorizontal, ChevronLeft, ChevronRight, Landmark } from
+  LogOut, DollarSign, UserCog,
+  Headphones, Menu, Building2, Plus, Receipt, Trophy, Wrench, X, FileSignature, MoreHorizontal, ChevronLeft, ChevronRight, Landmark } from
 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -24,7 +24,6 @@ interface NavItem {
   icon: any;
   path: string;
   permission: string;
-  masterOnly?: boolean;
   hideForDispatcher?: boolean;
   adminAndAccountingOnly?: boolean;
 }
@@ -58,10 +57,9 @@ const moreItems: NavItem[] = [
 const adminItems: NavItem[] = [
   { label: 'Companies', icon: Building2, path: '/companies', permission: 'companies' },
   { label: 'Users', icon: UserCog, path: '/users', permission: 'users' },
-  { label: 'Subscription', icon: CreditCard, path: '/subscription', permission: 'settings' },
 ];
 
-const tenantNavItems: NavItem[] = [
+const allNavItems: NavItem[] = [
   ...topLevelItems,
   ...teamItems,
   ...accountingItems,
@@ -69,16 +67,7 @@ const tenantNavItems: NavItem[] = [
   ...adminItems,
 ];
 
-const masterNavItems: NavItem[] = [
-  { label: 'Dashboard', icon: LayoutDashboard, path: '/master', permission: 'master' },
-  { label: 'Companies', icon: Building2, path: '/master/tenants', permission: 'master' },
-  { label: 'Statistics', icon: BarChart3, path: '/master/stats', permission: 'master' },
-  { label: 'Billing', icon: CreditCard, path: '/master/billing', permission: 'master' },
-  { label: 'Settings', icon: Settings, path: '/master/settings', permission: 'master' },
-];
-
 const roleBadgeStyles: Record<string, string> = {
-  master_admin: 'bg-purple-600 text-white',
   admin: 'bg-destructive text-destructive-foreground',
   accounting: 'bg-warning text-warning-foreground',
   dispatcher: 'bg-info text-info-foreground',
@@ -86,7 +75,6 @@ const roleBadgeStyles: Record<string, string> = {
 };
 
 const roleLabels: Record<string, string> = {
-  master_admin: 'MASTER',
   admin: 'ADMIN',
   accounting: 'ACCOUNTING',
   dispatcher: 'DISPATCHER',
@@ -94,7 +82,7 @@ const roleLabels: Record<string, string> = {
 };
 
 export const AppLayout = ({ children }: { children: ReactNode }) => {
-  const { profile, role, tenant, signOut, hasPermission, isMasterAdmin } = useAuth();
+  const { profile, role, tenant, signOut, hasPermission } = useAuth();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loadDialogOpen, setLoadDialogOpen] = useState(false);
@@ -135,16 +123,19 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
     return result;
   };
 
-  const isMasterRoute = location.pathname.startsWith('/master');
-  const useMasterNav = isMasterAdmin && isMasterRoute;
   const isDispatcher = role === 'dispatcher';
-  const isAdminOrAccounting = role === 'admin' || role === 'accounting' || isMasterAdmin;
+  const isAdminOrAccounting = role === 'admin' || role === 'accounting';
   const initials = profile.full_name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
 
+  const filterVisible = (items: NavItem[]) =>
+    items.filter((i) =>
+      hasPermission(i.permission) &&
+      (!i.hideForDispatcher || !isDispatcher) &&
+      (!i.adminAndAccountingOnly || isAdminOrAccounting)
+    );
+
   // Mobile items
-  const mobileItems = (useMasterNav ? masterNavItems : tenantNavItems).filter(
-    (i) => hasPermission(i.permission) && (!i.masterOnly || isMasterAdmin) && (!i.hideForDispatcher || !isDispatcher) && (!i.adminAndAccountingOnly || isAdminOrAccounting)
-  );
+  const mobileItems = filterVisible(allNavItems);
 
   // Sidebar section render helpers
   const renderSidebarLink = (item: NavItem) => {
@@ -194,14 +185,6 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
     );
   };
 
-  const filterVisible = (items: NavItem[]) =>
-    items.filter((i) =>
-      hasPermission(i.permission) &&
-      (!i.masterOnly || isMasterAdmin) &&
-      (!i.hideForDispatcher || !isDispatcher) &&
-      (!i.adminAndAccountingOnly || isAdminOrAccounting)
-    );
-
   return (
     <div className="flex h-screen overflow-hidden bg-background">
 
@@ -229,90 +212,33 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
 
         {/* Nav items */}
         <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
-          {useMasterNav ? (
+          {filterVisible(topLevelItems).map(renderSidebarLink)}
+
+          {filterVisible(teamItems).length > 0 && (
             <>
-              {masterNavItems.filter(i => hasPermission(i.permission)).map(renderSidebarLink)}
-              {renderSectionLabel('')}
-              {collapsed ? (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Link
-                      to="/dashboard"
-                      className="flex justify-center items-center p-2.5 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                    >
-                      <Truck className="h-5 w-5" />
-                    </Link>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">Go to App</TooltipContent>
-                </Tooltip>
-              ) : (
-                <Link
-                  to="/dashboard"
-                  className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                >
-                  <Truck className="h-4 w-4" />
-                  <span>Go to App</span>
-                </Link>
-              )}
+              {renderSectionLabel('Team')}
+              {filterVisible(teamItems).map(renderSidebarLink)}
             </>
-          ) : (
+          )}
+
+          {filterVisible(accountingItems).length > 0 && (
             <>
-              {filterVisible(topLevelItems).map(renderSidebarLink)}
+              {renderSectionLabel('Accounting')}
+              {filterVisible(accountingItems).map(renderSidebarLink)}
+            </>
+          )}
 
-              {filterVisible(teamItems).length > 0 && (
-                <>
-                  {renderSectionLabel('Team')}
-                  {filterVisible(teamItems).map(renderSidebarLink)}
-                </>
-              )}
+          {filterVisible(moreItems).length > 0 && (
+            <>
+              {renderSectionLabel('More')}
+              {filterVisible(moreItems).map(renderSidebarLink)}
+            </>
+          )}
 
-              {filterVisible(accountingItems).length > 0 && (
-                <>
-                  {renderSectionLabel('Accounting')}
-                  {filterVisible(accountingItems).map(renderSidebarLink)}
-                </>
-              )}
-
-              {filterVisible(moreItems).length > 0 && (
-                <>
-                  {renderSectionLabel('More')}
-                  {filterVisible(moreItems).map(renderSidebarLink)}
-                </>
-              )}
-
-              {filterVisible(adminItems).length > 0 && (
-                <>
-                  {renderSectionLabel('Admin')}
-                  {filterVisible(adminItems).map(renderSidebarLink)}
-                </>
-              )}
-
-              {isMasterAdmin && (
-                <>
-                  {renderSectionLabel('')}
-                  {collapsed ? (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Link
-                          to={isMasterRoute ? '/dashboard' : '/master'}
-                          className="flex justify-center items-center p-2.5 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                        >
-                          {isMasterRoute ? <Truck className="h-5 w-5" /> : <Crown className="h-5 w-5" />}
-                        </Link>
-                      </TooltipTrigger>
-                      <TooltipContent side="right">{isMasterRoute ? 'App' : 'Master Panel'}</TooltipContent>
-                    </Tooltip>
-                  ) : (
-                    <Link
-                      to={isMasterRoute ? '/dashboard' : '/master'}
-                      className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                    >
-                      {isMasterRoute ? <Truck className="h-4 w-4" /> : <Crown className="h-4 w-4" />}
-                      <span>{isMasterRoute ? 'Go to App' : 'Master Panel'}</span>
-                    </Link>
-                  )}
-                </>
-              )}
+          {filterVisible(adminItems).length > 0 && (
+            <>
+              {renderSectionLabel('Admin')}
+              {filterVisible(adminItems).map(renderSidebarLink)}
             </>
           )}
         </nav>
@@ -324,7 +250,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Avatar className="h-8 w-8 cursor-pointer">
-                    <AvatarFallback className={`text-[10px] font-semibold ${isMasterAdmin ? 'bg-purple-600 text-white' : 'bg-[#266aad] text-white'}`}>
+                    <AvatarFallback className="text-[10px] font-semibold bg-[#266aad] text-white">
                       {initials}
                     </AvatarFallback>
                   </Avatar>
@@ -343,7 +269,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
           ) : (
             <div className="flex items-center gap-2 mb-2">
               <Avatar className="h-8 w-8 flex-shrink-0">
-                <AvatarFallback className={`text-[10px] font-semibold ${isMasterAdmin ? 'bg-purple-600 text-white' : 'bg-[#266aad] text-white'}`}>
+                <AvatarFallback className="text-[10px] font-semibold bg-[#266aad] text-white">
                   {initials}
                 </AvatarFallback>
               </Avatar>
@@ -405,11 +331,6 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
           </div>
 
           <div className="flex items-center gap-2">
-            {isMasterAdmin && isMasterRoute && (
-              <Badge className="bg-purple-500/30 text-purple-200 text-[10px] border-purple-400/30 hidden md:inline-flex">
-                Master Panel
-              </Badge>
-            )}
             {tenant?.name && (
               <span className="hidden lg:inline text-sm font-semibold text-white truncate max-w-[200px]">
                 {tenant.name}
@@ -465,23 +386,11 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
                   </Link>
                 );
               })}
-              {isMasterAdmin && (
-                <div className="mt-3 pt-3 border-t">
-                  <Link
-                    to={isMasterRoute ? '/dashboard' : '/master'}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted"
-                  >
-                    {isMasterRoute ? <Truck className="h-4 w-4" /> : <Crown className="h-4 w-4" />}
-                    <span>{isMasterRoute ? 'Go to App' : 'Master Panel'}</span>
-                  </Link>
-                </div>
-              )}
             </nav>
             <div className="border-t p-3">
               <div className="flex items-center gap-2">
                 <Avatar className="h-8 w-8">
-                  <AvatarFallback className={`text-xs font-semibold ${isMasterAdmin ? 'bg-purple-600 text-white' : 'bg-[#266aad] text-white'}`}>
+                  <AvatarFallback className="text-xs font-semibold bg-[#266aad] text-white">
                     {initials}
                   </AvatarFallback>
                 </Avatar>
@@ -503,21 +412,12 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
         className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-card border-t border-border flex items-end justify-around"
         style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom, 0.5rem))' }}
       >
-        {(useMasterNav
-          ? [
-              { label: 'Dashboard', icon: LayoutDashboard, path: '/master', perm: 'master' },
-              { label: 'Companies', icon: Building2, path: '/master/tenants', perm: 'master' },
-              { label: 'Stats', icon: BarChart3, path: '/master/stats', perm: 'master' },
-              { label: 'Billing', icon: CreditCard, path: '/master/billing', perm: 'master' },
-              { label: 'Settings', icon: Settings, path: '/master/settings', perm: 'master' },
-            ]
-          : [
-              { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', perm: 'dashboard' },
-              { label: 'Loads', icon: Package, path: '/loads', perm: 'loads' },
-              { label: 'Fleet', icon: Truck, path: '/fleet', perm: 'fleet' },
-              { label: 'Payments', icon: DollarSign, path: '/payments', perm: 'payments.drivers' },
-            ]
-        )
+        {[
+          { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', perm: 'dashboard' },
+          { label: 'Loads', icon: Package, path: '/loads', perm: 'loads' },
+          { label: 'Fleet', icon: Truck, path: '/fleet', perm: 'fleet' },
+          { label: 'Payments', icon: DollarSign, path: '/payments', perm: 'payments.drivers' },
+        ]
           .filter((t) => hasPermission(t.perm))
           .map((tab) => {
             const active = location.pathname === tab.path;
@@ -535,15 +435,13 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
               </Link>
             );
           })}
-        {!useMasterNav && (
-          <button
-            onClick={() => setMobileMenuOpen(true)}
-            className="flex flex-col items-center gap-0.5 pt-2 px-3 min-w-[56px] text-muted-foreground"
-          >
-            <MoreHorizontal className="h-5 w-5" />
-            <span className="text-[10px] font-medium leading-tight">More</span>
-          </button>
-        )}
+        <button
+          onClick={() => setMobileMenuOpen(true)}
+          className="flex flex-col items-center gap-0.5 pt-2 px-3 min-w-[56px] text-muted-foreground"
+        >
+          <MoreHorizontal className="h-5 w-5" />
+          <span className="text-[10px] font-medium leading-tight">More</span>
+        </button>
       </nav>
 
       <LoadFormDialog
@@ -552,7 +450,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
         onSubmit={handleCreateLoad}
       />
 
-      {(role === 'admin' || role === 'dispatcher' || role === 'accounting' || role === 'master_admin') && (
+      {(role === 'admin' || role === 'dispatcher' || role === 'accounting') && (
         <LiveNotificationToasts />
       )}
       <MeetingAlertModal />

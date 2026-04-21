@@ -22,22 +22,12 @@ export interface TenantInfo {
   is_active: boolean;
 }
 
-export interface SubscriptionInfo {
-  plan: string;
-  status: string;
-  max_users: number;
-  max_trucks: number;
-  price_monthly: number;
-  next_payment_date: string;
-}
-
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   profile: Profile | null;
   role: AppRole | null;
   tenant: TenantInfo | null;
-  subscription: SubscriptionInfo | null;
   loading: boolean;
   isMasterAdmin: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
@@ -79,7 +69,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
   const [tenant, setTenant] = useState<TenantInfo | null>(null);
-  const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const profileLoadedRef = useRef(false);
   const loadedUserIdRef = useRef<string | null>(null);
@@ -92,7 +81,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setProfile(null);
     setRole(null);
     setTenant(null);
-    setSubscription(null);
   };
 
   const applySignedOutState = () => {
@@ -135,27 +123,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (roleError) throw roleError;
 
         let tenantData: TenantInfo | null = null;
-        let subData: SubscriptionInfo | null = null;
 
         if (profileData.tenant_id) {
-          const [{ data: tenantResult, error: tenantError }, { data: subscriptionResult, error: subscriptionError }] = await Promise.all([
-            supabase
-              .from('tenants')
-              .select('id, name, logo_url, is_active')
-              .eq('id', profileData.tenant_id)
-              .maybeSingle(),
-            supabase
-              .from('subscriptions')
-              .select('plan, status, max_users, max_trucks, price_monthly, next_payment_date')
-              .eq('tenant_id', profileData.tenant_id)
-              .maybeSingle(),
-          ]);
+          const { data: tenantResult, error: tenantError } = await supabase
+            .from('tenants')
+            .select('id, name, logo_url, is_active')
+            .eq('id', profileData.tenant_id)
+            .maybeSingle();
 
           if (tenantError) throw tenantError;
-          if (subscriptionError) throw subscriptionError;
-
           tenantData = (tenantResult as TenantInfo | null) ?? null;
-          subData = (subscriptionResult as SubscriptionInfo | null) ?? null;
         }
 
         profileLoadedRef.current = true;
@@ -163,7 +140,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setProfile(profileData as Profile);
         setRole((roleData?.role as AppRole) || (profileData.is_master_admin ? 'master_admin' : 'admin'));
         setTenant(tenantData);
-        setSubscription(subData);
 
         return true;
       } catch (error) {
@@ -338,7 +314,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <AuthContext.Provider value={{
-      user, session, profile, role, tenant, subscription, loading,
+      user, session, profile, role, tenant, loading,
       isMasterAdmin, signIn, signUp, signOut, hasPermission, refreshProfile,
     }}>
       {children}

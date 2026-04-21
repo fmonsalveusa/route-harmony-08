@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { encode as encodeBase64 } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 
 const corsHeaders = {
@@ -9,30 +9,15 @@ const corsHeaders = {
 };
 
 const MAX_PDF_BYTES = 10 * 1024 * 1024;
-const MAX_BASE64_SIZE = 13 * 1024 * 1024; // ~13MB base64 ≈ 10MB PDF
-
-function extractProviderErrorMessage(raw: string): string {
-  try {
-    const parsed = JSON.parse(raw);
-    const msg = parsed?.error?.message || parsed?.message || parsed?.error;
-    return typeof msg === "string" && msg.trim() ? msg : raw;
-  } catch {
-    return raw;
-  }
-}
+const MAX_BASE64_SIZE = 13 * 1024 * 1024;
 
 function looksLikePdf(bytes: Uint8Array): boolean {
-  // Be tolerant: some PDFs might have whitespace/newlines before the header.
   const scanLimit = Math.min(bytes.length, 1024);
   const needle = [0x25, 0x50, 0x44, 0x46, 0x2d]; // %PDF-
-
   for (let i = 0; i <= scanLimit - needle.length; i++) {
     let ok = true;
     for (let j = 0; j < needle.length; j++) {
-      if (bytes[i + j] !== needle[j]) {
-        ok = false;
-        break;
-      }
+      if (bytes[i + j] !== needle[j]) { ok = false; break; }
     }
     if (ok) return true;
   }
@@ -45,22 +30,16 @@ async function fetchPdfBytes(pdfUrl: string): Promise<Uint8Array> {
     const t = await resp.text().catch(() => "");
     throw new Error(`No se pudo descargar el PDF (HTTP ${resp.status})${t ? `: ${t.slice(0, 200)}` : ""}`);
   }
-
   const contentLength = resp.headers.get("content-length");
   if (contentLength) {
     const len = Number(contentLength);
     if (Number.isFinite(len) && len > MAX_PDF_BYTES) {
-      // Consume body to avoid leaks
       await resp.arrayBuffer().catch(() => null);
       throw new Error("PDF too large (max 10MB)");
     }
   }
-
   const buffer = await resp.arrayBuffer();
-  if (buffer.byteLength > MAX_PDF_BYTES) {
-    throw new Error("PDF too large (max 10MB)");
-  }
-
+  if (buffer.byteLength > MAX_PDF_BYTES) throw new Error("PDF too large (max 10MB)");
   return new Uint8Array(buffer);
 }
 
@@ -79,13 +58,14 @@ serve(async (req) => {
       });
     }
 
-    const supabaseClient = createClient(
+    // Usar admin client para validar el token server-side (evita parsing local de ES256)
+    const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } },
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
     if (authError || !user) {
       return new Response(JSON.stringify({ error: "Invalid authentication" }), {
         status: 401,
@@ -93,8 +73,7 @@ serve(async (req) => {
       });
     }
 
-    // Verify user belongs to active tenant
-    const { data: profile } = await supabaseClient
+    const { data: profile } = await supabaseAdmin
       .from("profiles")
       .select("tenant_id")
       .eq("id", user.id)
@@ -123,10 +102,8 @@ serve(async (req) => {
       base64Length: typeof pdfBase64 === "string" ? pdfBase64.length : 0,
     });
 
-    // Build a data URL for Gemini.
-    // NOTE: The AI gateway only supports URL inputs for images (png/jpg/webp/gif).
-    // For PDFs we MUST use a data URL with MIME type.
-    let documentUrl = "";
+    // Obtener el base64 del PDF
+    let finalBase64 = "";
 
     if (pdfUrl && typeof pdfUrl === "string") {
       if (!/^https?:\/\//i.test(pdfUrl)) {
@@ -135,13 +112,6 @@ serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      if (pdfUrl.length > 8192) {
-        return new Response(JSON.stringify({ error: "PDF URL too long" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
       const bytes = await fetchPdfBytes(pdfUrl);
       if (!looksLikePdf(bytes)) {
         return new Response(JSON.stringify({ error: "File is not a valid PDF" }), {
@@ -149,9 +119,7 @@ serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-
-      const base64 = encodeBase64(bytes);
-      documentUrl = `data:application/pdf;base64,${base64}`;
+      finalBase64 = encodeBase64(bytes);
     } else {
       if (pdfBase64.length > MAX_BASE64_SIZE) {
         return new Response(JSON.stringify({ error: "PDF too large (max 10MB)" }), {
@@ -159,8 +127,6 @@ serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-
-      // Validate base64 format and PDF magic number
       try {
         const decoded = atob(pdfBase64.slice(0, 200));
         if (!decoded.includes("%PDF-")) {
@@ -175,114 +141,114 @@ serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-
-      documentUrl = `data:application/pdf;base64,${pdfBase64}`;
+      finalBase64 = pdfBase64;
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      console.error("LOVABLE_API_KEY not configured");
+    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+    if (!ANTHROPIC_API_KEY) {
+      console.error("ANTHROPIC_API_KEY not configured");
       return new Response(JSON.stringify({ error: "AI service not configured" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    console.log("Processing PDF for data extraction with multi-stop support...");
+    console.log("Processing PDF with Claude AI...");
 
-    const systemPrompt = `You are a data extraction assistant for a trucking/logistics company. 
-You will receive a PDF document (rate confirmation, BOL, or similar). 
-Extract ALL stops from the document — there may be multiple pickup locations and multiple delivery locations.
-For each stop address, extract ONLY the physical address (street, city, state, zip). Do NOT include the company name, facility name, or stop label in the address field.
-Example: Instead of "ABC Warehouse - 123 Main St, Houston, TX 77001", just return "123 Main St, Houston, TX 77001".
-If only city and state are available, return "City, ST" format.
-Return stops in route order (first pickup first, last delivery last).
-If a field cannot be found, leave it as an empty string or 0 for numbers.
-Dates should be in YYYY-MM-DD format.
-For weight, extract the numeric value in lbs.
-IMPORTANT: Look carefully for ALL stops — some documents have multiple pickup and/or delivery locations listed as "Stop 1", "Stop 2", etc. or as separate sections.`;
-
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+        "anthropic-beta": "pdfs-2024-09-25",
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "claude-opus-4-5",
+        max_tokens: 2048,
+        tools: [
+          {
+            name: "extract_load_data",
+            description: "Extract structured load/shipment data from a document, including all stops",
+            input_schema: {
+              type: "object",
+              properties: {
+                referenceNumber: {
+                  type: "string",
+                  description: "Reference number, confirmation number, or load number",
+                },
+                brokerClient: {
+                  type: "string",
+                  description: "Broker or client company name (the company hiring the carrier)",
+                },
+                carrierName: {
+                  type: "string",
+                  description: "Carrier company name (the trucking company that will haul the load)",
+                },
+                totalRate: { type: "number", description: "Total rate/payment amount in USD" },
+                weight: { type: "number", description: "Weight in lbs" },
+                miles: { type: "number", description: "Total miles if shown in document" },
+                stops: {
+                  type: "array",
+                  description: "All pickup and delivery stops in route order",
+                  items: {
+                    type: "object",
+                    properties: {
+                      stopType: {
+                        type: "string",
+                        enum: ["pickup", "delivery"],
+                        description: "Whether this is a pickup or delivery stop",
+                      },
+                      address: {
+                        type: "string",
+                        description: "Physical address only (street, city, state, zip) — no company name",
+                      },
+                      date: {
+                        type: "string",
+                        description: "Date for this stop in YYYY-MM-DD format, empty if not found",
+                      },
+                    },
+                    required: ["stopType", "address"],
+                  },
+                },
+              },
+              required: ["referenceNumber", "brokerClient", "totalRate", "weight", "stops"],
+            },
+          },
+        ],
+        tool_choice: { type: "tool", name: "extract_load_data" },
         messages: [
-          { role: "system", content: systemPrompt },
           {
             role: "user",
             content: [
               {
-                type: "text",
-                text:
-                  "Extract all load/shipment information from this PDF document, including ALL pickup and delivery stops.",
+                type: "document",
+                source: {
+                  type: "base64",
+                  media_type: "application/pdf",
+                  data: finalBase64,
+                },
               },
               {
-                type: "image_url",
-                image_url: {
-                  url: documentUrl,
-                },
+                type: "text",
+                text: `You are a data extraction assistant for a trucking/logistics company.
+Extract ALL stops from this rate confirmation or BOL document.
+For each stop address, extract ONLY the physical address (street, city, state, zip). Do NOT include company name or facility name.
+Example: Instead of "ABC Warehouse - 123 Main St, Houston, TX 77001", return "123 Main St, Houston, TX 77001".
+Return stops in route order (first pickup first, last delivery last).
+If a field cannot be found, use empty string or 0 for numbers.
+Dates must be in YYYY-MM-DD format.
+Extract all load/shipment information including ALL pickup and delivery stops.`,
               },
             ],
           },
         ],
-        tools: [
-          {
-            type: "function",
-            function: {
-              name: "extract_load_data",
-              description: "Extract structured load/shipment data from a document, including all stops",
-              parameters: {
-                type: "object",
-                properties: {
-                  referenceNumber: {
-                    type: "string",
-                    description: "Reference number, confirmation number, or load number",
-                  },
-                  brokerClient: { type: "string", description: "Broker or client company name (the company that is hiring the carrier)" },
-                  carrierName: { type: "string", description: "Carrier company name (the trucking company that will haul the load). Usually labeled as 'Carrier' in the document." },
-                  totalRate: { type: "number", description: "Total rate/payment amount in USD" },
-                  weight: { type: "number", description: "Weight in lbs" },
-                  miles: { type: "number", description: "Total miles if shown in document" },
-                  stops: {
-                    type: "array",
-                    description: "All pickup and delivery stops in route order",
-                    items: {
-                      type: "object",
-                      properties: {
-                        stopType: {
-                          type: "string",
-                          enum: ["pickup", "delivery"],
-                          description: "Whether this is a pickup or delivery stop",
-                        },
-                        address: { type: "string", description: "Full address or city, state of the stop" },
-                        date: {
-                          type: "string",
-                          description: "Date for this stop in YYYY-MM-DD format, empty if not found",
-                        },
-                      },
-                      required: ["stopType", "address"],
-                      additionalProperties: false,
-                    },
-                  },
-                },
-                required: ["referenceNumber", "brokerClient", "totalRate", "weight", "stops"],
-                additionalProperties: false,
-              },
-            },
-          },
-        ],
-        tool_choice: { type: "function", function: { name: "extract_load_data" } },
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      const providerMsg = extractProviderErrorMessage(errorText);
-      console.error("AI gateway error:", response.status, errorText);
+      console.error("Claude API error:", response.status, errorText);
 
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Demasiadas solicitudes. Intenta de nuevo en unos segundos." }), {
@@ -291,40 +257,28 @@ IMPORTANT: Look carefully for ALL stops — some documents have multiple pickup 
         });
       }
 
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Créditos de IA agotados. Agrega fondos en Settings." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
       return new Response(
-        JSON.stringify({
-          error: providerMsg || "Error al procesar el PDF con IA",
-        }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
+        JSON.stringify({ error: "Error al procesar el PDF con IA" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
     const data = await response.json();
-    console.log("AI response received");
+    console.log("Claude response received");
 
-    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
-    if (!toolCall) {
-      console.error("No tool call in response:", JSON.stringify(data));
+    // Claude retorna tool_use en content
+    const toolUse = data.content?.find((c: any) => c.type === "tool_use");
+    if (!toolUse) {
+      console.error("No tool_use in Claude response:", JSON.stringify(data));
       return new Response(JSON.stringify({ error: "No se pudo extraer información del PDF" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const extractedData = JSON.parse(toolCall.function.arguments);
+    const extractedData = toolUse.input;
     console.log("Extracted data:", JSON.stringify(extractedData));
 
-    // Derive origin/destination from stops for backward compatibility
     const stops = extractedData.stops || [];
     const pickups = stops.filter((s: any) => s.stopType === "pickup");
     const deliveries = stops.filter((s: any) => s.stopType === "delivery");
@@ -350,11 +304,12 @@ IMPORTANT: Look carefully for ALL stops — some documents have multiple pickup 
     return new Response(JSON.stringify({ success: true, data: result }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
+
   } catch (error) {
     console.error("Error processing PDF:", error);
-    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Error desconocido" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ error: error instanceof Error ? error.message : "Error desconocido" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   }
 });
