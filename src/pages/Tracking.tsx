@@ -122,6 +122,14 @@ const Tracking = () => {
     return match?.id ?? null;
   }, [role, profile?.email, dispatchers]);
 
+  const isDispatcher = role === 'dispatcher';
+
+  // Set of driver IDs assigned to this dispatcher (null = no filter, show all)
+  const dispatcherDriverIds = useMemo(() => {
+    if (!userDispatcherId) return null;
+    return new Set(drivers.filter(d => d.dispatcher_id === userDispatcherId).map(d => d.id));
+  }, [userDispatcherId, drivers]);
+
   const [allStops, setAllStops] = useState<LoadStop[]>([]);
   const [selectedLoadId, setSelectedLoadId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
@@ -331,9 +339,11 @@ const Tracking = () => {
       });
   }, [availableDrivers.length]);
 
-  // Filter loads
+  // Filter loads — dispatchers only see loads of their assigned drivers
   const filteredLoads = useMemo(() => {
     return enrichedLoads.filter(l => {
+      // Dispatcher isolation: only show loads from their drivers
+      if (dispatcherDriverIds && (!l.driver_id || !dispatcherDriverIds.has(l.driver_id))) return false;
       if (statusFilter !== 'all' && l.status !== statusFilter) return false;
       if (search) {
         const term = search.toLowerCase();
@@ -344,14 +354,20 @@ const Tracking = () => {
       }
       return true;
     });
-  }, [enrichedLoads, statusFilter, search, drivers, trucks]);
+  }, [enrichedLoads, statusFilter, search, drivers, trucks, dispatcherDriverIds]);
 
   const selectedLoad = enrichedLoads.find(l => l.id === selectedLoadId);
 
-  // Stats
-  const inTransitCount = activeLoads.filter(l => l.status === 'in_transit').length;
-  const dispatchedCount = activeLoads.filter(l => l.status === 'dispatched').length;
-  const deliveriesToday = loads.filter(l => l.delivery_date && isToday(parseISO(l.delivery_date)) && l.status !== 'cancelled').length;
+  // Stats — filtered by dispatcher scope when applicable
+  const scopedActiveLoads = dispatcherDriverIds
+    ? activeLoads.filter(l => l.driver_id && dispatcherDriverIds.has(l.driver_id))
+    : activeLoads;
+  const scopedAllLoads = dispatcherDriverIds
+    ? loads.filter(l => l.driver_id && dispatcherDriverIds.has(l.driver_id))
+    : loads;
+  const inTransitCount = scopedActiveLoads.filter(l => l.status === 'in_transit').length;
+  const dispatchedCount = scopedActiveLoads.filter(l => l.status === 'dispatched').length;
+  const deliveriesToday = scopedAllLoads.filter(l => l.delivery_date && isToday(parseISO(l.delivery_date)) && l.status !== 'cancelled').length;
 
   const handleSelectLoad = (load: LoadWithStops) => {
     setSelectedLoadId(load.id);
@@ -553,8 +569,10 @@ const Tracking = () => {
                   </div>
                 );
               })}
-              {/* Driver live location markers */}
-              {driverLocations.map(loc => {
+              {/* Driver live location markers — filtered by dispatcher scope */}
+              {driverLocations
+                .filter(loc => !dispatcherDriverIds || dispatcherDriverIds.has(loc.driver_id))
+                .map(loc => {
                 const driver = drivers.find(d => d.id === loc.driver_id);
                 if (!driver) return null;
                 return (
@@ -609,17 +627,19 @@ const Tracking = () => {
                 Drivers Available ({availableDrivers.length})
               </CardTitle>
             </div>
-            <Select value={dispatcherFilter} onValueChange={setDispatcherFilter}>
-              <SelectTrigger className="w-full h-8 text-xs mt-2">
-                <SelectValue placeholder="All Dispatchers" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Dispatchers</SelectItem>
-                {dispatchers.filter(d => d.status === 'active').map(d => (
-                  <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {!isDispatcher && (
+              <Select value={dispatcherFilter} onValueChange={setDispatcherFilter}>
+                <SelectTrigger className="w-full h-8 text-xs mt-2">
+                  <SelectValue placeholder="All Dispatchers" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Dispatchers</SelectItem>
+                  {dispatchers.filter(d => d.status === 'active').map(d => (
+                    <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </CardHeader>
           <CardContent className="flex-1 overflow-y-auto px-3 pb-3 space-y-2">
             {availableDrivers.length === 0 ? (
@@ -714,9 +734,13 @@ const Tracking = () => {
         </Card>
       </div>
 
-      {/* Drivers Load Timeline */}
+      {/* Drivers Load Timeline — scoped to dispatcher's drivers */}
       <div className="lg:w-[calc(66.666%-0.5rem)]">
-        <DriversTimelineCard loads={loads} drivers={drivers} trucks={trucks} />
+        <DriversTimelineCard
+          loads={scopedAllLoads}
+          drivers={dispatcherDriverIds ? drivers.filter(d => dispatcherDriverIds.has(d.id)) : drivers}
+          trucks={trucks}
+        />
       </div>
 
       {/* Selected Load Detail */}
