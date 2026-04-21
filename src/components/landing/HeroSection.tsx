@@ -39,7 +39,7 @@ export function HeroSection() {
         <img
           src={heroImg}
           alt="Dispatch Up Fleet"
-          className="w-full h-full object-cover object-center opacity-45"
+          className="w-full h-full object-cover object-center opacity-55"
         />
         <div
           className="absolute inset-0"
