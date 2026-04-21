@@ -432,7 +432,7 @@ export const ManualDispatcherPaymentDialog = ({ open, onOpenChange, onComplete }
                         return (
                           <tr key={l.id} className={`border-b last:border-0 hover:bg-muted/30 cursor-pointer ${selectedLoadIds.has(l.id) ? 'bg-primary/5' : ''}`} onClick={() => toggleLoad(l.id)}>
                             <td className="p-2">
-                              <Checkbox checked={selectedLoadIds.has(l.id)} onCheckedChange={() => toggleLoad(l.id)} />
+                              <Checkbox checked={selectedLoadIds.has(l.id)} onCheckedChange={() => toggleLoad(l.id)} onClick={e => e.stopPropagation()} />
                             </td>
                             <td className="p-2 font-medium text-primary">{l.reference_number}</td>
                             <td className="p-2 text-muted-foreground">{formatDate(l.created_at)}</td>
