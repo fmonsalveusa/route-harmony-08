@@ -66,7 +66,7 @@ export function DispatcherCommissionsChart({ loads, dispatchers, year, month, we
         total: Math.round(total * 100) / 100,
       }))
       .sort((a, b) => b.total - a.total);
-  }, [loads, dispatchers, drivers, year, month, week]);
+  }, [loads, dispatchers, year, month, week]);
 
   return (
     <div className="glass-card p-0 overflow-hidden">
