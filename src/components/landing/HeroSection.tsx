@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ArrowRight, CalendarIcon, MapPin, Phone, Shield, TrendingUp, Clock } from "lucide-react";
+import { ArrowRight, CalendarIcon, MapPin, Phone, Shield, TrendingUp, Clock, UserPlus } from "lucide-react";
 import heroImg from "@/assets/landing-hero.jpg";
 import boxtruckImg from "@/assets/landing-boxtruck.jpg";
 import hotshotImg from "@/assets/landing-hotshot.jpg";
@@ -66,7 +66,7 @@ export function HeroSection() {
             <a
               key={v.badge}
               href="#onboarding"
-              className="relative rounded-2xl overflow-hidden group block"
+              className="relative rounded-2xl overflow-hidden group block cursor-pointer"
               style={{ height: "200px" }}
             >
               <img
@@ -74,25 +74,57 @@ export function HeroSection() {
                 alt={v.badge}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
               />
-              {/* Gradient overlay */}
+
+              {/* Base gradient overlay */}
               <div
                 className="absolute inset-0"
                 style={{ background: "linear-gradient(to top, rgba(6,13,28,0.92) 0%, rgba(6,13,28,0.45) 55%, rgba(6,13,28,0.15) 100%)" }}
               />
+
+              {/* Hover overlay — darkens + shows CTA */}
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-300 flex items-center justify-center">
+                <div className="opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 flex flex-col items-center gap-2">
+                  <div
+                    className="flex items-center gap-2 text-white font-bold text-sm px-5 py-2.5 rounded-xl shadow-lg"
+                    style={{ background: v.badgeColor }}
+                  >
+                    <UserPlus size={15} />
+                    {lang === "es" ? "Comenzar Registro" : "Start Registration"}
+                  </div>
+                </div>
+              </div>
+
               {/* Border glow on hover */}
               <div
-                className="absolute inset-0 rounded-2xl border transition-colors duration-300"
-                style={{ borderColor: `${v.badgeColor}00` }}
+                className="absolute inset-0 rounded-2xl border-2 border-transparent group-hover:transition-colors duration-300"
+                style={{ borderColor: `transparent` }}
               />
-              {/* Text overlay — bottom */}
-              <div className="absolute bottom-0 left-0 right-0 p-5">
-                <span
-                  className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest text-white mb-2"
-                  style={{ background: `${v.badgeColor}cc`, border: `1px solid ${v.badgeColor}` }}
-                >
-                  {v.badge}
-                </span>
-                <p className="text-white/50 text-xs">{v.sub}</p>
+              <div
+                className="absolute inset-0 rounded-2xl border-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                style={{ borderColor: v.badgeColor }}
+              />
+
+              {/* Bottom info — always visible */}
+              <div className="absolute bottom-0 left-0 right-0 p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span
+                      className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest text-white mb-1.5"
+                      style={{ background: `${v.badgeColor}cc`, border: `1px solid ${v.badgeColor}` }}
+                    >
+                      {v.badge}
+                    </span>
+                    <p className="text-white/50 text-xs">{v.sub}</p>
+                  </div>
+                  {/* Persistent "tap" indicator */}
+                  <div
+                    className="flex items-center gap-1 text-white text-[10px] font-bold px-2.5 py-1.5 rounded-lg opacity-80 group-hover:opacity-0 transition-opacity duration-200 shrink-0"
+                    style={{ background: `${v.badgeColor}99` }}
+                  >
+                    <UserPlus size={11} />
+                    {lang === "es" ? "Registro" : "Register"}
+                  </div>
+                </div>
               </div>
             </a>
           ))}
