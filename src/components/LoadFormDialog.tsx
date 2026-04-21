@@ -431,9 +431,11 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
 
   const driverPay = formData.totalRate * (selectedDriverObj?.pay_percentage ?? 30) / 100;
   const investorPay = formData.totalRate * (selectedDriverObj?.investor_pay_percentage ?? 15) / 100;
-  const dispatcherPct = selectedCommissionType === 'commission_2'
-    ? (selectedDispatcherObj?.commission_2_percentage ?? 0)
-    : (selectedDispatcherObj?.commission_percentage ?? 8);
+  const dispatcherPct = selectedServiceType === 'dispatch_service'
+    ? (selectedDispatcherObj?.dispatch_service_percentage ?? 0)
+    : selectedCommissionType === 'commission_2'
+      ? (selectedDispatcherObj?.commission_2_percentage ?? 0)
+      : (selectedDispatcherObj?.commission_percentage ?? 8);
   const dispatcherPay = formData.totalRate * dispatcherPct / 100;
   const companyProfit = formData.totalRate - driverPay - investorPay - dispatcherPay;
 

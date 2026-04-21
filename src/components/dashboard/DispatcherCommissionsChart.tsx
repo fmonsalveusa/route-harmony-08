@@ -48,15 +48,10 @@ export function DispatcherCommissionsChart({ loads, dispatchers, year, month, we
     filtered.forEach(l => {
       const disp = dispatcherMap[l.dispatcher_id!];
       if (!disp) return;
-      // Use the stored dispatcher_pay_amount (exact value from load creation).
-      // Fall back to recalculating only if it's missing.
-      let commission: number;
-      if (l.dispatcher_pay_amount != null && Number(l.dispatcher_pay_amount) > 0) {
-        commission = Number(l.dispatcher_pay_amount);
-      } else {
-        const pct = l.service_type === 'dispatch_service' ? disp.dispSvcPct : disp.commPct;
-        commission = l.total_rate * (pct / 100);
-      }
+      // Always recalculate using the correct percentage based on service_type.
+      // dispatch_service loads use dispSvcPct; all others use commPct.
+      const pct = l.service_type === 'dispatch_service' ? disp.dispSvcPct : disp.commPct;
+      const commission = l.total_rate * (pct / 100);
       byDispatcher[l.dispatcher_id!] = (byDispatcher[l.dispatcher_id!] || 0) + commission;
     });
 
