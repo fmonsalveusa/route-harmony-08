@@ -36,6 +36,10 @@ workflows:
         script: |
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
           echo "$PROVISIONING_PROFILE" | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/919ea03f-6af7-41b2-87cf-b36e36867bb0.mobileprovision
+      - name: Increment build number
+        script: |
+          cd ios/App
+          agvtool new-version -all $BUILD_NUMBER
       - name: Build iOS
         script: |
           xcodebuild -workspace ios/App/App.xcworkspace \
