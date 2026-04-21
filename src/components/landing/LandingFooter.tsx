@@ -19,13 +19,13 @@ export function LandingFooter() {
   return (
     <footer
       id="contacto"
-      style={{ background: "linear-gradient(180deg, #060d1c 0%, #040a18 100%)" }}
+      style={{ background: "linear-gradient(180deg, #111e36 0%, #0e1a30 100%)" }}
       className="border-t border-white/6"
     >
       {/* ── CTA Banner ── */}
       <div
         className="border-b border-white/6"
-        style={{ background: "linear-gradient(135deg, #0d1a35 0%, #111d38 100%)" }}
+        style={{ background: "linear-gradient(135deg, #162540 0%, #1a2f52 100%)" }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 text-center">
           <h3 className="text-2xl sm:text-3xl font-extrabold text-white mb-2">

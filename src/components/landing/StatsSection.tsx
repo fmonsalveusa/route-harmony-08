@@ -50,7 +50,7 @@ export function StatsSection() {
   return (
     <section
       className="relative py-20 overflow-hidden"
-      style={{ background: "linear-gradient(135deg, #060d1c 0%, #0a1628 100%)" }}
+      style={{ background: "linear-gradient(135deg, #162540 0%, #1a2f52 100%)" }}
     >
       {/* Top border glow */}
       <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "linear-gradient(90deg, transparent, #f59e0b40, transparent)" }} />

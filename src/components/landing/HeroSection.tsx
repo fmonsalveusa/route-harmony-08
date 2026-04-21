@@ -32,18 +32,18 @@ export function HeroSection() {
   return (
     <section
       className="relative overflow-hidden mt-16"
-      style={{ background: "linear-gradient(135deg, #060d1c 0%, #0a1628 60%, #0d1f3a 100%)" }}
+      style={{ background: "linear-gradient(135deg, #1a2f52 0%, #1e3a6e 60%, #1a3060 100%)" }}
     >
       {/* ── Background hero image ── */}
       <div className="absolute inset-0 pointer-events-none">
         <img
           src={heroImg}
           alt="Dispatch Up Fleet"
-          className="w-full h-full object-cover object-center opacity-15"
+          className="w-full h-full object-cover object-center opacity-45"
         />
         <div
           className="absolute inset-0"
-          style={{ background: "linear-gradient(180deg, rgba(6,13,28,0.85) 0%, rgba(6,13,28,0.75) 50%, rgba(6,13,28,0.92) 100%)" }}
+          style={{ background: "linear-gradient(180deg, rgba(20,40,80,0.55) 0%, rgba(20,40,80,0.40) 50%, rgba(20,40,80,0.65) 100%)" }}
         />
         {/* Ambient glow */}
         <div className="absolute top-0 right-1/4 w-[500px] h-[500px] rounded-full blur-3xl opacity-8 pointer-events-none"
