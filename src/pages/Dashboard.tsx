@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useDispatcherDriverIds } from '@/hooks/useDispatcherDriverIds';
 import { StatCard } from '@/components/StatCard';
 import { StatusBadge } from '@/components/StatusBadge';
 import { useLoads } from '@/hooks/useLoads';
@@ -129,7 +130,7 @@ const AdminDashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <DispatcherCommissionsChart loads={filteredLoads} dispatchers={dispatchers} drivers={drivers} year={year} month={month} week={week} />
+        <DispatcherCommissionsChart loads={filteredLoads} dispatchers={dispatchers} year={year} month={month} week={week} />
         <MarketAnalysisCard loads={filteredLoads} trucks={trucks} />
       </div>
 
@@ -140,14 +141,25 @@ const AdminDashboard = () => {
 };
 
 const DispatcherDashboard = () => {
-  const { profile } = useAuth();
-  const { loads, loading: loadsLoading } = useLoads();
-  const { drivers, loading: driversLoading } = useDrivers();
+  const { loads: allLoads, loading: loadsLoading } = useLoads();
+  const { drivers: allDrivers, loading: driversLoading } = useDrivers();
   const { trucks } = useTrucks();
   const { payments } = usePayments();
   const { dispatchers } = useDispatchers();
   const { expenses } = useExpenses();
   const navigate = useNavigate();
+
+  // Resolve dispatcher scope via server-side SQL function (reliable, no JS email matching)
+  const { loading: scopeLoading, driverIds: dispatcherDriverIds } = useDispatcherDriverIds();
+
+  const drivers = useMemo(
+    () => dispatcherDriverIds ? allDrivers.filter((d) => dispatcherDriverIds.has(d.id)) : allDrivers,
+    [allDrivers, dispatcherDriverIds]
+  );
+  const loads = useMemo(
+    () => dispatcherDriverIds ? allLoads.filter((l) => l.driver_id && dispatcherDriverIds.has(l.driver_id)) : allLoads,
+    [allLoads, dispatcherDriverIds]
+  );
 
   const getCurrentWeek = () => {
     const now = new Date();
@@ -164,7 +176,7 @@ const DispatcherDashboard = () => {
   const [week, setWeek] = useState(getCurrentWeek());
   const [driverFilter, setDriverFilter] = useState('all');
 
-  if (loadsLoading || driversLoading) {
+  if (loadsLoading || driversLoading || scopeLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -238,7 +250,7 @@ const DispatcherDashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <DispatcherCommissionsChart loads={filteredLoads} dispatchers={dispatchers} drivers={drivers} year={year} month={month} week={week} />
+        <DispatcherCommissionsChart loads={filteredLoads} dispatchers={dispatchers} year={year} month={month} week={week} />
         <MarketAnalysisCard loads={filteredLoads} trucks={trucks} />
       </div>
 
