@@ -156,7 +156,7 @@ export function HeroSection() {
           </a>
           <a
             href="#onboarding"
-            className="inline-flex items-center justify-center gap-2 border border-amber-400/40 text-amber-400 hover:bg-amber-400/10 font-bold px-8 py-4 rounded-xl text-base transition-all hover:-translate-y-0.5 w-full sm:w-auto"
+            className="inline-flex items-center justify-center gap-2 bg-amber-400 hover:bg-amber-300 text-white font-bold px-8 py-4 rounded-xl text-base transition-all hover:-translate-y-0.5 w-full sm:w-auto shadow-lg shadow-amber-600/30"
           >
             {lang === "es" ? "Registrar Driver" : "Register Driver"}
             <ArrowRight size={18} />
