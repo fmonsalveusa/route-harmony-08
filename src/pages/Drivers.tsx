@@ -118,14 +118,31 @@ const Drivers = () => {
     const truckType = truck?.truck_type || '';
     const isHotshot = truckType.toLowerCase().includes('hotshot');
 
-    let text = '';
-    if (isHotshot) {
-      text = `*Driver Info:*\nDriver Name: ${driver.name}\nPhone Number: ${driver.phone}\n\n*Truck Info:*\nTruck #: ${truck?.unit_number || ''}\nTruck Type: Hotshot\nTrailer (ft): ${truck?.trailer_length_ft || ''}\n\n*Dispatcher Info:*\nDispatcher Name: ${dispatcher?.name || ''}\nDispatcher Phone Number: ${dispatcher?.phone || ''}\n\nETA to Pick up: `;
-    } else {
-      text = `*Driver Info:*\nDriver Name: ${driver.name}\nPhone Number: ${driver.phone}\n\n*Truck Info:*\nTruck #: ${truck?.unit_number || ''}\nTruck Type: Box Truck\nBack Door: ${truck?.rear_door_width_in && truck?.rear_door_height_in ? `${truck.rear_door_width_in}" x ${truck.rear_door_height_in}"` : ''}\n\n*Dispatcher Info:*\nDispatcher Name: ${dispatcher?.name || ''}\nDispatcher Phone Number: ${dispatcher?.phone || ''}\n\nETA to Pick up: `;
+    const truckLines = isHotshot
+      ? `Truck #: ${truck?.unit_number || ''}\nTruck Type: Hotshot\nTrailer (ft): ${truck?.trailer_length_ft || ''}`
+      : `Truck #: ${truck?.unit_number || ''}\nTruck Type: Box Truck\nBack Door: ${truck?.rear_door_width_in && truck?.rear_door_height_in ? `${truck.rear_door_width_in}" x ${truck.rear_door_height_in}"` : ''}`;
+
+    const truckHtmlLines = isHotshot
+      ? `Truck #: ${truck?.unit_number || ''}<br>Truck Type: Hotshot<br>Trailer (ft): ${truck?.trailer_length_ft || ''}`
+      : `Truck #: ${truck?.unit_number || ''}<br>Truck Type: Box Truck<br>Back Door: ${truck?.rear_door_width_in && truck?.rear_door_height_in ? `${truck.rear_door_width_in}" x ${truck.rear_door_height_in}"` : ''}`;
+
+    // Plain text for WhatsApp (*bold*)
+    const plain = `*Driver Info:*\nDriver Name: ${driver.name}\nPhone Number: ${driver.phone}\n\n*Truck Info:*\n${truckLines}\n\n*Dispatcher Info:*\nDispatcher Name: ${dispatcher?.name || ''}\nDispatcher Phone Number: ${dispatcher?.phone || ''}\n\nETA to Pick up: `;
+
+    // HTML for email clients (<b>bold</b>)
+    const html = `<b>Driver Info:</b><br>Driver Name: ${driver.name}<br>Phone Number: ${driver.phone}<br><br><b>Truck Info:</b><br>${truckHtmlLines}<br><br><b>Dispatcher Info:</b><br>Dispatcher Name: ${dispatcher?.name || ''}<br>Dispatcher Phone Number: ${dispatcher?.phone || ''}<br><br>ETA to Pick up: `;
+
+    try {
+      navigator.clipboard.write([
+        new ClipboardItem({
+          'text/plain': new Blob([plain], { type: 'text/plain' }),
+          'text/html': new Blob([html], { type: 'text/html' }),
+        }),
+      ]);
+    } catch {
+      navigator.clipboard.writeText(plain);
     }
 
-    navigator.clipboard.writeText(text);
     toast({ title: 'Copied to clipboard' });
   };
 
