@@ -312,6 +312,8 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
   const confirmDelete = async () => {
     const id = deletePaymentId;
     if (!id) return;
+    // Delete associated dispatcher payment items first so loads become available again
+    await supabase.from('dispatcher_payment_items').delete().eq('payment_id', id);
     const { error } = await supabase.from('payments').delete().eq('id', id);
     setDeletePaymentId(null);
     if (error) {
