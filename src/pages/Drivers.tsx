@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import { useDispatcherDriverIds } from '@/hooks/useDispatcherDriverIds';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
@@ -119,9 +120,9 @@ const Drivers = () => {
 
     let text = '';
     if (isHotshot) {
-      text = `Driver Name: ${driver.name}\nPhone Number: ${driver.phone}\nTruck #: ${truck?.unit_number || ''}\nTruck Type: Hotshot\nTrailer (ft): ${truck?.trailer_length_ft || ''}\nDispatcher Name: ${dispatcher?.name || ''}\nDispatcher Phone Number: ${dispatcher?.phone || ''}\nETA to Pick up: `;
+      text = `*Driver Info:*\nDriver Name: ${driver.name}\nPhone Number: ${driver.phone}\n\n*Truck Info:*\nTruck #: ${truck?.unit_number || ''}\nTruck Type: Hotshot\nTrailer (ft): ${truck?.trailer_length_ft || ''}\n\n*Dispatcher Info:*\nDispatcher Name: ${dispatcher?.name || ''}\nDispatcher Phone Number: ${dispatcher?.phone || ''}\n\nETA to Pick up: `;
     } else {
-      text = `Driver Name: ${driver.name}\nPhone Number: ${driver.phone}\nTruck #: ${truck?.unit_number || ''}\nTruck Type: Box Truck\nBack Door: ${truck?.rear_door_width_in && truck?.rear_door_height_in ? `${truck.rear_door_width_in}" x ${truck.rear_door_height_in}"` : ''}\nDispatcher Name: ${dispatcher?.name || ''}\nDispatcher Phone Number: ${dispatcher?.phone || ''}\nETA to Pick up: `;
+      text = `*Driver Info:*\nDriver Name: ${driver.name}\nPhone Number: ${driver.phone}\n\n*Truck Info:*\nTruck #: ${truck?.unit_number || ''}\nTruck Type: Box Truck\nBack Door: ${truck?.rear_door_width_in && truck?.rear_door_height_in ? `${truck.rear_door_width_in}" x ${truck.rear_door_height_in}"` : ''}\n\n*Dispatcher Info:*\nDispatcher Name: ${dispatcher?.name || ''}\nDispatcher Phone Number: ${dispatcher?.phone || ''}\n\nETA to Pick up: `;
     }
 
     navigator.clipboard.writeText(text);
@@ -129,9 +130,17 @@ const Drivers = () => {
   };
 
   const isDispatcher = role === 'dispatcher';
-  let filtered = drivers;
 
-  if (dispatcherFilter && dispatcherFilter !== 'all') {
+  // Resolve dispatcher scope via server-side SQL function (reliable, no JS email matching)
+  const { driverIds: dispatcherDriverIds } = useDispatcherDriverIds();
+
+  // Start with the full list; if the user is a dispatcher, restrict to their drivers
+  let filtered = dispatcherDriverIds
+    ? drivers.filter((d) => dispatcherDriverIds.has(d.id))
+    : drivers;
+
+  // Admin/accounting dispatcher dropdown filter (hidden for dispatcher role)
+  if (!isDispatcher && dispatcherFilter && dispatcherFilter !== 'all') {
     filtered = filtered.filter(d => d.dispatcher_id === dispatcherFilter);
   }
 
