@@ -21,8 +21,6 @@ import { TerminationLetterDialog } from '@/components/TerminationLetterDialog';
 import { toast } from '@/hooks/use-toast';
 import { ExpiryIndicators } from '@/components/ExpiryIndicators';
 import { supabase } from '@/integrations/supabase/client';
-import { useSubscription } from '@/hooks/useSubscription';
-import { DriverLimitDialog } from '@/components/DriverLimitDialog';
 
 const driverStatusColor = (status: string) => {
   switch (status) {
@@ -57,8 +55,6 @@ const Drivers = () => {
   const [activeDriverIds, setActiveDriverIds] = useState<Set<string>>(new Set());
   const [terminationDriver, setTerminationDriver] = useState<DbDriver | null>(null);
   const [tenantName, setTenantName] = useState('');
-  const [limitDialogOpen, setLimitDialogOpen] = useState(false);
-  const { canAddDriver } = useSubscription();
 
   // Fetch tenant name for termination letter
   useEffect(() => {
@@ -350,10 +346,6 @@ const Drivers = () => {
             </Button>
           )}
           <Button size="sm" className="gap-2" onClick={() => {
-            if (!canAddDriver()) {
-              setLimitDialogOpen(true);
-              return;
-            }
             setEditingDriver(null);
             setFormOpen(true);
           }}>
@@ -414,7 +406,6 @@ const Drivers = () => {
         companyName={tenantName}
         onSuccess={() => { refetch(); setTerminationDriver(null); }}
       />
-      <DriverLimitDialog open={limitDialogOpen} onOpenChange={setLimitDialogOpen} />
     </div>
   );
 };
