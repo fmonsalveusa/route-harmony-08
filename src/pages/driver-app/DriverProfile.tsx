@@ -13,6 +13,14 @@ export default function DriverProfile() {
   const [driver, setDriver] = useState<any>(null);
   const [truck, setTruck] = useState<any>(null);
 
+  // ⚠️ All hooks must be declared before any early return (Rules of Hooks)
+  const { setTheme } = useTheme();
+
+  // La app móvil siempre usa Light mode
+  useEffect(() => {
+    setTheme('light');
+  }, [setTheme]);
+
   const fetchData = useCallback(async () => {
     if (!profile?.email) return;
     const { data: d } = await supabase.from('drivers').select('*').eq('email', profile.email).maybeSingle();
@@ -29,7 +37,7 @@ export default function DriverProfile() {
 
   if (!driver) return <div className="flex items-center justify-center h-40"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" /></div>;
 
-  const initials = driver.name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() || 'DR';
+  const initials = driver.name?.split(' ')?.map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() || 'DR';
 
   const ExpiryBadgeInline = ({ date }: { date: string | null }) => {
     if (!date) return <span className="text-muted-foreground">—</span>;
@@ -50,13 +58,6 @@ export default function DriverProfile() {
       </div>
     </div>
   );
-
-  const { setTheme } = useTheme();
-
-  // La app móvil siempre usa Light mode
-  useEffect(() => {
-    setTheme('light');
-  }, [setTheme]);
 
   return (
     <PullToRefresh onRefresh={fetchData}>
