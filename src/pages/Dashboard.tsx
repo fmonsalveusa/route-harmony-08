@@ -51,10 +51,8 @@ const AdminDashboard = () => {
     if (dispatcherFilter !== 'all' && l.dispatcher_id !== dispatcherFilter) return false;
     if (driverFilter !== 'all' && l.driver_id !== driverFilter) return false;
 
-    // Date filtering based on pickup_date
-    const dateStr = l.pickup_date || l.created_at;
-    if (!dateStr) return true;
-    const d = new Date(dateStr.includes('T') ? dateStr : dateStr + 'T00:00:00');
+    if (!l.pickup_date) return false;
+    const d = new Date(l.pickup_date + 'T00:00:00');
 
     if (year !== 'all' && d.getFullYear() !== Number(year)) return false;
     if (month !== 'all' && (d.getMonth() + 1) !== Number(month)) return false;
@@ -86,9 +84,8 @@ const AdminDashboard = () => {
   // Month-to-date revenue (current month, all loads regardless of filters)
   const monthToDateRevenue = loads.filter(l => {
     if (l.status === 'cancelled') return false;
-    const dateStr = l.pickup_date || l.created_at;
-    if (!dateStr) return false;
-    const d = new Date(dateStr.includes('T') ? dateStr : dateStr + 'T00:00:00');
+    if (!l.pickup_date) return false;
+    const d = new Date(l.pickup_date + 'T00:00:00');
     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
   }).reduce((s, l) => s + l.total_rate, 0);
   const thisMonthExpenses = expenses.filter(e => {
@@ -186,9 +183,8 @@ const DispatcherDashboard = () => {
 
   const filteredLoads = loads.filter(l => {
     if (driverFilter !== 'all' && l.driver_id !== driverFilter) return false;
-    const dateStr = l.pickup_date || l.created_at;
-    if (!dateStr) return true;
-    const d = new Date(dateStr.includes('T') ? dateStr : dateStr + 'T00:00:00');
+    if (!l.pickup_date) return false;
+    const d = new Date(l.pickup_date + 'T00:00:00');
     if (year !== 'all' && d.getFullYear() !== Number(year)) return false;
     if (month !== 'all' && (d.getMonth() + 1) !== Number(month)) return false;
     if (week !== 'all') {
