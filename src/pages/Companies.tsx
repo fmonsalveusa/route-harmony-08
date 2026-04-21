@@ -24,7 +24,7 @@ const emptyForm: CompanyForm = {
 };
 
 const Companies = () => {
-  const { companies, loading, createCompany, updateCompany, setPrimaryCompany } = useCompanies();
+  const { companies, loading, createCompany, updateCompany, deleteCompany, setPrimaryCompany } = useCompanies();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState<CompanyForm>(emptyForm);
@@ -191,6 +191,7 @@ const Companies = () => {
         editId={editId}
         form={form}
         set={set}
+        setForm={setForm}
         onSave={handleSave}
       />
     </div>

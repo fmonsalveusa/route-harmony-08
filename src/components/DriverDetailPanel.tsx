@@ -40,14 +40,20 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
   const [deletingTermination, setDeletingTermination] = useState(false);
   const [termLetterDeleted, setTermLetterDeleted] = useState(false);
   const [leasingDocs, setLeasingDocs] = useState<Array<{ id: string; company_name: string; file_url: string }>>([]);
+  const [leasingLoading, setLeasingLoading] = useState(true);
 
   useEffect(() => {
+    setLeasingLoading(true);
     supabase
       .from('driver_leasing_agreements' as any)
       .select('id, company_name, file_url')
       .eq('driver_id', driver.id)
       .order('company_name')
-      .then(({ data }) => setLeasingDocs((data as any) || []));
+      .then(({ data, error }) => {
+        if (error) console.error('[DriverDetailPanel] driver_leasing_agreements query error:', error);
+        setLeasingDocs((data as any) || []);
+        setLeasingLoading(false);
+      });
   }, [driver.id]);
 
   const handleDeleteTerminationLetter = async () => {
@@ -251,8 +257,42 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
             );
           })}
 
-          {/* Dynamic Leasing Agreements (per carrier company) */}
-          {leasingDocs.map(doc => (
+          {/* Legacy leasing fields (drivers onboarded before dynamic system) */}
+          {(driver as any).leasing_agreement_url && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 border rounded-md text-xs bg-background">
+              <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="font-medium">Leasing Agreement</span>
+              <button onClick={e => { e.stopPropagation(); handleViewDoc((driver as any).leasing_agreement_url, 'leasing_agreement_url'); }} className="text-primary underline flex items-center gap-0.5 hover:text-primary/80" disabled={loadingDoc === 'leasing_agreement_url'}>
+                {loadingDoc === 'leasing_agreement_url' ? <Loader2 className="h-3 w-3 animate-spin" /> : <>View <ExternalLink className="h-3 w-3" /></>}
+              </button>
+            </div>
+          )}
+          {(driver as any).leasing_agreement_venco_url && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 border rounded-md text-xs bg-background">
+              <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="font-medium">Leasing Agreement (VENCO)</span>
+              <button onClick={e => { e.stopPropagation(); handleViewDoc((driver as any).leasing_agreement_venco_url, 'leasing_agreement_venco_url'); }} className="text-primary underline flex items-center gap-0.5 hover:text-primary/80" disabled={loadingDoc === 'leasing_agreement_venco_url'}>
+                {loadingDoc === 'leasing_agreement_venco_url' ? <Loader2 className="h-3 w-3 animate-spin" /> : <>View <ExternalLink className="h-3 w-3" /></>}
+              </button>
+            </div>
+          )}
+          {(driver as any).leasing_agreement_58_url && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 border rounded-md text-xs bg-background">
+              <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="font-medium">Leasing Agreement (58 Logistics)</span>
+              <button onClick={e => { e.stopPropagation(); handleViewDoc((driver as any).leasing_agreement_58_url, 'leasing_agreement_58_url'); }} className="text-primary underline flex items-center gap-0.5 hover:text-primary/80" disabled={loadingDoc === 'leasing_agreement_58_url'}>
+                {loadingDoc === 'leasing_agreement_58_url' ? <Loader2 className="h-3 w-3 animate-spin" /> : <>View <ExternalLink className="h-3 w-3" /></>}
+              </button>
+            </div>
+          )}
+
+          {/* Dynamic Leasing Agreements (per carrier company — new system) */}
+          {leasingLoading && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-muted-foreground">
+              <Loader2 className="h-3 w-3 animate-spin" /> Loading leasing agreements...
+            </div>
+          )}
+          {!leasingLoading && leasingDocs.map(doc => (
             <div key={doc.id} className="flex items-center gap-1.5 px-2.5 py-1.5 border rounded-md text-xs bg-background">
               <FileText className="h-3.5 w-3.5 text-muted-foreground" />
               <span className="font-medium">Leasing Agreement ({doc.company_name})</span>

@@ -93,9 +93,20 @@ Deno.serve(async (req) => {
     // Validate file uploads
     const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
     const ALLOWED_EXTENSIONS = ["jpg", "jpeg", "png", "pdf", "webp"];
+    // Collect all dynamic leasing keys (driver_leasing_<uuid>)
+    const leasingFileKeys: string[] = [];
+    for (const key of formData.keys()) {
+      if (key.startsWith("driver_leasing_") && !["driver_leasing_agreement", "driver_leasing_agreement_venco", "driver_leasing_agreement_58"].includes(key)) {
+        leasingFileKeys.push(key);
+      }
+    }
+
     const allFileKeys = [
       "driver_license_photo", "driver_medical_card_photo", "driver_form_w9",
-      "driver_leasing_agreement", "driver_service_agreement", "driver_employment_contract",
+      // Legacy fixed keys (backward compat)
+      "driver_leasing_agreement", "driver_leasing_agreement_venco", "driver_leasing_agreement_58",
+      "driver_service_agreement", "driver_employment_contract",
+      ...leasingFileKeys,
       ...(isOO ? [
         "truck_registration_photo", "truck_insurance_photo", "truck_license_photo",
         "truck_rear_truck_photo", "truck_truck_side_photo", "truck_truck_plate_photo",
@@ -220,23 +231,45 @@ Deno.serve(async (req) => {
     }
 
     // 3. Upload driver documents
-    const driverDocKeys = ["license_photo", "medical_card_photo", "form_w9", "leasing_agreement", "service_agreement", "employment_contract"];
+    const driverDocKeys = [
+      "license_photo", "medical_card_photo", "form_w9",
+      "service_agreement", "employment_contract",
+    ];
     const driverDocUrls: Record<string, string> = {};
     for (const key of driverDocKeys) {
       const file = formData.get(`driver_${key}`) as File | null;
       if (file && file instanceof File) {
         const path = await uploadFile(file, driverId, key);
         if (path) driverDocUrls[`${key}_url`] = path;
+      }
+    }
 
-        // For leasing_agreement, also upload copies for VENCO and 58 LOGISTICS
-        if (key === "leasing_agreement") {
-          const vencoPath = await uploadFile(file, driverId, "leasing_agreement_venco");
-          if (vencoPath) driverDocUrls["leasing_agreement_venco_url"] = vencoPath;
-
-          const path58 = await uploadFile(file, driverId, "leasing_agreement_58");
-          if (path58) driverDocUrls["leasing_agreement_58_url"] = path58;
+    // Upload dynamic leasing agreement files (one per active company)
+    const leasingInserts: Array<{ driver_id: string; company_id: string; company_name: string; file_url: string }> = [];
+    for (const formKey of leasingFileKeys) {
+      // formKey = "driver_leasing_<companyId>"
+      const companyId = formKey.replace("driver_leasing_", "");
+      const file = formData.get(formKey) as File | null;
+      if (file && file instanceof File) {
+        const path = await uploadFile(file, driverId, `leasing_${companyId}`);
+        if (path) {
+          // Fetch company name for the record
+          const { data: co } = await supabaseAdmin
+            .from("companies")
+            .select("name")
+            .eq("id", companyId)
+            .single();
+          leasingInserts.push({
+            driver_id: driverId,
+            company_id: companyId,
+            company_name: co?.name ?? companyId,
+            file_url: path,
+          });
         }
       }
+    }
+    if (leasingInserts.length > 0) {
+      await supabaseAdmin.from("driver_leasing_agreements").insert(leasingInserts);
     }
     if (Object.keys(driverDocUrls).length > 0) {
       await supabaseAdmin.from("drivers").update(driverDocUrls).eq("id", driverId);

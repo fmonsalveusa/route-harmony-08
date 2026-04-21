@@ -35,15 +35,21 @@ const docFields = [
 export function DriverDetailDialog({ open, onOpenChange, driver, truckLabel, dispatcherName, getDocSignedUrl }: DriverDetailDialogProps) {
   const [loadingDoc, setLoadingDoc] = useState<string | null>(null);
   const [leasingDocs, setLeasingDocs] = useState<Array<{ id: string; company_name: string; file_url: string }>>([]);
+  const [leasingLoading, setLeasingLoading] = useState(false);
 
   useEffect(() => {
     if (!driver) return;
+    setLeasingLoading(true);
     supabase
       .from('driver_leasing_agreements' as any)
       .select('id, company_name, file_url')
       .eq('driver_id', driver.id)
       .order('company_name')
-      .then(({ data }) => setLeasingDocs((data as any) || []));
+      .then(({ data, error }) => {
+        if (error) console.error('[DriverDetailDialog] driver_leasing_agreements query error:', error);
+        setLeasingDocs((data as any) || []);
+        setLeasingLoading(false);
+      });
   }, [driver?.id]);
 
   if (!driver) return null;
@@ -166,8 +172,42 @@ export function DriverDetailDialog({ open, onOpenChange, driver, truckLabel, dis
                 );
               })}
 
-              {/* Dynamic Leasing Agreements */}
-              {leasingDocs.map(doc => (
+              {/* Legacy leasing fields (drivers onboarded before dynamic system) */}
+              {(driver as any).leasing_agreement_url && (
+                <div className="flex items-center gap-3 p-2 border rounded-md text-sm">
+                  <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span className="font-medium flex-1">Leasing Agreement</span>
+                  <button onClick={() => handleViewDoc((driver as any).leasing_agreement_url, 'leasing_agreement_url')} className="text-primary underline flex items-center gap-1 text-xs hover:text-primary/80" disabled={loadingDoc === 'leasing_agreement_url'}>
+                    {loadingDoc === 'leasing_agreement_url' ? <Loader2 className="h-3 w-3 animate-spin" /> : <>View <ExternalLink className="h-3 w-3" /></>}
+                  </button>
+                </div>
+              )}
+              {(driver as any).leasing_agreement_venco_url && (
+                <div className="flex items-center gap-3 p-2 border rounded-md text-sm">
+                  <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span className="font-medium flex-1">Leasing Agreement (VENCO)</span>
+                  <button onClick={() => handleViewDoc((driver as any).leasing_agreement_venco_url, 'leasing_agreement_venco_url')} className="text-primary underline flex items-center gap-1 text-xs hover:text-primary/80" disabled={loadingDoc === 'leasing_agreement_venco_url'}>
+                    {loadingDoc === 'leasing_agreement_venco_url' ? <Loader2 className="h-3 w-3 animate-spin" /> : <>View <ExternalLink className="h-3 w-3" /></>}
+                  </button>
+                </div>
+              )}
+              {(driver as any).leasing_agreement_58_url && (
+                <div className="flex items-center gap-3 p-2 border rounded-md text-sm">
+                  <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span className="font-medium flex-1">Leasing Agreement (58 Logistics)</span>
+                  <button onClick={() => handleViewDoc((driver as any).leasing_agreement_58_url, 'leasing_agreement_58_url')} className="text-primary underline flex items-center gap-1 text-xs hover:text-primary/80" disabled={loadingDoc === 'leasing_agreement_58_url'}>
+                    {loadingDoc === 'leasing_agreement_58_url' ? <Loader2 className="h-3 w-3 animate-spin" /> : <>View <ExternalLink className="h-3 w-3" /></>}
+                  </button>
+                </div>
+              )}
+
+              {/* Dynamic Leasing Agreements (new system — one per carrier company) */}
+              {leasingLoading && (
+                <div className="flex items-center gap-2 p-2 text-xs text-muted-foreground">
+                  <Loader2 className="h-3 w-3 animate-spin" /> Loading leasing agreements...
+                </div>
+              )}
+              {!leasingLoading && leasingDocs.map(doc => (
                 <div key={doc.id} className="flex items-center gap-3 p-2 border rounded-md text-sm">
                   <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
                   <span className="font-medium flex-1">Leasing Agreement ({doc.company_name})</span>
