@@ -114,7 +114,7 @@ const Expenses = () => {
     result.sort((a, b) => {
       const dir = sortDir === 'asc' ? 1 : -1;
       if (sortBy === 'expense_date') return (a.expense_date > b.expense_date ? 1 : -1) * dir;
-      if (sortBy === 'amount') return (a.amount - b.amount) * dir;
+      if (sortBy === 'amount') return ((a.amount ?? 0) - (b.amount ?? 0)) * dir;
       return (a.expense_type > b.expense_type ? 1 : -1) * dir;
     });
 
@@ -123,7 +123,7 @@ const Expenses = () => {
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const paged = filtered.slice((page - 1) * pageSize, page * pageSize);
-  const totalAmount = filtered.reduce((s, e) => s + e.total_amount, 0);
+  const totalAmount = filtered.reduce((s, e) => s + (e.total_amount ?? 0), 0);
 
   const toggleSelect = (id: string) => {
     setSelectedIds(prev => {
@@ -348,7 +348,7 @@ const Expenses = () => {
                         {expense.description}
                       </td>
                       <td className="p-3 text-right font-semibold">
-                        ${expense.total_amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                        ${(expense.total_amount ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                       </td>
                       <td className="p-3 hidden md:table-cell text-muted-foreground">
                         {expense.driver_name || '—'}
@@ -429,7 +429,7 @@ const Expenses = () => {
             <DialogTitle>Delete Expense</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            Are you sure you want to delete this expense of <strong>${deleteTarget?.total_amount.toFixed(2)}</strong>?
+            Are you sure you want to delete this expense of <strong>${(deleteTarget?.total_amount ?? 0).toFixed(2)}</strong>?
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancel</Button>

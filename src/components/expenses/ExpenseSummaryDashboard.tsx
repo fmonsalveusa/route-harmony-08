@@ -69,11 +69,11 @@ export function ExpenseSummaryDashboard({ expenses, trucks, drivers }: Props) {
     return ids.size;
   }, [filteredExpenses]);
 
-  const totalExpenses = filteredExpenses.reduce((s, e) => s + e.total_amount, 0);
+  const totalExpenses = filteredExpenses.reduce((s, e) => s + (e.total_amount ?? 0), 0);
   const fuelExpenses = filteredExpenses.filter(e => e.expense_type === 'fuel');
-  const fuelTotal = fuelExpenses.reduce((s, e) => s + e.total_amount, 0);
+  const fuelTotal = fuelExpenses.reduce((s, e) => s + (e.total_amount ?? 0), 0);
   const maintRepairExpenses = filteredExpenses.filter(e => ['maintenance', 'repairs'].includes(e.expense_type));
-  const maintTotal = maintRepairExpenses.reduce((s, e) => s + e.total_amount, 0);
+  const maintTotal = maintRepairExpenses.reduce((s, e) => s + (e.total_amount ?? 0), 0);
   const otherTotal = totalExpenses - fuelTotal - maintTotal;
 
   const fuelPct = totalExpenses > 0 ? ((fuelTotal / totalExpenses) * 100).toFixed(0) : '0';
@@ -85,7 +85,7 @@ export function ExpenseSummaryDashboard({ expenses, trucks, drivers }: Props) {
   const donutData = useMemo(() => {
     const byType: Record<string, number> = {};
     filteredExpenses.forEach(e => {
-      byType[e.expense_type] = (byType[e.expense_type] || 0) + e.total_amount;
+      byType[e.expense_type] = (byType[e.expense_type] || 0) + (e.total_amount ?? 0);
     });
     return Object.entries(byType)
       .map(([type, amount]) => ({
@@ -100,7 +100,7 @@ export function ExpenseSummaryDashboard({ expenses, trucks, drivers }: Props) {
   const truckBarData = useMemo(() => {
     const byTruck: Record<string, number> = {};
     filteredExpenses.forEach(e => {
-      if (e.truck_id) byTruck[e.truck_id] = (byTruck[e.truck_id] || 0) + e.total_amount;
+      if (e.truck_id) byTruck[e.truck_id] = (byTruck[e.truck_id] || 0) + (e.total_amount ?? 0);
     });
     return Object.entries(byTruck)
       .map(([truckId, total]) => {
@@ -128,14 +128,14 @@ export function ExpenseSummaryDashboard({ expenses, trucks, drivers }: Props) {
         map[e.truck_id] = { truckId: e.truck_id, fuel: 0, maintenance: 0, repairs: 0, tires: 0, other: 0, total: 0, count: 0, lastDate: e.expense_date };
       }
       const row = map[e.truck_id];
-      row.total += e.total_amount;
+      row.total += (e.total_amount ?? 0);
       row.count++;
       if (e.expense_date > row.lastDate) row.lastDate = e.expense_date;
-      if (e.expense_type === 'fuel') row.fuel += e.total_amount;
-      else if (e.expense_type === 'maintenance') row.maintenance += e.total_amount;
-      else if (e.expense_type === 'repairs') row.repairs += e.total_amount;
-      else if (e.expense_type === 'tires') row.tires += e.total_amount;
-      else row.other += e.total_amount;
+      if (e.expense_type === 'fuel') row.fuel += (e.total_amount ?? 0);
+      else if (e.expense_type === 'maintenance') row.maintenance += (e.total_amount ?? 0);
+      else if (e.expense_type === 'repairs') row.repairs += (e.total_amount ?? 0);
+      else if (e.expense_type === 'tires') row.tires += (e.total_amount ?? 0);
+      else row.other += (e.total_amount ?? 0);
     });
 
     let arr = Object.values(map).map(row => {
@@ -177,7 +177,7 @@ export function ExpenseSummaryDashboard({ expenses, trucks, drivers }: Props) {
     const readings = withOdometer.map(e => e.odometer_reading!).sort((a, b) => a - b);
     const totalMiles = readings[readings.length - 1] - readings[0];
     if (totalMiles <= 0) return null;
-    const totalExp = withOdometer.reduce((s, e) => s + e.total_amount, 0);
+    const totalExp = withOdometer.reduce((s, e) => s + (e.total_amount ?? 0), 0);
     return { cpm: totalExp / totalMiles, totalMiles, totalExp };
   }, [filteredExpenses]);
 
@@ -196,7 +196,7 @@ export function ExpenseSummaryDashboard({ expenses, trucks, drivers }: Props) {
       return [
         e.expense_date, t ? `#${t.unit_number}` : '', e.driver_name || '',
         EXPENSE_TYPE_LABELS[e.expense_type] || e.expense_type, e.description,
-        e.amount.toFixed(2), (e.tax_amount || 0).toFixed(2), e.total_amount.toFixed(2),
+        (e.amount ?? 0).toFixed(2), (e.tax_amount || 0).toFixed(2), (e.total_amount ?? 0).toFixed(2),
         e.vendor || '', e.payment_method, e.source,
       ];
     });
@@ -211,7 +211,7 @@ export function ExpenseSummaryDashboard({ expenses, trucks, drivers }: Props) {
       return [
         e.expense_date, t ? `#${t.unit_number}` : '', e.driver_name || '',
         EXPENSE_TYPE_LABELS[e.expense_type] || e.expense_type, e.description,
-        e.amount.toFixed(2), (e.tax_amount || 0).toFixed(2), e.total_amount.toFixed(2),
+        (e.amount ?? 0).toFixed(2), (e.tax_amount || 0).toFixed(2), (e.total_amount ?? 0).toFixed(2),
         e.vendor || '', e.payment_method,
       ];
     });
@@ -226,7 +226,7 @@ export function ExpenseSummaryDashboard({ expenses, trucks, drivers }: Props) {
       const t = trucks.find(tr => tr.id === e.truck_id);
       return [
         e.expense_date, t ? `#${t.unit_number}` : '', e.driver_name || '',
-        e.amount.toFixed(2), e.total_amount.toFixed(2),
+        (e.amount ?? 0).toFixed(2), (e.total_amount ?? 0).toFixed(2),
         e.vendor || '', e.location || '', e.odometer_reading || '',
       ];
     });
