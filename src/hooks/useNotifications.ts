@@ -38,6 +38,30 @@ export function useNotifications() {
 
   const unreadCount = notifications.filter(n => !n.is_read).length;
 
+  // Reproduce un chime suave usando el Web Audio API (sin archivos externos)
+  const playNotificationSound = useCallback(() => {
+    try {
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const play = (freq: number, startAt: number, duration: number) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, ctx.currentTime + startAt);
+        gain.gain.setValueAtTime(0, ctx.currentTime + startAt);
+        gain.gain.linearRampToValueAtTime(0.3, ctx.currentTime + startAt + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + startAt + duration);
+        osc.start(ctx.currentTime + startAt);
+        osc.stop(ctx.currentTime + startAt + duration);
+      };
+      play(880, 0, 0.25);   // La5 — primer tono
+      play(1100, 0.2, 0.3); // Do#6 — segundo tono
+    } catch {
+      // Si el navegador bloquea el audio, no hace nada
+    }
+  }, []);
+
   // Real-time: agrega notificaciones nuevas al caché directamente
   // Channel name único para evitar conflictos si el hook se monta en varios lugares
   useEffect(() => {
@@ -52,6 +76,7 @@ export function useNotifications() {
           queryClient.setQueryData<Notification[]>(NOTIFICATIONS_QUERY_KEY, (old = []) =>
             [newNotification, ...old].slice(0, 50)
           );
+          playNotificationSound();
         }
       )
       .subscribe();
@@ -59,7 +84,7 @@ export function useNotifications() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [queryClient]);
+  }, [queryClient, playNotificationSound]);
 
   const markAsRead = useCallback(async (id: string) => {
     await supabase.from('notifications').update({ is_read: true } as any).eq('id', id);
