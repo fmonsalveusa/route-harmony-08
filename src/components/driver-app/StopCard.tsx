@@ -203,8 +203,12 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
       }
     } catch (err: any) {
       console.error('Native camera failed:', err);
-      toast({ title: 'Error de cámara', description: 'Intentando abrir selector de archivos...', variant: 'destructive' });
-      cameraFallbackRef.current?.click();
+      if (err?.message?.includes('PERMISSION_DENIED')) {
+        toast({ title: 'Permiso de cámara denegado', description: 'Habilítalo en Configuración > Privacidad > Cámara.', variant: 'destructive' });
+      } else {
+        // Fallback silencioso al selector del sistema
+        cameraFallbackRef.current?.click();
+      }
     }
   };
 
@@ -216,8 +220,12 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
       }
     } catch (err: any) {
       console.error('Native gallery failed:', err);
-      toast({ title: 'Error de galería', description: 'Intentando abrir selector de archivos...', variant: 'destructive' });
-      galleryFallbackRef.current?.click();
+      if (err?.message?.includes('PERMISSION_DENIED')) {
+        toast({ title: 'Permiso de fotos denegado', description: 'Habilítalo en Configuración > Privacidad > Fotos.', variant: 'destructive' });
+      } else {
+        // Fallback silencioso al selector del sistema
+        galleryFallbackRef.current?.click();
+      }
     }
   };
 
@@ -490,7 +498,7 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
             )}
 
             {/* Hidden fallback inputs for native camera/gallery errors */}
-            <input ref={cameraFallbackRef} type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
+            <input ref={cameraFallbackRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileUpload} />
             <input ref={galleryFallbackRef} type="file" accept="image/*,application/pdf" multiple className="hidden" onChange={handleFileUpload} />
           </div>
 

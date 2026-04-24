@@ -176,12 +176,12 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
         console.error('Camera access error:', err);
         if (err?.message?.includes('PERMISSION_DENIED')) {
           toast({
-            title: 'Error de cámara',
-            description: 'Permiso de cámara denegado. Habilítalo en Configuración > Privacidad > Cámara.',
+            title: 'Permiso de cámara denegado',
+            description: 'Habilítalo en Configuración > Privacidad > Cámara.',
             variant: 'destructive',
           });
         } else {
-          toast({ title: 'Error de cámara', description: 'Abriendo selector de archivos...', variant: 'destructive' });
+          // Fallback silencioso al selector de archivos del sistema
           cameraRef.current?.click();
         }
       }
@@ -211,12 +211,12 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
         console.error('Gallery access error:', err);
         if (err?.message?.includes('PERMISSION_DENIED')) {
           toast({
-            title: 'Error de galería',
-            description: 'Permiso de fotos denegado. Habilítalo en Configuración > Privacidad > Fotos.',
+            title: 'Permiso de fotos denegado',
+            description: 'Habilítalo en Configuración > Privacidad > Fotos.',
             variant: 'destructive',
           });
         } else {
-          toast({ title: 'Error de galería', description: 'Abriendo selector de archivos...', variant: 'destructive' });
+          // Fallback silencioso al selector de archivos del sistema
           fileRef.current?.click();
         }
       }
@@ -469,7 +469,7 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
       </div>
 
       {/* Camera input */}
-      <input ref={cameraRef} type="file" accept="image/*" className="hidden" onChange={handleCapture} />
+      <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleCapture} />
       {/* Gallery input */}
       <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleCapture} />
     </div>
