@@ -1,6 +1,10 @@
 /**
- * Scanner image utilities using createImageBitmap for Android compatibility.
- * Falls back to new Image() when createImageBitmap is not available.
+ * Scanner image utilities.
+ *
+ * IMPORTANT — iOS WKWebView + remote server.url compatibility:
+ * createImageBitmap hangs indefinitely (never resolves, never rejects) when
+ * the Capacitor app uses a remote server.url. Every call is wrapped with a
+ * 3-second timeout so the new Image() fallback path is always reachable.
  */
 
 /** Convert ArrayBuffer to base64 in chunks to avoid call-stack limits on Android */
@@ -47,8 +51,38 @@ export function fileToDataUrl(file: File): Promise<string> {
 }
 
 /**
- * Draw an ImageBitmap or HTMLImageElement to a canvas and return data URL.
- * Uses createImageBitmap (preferred on Android) with fallback to new Image().
+ * createImageBitmap with a 3-second safety timeout.
+ *
+ * On iOS WKWebView with a remote server.url, the native createImageBitmap API
+ * hangs indefinitely — it never resolves nor rejects — so the Image() fallback
+ * would never be reached without this timeout.
+ */
+function createImageBitmapSafe(blob: Blob, timeoutMs = 3000): Promise<ImageBitmap> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(
+      () => reject(new Error('createImageBitmap timed out')),
+      timeoutMs
+    );
+    createImageBitmap(blob).then(
+      (bmp) => { clearTimeout(timer); resolve(bmp); },
+      (err) => { clearTimeout(timer); reject(err); }
+    );
+  });
+}
+
+/** Helper to get image dimensions via new Image() — always works on iOS */
+function getImageDimensions(dataUrl: string): Promise<{ width: number; height: number }> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve({ width: img.width, height: img.height });
+    img.onerror = () => resolve({ width: 1024, height: 1024 });
+    img.src = dataUrl;
+  });
+}
+
+/**
+ * Draw an image to a canvas and return a data URL.
+ * Tries createImageBitmapSafe first (fast on Android), falls back to new Image().
  */
 async function loadAndDraw(
   source: string | Blob,
@@ -64,13 +98,8 @@ async function loadAndDraw(
   // Try createImageBitmap first (better Android support for large images)
   if (typeof createImageBitmap === 'function') {
     try {
-      let blob: Blob;
-      if (typeof source === 'string') {
-        blob = dataUrlToBlob(source);
-      } else {
-        blob = source;
-      }
-      const bmp = await createImageBitmap(blob);
+      const blob = typeof source === 'string' ? dataUrlToBlob(source) : source;
+      const bmp = await createImageBitmapSafe(blob);
       w = targetW ?? bmp.width;
       h = targetH ?? bmp.height;
       canvas.width = w;
@@ -80,11 +109,11 @@ async function loadAndDraw(
       if (processor) processor(ctx, w, h);
       return canvas.toDataURL('image/jpeg', quality);
     } catch (e) {
-      console.warn('createImageBitmap failed, falling back to Image()', e);
+      console.warn('[scanner] createImageBitmap failed/timed out, using Image() fallback', e);
     }
   }
 
-  // Fallback: new Image()
+  // Fallback: new Image() — works everywhere including iOS WKWebView
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
@@ -119,7 +148,6 @@ export async function enhanceImage(dataUrl: string): Promise<string> {
 
 /** S-curve function for smooth contrast */
 function sCurve(v: number): number {
-  // Normalize 0-255 to 0-1, apply sigmoid-like curve, back to 0-255
   const x = v / 255;
   const s = x * x * (3 - 2 * x); // smoothstep
   return Math.round(s * 255);
@@ -152,20 +180,22 @@ export async function enhanceImageColor(dataUrl: string): Promise<string> {
   }, 0.95);
 }
 
-/** Resize image for AI edge detection (small payload) */
+/** Resize image for AI edge detection (small payload for Supabase function) */
 export async function resizeForDetection(dataUrl: string, maxDim = 1024): Promise<string> {
-  // Get dimensions first
   const blob = dataUrlToBlob(dataUrl);
   let origW: number, origH: number;
 
   if (typeof createImageBitmap === 'function') {
     try {
-      const bmp = await createImageBitmap(blob);
+      const bmp = await createImageBitmapSafe(blob);
       origW = bmp.width;
       origH = bmp.height;
       bmp.close();
     } catch {
-      return dataUrl; // can't decode, return original
+      // createImageBitmap unavailable or timed out — use Image() to get dimensions
+      const dims = await getImageDimensions(dataUrl);
+      origW = dims.width;
+      origH = dims.height;
     }
   } else {
     const dims = await getImageDimensions(dataUrl);
@@ -181,19 +211,22 @@ export async function resizeForDetection(dataUrl: string, maxDim = 1024): Promis
   return loadAndDraw(dataUrl, w, h, undefined, 0.7);
 }
 
-/** Resize large camera images for crop overlay (Android cameras can be 12MP+) */
+/** Resize large camera images for the crop overlay (Android cameras can be 12MP+) */
 export async function resizeForCrop(dataUrl: string, maxDim = 3200): Promise<string> {
   const blob = dataUrlToBlob(dataUrl);
   let origW: number, origH: number;
 
   if (typeof createImageBitmap === 'function') {
     try {
-      const bmp = await createImageBitmap(blob);
+      const bmp = await createImageBitmapSafe(blob);
       origW = bmp.width;
       origH = bmp.height;
       bmp.close();
     } catch {
-      return dataUrl;
+      // createImageBitmap unavailable or timed out — use Image() to get dimensions
+      const dims = await getImageDimensions(dataUrl);
+      origW = dims.width;
+      origH = dims.height;
     }
   } else {
     const dims = await getImageDimensions(dataUrl);
@@ -207,14 +240,4 @@ export async function resizeForCrop(dataUrl: string, maxDim = 3200): Promise<str
   const w = Math.round(origW * scale);
   const h = Math.round(origH * scale);
   return loadAndDraw(dataUrl, w, h, undefined, 0.85);
-}
-
-/** Helper to get dimensions via new Image() */
-function getImageDimensions(dataUrl: string): Promise<{ width: number; height: number }> {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => resolve({ width: img.width, height: img.height });
-    img.onerror = () => resolve({ width: 1024, height: 1024 });
-    img.src = dataUrl;
-  });
 }

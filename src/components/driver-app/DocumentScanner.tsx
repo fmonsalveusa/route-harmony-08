@@ -13,9 +13,6 @@ import {
   resizeForDetection,
   fileToDataUrl,
 } from '@/lib/scannerImageUtils';
-// Note: resizeForCrop is only used in handleCapture (web/file-input path).
-// Native iOS camera/gallery paths skip it to avoid createImageBitmap hanging
-// on WKWebView when the app uses a remote server.url.
 import { scanToPdf } from '@/lib/scanToPdf';
 
 type DisplayMode = 'original' | 'color';
@@ -79,6 +76,14 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
   // ─── Edge detection ───
   const detectEdges = useCallback(async (dataUrl: string) => {
     setDetecting(true);
+
+    // Hard safety timeout: ensures detecting is always cleared even if
+    // resizeForDetection or the Supabase function call stalls on iOS WKWebView.
+    const timeoutId = setTimeout(() => {
+      console.warn('[scanner] detectEdges timed out — using default corners');
+      setDetecting(false);
+    }, 10000);
+
     try {
       const small = await resizeForDetection(dataUrl);
       const { data, error } = await supabase.functions.invoke('detect-document-edges', {
@@ -90,6 +95,7 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
     } catch (err) {
       console.error('Edge detection failed:', err);
     } finally {
+      clearTimeout(timeoutId);
       setDetecting(false);
     }
   }, []);
