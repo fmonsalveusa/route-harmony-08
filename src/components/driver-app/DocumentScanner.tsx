@@ -155,25 +155,30 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
     setShowAddMore(false);
   }, []);
 
+  // Helper: resize dataUrl for crop, falling back to original if it fails
+  const safeResizeForCrop = async (dataUrl: string): Promise<string> => {
+    try {
+      return await resizeForCrop(dataUrl);
+    } catch (err) {
+      console.warn('[scanner] resizeForCrop failed, using original:', err);
+      return dataUrl;
+    }
+  };
+
   const triggerCamera = async () => {
     if (isNativeCamera()) {
       try {
         const dataUrl = await takeNativePhoto();
         if (!dataUrl) return;
         setProcessing(true);
-        try {
-          const resized = await resizeForCrop(dataUrl);
-          setCropImage(resized);
-          setCropCorners({ ...DEFAULT_CORNERS });
-          setProcessing(false);
-          detectEdges(resized);
-        } catch (err) {
-          console.error('Error processing native camera image:', err);
-          toast({ title: 'Error procesando imagen', variant: 'destructive' });
-          setProcessing(false);
-        }
+        const resized = await safeResizeForCrop(dataUrl);
+        setCropImage(resized);
+        setCropCorners({ ...DEFAULT_CORNERS });
+        setProcessing(false);
+        detectEdges(resized);
       } catch (err: any) {
         console.error('Camera access error:', err);
+        setProcessing(false);
         if (err?.message?.includes('PERMISSION_DENIED')) {
           toast({
             title: 'Permiso de cámara denegado',
@@ -181,7 +186,6 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
             variant: 'destructive',
           });
         } else {
-          // Fallback silencioso al selector de archivos del sistema
           cameraRef.current?.click();
         }
       }
@@ -196,19 +200,14 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
         const urls = await pickFromGallery();
         if (urls.length === 0) return;
         setProcessing(true);
-        try {
-          const resized = await resizeForCrop(urls[0]);
-          setCropImage(resized);
-          setCropCorners({ ...DEFAULT_CORNERS });
-          setProcessing(false);
-          detectEdges(resized);
-        } catch (err) {
-          console.error('Error processing native gallery image:', err);
-          toast({ title: 'Error procesando imagen', variant: 'destructive' });
-          setProcessing(false);
-        }
+        const resized = await safeResizeForCrop(urls[0]);
+        setCropImage(resized);
+        setCropCorners({ ...DEFAULT_CORNERS });
+        setProcessing(false);
+        detectEdges(resized);
       } catch (err: any) {
         console.error('Gallery access error:', err);
+        setProcessing(false);
         if (err?.message?.includes('PERMISSION_DENIED')) {
           toast({
             title: 'Permiso de fotos denegado',
@@ -216,7 +215,6 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
             variant: 'destructive',
           });
         } else {
-          // Fallback silencioso al selector de archivos del sistema
           fileRef.current?.click();
         }
       }
