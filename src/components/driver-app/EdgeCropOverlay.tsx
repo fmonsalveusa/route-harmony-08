@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect, useId } from 'react';
 import { Button } from '@/components/ui/button';
-import { Check, SkipForward, Loader2 } from 'lucide-react';
+import { Check, SkipForward } from 'lucide-react';
 import type { Corners, Point } from '@/lib/perspectiveTransform';
 
 interface EdgeCropOverlayProps {
@@ -39,7 +39,6 @@ export const EdgeCropOverlay = ({
   useEffect(() => {
     setCorners(initialCorners);
   }, [initialCorners]);
-
 
   const updateImageRect = useCallback(() => {
     const container = containerRef.current;
@@ -169,14 +168,27 @@ export const EdgeCropOverlay = ({
 
   return (
     <div className="fixed inset-0 z-[100] bg-black flex flex-col">
-      <div className="px-4 py-3 bg-black/90 text-center flex-shrink-0" style={{ paddingTop: 'max(12px, env(safe-area-inset-top))' }}>
-        <h2 className="text-white font-semibold text-sm">
-          {detecting ? 'Detectando bordes...' : 'Ajusta las esquinas del documento'}
-        </h2>
+      {/* Header — detecting shows a subtle pulsing dot, never blocks the UI */}
+      <div
+        className="px-4 py-3 bg-black/90 text-center flex-shrink-0"
+        style={{ paddingTop: 'max(12px, env(safe-area-inset-top))' }}
+      >
+        <div className="flex items-center justify-center gap-2">
+          {detecting && (
+            <span className="inline-block w-2 h-2 rounded-full bg-primary animate-pulse flex-shrink-0" />
+          )}
+          <h2 className="text-white font-semibold text-sm">
+            {detecting ? 'Ajusta las esquinas (analizando…)' : 'Ajusta las esquinas del documento'}
+          </h2>
+        </div>
         <p className="text-white/50 text-xs mt-1">Arrastra los puntos para ajustar el área de recorte</p>
       </div>
 
-      <div className="absolute left-0 right-0 z-20 px-4 py-3" style={{ top: 'calc(max(12px, env(safe-area-inset-top)) + 50px)' }}>
+      {/* Action buttons — always visible, always tappable, never disabled */}
+      <div
+        className="absolute left-0 right-0 z-20 px-4 py-3"
+        style={{ top: 'calc(max(12px, env(safe-area-inset-top)) + 50px)' }}
+      >
         <div className="flex gap-3 justify-center">
           <Button
             variant="outline"
@@ -186,12 +198,17 @@ export const EdgeCropOverlay = ({
           >
             <SkipForward className="h-4 w-4" /> Omitir recorte
           </Button>
-          <Button size="sm" onClick={() => onConfirm(corners)} disabled={detecting} className="gap-1.5 text-xs">
+          <Button
+            size="sm"
+            onClick={() => onConfirm(corners)}
+            className="gap-1.5 text-xs"
+          >
             <Check className="h-4 w-4" /> Confirmar recorte
           </Button>
         </div>
       </div>
 
+      {/* Image + interactive corner handles */}
       <div
         ref={containerRef}
         className="flex-1 relative flex items-center justify-center overflow-hidden min-h-0 pt-16"
@@ -218,16 +235,8 @@ export const EdgeCropOverlay = ({
           }}
         />
 
-        {detecting && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-30">
-            <div className="flex flex-col items-center gap-2 text-white">
-              <Loader2 className="h-8 w-8 animate-spin" />
-              <span className="text-sm">Detectando bordes...</span>
-            </div>
-          </div>
-        )}
-
-        {!detecting && imgLoaded && imgRect && (
+        {/* Crop quad + corner dots — always rendered once image is loaded */}
+        {imgLoaded && imgRect && (
           <>
             <svg
               className="absolute pointer-events-none z-10"

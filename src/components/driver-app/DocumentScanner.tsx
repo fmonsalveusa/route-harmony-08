@@ -169,12 +169,12 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
       try {
         const dataUrl = await takeNativePhoto();
         if (!dataUrl) return;
-        // Skip resizeForCrop entirely on native iOS — createImageBitmap hangs
-        // on WKWebView when the app uses a remote server.url.
-        // The dataUrl from CameraResultType.DataUrl is already a valid JPEG.
+        // On native iOS: show crop overlay IMMEDIATELY with default corners.
+        // Skip resizeForCrop (createImageBitmap hangs on WKWebView + remote server.url).
+        // Skip detectEdges (takes 6-8 s on iOS due to same constraint — user can
+        // drag corners manually in that time, so edge detection adds no value).
         setCropImage(dataUrl);
         setCropCorners({ ...DEFAULT_CORNERS });
-        detectEdges(dataUrl);
       } catch (err: any) {
         console.error('Camera access error:', err);
         if (err?.message?.includes('PERMISSION_DENIED')) {
@@ -197,10 +197,9 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
       try {
         const urls = await pickFromGallery();
         if (urls.length === 0) return;
-        // Skip resizeForCrop entirely on native iOS — same reason as triggerCamera.
+        // Same as triggerCamera — show crop overlay immediately, skip detectEdges on iOS.
         setCropImage(urls[0]);
         setCropCorners({ ...DEFAULT_CORNERS });
-        detectEdges(urls[0]);
       } catch (err: any) {
         console.error('Gallery access error:', err);
         if (err?.message?.includes('PERMISSION_DENIED')) {
