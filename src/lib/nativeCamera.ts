@@ -29,6 +29,12 @@ export async function takeNativePhoto(): Promise<string | null> {
       resultType: CameraResultType.DataUrl,
       source: CameraSource.Camera,
       correctOrientation: true,
+      // Cap at 2048px — prevents OOM in perspectiveTransform (pure-JS pixel loop)
+      // when processing full-resolution iPhone photos (12–48 MP).
+      // The native plugin resizes before converting to base64, so JS never
+      // receives the giant image.
+      width: 2048,
+      height: 2048,
       promptLabelHeader: 'Photo',
       promptLabelPhoto: 'From Photos',
       promptLabelPicture: 'Take Picture',
@@ -77,6 +83,9 @@ export async function pickFromGallery(): Promise<string[]> {
       resultType: CameraResultType.DataUrl,
       source: CameraSource.Photos,
       correctOrientation: true,
+      // Same cap as camera — prevents OOM in perspectiveTransform.
+      width: 2048,
+      height: 2048,
       promptLabelHeader: 'Photo',
       promptLabelCancel: 'Cancel',
     });

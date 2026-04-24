@@ -136,10 +136,23 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
   const handleCropConfirm = useCallback(
     async (corners: Corners) => {
       if (!cropImage) return;
-      const cropped = await perspectiveTransform(cropImage, corners);
-      addPage(cropped);
-      setCropImage(null);
-      setShowAddMore(true);
+      // Show processing overlay so user knows something is happening.
+      // perspectiveTransform is a JS pixel loop — can take 1–3 s on mobile.
+      setProcessing(true);
+      try {
+        const cropped = await perspectiveTransform(cropImage, corners);
+        addPage(cropped);
+        setCropImage(null);
+        setShowAddMore(true);
+      } catch (err) {
+        console.error('perspectiveTransform failed:', err);
+        // Fallback: add the original image without crop
+        addPage(cropImage);
+        setCropImage(null);
+        setShowAddMore(true);
+      } finally {
+        setProcessing(false);
+      }
     },
     [cropImage, addPage]
   );
