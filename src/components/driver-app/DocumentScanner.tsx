@@ -13,6 +13,9 @@ import {
   resizeForDetection,
   fileToDataUrl,
 } from '@/lib/scannerImageUtils';
+// Note: resizeForCrop is only used in handleCapture (web/file-input path).
+// Native iOS camera/gallery paths skip it to avoid createImageBitmap hanging
+// on WKWebView when the app uses a remote server.url.
 import { scanToPdf } from '@/lib/scanToPdf';
 
 type DisplayMode = 'original' | 'color';
@@ -155,30 +158,19 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
     setShowAddMore(false);
   }, []);
 
-  // Helper: resize dataUrl for crop, falling back to original if it fails
-  const safeResizeForCrop = async (dataUrl: string): Promise<string> => {
-    try {
-      return await resizeForCrop(dataUrl);
-    } catch (err) {
-      console.warn('[scanner] resizeForCrop failed, using original:', err);
-      return dataUrl;
-    }
-  };
-
   const triggerCamera = async () => {
     if (isNativeCamera()) {
       try {
         const dataUrl = await takeNativePhoto();
         if (!dataUrl) return;
-        setProcessing(true);
-        const resized = await safeResizeForCrop(dataUrl);
-        setCropImage(resized);
+        // Skip resizeForCrop entirely on native iOS — createImageBitmap hangs
+        // on WKWebView when the app uses a remote server.url.
+        // The dataUrl from CameraResultType.DataUrl is already a valid JPEG.
+        setCropImage(dataUrl);
         setCropCorners({ ...DEFAULT_CORNERS });
-        setProcessing(false);
-        detectEdges(resized);
+        detectEdges(dataUrl);
       } catch (err: any) {
         console.error('Camera access error:', err);
-        setProcessing(false);
         if (err?.message?.includes('PERMISSION_DENIED')) {
           toast({
             title: 'Permiso de cámara denegado',
@@ -199,15 +191,12 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
       try {
         const urls = await pickFromGallery();
         if (urls.length === 0) return;
-        setProcessing(true);
-        const resized = await safeResizeForCrop(urls[0]);
-        setCropImage(resized);
+        // Skip resizeForCrop entirely on native iOS — same reason as triggerCamera.
+        setCropImage(urls[0]);
         setCropCorners({ ...DEFAULT_CORNERS });
-        setProcessing(false);
-        detectEdges(resized);
+        detectEdges(urls[0]);
       } catch (err: any) {
         console.error('Gallery access error:', err);
-        setProcessing(false);
         if (err?.message?.includes('PERMISSION_DENIED')) {
           toast({
             title: 'Permiso de fotos denegado',
