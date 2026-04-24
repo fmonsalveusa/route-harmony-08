@@ -6,8 +6,9 @@ export function isNativeCamera(): boolean {
 
 /**
  * Take a photo using the native camera. Returns a data URL or null if cancelled/unavailable.
- * Uses CameraResultType.Uri + webPath fetch to avoid iOS memory issues with DataUrl on
- * high-resolution photos (12MP+ can be 15MB base64 string, causing silent failures on iOS).
+ * Uses CameraResultType.DataUrl directly — avoids fetch() of capacitor://localhost URLs
+ * which breaks when the app uses a remote server.url in capacitor.config.
+ * Quality is kept at 75 to avoid memory issues with high-res photos.
  */
 export async function takeNativePhoto(): Promise<string | null> {
   if (!isNativeCamera()) return null;
@@ -23,11 +24,9 @@ export async function takeNativePhoto(): Promise<string | null> {
       throw new Error('PERMISSION_DENIED: Camera permission was denied. Please enable it in Settings.');
     }
 
-    // Use Uri instead of DataUrl — avoids iOS memory crash with large photos.
-    // webPath is a Capacitor-served URL (capacitor://localhost/...) that can be fetched.
     const photo = await Camera.getPhoto({
-      quality: 90,
-      resultType: CameraResultType.Uri,
+      quality: 75,
+      resultType: CameraResultType.DataUrl,
       source: CameraSource.Camera,
       correctOrientation: true,
       promptLabelHeader: 'Photo',
@@ -36,22 +35,8 @@ export async function takeNativePhoto(): Promise<string | null> {
       promptLabelCancel: 'Cancel',
     });
 
-    const webPath = photo.webPath;
-    if (!webPath) {
-      console.warn('[nativeCamera] webPath is empty — falling back to dataUrl');
-      return photo.dataUrl ?? null;
-    }
+    return photo.dataUrl ?? null;
 
-    // Fetch the file from the Capacitor-served URL and convert to data URL
-    const response = await fetch(webPath);
-    const blob = await response.blob();
-
-    return new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = () => reject(new Error('FileReader error reading native photo'));
-      reader.readAsDataURL(blob);
-    });
   } catch (e: any) {
     // User cancelled
     if (
@@ -62,7 +47,6 @@ export async function takeNativePhoto(): Promise<string | null> {
       return null;
     }
     console.error('Native camera error:', e);
-    // Re-throw permission errors so the caller can show a toast
     if (e?.message?.includes('PERMISSION_DENIED')) {
       throw e;
     }
@@ -72,7 +56,7 @@ export async function takeNativePhoto(): Promise<string | null> {
 
 /**
  * Pick image(s) from the gallery. Returns an array of data URLs.
- * Uses CameraResultType.Uri + webPath fetch to avoid iOS memory issues.
+ * Uses CameraResultType.DataUrl directly — same reason as takeNativePhoto.
  */
 export async function pickFromGallery(): Promise<string[]> {
   if (!isNativeCamera()) return [];
@@ -89,32 +73,16 @@ export async function pickFromGallery(): Promise<string[]> {
     }
 
     const photo = await Camera.getPhoto({
-      quality: 90,
-      resultType: CameraResultType.Uri,
+      quality: 75,
+      resultType: CameraResultType.DataUrl,
       source: CameraSource.Photos,
       correctOrientation: true,
       promptLabelHeader: 'Photo',
       promptLabelCancel: 'Cancel',
     });
 
-    const webPath = photo.webPath;
-    if (!webPath) {
-      console.warn('[nativeCamera] gallery webPath is empty — falling back to dataUrl');
-      return photo.dataUrl ? [photo.dataUrl] : [];
-    }
+    return photo.dataUrl ? [photo.dataUrl] : [];
 
-    // Fetch the file and convert to data URL
-    const response = await fetch(webPath);
-    const blob = await response.blob();
-
-    const dataUrl = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = () => reject(new Error('FileReader error reading gallery photo'));
-      reader.readAsDataURL(blob);
-    });
-
-    return [dataUrl];
   } catch (e: any) {
     if (
       e?.message?.includes('cancelled') ||
