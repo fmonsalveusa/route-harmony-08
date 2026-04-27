@@ -8,18 +8,16 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const MAX_PDF_BYTES = 10 * 1024 * 1024;
+const MAX_PDF_BYTES   = 10 * 1024 * 1024;
 const MAX_BASE64_SIZE = 13 * 1024 * 1024;
 
 function looksLikePdf(bytes: Uint8Array): boolean {
-  const scanLimit = Math.min(bytes.length, 1024);
   const needle = [0x25, 0x50, 0x44, 0x46, 0x2d]; // %PDF-
-  for (let i = 0; i <= scanLimit - needle.length; i++) {
-    let ok = true;
-    for (let j = 0; j < needle.length; j++) {
-      if (bytes[i + j] !== needle[j]) { ok = false; break; }
-    }
-    if (ok) return true;
+  const limit = Math.min(bytes.length - needle.length, 1024);
+  for (let i = 0; i <= limit; i++) {
+    if (bytes[i] === needle[0] && bytes[i+1] === needle[1] &&
+        bytes[i+2] === needle[2] && bytes[i+3] === needle[3] &&
+        bytes[i+4] === needle[4]) return true;
   }
   return false;
 }
@@ -33,10 +31,7 @@ async function fetchPdfBytes(pdfUrl: string): Promise<Uint8Array> {
   const contentLength = resp.headers.get("content-length");
   if (contentLength) {
     const len = Number(contentLength);
-    if (Number.isFinite(len) && len > MAX_PDF_BYTES) {
-      await resp.arrayBuffer().catch(() => null);
-      throw new Error("PDF too large (max 10MB)");
-    }
+    if (Number.isFinite(len) && len > MAX_PDF_BYTES) throw new Error("PDF too large (max 10MB)");
   }
   const buffer = await resp.arrayBuffer();
   if (buffer.byteLength > MAX_PDF_BYTES) throw new Error("PDF too large (max 10MB)");
@@ -44,21 +39,17 @@ async function fetchPdfBytes(pdfUrl: string): Promise<Uint8Array> {
 }
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    // Authentication check
+    // ── Autenticación ──────────────────────────────────────────────────────
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Authentication required" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Usar admin client para validar el token server-side (evita parsing local de ES256)
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
@@ -68,92 +59,76 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
     if (authError || !user) {
       return new Response(JSON.stringify({ error: "Invalid authentication" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const { data: profile } = await supabaseAdmin
-      .from("profiles")
-      .select("tenant_id")
-      .eq("id", user.id)
-      .single();
-
+      .from("profiles").select("tenant_id").eq("id", user.id).single();
     if (!profile?.tenant_id) {
       return new Response(JSON.stringify({ error: "No active tenant" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    // ── Obtener PDF ────────────────────────────────────────────────────────
     const body = await req.json().catch(() => ({} as any));
-    const pdfBase64 = body?.pdfBase64;
-    const pdfUrl = body?.pdfUrl;
+    const pdfBase64: string | undefined = body?.pdfBase64;
+    const pdfUrl: string | undefined    = body?.pdfUrl;
 
-    if ((!pdfBase64 || typeof pdfBase64 !== "string") && (!pdfUrl || typeof pdfUrl !== "string")) {
+    if (!pdfBase64 && !pdfUrl) {
       return new Response(JSON.stringify({ error: "PDF data is required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    console.log("extract-pdf request received", {
-      mode: pdfUrl ? "url" : "base64",
-      base64Length: typeof pdfBase64 === "string" ? pdfBase64.length : 0,
-    });
+    console.log("extract-pdf request", { mode: pdfUrl ? "url" : "base64" });
 
-    // Obtener el base64 del PDF
     let finalBase64 = "";
 
-    if (pdfUrl && typeof pdfUrl === "string") {
+    if (pdfUrl) {
       if (!/^https?:\/\//i.test(pdfUrl)) {
         return new Response(JSON.stringify({ error: "Invalid PDF URL" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       const bytes = await fetchPdfBytes(pdfUrl);
       if (!looksLikePdf(bytes)) {
         return new Response(JSON.stringify({ error: "File is not a valid PDF" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       finalBase64 = encodeBase64(bytes);
     } else {
-      if (pdfBase64.length > MAX_BASE64_SIZE) {
+      if (pdfBase64!.length > MAX_BASE64_SIZE) {
         return new Response(JSON.stringify({ error: "PDF too large (max 10MB)" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       try {
-        const decoded = atob(pdfBase64.slice(0, 200));
+        const decoded = atob(pdfBase64!.slice(0, 200));
         if (!decoded.includes("%PDF-")) {
           return new Response(JSON.stringify({ error: "File is not a valid PDF" }), {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
       } catch {
         return new Response(JSON.stringify({ error: "Invalid base64 encoding" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      finalBase64 = pdfBase64;
+      finalBase64 = pdfBase64!;
     }
 
+    // ── Llamada a Claude Haiku (más económico que Sonnet) ──────────────────
     const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
     if (!ANTHROPIC_API_KEY) {
-      console.error("ANTHROPIC_API_KEY not configured");
       return new Response(JSON.stringify({ error: "AI service not configured" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    console.log("Processing PDF with Claude AI...");
+    console.log("Sending PDF to claude-haiku-4-5...");
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -164,7 +139,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "claude-opus-4-5",
+        model: "claude-haiku-4-5-20251001", // Haiku: ~20x más barato que Sonnet
         max_tokens: 2048,
         tools: [
           {
@@ -185,9 +160,9 @@ serve(async (req) => {
                   type: "string",
                   description: "Carrier company name (the trucking company that will haul the load)",
                 },
-                totalRate: { type: "number", description: "Total rate/payment amount in USD" },
-                weight: { type: "number", description: "Weight in lbs" },
-                miles: { type: "number", description: "Total miles if shown in document" },
+                totalRate:  { type: "number", description: "Total rate/payment amount in USD" },
+                weight:     { type: "number", description: "Weight in lbs" },
+                miles:      { type: "number", description: "Total miles if shown in document" },
                 stops: {
                   type: "array",
                   description: "All pickup and delivery stops in route order",
@@ -201,7 +176,7 @@ serve(async (req) => {
                       },
                       address: {
                         type: "string",
-                        description: "Physical address only (street, city, state, zip) — no company name",
+                        description: "Physical address only (street, city, state, zip) - no company name",
                       },
                       date: {
                         type: "string",
@@ -249,14 +224,11 @@ Extract all load/shipment information including ALL pickup and delivery stops.`,
     if (!response.ok) {
       const errorText = await response.text();
       console.error("Claude API error:", response.status, errorText);
-
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Demasiadas solicitudes. Intenta de nuevo en unos segundos." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-
       return new Response(
         JSON.stringify({ error: "Error al procesar el PDF con IA" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -264,40 +236,39 @@ Extract all load/shipment information including ALL pickup and delivery stops.`,
     }
 
     const data = await response.json();
-    console.log("Claude response received");
+    console.log("Claude Haiku response received");
 
-    // Claude retorna tool_use en content
     const toolUse = data.content?.find((c: any) => c.type === "tool_use");
     if (!toolUse) {
       console.error("No tool_use in Claude response:", JSON.stringify(data));
-      return new Response(JSON.stringify({ error: "No se pudo extraer información del PDF" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      return new Response(JSON.stringify({ error: "No se pudo extraer informacion del PDF" }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const extractedData = toolUse.input;
     console.log("Extracted data:", JSON.stringify(extractedData));
 
-    const stops = extractedData.stops || [];
-    const pickups = stops.filter((s: any) => s.stopType === "pickup");
+    // ── Formatear resultado ────────────────────────────────────────────────
+    const stops      = extractedData.stops || [];
+    const pickups    = stops.filter((s: any) => s.stopType === "pickup");
     const deliveries = stops.filter((s: any) => s.stopType === "delivery");
 
     const result = {
       referenceNumber: extractedData.referenceNumber || "",
-      brokerClient: extractedData.brokerClient || "",
-      carrierName: extractedData.carrierName || "",
-      totalRate: extractedData.totalRate || 0,
-      weight: extractedData.weight || 0,
-      miles: extractedData.miles || 0,
-      origin: pickups[0]?.address || "",
-      destination: deliveries[deliveries.length - 1]?.address || "",
-      pickupDate: pickups[0]?.date || "",
-      deliveryDate: deliveries[deliveries.length - 1]?.date || "",
+      brokerClient:    extractedData.brokerClient    || "",
+      carrierName:     extractedData.carrierName     || "",
+      totalRate:       extractedData.totalRate       || 0,
+      weight:          extractedData.weight          || 0,
+      miles:           extractedData.miles           || 0,
+      origin:          pickups[0]?.address           || "",
+      destination:     deliveries[deliveries.length - 1]?.address || "",
+      pickupDate:      pickups[0]?.date              || "",
+      deliveryDate:    deliveries[deliveries.length - 1]?.date    || "",
       stops: stops.map((s: any) => ({
         stop_type: s.stopType,
-        address: s.address,
-        date: s.date || "",
+        address:   s.address,
+        date:      s.date || "",
       })),
     };
 
