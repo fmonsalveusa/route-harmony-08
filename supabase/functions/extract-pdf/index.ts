@@ -13,7 +13,7 @@ const MAX_BASE64_SIZE = 13 * 1024 * 1024;
 
 function looksLikePdf(bytes: Uint8Array): boolean {
   const scanLimit = Math.min(bytes.length, 1024);
-  const needle = [0x25, 0x50, 0x44, 0x46, 0x2d]; // %PDF-
+  const needle = [0x25, 0x50, 0x44, 0x46, 0x2d];
   for (let i = 0; i <= scanLimit - needle.length; i++) {
     let ok = true;
     for (let j = 0; j < needle.length; j++) {
@@ -49,7 +49,6 @@ serve(async (req) => {
   }
 
   try {
-    // Authentication check
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Authentication required" }), {
@@ -58,7 +57,6 @@ serve(async (req) => {
       });
     }
 
-    // Usar admin client para validar el token server-side (evita parsing local de ES256)
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
@@ -102,7 +100,6 @@ serve(async (req) => {
       base64Length: typeof pdfBase64 === "string" ? pdfBase64.length : 0,
     });
 
-    // Obtener el base64 del PDF
     let finalBase64 = "";
 
     if (pdfUrl && typeof pdfUrl === "string") {
@@ -128,7 +125,9 @@ serve(async (req) => {
         });
       }
       try {
-        const decoded = atob(pdfBase64.slice(0, 200));
+        const chunk = pdfBase64.slice(0, 200);
+        const aligned = chunk.slice(0, Math.floor(chunk.length / 4) * 4);
+        const decoded = atob(aligned);
         if (!decoded.includes("%PDF-")) {
           return new Response(JSON.stringify({ error: "File is not a valid PDF" }), {
             status: 400,
@@ -144,93 +143,32 @@ serve(async (req) => {
       finalBase64 = pdfBase64;
     }
 
-    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
-    if (!ANTHROPIC_API_KEY) {
-      console.error("ANTHROPIC_API_KEY not configured");
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) {
+      console.error("GEMINI_API_KEY not configured");
       return new Response(JSON.stringify({ error: "AI service not configured" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    console.log("Processing PDF with Claude AI...");
+    console.log("Processing PDF with Gemini...");
 
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "x-api-key": ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01",
-        "anthropic-beta": "pdfs-2024-09-25",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "claude-opus-4-5",
-        max_tokens: 2048,
-        tools: [
-          {
-            name: "extract_load_data",
-            description: "Extract structured load/shipment data from a document, including all stops",
-            input_schema: {
-              type: "object",
-              properties: {
-                referenceNumber: {
-                  type: "string",
-                  description: "Reference number, confirmation number, or load number",
-                },
-                brokerClient: {
-                  type: "string",
-                  description: "Broker or client company name (the company hiring the carrier)",
-                },
-                carrierName: {
-                  type: "string",
-                  description: "Carrier company name (the trucking company that will haul the load)",
-                },
-                totalRate: { type: "number", description: "Total rate/payment amount in USD" },
-                weight: { type: "number", description: "Weight in lbs" },
-                miles: { type: "number", description: "Total miles if shown in document" },
-                stops: {
-                  type: "array",
-                  description: "All pickup and delivery stops in route order",
-                  items: {
-                    type: "object",
-                    properties: {
-                      stopType: {
-                        type: "string",
-                        enum: ["pickup", "delivery"],
-                        description: "Whether this is a pickup or delivery stop",
-                      },
-                      address: {
-                        type: "string",
-                        description: "Physical address only (street, city, state, zip) — no company name",
-                      },
-                      date: {
-                        type: "string",
-                        description: "Date for this stop in YYYY-MM-DD format, empty if not found",
-                      },
-                    },
-                    required: ["stopType", "address"],
-                  },
-                },
-              },
-              required: ["referenceNumber", "brokerClient", "totalRate", "weight", "stops"],
-            },
-          },
-        ],
-        tool_choice: { type: "tool", name: "extract_load_data" },
-        messages: [
-          {
-            role: "user",
-            content: [
+    const geminiResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
               {
-                type: "document",
-                source: {
-                  type: "base64",
-                  media_type: "application/pdf",
+                inlineData: {
+                  mimeType: "application/pdf",
                   data: finalBase64,
                 },
               },
               {
-                type: "text",
                 text: `You are a data extraction assistant for a trucking/logistics company.
 Extract ALL stops from this rate confirmation or BOL document.
 For each stop address, extract ONLY the physical address (street, city, state, zip). Do NOT include company name or facility name.
@@ -241,16 +179,43 @@ Dates must be in YYYY-MM-DD format.
 Extract all load/shipment information including ALL pickup and delivery stops.`,
               },
             ],
+          }],
+          generationConfig: {
+            responseMimeType: "application/json",
+            responseSchema: {
+              type: "object",
+              properties: {
+                referenceNumber: { type: "string" },
+                brokerClient: { type: "string" },
+                carrierName: { type: "string" },
+                totalRate: { type: "number" },
+                weight: { type: "number" },
+                miles: { type: "number" },
+                stops: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      stopType: { type: "string", enum: ["pickup", "delivery"] },
+                      address: { type: "string" },
+                      date: { type: "string" },
+                    },
+                    required: ["stopType", "address"],
+                  },
+                },
+              },
+              required: ["referenceNumber", "brokerClient", "totalRate", "weight", "stops"],
+            },
           },
-        ],
-      }),
-    });
+        }),
+      },
+    );
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Claude API error:", response.status, errorText);
+    if (!geminiResponse.ok) {
+      const errorText = await geminiResponse.text();
+      console.error("Gemini API error:", geminiResponse.status, errorText);
 
-      if (response.status === 429) {
+      if (geminiResponse.status === 429) {
         return new Response(JSON.stringify({ error: "Demasiadas solicitudes. Intenta de nuevo en unos segundos." }), {
           status: 429,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -258,25 +223,34 @@ Extract all load/shipment information including ALL pickup and delivery stops.`,
       }
 
       return new Response(
-        JSON.stringify({ error: "Error al procesar el PDF con IA" }),
+        JSON.stringify({ error: "Error al procesar el PDF" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    const data = await response.json();
-    console.log("Claude response received");
+    const geminiData = await geminiResponse.json();
+    console.log("Gemini response received");
 
-    // Claude retorna tool_use en content
-    const toolUse = data.content?.find((c: any) => c.type === "tool_use");
-    if (!toolUse) {
-      console.error("No tool_use in Claude response:", JSON.stringify(data));
+    const rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!rawText) {
+      console.error("No text in Gemini response:", JSON.stringify(geminiData));
       return new Response(JSON.stringify({ error: "No se pudo extraer información del PDF" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const extractedData = toolUse.input;
+    let extractedData: any;
+    try {
+      extractedData = JSON.parse(rawText);
+    } catch {
+      console.error("Failed to parse Gemini JSON response:", rawText);
+      return new Response(JSON.stringify({ error: "No se pudo extraer información del PDF" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     console.log("Extracted data:", JSON.stringify(extractedData));
 
     const stops = extractedData.stops || [];
