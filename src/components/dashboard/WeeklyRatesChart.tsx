@@ -1,10 +1,11 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
 import { getISOWeek } from '@/lib/dateUtils';
 
-// Query propia — solo trae los 2 campos necesarios de TODAS las cargas
+type PeriodFilter = 'last10' | 'ytd' | 'this_month' | 'last_month';
+
 async function fetchWeeklyData() {
   const { data, error } = await supabase
     .from('loads')
@@ -16,30 +17,62 @@ async function fetchWeeklyData() {
   return data ?? [];
 }
 
+function getISOWeekKey(date: Date): string {
+  const yr = date.getFullYear();
+  const wk = getISOWeek(date);
+  return `${yr}-W${String(wk).padStart(2, '0')}`;
+}
+
 export function WeeklyRatesChart() {
-  // Query independiente — no depende del límite de useLoads
+  const [period, setPeriod] = useState<PeriodFilter>('last10');
+
   const { data: rawLoads = [] } = useQuery({
     queryKey: ['weekly-rates-chart'],
     queryFn: fetchWeeklyData,
-    staleTime: 5 * 60 * 1000, // cache por 5 minutos — no necesita ser realtime
+    staleTime: 24 * 60 * 60 * 1000,
   });
 
   const { data, trend } = useMemo(() => {
-    const byWeek: Record<string, number> = {};
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth(); // 0-indexed
 
+    // Calcular rango de fechas según filtro
+    let filterFn: (dateStr: string) => boolean = () => true;
+
+    if (period === 'ytd') {
+      filterFn = (dateStr) => {
+        const [y] = dateStr.split('-').map(Number);
+        return y === currentYear;
+      };
+    } else if (period === 'this_month') {
+      filterFn = (dateStr) => {
+        const [y, m] = dateStr.split('-').map(Number);
+        return y === currentYear && m - 1 === currentMonth;
+      };
+    } else if (period === 'last_month') {
+      const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+      const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+      filterFn = (dateStr) => {
+        const [y, m] = dateStr.split('-').map(Number);
+        return y === lastMonthYear && m - 1 === lastMonth;
+      };
+    }
+
+    // Agrupar por semana
+    const byWeek: Record<string, number> = {};
     rawLoads.forEach(l => {
       const d = l.pickup_date || l.created_at;
       if (!d) return;
       const raw = d.split('T')[0];
+      if (period !== 'last10' && !filterFn(raw)) return;
       const [y, m, day] = raw.split('-').map(Number);
       const date = new Date(y, m - 1, day);
-      const yr = date.getFullYear();
-      const wk = getISOWeek(date);
-      const key = `${yr}-W${String(wk).padStart(2, '0')}`;
+      const key = getISOWeekKey(date);
       byWeek[key] = (byWeek[key] || 0) + l.total_rate;
     });
 
-    const sorted = Object.entries(byWeek)
+    let sorted = Object.entries(byWeek)
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([week, total], i, arr) => {
         let pctChange: number | null = null;
@@ -50,6 +83,11 @@ export function WeeklyRatesChart() {
         return { week: week.replace(/^\d{4}-/, ''), total, pctChange };
       });
 
+    // Aplicar límite de últimas 10 semanas
+    if (period === 'last10') {
+      sorted = sorted.slice(-10);
+    }
+
     let trend: { value: string; positive: boolean } | null = null;
     if (sorted.length >= 2) {
       const last = sorted[sorted.length - 1];
@@ -59,14 +97,36 @@ export function WeeklyRatesChart() {
     }
 
     return { data: sorted, trend };
-  }, [rawLoads]);
+  }, [rawLoads, period]);
+
+  const periodLabels: Record<PeriodFilter, string> = {
+    last10: 'Last 10 Weeks',
+    ytd: 'YTD',
+    this_month: 'This Month',
+    last_month: 'Last Month',
+  };
 
   return (
     <div className="glass-card p-0 overflow-hidden">
       <div className="px-6 pt-5 pb-2">
         <div className="flex items-center justify-between">
           <h3 className="text-base font-semibold leading-none tracking-tight">Weekly Production</h3>
-          <span className="text-xs text-muted-foreground">No filters · All weeks</span>
+          {/* Filtro de período */}
+          <div className="flex gap-1">
+            {(Object.keys(periodLabels) as PeriodFilter[]).map((key) => (
+              <button
+                key={key}
+                onClick={() => setPeriod(key)}
+                className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                  period === key
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                }`}
+              >
+                {periodLabels[key]}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
       <div className="px-6 pb-6">
