@@ -69,7 +69,7 @@ async function fetchLoadsFromDb(): Promise<DbLoad[]> {
     .from('loads')
     .select('*')
     .order('pickup_date', { ascending: false, nullsFirst: false })
-    .limit(200);
+    .limit(1000);
 
   if (error) {
     console.error('Error fetching loads:', error);
