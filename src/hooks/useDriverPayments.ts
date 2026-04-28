@@ -73,7 +73,7 @@ async function fetchDriverPaymentsFromDb(email: string): Promise<DriverPaymentsR
   // Buscar driver e investor drivers EN PARALELO
   const [{ data: driver }, { data: investorDrivers }] = await Promise.all([
     supabase.from('drivers').select('id').eq('email', email).maybeSingle(),
-    (supabase.from('drivers') as any).select('id, name').eq('investor_email', email),
+    supabase.from('drivers' as any).select('id, name').eq('investor_email', email),
   ]);
   console.log('[DriverPayments] driver:', driver, 'investorDrivers:', investorDrivers);
   
