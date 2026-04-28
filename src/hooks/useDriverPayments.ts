@@ -56,8 +56,7 @@ async function enrichPayments(data: any[]): Promise<DriverPayment[]> {
 
   return data.map(p => {
   const load = loadMap.get(p.load_id);
-  console.log('[enrichPayments] load:', load, 'driverMap:', driverMap, 'driver_name:', load ? driverMap.get(load.driver_id) : 'no load');
-    const totalAdj = adjMap.get(p.id) || 0;
+      const totalAdj = adjMap.get(p.id) || 0;
     return {
       ...p,
       origin: load?.origin || '',
@@ -70,14 +69,12 @@ async function enrichPayments(data: any[]): Promise<DriverPayment[]> {
 }
 
 async function fetchDriverPaymentsFromDb(email: string): Promise<DriverPaymentsResult> {
-  console.log('[DriverPayments] fetching for email:', email);
-  // Buscar driver e investor drivers EN PARALELO
+    // Buscar driver e investor drivers EN PARALELO
   const [{ data: driver }, { data: investorDrivers }] = await Promise.all([
     supabase.from('drivers').select('id').eq('email', email).maybeSingle(),
     supabase.from('drivers' as any).select('id, name').eq('investor_email', email),
   ]);
-  console.log('[DriverPayments] driver:', driver, 'investorDrivers:', investorDrivers);
-  
+    
   // Buscar pagos de driver e investor EN PARALELO
   const [driverPaymentsRaw, investorPaymentsRaw] = await Promise.all([
     driver
