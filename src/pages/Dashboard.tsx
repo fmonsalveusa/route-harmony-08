@@ -123,7 +123,7 @@ const AdminDashboard = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <RatesByDriverChart loads={filteredLoads} drivers={drivers} year={year} month={month} week={week} />
-        <WeeklyRatesChart loads={loads} />
+        <WeeklyRatesChart />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -242,7 +242,7 @@ const DispatcherDashboard = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <RatesByDriverChart loads={filteredLoads} drivers={drivers} year={year} month={month} week={week} />
-        <WeeklyRatesChart loads={loads} />
+        <WeeklyRatesChart />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

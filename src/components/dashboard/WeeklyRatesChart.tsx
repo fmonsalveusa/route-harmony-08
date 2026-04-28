@@ -1,18 +1,33 @@
 import { useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useQuery } from '@tanstack/react-query';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { DbLoad } from '@/hooks/useLoads';
+import { supabase } from '@/integrations/supabase/client';
 import { getISOWeek } from '@/lib/dateUtils';
 
-interface Props {
-  loads: DbLoad[];
+// Query propia — solo trae los 2 campos necesarios de TODAS las cargas
+async function fetchWeeklyData() {
+  const { data, error } = await supabase
+    .from('loads')
+    .select('pickup_date, created_at, total_rate, status')
+    .neq('status', 'cancelled')
+    .order('pickup_date', { ascending: true });
+
+  if (error) throw error;
+  return data ?? [];
 }
 
-export function WeeklyRatesChart({ loads }: Props) {
+export function WeeklyRatesChart() {
+  // Query independiente — no depende del límite de useLoads
+  const { data: rawLoads = [] } = useQuery({
+    queryKey: ['weekly-rates-chart'],
+    queryFn: fetchWeeklyData,
+    staleTime: 5 * 60 * 1000, // cache por 5 minutos — no necesita ser realtime
+  });
+
   const { data, trend } = useMemo(() => {
     const byWeek: Record<string, number> = {};
-    loads.forEach(l => {
-      if (l.status === 'cancelled') return;
+
+    rawLoads.forEach(l => {
       const d = l.pickup_date || l.created_at;
       if (!d) return;
       const raw = d.split('T')[0];
@@ -44,7 +59,7 @@ export function WeeklyRatesChart({ loads }: Props) {
     }
 
     return { data: sorted, trend };
-  }, [loads]);
+  }, [rawLoads]);
 
   return (
     <div className="glass-card p-0 overflow-hidden">
