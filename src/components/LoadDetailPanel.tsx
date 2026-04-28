@@ -621,7 +621,14 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
               empty_miles: roundedDist,
               empty_miles_origin: originAddress,
             } as any).eq('id', load.id).then(() => {
-              queryClient.invalidateQueries({ queryKey: ['loads'] });
+              // Actualiza solo esta carga en el cache — sin refetchear todo
+              queryClient.setQueryData<any[]>(['loads'], (old) =>
+                (old ?? []).map(l =>
+                  l.id === load.id
+                    ? { ...l, empty_miles: roundedDist, empty_miles_origin: originAddress }
+                    : l
+                )
+              );
             });
           }
 
