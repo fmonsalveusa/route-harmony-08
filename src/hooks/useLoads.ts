@@ -1,5 +1,5 @@
 import { useCallback, useRef, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { getTenantId } from '@/hooks/useTenantId';
@@ -28,7 +28,7 @@ export interface DbLoad {
   pdf_url: string | null;
   notes: string | null;
   created_at: string;
-  route_geometry?: any;
+  route_geometry?: any; // solo se usa en LoadDetailPanel, no en la lista
   empty_miles: number;
   empty_miles_origin: string | null;
   company_id: string | null;
@@ -64,10 +64,20 @@ export interface CreateLoadInput {
 
 const LOADS_QUERY_KEY = ['loads'];
 
+// Columnas explícitas — excluye route_geometry que es pesado y no se necesita en la lista
+const LOADS_SELECT = [
+  'id', 'reference_number', 'origin', 'destination', 'pickup_date', 'delivery_date',
+  'weight', 'cargo_type', 'total_rate', 'status', 'driver_id', 'truck_id',
+  'dispatcher_id', 'broker_client', 'driver_pay_amount', 'investor_pay_amount',
+  'dispatcher_pay_amount', 'company_profit', 'miles', 'factoring', 'pdf_url',
+  'notes', 'created_at', 'empty_miles', 'empty_miles_origin', 'company_id',
+  'gross_rate', 'rc_original_url'
+].join(',');
+
 async function fetchLoadsFromDb(): Promise<DbLoad[]> {
   const { data, error } = await supabase
     .from('loads')
-    .select('*')
+    .select(LOADS_SELECT)
     .order('pickup_date', { ascending: false, nullsFirst: false })
     .limit(1000);
 
@@ -89,20 +99,45 @@ export function useLoads() {
     queryFn: fetchLoadsFromDb,
   });
 
-  // Realtime subscription: auto-refresh on any loads change
+  // Realtime: actualiza cache local en vez de refetchear todo
   useEffect(() => {
     const channel = supabase
       .channel('loads-realtime')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'loads' },
-        () => {
-          queryClient.invalidateQueries({ queryKey: LOADS_QUERY_KEY });
+        (payload) => {
+          const { eventType, new: newRecord, old: oldRecord } = payload;
+
+          queryClient.setQueryData<DbLoad[]>(LOADS_QUERY_KEY, (old) => {
+            if (!old) return old;
+
+            if (eventType === 'INSERT') {
+              // Nueva carga — agregar al inicio si no existe ya
+              const exists = old.some(l => l.id === (newRecord as any).id);
+              if (exists) return old;
+              return [newRecord as DbLoad, ...old];
+            }
+
+            if (eventType === 'UPDATE') {
+              // Actualizar solo la carga que cambió
+              return old.map(l =>
+                l.id === (newRecord as any).id ? { ...l, ...(newRecord as DbLoad) } : l
+              );
+            }
+
+            if (eventType === 'DELETE') {
+              // Eliminar del cache
+              return old.filter(l => l.id !== (oldRecord as any).id);
+            }
+
+            return old;
+          });
         }
       )
       .subscribe((status) => {
         if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-          // Force refetch on channel issues
+          // Solo en caso de error del canal, refetchear
           queryClient.invalidateQueries({ queryKey: LOADS_QUERY_KEY });
         }
       });
@@ -119,7 +154,7 @@ export function useLoads() {
   const createLoad = useCallback(async (input: CreateLoadInput) => {
     const tenant_id = await getTenantId();
 
-    // Check for duplicate reference number
+    // Verificar duplicado
     const { data: existing } = await supabase
       .from('loads')
       .select('id')
@@ -134,7 +169,7 @@ export function useLoads() {
     const { data, error } = await supabase
       .from('loads')
       .insert([{ ...input, tenant_id } as any])
-      .select()
+      .select(LOADS_SELECT)
       .single();
 
     if (error) {
@@ -145,7 +180,7 @@ export function useLoads() {
 
     const newLoad = (data as unknown) as DbLoad;
     queryClient.setQueryData<DbLoad[]>(LOADS_QUERY_KEY, (old) => [newLoad, ...(old ?? [])]);
-    queryClient.invalidateQueries({ queryKey: ['weekly-rates-chart'] }); // refresca gráfica al crear carga
+    queryClient.invalidateQueries({ queryKey: ['weekly-rates-chart'] }); // refresca gráfica
     toastRef.current({ title: 'Load created', description: `Reference: ${input.reference_number}` });
     return newLoad;
   }, [queryClient]);
@@ -162,15 +197,17 @@ export function useLoads() {
       return false;
     }
 
+    // Actualizar cache local inmediatamente
+    queryClient.setQueryData<DbLoad[]>(LOADS_QUERY_KEY, (old) =>
+      (old ?? []).map(l => l.id === id ? { ...l, ...input } : l)
+    );
     toastRef.current({ title: 'Load updated' });
-    await queryClient.invalidateQueries({ queryKey: LOADS_QUERY_KEY });
     return true;
   }, [queryClient]);
 
   /**
-   * Silent update specifically for auto-calculated miles/route_geometry.
-   * - No toast (user didn't trigger this)
-   * - Uses setQueryData for instant local update (no full DB refetch)
+   * Silent update para millas/route_geometry calculadas automáticamente.
+   * No muestra toast — el usuario no lo disparó.
    */
   const updateLoadMiles = useCallback(async (id: string, miles: number, routeGeometry?: any) => {
     const payload: any = { miles };
@@ -182,9 +219,9 @@ export function useLoads() {
       return;
     }
 
-    // Instant cache update — no round-trip, no toast
+    // Actualizar cache local — no incluir route_geometry en la lista
     queryClient.setQueryData<DbLoad[]>(LOADS_QUERY_KEY, (old) =>
-      (old ?? []).map(l => l.id === id ? { ...l, ...payload } : l)
+      (old ?? []).map(l => l.id === id ? { ...l, miles } : l)
     );
   }, [queryClient]);
 
@@ -213,7 +250,7 @@ export function useLoads() {
 
     for (let i = 0; i < inputs.length; i += BATCH_SIZE) {
       const batch = inputs.slice(i, i + BATCH_SIZE).map(input => ({ ...input, tenant_id } as any));
-      const { data, error } = await supabase.from('loads').insert(batch).select();
+      const { data, error } = await supabase.from('loads').insert(batch).select(LOADS_SELECT);
       if (error) {
         console.error('Batch insert error:', error);
         errors += batch.length;
