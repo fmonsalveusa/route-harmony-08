@@ -65,14 +65,6 @@ export interface CreateLoadInput {
 const LOADS_QUERY_KEY = ['loads'];
 
 // Columnas explícitas — excluye route_geometry que es pesado y no se necesita en la lista
-const LOADS_SELECT = [
-  'id', 'reference_number', 'origin', 'destination', 'pickup_date', 'delivery_date',
-  'weight', 'cargo_type', 'total_rate', 'status', 'driver_id', 'truck_id',
-  'dispatcher_id', 'broker_client', 'driver_pay_amount', 'investor_pay_amount',
-  'dispatcher_pay_amount', 'company_profit', 'miles', 'factoring', 'pdf_url',
-  'notes', 'created_at', 'empty_miles', 'empty_miles_origin', 'company_id',
-  'gross_rate', 'rc_original_url'
-].join(',');
 
 async function fetchLoadsFromDb(): Promise<DbLoad[]> {
   const { data, error } = await supabase
