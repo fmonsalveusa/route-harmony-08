@@ -89,17 +89,6 @@ const Loads = () => {
   const [editLoad, setEditLoad] = useState<DbLoad | null>(null);
   const [rcRefreshKey, setRcRefreshKey] = useState(0);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  // Abrir detalle de carga desde URL param (ej: /loads?openLoad=xxx)
-useEffect(() => {
-  const params = new URLSearchParams(window.location.search);
-  const openLoad = params.get('openLoad');
-  if (openLoad) {
-    setActiveTab('all'); // Mostrar todas las cargas para encontrarla
-    setExpandedId(openLoad);
-    // Limpiar el param de la URL sin recargar la página
-    window.history.replaceState({}, '', '/loads');
-  }
-}, []);
   const [deleteTarget, setDeleteTarget] = useState<DbLoad | null>(null);
   const [podUploadLoadId, setPodUploadLoadId] = useState<string | null>(null);
   const [showImportWizard, setShowImportWizard] = useState(false);
@@ -194,7 +183,18 @@ useEffect(() => {
   const deliveredLoads = baseLoads.filter(l => ['delivered', 'tonu'].includes(l.status));
   const cancelledLoads = baseLoads.filter(l => l.status === 'cancelled');
 
-  const loadsAll = activeTab === 'all' ? baseLoads : activeTab === 'active' ? activeLoads : activeTab === 'delivered' ? deliveredLoads : cancelledLoads;
+  const [sortBy, setSortBy] = useState<'delivery_date' | 'pickup_date'>('delivery_date');
+  const today = new Date().toLocaleDateString('en-CA');
+  const sortLoads = (arr: DbLoad[]) => [...arr].sort((a, b) => {
+    if (sortBy === 'delivery_date') {
+      const aIsToday = a.delivery_date?.split('T')[0] === today ? 0 : 1;
+      const bIsToday = b.delivery_date?.split('T')[0] === today ? 0 : 1;
+      if (aIsToday !== bIsToday) return aIsToday - bIsToday;
+      return (a.delivery_date || '').localeCompare(b.delivery_date || '');
+    }
+    return (b.pickup_date || '').localeCompare(a.pickup_date || '');
+  });
+  const loadsAll = sortLoads(activeTab === 'all' ? baseLoads : activeTab === 'active' ? activeLoads : activeTab === 'delivered' ? deliveredLoads : cancelledLoads);
   const totalPages = Math.max(1, Math.ceil(loadsAll.length / pageSize));
   const loads = loadsAll.slice((page - 1) * pageSize, page * pageSize);
 
@@ -341,6 +341,15 @@ useEffect(() => {
               Clear filters
             </Button>
           )}
+          <Select value={sortBy} onValueChange={(v) => setSortBy(v as 'delivery_date' | 'pickup_date')}>
+            <SelectTrigger className="w-[170px] h-8 text-xs">
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="delivery_date">Sort: Delivery Date</SelectItem>
+              <SelectItem value="pickup_date">Sort: Pickup Date</SelectItem>
+            </SelectContent>
+          </Select>
       
       </div>
 
