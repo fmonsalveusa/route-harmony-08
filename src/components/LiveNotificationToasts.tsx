@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -60,6 +60,10 @@ export function LiveNotificationToasts() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
+  // Debounce timer for invalidateQueries — coalesces bursts of notifications
+  // (e.g. driver_arrived + pod_uploaded at the same time) into a single refetch.
+  const invalidateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
     requestNotificationPermission();
   }, []);
@@ -90,12 +94,15 @@ export function LiveNotificationToasts() {
 
           setToasts((prev) => [toast, ...prev].slice(0, 5));
 
-          // Refresh loads data when a status change or driver action notification arrives
+          // Refresh loads data when a status change or driver action notification arrives.
+          // Debounced: if multiple notifications arrive in quick succession,
+          // only one invalidateQueries call is made after the burst settles.
           if (['status_changed', 'driver_arrived', 'pod_uploaded'].includes(n.type)) {
-            // Small delay to ensure DB write is committed before refetching
-            setTimeout(() => {
+            if (invalidateTimerRef.current) clearTimeout(invalidateTimerRef.current);
+            invalidateTimerRef.current = setTimeout(() => {
               queryClient.invalidateQueries({ queryKey: ['loads'] });
-            }, 500);
+              invalidateTimerRef.current = null;
+            }, 1500);
           }
 
           // Browser push notification para maintenance y nuevo onboarding (solo admin)
@@ -108,6 +115,7 @@ export function LiveNotificationToasts() {
 
     return () => {
       supabase.removeChannel(channel);
+      if (invalidateTimerRef.current) clearTimeout(invalidateTimerRef.current);
     };
   }, [profile?.tenant_id]);
 
@@ -115,14 +123,23 @@ export function LiveNotificationToasts() {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
 
-  const handleClick = async (toast: LiveToast) => {
-    await supabase
-      .from('notifications')
-      .update({ is_read: true } as any)
-      .eq('id', toast.id);
-    dismiss(toast.id);
-    navigate(toast.type === 'new_driver_onboarded' ? '/drivers' : toast.type === 'maintenance' ? '/maintenance' : '/loads');
-  };
+ const handleClick = async (toast: LiveToast) => {
+  await supabase
+    .from('notifications')
+    .update({ is_read: true } as any)
+    .eq('id', toast.id);
+  dismiss(toast.id);
+  if (toast.type === 'new_driver_onboarded') {
+    navigate('/drivers');
+  } else if (toast.type === 'maintenance') {
+    navigate('/maintenance');
+  } else if (toast.load_id) {
+    // Navegar a loads con el load_id para abrir el detalle automáticamente
+    navigate(`/loads?openLoad=${toast.load_id}`);
+  } else {
+    navigate('/loads');
+  }
+};
 
   if (toasts.length === 0) return null;
 

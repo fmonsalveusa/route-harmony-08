@@ -89,6 +89,17 @@ const Loads = () => {
   const [editLoad, setEditLoad] = useState<DbLoad | null>(null);
   const [rcRefreshKey, setRcRefreshKey] = useState(0);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  // Abrir detalle de carga desde URL param (ej: /loads?openLoad=xxx)
+useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+  const openLoad = params.get('openLoad');
+  if (openLoad) {
+    setActiveTab('all'); // Mostrar todas las cargas para encontrarla
+    setExpandedId(openLoad);
+    // Limpiar el param de la URL sin recargar la página
+    window.history.replaceState({}, '', '/loads');
+  }
+}, []);
   const [deleteTarget, setDeleteTarget] = useState<DbLoad | null>(null);
   const [podUploadLoadId, setPodUploadLoadId] = useState<string | null>(null);
   const [showImportWizard, setShowImportWizard] = useState(false);
