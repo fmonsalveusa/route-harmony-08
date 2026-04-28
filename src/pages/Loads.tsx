@@ -425,7 +425,14 @@ const Loads = () => {
                             ); })()}
                           </td>
                           <td className="p-3 hidden lg:table-cell text-muted-foreground">{formatDate(load.pickup_date)}</td>
-                          <td className="p-3 hidden lg:table-cell text-muted-foreground">{formatDate(load.delivery_date)}</td>
+                          <td className="p-3 hidden lg:table-cell text-muted-foreground">
+                            <div>{formatDate(load.delivery_date)}</div>
+                            {load.delivery_date && load.delivery_date.split('T')[0] === new Date().toLocaleDateString('en-CA') && (
+                              <span style={{ backgroundColor: '#ea580c', color: 'white', fontSize: '10px', fontWeight: 600, padding: '2px 6px', borderRadius: '4px', display: 'inline-block', marginTop: '2px' }}>
+                                Delivery Today
+                              </span>
+                            )}
+                          </td>
                           <td className="p-3 text-right font-semibold">${Number(load.total_rate).toLocaleString()}</td>
                           <td className="p-3 text-right hidden md:table-cell text-muted-foreground">{load.empty_miles && Number(load.empty_miles) > 0 ? Number(load.empty_miles).toLocaleString() : '—'}</td>
                           <td className="p-3 text-right hidden md:table-cell text-muted-foreground">{load.miles && Number(load.miles) > 0 ? Number(load.miles).toLocaleString() : '—'}</td>
