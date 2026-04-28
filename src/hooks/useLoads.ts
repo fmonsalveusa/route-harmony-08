@@ -67,8 +67,9 @@ const LOADS_QUERY_KEY = ['loads'];
 async function fetchLoadsFromDb(): Promise<DbLoad[]> {
   const { data, error } = await supabase
     .from('loads')
-    .select('*')
-    .order('pickup_date', { ascending: false, nullsFirst: false });
+    .select('id, reference_number, origin, destination, pickup_date, delivery_date, weight, cargo_type, total_rate, status, driver_id, truck_id, dispatcher_id, broker_client, driver_pay_amount, investor_pay_amount, dispatcher_pay_amount, company_profit, miles, factoring, pdf_url, notes, created_at, empty_miles, empty_miles_origin, company_id, gross_rate, rc_original_url')
+    .order('pickup_date', { ascending: false, nullsFirst: false })
+    .limit(200);
 
   if (error) {
     console.error('Error fetching loads:', error);
