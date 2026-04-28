@@ -21,7 +21,7 @@ export function WeeklyRatesChart() {
   const { data: rawLoads = [] } = useQuery({
     queryKey: ['weekly-rates-chart'],
     queryFn: fetchWeeklyData,
-    staleTime: 5 * 60 * 1000, // cache por 5 minutos — no necesita ser realtime
+    staleTime: 24 * 60 * 60 * 1000, // solo refresca al agregar carga nueva 
   });
 
   const { data, trend } = useMemo(() => {
@@ -58,7 +58,9 @@ export function WeeklyRatesChart() {
       }
     }
 
-    return { data: sorted, trend };
+    // Solo mostrar las últimas 10 semanas
+const last10 = sorted.slice(-10);
+return { data: last10, trend };
   }, [rawLoads]);
 
   return (

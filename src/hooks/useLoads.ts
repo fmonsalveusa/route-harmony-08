@@ -145,7 +145,7 @@ export function useLoads() {
 
     const newLoad = (data as unknown) as DbLoad;
     queryClient.setQueryData<DbLoad[]>(LOADS_QUERY_KEY, (old) => [newLoad, ...(old ?? [])]);
-
+    queryClient.invalidateQueries({ queryKey: ['weekly-rates-chart'] }); // refresca gráfica al crear carga
     toastRef.current({ title: 'Load created', description: `Reference: ${input.reference_number}` });
     return newLoad;
   }, [queryClient]);
