@@ -55,7 +55,8 @@ async function enrichPayments(data: any[]): Promise<DriverPayment[]> {
   }
 
   return data.map(p => {
-    const load = loadMap.get(p.load_id);
+  const load = loadMap.get(p.load_id);
+  console.log('[enrichPayments] load:', load, 'driverMap:', driverMap, 'driver_name:', load ? driverMap.get(load.driver_id) : 'no load');
     const totalAdj = adjMap.get(p.id) || 0;
     return {
       ...p,
