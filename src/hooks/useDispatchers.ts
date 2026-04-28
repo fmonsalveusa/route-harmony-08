@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { getTenantId } from '@/hooks/useTenantId';
@@ -30,22 +31,26 @@ export interface DispatcherInput {
   start_date: string;
 }
 
+const DISPATCHERS_QUERY_KEY = ['dispatchers'];
+
+async function fetchDispatchersFromDb(): Promise<DbDispatcher[]> {
+  const { data, error } = await supabase.from('dispatchers' as any).select('*').order('name');
+  if (error) throw error;
+  return (data as any) || [];
+}
+
 export function useDispatchers() {
-  const [dispatchers, setDispatchers] = useState<DbDispatcher[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  const fetchDispatchers = useCallback(async () => {
-    setLoading(true);
-    const { data, error } = await supabase.from('dispatchers' as any).select('*').order('name');
-    if (error) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
-    } else {
-      setDispatchers((data as any) || []);
-    }
-    setLoading(false);
-  }, []);
+  const { data: dispatchers = [], isLoading: loading } = useQuery({
+    queryKey: DISPATCHERS_QUERY_KEY,
+    queryFn: fetchDispatchersFromDb,
+    staleTime: 5 * 60 * 1000, // cache 5 minutos
+  });
 
-  useEffect(() => { fetchDispatchers(); }, [fetchDispatchers]);
+  const refetch = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: DISPATCHERS_QUERY_KEY });
+  }, [queryClient]);
 
   const createDispatcher = async (input: DispatcherInput) => {
     const tenant_id = await getTenantId();
@@ -55,7 +60,7 @@ export function useDispatchers() {
       return false;
     }
     toast({ title: 'Dispatcher created successfully' });
-    fetchDispatchers();
+    await queryClient.invalidateQueries({ queryKey: DISPATCHERS_QUERY_KEY });
     return true;
   };
 
@@ -66,7 +71,7 @@ export function useDispatchers() {
       return false;
     }
     toast({ title: 'Dispatcher updated successfully' });
-    fetchDispatchers();
+    await queryClient.invalidateQueries({ queryKey: DISPATCHERS_QUERY_KEY });
     return true;
   };
 
@@ -77,9 +82,9 @@ export function useDispatchers() {
       return false;
     }
     toast({ title: 'Dispatcher deleted successfully' });
-    fetchDispatchers();
+    await queryClient.invalidateQueries({ queryKey: DISPATCHERS_QUERY_KEY });
     return true;
   };
 
-  return { dispatchers, loading, createDispatcher, updateDispatcher, deleteDispatcher, refetch: fetchDispatchers };
+  return { dispatchers, loading, createDispatcher, updateDispatcher, deleteDispatcher, refetch };
 }

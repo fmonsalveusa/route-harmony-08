@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { getTenantId } from '@/hooks/useTenantId';
@@ -73,33 +74,26 @@ export interface DriverInput {
   emergency_phone?: string | null;
 }
 
+const DRIVERS_QUERY_KEY = ['drivers'];
+
+async function fetchDriversFromDb(): Promise<DbDriver[]> {
+  const { data, error } = await supabase.from('drivers' as any).select('*').order('name');
+  if (error) throw error;
+  return (data as any) || [];
+}
+
 export function useDrivers() {
-  const [drivers, setDrivers] = useState<DbDriver[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  const fetchDrivers = useCallback(async () => {
-    setLoading(true);
-    const { data, error } = await supabase.from('drivers' as any).select('*').order('name');
-    if (error) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
-    } else {
-      setDrivers((data as any) || []);
-    }
-    setLoading(false);
-  }, []);
+  const { data: drivers = [], isLoading: loading } = useQuery({
+    queryKey: DRIVERS_QUERY_KEY,
+    queryFn: fetchDriversFromDb,
+    staleTime: 5 * 60 * 1000, // cache 5 minutos — drivers no cambian frecuentemente
+  });
 
-  useEffect(() => { fetchDrivers(); }, [fetchDrivers]);
-
-  // Realtime: auto-refresh when drivers table changes
-  useEffect(() => {
-    const channel = supabase
-      .channel('drivers-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'drivers' }, () => {
-        fetchDrivers();
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [fetchDrivers]);
+  const refetch = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: DRIVERS_QUERY_KEY });
+  }, [queryClient]);
 
   const createDriver = async (input: DriverInput) => {
     const tenant_id = await getTenantId();
@@ -109,7 +103,7 @@ export function useDrivers() {
       return false;
     }
     toast({ title: 'Driver created successfully' });
-    fetchDrivers();
+    await queryClient.invalidateQueries({ queryKey: DRIVERS_QUERY_KEY });
     return true;
   };
 
@@ -120,7 +114,7 @@ export function useDrivers() {
       return false;
     }
     toast({ title: 'Driver updated successfully' });
-    fetchDrivers();
+    await queryClient.invalidateQueries({ queryKey: DRIVERS_QUERY_KEY });
     return true;
   };
 
@@ -131,7 +125,7 @@ export function useDrivers() {
       return false;
     }
     toast({ title: 'Driver deleted successfully' });
-    fetchDrivers();
+    await queryClient.invalidateQueries({ queryKey: DRIVERS_QUERY_KEY });
     return true;
   };
 
@@ -149,16 +143,13 @@ export function useDrivers() {
 
   const getDocSignedUrl = async (storedUrl: string): Promise<string | null> => {
     try {
-      // If it's already a full signed URL, extract the storage path
       const match = storedUrl.match(/\/driver-documents\/([^?]+)/);
       let path: string;
       if (match) {
         path = decodeURIComponent(match[1]);
       } else if (storedUrl.startsWith('http')) {
-        // Unknown full URL — just return as-is
         return storedUrl;
       } else {
-        // It's a raw storage path (e.g. from onboarding uploads)
         path = storedUrl;
       }
       const { data } = await supabase.storage.from('driver-documents').createSignedUrl(path, 3600);
@@ -177,9 +168,9 @@ export function useDrivers() {
       return { success: 0, errors: inputs.length };
     }
     const count = (data as any[])?.length || 0;
-    await fetchDrivers();
+    await queryClient.invalidateQueries({ queryKey: DRIVERS_QUERY_KEY });
     return { success: count, errors: inputs.length - count };
   };
 
-  return { drivers, loading, createDriver, createDriversBulk, updateDriver, deleteDriver, uploadDocument, getDocSignedUrl, refetch: fetchDrivers };
+  return { drivers, loading, createDriver, createDriversBulk, updateDriver, deleteDriver, uploadDocument, getDocSignedUrl, refetch };
 }

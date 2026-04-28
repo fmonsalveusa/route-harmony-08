@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { getTenantId } from '@/hooks/useTenantId';
@@ -59,22 +60,26 @@ export interface TruckInput {
   mega_ramp?: string | null;
 }
 
+const TRUCKS_QUERY_KEY = ['trucks'];
+
+async function fetchTrucksFromDb(): Promise<DbTruck[]> {
+  const { data, error } = await supabase.from('trucks' as any).select('*').order('unit_number');
+  if (error) throw error;
+  return (data as any) || [];
+}
+
 export function useTrucks() {
-  const [trucks, setTrucks] = useState<DbTruck[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  const fetchTrucks = useCallback(async () => {
-    setLoading(true);
-    const { data, error } = await supabase.from('trucks' as any).select('*').order('unit_number');
-    if (error) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
-    } else {
-      setTrucks((data as any) || []);
-    }
-    setLoading(false);
-  }, []);
+  const { data: trucks = [], isLoading: loading } = useQuery({
+    queryKey: TRUCKS_QUERY_KEY,
+    queryFn: fetchTrucksFromDb,
+    staleTime: 5 * 60 * 1000, // cache 5 minutos
+  });
 
-  useEffect(() => { fetchTrucks(); }, [fetchTrucks]);
+  const refetch = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: TRUCKS_QUERY_KEY });
+  }, [queryClient]);
 
   const createTruck = async (input: TruckInput) => {
     const tenant_id = await getTenantId();
@@ -84,7 +89,7 @@ export function useTrucks() {
       return false;
     }
     toast({ title: 'Truck created successfully' });
-    fetchTrucks();
+    await queryClient.invalidateQueries({ queryKey: TRUCKS_QUERY_KEY });
     return true;
   };
 
@@ -95,7 +100,7 @@ export function useTrucks() {
       return false;
     }
     toast({ title: 'Truck updated successfully' });
-    fetchTrucks();
+    await queryClient.invalidateQueries({ queryKey: TRUCKS_QUERY_KEY });
     return true;
   };
 
@@ -106,7 +111,7 @@ export function useTrucks() {
       return false;
     }
     toast({ title: 'Truck deleted successfully' });
-    fetchTrucks();
+    await queryClient.invalidateQueries({ queryKey: TRUCKS_QUERY_KEY });
     return true;
   };
 
@@ -140,5 +145,5 @@ export function useTrucks() {
     }
   };
 
-  return { trucks, loading, createTruck, updateTruck, deleteTruck, uploadDocument, getDocSignedUrl, refetch: fetchTrucks };
+  return { trucks, loading, createTruck, updateTruck, deleteTruck, uploadDocument, getDocSignedUrl, refetch };
 }
