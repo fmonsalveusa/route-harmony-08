@@ -190,7 +190,7 @@ const Loads = () => {
       const aIsToday = a.delivery_date?.split('T')[0] === today ? 0 : 1;
       const bIsToday = b.delivery_date?.split('T')[0] === today ? 0 : 1;
       if (aIsToday !== bIsToday) return aIsToday - bIsToday;
-      return (a.delivery_date || '').localeCompare(b.delivery_date || '');
+      return (b.delivery_date || '').localeCompare(a.delivery_date || '');
     }
     return (b.pickup_date || '').localeCompare(a.pickup_date || '');
   });
