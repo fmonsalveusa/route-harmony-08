@@ -15,6 +15,7 @@ function rowToDoc(row: any): SignDocument {
     fields: (row.fields as any[]) ?? [],
     signerData: row.signer_data as any,
     recipientEmail: row.recipient_email ?? undefined,
+    signerName: row.signer_name ?? undefined, // ← agregar esta línea
   };
 }
 
