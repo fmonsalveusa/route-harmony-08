@@ -185,16 +185,22 @@ const Loads = () => {
 
   const [sortBy, setSortBy] = useState<'delivery_date' | 'pickup_date'>('delivery_date');
   const today = new Date().toLocaleDateString('en-CA');
-  const sortLoads = (arr: DbLoad[]) => [...arr].sort((a, b) => {
+  const sortLoads = (arr: DbLoad[], isActive = false) => [...arr].sort((a, b) => {
     if (sortBy === 'delivery_date') {
       const aIsToday = a.delivery_date?.split('T')[0] === today ? 0 : 1;
       const bIsToday = b.delivery_date?.split('T')[0] === today ? 0 : 1;
       if (aIsToday !== bIsToday) return aIsToday - bIsToday;
-      return (b.delivery_date || '').localeCompare(a.delivery_date || '');
+      // Active: ascendente (próximas primero), resto: descendente
+      return isActive
+        ? (a.delivery_date || '').localeCompare(b.delivery_date || '')
+        : (b.delivery_date || '').localeCompare(a.delivery_date || '');
     }
     return (b.pickup_date || '').localeCompare(a.pickup_date || '');
   });
-  const loadsAll = sortLoads(activeTab === 'all' ? baseLoads : activeTab === 'active' ? activeLoads : activeTab === 'delivered' ? deliveredLoads : cancelledLoads);
+  const loadsAll = sortLoads(
+      activeTab === 'all' ? baseLoads : activeTab === 'active' ? activeLoads : activeTab === 'delivered' ? deliveredLoads : cancelledLoads,
+      activeTab === 'active'
+    );
   const totalPages = Math.max(1, Math.ceil(loadsAll.length / pageSize));
   const loads = loadsAll.slice((page - 1) * pageSize, page * pageSize);
 
