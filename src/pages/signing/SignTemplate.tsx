@@ -55,6 +55,7 @@ export default function SignTemplate() {
         signerData: { date: new Date().toISOString() },
         templateId: template.id,
         templateName: template.name,
+        expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 días
       };
 
       await saveDocument(newDoc as any);
