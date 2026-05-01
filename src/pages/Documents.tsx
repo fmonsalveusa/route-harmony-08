@@ -10,7 +10,6 @@ import { format } from 'date-fns';
 import { getDocuments, deleteDocument } from '@/store/signing-documents';
 import { getTemplates, deleteTemplate } from '@/store/signing-templates';
 import { supabase } from '@/integrations/supabase/client';
-import { getSigningUrl } from '@/lib/signing-url';
 import { getSigningUrl, getTemplateSigningUrl } from '@/lib/signing-url';
 import type { SignDocument, SignTemplate } from '@/types/document';
 import {
@@ -59,6 +58,7 @@ const Documents = () => {
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'doc' | 'tpl'; id: string; name: string } | null>(null);
   const [previewDoc, setPreviewDoc] = useState<SignDocument | null>(null);
   const [editingRecipient, setEditingRecipient] = useState<{ id: string; email: string } | null>(null);
+  const [editingSigner, setEditingSigner] = useState<{ id: string; name: string } | null>(null);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -138,6 +138,16 @@ const Documents = () => {
     toast.success('Destinatario actualizado');
   };
 
+  const saveSignerName = async () => {
+    if (!editingSigner) return;
+    const name = editingSigner.name.trim();
+    const { error } = await supabase.from('documents').update({ signer_name: name || null } as any).eq('id', editingSigner.id);
+    if (error) { toast.error('Error al guardar'); return; }
+    setDocuments(prev => prev.map(d => d.id === editingSigner.id ? { ...d, signerName: name || null } : d));
+    setEditingSigner(null);
+    toast.success('Firmante actualizado');
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -184,6 +194,7 @@ const Documents = () => {
                     <TableHead>Archivo</TableHead>
                     <TableHead>Estado</TableHead>
                     <TableHead>Destinatario</TableHead>
+                    <TableHead>Firmado por</TableHead>
                     <TableHead>Creado</TableHead>
                     <TableHead className="text-right">Acciones</TableHead>
                   </TableRow>
@@ -223,6 +234,32 @@ const Documents = () => {
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {format(new Date(doc.createdAt), 'MMM dd, yyyy')}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {editingSigner?.id === doc.id ? (
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="text"
+                              className="border rounded px-2 py-1 text-sm w-48 bg-background text-foreground"
+                              value={editingSigner.name}
+                              onChange={e => setEditingSigner({ ...editingSigner, name: e.target.value })}
+                              onKeyDown={e => { if (e.key === 'Enter') saveSignerName(); if (e.key === 'Escape') setEditingSigner(null); }}
+                              autoFocus
+                              placeholder="Nombre del firmante"
+                            />
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={saveSignerName}>
+                              <Pencil className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <span
+                            className="cursor-pointer hover:text-foreground hover:underline"
+                            onClick={() => setEditingSigner({ id: doc.id, name: (doc as any).signerName || '' })}
+                            title="Click para editar"
+                          >
+                            {(doc as any).signerName || '—'}
+                          </span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center justify-end gap-1">
