@@ -83,6 +83,7 @@ export async function saveDocument(doc: SignDocument): Promise<void> {
       fields: doc.fields as any,
       signer_data: doc.signerData as any ?? null,
       recipient_email: doc.recipientEmail ?? null,
+      signer_name: doc.signerName ?? null,
     } as any);
   if (error) { console.error(error); throw error; }
 }
