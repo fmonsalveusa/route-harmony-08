@@ -11,3 +11,8 @@ export function getSigningBaseUrl() {
 export function getSigningUrl(documentId: string) {
   return `${getSigningBaseUrl()}/sign/${documentId}`;
 }
+
+// URL para compartir una plantilla — el destinatario la llena y firma
+export function getTemplateSigningUrl(templateId: string) {
+  return `${getSigningBaseUrl()}/sign/template/${templateId}`;
+}

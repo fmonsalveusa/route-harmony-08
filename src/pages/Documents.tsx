@@ -11,6 +11,7 @@ import { getDocuments, deleteDocument } from '@/store/signing-documents';
 import { getTemplates, deleteTemplate } from '@/store/signing-templates';
 import { supabase } from '@/integrations/supabase/client';
 import { getSigningUrl } from '@/lib/signing-url';
+import { getSigningUrl, getTemplateSigningUrl } from '@/lib/signing-url';
 import type { SignDocument, SignTemplate } from '@/types/document';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -309,6 +310,9 @@ const Documents = () => {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center justify-end gap-1">
+                          <Button variant="ghost" size="icon" onClick={() => { navigator.clipboard.writeText(getTemplateSigningUrl(tpl.id)); toast.success('Enlace de plantilla copiado'); }} title="Copiar enlace">
+                            <Copy className="h-4 w-4" />
+                          </Button>
                           <Button variant="ghost" size="icon" onClick={() => navigate(`/documents/upload?mode=template&edit=${tpl.id}`)} title="Editar plantilla">
                             <Pencil className="h-4 w-4" />
                           </Button>

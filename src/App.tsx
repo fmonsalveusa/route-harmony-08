@@ -34,6 +34,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Documents from "./pages/Documents";
 import SigningUpload from "./pages/signing/Upload";
 import SigningSign from "./pages/signing/Sign";
+import SigningSignTemplate from "./pages/signing/SignTemplate";
 import SigningComplete from "./pages/signing/Complete";
 
 import DriverDashboard from "./pages/driver-app/DriverDashboard";
@@ -208,6 +209,7 @@ const AppRoutes = () => {
       <Route path="/documents/upload" element={<ProtectedRoute><SigningUpload /></ProtectedRoute>} />
       <Route path="/documents/sign/:id" element={<SigningSign />} />
       <Route path="/sign/:id" element={<SigningSign />} />
+      <Route path="/sign/template/:id" element={<SigningSignTemplate />} />
       <Route path="/documents/complete/:id" element={<SigningComplete />} />
 
       <Route path="*" element={<NotFound />} />
