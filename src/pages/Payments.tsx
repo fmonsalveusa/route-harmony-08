@@ -216,8 +216,12 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
       );
     }
 
-    // Sort newest first by created_at
-    result.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    // Paid: más recientes primero por created_at. Resto: ascendente
+    if (statusFilter === 'paid') {
+      result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    } else {
+      result.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    }
     return result;
   }, [allTypePayments, statusFilter, beneficiaryFilter, weekFilter, monthFilter, yearFilter, dateFrom, dateTo, paymentDateMap, searchQuery]);
 
