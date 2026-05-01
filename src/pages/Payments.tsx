@@ -216,9 +216,13 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
       );
     }
 
-    // Paid: más recientes primero por created_at. Resto: ascendente
+    // Paid: más recientes primero por payment_date. Resto: ascendente
     if (statusFilter === 'paid') {
-      result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      result.sort((a, b) => {
+        const dateA = a.payment_date ? new Date(a.payment_date).getTime() : 0;
+        const dateB = b.payment_date ? new Date(b.payment_date).getTime() : 0;
+        return dateB - dateA;
+      });
     } else {
       result.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
     }
