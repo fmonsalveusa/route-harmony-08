@@ -64,7 +64,7 @@ export async function generateSignedPdf(
       if (field.value === 'checked') {
         // Draw a checkmark
         const fontSize = Math.min(h * 0.8, 14);
-        page.drawText('✓', {
+        page.drawText('X', {
           x: x + 2,
           y: y + (h - fontSize) / 2,
           size: fontSize,
