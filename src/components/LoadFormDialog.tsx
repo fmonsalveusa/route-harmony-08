@@ -227,7 +227,18 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
   };
 
   const addStop = (type: 'pickup' | 'delivery') => {
-    setStopEntries(prev => [...prev, { stop_type: type, address: '', date: '' }]);
+    setStopEntries(prev => {
+      const newStop = { stop_type: type, address: '', date: '' };
+      if (type === 'pickup') {
+        // Insertar después del último pickup
+        const lastPickupIdx = [...prev].map((s, i) => s.stop_type === 'pickup' ? i : -1).filter(i => i >= 0).pop() ?? -1;
+        const insertAt = lastPickupIdx + 1;
+        return [...prev.slice(0, insertAt), newStop, ...prev.slice(insertAt)];
+      } else {
+        // Delivery: agregar al final
+        return [...prev, newStop];
+      }
+    });
   };
 
   const removeStop = (index: number) => {
