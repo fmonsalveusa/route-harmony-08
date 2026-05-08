@@ -52,7 +52,7 @@ async function hydrateSignedPdf(doc: SignDocument): Promise<SignDocument> {
 export async function getDocuments(): Promise<SignDocument[]> {
   const { data, error } = await supabase
     .from("documents" as any)
-    .select("*")
+    .select("id, file_name, status, created_at, signed_at, expires_at, fields, signer_data, recipient_email, signer_name")
     .order("created_at", { ascending: false });
   if (error) { console.error(error); return []; }
   return Promise.all((data ?? []).map((row) => hydrateSignedPdf(rowToDoc(row))));
