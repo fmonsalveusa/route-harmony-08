@@ -23,7 +23,6 @@ export default function PdfViewer({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
-  const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
     if (!fileData) return;
@@ -45,7 +44,6 @@ export default function PdfViewer({
         const scaledViewport = page.getViewport({ scale: newScale });
         canvas.width = scaledViewport.width;
         canvas.height = scaledViewport.height;
-        setCanvasSize({ width: scaledViewport.width, height: scaledViewport.height });
         await page.render({ canvasContext: ctx, viewport: scaledViewport, canvas: canvas } as any).promise;
         onCanvasReady?.(canvas);
       } catch (err) { console.error("Error rendering PDF:", err); }
@@ -55,11 +53,9 @@ export default function PdfViewer({
 
   return (
     <div className="flex flex-col items-center">
-      <div ref={containerRef} className="relative w-full max-w-[800px] bg-muted/30 rounded-xl overflow-hidden border" onClick={(e) => { if (e.target === e.currentTarget || e.target === canvasRef.current) onBackgroundClick?.(); }}>
-        <div data-field-container className="relative mx-auto" style={{ width: canvasSize.width || '100%', height: canvasSize.height || 'auto' }}>
-          <canvas ref={canvasRef} className="block" />
-          {children}
-        </div>
+      <div ref={containerRef} data-field-container className="relative w-full max-w-[800px] bg-muted/30 rounded-xl overflow-hidden border" onClick={(e) => { if (e.target === e.currentTarget || e.target === canvasRef.current) onBackgroundClick?.(); }}>
+        <canvas ref={canvasRef} className="block mx-auto" />
+        {children}
       </div>
       {totalPages > 1 && (
         <div className="flex items-center gap-3 mt-4">
