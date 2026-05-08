@@ -9,7 +9,10 @@ export async function generateSignedPdf(
   originalBase64: string,
   fields: DocumentField[]
 ): Promise<string> {
-  // Extract raw base64
+  console.log('[generateSignedPdf] fields count:', fields.length);
+  console.log('[generateSignedPdf] fields with values:', fields.filter(f => !!f.value).length);
+  console.log('[generateSignedPdf] fileData length:', originalBase64?.length);
+  
   const raw = originalBase64.includes(',')
     ? originalBase64.split(',')[1]
     : originalBase64;
