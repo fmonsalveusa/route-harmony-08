@@ -18,7 +18,16 @@ export async function generateSignedPdf(
     : originalBase64;
 
   const pdfBytes = Uint8Array.from(atob(raw), (c) => c.charCodeAt(0));
-  const pdfDoc = await PDFDocument.load(pdfBytes);
+  const pdfDoc = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
+
+  // Aplanar campos AcroForm existentes para que no se rendericen
+  // encima del contenido que vamos a dibujar.
+  try {
+    pdfDoc.getForm().flatten();
+  } catch {
+    // El PDF no tiene campos AcroForm — ignorar.
+  }
+
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const pages = pdfDoc.getPages();
 

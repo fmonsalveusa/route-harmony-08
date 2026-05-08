@@ -7,7 +7,7 @@ import { StatusBadge } from '@/components/StatusBadge';
 import { FileText, Copy, Pencil, Eye, Download, Trash2, Plus, LayoutTemplate } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { getDocuments, deleteDocument } from '@/store/signing-documents';
+import { getDocuments, getDocument, deleteDocument } from '@/store/signing-documents';
 import { getTemplates, deleteTemplate } from '@/store/signing-templates';
 import { supabase } from '@/integrations/supabase/client';
 import { getSigningUrl, getTemplateSigningUrl } from '@/lib/signing-url';
@@ -57,6 +57,7 @@ const Documents = () => {
   const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'doc' | 'tpl'; id: string; name: string } | null>(null);
   const [previewDoc, setPreviewDoc] = useState<SignDocument | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
   const [editingRecipient, setEditingRecipient] = useState<{ id: string; email: string } | null>(null);
   const [editingSigner, setEditingSigner] = useState<{ id: string; name: string } | null>(null);
 
@@ -124,8 +125,38 @@ const Documents = () => {
     return 'pending';
   };
 
-  const openPdfPreview = (doc: SignDocument) => {
-    setPreviewDoc(doc);
+  // getDocuments() no carga file_data ni signed_file_data para mantener
+  // la lista liviana. Los cargamos bajo demanda al abrir preview o descargar.
+  const withPdfData = async (doc: SignDocument): Promise<SignDocument> => {
+    if (doc.signedFileData || doc.fileData) return doc;
+    const full = await getDocument(doc.id);
+    return full ?? doc;
+  };
+
+  const openPdfPreview = async (doc: SignDocument) => {
+    setPreviewLoading(true);
+    try {
+      const full = await withPdfData(doc);
+      setPreviewDoc(full);
+    } catch {
+      toast.error('No se pudo cargar el PDF');
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  const downloadPdf = async (doc: SignDocument) => {
+    try {
+      const full = await withPdfData(doc);
+      const pdfData = full.signedFileData || full.fileData;
+      if (!pdfData) { toast.error('PDF no disponible'); return; }
+      const link = document.createElement('a');
+      link.href = pdfData;
+      link.download = `signed-${full.fileName}`;
+      link.click();
+    } catch {
+      toast.error('Error al descargar el PDF');
+    }
   };
 
   const saveRecipientName = async () => {
@@ -275,21 +306,13 @@ const Documents = () => {
                           )}
                           {doc.status === 'signed' && (
                             <>
-                              {(doc.signedFileData || doc.fileData) && (
-                                <Button variant="ghost" size="icon" onClick={() => openPdfPreview(doc)} title="Ver PDF">
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                              )}
+                              <Button variant="ghost" size="icon" onClick={() => openPdfPreview(doc)} title="Ver PDF" disabled={previewLoading}>
+                                <Eye className="h-4 w-4" />
+                              </Button>
                               <Button variant="ghost" size="icon" onClick={() => navigate(`/documents/complete/${doc.id}`)} title="Ver detalles">
                                 <FileText className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="icon" onClick={() => {
-                                const pdfData = doc.signedFileData || doc.fileData;
-                                const link = document.createElement('a');
-                                link.href = pdfData;
-                                link.download = `signed-${doc.fileName}`;
-                                link.click();
-                              }} title="Descargar PDF">
+                              <Button variant="ghost" size="icon" onClick={() => downloadPdf(doc)} title="Descargar PDF">
                                 <Download className="h-4 w-4" />
                               </Button>
                             </>
