@@ -46,9 +46,11 @@ export default function Sign() {
   }, [id, navigate]);
 
   const handleFormComplete = async (updatedFields: DocumentField[]) => {
-    if (!doc) return;
-    setSubmitting(true);
-    try {
+  if (!doc) return;
+  setSubmitting(true);
+  console.log('[Sign] fields with values:', updatedFields.map(f => ({ id: f.id, type: f.type, value: f.value?.substring(0, 50) })));
+  console.log('[Sign] fileData starts with:', doc.fileData?.substring(0, 50));
+  try {
       // Generate signed PDF with field values stamped on
       const signedPdfData = await generateSignedPdf(doc.fileData, updatedFields);
 
