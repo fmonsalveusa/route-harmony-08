@@ -21,10 +21,10 @@ function rowToDoc(row: any): SignDocument {
 
 async function hydrateSignedPdf(doc: SignDocument): Promise<SignDocument> {
   const hasFilledFields = doc.fields.some((field) => !!field.value);
-
   if (doc.status !== "signed" || doc.signedFileData || !hasFilledFields) {
     return doc;
   }
+  if (!doc.fileData) return doc; 
 
   try {
     const signedFileData = await generateSignedPdf(doc.fileData, doc.fields);
