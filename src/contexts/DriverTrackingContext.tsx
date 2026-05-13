@@ -43,7 +43,7 @@ const DriverTrackingContext = createContext<DriverTrackingContextType | null>(nu
 
 const GEOFENCE_RADIUS_METERS = 300;
 const TRACKING_STORAGE_KEY = 'driver-tracking-active';
-const ACTIVE_LOAD_STATUSES = ['dispatched', 'in_transit', 'on_site_pickup', 'picked_up', 'on_site_delivery'];
+const ACTIVE_LOAD_STATUSES = ['planned', 'dispatched', 'in_transit', 'on_site_pickup', 'picked_up', 'on_site_delivery'];
 const IDLE_PAUSE_MS = 5 * 60 * 1000; // 5 minutes
 
 // --- Helpers ---

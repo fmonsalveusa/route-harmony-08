@@ -1,0 +1,3 @@
+-- This migration is intentionally empty.
+-- The get_user_dispatcher_id() function already exists from a previous migration.
+-- The frontend uses that existing function via supabase.rpc('get_user_dispatcher_id').

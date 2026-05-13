@@ -40,4 +40,5 @@ export interface SignDocument {
   fields: DocumentField[];
   signerData?: { name?: string; signatureImage?: string; date?: string };
   recipientEmail?: string;
+  signerName?: string;
 }
