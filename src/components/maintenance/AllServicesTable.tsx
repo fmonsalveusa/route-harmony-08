@@ -241,5 +241,6 @@ export function AllServicesTable({ items, getTruckLabel, onEdit, onDelete, onLog
         </div>
       </DialogContent>
     </Dialog>
-  </>;
+    </>
+  );
 }
