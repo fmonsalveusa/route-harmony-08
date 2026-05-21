@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Pencil, Trash2, RotateCcw, ChevronDown, ChevronRight, History, Gauge, DollarSign } from 'lucide-react';
+import { Pencil, Trash2, RotateCcw, ChevronDown, ChevronRight, History, Gauge, DollarSign, Image, X } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { DbTruckMaintenance } from '@/hooks/useTruckMaintenance';
 import { useServiceLog } from '@/hooks/useServiceLog';
 import { getMaintenanceTypeConfig, getStatusColor } from './maintenanceConstants';
@@ -83,6 +84,7 @@ function ServiceHistoryRow({ maintenanceId }: { maintenanceId: string }) {
 
 export function AllServicesTable({ items, getTruckLabel, onEdit, onDelete, onLogService, onViewHistory }: AllServicesTableProps) {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
 
   const sorted = [...items].sort((a, b) =>
     new Date(b.last_performed_at).getTime() - new Date(a.last_performed_at).getTime()
@@ -106,6 +108,7 @@ export function AllServicesTable({ items, getTruckLabel, onEdit, onDelete, onLog
   }
 
   return (
+    <>
     <div className="rounded-md border overflow-hidden">
       <Table>
         <TableHeader>
@@ -120,7 +123,7 @@ export function AllServicesTable({ items, getTruckLabel, onEdit, onDelete, onLog
             <TableHead>Status</TableHead>
             <TableHead className="text-right">Cost</TableHead>
             <TableHead>Vendor</TableHead>
-            <TableHead className="w-[120px]" />
+            <TableHead className="w-[140px]" />
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -186,6 +189,11 @@ export function AllServicesTable({ items, getTruckLabel, onEdit, onDelete, onLog
                   </TableCell>
                   <TableCell className="py-2">
                     <div className="flex items-center gap-1">
+                      {(item as any).invoice_photo_url && (
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-blue-500" onClick={() => setPhotoUrl((item as any).invoice_photo_url)} title="Ver factura">
+                          <Image className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
                       {isRecurring && (
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onLogService(item)} title="Log Service">
                           <RotateCcw className="h-3.5 w-3.5" />
@@ -207,5 +215,31 @@ export function AllServicesTable({ items, getTruckLabel, onEdit, onDelete, onLog
         </TableBody>
       </Table>
     </div>
-  );
+
+    {/* Dialog para ver foto de factura */}
+    <Dialog open={!!photoUrl} onOpenChange={(open) => !open && setPhotoUrl(null)}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Invoice Photo</DialogTitle>
+        </DialogHeader>
+        {photoUrl && (
+          <div className="flex justify-center">
+            {photoUrl.match(/\.(jpg|jpeg|png|gif|webp)$/i) || photoUrl.includes('image') ? (
+              <img src={photoUrl} alt="Invoice" className="max-w-full max-h-[70vh] object-contain rounded" />
+            ) : (
+              <iframe src={photoUrl} className="w-full h-[70vh] rounded border" title="Invoice PDF" />
+            )}
+          </div>
+        )}
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={() => setPhotoUrl(null)}>Cerrar</Button>
+          {photoUrl && (
+            <Button asChild>
+              <a href={photoUrl} target="_blank" rel="noopener noreferrer">Abrir en nueva pestaña</a>
+            </Button>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  </>;
 }

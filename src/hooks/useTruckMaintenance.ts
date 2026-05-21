@@ -21,6 +21,7 @@ export interface DbTruckMaintenance {
   cost: number | null;
   vendor: string | null;
   expense_id: string | null;
+  invoice_photo_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -39,6 +40,7 @@ export interface MaintenanceInput {
   payment_method?: string;
   location?: string | null;
   invoice_number?: string | null;
+  invoice_photo_url?: string | null;
   create_expense?: boolean;
 }
 
@@ -169,6 +171,7 @@ export function useTruckMaintenance() {
       cost: input.cost || null,
       vendor: input.vendor || null,
       expense_id,
+      invoice_photo_url: input.invoice_photo_url || null,
     } as any);
 
     if (error) {
@@ -183,7 +186,7 @@ export function useTruckMaintenance() {
 
   const updateMaintenance = useCallback(async (id: string, input: Partial<MaintenanceInput>) => {
     const updates: Record<string, any> = {};
-    const allowedKeys = ['truck_id', 'maintenance_type', 'description', 'interval_miles', 'interval_days', 'last_performed_at', 'last_miles', 'cost', 'vendor'];
+    const allowedKeys = ['truck_id', 'maintenance_type', 'description', 'interval_miles', 'interval_days', 'last_performed_at', 'last_miles', 'cost', 'vendor', 'invoice_photo_url'];
     for (const key of allowedKeys) {
       if (key in input) updates[key] = (input as any)[key];
     }

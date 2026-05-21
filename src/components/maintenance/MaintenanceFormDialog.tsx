@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,8 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import { Camera, X, Loader2 } from 'lucide-react';
 import { MAINTENANCE_TYPES, MAINTENANCE_TYPE_LABELS, MAINTENANCE_CATEGORIES_BY_TYPE } from './maintenanceConstants';
 import { PAYMENT_METHODS } from '@/components/expenses/expenseConstants';
+import { supabase } from '@/integrations/supabase/client';
 import type { DbTruck } from '@/hooks/useTrucks';
 import type { DbTruckMaintenance, MaintenanceInput } from '@/hooks/useTruckMaintenance';
 
@@ -45,6 +47,9 @@ export function MaintenanceFormDialog({ open, onOpenChange, trucks, drivers, onS
   const [createExpense, setCreateExpense] = useState(true);
   const [isRecurring, setIsRecurring] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [invoicePhotoUrl, setInvoicePhotoUrl] = useState<string | null>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (open) {
@@ -67,6 +72,7 @@ export function MaintenanceFormDialog({ open, onOpenChange, trucks, drivers, onS
         setDescription(editItem.description || '');
         setNotes('');
         setIsRecurring(!!(editItem.interval_miles || editItem.interval_days));
+        setInvoicePhotoUrl((editItem as any).invoice_photo_url || null);
       } else {
         setTruckId(companyDriverTrucks[0]?.id || '');
         setMaintenanceType('maintenance');
@@ -86,6 +92,7 @@ export function MaintenanceFormDialog({ open, onOpenChange, trucks, drivers, onS
         setNotes('');
         setCreateExpense(true);
         setIsRecurring(true);
+        setInvoicePhotoUrl(null);
       }
     }
   }, [open, editItem, trucks]);
@@ -104,6 +111,24 @@ export function MaintenanceFormDialog({ open, onOpenChange, trucks, drivers, onS
   const selectedTruck = trucks.find(t => t.id === truckId);
   const assignedDriver = selectedTruck ? drivers.find(d => d.truck_id === selectedTruck.id) : null;
   const totalAmount = (parseFloat(cost) || 0) + (parseFloat(taxAmount) || 0);
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingPhoto(true);
+    try {
+      const ext = file.name.split('.').pop();
+      const path = `maintenance/invoices/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error } = await supabase.storage.from('driver-documents').upload(path, file);
+      if (error) throw error;
+      const { data } = await supabase.storage.from('driver-documents').createSignedUrl(path, 31536000);
+      setInvoicePhotoUrl(data?.signedUrl || null);
+    } catch (e: any) {
+      console.error('Error uploading photo:', e);
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
 
   const handleSubmit = async () => {
     if (!truckId) return;
@@ -128,6 +153,7 @@ export function MaintenanceFormDialog({ open, onOpenChange, trucks, drivers, onS
       payment_method: paymentMethod,
       location: location || null,
       invoice_number: invoiceNumber || null,
+      invoice_photo_url: invoicePhotoUrl || null,
       create_expense: createExpense,
     });
     setSaving(false);
@@ -313,6 +339,28 @@ export function MaintenanceFormDialog({ open, onOpenChange, trucks, drivers, onS
                 <Input value={invoiceNumber} maxLength={50}
                   onChange={e => setInvoiceNumber(e.target.value)}
                   placeholder="e.g., INV-12345" />
+              </div>
+              {/* Foto de factura */}
+              <div className="md:col-span-2">
+                <Label>Invoice Photo</Label>
+                <div className="mt-1">
+                  {invoicePhotoUrl ? (
+                    <div className="flex items-center gap-3">
+                      <a href={invoicePhotoUrl} target="_blank" rel="noopener noreferrer">
+                        <img src={invoicePhotoUrl} alt="Invoice" className="h-20 w-auto rounded border object-cover cursor-pointer hover:opacity-80" />
+                      </a>
+                      <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setInvoicePhotoUrl(null)}>
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button variant="outline" className="gap-2" onClick={() => photoInputRef.current?.click()} disabled={uploadingPhoto}>
+                      {uploadingPhoto ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+                      {uploadingPhoto ? 'Uploading...' : 'Upload Invoice Photo'}
+                    </Button>
+                  )}
+                  <input ref={photoInputRef} type="file" accept="image/*,.pdf" className="hidden" onChange={handlePhotoUpload} />
+                </div>
               </div>
               <div className="md:col-span-2">
                 <Label>Notes ({notes.length}/1000)</Label>
