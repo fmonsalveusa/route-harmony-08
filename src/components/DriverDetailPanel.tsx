@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { DocViewer } from '@/components/DocViewer';
 
 function Info({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -33,9 +34,10 @@ interface Props {
   dispatcherName: string | null;
   getDocSignedUrl?: (storedUrl: string) => Promise<string | null>;
   truck?: any;
+  onUpdateDriver?: (id: string, updates: Record<string, any>) => Promise<boolean>;
 }
 
-export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSignedUrl, truck }: Props) {
+export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSignedUrl, truck, onUpdateDriver }: Props) {
   const [loadingDoc, setLoadingDoc] = useState<string | null>(null);
   const [deletingTermination, setDeletingTermination] = useState(false);
   const [termLetterDeleted, setTermLetterDeleted] = useState(false);
@@ -227,83 +229,51 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
             const isTermination = doc.key === 'termination_letter_url';
             const url = isTermination && termLetterDeleted ? null : (driver as any)[doc.key];
             return (
-              <div key={doc.key} className="flex items-center gap-1.5 px-2.5 py-1.5 border rounded-md text-xs bg-background">
-                <FileText className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className="font-medium">{doc.label}</span>
-                {url ? (
-                  <>
-                    <button
-                      onClick={e => { e.stopPropagation(); handleViewDoc(url, doc.key); }}
-                      className="text-primary underline flex items-center gap-0.5 hover:text-primary/80"
-                      disabled={loadingDoc === doc.key}
-                    >
-                      {loadingDoc === doc.key ? <Loader2 className="h-3 w-3 animate-spin" /> : <>View <ExternalLink className="h-3 w-3" /></>}
-                    </button>
-                    {isTermination && (
-                      <button
-                        onClick={e => { e.stopPropagation(); handleDeleteTerminationLetter(); }}
-                        className="text-destructive hover:text-destructive/80 ml-1"
-                        disabled={deletingTermination}
-                        title="Delete termination letter"
-                      >
-                        {deletingTermination ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
-                      </button>
-                    )}
-                  </>
-                ) : (
-                  <span className="text-muted-foreground">—</span>
+              <DocViewer
+                key={doc.key}
+                label={doc.label}
+                url={url}
+                docKey={doc.key}
+                getDocSignedUrl={getDocSignedUrl}
+                allowUpload={!!onUpdateDriver}
+                uploadPath={`${driver.id}/${doc.key}`}
+                onUpload={onUpdateDriver ? async (newUrl) => {
+                  await onUpdateDriver(driver.id, { [doc.key]: newUrl });
+                } : undefined}
+              >
+                {isTermination && url && (
+                  <button
+                    onClick={e => { e.stopPropagation(); handleDeleteTerminationLetter(); }}
+                    className="text-destructive hover:text-destructive/80 ml-1"
+                    disabled={deletingTermination}
+                    title="Delete termination letter"
+                  >
+                    {deletingTermination ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                  </button>
                 )}
-              </div>
+              </DocViewer>
             );
           })}
 
-          {/* Legacy leasing fields (drivers onboarded before dynamic system) */}
+          {/* Legacy leasing fields */}
           {(driver as any).leasing_agreement_url && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1.5 border rounded-md text-xs bg-background">
-              <FileText className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="font-medium">Leasing Agreement</span>
-              <button onClick={e => { e.stopPropagation(); handleViewDoc((driver as any).leasing_agreement_url, 'leasing_agreement_url'); }} className="text-primary underline flex items-center gap-0.5 hover:text-primary/80" disabled={loadingDoc === 'leasing_agreement_url'}>
-                {loadingDoc === 'leasing_agreement_url' ? <Loader2 className="h-3 w-3 animate-spin" /> : <>View <ExternalLink className="h-3 w-3" /></>}
-              </button>
-            </div>
+            <DocViewer label="Leasing Agreement" url={(driver as any).leasing_agreement_url} docKey="leasing_agreement_url" getDocSignedUrl={getDocSignedUrl} />
           )}
           {(driver as any).leasing_agreement_venco_url && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1.5 border rounded-md text-xs bg-background">
-              <FileText className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="font-medium">Leasing Agreement (VENCO)</span>
-              <button onClick={e => { e.stopPropagation(); handleViewDoc((driver as any).leasing_agreement_venco_url, 'leasing_agreement_venco_url'); }} className="text-primary underline flex items-center gap-0.5 hover:text-primary/80" disabled={loadingDoc === 'leasing_agreement_venco_url'}>
-                {loadingDoc === 'leasing_agreement_venco_url' ? <Loader2 className="h-3 w-3 animate-spin" /> : <>View <ExternalLink className="h-3 w-3" /></>}
-              </button>
-            </div>
+            <DocViewer label="Leasing Agreement (VENCO)" url={(driver as any).leasing_agreement_venco_url} docKey="leasing_agreement_venco_url" getDocSignedUrl={getDocSignedUrl} />
           )}
           {(driver as any).leasing_agreement_58_url && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1.5 border rounded-md text-xs bg-background">
-              <FileText className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="font-medium">Leasing Agreement (58 Logistics)</span>
-              <button onClick={e => { e.stopPropagation(); handleViewDoc((driver as any).leasing_agreement_58_url, 'leasing_agreement_58_url'); }} className="text-primary underline flex items-center gap-0.5 hover:text-primary/80" disabled={loadingDoc === 'leasing_agreement_58_url'}>
-                {loadingDoc === 'leasing_agreement_58_url' ? <Loader2 className="h-3 w-3 animate-spin" /> : <>View <ExternalLink className="h-3 w-3" /></>}
-              </button>
-            </div>
+            <DocViewer label="Leasing Agreement (58 Logistics)" url={(driver as any).leasing_agreement_58_url} docKey="leasing_agreement_58_url" getDocSignedUrl={getDocSignedUrl} />
           )}
 
-          {/* Dynamic Leasing Agreements (per carrier company — new system) */}
+          {/* Dynamic Leasing Agreements */}
           {leasingLoading && (
             <div className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-muted-foreground">
               <Loader2 className="h-3 w-3 animate-spin" /> Loading leasing agreements...
             </div>
           )}
           {!leasingLoading && leasingDocs.map(doc => (
-            <div key={doc.id} className="flex items-center gap-1.5 px-2.5 py-1.5 border rounded-md text-xs bg-background">
-              <FileText className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="font-medium">Leasing Agreement ({doc.company_name})</span>
-              <button
-                onClick={e => { e.stopPropagation(); handleViewDoc(doc.file_url, doc.id); }}
-                className="text-primary underline flex items-center gap-0.5 hover:text-primary/80"
-                disabled={loadingDoc === doc.id}
-              >
-                {loadingDoc === doc.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <>View <ExternalLink className="h-3 w-3" /></>}
-              </button>
-            </div>
+            <DocViewer key={doc.id} label={`Leasing Agreement (${doc.company_name})`} url={doc.file_url} docKey={doc.id} getDocSignedUrl={getDocSignedUrl} />
           ))}
         </div>
       </div>
