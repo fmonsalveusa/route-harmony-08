@@ -1546,12 +1546,6 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
             company={companies.length > 0 ? companies[0] : null}
             driverName={driver?.name}
           />
-
-          {/* Pick Up Pictures */}
-          <PickupPicturesSection loadId={load.id} />
-
-          {/* POD Upload Section */}
-          <PodUploadSection loadId={load.id} />
         </div>
 
         {/* Map */}
