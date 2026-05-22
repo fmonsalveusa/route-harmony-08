@@ -1,4 +1,5 @@
-import { useQuery, useQueryClient, useCallback } from '@tanstack/react-query';
+import { useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface DbServiceLog {
