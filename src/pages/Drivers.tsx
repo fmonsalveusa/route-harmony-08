@@ -22,6 +22,7 @@ import { TerminationLetterDialog } from '@/components/TerminationLetterDialog';
 import { toast } from '@/hooks/use-toast';
 import { ExpiryIndicators } from '@/components/ExpiryIndicators';
 import { supabase } from '@/integrations/supabase/client';
+import { formatPhone } from '@/lib/phoneUtils';
 
 const driverStatusColor = (status: string) => {
   switch (status) {
@@ -127,10 +128,10 @@ const Drivers = () => {
       : `Truck #: ${truck?.unit_number || ''}<br>Truck Type: Box Truck<br>Back Door: ${truck?.rear_door_width_in && truck?.rear_door_height_in ? `${truck.rear_door_width_in}" x ${truck.rear_door_height_in}"` : ''}`;
 
     // Plain text for WhatsApp (*bold*)
-    const plain = `*Driver Info:*\nDriver Name: ${driver.name}\nPhone Number: ${driver.phone}\n\n*Truck Info:*\n${truckLines}\n\n*Dispatcher Info:*\nDispatcher Name: ${dispatcher?.name || ''}\nDispatcher Phone Number: ${dispatcher?.phone || ''}\n\nETA to Pick up: `;
+    const plain = `*Driver Info:*\nDriver Name: ${driver.name}\nPhone Number: ${formatPhone(driver.phone)}\n\n*Truck Info:*\n${truckLines}\n\n*Dispatcher Info:*\nDispatcher Name: ${dispatcher?.name || ''}\nDispatcher Phone Number: ${formatPhone(dispatcher?.phone)}\n\nETA to Pick up: `;
 
     // HTML for email clients (<b>bold</b>)
-    const html = `<b>Driver Info:</b><br>Driver Name: ${driver.name}<br>Phone Number: ${driver.phone}<br><br><b>Truck Info:</b><br>${truckHtmlLines}<br><br><b>Dispatcher Info:</b><br>Dispatcher Name: ${dispatcher?.name || ''}<br>Dispatcher Phone Number: ${dispatcher?.phone || ''}<br><br>ETA to Pick up: `;
+    const html = `<b>Driver Info:</b><br>Driver Name: ${driver.name}<br>Phone Number: ${formatPhone(driver.phone)}<br><br><b>Truck Info:</b><br>${truckHtmlLines}<br><br><b>Dispatcher Info:</b><br>Dispatcher Name: ${dispatcher?.name || ''}<br>Dispatcher Phone Number: ${formatPhone(dispatcher?.phone)}<br><br>ETA to Pick up: `;
 
     try {
       navigator.clipboard.write([
@@ -254,7 +255,7 @@ const Drivers = () => {
                       </td>
                       <td className="p-3 text-muted-foreground">
                         <div className="flex items-center gap-1.5">
-                          <Phone className="h-3.5 w-3.5" />{driver.phone}
+                          <Phone className="h-3.5 w-3.5" />{formatPhone(driver.phone)}
                         </div>
                       </td>
                       <td className="p-3 hidden md:table-cell">

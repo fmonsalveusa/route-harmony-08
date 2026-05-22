@@ -14,6 +14,7 @@ import { US_STATES } from '@/lib/usStates';
 import DocumentSigningStep, { SignedDocs } from '@/components/onboarding/DocumentSigningStep';
 import { generateOnboardingSummaryPdf } from '@/lib/onboardingDocPdf';
 import { format } from 'date-fns';
+import { formatPhone } from '@/lib/phoneUtils';
 
 const TRUCK_TYPES = ['Box Truck', 'Hotshot', 'Flatbed', 'Dry Van'];
 
@@ -541,7 +542,7 @@ export default function DriverOnboarding() {
                 <div className="grid grid-cols-2 gap-2 text-sm bg-muted/50 p-4 rounded-lg">
                   <div><span className="text-muted-foreground">Name:</span> {driver.name}</div>
                   <div><span className="text-muted-foreground">Email:</span> {driver.email}</div>
-                  <div><span className="text-muted-foreground">Phone:</span> {driver.phone}</div>
+                  <div><span className="text-muted-foreground">Phone:</span> {formatPhone(driver.phone)}</div>
                   <div><span className="text-muted-foreground">License:</span> {driver.license}</div>
                   {driver.state && <div><span className="text-muted-foreground">State:</span> {driver.state}</div>}
                   {driver.license_expiry && <div><span className="text-muted-foreground">License Exp:</span> {driver.license_expiry}</div>}

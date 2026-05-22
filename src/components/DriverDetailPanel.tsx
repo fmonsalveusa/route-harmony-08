@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { DbDriver } from '@/hooks/useDrivers';
 import { FileText, ExternalLink, Loader2, Download, Trash2 } from 'lucide-react';
 import { formatDate } from '@/lib/dateUtils';
+import { formatPhone } from '@/lib/phoneUtils';
 import { ExpiryBadge } from '@/components/ExpiryBadge';
 import { generateOnboardingSummaryPdf } from '@/lib/onboardingDocPdf';
 import { Button } from '@/components/ui/button';
@@ -169,7 +170,7 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
       {/* Personal Info */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3">
         <Info label="Email">{driver.email}</Info>
-        <Info label="Phone">{driver.phone}</Info>
+        <Info label="Phone">{formatPhone(driver.phone)}</Info>
         <Info label="Birthday">{formatDate((driver as any).birthday) || '—'}</Info>
         <Info label="Hire Date">{formatDate(driver.hire_date)}</Info>
         <Info label="Service Type">{driver.service_type?.replace(/_/g, ' ')}</Info>
@@ -186,7 +187,7 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
       {/* Emergency Contact */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3 border-t pt-3">
         <Info label="Emergency Contact">{(driver as any).emergency_contact_name || '—'}</Info>
-        <Info label="Emergency Phone">{(driver as any).emergency_phone || '—'}</Info>
+        <Info label="Emergency Phone">{formatPhone((driver as any).emergency_phone)}</Info>
       </div>
 
       {/* License & Medical */}

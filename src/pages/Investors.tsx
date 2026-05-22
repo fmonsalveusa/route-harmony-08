@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Landmark, Pencil, Trash2, PlusCircle, Search, Phone, Mail, Users, DollarSign, X, Percent } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { formatPhone } from '@/lib/phoneUtils';
 
 // ─── Create / Edit Dialog ────────────────────────────────────
 const InvestorFormDialog = ({
@@ -300,7 +301,7 @@ const Investors = () => {
                 </td>
                 <td className="p-4 text-muted-foreground">
                   {inv.phone
-                    ? <span className="flex items-center gap-1"><Phone className="h-3.5 w-3.5" />{inv.phone}</span>
+                    ? <span className="flex items-center gap-1"><Phone className="h-3.5 w-3.5" />{formatPhone(inv.phone)}</span>
                     : '—'}
                 </td>
                 <td className="p-4 text-center">

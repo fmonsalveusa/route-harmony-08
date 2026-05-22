@@ -11,6 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Plus, Shield, Calculator, Headphones, Truck as TruckIcon, Loader2, Pencil, Trash2, ChevronDown } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { formatPhone } from '@/lib/phoneUtils';
 
 const roleIcons: Record<string, any> = {
   admin: Shield,
@@ -143,7 +144,7 @@ const UsersPage = () => {
                           </div>
                         </td>
                         <td className="p-3 text-muted-foreground">{u.email}</td>
-                        <td className="p-3 text-muted-foreground">{u.phone || '—'}</td>
+                        <td className="p-3 text-muted-foreground">{formatPhone(u.phone)}</td>
                         <td className="p-3">
                           <Badge variant="secondary" className={`gap-1 ${roleBadgeStyles[u.role] || ''}`}>
                             <RoleIcon className="h-3 w-3" /> {roleLabels[u.role] || u.role}

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Plus, Phone, Mail, Percent, Pencil, Trash2, ChevronDown } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { formatPhone } from '@/lib/phoneUtils';
 
 const dispatcherStatusColor = (status: string) => {
   switch (status) {
@@ -68,7 +69,7 @@ const Dispatchers = () => {
 
           <div className="mt-4 space-y-2 text-sm">
             <div className="flex items-center gap-2 text-muted-foreground"><Mail className="h-3.5 w-3.5" />{d.email}</div>
-            <div className="flex items-center gap-2 text-muted-foreground"><Phone className="h-3.5 w-3.5" />{d.phone}</div>
+            <div className="flex items-center gap-2 text-muted-foreground"><Phone className="h-3.5 w-3.5" />{formatPhone(d.phone)}</div>
             <div className="flex items-center gap-2 text-muted-foreground">
               <Percent className="h-3.5 w-3.5" />
               <span>Commission 1: {d.commission_percentage}%</span>

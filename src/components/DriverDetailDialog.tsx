@@ -4,6 +4,7 @@ import { StatusBadge } from '@/components/StatusBadge';
 import { DbDriver } from '@/hooks/useDrivers';
 import { FileText, ExternalLink, Loader2 } from 'lucide-react';
 import { formatDate } from '@/lib/dateUtils';
+import { formatPhone } from '@/lib/phoneUtils';
 import { supabase } from '@/integrations/supabase/client';
 
 interface DriverDetailDialogProps {
@@ -84,7 +85,7 @@ export function DriverDetailDialog({ open, onOpenChange, driver, truckLabel, dis
             <h3 className="font-semibold text-sm border-b pb-1">Personal Information</h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3">
               <Info label="Email">{driver.email}</Info>
-              <Info label="Phone">{driver.phone}</Info>
+              <Info label="Phone">{formatPhone(driver.phone)}</Info>
               <Info label="Birthday">{formatDate((driver as any).birthday) || '—'}</Info>
               <Info label="Hire Date">{formatDate(driver.hire_date)}</Info>
               <Info label="Service Type">{driver.service_type?.replace(/_/g, ' ')}</Info>
@@ -107,7 +108,7 @@ export function DriverDetailDialog({ open, onOpenChange, driver, truckLabel, dis
             <h3 className="font-semibold text-sm border-b pb-1">Emergency Contact</h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3">
               <Info label="Name">{(driver as any).emergency_contact_name || '—'}</Info>
-              <Info label="Phone">{(driver as any).emergency_phone || '—'}</Info>
+              <Info label="Phone">{formatPhone((driver as any).emergency_phone)}</Info>
             </div>
           </section>
 
