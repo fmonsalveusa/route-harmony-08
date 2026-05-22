@@ -46,14 +46,19 @@ function ServiceHistoryRow({ maintenanceId, onViewPhoto }: { maintenanceId: stri
   const handleSaveEdit = async () => {
     if (!editingLog) return;
     setSavingEdit(true);
-    await updateLog(editingLog.id, {
+    const updates = {
       performed_at: editDate,
       odometer_miles: Number(editMiles) || 0,
       cost: editCost ? Number(editCost) : null,
       vendor: editVendor || null,
       invoice_photo_url: editPhotoUrl,
-    });
+    };
+    const ok = await updateLog(editingLog.id, updates);
     setSavingEdit(false);
+    if (ok) {
+      // Actualiza el log localmente para mostrar la foto inmediatamente sin esperar re-fetch
+      Object.assign(editingLog, updates);
+    }
     setEditingLog(null);
   };
 
