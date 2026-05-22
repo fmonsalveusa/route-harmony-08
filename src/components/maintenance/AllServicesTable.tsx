@@ -24,6 +24,7 @@ interface AllServicesTableProps {
 function ServiceHistoryRow({ maintenanceId, onViewPhoto }: { maintenanceId: string; onViewPhoto: (url: string) => void }) {
   const { logs, isLoading, deleteLog, updateLog } = useServiceLog(maintenanceId);
   const [editingLog, setEditingLog] = useState<DbServiceLog | null>(null);
+  const [localPhotoOverrides, setLocalPhotoOverrides] = useState<Record<string, string | null>>({});
   const [editDate, setEditDate] = useState('');
   const [editMiles, setEditMiles] = useState('');
   const [editCost, setEditCost] = useState('');
@@ -56,8 +57,8 @@ function ServiceHistoryRow({ maintenanceId, onViewPhoto }: { maintenanceId: stri
     const ok = await updateLog(editingLog.id, updates);
     setSavingEdit(false);
     if (ok) {
-      // Actualiza el log localmente para mostrar la foto inmediatamente sin esperar re-fetch
-      Object.assign(editingLog, updates);
+      // Actualiza foto localmente para mostrar inmediatamente sin esperar re-fetch
+      setLocalPhotoOverrides(prev => ({ ...prev, [editingLog.id]: editPhotoUrl }));
     }
     setEditingLog(null);
   };
@@ -195,11 +196,16 @@ function ServiceHistoryRow({ maintenanceId, onViewPhoto }: { maintenanceId: stri
           </TableCell>
           <TableCell className="py-1.5">
             <div className="flex items-center gap-1">
-              {(log as any).invoice_photo_url && (
-                <Button variant="ghost" size="icon" className="h-6 w-6 text-blue-500" onClick={() => onViewPhoto((log as any).invoice_photo_url)} title="Ver factura">
-                  <Image className="h-3 w-3" />
-                </Button>
-              )}
+              {(() => {
+                const photoUrl = log.id in localPhotoOverrides
+                  ? localPhotoOverrides[log.id]
+                  : (log as any).invoice_photo_url;
+                return photoUrl ? (
+                  <Button variant="ghost" size="icon" className="h-6 w-6 text-blue-500" onClick={() => onViewPhoto(photoUrl)} title="Ver factura">
+                    <Image className="h-3 w-3" />
+                  </Button>
+                ) : null;
+              })()}
               <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => startEdit(log)} title="Editar">
                 <Pencil className="h-3 w-3" />
               </Button>
