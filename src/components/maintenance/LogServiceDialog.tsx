@@ -1,11 +1,13 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Camera, X, Loader2 } from 'lucide-react';
 import { PAYMENT_METHODS } from '@/components/expenses/expenseConstants';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Props {
   open: boolean;
@@ -20,6 +22,7 @@ interface Props {
     payment_method?: string;
     location?: string | null;
     invoice_number?: string | null;
+    invoice_photo_url?: string | null;
     create_expense?: boolean;
   }) => Promise<boolean>;
 }
@@ -35,6 +38,27 @@ export function LogServiceDialog({ open, onOpenChange, maintenanceType, onSubmit
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [createExpense, setCreateExpense] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [invoicePhotoUrl, setInvoicePhotoUrl] = useState<string | null>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingPhoto(true);
+    try {
+      const ext = file.name.split('.').pop();
+      const path = `maintenance/invoices/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error } = await supabase.storage.from('driver-documents').upload(path, file);
+      if (error) throw error;
+      const { data } = await supabase.storage.from('driver-documents').createSignedUrl(path, 31536000);
+      setInvoicePhotoUrl(data?.signedUrl || null);
+    } catch (e: any) {
+      console.error('Error uploading photo:', e);
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
 
   const totalAmount = (parseFloat(cost) || 0) + (parseFloat(taxAmount) || 0);
 
@@ -49,6 +73,7 @@ export function LogServiceDialog({ open, onOpenChange, maintenanceType, onSubmit
       payment_method: paymentMethod,
       location: location || null,
       invoice_number: invoiceNumber || null,
+      invoice_photo_url: invoicePhotoUrl || null,
       create_expense: createExpense,
     });
     setSaving(false);
@@ -133,6 +158,27 @@ export function LogServiceDialog({ open, onOpenChange, maintenanceType, onSubmit
               <div>
                 <Label>Invoice/Receipt Number</Label>
                 <Input value={invoiceNumber} maxLength={50} onChange={e => setInvoiceNumber(e.target.value)} placeholder="e.g., INV-12345" />
+              </div>
+              <div className="md:col-span-2">
+                <Label>Invoice Photo</Label>
+                <div className="mt-1">
+                  {invoicePhotoUrl ? (
+                    <div className="flex items-center gap-3">
+                      <a href={invoicePhotoUrl} target="_blank" rel="noopener noreferrer">
+                        <img src={invoicePhotoUrl} alt="Invoice" className="h-20 w-auto rounded border object-cover cursor-pointer hover:opacity-80" />
+                      </a>
+                      <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setInvoicePhotoUrl(null)}>
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button variant="outline" className="gap-2" onClick={() => photoInputRef.current?.click()} disabled={uploadingPhoto}>
+                      {uploadingPhoto ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+                      {uploadingPhoto ? 'Uploading...' : 'Upload Invoice Photo'}
+                    </Button>
+                  )}
+                  <input ref={photoInputRef} type="file" accept="image/*,.pdf" className="hidden" onChange={handlePhotoUpload} />
+                </div>
               </div>
               {Number(cost) > 0 && (
                 <div className="flex items-center gap-2 self-end pb-2">

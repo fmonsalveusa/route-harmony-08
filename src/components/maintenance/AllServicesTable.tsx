@@ -1,13 +1,16 @@
-import { useState } from 'react';
-import { Pencil, Trash2, RotateCcw, ChevronDown, ChevronRight, History, Gauge, DollarSign, Image, X } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { Pencil, Trash2, RotateCcw, ChevronDown, ChevronRight, History, Gauge, DollarSign, Image, X, Check, Loader2, Camera } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { DbTruckMaintenance } from '@/hooks/useTruckMaintenance';
-import { useServiceLog } from '@/hooks/useServiceLog';
+import { useServiceLog, DbServiceLog } from '@/hooks/useServiceLog';
 import { getMaintenanceTypeConfig, getStatusColor } from './maintenanceConstants';
 import { formatDate } from '@/lib/dateUtils';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AllServicesTableProps {
   items: DbTruckMaintenance[];
@@ -18,8 +21,66 @@ interface AllServicesTableProps {
   onViewHistory: (item: DbTruckMaintenance) => void;
 }
 
-function ServiceHistoryRow({ maintenanceId }: { maintenanceId: string }) {
-  const { logs, isLoading } = useServiceLog(maintenanceId);
+function ServiceHistoryRow({ maintenanceId, onViewPhoto }: { maintenanceId: string; onViewPhoto: (url: string) => void }) {
+  const { logs, isLoading, deleteLog, updateLog } = useServiceLog(maintenanceId);
+  const [editingLog, setEditingLog] = useState<DbServiceLog | null>(null);
+  const [editDate, setEditDate] = useState('');
+  const [editMiles, setEditMiles] = useState('');
+  const [editCost, setEditCost] = useState('');
+  const [editVendor, setEditVendor] = useState('');
+  const [editPhotoUrl, setEditPhotoUrl] = useState<string | null>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+
+  const startEdit = (log: DbServiceLog) => {
+    setEditingLog(log);
+    setEditDate(log.performed_at);
+    setEditMiles(String(log.odometer_miles));
+    setEditCost(log.cost != null ? String(log.cost) : '');
+    setEditVendor(log.vendor || '');
+    setEditPhotoUrl((log as any).invoice_photo_url || null);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingLog) return;
+    setSavingEdit(true);
+    await updateLog(editingLog.id, {
+      performed_at: editDate,
+      odometer_miles: Number(editMiles) || 0,
+      cost: editCost ? Number(editCost) : null,
+      vendor: editVendor || null,
+      invoice_photo_url: editPhotoUrl,
+    });
+    setSavingEdit(false);
+    setEditingLog(null);
+  };
+
+  const handleDelete = async (logId: string) => {
+    if (!confirm('¿Eliminar este registro de servicio?')) return;
+    setDeletingId(logId);
+    await deleteLog(logId);
+    setDeletingId(null);
+  };
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingPhoto(true);
+    try {
+      const ext = file.name.split('.').pop();
+      const path = `maintenance/invoices/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error } = await supabase.storage.from('driver-documents').upload(path, file);
+      if (error) throw error;
+      const { data } = await supabase.storage.from('driver-documents').createSignedUrl(path, 31536000);
+      setEditPhotoUrl(data?.signedUrl || null);
+    } catch (e: any) {
+      console.error('Upload error:', e);
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -43,6 +104,58 @@ function ServiceHistoryRow({ maintenanceId }: { maintenanceId: string }) {
 
   return (
     <>
+      {/* Edit Dialog */}
+      <Dialog open={!!editingLog} onOpenChange={(open) => !open && setEditingLog(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Service Log</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label>Date</Label>
+              <Input type="date" value={editDate} onChange={e => setEditDate(e.target.value)} />
+            </div>
+            <div>
+              <Label>Odometer (miles)</Label>
+              <Input type="number" value={editMiles} onChange={e => setEditMiles(e.target.value)} />
+            </div>
+            <div>
+              <Label>Cost ($)</Label>
+              <Input type="number" value={editCost} onChange={e => setEditCost(e.target.value)} placeholder="0.00" />
+            </div>
+            <div>
+              <Label>Vendor</Label>
+              <Input value={editVendor} onChange={e => setEditVendor(e.target.value)} />
+            </div>
+            <div>
+              <Label>Invoice Photo</Label>
+              {editPhotoUrl ? (
+                <div className="flex items-center gap-2 mt-1">
+                  <a href={editPhotoUrl} target="_blank" rel="noopener noreferrer">
+                    <img src={editPhotoUrl} alt="Invoice" className="h-16 w-auto rounded border object-cover" />
+                  </a>
+                  <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setEditPhotoUrl(null)}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <Button variant="outline" size="sm" className="gap-2 mt-1" onClick={() => photoInputRef.current?.click()} disabled={uploadingPhoto}>
+                  {uploadingPhoto ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
+                  {uploadingPhoto ? 'Uploading...' : 'Upload Photo'}
+                </Button>
+              )}
+              <input ref={photoInputRef} type="file" accept="image/*,.pdf" className="hidden" onChange={handlePhotoUpload} />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setEditingLog(null)}>Cancel</Button>
+            <Button onClick={handleSaveEdit} disabled={savingEdit}>
+              {savingEdit ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {logs.map((log) => (
         <TableRow key={log.id} className="bg-muted/30">
           <TableCell className="py-1.5 pl-10 text-xs text-muted-foreground whitespace-nowrap">
@@ -75,7 +188,21 @@ function ServiceHistoryRow({ maintenanceId }: { maintenanceId: string }) {
           <TableCell className="py-1.5 text-xs text-muted-foreground">
             {log.vendor || '—'}
           </TableCell>
-          <TableCell className="py-1.5" />
+          <TableCell className="py-1.5">
+            <div className="flex items-center gap-1">
+              {(log as any).invoice_photo_url && (
+                <Button variant="ghost" size="icon" className="h-6 w-6 text-blue-500" onClick={() => onViewPhoto((log as any).invoice_photo_url)} title="Ver factura">
+                  <Image className="h-3 w-3" />
+                </Button>
+              )}
+              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => startEdit(log)} title="Editar">
+                <Pencil className="h-3 w-3" />
+              </Button>
+              <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => handleDelete(log.id)} disabled={deletingId === log.id} title="Eliminar">
+                {deletingId === log.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+              </Button>
+            </div>
+          </TableCell>
         </TableRow>
       ))}
     </>
@@ -208,7 +335,7 @@ export function AllServicesTable({ items, getTruckLabel, onEdit, onDelete, onLog
                     </div>
                   </TableCell>
                 </TableRow>
-                {isExpanded && <ServiceHistoryRow maintenanceId={item.id} />}
+                {isExpanded && <ServiceHistoryRow maintenanceId={item.id} onViewPhoto={setPhotoUrl} />}
               </>
             );
           })}

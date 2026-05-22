@@ -292,6 +292,7 @@ export function useTruckMaintenance() {
     payment_method?: string;
     location?: string | null;
     invoice_number?: string | null;
+    invoice_photo_url?: string | null;
     create_expense?: boolean;
   }) => {
     const item = maintenanceItems.find(m => m.id === id);
@@ -342,6 +343,7 @@ export function useTruckMaintenance() {
       cost: input.cost || null,
       vendor: input.vendor || null,
       expense_id,
+      invoice_photo_url: input.invoice_photo_url || null,
     } as any);
 
     const { error } = await supabase.from('truck_maintenance' as any)

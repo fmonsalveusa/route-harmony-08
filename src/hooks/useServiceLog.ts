@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useCallback } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface DbServiceLog {
@@ -11,6 +11,7 @@ export interface DbServiceLog {
   vendor: string | null;
   expense_id: string | null;
   notes: string | null;
+  invoice_photo_url: string | null;
   created_at: string;
 }
 
@@ -32,7 +33,27 @@ export function useServiceLog(maintenanceId: string | null) {
     enabled: !!maintenanceId,
   });
 
-  const invalidate = () => qc.invalidateQueries({ queryKey: ['service_log', maintenanceId] });
+  const invalidate = useCallback(() => qc.invalidateQueries({ queryKey: ['service_log', maintenanceId] }), [qc, maintenanceId]);
 
-  return { logs, isLoading, invalidate };
+  const deleteLog = useCallback(async (logId: string): Promise<boolean> => {
+    const { error } = await supabase
+      .from('maintenance_service_log' as any)
+      .delete()
+      .eq('id', logId);
+    if (error) { console.error(error); return false; }
+    invalidate();
+    return true;
+  }, [invalidate]);
+
+  const updateLog = useCallback(async (logId: string, updates: Partial<Pick<DbServiceLog, 'performed_at' | 'odometer_miles' | 'cost' | 'vendor' | 'notes' | 'invoice_photo_url'>>): Promise<boolean> => {
+    const { error } = await supabase
+      .from('maintenance_service_log' as any)
+      .update(updates as any)
+      .eq('id', logId);
+    if (error) { console.error(error); return false; }
+    invalidate();
+    return true;
+  }, [invalidate]);
+
+  return { logs, isLoading, invalidate, deleteLog, updateLog };
 }
