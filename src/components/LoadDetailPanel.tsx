@@ -15,6 +15,7 @@ import { PodUploadSection } from '@/components/PodUploadSection';
 import { LoadAdjustmentsSection } from '@/components/LoadAdjustmentsSection';
 import { PickupPicturesSection } from '@/components/PickupPicturesSection';
 import { BolFormDialog } from '@/components/BolFormDialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { usePodDocuments } from '@/hooks/usePodDocuments';
 import { StopDocumentGroup } from '@/components/StopDocumentGroup';
 import { Input } from '@/components/ui/input';
@@ -224,42 +225,94 @@ function BrokerScoreRow({ brokerName }: { brokerName: string | null | undefined 
 }
 
 function StopPhotoSection({ loadId, stopId }: { loadId: string; stopId: string }) {
-  const { pods, uploading, uploadPod, deletePod, openPod, downloadPod } = usePodDocuments(loadId);
+  const { pods, uploading, uploadPod, deletePod, downloadPod, resolvePodUrl } = usePodDocuments(loadId);
   const stopPods = pods.filter(p => p.stop_id === stopId);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewName, setPreviewName] = useState<string>('');
+  const [previewType, setPreviewType] = useState<string>('');
+  const [loadingPreview, setLoadingPreview] = useState(false);
+
+  const handleOpen = async (doc: any) => {
+    setLoadingPreview(true);
+    setPreviewName(doc.file_name || 'Documento');
+    setPreviewType(doc.file_type || '');
+    try {
+      const url = await resolvePodUrl(doc);
+      setPreviewUrl(url || null);
+    } catch {
+      setPreviewUrl(null);
+    } finally {
+      setLoadingPreview(false);
+    }
+  };
 
   return (
-    <div className="mt-2 space-y-1.5">
-      <StopDocumentGroup
-        label={null}
-        docs={stopPods}
-        onOpen={openPod}
-        onDownload={downloadPod}
-        onDelete={deletePod}
-      />
-      <div className="flex items-center gap-2">
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploading}
-          className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-          type="button"
-        >
-          {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
-          {uploading ? 'Subiendo...' : 'Subir foto/doc'}
-        </button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*,.pdf"
-          className="hidden"
-          onChange={e => {
-            const file = e.target.files?.[0];
-            if (file) uploadPod(file, stopId);
-            e.target.value = '';
-          }}
+    <>
+      <div className="mt-2 space-y-1.5">
+        <StopDocumentGroup
+          label={null}
+          docs={stopPods}
+          onOpen={handleOpen}
+          onDownload={downloadPod}
+          onDelete={deletePod}
         />
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+            type="button"
+          >
+            {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
+            {uploading ? 'Subiendo...' : 'Subir foto/doc'}
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*,.pdf"
+            className="hidden"
+            onChange={e => {
+              const file = e.target.files?.[0];
+              if (file) uploadPod(file, stopId);
+              e.target.value = '';
+            }}
+          />
+        </div>
       </div>
-    </div>
+
+      {/* Visor inline */}
+      <Dialog open={!!previewUrl || loadingPreview} onOpenChange={(open) => { if (!open) { setPreviewUrl(null); setPreviewName(''); } }}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>{previewName}</DialogTitle>
+          </DialogHeader>
+          {loadingPreview ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : previewUrl && (
+            <div className="flex justify-center">
+              {previewUrl.toLowerCase().includes('.pdf') || previewName.toLowerCase().endsWith('.pdf') || previewType === 'pdf' ? (
+                <iframe src={previewUrl} className="w-full h-[70vh] rounded border" title={previewName} />
+              ) : (
+                <img src={previewUrl} alt={previewName} className="max-w-full max-h-[70vh] object-contain rounded" />
+              )}
+            </div>
+          )}
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => { setPreviewUrl(null); setPreviewName(''); }}>Cerrar</Button>
+            {previewUrl && (
+              <Button asChild>
+                <a href={previewUrl} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="h-4 w-4 mr-2" /> Abrir en nueva pestaña
+                </a>
+              </Button>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 

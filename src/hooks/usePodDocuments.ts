@@ -196,5 +196,5 @@ export function usePodDocuments(loadId: string) {
     }
   }, [resolvePodUrl, toast]);
 
-  return { pods, loading, uploading, uploadPod, deletePod, openPod, downloadPod };
+  return { pods, loading, uploading, uploadPod, deletePod, openPod, downloadPod, resolvePodUrl };
 }
