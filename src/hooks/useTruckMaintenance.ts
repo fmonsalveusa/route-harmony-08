@@ -232,7 +232,7 @@ export function useTruckMaintenance() {
         .select('miles, empty_miles')
         .eq('truck_id', truckId)
         .gte('pickup_date', item.last_performed_at)
-        .in('status', ['in_transit', 'delivered', 'paid']);
+        .in('status', ['in_transit', 'picked_up', 'on_site_delivery', 'delivered', 'paid']);
 
       if (error) { console.error(error); continue; }
 
