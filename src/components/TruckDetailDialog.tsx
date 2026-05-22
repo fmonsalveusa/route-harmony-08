@@ -9,6 +9,7 @@ import { formatDate } from '@/lib/dateUtils';
 const DOC_LABELS: { key: keyof DbTruck; label: string }[] = [
   { key: 'registration_photo_url', label: 'Registration Photo' },
   { key: 'insurance_photo_url', label: 'Insurance Photo' },
+  { key: 'annual_inspection_photo_url' as keyof DbTruck, label: 'Annual Inspection Photo' },
   { key: 'rear_truck_photo_url', label: 'Rear Truck Photo' },
   { key: 'truck_side_photo_url', label: 'Truck Side Photo' },
   { key: 'truck_plate_photo_url', label: 'Truck Plate Photo' },
@@ -72,6 +73,9 @@ export function TruckDetailDialog({ open, onOpenChange, truck, getDocSignedUrl }
             <Info label="License Plate">{truck.license_plate || '—'}</Info>
             <Info label="Insurance Expiry">{formatDate(truck.insurance_expiry)}</Info>
             <Info label="Registration Expiry">{formatDate(truck.registration_expiry)}</Info>
+            {(truck as any).annual_inspection_expiry && (
+              <Info label="Annual Inspection Expiry">{formatDate((truck as any).annual_inspection_expiry)}</Info>
+            )}
           </section>
 
           {/* Box Truck dimensions */}

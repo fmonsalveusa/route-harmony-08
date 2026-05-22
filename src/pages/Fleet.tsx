@@ -141,6 +141,7 @@ const Fleet = () => {
                             <ExpiryIndicators items={[
                               { date: truck.registration_expiry, label: 'Registration' },
                               { date: truck.insurance_expiry, label: 'Insurance' },
+                              { date: (truck as any).annual_inspection_expiry, label: 'Annual Insp.' },
                             ]} />
                           </div>
                         </div>
