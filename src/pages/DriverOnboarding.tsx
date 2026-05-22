@@ -25,6 +25,7 @@ const DRIVER_DOC_FIELDS = [
 const TRUCK_DOC_FIELDS = [
   { key: 'registration_photo', label: 'Registration Photo' },
   { key: 'insurance_photo', label: 'Insurance Photo' },
+  { key: 'annual_inspection_photo', label: 'Annual Inspection Photo' },
   { key: 'rear_truck_photo', label: 'Rear Truck Photo' },
   { key: 'truck_side_photo', label: 'Truck Side Photo' },
   { key: 'truck_plate_photo', label: 'Truck Plate Photo' },
@@ -63,6 +64,7 @@ export default function DriverOnboarding() {
     vin: '', license_plate: '',
     insurance_expiry: null as string | null,
     registration_expiry: null as string | null,
+    annual_inspection_expiry: null as string | null,
     cargo_length_ft: null as number | null,
     cargo_width_in: null as number | null,
     cargo_height_in: null as number | null,
@@ -450,6 +452,7 @@ export default function DriverOnboarding() {
                 </div>
                 <OnboardingDateField label="Insurance Expiry" value={truck.insurance_expiry} onChange={v => setTruck(t => ({ ...t, insurance_expiry: v }))} />
                 <OnboardingDateField label="Registration Expiry" value={truck.registration_expiry} onChange={v => setTruck(t => ({ ...t, registration_expiry: v }))} />
+                <OnboardingDateField label="Annual Inspection Expiry" value={truck.annual_inspection_expiry} onChange={v => setTruck(t => ({ ...t, annual_inspection_expiry: v }))} />
               </div>
 
               {/* Box Truck dimensions */}

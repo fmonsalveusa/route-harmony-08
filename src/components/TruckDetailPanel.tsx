@@ -22,6 +22,7 @@ function Info({ label, children }: { label: string; children: React.ReactNode })
 const DOC_LABELS: { key: keyof DbTruck; label: string }[] = [
   { key: 'registration_photo_url', label: 'Registration' },
   { key: 'insurance_photo_url', label: 'Insurance' },
+  { key: 'annual_inspection_photo_url', label: 'Annual Inspection' },
   { key: 'rear_truck_photo_url', label: 'Rear Photo' },
   { key: 'truck_side_photo_url', label: 'Side Photo' },
   { key: 'truck_plate_photo_url', label: 'Plate Photo' },
@@ -60,10 +61,11 @@ export function TruckDetailPanel({ truck, driverName, getDocSignedUrl, onUpdateT
   return (
     <div className="p-5 bg-muted/20 border-t space-y-4 animate-fade-in">
       {/* Document Expiry Alerts */}
-      {(truck.registration_expiry || truck.insurance_expiry) && (
+      {(truck.registration_expiry || truck.insurance_expiry || (truck as any).annual_inspection_expiry) && (
         <div className="flex flex-wrap gap-2">
           <ExpiryBadge date={truck.registration_expiry} label="Registration" />
           <ExpiryBadge date={truck.insurance_expiry} label="Insurance" />
+          <ExpiryBadge date={(truck as any).annual_inspection_expiry} label="Annual Inspection" />
         </div>
       )}
 
@@ -80,6 +82,9 @@ export function TruckDetailPanel({ truck, driverName, getDocSignedUrl, onUpdateT
         <Info label="Max Payload">{truck.max_payload_lbs ? `${truck.max_payload_lbs.toLocaleString()} lbs` : '—'}</Info>
         <Info label="Insurance Expiry">{formatDate(truck.insurance_expiry)}</Info>
         <Info label="Registration Expiry">{formatDate(truck.registration_expiry)}</Info>
+        {(truck as any).annual_inspection_expiry && (
+          <Info label="Annual Inspection Expiry">{formatDate((truck as any).annual_inspection_expiry)}</Info>
+        )}
       </div>
 
       {/* Box Truck dimensions */}
