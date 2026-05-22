@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { formatDate } from '@/lib/dateUtils';
-import { MapPin, Calendar, Weight, DollarSign, User, Truck, Route, Navigation, FileText, Download, ExternalLink, Pencil, Loader2, Copy, Check, Building2, Plus } from 'lucide-react';
+import { MapPin, Calendar, Weight, DollarSign, User, Truck, Route, Navigation, FileText, Download, ExternalLink, Pencil, Loader2, Copy, Check, Building2, Plus, Upload } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import type { DbLoad } from '@/hooks/useLoads';
@@ -15,6 +15,8 @@ import { PodUploadSection } from '@/components/PodUploadSection';
 import { LoadAdjustmentsSection } from '@/components/LoadAdjustmentsSection';
 import { PickupPicturesSection } from '@/components/PickupPicturesSection';
 import { BolFormDialog } from '@/components/BolFormDialog';
+import { usePodDocuments } from '@/hooks/usePodDocuments';
+import { StopDocumentGroup } from '@/components/StopDocumentGroup';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { useToast } from '@/hooks/use-toast';
@@ -217,6 +219,46 @@ function BrokerScoreRow({ brokerName }: { brokerName: string | null | undefined 
           <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setAdding(false)}>✕</Button>
         </div>
       )}
+    </div>
+  );
+}
+
+function StopPhotoSection({ loadId, stopId }: { loadId: string; stopId: string }) {
+  const { pods, uploading, uploadPod, deletePod, openPod, downloadPod } = usePodDocuments(loadId);
+  const stopPods = pods.filter(p => p.stop_id === stopId);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  return (
+    <div className="mt-2 space-y-1.5">
+      <StopDocumentGroup
+        label={null}
+        docs={stopPods}
+        onOpen={openPod}
+        onDownload={downloadPod}
+        onDelete={deletePod}
+      />
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading}
+          className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+          type="button"
+        >
+          {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
+          {uploading ? 'Subiendo...' : 'Subir foto/doc'}
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*,.pdf"
+          className="hidden"
+          onChange={e => {
+            const file = e.target.files?.[0];
+            if (file) uploadPod(file, stopId);
+            e.target.value = '';
+          }}
+        />
+      </div>
     </div>
   );
 }
@@ -1360,23 +1402,29 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
               <Navigation className="h-3.5 w-3.5 text-primary" /> Ruta y Paradas
             </h5>
             {resolvedStops.length > 0 ? (
-              <div className="space-y-2">
-                {resolvedStops.map((stop, i) => (
-                  <div key={i} className="flex items-start gap-2">
-                    <div className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white ${stop.type === 'pickup' ? 'bg-[hsl(152,60%,40%)]' : 'bg-[hsl(0,72%,51%)]'}`}>
-                      {stop.type === 'pickup' ? 'P' : 'D'}
-                    </div>
-                    <div className="flex-1">
-                      <div className="font-medium">{stop.address}</div>
-                      <div className="text-muted-foreground text-xs">
-                        {stop.type === 'pickup' ? 'Pick Up' : 'Delivery'}
-                        {stop.distanceFromPrev != null && (
-                          <span className="ml-2 text-primary font-semibold">↳ {stop.distanceFromPrev.toLocaleString()} mi desde parada anterior</span>
+              <div className="space-y-3">
+                {resolvedStops.map((stop, i) => {
+                  const dbStop = dbStops.find(s => s.address === stop.address);
+                  return (
+                    <div key={i} className="flex items-start gap-2">
+                      <div className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white ${stop.type === 'pickup' ? 'bg-[hsl(152,60%,40%)]' : 'bg-[hsl(0,72%,51%)]'}`}>
+                        {stop.type === 'pickup' ? 'P' : 'D'}
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-medium">{stop.address}</div>
+                        <div className="text-muted-foreground text-xs">
+                          {stop.type === 'pickup' ? 'Pick Up' : 'Delivery'}
+                          {stop.distanceFromPrev != null && (
+                            <span className="ml-2 text-primary font-semibold">↳ {stop.distanceFromPrev.toLocaleString()} mi desde parada anterior</span>
+                          )}
+                        </div>
+                        {dbStop?.id && (
+                          <StopPhotoSection loadId={load.id} stopId={dbStop.id} />
                         )}
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
                 {totalMiles > 0 && (
                   <div className="pt-2 border-t flex justify-between text-xs font-semibold">
                     <span className="text-muted-foreground">Distancia Total</span>
