@@ -17,6 +17,8 @@ export interface DbTruck {
   status: string;
   insurance_expiry: string | null;
   registration_expiry: string | null;
+  annual_inspection_expiry: string | null;
+  annual_inspection_photo_url: string | null;
   registration_photo_url: string | null;
   insurance_photo_url: string | null;
   license_photo_url: string | null;
@@ -49,6 +51,7 @@ export interface TruckInput {
   status: string;
   insurance_expiry?: string | null;
   registration_expiry?: string | null;
+  annual_inspection_expiry?: string | null;
   driver_id?: string | null;
   investor_id?: string | null;
   cargo_length_ft?: number | null;
