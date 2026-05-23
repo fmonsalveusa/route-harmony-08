@@ -171,7 +171,13 @@ export function RevenueBySegmentChart({ loads, drivers, dispatchers, expenses }:
     }, 0);
     const cdTruckIds = new Set(cdLoads.map(l => truckDriverMap[l.driver_id || '']).filter(Boolean));
     const cdGastos = periodExpenses.filter(e => e.truck_id && cdTruckIds.has(e.truck_id)).reduce((s, e) => s + e.total_amount, 0);
-    const cdNeto = Math.max(0, cdBruto - cdDriverPay - cdGastos);
+    const cdDispatcher = cdLoads.reduce((s, l) => {
+      const dr = drivers.find(d => d.id === l.driver_id);
+      const disp = dispatchers.find(d => d.id === dr?.dispatcher_id);
+      if (!disp) return s;
+      return s + l.total_rate * ((disp.commission_percentage || 0) / 100);
+    }, 0);
+    const cdNeto = Math.max(0, cdBruto - cdDriverPay - cdGastos - cdDispatcher);
 
     // OWNER OPERATORS
     const ooLoads = periodLoads.filter(l => drivers.find(d => d.id === l.driver_id)?.service_type === 'owner_operator');
@@ -212,7 +218,7 @@ export function RevenueBySegmentChart({ loads, drivers, dispatchers, expenses }:
     const dsNeto = Math.max(0, dsBruto - dsDispatcher);
 
     return {
-      cd: { bruto: Math.round(cdBruto), driverPay: Math.round(cdDriverPay), gastos: Math.round(cdGastos), neto: Math.round(cdNeto) },
+      cd: { bruto: Math.round(cdBruto), driverPay: Math.round(cdDriverPay), gastos: Math.round(cdGastos), dispatcher: Math.round(cdDispatcher), neto: Math.round(cdNeto) },
       oo: { bruto: Math.round(ooBruto), driverPay: Math.round(ooDriverPay), investor: Math.round(ooInvestor), dispatcher: Math.round(ooDispatcher), neto: Math.round(ooNeto) },
       ds: { bruto: Math.round(dsBruto), dispatcher: Math.round(dsDispatcher), neto: Math.round(dsNeto) },
     };
@@ -260,6 +266,7 @@ export function RevenueBySegmentChart({ loads, drivers, dispatchers, expenses }:
               { name: 'Bruto', value: segments.cd.bruto, color: COLORS.bruto },
               { name: 'Pago Drivers', value: segments.cd.driverPay, color: COLORS.drivers },
               { name: 'Gastos', value: segments.cd.gastos, color: COLORS.gastos },
+              { name: 'Dispatcher', value: segments.cd.dispatcher, color: COLORS.dispatcher },
               { name: 'Neto', value: segments.cd.neto, color: COLORS.neto },
             ]}
           />
