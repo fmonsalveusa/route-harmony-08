@@ -17,6 +17,7 @@ import { RatesByDriverChart } from '@/components/dashboard/RatesByDriverChart';
 import { WeeklyRatesChart } from '@/components/dashboard/WeeklyRatesChart';
 import { DispatcherCommissionsChart } from '@/components/dashboard/DispatcherCommissionsChart';
 import { MarketAnalysisCard } from '@/components/dashboard/MarketAnalysisCard';
+import { RevenueBySegmentChart } from '@/components/dashboard/RevenueBySegmentChart';
 
 
 import { useNavigate } from 'react-router-dom';
@@ -131,7 +132,12 @@ const AdminDashboard = () => {
         <MarketAnalysisCard loads={filteredLoads} trucks={trucks} />
       </div>
 
-
+      <RevenueBySegmentChart
+        loads={loads}
+        drivers={drivers}
+        dispatchers={dispatchers}
+        expenses={expenses}
+      />
 
     </div>
   );
