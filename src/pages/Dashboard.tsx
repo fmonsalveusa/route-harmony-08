@@ -29,7 +29,9 @@ const AdminDashboard = () => {
   const { payments } = usePayments();
   const { dispatchers } = useDispatchers();
   const { expenses } = useExpenses();
+  const { role, isMasterAdmin } = useAuth();
   const navigate = useNavigate();
+  const isAdmin = role === 'admin' || isMasterAdmin;
 
   // Calculate current ISO week number
   const getCurrentWeek = () => {
@@ -132,12 +134,14 @@ const AdminDashboard = () => {
         <MarketAnalysisCard loads={filteredLoads} trucks={trucks} />
       </div>
 
-      <RevenueBySegmentChart
-        loads={loads}
-        drivers={drivers}
-        dispatchers={dispatchers}
-        expenses={expenses}
-      />
+      {isAdmin && (
+        <RevenueBySegmentChart
+          loads={loads}
+          drivers={drivers}
+          dispatchers={dispatchers}
+          expenses={expenses}
+        />
+      )}
 
     </div>
   );
