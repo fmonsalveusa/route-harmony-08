@@ -258,15 +258,17 @@ function StopPhotoSection({ loadId, stopId }: { loadId: string; stopId: string }
           onDelete={deletePod}
         />
         <div className="flex items-center gap-2">
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+            className="gap-1.5 text-xs h-7"
             type="button"
           >
             {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
             {uploading ? 'Subiendo...' : 'Subir foto/doc'}
-          </button>
+          </Button>
           <input
             ref={fileInputRef}
             type="file"
