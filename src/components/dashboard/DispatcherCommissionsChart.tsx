@@ -114,16 +114,16 @@ export function DispatcherCommissionsChart({ loads, dispatchers, year, month, we
                 wrapperStyle={{ fontSize: '11px', paddingTop: '8px' }}
                 iconType="square"
               />
-              <Bar dataKey="Company Drivers" fill={COLORS.company} radius={[3, 3, 0, 0]} maxBarSize={30}>
+              <Bar dataKey="Total" fill={COLORS.total} radius={[3, 3, 0, 0]} maxBarSize={30}>
                 <LabelList content={TopLabel} />
               </Bar>
               <Bar dataKey="Owner Operators" fill={COLORS.oo} radius={[3, 3, 0, 0]} maxBarSize={30}>
                 <LabelList content={TopLabel} />
               </Bar>
-              <Bar dataKey="Dispatch Service" fill={COLORS.dispatch} radius={[3, 3, 0, 0]} maxBarSize={30}>
+              <Bar dataKey="Company Drivers" fill={COLORS.company} radius={[3, 3, 0, 0]} maxBarSize={30}>
                 <LabelList content={TopLabel} />
               </Bar>
-              <Bar dataKey="Total" fill={COLORS.total} radius={[3, 3, 0, 0]} maxBarSize={30}>
+              <Bar dataKey="Dispatch Service" fill={COLORS.dispatch} radius={[3, 3, 0, 0]} maxBarSize={30}>
                 <LabelList content={TopLabel} />
               </Bar>
             </BarChart>
