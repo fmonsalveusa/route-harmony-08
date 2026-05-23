@@ -29,9 +29,7 @@ const AdminDashboard = () => {
   const { payments } = usePayments();
   const { dispatchers } = useDispatchers();
   const { expenses } = useExpenses();
-  const { role, isMasterAdmin } = useAuth();
   const navigate = useNavigate();
-  const isAdmin = role === 'admin' || isMasterAdmin;
 
   // Calculate current ISO week number
   const getCurrentWeek = () => {
@@ -49,6 +47,7 @@ const AdminDashboard = () => {
   const [week, setWeek] = useState(getCurrentWeek());
   const [dispatcherFilter, setDispatcherFilter] = useState('all');
   const [driverFilter, setDriverFilter] = useState('all');
+  const [serviceTypeFilter, setServiceTypeFilter] = useState('all');
 
   const filteredLoads = loads.filter(l => {
     if (dispatcherFilter !== 'all' && l.dispatcher_id !== dispatcherFilter) return false;
@@ -102,6 +101,11 @@ const AdminDashboard = () => {
   const dispatcherOptions = dispatchers.map(d => ({ id: d.id, name: d.name }));
   const driverOptions = drivers.map(d => ({ id: d.id, name: d.name }));
 
+  // Driver IDs filtrados por service type — para WeeklyRatesChart
+  const filteredDriverIds = serviceTypeFilter === 'all'
+    ? undefined
+    : new Set(drivers.filter(d => d.service_type === serviceTypeFilter).map(d => d.id));
+
   return (
     <div className="space-y-6">
       <div>
@@ -124,9 +128,32 @@ const AdminDashboard = () => {
         <StatCard title="Pending Payments" value={`$${pendingPayments.toLocaleString()}`} icon={AlertTriangle} iconClassName="bg-destructive/10 text-destructive" subtitle={`${payments.filter(p => p.status === 'pending').length} payments`} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <RatesByDriverChart loads={filteredLoads} drivers={drivers} year={year} month={month} week={week} />
-        <WeeklyRatesChart />
+      <div className="space-y-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs font-medium text-muted-foreground">Driver Type:</span>
+          {[
+            { value: 'all', label: 'All' },
+            { value: 'company_driver', label: 'Company Drivers' },
+            { value: 'owner_operator', label: 'Owner Operators' },
+            { value: 'dispatch_service', label: 'Dispatch Service' },
+          ].map(opt => (
+            <button
+              key={opt.value}
+              onClick={() => setServiceTypeFilter(opt.value)}
+              className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+                serviceTypeFilter === opt.value
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted border'
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <RatesByDriverChart loads={filteredLoads} drivers={drivers} year={year} month={month} week={week} serviceType={serviceTypeFilter} />
+          <WeeklyRatesChart driverIds={filteredDriverIds} />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -134,14 +161,12 @@ const AdminDashboard = () => {
         <MarketAnalysisCard loads={filteredLoads} trucks={trucks} />
       </div>
 
-      {isAdmin && (
-        <RevenueBySegmentChart
-          loads={loads}
-          drivers={drivers}
-          dispatchers={dispatchers}
-          expenses={expenses}
-        />
-      )}
+      <RevenueBySegmentChart
+        loads={loads}
+        drivers={drivers}
+        dispatchers={dispatchers}
+        expenses={expenses}
+      />
 
     </div>
   );

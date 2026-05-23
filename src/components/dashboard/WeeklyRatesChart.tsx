@@ -9,7 +9,7 @@ type PeriodFilter = 'last10' | 'ytd' | 'this_month' | 'last_month';
 async function fetchWeeklyData() {
   const { data, error } = await supabase
     .from('loads')
-    .select('pickup_date, created_at, total_rate, status')
+    .select('pickup_date, created_at, total_rate, status, driver_id')
     .neq('status', 'cancelled')
     .order('pickup_date', { ascending: true });
 
@@ -23,7 +23,7 @@ function getISOWeekKey(date: Date): string {
   return `${yr}-W${String(wk).padStart(2, '0')}`;
 }
 
-export function WeeklyRatesChart() {
+export function WeeklyRatesChart({ driverIds }: { driverIds?: Set<string> }) {
   const [period, setPeriod] = useState<PeriodFilter>('last10');
 
   const { data: rawLoads = [] } = useQuery({
@@ -32,8 +32,7 @@ export function WeeklyRatesChart() {
     staleTime: 24 * 60 * 60 * 1000,
   });
 
-  const { data, trend } = useMemo(() => {
-    const now = new Date();
+  const { data, trend } = useMemo(() => {    const now = new Date();
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth(); // 0-indexed
 
@@ -62,6 +61,8 @@ export function WeeklyRatesChart() {
     // Agrupar por semana
     const byWeek: Record<string, number> = {};
     rawLoads.forEach(l => {
+      // Filtrar por service type si aplica
+      if (driverIds && l.driver_id && !driverIds.has(l.driver_id)) return;
       const d = l.pickup_date || l.created_at;
       if (!d) return;
       const raw = d.split('T')[0];
@@ -97,7 +98,7 @@ export function WeeklyRatesChart() {
     }
 
     return { data: sorted, trend };
-  }, [rawLoads, period]);
+  }, [rawLoads, period, driverIds]);
 
   const periodLabels: Record<PeriodFilter, string> = {
     last10: 'Last 10 Weeks',

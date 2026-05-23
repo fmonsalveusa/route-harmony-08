@@ -16,11 +16,19 @@ interface Props {
   year: string;
   month: string;
   week: string;
+  serviceType?: string;
 }
 
-export function RatesByDriverChart({ loads, drivers, year, month, week }: Props) {
+export function RatesByDriverChart({ loads, drivers, year, month, week, serviceType }: Props) {
   const data = useMemo(() => {
-    const filtered = loads.filter(l => l.status !== 'cancelled' && l.driver_id);
+    const filtered = loads.filter(l => {
+      if (l.status === 'cancelled' || !l.driver_id) return false;
+      if (serviceType && serviceType !== 'all') {
+        const driver = drivers.find(d => d.id === l.driver_id);
+        if (driver?.service_type !== serviceType) return false;
+      }
+      return true;
+    });
 
     const byDriver: Record<string, number> = {};
     filtered.forEach(l => {
@@ -33,7 +41,7 @@ export function RatesByDriverChart({ loads, drivers, year, month, week }: Props)
         return { name: driver?.name || 'Unknown', total };
       })
       .sort((a, b) => b.total - a.total);
-  }, [loads, drivers, year, month, week]);
+  }, [loads, drivers, year, month, week, serviceType]);
 
   const renderTopLabel = (props: any) => {
     const { x, y, width, value } = props;
