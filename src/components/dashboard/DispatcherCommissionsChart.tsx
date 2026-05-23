@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList, Legend } from 'recharts';
 import { DbLoad } from '@/hooks/useLoads';
 import { DbDispatcher } from '@/hooks/useDispatchers';
@@ -48,6 +48,8 @@ const TopLabel = ({ x, y, width, value }: any) => {
 };
 
 export function DispatcherCommissionsChart({ loads, dispatchers, year, month, week }: Props) {
+  const [selectedDispatcher, setSelectedDispatcher] = useState<string>('all');
+
   const data = useMemo(() => {
     const dispMap: Record<string, { name: string; commPct: number; dispSvcPct: number }> = {};
     dispatchers.forEach(d => {
@@ -85,22 +87,40 @@ export function DispatcherCommissionsChart({ loads, dispatchers, year, month, we
       .sort((a, b) => b.Total - a.Total);
   }, [loads, dispatchers, year, month, week]);
 
-  const totalGeneral = data.reduce((s, d) => s + d['Total'], 0);
+  const filteredData = selectedDispatcher === 'all'
+    ? data
+    : data.filter(d => d.name === dispatchers.find(dp => dp.id === selectedDispatcher)?.name);
+
+  const totalGeneral = filteredData.reduce((s, d) => s + d['Total'], 0);
 
   return (
     <div className="glass-card p-0 overflow-hidden">
       <div className="px-6 pt-5 pb-2">
-        <h3 className="text-base font-semibold leading-none tracking-tight">Weekly Dispatcher Commissions</h3>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          Total: <span className="font-semibold text-foreground">${totalGeneral.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
-        </p>
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div>
+            <h3 className="text-base font-semibold leading-none tracking-tight">Weekly Dispatcher Commissions</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Total: <span className="font-semibold text-foreground">${totalGeneral.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
+            </p>
+          </div>
+          <select
+            value={selectedDispatcher}
+            onChange={e => setSelectedDispatcher(e.target.value)}
+            className="h-8 text-xs border rounded-md px-2 bg-background text-foreground"
+          >
+            <option value="all">Todos</option>
+            {dispatchers.map(d => (
+              <option key={d.id} value={d.id}>{d.name}</option>
+            ))}
+          </select>
+        </div>
       </div>
       <div className="px-6 pb-6">
-        {data.length === 0 ? (
+        {filteredData.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-10">No data for selected filters</p>
         ) : (
           <ResponsiveContainer width="100%" height={320}>
-            <BarChart data={data} margin={{ top: 20, right: 8, left: 8, bottom: 60 }} barGap={3}>
+            <BarChart data={filteredData} margin={{ top: 20, right: 8, left: 8, bottom: 60 }} barGap={3}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis
                 dataKey="name"
