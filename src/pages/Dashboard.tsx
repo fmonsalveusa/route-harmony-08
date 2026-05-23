@@ -25,6 +25,8 @@ import { useNavigate } from 'react-router-dom';
 const AdminDashboard = () => {
   const { loads } = useLoads();
   const { drivers } = useDrivers();
+  const { role, isMasterAdmin } = useAuth();
+  const isAdmin = role === 'admin' || isMasterAdmin;
   const { trucks } = useTrucks();
   const { payments } = usePayments();
   const { dispatchers } = useDispatchers();
