@@ -37,11 +37,13 @@ interface Props {
   expenses: Expense[];
 }
 
-type Period = 'this_week' | 'this_month' | 'this_year' | 'custom';
+type Period = 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'this_year' | 'custom';
 
 const PERIOD_LABELS: Record<Period, string> = {
   this_week: 'Esta semana',
+  last_week: 'Semana anterior',
   this_month: 'Este mes',
+  last_month: 'Mes anterior',
   this_year: 'Este año',
   custom: 'Personalizado',
 };
@@ -70,7 +72,18 @@ function isInPeriod(dateStr: string, period: Period, from: string, to: string): 
   const d = new Date(dateStr + 'T00:00:00');
   const now = new Date();
   if (period === 'this_week') { const { start, end } = getWeekRange(now); return d >= start && d < end; }
+  if (period === 'last_week') {
+    const prevWeek = new Date(now);
+    prevWeek.setDate(now.getDate() - 7);
+    const { start, end } = getWeekRange(prevWeek);
+    return d >= start && d < end;
+  }
   if (period === 'this_month') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  if (period === 'last_month') {
+    const lastMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
+    const lastMonthYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+    return d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear;
+  }
   if (period === 'this_year') return d.getFullYear() === now.getFullYear();
   if (period === 'custom' && from && to) return d >= new Date(from + 'T00:00:00') && d <= new Date(to + 'T23:59:59');
   return false;
