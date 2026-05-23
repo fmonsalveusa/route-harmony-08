@@ -83,10 +83,10 @@ const CustomLabel = ({ x, y, width, value, bruto }: any) => {
   const pct = bruto > 0 ? Math.round((value / bruto) * 100) : 0;
   return (
     <g>
-      <text x={x + width / 2} y={y - 14} textAnchor="middle" fontSize={9} fill="hsl(var(--foreground))" fontWeight="600">
+      <text x={x + width / 2} y={y - 16} textAnchor="middle" fontSize={11} fill="hsl(var(--foreground))" fontWeight="700">
         {fmt(value)}
       </text>
-      <text x={x + width / 2} y={y - 4} textAnchor="middle" fontSize={8} fill="hsl(var(--muted-foreground))">
+      <text x={x + width / 2} y={y - 4} textAnchor="middle" fontSize={10} fill="hsl(var(--muted-foreground))" fontWeight="600">
         {pct}%
       </text>
     </g>
@@ -116,12 +116,12 @@ function SegmentChart({ title, data, bruto }: { title: string; data: { name: str
   const chartData = [data.reduce((acc, d) => ({ ...acc, [d.name]: d.value }), { segment: title })];
   return (
     <div className="space-y-1">
-      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{title}</p>
-      <ResponsiveContainer width="100%" height={160}>
-        <BarChart data={chartData} margin={{ top: 28, right: 8, left: 8, bottom: 4 }} barGap={4}>
+      <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{title}</p>
+      <ResponsiveContainer width="100%" height={200}>
+        <BarChart data={chartData} margin={{ top: 36, right: 8, left: 8, bottom: 4 }} barGap={4}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
           <XAxis dataKey="segment" hide />
-          <YAxis tickFormatter={fmt} tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} width={40} />
+          <YAxis tickFormatter={fmt} tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} width={48} />
           <Tooltip content={<CustomTooltip />} />
           {data.map(d => (
             <Bar key={d.name} dataKey={d.name} fill={d.color} radius={[4, 4, 0, 0]} maxBarSize={50}>
@@ -133,8 +133,8 @@ function SegmentChart({ title, data, bruto }: { title: string; data: { name: str
       {/* Mini legend */}
       <div className="flex flex-wrap gap-x-3 gap-y-1 justify-center">
         {data.map(d => (
-          <span key={d.name} className="flex items-center gap-1 text-[10px] text-muted-foreground">
-            <span className="w-2 h-2 rounded-sm inline-block" style={{ backgroundColor: d.color }} />
+          <span key={d.name} className="flex items-center gap-1 text-xs text-muted-foreground">
+            <span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ backgroundColor: d.color }} />
             {d.name}
           </span>
         ))}

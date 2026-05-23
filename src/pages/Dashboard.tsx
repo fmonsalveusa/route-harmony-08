@@ -130,11 +130,6 @@ const AdminDashboard = () => {
         <StatCard title="Pending Payments" value={`$${pendingPayments.toLocaleString()}`} icon={AlertTriangle} iconClassName="bg-destructive/10 text-destructive" subtitle={`${payments.filter(p => p.status === 'pending').length} payments`} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <DispatcherCommissionsChart loads={filteredLoads} dispatchers={dispatchers} year={year} month={month} week={week} />
-        <MarketAnalysisCard loads={filteredLoads} trucks={trucks} />
-      </div>
-
       <div className="space-y-2">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-xs font-medium text-muted-foreground">Driver Type:</span>
@@ -171,6 +166,11 @@ const AdminDashboard = () => {
           expenses={expenses}
         />
       )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <DispatcherCommissionsChart loads={filteredLoads} dispatchers={dispatchers} year={year} month={month} week={week} />
+        <MarketAnalysisCard loads={filteredLoads} trucks={trucks} />
+      </div>
 
     </div>
   );
