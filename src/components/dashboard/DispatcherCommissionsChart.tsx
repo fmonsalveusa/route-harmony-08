@@ -85,10 +85,15 @@ export function DispatcherCommissionsChart({ loads, dispatchers, year, month, we
       .sort((a, b) => b.Total - a.Total);
   }, [loads, dispatchers, year, month, week]);
 
+  const totalGeneral = data.reduce((s, d) => s + d['Total'], 0);
+
   return (
     <div className="glass-card p-0 overflow-hidden">
       <div className="px-6 pt-5 pb-2">
         <h3 className="text-base font-semibold leading-none tracking-tight">Weekly Dispatcher Commissions</h3>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          Total: <span className="font-semibold text-foreground">${totalGeneral.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
+        </p>
       </div>
       <div className="px-6 pb-6">
         {data.length === 0 ? (
