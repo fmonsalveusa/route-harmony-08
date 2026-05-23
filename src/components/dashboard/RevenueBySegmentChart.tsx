@@ -268,7 +268,7 @@ export function RevenueBySegmentChart({ loads, drivers, dispatchers, expenses }:
               { name: 'Pago Drivers', value: segments.cd.driverPay, color: COLORS.drivers },
               { name: 'Gastos', value: segments.cd.gastos, color: COLORS.gastos },
               { name: 'Dispatcher', value: segments.cd.dispatcher, color: COLORS.dispatcher },
-              { name: 'Neto', value: segments.cd.neto, color: COLORS.neto },
+              { name: 'Ganancia Neta', value: segments.cd.neto, color: COLORS.neto },
             ]}
           />
           {/* Owner Operators */}
@@ -281,7 +281,7 @@ export function RevenueBySegmentChart({ loads, drivers, dispatchers, expenses }:
                 { name: 'Pago Drivers', value: segments.oo.driverPay, color: COLORS.drivers },
                 { name: 'Investor', value: segments.oo.investor, color: COLORS.investor },
                 { name: 'Dispatcher', value: segments.oo.dispatcher, color: COLORS.dispatcher },
-                { name: 'Neto', value: segments.oo.neto, color: COLORS.neto },
+                { name: 'Ganancia Neta', value: segments.oo.neto, color: COLORS.neto },
               ]}
             />
           </div>
@@ -292,9 +292,8 @@ export function RevenueBySegmentChart({ loads, drivers, dispatchers, expenses }:
               bruto={segments.ds.rateTotal}
               data={[
                 { name: 'Rate Total', value: segments.ds.rateTotal, color: COLORS.bruto },
-                { name: 'DS Fee', value: segments.ds.bruto, color: '#06b6d4' },
-                { name: 'Pago Dispatcher', value: segments.ds.dispatcher, color: COLORS.dispatcher },
-                { name: 'Neto', value: segments.ds.neto, color: COLORS.neto },
+                { name: 'Dispatcher', value: segments.ds.bruto, color: '#06b6d4' },
+                { name: 'Ganancia Neta', value: segments.ds.neto, color: COLORS.neto },
               ]}
             />
           </div>
