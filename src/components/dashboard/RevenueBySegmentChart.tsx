@@ -10,6 +10,7 @@ interface Load {
   pickup_date: string | null;
   status: string;
   driver_id: string | null;
+  service_type?: string | null;
 }
 interface Driver {
   id: string;
@@ -186,7 +187,13 @@ export function RevenueBySegmentChart({ loads, drivers, dispatchers, expenses }:
     const ooDispatcher = ooLoads.reduce((s, l) => {
       const dr = drivers.find(d => d.id === l.driver_id);
       const disp = dispatchers.find(d => d.id === dr?.dispatcher_id);
-      return s + (disp ? l.total_rate * ((disp.commission_percentage || 0) / 100) : 0);
+      if (!disp) return s;
+      // Usar mismo criterio que DispatcherCommissionsChart:
+      // dispatch_service → dispatch_service_percentage, resto → commission_percentage
+      const pct = (l.service_type || dr?.service_type) === 'dispatch_service'
+        ? disp.dispatch_service_percentage
+        : disp.commission_percentage;
+      return s + l.total_rate * ((pct || 0) / 100);
     }, 0);
     const ooNeto = Math.max(0, ooBruto - ooDriverPay - ooInvestor - ooDispatcher);
 
