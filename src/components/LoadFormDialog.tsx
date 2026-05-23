@@ -99,6 +99,12 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
   const [rcOriginalPreviewUrl, setRcOriginalPreviewUrl] = useState<string | null>(null);
   const [rcOriginalUploadedUrl, setRcOriginalUploadedUrl] = useState<string | null>(null);
   const [rcOriginalFileName, setRcOriginalFileName] = useState('');
+
+  // Distribución del delta RC
+  type RecipientType = 'company' | 'dispatcher' | 'broker';
+  interface Recipient { type: RecipientType; name: string; pct: number; }
+  const [recipients, setRecipients] = useState<Recipient[]>([{ type: 'company', name: 'Empresa', pct: 100 }]);
+  const [adjustmentSaved, setAdjustmentSaved] = useState(false);
   const [stopEntries, setStopEntries] = useState<StopEntry[]>([
     { stop_type: 'pickup', address: '', date: '' },
     { stop_type: 'delivery', address: '', date: '' },
@@ -137,6 +143,8 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       setRcOriginalPreviewUrl(null);
       setRcOriginalFile(null);
       setRcOriginalFileName('');
+      setRecipients([{ type: 'company', name: 'Empresa', pct: 100 }]);
+      setAdjustmentSaved(false);
 
       // Refresh signed URLs + load RC metadata from Storage (bypasses PostgREST schema cache)
       const refreshUrls = async () => {
@@ -552,6 +560,47 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       } else {
         console.log('RC metadata saved to Storage — gross_rate:', grossRate, 'url:', rcOriginalUrl);
       }
+
+      // Guardar distribución del delta si hay ajuste
+      const delta = grossRate - formData.totalRate;
+      if (delta > 0 && recipients.length > 0) {
+        const totalPct = recipients.reduce((s, r) => s + r.pct, 0);
+        if (Math.abs(totalPct - 100) < 0.01) {
+          const recipientsWithAmount = recipients.map(r => ({
+            ...r,
+            amount: Math.round(delta * (r.pct / 100) * 100) / 100,
+          }));
+
+          // Upsert rate_adjustment
+          await supabase.from('rate_adjustments' as any).upsert({
+            load_id: loadId,
+            tenant_id: (await supabase.auth.getUser()).data.user?.id
+              ? (await supabase.from('profiles' as any).select('tenant_id').eq('id', (await supabase.auth.getUser()).data.user!.id).single()).data?.tenant_id
+              : null,
+            delta_amount: delta,
+            recipients: recipientsWithAmount,
+          }, { onConflict: 'load_id' });
+
+          // Crear expense automático para brokers externos
+          for (const r of recipientsWithAmount) {
+            if (r.type === 'broker' && r.name && r.amount > 0) {
+              const { data: profile } = await supabase.from('profiles' as any).select('tenant_id').eq('id', (await supabase.auth.getUser()).data.user!.id).single();
+              await supabase.from('expenses' as any).insert({
+                tenant_id: (profile as any)?.tenant_id,
+                expense_date: formData.pickupDate || new Date().toISOString().split('T')[0],
+                expense_type: 'commission',
+                category: 'broker_commission',
+                description: `Pago de Comisión a Broker "${r.name}"`,
+                amount: r.amount,
+                total_amount: r.amount,
+                payment_method: 'other',
+                source: 'rate_adjustment',
+              } as any);
+            }
+          }
+          setAdjustmentSaved(true);
+        }
+      }
     }
     if (loadId && stopEntries.some(s => s.address)) {
       const validStops = stopEntries.filter(s => s.address.trim());
@@ -694,15 +743,106 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
                 step={0.01}
                 placeholder="0.00"
                 value={grossRate || ''}
-                onChange={e => setGrossRate(parseFloat(e.target.value) || 0)}
+                onChange={e => { setGrossRate(parseFloat(e.target.value) || 0); setAdjustmentSaved(false); }}
                 className="h-8 text-sm w-36"
               />
               {grossRate > 0 && formData.totalRate > 0 && (
                 <span className="text-xs text-muted-foreground">
-                  Comisión broker: <strong className="text-amber-600">${(grossRate - formData.totalRate).toLocaleString()}</strong>
+                  Delta: <strong className="text-amber-600">${(grossRate - formData.totalRate).toLocaleString()}</strong>
                 </span>
               )}
             </div>
+
+            {/* Panel de distribución del delta */}
+            {grossRate > formData.totalRate && formData.totalRate > 0 && (() => {
+              const delta = grossRate - formData.totalRate;
+              const totalPct = recipients.reduce((s, r) => s + r.pct, 0);
+              const pctOk = Math.abs(totalPct - 100) < 0.01;
+
+              const updateRecipient = (idx: number, field: string, value: any) => {
+                setRecipients(prev => prev.map((r, i) => i === idx ? { ...r, [field]: value } : r));
+                setAdjustmentSaved(false);
+              };
+              const addRecipient = () => {
+                if (recipients.length >= 3) return;
+                setRecipients(prev => [...prev, { type: 'dispatcher', name: '', pct: 0 }]);
+              };
+              const removeRecipient = (idx: number) => {
+                setRecipients(prev => prev.filter((_, i) => i !== idx));
+              };
+
+              return (
+                <div className="mt-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">
+                      Distribución del Ajuste — Delta: <span className="text-amber-600">${delta.toLocaleString()}</span>
+                    </p>
+                    {adjustmentSaved && <span className="text-xs text-green-600 font-medium">✓ Guardado</span>}
+                  </div>
+
+                  {recipients.map((r, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <select
+                        value={r.type}
+                        onChange={e => updateRecipient(idx, 'type', e.target.value)}
+                        className="h-7 text-xs border rounded px-1 bg-background"
+                      >
+                        <option value="company">Empresa</option>
+                        <option value="dispatcher">Dispatcher</option>
+                        <option value="broker">Broker</option>
+                      </select>
+                      {r.type === 'dispatcher' ? (
+                        <select
+                          value={r.name}
+                          onChange={e => updateRecipient(idx, 'name', e.target.value)}
+                          className="h-7 text-xs border rounded px-1 bg-background flex-1"
+                        >
+                          <option value="">— Seleccionar —</option>
+                          {dispatchers.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
+                        </select>
+                      ) : r.type === 'broker' ? (
+                        <Input
+                          placeholder="Nombre del broker"
+                          value={r.name}
+                          onChange={e => updateRecipient(idx, 'name', e.target.value)}
+                          className="h-7 text-xs flex-1"
+                        />
+                      ) : (
+                        <span className="text-xs flex-1 text-muted-foreground">58 Logistics LLC</span>
+                      )}
+                      <div className="flex items-center gap-1">
+                        <Input
+                          type="number" min={0} max={100} step={1}
+                          value={r.pct || ''}
+                          onChange={e => updateRecipient(idx, 'pct', parseFloat(e.target.value) || 0)}
+                          className="h-7 text-xs w-16"
+                        />
+                        <span className="text-xs text-muted-foreground">%</span>
+                        <span className="text-xs font-semibold text-amber-600 w-16 text-right">
+                          ${Math.round(delta * (r.pct / 100)).toLocaleString()}
+                        </span>
+                      </div>
+                      {recipients.length > 1 && (
+                        <Button variant="ghost" size="sm" className="h-7 px-1" onClick={() => removeRecipient(idx)}>
+                          <X className="h-3.5 w-3.5 text-destructive" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+
+                  <div className="flex items-center justify-between pt-1">
+                    <div className={`text-xs font-semibold ${pctOk ? 'text-green-600' : 'text-destructive'}`}>
+                      Total: {totalPct.toFixed(0)}% {!pctOk && '— debe sumar 100%'}
+                    </div>
+                    {recipients.length < 3 && (
+                      <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={addRecipient}>
+                        <Plus className="h-3.5 w-3.5" /> Agregar receptor
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* RC Original PDF upload */}
             <input
