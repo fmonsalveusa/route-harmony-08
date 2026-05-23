@@ -38,6 +38,7 @@ export interface CreateExpenseInput {
   description: string;
   amount: number;
   tax_amount?: number | null;
+  total_amount?: number | null;
   payment_method: string;
   vendor?: string | null;
   location?: string | null;
@@ -79,9 +80,10 @@ export function useExpenses() {
 
   const createExpense = useCallback(async (input: CreateExpenseInput) => {
     const tenant_id = await getTenantId();
+    const total_amount = input.total_amount ?? (input.amount + (input.tax_amount || 0));
     const { data, error } = await supabase
       .from('expenses' as any)
-      .insert([{ ...input, tenant_id } as any])
+      .insert([{ ...input, total_amount, tenant_id } as any])
       .select()
       .single();
 
@@ -98,7 +100,11 @@ export function useExpenses() {
 
   const createExpensesBatch = useCallback(async (inputs: CreateExpenseInput[]) => {
     const tenant_id = await getTenantId();
-    const rows = inputs.map(input => ({ ...input, tenant_id }));
+    const rows = inputs.map(input => ({
+      ...input,
+      total_amount: input.total_amount ?? (input.amount + (input.tax_amount || 0)),
+      tenant_id,
+    }));
     const { error } = await supabase
       .from('expenses' as any)
       .insert(rows as any);

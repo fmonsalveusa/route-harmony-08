@@ -211,6 +211,7 @@ export function FuelImportWizard({ open, onOpenChange, onImport, trucks, drivers
       category: fuelCategory,
       description: 'Fuel purchase from fleet card',
       amount: r.amount,
+      total_amount: r.amount,
       payment_method: paymentMethod,
       vendor: vendorName || null,
       source: 'csv_import',
