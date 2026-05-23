@@ -205,12 +205,13 @@ export function RevenueBySegmentChart({ loads, drivers, dispatchers, expenses }:
 
     // SERVICIO DISPATCHER
     const dsLoads = periodLoads.filter(l => drivers.find(d => d.id === l.driver_id)?.service_type === 'dispatch_service');
-    const dsBruto = dsLoads.reduce((s, l) => {
+    const dsRateTotal = dsLoads.reduce((s, l) => s + l.total_rate, 0); // Total de rates
+    const dsBruto = dsLoads.reduce((s, l) => {                          // % Dispatch Service Fee
       const dr = drivers.find(d => d.id === l.driver_id);
       const disp = dispatchers.find(d => d.id === dr?.dispatcher_id);
       return s + l.total_rate * ((disp?.dispatch_service_percentage || 0) / 100);
     }, 0);
-    const dsDispatcher = dsLoads.reduce((s, l) => {
+    const dsDispatcher = dsLoads.reduce((s, l) => {                     // % comisión del dispatcher
       const dr = drivers.find(d => d.id === l.driver_id);
       const disp = dispatchers.find(d => d.id === dr?.dispatcher_id);
       return s + l.total_rate * ((disp?.commission_percentage || 0) / 100);
@@ -220,7 +221,7 @@ export function RevenueBySegmentChart({ loads, drivers, dispatchers, expenses }:
     return {
       cd: { bruto: Math.round(cdBruto), driverPay: Math.round(cdDriverPay), gastos: Math.round(cdGastos), dispatcher: Math.round(cdDispatcher), neto: Math.round(cdNeto) },
       oo: { bruto: Math.round(ooBruto), driverPay: Math.round(ooDriverPay), investor: Math.round(ooInvestor), dispatcher: Math.round(ooDispatcher), neto: Math.round(ooNeto) },
-      ds: { bruto: Math.round(dsBruto), dispatcher: Math.round(dsDispatcher), neto: Math.round(dsNeto) },
+      ds: { rateTotal: Math.round(dsRateTotal), bruto: Math.round(dsBruto), dispatcher: Math.round(dsDispatcher), neto: Math.round(dsNeto) },
     };
   }, [loads, drivers, dispatchers, expenses, period, customFrom, customTo, truckDriverMap]);
 
@@ -288,9 +289,10 @@ export function RevenueBySegmentChart({ loads, drivers, dispatchers, expenses }:
           <div className="pt-6 md:pt-0 md:pl-6">
             <SegmentChart
               title="Servicio Dispatcher"
-              bruto={segments.ds.bruto}
+              bruto={segments.ds.rateTotal}
               data={[
-                { name: 'Bruto', value: segments.ds.bruto, color: COLORS.bruto },
+                { name: 'Rate Total', value: segments.ds.rateTotal, color: COLORS.bruto },
+                { name: 'DS Fee', value: segments.ds.bruto, color: '#06b6d4' },
                 { name: 'Pago Dispatcher', value: segments.ds.dispatcher, color: COLORS.dispatcher },
                 { name: 'Neto', value: segments.ds.neto, color: COLORS.neto },
               ]}
