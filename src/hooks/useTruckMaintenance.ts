@@ -92,6 +92,7 @@ async function buildMaintenanceExpensePayload(params: {
     category: params.maintenance_type,
     amount: params.cost,
     tax_amount: params.tax_amount || null,
+    total_amount: params.cost + (params.tax_amount || 0),
     vendor: params.vendor || null,
     payment_method: params.payment_method || 'other',
     location: params.location || null,
