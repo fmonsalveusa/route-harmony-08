@@ -103,3 +103,11 @@ export const PAYMENT_METHODS = [
 export const PAYMENT_METHOD_LABELS: Record<string, string> = Object.fromEntries(
   PAYMENT_METHODS.map(p => [p.value, p.label])
 );
+
+// Formato legible para cualquier tipo, incluyendo categorías custom
+export function getExpenseTypeLabel(type: string, customLabels?: Record<string, string>): string {
+  if (EXPENSE_TYPE_LABELS[type]) return EXPENSE_TYPE_LABELS[type];
+  if (customLabels?.[type]) return customLabels[type];
+  // Fallback: convierte snake_case a Title Case
+  return type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}

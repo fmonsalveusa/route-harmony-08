@@ -144,8 +144,9 @@ export function BankImportWizard({ open, onOpenChange, onImport, trucks, drivers
   const [savingCat, setSavingCat] = useState(false);
 
   const allCategories = [
-    ...BASE_CATEGORIES,
-    ...customCategories.map(c => ({ ...c, keywords: [] })),
+    ...BASE_CATEGORIES.filter(c => c.value !== 'other'),
+    ...customCategories.map(c => ({ ...c, keywords: [] })).sort((a, b) => a.label.localeCompare(b.label)),
+    { value: 'other', label: 'Otro', keywords: [] },
   ];
 
   // Cargar categorías custom al abrir
@@ -249,15 +250,17 @@ export function BankImportWizard({ open, onOpenChange, onImport, trucks, drivers
     for (const row of toImport) {
       const date = formatDate(row.date);
       if (row.assignMode === 'fleet' && row.fleetTruckIds.length > 0) {
-        // Split per truck
         for (const truckId of row.fleetTruckIds) {
           const amount = row.fleetSplit === 'equal'
             ? Math.round((row.amount / row.fleetTruckIds.length) * 100) / 100
             : (row.customAmounts[truckId] || 0);
           if (amount > 0) {
+            const dr = drivers.find(d => d.truck_id === truckId);
             inputs.push({
               expense_date: date,
               truck_id: truckId,
+              driver_name: dr?.name || null,
+              driver_service_type: dr?.service_type || null,
               expense_type: row.category,
               category: row.category,
               description: row.description,
@@ -270,9 +273,12 @@ export function BankImportWizard({ open, onOpenChange, onImport, trucks, drivers
           }
         }
       } else {
+        const dr = drivers.find(d => d.truck_id === (row.truckId || ''));
         inputs.push({
           expense_date: date,
           truck_id: row.truckId || null,
+          driver_name: dr?.name || null,
+          driver_service_type: dr?.service_type || null,
           expense_type: row.category,
           category: row.category,
           description: row.description,

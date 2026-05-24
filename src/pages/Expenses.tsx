@@ -7,7 +7,7 @@ import { FuelImportWizard } from '@/components/expenses/FuelImportWizard';
 import { BankImportWizard } from '@/components/expenses/BankImportWizard';
 import { ExpenseSummaryDashboard } from '@/components/expenses/ExpenseSummaryDashboard';
 import {
-  EXPENSE_TYPE_LABELS, EXPENSE_TYPE_COLORS, PAYMENT_METHOD_LABELS,
+  EXPENSE_TYPE_LABELS, EXPENSE_TYPE_COLORS, PAYMENT_METHOD_LABELS, getExpenseTypeLabel,
 } from '@/components/expenses/expenseConstants';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -346,7 +346,7 @@ const Expenses = () => {
                       </td>
                       <td className="p-3">
                         <Badge className={`text-xs ${EXPENSE_TYPE_COLORS[expense.expense_type] || 'bg-gray-100 text-gray-800'}`}>
-                          {EXPENSE_TYPE_LABELS[expense.expense_type] || expense.expense_type}
+                          {getExpenseTypeLabel(expense.expense_type)}
                         </Badge>
                       </td>
                       <td className="p-3 hidden lg:table-cell max-w-[200px] truncate text-muted-foreground">
