@@ -1,16 +1,19 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Upload, ArrowLeft, ArrowRight, FileText, CheckCircle, AlertTriangle, XCircle, Download, Ban } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Upload, ArrowLeft, ArrowRight, FileText, CheckCircle, AlertTriangle, XCircle, Download, Ban, Plus } from 'lucide-react';
 import type { DbTruck } from '@/hooks/useTrucks';
 import type { DbDriver } from '@/hooks/useDrivers';
 import type { CreateExpenseInput, DbExpense } from '@/hooks/useExpenses';
+import { supabase } from '@/integrations/supabase/client';
+import { getTenantId } from '@/hooks/useTenantId';
 
-// ── Categorías ──────────────────────────────────────────────────────────────
-const EXPENSE_CATEGORIES: { value: string; label: string; keywords: string[] }[] = [
+// ── Categorías base (siempre presentes) ─────────────────────────────────────
+const BASE_CATEGORIES: { value: string; label: string; keywords: string[] }[] = [
   { value: 'fuel',        label: 'Combustible',   keywords: ["rutter's", "pilot", "love's", "loves travel", "sheetz", "flying j", "ta travel", "petro", "speedway", "circle k", "bp ", "shell ", "exxon", "chevron", "sunoco", "wawa", "7-eleven fuel", "kwik trip", "casey's", "marathon", "fuel", "diesel", "gas station"] },
   { value: 'maintenance', label: 'Mantenimiento',  keywords: ["autozone", "o'reilly", "oreilly", "napa auto", "advance auto", "pep boys", "jiffy lube", "valvoline", "firestone", "midas", "oil change", "tire kingdom", "discount tire", "goodyear", "mavis"] },
   { value: 'repair',      label: 'Reparación',     keywords: ["repair", "mechanic", "shop", "truck service", "freightliner", "kenworth", "peterbilt", "volvo truck", "navistar", "body shop", "towing", "roadside"] },
@@ -22,7 +25,7 @@ const EXPENSE_CATEGORIES: { value: string; label: string; keywords: string[] }[]
 
 // Tipos que se descartan automáticamente
 const AUTO_DISCARD_TYPES = ['CREDIT', 'ACCT_XFER', 'MISC_CREDIT', 'ACH_CREDIT', 'QUICKPAY_CREDIT', 'PARTNERFI_TO_CHASE'];
-const AUTO_DISCARD_KEYWORDS = ['zelle payment to', 'zelle payment from', 'online transfer to', 'online transfer from', 'fee', 'bank fee', 'service charge', 'monthly fee', 'wire fee'];
+const AUTO_DISCARD_KEYWORDS = ['zelle payment to', 'zelle payment from', 'online transfer to', 'online transfer from', 'fee', 'bank fee', 'service charge', 'monthly fee', 'wire fee', 'meiborg bros', 'meiborg'];
 
 // ── Tipos internos ───────────────────────────────────────────────────────────
 interface BankRow {
@@ -41,11 +44,12 @@ interface ProcessedRow extends BankRow {
   discarded: boolean;
   discardReason: DiscardReason;
   category: string;
+  notes: string;
   assignMode: AssignMode;
-  truckId: string | null;         // single truck
-  fleetTruckIds: string[];        // multi-truck
+  truckId: string | null;
+  fleetTruckIds: string[];
   fleetSplit: 'equal' | 'custom';
-  customAmounts: Record<string, number>; // truckId → amount
+  customAmounts: Record<string, number>;
   isDuplicate: boolean;
   duplicateNote: string;
 }
@@ -86,7 +90,7 @@ function parseChaseCSV(text: string): BankRow[] {
 
 function detectCategory(description: string): string {
   const desc = description.toLowerCase();
-  for (const cat of EXPENSE_CATEGORIES) {
+  for (const cat of BASE_CATEGORIES) {
     if (cat.keywords.some(kw => desc.includes(kw))) return cat.value;
   }
   return 'other';
@@ -133,6 +137,39 @@ export function BankImportWizard({ open, onOpenChange, onImport, trucks, drivers
   const [importing, setImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Categorías custom desde Supabase
+  const [customCategories, setCustomCategories] = useState<{ value: string; label: string }[]>([]);
+  const [newCatLabel, setNewCatLabel] = useState('');
+  const [showNewCat, setShowNewCat] = useState(false);
+  const [savingCat, setSavingCat] = useState(false);
+
+  const allCategories = [
+    ...BASE_CATEGORIES,
+    ...customCategories.map(c => ({ ...c, keywords: [] })),
+  ];
+
+  // Cargar categorías custom al abrir
+  useEffect(() => {
+    if (!open) return;
+    supabase.from('expense_categories' as any).select('value, label').order('created_at').then(({ data }) => {
+      setCustomCategories((data as any[]) || []);
+    });
+  }, [open]);
+
+  const saveNewCategory = async () => {
+    if (!newCatLabel.trim()) return;
+    setSavingCat(true);
+    const value = newCatLabel.trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+    const tenant_id = await getTenantId();
+    const { error } = await supabase.from('expense_categories' as any).insert({ value, label: newCatLabel.trim(), tenant_id } as any);
+    if (!error) {
+      setCustomCategories(prev => [...prev, { value, label: newCatLabel.trim() }]);
+      setNewCatLabel('');
+      setShowNewCat(false);
+    }
+    setSavingCat(false);
+  };
+
   const reset = () => { setStep('upload'); setFile(null); setRows([]); };
 
   const processFile = (f: File) => {
@@ -170,6 +207,7 @@ export function BankImportWizard({ open, onOpenChange, onImport, trucks, drivers
           discarded,
           discardReason,
           category: detectCategory(row.description),
+          notes: '',
           assignMode: null,
           truckId: null,
           fleetTruckIds: [],
@@ -223,6 +261,7 @@ export function BankImportWizard({ open, onOpenChange, onImport, trucks, drivers
               expense_type: row.category,
               category: row.category,
               description: row.description,
+              notes: row.notes || null,
               amount,
               total_amount: amount,
               payment_method: 'debit_card',
@@ -237,6 +276,7 @@ export function BankImportWizard({ open, onOpenChange, onImport, trucks, drivers
           expense_type: row.category,
           category: row.category,
           description: row.description,
+          notes: row.notes || null,
           amount: row.amount,
           total_amount: row.amount,
           payment_method: 'debit_card',
@@ -357,7 +397,29 @@ export function BankImportWizard({ open, onOpenChange, onImport, trucks, drivers
                       <th className="p-2 text-left w-24">Fecha</th>
                       <th className="p-2 text-left">Descripción</th>
                       <th className="p-2 text-right w-24">Monto</th>
-                      <th className="p-2 text-left w-32">Categoría</th>
+                      <th className="p-2 text-left w-36">
+                        <div className="flex items-center gap-1">
+                          Categoría
+                          <button onClick={() => setShowNewCat(v => !v)} className="text-primary hover:text-primary/80" title="Nueva categoría">
+                            <Plus className="h-3 w-3" />
+                          </button>
+                        </div>
+                        {showNewCat && (
+                          <div className="flex items-center gap-1 mt-1">
+                            <input
+                              value={newCatLabel}
+                              onChange={e => setNewCatLabel(e.target.value)}
+                              placeholder="Nombre..."
+                              className="h-5 text-[10px] border rounded px-1 bg-background w-20"
+                              onKeyDown={e => e.key === 'Enter' && saveNewCategory()}
+                            />
+                            <button onClick={saveNewCategory} disabled={savingCat} className="text-[10px] text-green-600 font-semibold">
+                              {savingCat ? '...' : 'OK'}
+                            </button>
+                          </div>
+                        )}
+                      </th>
+                      <th className="p-2 text-left w-36">Notas</th>
                       <th className="p-2 text-left w-44">Camión</th>
                     </tr>
                   </thead>
@@ -401,6 +463,18 @@ export function BankImportWizard({ open, onOpenChange, onImport, trucks, drivers
                                 <option key={c.value} value={c.value}>{c.label}</option>
                               ))}
                             </select>
+                          )}
+                        </td>
+                        {/* Notas */}
+                        <td className="p-2">
+                          {!row.discarded && !row.isDuplicate && (
+                            <input
+                              type="text"
+                              value={row.notes}
+                              onChange={e => updateRow(idx, { notes: e.target.value })}
+                              placeholder="Nota..."
+                              className="w-full h-6 text-xs border rounded px-1 bg-background"
+                            />
                           )}
                         </td>
                         {/* Truck assignment */}
@@ -518,7 +592,7 @@ export function BankImportWizard({ open, onOpenChange, onImport, trucks, drivers
             <div className="space-y-2">
               <p className="text-sm font-semibold">Resumen por categoría:</p>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {EXPENSE_CATEGORIES.filter(c => toImport.some(r => r.category === c.value)).map(c => {
+                {allCategories.filter(c => toImport.some(r => r.category === c.value)).map(c => {
                   const catRows = toImport.filter(r => r.category === c.value);
                   const total = catRows.reduce((s, r) => s + r.amount, 0);
                   return (
