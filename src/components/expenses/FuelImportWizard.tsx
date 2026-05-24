@@ -205,8 +205,8 @@ export function FuelImportWizard({ open, onOpenChange, onImport, trucks, drivers
     const inputs: CreateExpenseInput[] = rowsToImport.map(r => ({
       expense_date: r.date,
       truck_id: r.matchedTruck?.id || null,
-      driver_name: r.matchedTruck ? drivers.find(d => d.id === r.matchedTruck!.driver_id)?.name || null : null,
-      driver_service_type: r.matchedTruck ? drivers.find(d => d.id === r.matchedTruck!.driver_id)?.service_type || null : null,
+      driver_name: r.matchedTruck ? drivers.find(d => d.truck_id === r.matchedTruck!.id)?.name || null : null,
+      driver_service_type: r.matchedTruck ? drivers.find(d => d.truck_id === r.matchedTruck!.id)?.service_type || null : null,
       expense_type: 'fuel',
       category: fuelCategory,
       description: 'Fuel purchase from fleet card',
