@@ -4,6 +4,7 @@ import { useTrucks } from '@/hooks/useTrucks';
 import { useDrivers } from '@/hooks/useDrivers';
 import { ExpenseFormDialog } from '@/components/expenses/ExpenseFormDialog';
 import { FuelImportWizard } from '@/components/expenses/FuelImportWizard';
+import { BankImportWizard } from '@/components/expenses/BankImportWizard';
 import { ExpenseSummaryDashboard } from '@/components/expenses/ExpenseSummaryDashboard';
 import {
   EXPENSE_TYPE_LABELS, EXPENSE_TYPE_COLORS, PAYMENT_METHOD_LABELS,
@@ -31,6 +32,7 @@ const Expenses = () => {
   const [search, setSearch] = useState('');
   const [formOpen, setFormOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [bankImportOpen, setBankImportOpen] = useState(false);
   const [editExpense, setEditExpense] = useState<DbExpense | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<DbExpense | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -194,6 +196,9 @@ const Expenses = () => {
           </Button>
           <Button onClick={() => setImportOpen(true)} className="bg-green-600 hover:bg-green-700 gap-2" size="sm">
             <Upload className="h-4 w-4" /> Import Fuel Data
+          </Button>
+          <Button onClick={() => setBankImportOpen(true)} variant="outline" className="gap-2" size="sm">
+            <Upload className="h-4 w-4" /> Import Bank Statement
           </Button>
         </div>
       </div>
@@ -419,6 +424,15 @@ const Expenses = () => {
         onImport={createExpensesBatch}
         trucks={trucks}
         drivers={driverList}
+        existingExpenses={expenses}
+      />
+
+      <BankImportWizard
+        open={bankImportOpen}
+        onOpenChange={setBankImportOpen}
+        onImport={createExpensesBatch}
+        trucks={trucks}
+        drivers={drivers}
         existingExpenses={expenses}
       />
 
