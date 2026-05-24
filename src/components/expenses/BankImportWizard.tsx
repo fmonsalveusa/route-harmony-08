@@ -388,6 +388,38 @@ export function BankImportWizard({ open, onOpenChange, onImport, trucks, drivers
             </div>
 
             {/* Transaction list */}
+            {/* Nueva categoría */}
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-xs text-muted-foreground">Categorías:</span>
+              {!showNewCat ? (
+                <button
+                  onClick={() => setShowNewCat(true)}
+                  className="flex items-center gap-1 text-xs text-primary hover:underline"
+                >
+                  <Plus className="h-3 w-3" /> Nueva categoría
+                </button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <input
+                    autoFocus
+                    value={newCatLabel}
+                    onChange={e => setNewCatLabel(e.target.value)}
+                    placeholder="Nombre de la categoría..."
+                    className="h-7 text-xs border rounded-md px-2 bg-background w-48"
+                    onKeyDown={e => { if (e.key === 'Enter') saveNewCategory(); if (e.key === 'Escape') setShowNewCat(false); }}
+                  />
+                  <button onClick={saveNewCategory} disabled={savingCat} className="h-7 px-3 text-xs bg-primary text-primary-foreground rounded-md font-medium">
+                    {savingCat ? '...' : 'Guardar'}
+                  </button>
+                  <button onClick={() => { setShowNewCat(false); setNewCatLabel(''); }} className="text-xs text-muted-foreground hover:text-foreground">
+                    Cancelar
+                  </button>
+                </div>
+              )}
+              {customCategories.length > 0 && (
+                <span className="text-xs text-muted-foreground">({customCategories.map(c => c.label).join(', ')})</span>
+              )}
+            </div>
             <div className="border rounded-lg overflow-hidden">
               <div className="max-h-[50vh] overflow-y-auto">
                 <table className="w-full text-xs">
@@ -397,28 +429,7 @@ export function BankImportWizard({ open, onOpenChange, onImport, trucks, drivers
                       <th className="p-2 text-left w-24">Fecha</th>
                       <th className="p-2 text-left">Descripción</th>
                       <th className="p-2 text-right w-24">Monto</th>
-                      <th className="p-2 text-left w-36">
-                        <div className="flex items-center gap-1">
-                          Categoría
-                          <button onClick={() => setShowNewCat(v => !v)} className="text-primary hover:text-primary/80" title="Nueva categoría">
-                            <Plus className="h-3 w-3" />
-                          </button>
-                        </div>
-                        {showNewCat && (
-                          <div className="flex items-center gap-1 mt-1">
-                            <input
-                              value={newCatLabel}
-                              onChange={e => setNewCatLabel(e.target.value)}
-                              placeholder="Nombre..."
-                              className="h-5 text-[10px] border rounded px-1 bg-background w-20"
-                              onKeyDown={e => e.key === 'Enter' && saveNewCategory()}
-                            />
-                            <button onClick={saveNewCategory} disabled={savingCat} className="text-[10px] text-green-600 font-semibold">
-                              {savingCat ? '...' : 'OK'}
-                            </button>
-                          </div>
-                        )}
-                      </th>
+                      <th className="p-2 text-left w-36">Categoría</th>
                       <th className="p-2 text-left w-36">Notas</th>
                       <th className="p-2 text-left w-44">Camión</th>
                     </tr>
