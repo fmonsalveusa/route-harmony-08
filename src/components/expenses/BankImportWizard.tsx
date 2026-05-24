@@ -459,7 +459,7 @@ export function BankImportWizard({ open, onOpenChange, onImport, trucks, drivers
                               onChange={e => updateRow(idx, { category: e.target.value })}
                               className="w-full h-6 text-xs border rounded px-1 bg-background"
                             >
-                              {EXPENSE_CATEGORIES.map(c => (
+                              {allCategories.map(c => (
                                 <option key={c.value} value={c.value}>{c.label}</option>
                               ))}
                             </select>
