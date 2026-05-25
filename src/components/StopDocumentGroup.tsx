@@ -49,16 +49,16 @@ function ImageThumb({ doc, onClick }: { doc: PodDocument; onClick: () => void })
       title={doc.file_name}
     >
       {loading ? (
-        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
       ) : src ? (
         <>
           <img src={src} alt={doc.file_name} className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
-            <Eye className="h-5 w-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+            <Eye className="h-3 w-3 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
         </>
       ) : (
-        <Image className="h-5 w-5 text-muted-foreground" />
+        <Image className="h-3 w-3 text-muted-foreground" />
       )}
     </button>
   );
@@ -81,17 +81,17 @@ function DocCard({
   onDelete: () => void;
 }) {
   const isImage = doc.file_type === 'image';
-  const shortName = doc.file_name.length > 18 ? doc.file_name.slice(0, 16) + '…' : doc.file_name;
+  const shortName = doc.file_name.length > 12 ? doc.file_name.slice(0, 10) + '…' : doc.file_name;
 
   return (
     <div className={`relative flex flex-col rounded-lg border overflow-hidden transition-all ${
       selected
         ? 'border-primary ring-2 ring-primary/30 shadow-md'
         : 'border-border hover:border-primary/50 hover:shadow-sm'
-    }`} style={{ width: 100 }}>
+    }`} style={{ width: 64 }}>
 
       {/* Thumbnail area */}
-      <div className="h-16 bg-muted/30 relative">
+      <div className="h-8 bg-muted/30 relative">
         {isImage ? (
           <ImageThumb doc={doc} onClick={onOpen} />
         ) : (
@@ -100,8 +100,8 @@ function DocCard({
             className="w-full h-full flex flex-col items-center justify-center gap-1 text-primary hover:bg-muted/50 transition-colors"
             type="button"
           >
-            <FileText className="h-7 w-7" />
-            <span className="text-[9px] text-muted-foreground">PDF</span>
+            <FileText className="h-4 w-4" />
+            <span className="text-[8px] text-muted-foreground">PDF</span>
           </button>
         )}
 
@@ -111,18 +111,18 @@ function DocCard({
             <Checkbox
               checked={selected}
               onCheckedChange={onSelect}
-              className="h-3.5 w-3.5 bg-white/80 border-white/80"
+              className="h-3 w-3 bg-white/80 border-white/80"
             />
           </div>
         )}
 
         {/* Badge de tipo */}
-        <div className={`absolute top-1 right-1 rounded-full w-4 h-4 flex items-center justify-center ${
+        <div className={`absolute top-1 right-1 rounded-full w-3 h-3 flex items-center justify-center ${
           isImage ? 'bg-blue-500' : 'bg-rose-500'
         }`}>
           {isImage
-            ? <Image className="h-2.5 w-2.5 text-white" />
-            : <FileText className="h-2.5 w-2.5 text-white" />
+            ? <Image className="h-2 w-2 text-white" />
+            : <FileText className="h-2 w-2 text-white" />
           }
         </div>
       </div>
