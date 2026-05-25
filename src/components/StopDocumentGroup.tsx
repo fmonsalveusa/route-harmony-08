@@ -1,18 +1,146 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { PodDocument } from '@/hooks/usePodDocuments';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
-import { Image, FileText, Download, Trash2, Copy, CheckSquare, Square, Loader2 } from 'lucide-react';
+import { Image, FileText, Download, Trash2, Copy, CheckSquare, Square, Loader2, Eye } from 'lucide-react';
 import { copyImageToClipboard } from '@/lib/clipboardUtils';
 import { toast } from '@/hooks/use-toast';
 
 interface StopDocumentGroupProps {
-  label: string | null; // null = don't show header (single stop)
+  label: string | null;
   docs: PodDocument[];
   onOpen: (doc: PodDocument) => void;
   onDownload: (doc: PodDocument) => void;
   onDelete: (id: string) => void;
+}
+
+// Resuelve la URL firmada de un doc
+async function resolveDocUrl(doc: PodDocument): Promise<string> {
+  const url = doc.file_url;
+  if (!url) return '';
+  if (url.startsWith('http')) {
+    const match = url.match(/\/storage\/v1\/object\/sign\/driver-documents\/([^?]+)/);
+    if (match?.[1]) {
+      const path = decodeURIComponent(match[1]);
+      const { data } = await supabase.storage.from('driver-documents').createSignedUrl(path, 3600);
+      if (data?.signedUrl) return data.signedUrl;
+    }
+    return url;
+  }
+  const { data } = await supabase.storage.from('driver-documents').createSignedUrl(url, 3600);
+  return data?.signedUrl || '';
+}
+
+// Thumbnail de imagen con lazy load
+function ImageThumb({ doc, onClick }: { doc: PodDocument; onClick: () => void }) {
+  const [src, setSrc] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    resolveDocUrl(doc).then(url => { setSrc(url); setLoading(false); });
+  }, [doc.file_url]);
+
+  return (
+    <button
+      onClick={onClick}
+      className="relative w-full h-full flex items-center justify-center bg-muted/40 rounded overflow-hidden group"
+      type="button"
+      title={doc.file_name}
+    >
+      {loading ? (
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      ) : src ? (
+        <>
+          <img src={src} alt={doc.file_name} className="w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+            <Eye className="h-5 w-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+          </div>
+        </>
+      ) : (
+        <Image className="h-5 w-5 text-muted-foreground" />
+      )}
+    </button>
+  );
+}
+
+// Tarjeta de documento
+function DocCard({
+  doc,
+  selected,
+  onSelect,
+  onOpen,
+  onDownload,
+  onDelete,
+}: {
+  doc: PodDocument;
+  selected: boolean;
+  onSelect: () => void;
+  onOpen: () => void;
+  onDownload: () => void;
+  onDelete: () => void;
+}) {
+  const isImage = doc.file_type === 'image';
+  const shortName = doc.file_name.length > 18 ? doc.file_name.slice(0, 16) + '…' : doc.file_name;
+
+  return (
+    <div className={`relative flex flex-col rounded-lg border overflow-hidden transition-all ${
+      selected
+        ? 'border-primary ring-2 ring-primary/30 shadow-md'
+        : 'border-border hover:border-primary/50 hover:shadow-sm'
+    }`} style={{ width: 100 }}>
+
+      {/* Thumbnail area */}
+      <div className="h-16 bg-muted/30 relative">
+        {isImage ? (
+          <ImageThumb doc={doc} onClick={onOpen} />
+        ) : (
+          <button
+            onClick={onOpen}
+            className="w-full h-full flex flex-col items-center justify-center gap-1 text-primary hover:bg-muted/50 transition-colors"
+            type="button"
+          >
+            <FileText className="h-7 w-7" />
+            <span className="text-[9px] text-muted-foreground">PDF</span>
+          </button>
+        )}
+
+        {/* Checkbox para imágenes */}
+        {isImage && (
+          <div className="absolute top-1 left-1">
+            <Checkbox
+              checked={selected}
+              onCheckedChange={onSelect}
+              className="h-3.5 w-3.5 bg-white/80 border-white/80"
+            />
+          </div>
+        )}
+
+        {/* Badge de tipo */}
+        <div className={`absolute top-1 right-1 rounded-full w-4 h-4 flex items-center justify-center ${
+          isImage ? 'bg-blue-500' : 'bg-rose-500'
+        }`}>
+          {isImage
+            ? <Image className="h-2.5 w-2.5 text-white" />
+            : <FileText className="h-2.5 w-2.5 text-white" />
+          }
+        </div>
+      </div>
+
+      {/* Footer con nombre y acciones */}
+      <div className="px-1.5 py-1 bg-card border-t">
+        <p className="text-[10px] text-foreground font-medium truncate" title={doc.file_name}>{shortName}</p>
+        <div className="flex items-center justify-between mt-0.5">
+          <button onClick={onDownload} className="text-muted-foreground hover:text-foreground" type="button" title="Descargar">
+            <Download className="h-3 w-3" />
+          </button>
+          <button onClick={onDelete} className="text-destructive/70 hover:text-destructive" type="button" title="Eliminar">
+            <Trash2 className="h-3 w-3" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export const StopDocumentGroup = ({ label, docs, onOpen, onDownload, onDelete }: StopDocumentGroupProps) => {
@@ -45,22 +173,6 @@ export const StopDocumentGroup = ({ label, docs, onOpen, onDownload, onDelete }:
     setSelectedIds(prev => { const n = new Set(prev); n.delete(id); return n; });
   };
 
-  const resolveUrl = async (doc: PodDocument): Promise<string> => {
-    const url = doc.file_url;
-    if (!url) return '';
-    if (url.startsWith('http')) {
-      const match = url.match(/\/storage\/v1\/object\/sign\/driver-documents\/([^?]+)/);
-      if (match?.[1]) {
-        const path = decodeURIComponent(match[1]);
-        const { data } = await supabase.storage.from('driver-documents').createSignedUrl(path, 3600);
-        if (data?.signedUrl) return data.signedUrl;
-      }
-      return url;
-    }
-    const { data } = await supabase.storage.from('driver-documents').createSignedUrl(url, 3600);
-    return data?.signedUrl || '';
-  };
-
   const handleCopy = async () => {
     const selected = imageDocs.filter(d => selectedIds.has(d.id));
     if (selected.length === 0) return;
@@ -69,7 +181,7 @@ export const StopDocumentGroup = ({ label, docs, onOpen, onDownload, onDelete }:
 
     setCopying(true);
     try {
-      const resolvedUrl = await resolveUrl(doc);
+      const resolvedUrl = await resolveDocUrl(doc);
       if (!resolvedUrl) throw new Error('No URL');
       const ok = await copyImageToClipboard(resolvedUrl);
       if (ok) {
@@ -105,30 +217,22 @@ export const StopDocumentGroup = ({ label, docs, onOpen, onDownload, onDelete }:
         </div>
       )}
 
+      {/* Tarjetas de documentos */}
       <div className="flex flex-wrap gap-2">
         {docs.map(doc => (
-          <div key={doc.id} className="flex items-center gap-1.5 bg-muted/50 rounded-md px-2 py-1 text-xs border">
-            {doc.file_type === 'image' && (
-              <Checkbox
-                checked={selectedIds.has(doc.id)}
-                onCheckedChange={() => toggleSelect(doc.id)}
-                className="h-3.5 w-3.5"
-              />
-            )}
-            {doc.file_type === 'image' ? <Image className="h-3 w-3 text-primary" /> : <FileText className="h-3 w-3 text-primary" />}
-            <button onClick={() => onOpen(doc)} className="hover:underline truncate max-w-[120px] text-left" title={doc.file_name} type="button">
-              {doc.file_name}
-            </button>
-            <button onClick={() => onDownload(doc)} className="text-muted-foreground hover:text-foreground" type="button" title="Descargar">
-              <Download className="h-3 w-3" />
-            </button>
-            <button onClick={() => handleDelete(doc.id)} className="text-destructive hover:text-destructive/80" type="button">
-              <Trash2 className="h-3 w-3" />
-            </button>
-          </div>
+          <DocCard
+            key={doc.id}
+            doc={doc}
+            selected={selectedIds.has(doc.id)}
+            onSelect={() => toggleSelect(doc.id)}
+            onOpen={() => onOpen(doc)}
+            onDownload={() => onDownload(doc)}
+            onDelete={() => handleDelete(doc.id)}
+          />
         ))}
       </div>
 
+      {/* Copiar al clipboard */}
       {selectedIds.size > 0 && (
         <div className="flex items-center gap-2">
           <Button size="sm" variant="outline" className="gap-1.5 text-xs h-7" onClick={handleCopy} disabled={copying}>
