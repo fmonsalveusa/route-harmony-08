@@ -1299,7 +1299,7 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
           </div>
         ) : null;
       })()}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
         {/* Info */}
           <div className="space-y-3">
           <div className="flex items-center gap-2">
@@ -1551,8 +1551,8 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
         </div>
 
         {/* Map */}
-        <div className="rounded-lg overflow-hidden border bg-card relative h-full" style={{ minHeight: 350, zIndex: 0 }}>
-          <div ref={mapRef} style={{ height: '100%', minHeight: 350, zIndex: 0 }} />
+        <div className="sticky top-4 rounded-lg overflow-hidden border bg-card relative" style={{ height: 350, zIndex: 0 }}>
+          <div ref={mapRef} style={{ height: '100%', zIndex: 0 }} />
           {gpsStatus !== 'none' && (
             <div className="absolute top-2 right-2 z-[1000] pointer-events-none">
               {gpsStatus === 'active' ? (
