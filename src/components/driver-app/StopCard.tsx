@@ -181,8 +181,8 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
 
     await createNotification({
       type: 'pod_uploaded',
-      title: `POD Uploaded - ${driverName}`,
-      message: `${driverName} uploaded ${stop.stop_type} doc at ${stop.address} (Load #${loadRef})`,
+      title: `${stop.stop_type === 'pickup' ? 'BOL' : 'POD'} Uploaded - ${driverName}`,
+      message: `${driverName} uploaded ${stop.stop_type === 'pickup' ? 'BOL' : 'POD'} at ${stop.address} (Load #${loadRef})`,
       load_id: stop.load_id,
     });
 
@@ -262,8 +262,8 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
 
       await createNotification({
         type: 'pod_uploaded',
-        title: `POD Uploaded - ${driverName}`,
-        message: `${driverName} uploaded ${stop.stop_type} doc at ${stop.address} (Load #${loadRef})`,
+        title: `${stop.stop_type === 'pickup' ? 'BOL' : 'POD'} Uploaded - ${driverName}`,
+        message: `${driverName} uploaded ${stop.stop_type === 'pickup' ? 'BOL' : 'POD'} at ${stop.address} (Load #${loadRef})`,
         load_id: stop.load_id,
       });
     }
