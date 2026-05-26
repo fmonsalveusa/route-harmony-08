@@ -224,9 +224,12 @@ function BrokerScoreRow({ brokerName }: { brokerName: string | null | undefined 
   );
 }
 
-function StopPhotoSection({ loadId, stopId }: { loadId: string; stopId: string }) {
+function StopPhotoSection({ loadId, stopId, isFirst }: { loadId: string; stopId: string; isFirst?: boolean }) {
   const { pods, uploading, uploadPod, deletePod, downloadPod, resolvePodUrl } = usePodDocuments(loadId);
-  const stopPods = pods.filter(p => p.stop_id === stopId);
+  // Fotos de esta parada + fotos sin stop_id (legacy) solo en la primera parada
+  const stopPods = pods.filter(p =>
+    p.stop_id === stopId || (isFirst && p.stop_id === null)
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewName, setPreviewName] = useState<string>('');
@@ -1474,7 +1477,7 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
                           )}
                         </div>
                         {dbStop?.id && (
-                          <StopPhotoSection loadId={load.id} stopId={dbStop.id} />
+                          <StopPhotoSection loadId={load.id} stopId={dbStop.id} isFirst={i === 0} />
                         )}
                       </div>
                     </div>
