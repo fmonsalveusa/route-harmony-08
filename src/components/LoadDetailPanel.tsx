@@ -224,12 +224,17 @@ function BrokerScoreRow({ brokerName }: { brokerName: string | null | undefined 
   );
 }
 
-function StopPhotoSection({ loadId, stopId, isFirst }: { loadId: string; stopId: string; isFirst?: boolean }) {
+function StopPhotoSection({ loadId, stopId, isFirst, stopType }: { loadId: string; stopId: string; isFirst?: boolean; stopType?: string }) {
   const { pods, uploading, uploadPod, deletePod, downloadPod, resolvePodUrl } = usePodDocuments(loadId);
   // Fotos de esta parada + fotos sin stop_id (legacy) solo en la primera parada
   const stopPods = pods.filter(p =>
     p.stop_id === stopId || (isFirst && p.stop_id === null)
   );
+
+  // Separar imágenes y documentos según tipo de parada
+  const images = stopPods.filter(p => p.file_type === 'image');
+  const docs = stopPods.filter(p => p.file_type !== 'image');
+  const docLabel = stopType === 'pickup' ? 'BOL' : 'POD';
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewName, setPreviewName] = useState<string>('');
@@ -253,13 +258,36 @@ function StopPhotoSection({ loadId, stopId, isFirst }: { loadId: string; stopId:
   return (
     <>
       <div className="mt-2 space-y-1.5">
-        <StopDocumentGroup
-          label={null}
-          docs={stopPods}
-          onOpen={handleOpen}
-          onDownload={downloadPod}
-          onDelete={deletePod}
-        />
+        {/* Imágenes */}
+        {images.length > 0 && (
+          <StopDocumentGroup
+            label="Imágenes"
+            docs={images}
+            onOpen={handleOpen}
+            onDownload={downloadPod}
+            onDelete={deletePod}
+          />
+        )}
+        {/* BOL / POD */}
+        {docs.length > 0 && (
+          <StopDocumentGroup
+            label={docLabel}
+            docs={docs}
+            onOpen={handleOpen}
+            onDownload={downloadPod}
+            onDelete={deletePod}
+          />
+        )}
+        {/* Si no hay nada aún, muestra el grupo vacío para mantener estructura */}
+        {stopPods.length === 0 && (
+          <StopDocumentGroup
+            label={null}
+            docs={[]}
+            onOpen={handleOpen}
+            onDownload={downloadPod}
+            onDelete={deletePod}
+          />
+        )}
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
@@ -1477,7 +1505,7 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
                           )}
                         </div>
                         {dbStop?.id && (
-                          <StopPhotoSection loadId={load.id} stopId={dbStop.id} isFirst={i === 0} />
+                          <StopPhotoSection loadId={load.id} stopId={dbStop.id} isFirst={i === 0} stopType={stop.type} />
                         )}
                       </div>
                     </div>
