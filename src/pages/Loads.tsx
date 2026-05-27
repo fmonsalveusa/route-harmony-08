@@ -584,16 +584,6 @@ const Loads = () => {
                           </td>
                           <td className="p-3 text-right" onClick={e => e.stopPropagation()}>
                             <div className="flex justify-end gap-1.5">
-                              <Button variant="ghost" size="sm" className="glass-action-btn tint-purple" onClick={() => { inputRefMap.current[load.id]?.click(); }} title="POD">
-                                <Upload className="h-4 w-4" /> POD
-                              </Button>
-                              {load.pdf_url && (
-                                <Button variant="ghost" size="sm" className="glass-action-btn tint-blue" asChild title="PDF">
-                                  <a href={load.pdf_url} target="_blank" rel="noopener noreferrer">
-                                    <ExternalLink className="h-4 w-4" /> PDF
-                                  </a>
-                                </Button>
-                              )}
                               <Button variant="ghost" size="sm" className="glass-action-btn tint-green" onClick={() => handleGenerateInvoice(load)} title="Invoice">
                                  <FileText className="h-4 w-4" /> Invoice
                                </Button>
