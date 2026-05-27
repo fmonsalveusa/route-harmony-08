@@ -181,8 +181,8 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
 
     await createNotification({
       type: 'pod_uploaded',
-      title: `${stop.stop_type === 'pickup' ? 'BOL' : 'POD'} Uploaded - ${driverName}`,
-      message: `${driverName} uploaded ${stop.stop_type === 'pickup' ? 'BOL' : 'POD'} at ${stop.address} (Load #${loadRef})`,
+      title: `${stop.stop_type === 'pickup' ? 'Pick Up Picture' : 'Delivery Picture'} - ${driverName}`,
+      message: `${driverName} uploaded a ${stop.stop_type === 'pickup' ? 'Pick Up Picture' : 'Delivery Picture'} at ${stop.address} (Load #${loadRef})`,
       load_id: stop.load_id,
     });
 
@@ -260,10 +260,14 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
         tenant_id,
       } as any);
 
+      const docLabel = stop.stop_type === 'pickup'
+        ? (isImage ? 'Pick Up Picture' : 'Scanned BOL')
+        : (isImage ? 'Delivery Picture' : 'Scanned POD');
+
       await createNotification({
         type: 'pod_uploaded',
-        title: `${stop.stop_type === 'pickup' ? 'BOL' : 'POD'} Uploaded - ${driverName}`,
-        message: `${driverName} uploaded ${stop.stop_type === 'pickup' ? 'BOL' : 'POD'} at ${stop.address} (Load #${loadRef})`,
+        title: `${docLabel} - ${driverName}`,
+        message: `${driverName} uploaded a ${docLabel} at ${stop.address} (Load #${loadRef})`,
         load_id: stop.load_id,
       });
     }
