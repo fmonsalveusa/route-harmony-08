@@ -102,6 +102,7 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
   const [deletePaymentId, setDeletePaymentId] = useState<string | null>(null);
   
   const [adjMap, setAdjMap] = useState<Record<string, number>>({});
+  const [adjRefresh, setAdjRefresh] = useState(0);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [batchProcessing, setBatchProcessing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -127,7 +128,7 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
     }
   }, [allPayments, type]);
 
-  useEffect(() => { fetchAdjustments(); }, [fetchAdjustments]);
+  useEffect(() => { fetchAdjustments(); }, [fetchAdjustments, adjRefresh]);
 
   // Build date map from payment created_at (payments are generated when load is marked delivered)
   const paymentDateMap = useMemo(() => {
@@ -604,7 +605,7 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
       </div>
 
       {editPayment && (
-        <PaymentEditDialog payment={editPayment} open={!!editPayment} onOpenChange={(o) => { if (!o) { setEditPayment(null); fetchAdjustments(); } }} />
+        <PaymentEditDialog payment={editPayment} open={!!editPayment} onOpenChange={(o) => { if (!o) { setEditPayment(null); setAdjRefresh(r => r + 1); } }} />
       )}
 
       <Dialog open={!!deletePaymentId} onOpenChange={(o) => { if (!o) setDeletePaymentId(null); }}>
