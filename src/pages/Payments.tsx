@@ -132,9 +132,10 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
   };
 
   // Re-fetch when payments load or adjRefresh changes
+  const typePaymentsCount = allPayments.filter(p => p.recipient_type === type).length;
   useEffect(() => {
-    if (allPayments.length > 0) doFetchAdjustments();
-  }, [allPayments.length, adjRefresh, type]);
+    if (typePaymentsCount > 0) doFetchAdjustments();
+  }, [typePaymentsCount, adjRefresh, type]);
 
   // Build date map from payment created_at (payments are generated when load is marked delivered)
   const paymentDateMap = useMemo(() => {
