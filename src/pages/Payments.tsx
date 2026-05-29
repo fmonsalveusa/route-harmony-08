@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, isWithinInterval, parseISO } from 'date-fns';
 import { formatDate } from '@/lib/dateUtils';
 import { usePayments, type DbPayment } from '@/hooks/usePayments';
@@ -113,14 +113,22 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
 
-  // Fetch all adjustments for payments of this type
-  const allPaymentsRef = useRef(allPayments);
-  allPaymentsRef.current = allPayments;
-
+  // Fetch all adjustments for payments of this type — directo desde Supabase
   const doFetchAdjustments = async () => {
-    const ids = allPaymentsRef.current.filter(p => p.recipient_type === type).map(p => p.id);
+    // Obtener todos los payment_ids de este tipo directo de la BD
+    const { data: paymentIds } = await supabase
+      .from('payments' as any)
+      .select('id')
+      .eq('recipient_type', type);
+    
+    const ids = ((paymentIds as any[]) || []).map((p: any) => p.id);
     if (ids.length === 0) return;
-    const { data } = await supabase.from('payment_adjustments').select('payment_id, adjustment_type, amount').in('payment_id', ids);
+
+    const { data } = await supabase
+      .from('payment_adjustments')
+      .select('payment_id, adjustment_type, amount')
+      .in('payment_id', ids);
+
     if (data) {
       const map: Record<string, number> = {};
       (data as any[]).forEach(a => {
@@ -131,11 +139,10 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
     }
   };
 
-  // Re-fetch when payments load or adjRefresh changes
-  const typePaymentsCount = allPayments.filter(p => p.recipient_type === type).length;
+  // Re-fetch al montar y cuando cambie adjRefresh
   useEffect(() => {
-    if (typePaymentsCount > 0) doFetchAdjustments();
-  }, [typePaymentsCount, adjRefresh, type]);
+    doFetchAdjustments();
+  }, [type, adjRefresh]);
 
   // Build date map from payment created_at (payments are generated when load is marked delivered)
   const paymentDateMap = useMemo(() => {
