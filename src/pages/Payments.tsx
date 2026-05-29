@@ -113,26 +113,34 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
 
-  // Fetch all adjustments for payments of this type — join directo para evitar URL demasiado larga
+  // Fetch adjustments en chunks de 100 para evitar límite de URL de PostgREST
   const doFetchAdjustments = async () => {
-    const { data } = await supabase
-      .from('payment_adjustments' as any)
-      .select('payment_id, adjustment_type, amount, payments!inner(recipient_type)')
-      .eq('payments.recipient_type' as any, type);
+    const ids = allPayments.filter(p => p.recipient_type === type).map(p => p.id);
+    if (ids.length === 0) return;
 
-    if (data) {
-      const map: Record<string, number> = {};
-      (data as any[]).forEach(a => {
-        const val = a.adjustment_type === 'addition' ? Number(a.amount) : -Number(a.amount);
-        map[a.payment_id] = (map[a.payment_id] || 0) + val;
-      });
-      setAdjMap(map);
+    const chunkSize = 100;
+    const allData: any[] = [];
+
+    for (let i = 0; i < ids.length; i += chunkSize) {
+      const chunk = ids.slice(i, i + chunkSize);
+      const { data } = await supabase
+        .from('payment_adjustments' as any)
+        .select('payment_id, adjustment_type, amount')
+        .in('payment_id', chunk);
+      if (data) allData.push(...(data as any[]));
     }
+
+    const map: Record<string, number> = {};
+    allData.forEach(a => {
+      const val = a.adjustment_type === 'addition' ? Number(a.amount) : -Number(a.amount);
+      map[a.payment_id] = (map[a.payment_id] || 0) + val;
+    });
+    setAdjMap(map);
   };
 
   useEffect(() => {
-    doFetchAdjustments();
-  }, [type, adjRefresh]);
+    if (allPayments.length > 0) doFetchAdjustments();
+  }, [allPayments, adjRefresh, type]);
 
   // Build date map from payment created_at (payments are generated when load is marked delivered)
   const paymentDateMap = useMemo(() => {
