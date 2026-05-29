@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, isWithinInterval, parseISO } from 'date-fns';
 import { formatDate } from '@/lib/dateUtils';
 import { usePayments, type DbPayment } from '@/hooks/usePayments';
@@ -117,7 +117,7 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
   const allPaymentsRef = useRef(allPayments);
   allPaymentsRef.current = allPayments;
 
-  const fetchAdjustments = useCallback(async () => {
+  const doFetchAdjustments = async () => {
     const ids = allPaymentsRef.current.filter(p => p.recipient_type === type).map(p => p.id);
     if (ids.length === 0) return;
     const { data } = await supabase.from('payment_adjustments').select('payment_id, adjustment_type, amount').in('payment_id', ids);
@@ -129,9 +129,12 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
       });
       setAdjMap(map);
     }
-  }, [type]);
+  };
 
-  useEffect(() => { fetchAdjustments(); }, [fetchAdjustments, adjRefresh]);
+  // Re-fetch when payments load or adjRefresh changes
+  useEffect(() => {
+    if (allPayments.length > 0) doFetchAdjustments();
+  }, [allPayments.length, adjRefresh, type]);
 
   // Build date map from payment created_at (payments are generated when load is marked delivered)
   const paymentDateMap = useMemo(() => {
