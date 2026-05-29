@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, isWithinInterval, parseISO } from 'date-fns';
 import { formatDate } from '@/lib/dateUtils';
 import { usePayments, type DbPayment } from '@/hooks/usePayments';
@@ -114,8 +114,11 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
   const [dateTo, setDateTo] = useState('');
 
   // Fetch all adjustments for payments of this type
+  const allPaymentsRef = useRef(allPayments);
+  allPaymentsRef.current = allPayments;
+
   const fetchAdjustments = useCallback(async () => {
-    const ids = allPayments.filter(p => p.recipient_type === type).map(p => p.id);
+    const ids = allPaymentsRef.current.filter(p => p.recipient_type === type).map(p => p.id);
     if (ids.length === 0) return;
     const { data } = await supabase.from('payment_adjustments').select('payment_id, adjustment_type, amount').in('payment_id', ids);
     if (data) {
@@ -126,7 +129,7 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
       });
       setAdjMap(map);
     }
-  }, [allPayments, type]);
+  }, [type]);
 
   useEffect(() => { fetchAdjustments(); }, [fetchAdjustments, adjRefresh]);
 
