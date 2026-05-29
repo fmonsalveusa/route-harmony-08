@@ -113,21 +113,12 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
 
-  // Fetch all adjustments for payments of this type — directo desde Supabase
+  // Fetch all adjustments for payments of this type — join directo para evitar URL demasiado larga
   const doFetchAdjustments = async () => {
-    // Obtener todos los payment_ids de este tipo directo de la BD
-    const { data: paymentIds } = await supabase
-      .from('payments' as any)
-      .select('id')
-      .eq('recipient_type', type);
-    
-    const ids = ((paymentIds as any[]) || []).map((p: any) => p.id);
-    if (ids.length === 0) return;
-
     const { data } = await supabase
-      .from('payment_adjustments')
-      .select('payment_id, adjustment_type, amount')
-      .in('payment_id', ids);
+      .from('payment_adjustments' as any)
+      .select('payment_id, adjustment_type, amount, payments!inner(recipient_type)')
+      .eq('payments.recipient_type' as any, type);
 
     if (data) {
       const map: Record<string, number> = {};
@@ -139,7 +130,6 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
     }
   };
 
-  // Re-fetch al montar y cuando cambie adjRefresh
   useEffect(() => {
     doFetchAdjustments();
   }, [type, adjRefresh]);
