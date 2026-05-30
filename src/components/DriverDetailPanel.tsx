@@ -6,6 +6,7 @@ import { formatPhone } from '@/lib/phoneUtils';
 import { ExpiryBadge } from '@/components/ExpiryBadge';
 import { generateOnboardingSummaryPdf } from '@/lib/onboardingDocPdf';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -44,6 +45,18 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
   const [termLetterDeleted, setTermLetterDeleted] = useState(false);
   const [leasingDocs, setLeasingDocs] = useState<Array<{ id: string; company_name: string; file_url: string }>>([]);
   const [leasingLoading, setLeasingLoading] = useState(true);
+  const [previewDoc, setPreviewDoc] = useState<{ url: string; label: string } | null>(null);
+  const [loadingPreview, setLoadingPreview] = useState(false);
+
+  const handleDocView = async (url: string, label: string) => {
+    setLoadingPreview(true);
+    try {
+      const resolved = getDocSignedUrl ? (await getDocSignedUrl(url) || url) : url;
+      setPreviewDoc({ url: resolved, label });
+    } finally {
+      setLoadingPreview(false);
+    }
+  };
 
   useEffect(() => {
     setLeasingLoading(true);
@@ -238,6 +251,7 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
                 getDocSignedUrl={getDocSignedUrl}
                 allowUpload={!!onUpdateDriver}
                 uploadPath={`${driver.id}/${doc.key}`}
+                onView={url ? () => handleDocView(url, doc.label) : undefined}
                 onUpload={onUpdateDriver ? async (newUrl) => {
                   await onUpdateDriver(driver.id, { [doc.key]: newUrl });
                 } : undefined}
@@ -258,13 +272,13 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
 
           {/* Legacy leasing fields */}
           {(driver as any).leasing_agreement_url && (
-            <DocViewer label="Leasing Agreement" url={(driver as any).leasing_agreement_url} docKey="leasing_agreement_url" getDocSignedUrl={getDocSignedUrl} />
+            <DocViewer label="Leasing Agreement" url={(driver as any).leasing_agreement_url} docKey="leasing_agreement_url" getDocSignedUrl={getDocSignedUrl} onView={() => handleDocView((driver as any).leasing_agreement_url, 'Leasing Agreement')} />
           )}
           {(driver as any).leasing_agreement_venco_url && (
-            <DocViewer label="Leasing Agreement (VENCO)" url={(driver as any).leasing_agreement_venco_url} docKey="leasing_agreement_venco_url" getDocSignedUrl={getDocSignedUrl} />
+            <DocViewer label="Leasing Agreement (VENCO)" url={(driver as any).leasing_agreement_venco_url} docKey="leasing_agreement_venco_url" getDocSignedUrl={getDocSignedUrl} onView={() => handleDocView((driver as any).leasing_agreement_venco_url, 'Leasing Agreement (VENCO)')} />
           )}
           {(driver as any).leasing_agreement_58_url && (
-            <DocViewer label="Leasing Agreement (58 Logistics)" url={(driver as any).leasing_agreement_58_url} docKey="leasing_agreement_58_url" getDocSignedUrl={getDocSignedUrl} />
+            <DocViewer label="Leasing Agreement (58 Logistics)" url={(driver as any).leasing_agreement_58_url} docKey="leasing_agreement_58_url" getDocSignedUrl={getDocSignedUrl} onView={() => handleDocView((driver as any).leasing_agreement_58_url, 'Leasing Agreement (58 Logistics)')} />
           )}
 
           {/* Dynamic Leasing Agreements */}
@@ -274,10 +288,40 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
             </div>
           )}
           {!leasingLoading && leasingDocs.map(doc => (
-            <DocViewer key={doc.id} label={`Leasing Agreement (${doc.company_name})`} url={doc.file_url} docKey={doc.id} getDocSignedUrl={getDocSignedUrl} />
+            <DocViewer key={doc.id} label={`Leasing Agreement (${doc.company_name})`} url={doc.file_url} docKey={doc.id} getDocSignedUrl={getDocSignedUrl} onView={() => handleDocView(doc.file_url, `Leasing Agreement (${doc.company_name})`)} />
           ))}
         </div>
       </div>
+
+      {/* Preview Dialog — a nivel del panel para evitar desmontaje */}
+      <Dialog open={!!previewDoc} onOpenChange={(open) => { if (!open) setPreviewDoc(null); }}>
+        <DialogContent className="max-w-3xl" onClick={e => e.stopPropagation()}>
+          <DialogHeader>
+            <DialogTitle>{previewDoc?.label}</DialogTitle>
+          </DialogHeader>
+          {loadingPreview ? (
+            <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
+          ) : previewDoc && (
+            <div className="flex justify-center">
+              {previewDoc.url.toLowerCase().includes('.pdf') || previewDoc.url.toLowerCase().includes('pdf') ? (
+                <iframe src={previewDoc.url} className="w-full h-[70vh] rounded border" title={previewDoc.label} />
+              ) : (
+                <img src={previewDoc.url} alt={previewDoc.label} className="max-w-full max-h-[70vh] object-contain rounded" />
+              )}
+            </div>
+          )}
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setPreviewDoc(null)}>Cerrar</Button>
+            {previewDoc && (
+              <Button asChild>
+                <a href={previewDoc.url} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="h-4 w-4 mr-2" /> Abrir en nueva pestaña
+                </a>
+              </Button>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

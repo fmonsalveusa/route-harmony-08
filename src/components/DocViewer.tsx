@@ -13,6 +13,7 @@ interface DocViewerProps {
   uploadPath?: string;
   allowUpload?: boolean;
   children?: React.ReactNode;
+  onView?: () => void; // override view handler to lift state up
 }
 
 export function DocViewer({ label, url, docKey, getDocSignedUrl, onUpload, uploadPath, allowUpload = false, children }: DocViewerProps) {
@@ -32,8 +33,9 @@ export function DocViewer({ label, url, docKey, getDocSignedUrl, onUpload, uploa
   };
 
   const handleView = async (e: React.MouseEvent) => {
-    e.stopPropagation(); // Evita que el click propague y cierre el panel padre
+    e.stopPropagation();
     if (!url) return;
+    if (onView) { onView(); return; } // Delegate to parent if provided
     setLoadingDoc(true);
     try {
       const resolved = await resolveUrl(url);
