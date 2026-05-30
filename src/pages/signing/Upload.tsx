@@ -5,7 +5,8 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Save, Wand2, Loader2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ArrowLeft, Save, Wand2, Loader2, CopyPlus } from 'lucide-react';
 import PdfViewer from '@/components/signing/PdfViewer';
 import FieldOverlay from '@/components/signing/FieldOverlay';
 import FieldsSidebar from '@/components/signing/FieldsSidebar';
@@ -38,6 +39,7 @@ export default function Upload() {
   const [saving, setSaving] = useState(false);
   const [detecting, setDetecting] = useState(false);
   const [loading, setLoading] = useState(!!editId);
+  const [copyToPageField, setCopyToPageField] = useState<DocumentField | null>(null);
 
   useEffect(() => {
     if (!editId) return;
@@ -106,6 +108,35 @@ export default function Upload() {
       return [...prev, { ...original, id: uuidv4(), x: original.x + 2, y: original.y + 2 }];
     });
   }, []);
+
+  const openCopyToPage = useCallback((id: string) => {
+    const field = fields.find(f => f.id === id);
+    if (field) setCopyToPageField(field);
+  }, [fields]);
+
+  const copyFieldToPage = useCallback((targetPage: number) => {
+    if (!copyToPageField) return;
+    // Usar groupId existente o crear uno nuevo para este grupo
+    const groupId = copyToPageField.groupId || copyToPageField.id;
+    // Si el campo original no tiene groupId, actualizarlo
+    setFields(prev => {
+      const updated = prev.map(f =>
+        f.id === copyToPageField.id ? { ...f, groupId } : f
+      );
+      // Agregar copia en la página destino
+      const copy: DocumentField = {
+        ...copyToPageField,
+        id: uuidv4(),
+        page: targetPage,
+        groupId,
+        x: copyToPageField.x,
+        y: copyToPageField.y,
+      };
+      return [...updated, copy];
+    });
+    toast.success(`Campo copiado a página ${targetPage}`);
+    setCopyToPageField(null);
+  }, [copyToPageField]);
 
   const handleDetectFields = async () => {
     if (!fileData) return;
@@ -281,6 +312,7 @@ export default function Upload() {
                 onMove={(id, x, y) => updateField(id, { x, y })}
                 onResize={(id, w, h) => updateField(id, { width: w, height: h })}
                 onDuplicate={duplicateField}
+                onCopyToPage={totalPages > 1 ? openCopyToPage : undefined}
                 onOpenSettings={(f) => { setSettingsField(f); setSettingsOpen(true); }}
               />
             ))}
@@ -308,6 +340,44 @@ export default function Upload() {
           setSettingsField(null);
         }}
       />
+
+      {/* Modal: Copiar campo a otra página */}
+      <Dialog open={!!copyToPageField} onOpenChange={(o) => { if (!o) setCopyToPageField(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CopyPlus className="h-4 w-4" /> Copiar campo a página
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <p className="text-sm text-muted-foreground">
+              Campo: <span className="font-medium text-foreground">{copyToPageField?.label || copyToPageField?.type}</span>
+            </p>
+            <p className="text-sm text-muted-foreground mb-3">
+              El campo compartirá el mismo valor en todas las páginas donde esté copiado.
+            </p>
+            <div className="grid grid-cols-4 gap-2">
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter(p => p !== copyToPageField?.page)
+                .map(page => (
+                  <Button
+                    key={page}
+                    variant="outline"
+                    className="h-12 text-base font-semibold"
+                    onClick={() => copyFieldToPage(page)}
+                  >
+                    {page}
+                  </Button>
+                ))}
+            </div>
+            {totalPages <= 1 && (
+              <p className="text-sm text-muted-foreground text-center py-2">
+                El documento solo tiene 1 página.
+              </p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

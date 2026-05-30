@@ -1,6 +1,6 @@
 import { useRef, useCallback, useState, useEffect } from "react";
 import { DocumentField, FieldType } from "@/types/document";
-import { PenLine, User, Calendar, X, GripVertical, MapPin, StickyNote, Phone, Mail, Type, Building2, Briefcase, Copy, Settings, Trash2, TextCursorInput, AlignLeft, ListOrdered, CircleDot, CheckSquare, Hash } from "lucide-react";
+import { PenLine, User, Calendar, X, GripVertical, MapPin, StickyNote, Phone, Mail, Type, Building2, Briefcase, Copy, Settings, Trash2, TextCursorInput, AlignLeft, ListOrdered, CircleDot, CheckSquare, Hash, CopyPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface FieldOverlayProps {
@@ -9,6 +9,7 @@ interface FieldOverlayProps {
   onMove?: (id: string, x: number, y: number) => void;
   onResize?: (id: string, width: number, height: number) => void;
   onDuplicate?: (id: string) => void;
+  onCopyToPage?: (id: string) => void;
   onOpenSettings?: (field: DocumentField) => void;
   editable?: boolean;
   onClick?: () => void;
@@ -38,7 +39,7 @@ const fieldConfig: Record<FieldType, { icon: typeof PenLine; label: string; colo
   checkbox: { icon: CheckSquare, label: "Checkbox", color: "border-secondary bg-secondary/10 text-secondary" },
 };
 
-export default function FieldOverlay({ field, onRemove, onMove, onResize, onDuplicate, onOpenSettings, editable = true, onClick, completed, colorOverride, isSelected: isSelectedProp, onSelect }: FieldOverlayProps) {
+export default function FieldOverlay({ field, onRemove, onMove, onResize, onDuplicate, onCopyToPage, onOpenSettings, editable = true, onClick, completed, colorOverride, isSelected: isSelectedProp, onSelect }: FieldOverlayProps) {
   const config = fieldConfig[field.type];
   const colorClasses = colorOverride || config.color;
   const Icon = config.icon;
@@ -241,8 +242,13 @@ export default function FieldOverlay({ field, onRemove, onMove, onResize, onDupl
             </Button>
           )}
           {onDuplicate && (
-            <Button variant="outline" size="icon" className="h-7 w-7 rounded-full bg-background shadow-md border-border hover:bg-accent" onClick={(e) => { e.stopPropagation(); onDuplicate(field.id); }} onPointerDown={(e) => e.stopPropagation()} title="Duplicar">
+            <Button variant="outline" size="icon" className="h-7 w-7 rounded-full bg-background shadow-md border-border hover:bg-accent" onClick={(e) => { e.stopPropagation(); onDuplicate(field.id); }} onPointerDown={(e) => e.stopPropagation()} title="Duplicar en esta página">
               <Copy className="h-3.5 w-3.5" />
+            </Button>
+          )}
+          {onCopyToPage && (
+            <Button variant="outline" size="icon" className="h-7 w-7 rounded-full bg-background shadow-md border-border hover:bg-accent" onClick={(e) => { e.stopPropagation(); onCopyToPage(field.id); }} onPointerDown={(e) => e.stopPropagation()} title="Copiar a otra página">
+              <CopyPlus className="h-3.5 w-3.5" />
             </Button>
           )}
           <Button variant="outline" size="icon" className="h-7 w-7 rounded-full bg-background shadow-md border-border hover:bg-destructive hover:text-destructive-foreground" onClick={(e) => { e.stopPropagation(); onRemove(field.id); }} onPointerDown={(e) => e.stopPropagation()} title="Eliminar">
