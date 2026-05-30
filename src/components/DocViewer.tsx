@@ -13,9 +13,10 @@ interface DocViewerProps {
   uploadPath?: string;
   allowUpload?: boolean;
   children?: React.ReactNode;
+  onView?: (e: React.MouseEvent) => void;
 }
 
-export function DocViewer({ label, url, docKey, getDocSignedUrl, onUpload, uploadPath, allowUpload = false, children }: DocViewerProps) {
+export function DocViewer({ label, url, docKey, getDocSignedUrl, onUpload, uploadPath, allowUpload = false, children, onView }: DocViewerProps) {
   const [loadingDoc, setLoadingDoc] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -34,12 +35,12 @@ export function DocViewer({ label, url, docKey, getDocSignedUrl, onUpload, uploa
   const handleView = async (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
+    if (onView) { onView(e); return; } // delegate to parent
     if (!url) return;
     setLoadingDoc(true);
     try {
       const resolved = await resolveUrl(url);
-      // Small delay to ensure the click event cycle is complete before opening dialog
-      setTimeout(() => setPreviewUrl(resolved), 10);
+      setPreviewUrl(resolved);
     } finally {
       setLoadingDoc(false);
     }

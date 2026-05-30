@@ -16,6 +16,8 @@ import { useDispatchers } from '@/hooks/useDispatchers';
 import { useInvestors } from '@/hooks/useInvestors';
 import { DriverFormDialog } from '@/components/DriverFormDialog';
 import { DriverDetailDialog } from '@/components/DriverDetailDialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ExternalLink, Loader2 } from 'lucide-react';
 import { DriverDetailPanel } from '@/components/DriverDetailPanel';
 import { GenerateOnboardingLinkDialog } from '@/components/GenerateOnboardingLinkDialog';
 import { TerminationLetterDialog } from '@/components/TerminationLetterDialog';
@@ -51,6 +53,7 @@ const Drivers = () => {
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('active');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [docPreview, setDocPreview] = useState<{ url: string; label: string } | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [dispatcherFilter, setDispatcherFilter] = useState<string>('all');
@@ -225,7 +228,7 @@ const Drivers = () => {
                 const dispatcher = dispatchers.find(d => d.id === driver.dispatcher_id);
                 return (
                   <>{/* Fragment needed for expand row */}
-                    <tr key={driver.id} className={cn("border-b glass-row cursor-pointer", driver.status === 'pending' && "bg-yellow-50/50", isExpanded && "glass-row-expanded")} onClick={() => setExpandedId(isExpanded ? null : driver.id)}>
+                    <tr key={driver.id} className={cn("border-b glass-row cursor-pointer", driver.status === 'pending' && "bg-yellow-50/50", isExpanded && "glass-row-expanded")} onClick={() => { if (docPreview) return; setExpandedId(isExpanded ? null : driver.id); }}>
                       <td className="p-3 text-muted-foreground">
                         {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                       </td>
@@ -313,7 +316,7 @@ const Drivers = () => {
                     {isExpanded && (
                       <tr key={`${driver.id}-detail`} onClick={e => e.stopPropagation()}>
                         <td colSpan={8} className="p-0" onClick={e => e.stopPropagation()}>
-                          <DriverDetailPanel driver={driver} truckLabel={truckLabel} dispatcherName={dispatcher?.name || null} getDocSignedUrl={getDocSignedUrl} truck={getTruck(driver.truck_id)} />
+                          <DriverDetailPanel driver={driver} truckLabel={truckLabel} dispatcherName={dispatcher?.name || null} getDocSignedUrl={getDocSignedUrl} truck={getTruck(driver.truck_id)} onDocView={(url, label) => setDocPreview({ url, label })} />
                         </td>
                       </tr>
                     )}
@@ -433,6 +436,34 @@ const Drivers = () => {
         companyName={tenantName}
         onSuccess={() => { refetch(); setTerminationDriver(null); }}
       />
+
+      {/* Doc preview dialog — fuera de la tabla para evitar desmontaje */}
+      <Dialog open={!!docPreview} onOpenChange={(open) => { if (!open) setDocPreview(null); }}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>{docPreview?.label}</DialogTitle>
+          </DialogHeader>
+          {docPreview && (
+            <div className="flex justify-center">
+              {docPreview.url.toLowerCase().includes('.pdf') ? (
+                <iframe src={docPreview.url} className="w-full h-[70vh] rounded border" title={docPreview.label} />
+              ) : (
+                <img src={docPreview.url} alt={docPreview.label} className="max-w-full max-h-[70vh] object-contain rounded" />
+              )}
+            </div>
+          )}
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setDocPreview(null)}>Cerrar</Button>
+            {docPreview && (
+              <Button asChild>
+                <a href={docPreview.url} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="h-4 w-4 mr-2" /> Abrir en nueva pestaña
+                </a>
+              </Button>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
