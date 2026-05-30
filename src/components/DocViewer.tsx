@@ -10,13 +10,12 @@ interface DocViewerProps {
   docKey: string;
   getDocSignedUrl?: (url: string) => Promise<string | null>;
   onUpload?: (url: string) => void;
-  uploadPath?: string;
+  uploadPath?: string; // e.g. "driver-id/license"
   allowUpload?: boolean;
-  children?: React.ReactNode;
-  onView?: (e: React.MouseEvent) => void;
+  children?: React.ReactNode; // extra buttons (e.g. delete)
 }
 
-export function DocViewer({ label, url, docKey, getDocSignedUrl, onUpload, uploadPath, allowUpload = false, children, onView }: DocViewerProps) {
+export function DocViewer({ label, url, docKey, getDocSignedUrl, onUpload, uploadPath, allowUpload = false, children }: DocViewerProps) {
   const [loadingDoc, setLoadingDoc] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -32,10 +31,7 @@ export function DocViewer({ label, url, docKey, getDocSignedUrl, onUpload, uploa
     }
   };
 
-  const handleView = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
-    if (onView) { onView(e); return; } // delegate to parent
+  const handleView = async () => {
     if (!url) return;
     setLoadingDoc(true);
     try {
@@ -84,7 +80,7 @@ export function DocViewer({ label, url, docKey, getDocSignedUrl, onUpload, uploa
             </button>
             {allowUpload && (
               <button
-                onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
+                onClick={() => fileInputRef.current?.click()}
                 className="text-muted-foreground hover:text-foreground ml-1"
                 title="Replace document"
                 disabled={uploading}
@@ -99,7 +95,7 @@ export function DocViewer({ label, url, docKey, getDocSignedUrl, onUpload, uploa
             <span className="text-muted-foreground">—</span>
             {allowUpload && (
               <button
-                onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
+                onClick={() => fileInputRef.current?.click()}
                 className="text-primary hover:text-primary/80 ml-1 flex items-center gap-0.5"
                 title="Upload document"
                 disabled={uploading}
@@ -123,7 +119,7 @@ export function DocViewer({ label, url, docKey, getDocSignedUrl, onUpload, uploa
 
       {/* Preview Dialog */}
       <Dialog open={!!previewUrl} onOpenChange={(open) => !open && setPreviewUrl(null)}>
-        <DialogContent className="max-w-3xl" onClick={e => e.stopPropagation()}>
+        <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>{label}</DialogTitle>
           </DialogHeader>

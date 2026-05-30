@@ -36,10 +36,9 @@ interface Props {
   getDocSignedUrl?: (storedUrl: string) => Promise<string | null>;
   truck?: any;
   onUpdateDriver?: (id: string, updates: Record<string, any>) => Promise<boolean>;
-  onDocView?: (url: string, label: string) => void;
 }
 
-export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSignedUrl, truck, onUpdateDriver, onDocView }: Props) {
+export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSignedUrl, truck, onUpdateDriver }: Props) {
   const [loadingDoc, setLoadingDoc] = useState<string | null>(null);
   const [deletingTermination, setDeletingTermination] = useState(false);
   const [termLetterDeleted, setTermLetterDeleted] = useState(false);
@@ -140,18 +139,22 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
     URL.revokeObjectURL(url);
   };
 
-  const handleViewDoc = async (url: string, label: string) => {
-    if (onDocView) {
-      // Resolve signed URL first, then pass to parent dialog
-      const resolved = getDocSignedUrl ? (await getDocSignedUrl(url) || url) : url;
-      onDocView(resolved, label);
+  const handleViewDoc = async (url: string, key: string) => {
+    // Open window synchronously to avoid popup blocker
+    const newWindow = window.open('about:blank', '_blank');
+    if (!getDocSignedUrl) {
+      if (newWindow) newWindow.location.href = url;
       return;
     }
-    // Fallback: open in new tab
-    const newWindow = window.open('about:blank', '_blank');
-    if (!getDocSignedUrl) { if (newWindow) newWindow.location.href = url; return; }
-    const signedUrl = await getDocSignedUrl(url);
-    if (newWindow) newWindow.location.href = signedUrl || url;
+    setLoadingDoc(key);
+    try {
+      const signedUrl = await getDocSignedUrl(url);
+      if (newWindow) newWindow.location.href = signedUrl || url;
+    } catch {
+      if (newWindow) newWindow.location.href = url;
+    } finally {
+      setLoadingDoc(null);
+    }
   };
 
   return (
@@ -235,7 +238,6 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
                 getDocSignedUrl={getDocSignedUrl}
                 allowUpload={!!onUpdateDriver}
                 uploadPath={`${driver.id}/${doc.key}`}
-                onView={url && onDocView ? (e) => { e.stopPropagation(); handleViewDoc(url, doc.label); } : undefined}
                 onUpload={onUpdateDriver ? async (newUrl) => {
                   await onUpdateDriver(driver.id, { [doc.key]: newUrl });
                 } : undefined}
