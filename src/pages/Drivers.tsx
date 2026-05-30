@@ -313,7 +313,7 @@ const Drivers = () => {
                     {isExpanded && (
                       <tr key={`${driver.id}-detail`}>
                         <td colSpan={8} className="p-0">
-                          <DriverDetailPanel driver={driver} truckLabel={truckLabel} dispatcherName={dispatcher?.name || null} getDocSignedUrl={getDocSignedUrl} truck={getTruck(driver.truck_id)} />
+                          <DriverDetailPanel driver={driver} truckLabel={truckLabel} dispatcherName={dispatcher?.name || null} getDocSignedUrl={getDocSignedUrl} truck={getTruck(driver.truck_id)} onUpdateDriver={updateDriver} />
                         </td>
                       </tr>
                     )}
