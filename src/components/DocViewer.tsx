@@ -33,11 +33,13 @@ export function DocViewer({ label, url, docKey, getDocSignedUrl, onUpload, uploa
 
   const handleView = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    e.preventDefault();
     if (!url) return;
     setLoadingDoc(true);
     try {
       const resolved = await resolveUrl(url);
-      setPreviewUrl(resolved);
+      // Small delay to ensure the click event cycle is complete before opening dialog
+      setTimeout(() => setPreviewUrl(resolved), 10);
     } finally {
       setLoadingDoc(false);
     }
