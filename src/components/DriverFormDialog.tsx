@@ -37,7 +37,7 @@ const emptyForm: DriverInput = {
   emergency_contact_name: null, emergency_phone: null,
 };
 
-type DocKey = 'license_photo' | 'medical_card_photo' | 'form_w9' | 'leasing_agreement' | 'service_agreement';
+type DocKey = 'license_photo' | 'medical_card_photo' | 'form_w9' | 'leasing_agreement' | 'service_agreement' | 'employment_contract';
 
 const docFields: { key: DocKey; label: string; urlKey: string }[] = [
   { key: 'license_photo', label: 'License Photo', urlKey: 'license_photo_url' },
@@ -45,6 +45,7 @@ const docFields: { key: DocKey; label: string; urlKey: string }[] = [
   { key: 'form_w9', label: 'Form W9', urlKey: 'form_w9_url' },
   { key: 'leasing_agreement', label: 'Leasing Agreement', urlKey: 'leasing_agreement_url' },
   { key: 'service_agreement', label: 'Service Agreement', urlKey: 'service_agreement_url' },
+  { key: 'employment_contract', label: 'Employment Contract', urlKey: 'employment_contract_url' },
 ];
 
 export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks, dispatchers, investors = [] }: DriverFormDialogProps) {
