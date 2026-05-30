@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Image, FileText, Download, Trash2, Upload, Loader2, Eye } from 'lucide-react';
+import { Image, FileText, Upload, Loader2, Eye, X, ExternalLink } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 export interface DocItem {
   key: string;
@@ -13,10 +15,9 @@ interface Props {
   getDocSignedUrl?: (url: string) => Promise<string | null>;
   allowUpload?: boolean;
   onUpload?: (key: string, url: string) => void;
-  uploadBasePath?: string; // e.g. "driver-id" or "trucks/truck-id"
+  uploadBasePath?: string;
 }
 
-// Resuelve URL firmada
 async function resolveUrl(url: string, getDocSignedUrl?: (u: string) => Promise<string | null>): Promise<string> {
   if (!url) return '';
   if (getDocSignedUrl) {
@@ -25,43 +26,47 @@ async function resolveUrl(url: string, getDocSignedUrl?: (u: string) => Promise<
   return url;
 }
 
-function isImage(url: string): boolean {
+function isImageUrl(url: string): boolean {
   const u = url.toLowerCase();
-  return u.includes('.jpg') || u.includes('.jpeg') || u.includes('.png') || u.includes('.webp') || u.includes('.gif');
+  return u.includes('.jpg') || u.includes('.jpeg') || u.includes('.png') || u.includes('.webp') || u.includes('.gif') || u.includes('image');
 }
 
-// Thumbnail card
+function isPdfUrl(url: string): boolean {
+  return url.toLowerCase().includes('.pdf') || url.toLowerCase().includes('pdf');
+}
+
+function ImageThumb({ url, label, getDocSignedUrl }: { url: string; label: string; getDocSignedUrl?: (u: string) => Promise<string | null> }) {
+  const [src, setSrc] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    resolveUrl(url, getDocSignedUrl).then(r => { setSrc(r); setLoading(false); });
+  }, [url]);
+
+  if (loading) return <div className="w-full h-full flex items-center justify-center"><Loader2 className="h-3 w-3 animate-spin text-muted-foreground" /></div>;
+  if (!src) return <Image className="h-4 w-4 text-muted-foreground m-auto" />;
+  return <img src={src} alt={label} className="w-full h-full object-cover" />;
+}
+
 function DocCard({
   item,
   getDocSignedUrl,
   allowUpload,
   onUpload,
   uploadBasePath,
+  onPreview,
 }: {
   item: DocItem;
   getDocSignedUrl?: (url: string) => Promise<string | null>;
   allowUpload?: boolean;
   onUpload?: (key: string, url: string) => void;
   uploadBasePath?: string;
+  onPreview: (item: DocItem) => void;
 }) {
-  const [thumbSrc, setThumbSrc] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
-  const img = item.url ? isImage(item.url) : false;
-
-  useEffect(() => {
-    if (!item.url || !img) return;
-    setLoading(true);
-    resolveUrl(item.url, getDocSignedUrl).then(url => { setThumbSrc(url); setLoading(false); });
-  }, [item.url]);
-
-  const handleView = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!item.url) return;
-    const resolved = await resolveUrl(item.url, getDocSignedUrl);
-    window.open(resolved, '_blank');
-  };
+  const img = item.url ? isImageUrl(item.url) : false;
+  const shortName = item.label.length > 14 ? item.label.slice(0, 12) + '…' : item.label;
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -82,37 +87,31 @@ function DocCard({
     }
   };
 
-  const shortName = item.label.length > 14 ? item.label.slice(0, 12) + '…' : item.label;
-
   return (
-    <div className="relative flex flex-col rounded-lg border overflow-hidden transition-all hover:border-primary/50 hover:shadow-sm border-border" style={{ width: 80 }}>
+    <div
+      className="relative flex flex-col rounded-lg border overflow-hidden transition-all hover:border-primary/50 hover:shadow-sm border-border cursor-pointer"
+      style={{ width: 80 }}
+      onClick={e => { e.stopPropagation(); if (item.url) onPreview(item); }}
+    >
       {/* Thumbnail */}
-      <div className="h-12 bg-muted/30 relative">
+      <div className="h-12 bg-muted/30 relative group">
         {item.url ? (
           img ? (
-            <button onClick={handleView} className="w-full h-full group relative overflow-hidden" type="button">
-              {loading ? (
-                <div className="w-full h-full flex items-center justify-center">
-                  <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
-                </div>
-              ) : thumbSrc ? (
-                <>
-                  <img src={thumbSrc} alt={item.label} className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
-                    <Eye className="h-3 w-3 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </div>
-                </>
-              ) : <Image className="h-4 w-4 text-muted-foreground m-auto" />}
-            </button>
+            <>
+              <ImageThumb url={item.url} label={item.label} getDocSignedUrl={getDocSignedUrl} />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                <Eye className="h-3 w-3 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+            </>
           ) : (
-            <button onClick={handleView} className="w-full h-full flex flex-col items-center justify-center gap-0.5 text-primary hover:bg-muted/50 transition-colors" type="button">
+            <div className="w-full h-full flex flex-col items-center justify-center gap-0.5 text-primary hover:bg-muted/50 transition-colors">
               <FileText className="h-5 w-5" />
               <span className="text-[8px] text-muted-foreground">PDF</span>
-            </button>
+            </div>
           )
         ) : (
           <div className="w-full h-full flex items-center justify-center">
-            {img ? <Image className="h-4 w-4 text-muted-foreground/40" /> : <FileText className="h-4 w-4 text-muted-foreground/40" />}
+            {img ? <Image className="h-4 w-4 text-muted-foreground/30" /> : <FileText className="h-4 w-4 text-muted-foreground/30" />}
           </div>
         )}
 
@@ -127,12 +126,7 @@ function DocCard({
       {/* Footer */}
       <div className="px-1 py-0.5 bg-card border-t">
         <p className="text-[9px] text-foreground font-medium truncate" title={item.label}>{shortName}</p>
-        <div className="flex items-center justify-between mt-0.5">
-          {item.url ? (
-            <button onClick={handleView} className="text-muted-foreground hover:text-foreground" type="button" title="Ver">
-              <Eye className="h-2.5 w-2.5" />
-            </button>
-          ) : <span />}
+        <div className="flex items-center justify-end mt-0.5">
           {allowUpload && (
             <button
               onClick={e => { e.stopPropagation(); fileRef.current?.click(); }}
@@ -155,18 +149,64 @@ function DocCard({
 }
 
 export function DocCardGrid({ docs, getDocSignedUrl, allowUpload, onUpload, uploadBasePath }: Props) {
+  const [preview, setPreview] = useState<{ item: DocItem; resolvedUrl: string } | null>(null);
+  const [loadingPreview, setLoadingPreview] = useState(false);
+
+  const handlePreview = async (item: DocItem) => {
+    if (!item.url) return;
+    setLoadingPreview(true);
+    const resolved = await resolveUrl(item.url, getDocSignedUrl);
+    setPreview({ item, resolvedUrl: resolved });
+    setLoadingPreview(false);
+  };
+
+  const isPdf = preview ? isPdfUrl(preview.resolvedUrl) : false;
+
   return (
-    <div className="flex flex-wrap gap-2">
-      {docs.map(item => (
-        <DocCard
-          key={item.key}
-          item={item}
-          getDocSignedUrl={getDocSignedUrl}
-          allowUpload={allowUpload}
-          onUpload={onUpload}
-          uploadBasePath={uploadBasePath}
-        />
-      ))}
-    </div>
+    <>
+      <div className="flex flex-wrap gap-2">
+        {docs.map(item => (
+          <DocCard
+            key={item.key}
+            item={item}
+            getDocSignedUrl={getDocSignedUrl}
+            allowUpload={allowUpload}
+            onUpload={onUpload}
+            uploadBasePath={uploadBasePath}
+            onPreview={handlePreview}
+          />
+        ))}
+      </div>
+
+      {/* Preview Dialog */}
+      <Dialog open={!!preview || loadingPreview} onOpenChange={(open) => { if (!open) setPreview(null); }}>
+        <DialogContent className="max-w-3xl" onClick={e => e.stopPropagation()}>
+          <DialogHeader>
+            <DialogTitle>{preview?.item.label}</DialogTitle>
+          </DialogHeader>
+          {loadingPreview ? (
+            <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
+          ) : preview && (
+            <div className="flex justify-center">
+              {isPdf ? (
+                <iframe src={preview.resolvedUrl} className="w-full h-[70vh] rounded border" title={preview.item.label} />
+              ) : (
+                <img src={preview.resolvedUrl} alt={preview.item.label} className="max-w-full max-h-[70vh] object-contain rounded" />
+              )}
+            </div>
+          )}
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setPreview(null)}>Cerrar</Button>
+            {preview && (
+              <Button asChild>
+                <a href={preview.resolvedUrl} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="h-4 w-4 mr-2" /> Abrir en nueva pestaña
+                </a>
+              </Button>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
