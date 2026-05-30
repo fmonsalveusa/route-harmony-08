@@ -242,6 +242,7 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
           {docFields.map(doc => {
             const isTermination = doc.key === 'termination_letter_url';
             const url = isTermination && termLetterDeleted ? null : (driver as any)[doc.key];
+            const isPdf = url && (url.toLowerCase().includes('.pdf') || doc.key.includes('w9') || doc.key.includes('agreement') || doc.key.includes('contract') || doc.key.includes('letter'));
             return (
               <DocViewer
                 key={doc.key}
@@ -251,7 +252,7 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
                 getDocSignedUrl={getDocSignedUrl}
                 allowUpload={!!onUpdateDriver}
                 uploadPath={`${driver.id}/${doc.key}`}
-                onView={url ? () => handleDocView(url, doc.label) : undefined}
+                onView={isPdf && url ? () => handleDocView(url, doc.label) : undefined}
                 onUpload={onUpdateDriver ? async (newUrl) => {
                   await onUpdateDriver(driver.id, { [doc.key]: newUrl });
                 } : undefined}
