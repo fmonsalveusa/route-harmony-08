@@ -311,8 +311,8 @@ const Drivers = () => {
                       </td>
                     </tr>
                     {isExpanded && (
-                      <tr key={`${driver.id}-detail`}>
-                        <td colSpan={8} className="p-0">
+                      <tr key={`${driver.id}-detail`} onClick={e => e.stopPropagation()}>
+                        <td colSpan={8} className="p-0" onClick={e => e.stopPropagation()}>
                           <DriverDetailPanel driver={driver} truckLabel={truckLabel} dispatcherName={dispatcher?.name || null} getDocSignedUrl={getDocSignedUrl} truck={getTruck(driver.truck_id)} />
                         </td>
                       </tr>

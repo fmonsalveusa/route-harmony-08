@@ -13,7 +13,6 @@ interface DocViewerProps {
   uploadPath?: string;
   allowUpload?: boolean;
   children?: React.ReactNode;
-  onView?: () => void; // override view handler to lift state up
 }
 
 export function DocViewer({ label, url, docKey, getDocSignedUrl, onUpload, uploadPath, allowUpload = false, children }: DocViewerProps) {
@@ -35,7 +34,6 @@ export function DocViewer({ label, url, docKey, getDocSignedUrl, onUpload, uploa
   const handleView = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!url) return;
-    if (onView) { onView(); return; } // Delegate to parent if provided
     setLoadingDoc(true);
     try {
       const resolved = await resolveUrl(url);
@@ -122,7 +120,7 @@ export function DocViewer({ label, url, docKey, getDocSignedUrl, onUpload, uploa
 
       {/* Preview Dialog */}
       <Dialog open={!!previewUrl} onOpenChange={(open) => !open && setPreviewUrl(null)}>
-        <DialogContent className="max-w-3xl" onClick={(e) => e.stopPropagation()}>
+        <DialogContent className="max-w-3xl" onClick={e => e.stopPropagation()}>
           <DialogHeader>
             <DialogTitle>{label}</DialogTitle>
           </DialogHeader>
