@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Button } from '@/components/ui/button';
-import { ExternalLink, Truck as TruckIcon, Loader2 } from 'lucide-react';
+import { Truck as TruckIcon } from 'lucide-react';
+import { DocCardGrid } from '@/components/DocCardGrid';
 import type { DbTruck } from '@/hooks/useTrucks';
 import { formatDate } from '@/lib/dateUtils';
 
@@ -106,34 +107,10 @@ export function TruckDetailDialog({ open, onOpenChange, truck, getDocSignedUrl }
           {/* Documents */}
           <section className="border-t pt-4 space-y-3">
             <h3 className="font-semibold text-sm">Documentos y Fotos</h3>
-            {docs.length === 0 ? (
-              <p className="text-muted-foreground text-sm">No hay documentos cargados.</p>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {docs.map(d => {
-                  const url = truck[d.key] as string;
-                  return (
-                    <div key={d.key} className="border rounded-lg overflow-hidden">
-                      <div className="h-40 flex items-center justify-center bg-muted">
-                        <span className="text-muted-foreground text-xs">Click to view</span>
-                      </div>
-                      <div className="p-2 flex items-center justify-between">
-                        <span className="text-xs font-medium">{d.label}</span>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7"
-                          disabled={loadingDoc === d.key}
-                          onClick={() => handleViewDoc(url, d.key)}
-                        >
-                          {loadingDoc === d.key ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ExternalLink className="h-3.5 w-3.5" />}
-                        </Button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+            <DocCardGrid
+              docs={DOC_LABELS.map(d => ({ key: String(d.key), label: d.label, url: truck[d.key] as string | null }))}
+              getDocSignedUrl={getDocSignedUrl}
+            />
           </section>
         </div>
       </DialogContent>

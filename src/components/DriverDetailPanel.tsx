@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-import { DocViewer } from '@/components/DocViewer';
+import { DocCardGrid } from '@/components/DocCardGrid';
 
 function Info({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -225,58 +225,30 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
             <Download className="h-3.5 w-3.5" /> Download PDF
           </Button>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {docFields.map(doc => {
-            const isTermination = doc.key === 'termination_letter_url';
-            const url = isTermination && termLetterDeleted ? null : (driver as any)[doc.key];
-            return (
-              <DocViewer
-                key={doc.key}
-                label={doc.label}
-                url={url}
-                docKey={doc.key}
-                getDocSignedUrl={getDocSignedUrl}
-                allowUpload={!!onUpdateDriver}
-                uploadPath={`${driver.id}/${doc.key}`}
-                onUpload={onUpdateDriver ? async (newUrl) => {
-                  await onUpdateDriver(driver.id, { [doc.key]: newUrl });
-                } : undefined}
-              >
-                {isTermination && url && (
-                  <button
-                    onClick={e => { e.stopPropagation(); handleDeleteTerminationLetter(); }}
-                    className="text-destructive hover:text-destructive/80 ml-1"
-                    disabled={deletingTermination}
-                    title="Delete termination letter"
-                  >
-                    {deletingTermination ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
-                  </button>
-                )}
-              </DocViewer>
-            );
-          })}
-
-          {/* Legacy leasing fields */}
-          {(driver as any).leasing_agreement_url && (
-            <DocViewer label="Leasing Agreement" url={(driver as any).leasing_agreement_url} docKey="leasing_agreement_url" getDocSignedUrl={getDocSignedUrl} />
-          )}
-          {(driver as any).leasing_agreement_venco_url && (
-            <DocViewer label="Leasing Agreement (VENCO)" url={(driver as any).leasing_agreement_venco_url} docKey="leasing_agreement_venco_url" getDocSignedUrl={getDocSignedUrl} />
-          )}
-          {(driver as any).leasing_agreement_58_url && (
-            <DocViewer label="Leasing Agreement (58 Logistics)" url={(driver as any).leasing_agreement_58_url} docKey="leasing_agreement_58_url" getDocSignedUrl={getDocSignedUrl} />
-          )}
-
-          {/* Dynamic Leasing Agreements */}
-          {leasingLoading && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-muted-foreground">
-              <Loader2 className="h-3 w-3 animate-spin" /> Loading leasing agreements...
-            </div>
-          )}
-          {!leasingLoading && leasingDocs.map(doc => (
-            <DocViewer key={doc.id} label={`Leasing Agreement (${doc.company_name})`} url={doc.file_url} docKey={doc.id} getDocSignedUrl={getDocSignedUrl} />
-          ))}
-        </div>
+        <DocCardGrid
+          docs={[
+            ...docFields.map(doc => {
+              const isTermination = doc.key === 'termination_letter_url';
+              const url = isTermination && termLetterDeleted ? null : (driver as any)[doc.key];
+              return { key: doc.key, label: doc.label, url };
+            }),
+            ...((driver as any).leasing_agreement_url ? [{ key: 'leasing_agreement_url', label: 'Leasing Agreement', url: (driver as any).leasing_agreement_url }] : []),
+            ...((driver as any).leasing_agreement_venco_url ? [{ key: 'leasing_agreement_venco_url', label: 'Leasing (VENCO)', url: (driver as any).leasing_agreement_venco_url }] : []),
+            ...((driver as any).leasing_agreement_58_url ? [{ key: 'leasing_agreement_58_url', label: 'Leasing (58 Log)', url: (driver as any).leasing_agreement_58_url }] : []),
+            ...leasingDocs.map(doc => ({ key: doc.id, label: `Leasing (${doc.company_name})`, url: doc.file_url })),
+          ]}
+          getDocSignedUrl={getDocSignedUrl}
+          allowUpload={!!onUpdateDriver}
+          uploadBasePath={driver.id}
+          onUpload={onUpdateDriver ? async (key, newUrl) => {
+            await onUpdateDriver(driver.id, { [key + (key.endsWith('_url') ? '' : '_url')]: newUrl });
+          } : undefined}
+        />
+        {leasingLoading && (
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
+            <Loader2 className="h-3 w-3 animate-spin" /> Loading leasing agreements...
+          </div>
+        )}
       </div>
     </div>
   );

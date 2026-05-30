@@ -8,7 +8,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { getStatusColor } from '@/components/maintenance/maintenanceConstants';
-import { DocViewer } from '@/components/DocViewer';
+import { DocCardGrid } from '@/components/DocCardGrid';
 
 function Info({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -137,25 +137,15 @@ export function TruckDetailPanel({ truck, driverName, getDocSignedUrl, onUpdateT
       {/* Documents */}
       <div className="border-t pt-3">
         <p className="text-xs font-semibold text-muted-foreground mb-2">Documents</p>
-        <div className="flex flex-wrap gap-2">
-          {DOC_LABELS.map(doc => {
-            const url = truck[doc.key] as string | null;
-            return (
-              <DocViewer
-                key={doc.key}
-                label={doc.label}
-                url={url}
-                docKey={doc.key}
-                getDocSignedUrl={getDocSignedUrl}
-                allowUpload={!!onUpdateTruck}
-                uploadPath={`trucks/${truck.id}/${doc.key}`}
-                onUpload={onUpdateTruck ? async (newUrl) => {
-                  await onUpdateTruck(truck.id, { [doc.key]: newUrl });
-                } : undefined}
-              />
-            );
-          })}
-        </div>
+        <DocCardGrid
+          docs={DOC_LABELS.map(doc => ({ key: String(doc.key), label: doc.label, url: truck[doc.key] as string | null }))}
+          getDocSignedUrl={getDocSignedUrl}
+          allowUpload={!!onUpdateTruck}
+          uploadBasePath={`trucks/${truck.id}`}
+          onUpload={onUpdateTruck ? async (key, newUrl) => {
+            await onUpdateTruck(truck.id, { [key]: newUrl });
+          } : undefined}
+        />
       </div>
     </div>
   );
