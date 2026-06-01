@@ -615,18 +615,22 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
                 if (existingAdj) {
                   await supabase.from('payments' as any).update({ amount: r.amount, total_amount: r.amount } as any).eq('id', (existingAdj as any).id);
                 } else {
-                  await supabase.from('payments' as any).insert({
+                  const { error: payError } = await supabase.from('payments' as any).insert({
                     tenant_id: (dispatcherData as any).tenant_id,
                     load_id: loadId,
+                    load_reference: formData.referenceNumber || editLoad?.reference_number || loadId,
                     recipient_type: 'dispatcher',
                     recipient_id: (dispatcherData as any).id,
                     recipient_name: r.name,
                     amount: r.amount,
                     total_amount: r.amount,
+                    percentage_applied: r.pct || 0,
+                    total_rate: grossRate,
                     status: 'pending',
                     source: 'rate_adjustment',
                     payment_date: formData.deliveryDate || formData.pickupDate || new Date().toISOString().split('T')[0],
                   } as any);
+                  if (payError) console.error('payment insert error:', payError);
                 }
               }
             }
