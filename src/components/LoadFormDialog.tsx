@@ -623,7 +623,6 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
                     recipient_id: (dispatcherData as any).id,
                     recipient_name: r.name,
                     amount: r.amount,
-                    total_amount: r.amount,
                     percentage_applied: r.pct || 0,
                     total_rate: grossRate,
                     status: 'pending',
