@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Plus, Search, Phone, Truck as TruckIcon, Pencil, Trash2, Eye, Copy, Link2, ChevronDown, ChevronUp, Navigation, FileText } from 'lucide-react';
+import { Plus, Search, Phone, Truck as TruckIcon, Pencil, Trash2, Eye, Copy, Link2, ChevronDown, ChevronUp, Navigation, FileText, Check } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useDrivers, DbDriver, DriverInput } from '@/hooks/useDrivers';
 import { useTrucks } from '@/hooks/useTrucks';
@@ -240,6 +240,13 @@ const Drivers = () => {
                               {activeDriverIds.has(driver.id) && (
                                 <Navigation className="h-3.5 w-3.5 text-[hsl(152,60%,40%)] animate-pulse" />
                               )}
+                              <button
+                                onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(driver.name); }}
+                                className="text-muted-foreground hover:text-foreground transition-colors ml-0.5"
+                                title="Copiar nombre"
+                              >
+                                <Copy className="h-3 w-3" />
+                              </button>
                             </span>
                             <ExpiryIndicators items={[
                               { date: driver.license_expiry, label: 'License' },
@@ -256,6 +263,13 @@ const Drivers = () => {
                       <td className="p-3 text-muted-foreground">
                         <div className="flex items-center gap-1.5">
                           <Phone className="h-3.5 w-3.5" />{formatPhone(driver.phone)}
+                          <button
+                            onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(driver.phone); }}
+                            className="text-muted-foreground hover:text-foreground transition-colors"
+                            title="Copiar teléfono"
+                          >
+                            <Copy className="h-3 w-3" />
+                          </button>
                         </div>
                       </td>
                       <td className="p-3 hidden md:table-cell">
