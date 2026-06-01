@@ -17,6 +17,7 @@ import { useLoadStops } from '@/hooks/useLoadStops';
 import type { DbLoad, CreateLoadInput } from '@/hooks/useLoads';
 import { createNotification } from '@/hooks/useNotifications';
 import { useAuth } from '@/contexts/AuthContext';
+import { getTenantId } from '@/hooks/useTenantId';
 
 interface StopEntry {
   stop_type: 'pickup' | 'delivery';
@@ -145,6 +146,15 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       setRcOriginalFileName('');
       setRecipients([{ type: 'company', name: 'Empresa', pct: 100 }]);
       setAdjustmentSaved(false);
+
+      // Cargar rate_adjustment existente si hay
+      if (canSeeGrossRate) {
+        supabase.from('rate_adjustments' as any).select('recipients, delta_amount').eq('load_id', editLoad.id).maybeSingle().then(({ data }) => {
+          if (data && (data as any).recipients?.length > 0) {
+            setRecipients((data as any).recipients.map((r: any) => ({ type: r.type, name: r.name, pct: r.pct })));
+          }
+        });
+      }
 
       // Refresh signed URLs + load RC metadata from Storage (bypasses PostgREST schema cache)
       const refreshUrls = async () => {
@@ -566,27 +576,27 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       if (delta > 0 && recipients.length > 0) {
         const totalPct = recipients.reduce((s, r) => s + r.pct, 0);
         if (Math.abs(totalPct - 100) < 0.01) {
+          const tenant_id = await getTenantId();
           const recipientsWithAmount = recipients.map(r => ({
             ...r,
             amount: Math.round(delta * (r.pct / 100) * 100) / 100,
           }));
 
-          // Upsert rate_adjustment
-          await supabase.from('rate_adjustments' as any).upsert({
+          // Upsert rate_adjustment — primero eliminar si existe para evitar conflictos
+          await supabase.from('rate_adjustments' as any).delete().eq('load_id', loadId);
+          const { error: raError } = await supabase.from('rate_adjustments' as any).insert({
             load_id: loadId,
-            tenant_id: (await supabase.auth.getUser()).data.user?.id
-              ? (await supabase.from('profiles' as any).select('tenant_id').eq('id', (await supabase.auth.getUser()).data.user!.id).single()).data?.tenant_id
-              : null,
+            tenant_id,
             delta_amount: delta,
             recipients: recipientsWithAmount,
-          }, { onConflict: 'load_id' });
+          } as any);
+          if (raError) console.error('rate_adjustments insert error:', raError);
 
-          // Crear expense automático para brokers externos
+          // Crear expense automático para brokers externos y pago para dispatchers
           for (const r of recipientsWithAmount) {
             if (r.type === 'broker' && r.name && r.amount > 0) {
-              const { data: profile } = await supabase.from('profiles' as any).select('tenant_id').eq('id', (await supabase.auth.getUser()).data.user!.id).single();
               await supabase.from('expenses' as any).insert({
-                tenant_id: (profile as any)?.tenant_id,
+                tenant_id,
                 expense_date: formData.pickupDate || new Date().toISOString().split('T')[0],
                 expense_type: 'commission',
                 category: 'broker_commission',
@@ -596,6 +606,29 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
                 payment_method: 'other',
                 source: 'rate_adjustment',
               } as any);
+            }
+            if (r.type === 'dispatcher' && r.name && r.amount > 0) {
+              const { data: dispatcherData } = await supabase.from('dispatchers' as any).select('id, tenant_id').ilike('name', r.name).maybeSingle();
+              if (dispatcherData) {
+                const { data: existingAdj } = await supabase.from('payments' as any)
+                  .select('id').eq('load_id', loadId).eq('recipient_id', (dispatcherData as any).id).eq('source', 'rate_adjustment').maybeSingle();
+                if (existingAdj) {
+                  await supabase.from('payments' as any).update({ amount: r.amount, total_amount: r.amount } as any).eq('id', (existingAdj as any).id);
+                } else {
+                  await supabase.from('payments' as any).insert({
+                    tenant_id: (dispatcherData as any).tenant_id,
+                    load_id: loadId,
+                    recipient_type: 'dispatcher',
+                    recipient_id: (dispatcherData as any).id,
+                    recipient_name: r.name,
+                    amount: r.amount,
+                    total_amount: r.amount,
+                    status: 'pending',
+                    source: 'rate_adjustment',
+                    payment_date: formData.deliveryDate || formData.pickupDate || new Date().toISOString().split('T')[0],
+                  } as any);
+                }
+              }
             }
           }
           setAdjustmentSaved(true);
