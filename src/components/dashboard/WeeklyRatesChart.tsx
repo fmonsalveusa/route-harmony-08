@@ -29,10 +29,13 @@ export function WeeklyRatesChart({ driverIds }: { driverIds?: Set<string> }) {
   const { data: rawLoads = [] } = useQuery({
     queryKey: ['weekly-rates-chart'],
     queryFn: fetchWeeklyData,
-    staleTime: 24 * 60 * 60 * 1000,
+    // FIX: era 24h — el cache viejo impedía ver la semana actual.
+    // Con 5 min es suficiente para no spamear Supabase y siempre tener datos frescos.
+    staleTime: 5 * 60 * 1000,
   });
 
-  const { data, trend } = useMemo(() => {    const now = new Date();
+  const { data, trend } = useMemo(() => {
+    const now = new Date();
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth(); // 0-indexed
 
