@@ -11,10 +11,14 @@ async function fetchWeeklyData() {
     .from('loads')
     .select('pickup_date, created_at, total_rate, status, driver_id')
     .neq('status', 'cancelled')
-    // FIX: nulls_last para que los registros sin pickup_date no rompan el orden
     .order('pickup_date', { ascending: true, nullsFirst: false });
 
   if (error) throw error;
+
+  // DEBUG: ver qué fechas llegan de Supabase
+  console.log('[WeeklyChart] Total loads:', data?.length);
+  console.log('[WeeklyChart] Últimas 5 fechas:', data?.slice(-5).map(l => ({ pickup_date: l.pickup_date, created_at: l.created_at?.slice(0,10) })));
+
   return data ?? [];
 }
 
@@ -28,19 +32,16 @@ export function WeeklyRatesChart({ driverIds }: { driverIds?: Set<string> }) {
   const [period, setPeriod] = useState<PeriodFilter>('last10');
 
   const { data: rawLoads = [] } = useQuery({
-    // FIX: queryKey incluye la fecha del día — invalida cache automáticamente cada día
-    // y evita que el cache viejo oculte la semana actual
     queryKey: ['weekly-rates-chart', new Date().toISOString().slice(0, 10)],
     queryFn: fetchWeeklyData,
-    staleTime: 5 * 60 * 1000, // 5 min
+    staleTime: 5 * 60 * 1000,
   });
 
   const { data, trend } = useMemo(() => {
     const now = new Date();
     const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth(); // 0-indexed
+    const currentMonth = now.getMonth();
 
-    // Calcular rango de fechas según filtro
     let filterFn: (dateStr: string) => boolean = () => true;
 
     if (period === 'ytd') {
@@ -62,13 +63,9 @@ export function WeeklyRatesChart({ driverIds }: { driverIds?: Set<string> }) {
       };
     }
 
-    // Agrupar por semana
     const byWeek: Record<string, number> = {};
     rawLoads.forEach(l => {
       if (driverIds && l.driver_id && !driverIds.has(l.driver_id)) return;
-
-      // FIX: si no hay pickup_date usamos created_at, pero solo su fecha (sin hora)
-      // para evitar que el timezone desplace el día y cambie de semana
       const d = l.pickup_date || l.created_at;
       if (!d) return;
       const raw = d.split('T')[0];
@@ -78,6 +75,9 @@ export function WeeklyRatesChart({ driverIds }: { driverIds?: Set<string> }) {
       const key = getISOWeekKey(date);
       byWeek[key] = (byWeek[key] || 0) + l.total_rate;
     });
+
+    // DEBUG: ver todas las semanas agrupadas antes del slice
+    console.log('[WeeklyChart] Semanas agrupadas:', Object.keys(byWeek).sort());
 
     let sorted = Object.entries(byWeek)
       .sort(([a], [b]) => a.localeCompare(b))
@@ -90,10 +90,12 @@ export function WeeklyRatesChart({ driverIds }: { driverIds?: Set<string> }) {
         return { week: week.replace(/^\d{4}-/, ''), total, pctChange };
       });
 
-    // Aplicar límite de últimas 10 semanas
     if (period === 'last10') {
       sorted = sorted.slice(-10);
     }
+
+    // DEBUG: ver qué semanas quedan después del slice
+    console.log('[WeeklyChart] Semanas en gráfica:', sorted.map(s => s.week));
 
     let trend: { value: string; positive: boolean } | null = null;
     if (sorted.length >= 2) {
