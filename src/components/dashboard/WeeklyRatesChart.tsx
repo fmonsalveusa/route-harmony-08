@@ -202,5 +202,6 @@ export function WeeklyRatesChart({ driverIds }: { driverIds?: Set<string> }) {
     </div>
   );
 }
- 
+
+ 
  
