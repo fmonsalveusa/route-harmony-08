@@ -7,18 +7,23 @@ import { getISOWeek } from '@/lib/dateUtils';
 type PeriodFilter = 'last10' | 'ytd' | 'this_month' | 'last_month';
 
 async function fetchWeeklyData() {
+  // FIX REAL: Supabase tiene límite de 1000 filas por defecto.
+  // Los loads de W23 quedaban fuera porque el fetch ordenaba ASC
+  // y los 1000 más viejos llenaban el límite antes de llegar a esta semana.
+  // Solución: filtrar solo el año actual desde Supabase para no desperdiciar
+  // el límite de 1000 en datos históricos viejos.
+  const currentYear = new Date().getFullYear();
+  const startOfYear = `${currentYear}-01-01`;
+
   const { data, error } = await supabase
     .from('loads')
     .select('pickup_date, created_at, total_rate, status, driver_id')
     .neq('status', 'cancelled')
-    .order('pickup_date', { ascending: true, nullsFirst: false });
+    .gte('pickup_date', startOfYear)          // solo este año
+    .order('pickup_date', { ascending: true, nullsFirst: false })
+    .limit(2000);                              // sube el límite por si acaso
 
   if (error) throw error;
-
-  // DEBUG: ver qué fechas llegan de Supabase
-  console.log('[WeeklyChart] Total loads:', data?.length);
-  console.log('[WeeklyChart] Últimas 5 fechas:', data?.slice(-5).map(l => ({ pickup_date: l.pickup_date, created_at: l.created_at?.slice(0,10) })));
-
   return data ?? [];
 }
 
@@ -76,9 +81,6 @@ export function WeeklyRatesChart({ driverIds }: { driverIds?: Set<string> }) {
       byWeek[key] = (byWeek[key] || 0) + l.total_rate;
     });
 
-    // DEBUG: ver todas las semanas agrupadas antes del slice
-    console.log('[WeeklyChart] Semanas agrupadas:', Object.keys(byWeek).sort());
-
     let sorted = Object.entries(byWeek)
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([week, total], i, arr) => {
@@ -93,9 +95,6 @@ export function WeeklyRatesChart({ driverIds }: { driverIds?: Set<string> }) {
     if (period === 'last10') {
       sorted = sorted.slice(-10);
     }
-
-    // DEBUG: ver qué semanas quedan después del slice
-    console.log('[WeeklyChart] Semanas en gráfica:', sorted.map(s => s.week));
 
     let trend: { value: string; positive: boolean } | null = null;
     if (sorted.length >= 2) {
