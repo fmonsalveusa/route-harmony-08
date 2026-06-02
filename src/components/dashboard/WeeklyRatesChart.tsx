@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,17 +9,32 @@ type PeriodFilter = 'last10' | 'ytd' | 'this_month' | 'last_month';
 async function fetchWeeklyData() {
   const currentYear = new Date().getFullYear();
   const startOfYear = `${currentYear}-01-01`;
-  const { data, error } = await supabase
+
+  // Query 1: loads con pickup_date en el año actual (orden DESC para priorizar recientes)
+  const { data: withDate, error: e1 } = await supabase
     .from('loads')
     .select('pickup_date, created_at, total_rate, status, driver_id')
     .neq('status', 'cancelled')
     .gte('pickup_date', startOfYear)
-    .order('pickup_date', { ascending: true, nullsFirst: false })
+    .order('pickup_date', { ascending: false })
     .limit(2000);
-  if (error) throw error;
-  console.log('[WeeklyChart] Total loads:', data?.length);
-  console.log('[WeeklyChart] Semanas raw:', [...new Set(data?.map(l => l.pickup_date?.slice(0, 7)))].sort());
-  return data ?? [];
+
+  // Query 2: loads sin pickup_date creados este año (usarán created_at para la semana)
+  const { data: withoutDate, error: e2 } = await supabase
+    .from('loads')
+    .select('pickup_date, created_at, total_rate, status, driver_id')
+    .neq('status', 'cancelled')
+    .is('pickup_date', null)
+    .gte('created_at', startOfYear)
+    .limit(500);
+
+  if (e1) throw e1;
+  if (e2) throw e2;
+
+  const combined = [...(withDate ?? []), ...(withoutDate ?? [])];
+  console.log('[WeeklyChart] Total loads:', combined.length);
+  console.log('[WeeklyChart] Semanas raw:', [...new Set(combined.map(l => (l.pickup_date || l.created_at)?.slice(0, 7)))].sort());
+  return combined;
 }
 
 function getISOWeekKey(date: Date): string {
@@ -93,7 +108,7 @@ export function WeeklyRatesChart({ driverIds }: { driverIds?: Set<string> }) {
       sorted = sorted.slice(-10);
     }
 
-    console.log('[WeeklyChart] Semanas en gráfica:', sorted.map(s => s.week));
+    console.log('[WeeklyChart] Semanas en grafica:', sorted.map(s => s.week));
 
     let trend: { value: string; positive: boolean } | null = null;
     if (sorted.length >= 2) {
