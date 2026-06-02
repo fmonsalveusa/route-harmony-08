@@ -11,7 +11,8 @@ async function fetchWeeklyData() {
     .from('loads')
     .select('pickup_date, created_at, total_rate, status, driver_id')
     .neq('status', 'cancelled')
-    .order('pickup_date', { ascending: true });
+    // FIX: nulls_last para que los registros sin pickup_date no rompan el orden
+    .order('pickup_date', { ascending: true, nullsFirst: false });
 
   if (error) throw error;
   return data ?? [];
@@ -27,11 +28,11 @@ export function WeeklyRatesChart({ driverIds }: { driverIds?: Set<string> }) {
   const [period, setPeriod] = useState<PeriodFilter>('last10');
 
   const { data: rawLoads = [] } = useQuery({
-    queryKey: ['weekly-rates-chart'],
+    // FIX: queryKey incluye la fecha del día — invalida cache automáticamente cada día
+    // y evita que el cache viejo oculte la semana actual
+    queryKey: ['weekly-rates-chart', new Date().toISOString().slice(0, 10)],
     queryFn: fetchWeeklyData,
-    // FIX: era 24h — el cache viejo impedía ver la semana actual.
-    // Con 5 min es suficiente para no spamear Supabase y siempre tener datos frescos.
-    staleTime: 5 * 60 * 1000,
+    staleTime: 5 * 60 * 1000, // 5 min
   });
 
   const { data, trend } = useMemo(() => {
@@ -64,8 +65,10 @@ export function WeeklyRatesChart({ driverIds }: { driverIds?: Set<string> }) {
     // Agrupar por semana
     const byWeek: Record<string, number> = {};
     rawLoads.forEach(l => {
-      // Filtrar por service type si aplica
       if (driverIds && l.driver_id && !driverIds.has(l.driver_id)) return;
+
+      // FIX: si no hay pickup_date usamos created_at, pero solo su fecha (sin hora)
+      // para evitar que el timezone desplace el día y cambie de semana
       const d = l.pickup_date || l.created_at;
       if (!d) return;
       const raw = d.split('T')[0];
@@ -115,7 +118,6 @@ export function WeeklyRatesChart({ driverIds }: { driverIds?: Set<string> }) {
       <div className="px-6 pt-5 pb-2">
         <div className="flex items-center justify-between">
           <h3 className="text-base font-semibold leading-none tracking-tight">Weekly Production</h3>
-          {/* Filtro de período */}
           <div className="flex gap-1">
             {(Object.keys(periodLabels) as PeriodFilter[]).map((key) => (
               <button
