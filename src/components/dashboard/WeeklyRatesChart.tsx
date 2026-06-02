@@ -2,51 +2,37 @@ import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
-import { getISOWeek } from '@/lib/dateUtils';
 
 type PeriodFilter = 'last10' | 'ytd' | 'this_month' | 'last_month';
 
 async function fetchWeeklyData() {
   const currentYear = new Date().getFullYear();
-  const startOfYear = `${currentYear}-01-01`;
 
-  // Query 1: loads con pickup_date en el año actual (orden DESC para priorizar recientes)
-  const { data: withDate, error: e1 } = await supabase
-    .from('loads')
-    .select('pickup_date, created_at, total_rate, status, driver_id')
-    .neq('status', 'cancelled')
-    .gte('pickup_date', startOfYear)
-    .order('pickup_date', { ascending: false })
-    .limit(2000);
+  // Usamos la vista weekly_production — ya agrupa en Supabase,
+  // nunca vamos a tener problema de límite de 1000 filas
+  const { data, error } = await supabase
+    .from('weekly_production')
+    .select('iso_year, iso_week, total_rate, driver_id, service_type')
+    .gte('iso_year', currentYear - 1) // traemos año actual y anterior para el filtro last10
+    .order('iso_year', { ascending: true })
+    .order('iso_week', { ascending: true });
 
-  // Query 2: loads sin pickup_date creados este año (usarán created_at para la semana)
-  const { data: withoutDate, error: e2 } = await supabase
-    .from('loads')
-    .select('pickup_date, created_at, total_rate, status, driver_id')
-    .neq('status', 'cancelled')
-    .is('pickup_date', null)
-    .gte('created_at', startOfYear)
-    .limit(500);
-
-  if (e1) throw e1;
-  if (e2) throw e2;
-
-  const combined = [...(withDate ?? []), ...(withoutDate ?? [])];
-  console.log('[WeeklyChart] Total loads:', combined.length);
-  console.log('[WeeklyChart] Semanas raw:', [...new Set(combined.map(l => (l.pickup_date || l.created_at)?.slice(0, 7)))].sort());
-  return combined;
+  if (error) throw error;
+  return data ?? [];
 }
 
-function getISOWeekKey(date: Date): string {
-  const yr = date.getFullYear();
-  const wk = getISOWeek(date);
-  return `${yr}-W${String(wk).padStart(2, '0')}`;
+function padWeek(week: number): string {
+  return String(week).padStart(2, '0');
+}
+
+function weekKey(iso_year: number, iso_week: number): string {
+  return `${iso_year}-W${padWeek(iso_week)}`;
 }
 
 export function WeeklyRatesChart({ driverIds }: { driverIds?: Set<string> }) {
   const [period, setPeriod] = useState<PeriodFilter>('last10');
 
-  const { data: rawLoads = [] } = useQuery({
+  const { data: rawRows = [] } = useQuery({
     queryKey: ['weekly-rates-chart', new Date().toISOString().slice(0, 10)],
     queryFn: fetchWeeklyData,
     staleTime: 5 * 60 * 1000,
@@ -55,43 +41,31 @@ export function WeeklyRatesChart({ driverIds }: { driverIds?: Set<string> }) {
   const { data, trend } = useMemo(() => {
     const now = new Date();
     const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth();
+    const currentMonth = now.getMonth(); // 0-indexed
 
-    let filterFn: (dateStr: string) => boolean = () => true;
-
-    if (period === 'ytd') {
-      filterFn = (dateStr) => {
-        const [y] = dateStr.split('-').map(Number);
-        return y === currentYear;
-      };
-    } else if (period === 'this_month') {
-      filterFn = (dateStr) => {
-        const [y, m] = dateStr.split('-').map(Number);
-        return y === currentYear && m - 1 === currentMonth;
-      };
-    } else if (period === 'last_month') {
-      const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
-      const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
-      filterFn = (dateStr) => {
-        const [y, m] = dateStr.split('-').map(Number);
-        return y === lastMonthYear && m - 1 === lastMonth;
-      };
-    }
-
+    // Agrupar filas de la vista por semana (puede haber múltiples filas por semana si hay varios drivers)
     const byWeek: Record<string, number> = {};
-    rawLoads.forEach(l => {
-      if (driverIds && l.driver_id && !driverIds.has(l.driver_id)) return;
-      const d = l.pickup_date || l.created_at;
-      if (!d) return;
-      const raw = d.split('T')[0];
-      if (period !== 'last10' && !filterFn(raw)) return;
-      const [y, m, day] = raw.split('-').map(Number);
-      const date = new Date(y, m - 1, day);
-      const key = getISOWeekKey(date);
-      byWeek[key] = (byWeek[key] || 0) + l.total_rate;
-    });
 
-    console.log('[WeeklyChart] Semanas agrupadas:', Object.keys(byWeek).sort());
+    rawRows.forEach(r => {
+      if (driverIds && r.driver_id && !driverIds.has(r.driver_id)) return;
+
+      // Filtrar según período seleccionado
+      if (period === 'ytd' && r.iso_year !== currentYear) return;
+      if (period === 'this_month') {
+        // Aproximación: semana debe caer en el mes actual
+        const approxDate = new Date(r.iso_year, 0, 1 + (r.iso_week - 1) * 7);
+        if (approxDate.getMonth() !== currentMonth || approxDate.getFullYear() !== currentYear) return;
+      }
+      if (period === 'last_month') {
+        const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+        const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+        const approxDate = new Date(r.iso_year, 0, 1 + (r.iso_week - 1) * 7);
+        if (approxDate.getMonth() !== lastMonth || approxDate.getFullYear() !== lastMonthYear) return;
+      }
+
+      const key = weekKey(r.iso_year, r.iso_week);
+      byWeek[key] = (byWeek[key] || 0) + Number(r.total_rate);
+    });
 
     let sorted = Object.entries(byWeek)
       .sort(([a], [b]) => a.localeCompare(b))
@@ -108,8 +82,6 @@ export function WeeklyRatesChart({ driverIds }: { driverIds?: Set<string> }) {
       sorted = sorted.slice(-10);
     }
 
-    console.log('[WeeklyChart] Semanas en grafica:', sorted.map(s => s.week));
-
     let trend: { value: string; positive: boolean } | null = null;
     if (sorted.length >= 2) {
       const last = sorted[sorted.length - 1];
@@ -119,7 +91,7 @@ export function WeeklyRatesChart({ driverIds }: { driverIds?: Set<string> }) {
     }
 
     return { data: sorted, trend };
-  }, [rawLoads, period, driverIds]);
+  }, [rawRows, period, driverIds]);
 
   const periodLabels: Record<PeriodFilter, string> = {
     last10: 'Last 10 Weeks',
