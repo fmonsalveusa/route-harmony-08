@@ -7,23 +7,18 @@ import { getISOWeek } from '@/lib/dateUtils';
 type PeriodFilter = 'last10' | 'ytd' | 'this_month' | 'last_month';
 
 async function fetchWeeklyData() {
-  // FIX REAL: Supabase tiene lÃ­mite de 1000 filas por defecto.
-  // Los loads de W23 quedaban fuera porque el fetch ordenaba ASC
-  // y los 1000 mÃ¡s viejos llenaban el lÃ­mite antes de llegar a esta semana.
-  // SoluciÃ³n: filtrar solo el aÃ±o actual desde Supabase para no desperdiciar
-  // el lÃ­mite de 1000 en datos histÃ³ricos viejos.
   const currentYear = new Date().getFullYear();
   const startOfYear = `${currentYear}-01-01`;
-
   const { data, error } = await supabase
     .from('loads')
     .select('pickup_date, created_at, total_rate, status, driver_id')
     .neq('status', 'cancelled')
-    .gte('pickup_date', startOfYear)          // solo este aÃ±o
+    .gte('pickup_date', startOfYear)
     .order('pickup_date', { ascending: true, nullsFirst: false })
-    .limit(2000);                              // sube el lÃ­mite por si acaso
-
+    .limit(2000);
   if (error) throw error;
+  console.log('[WeeklyChart] Total loads:', data?.length);
+  console.log('[WeeklyChart] Semanas raw:', [...new Set(data?.map(l => l.pickup_date?.slice(0, 7)))].sort());
   return data ?? [];
 }
 
@@ -81,6 +76,8 @@ export function WeeklyRatesChart({ driverIds }: { driverIds?: Set<string> }) {
       byWeek[key] = (byWeek[key] || 0) + l.total_rate;
     });
 
+    console.log('[WeeklyChart] Semanas agrupadas:', Object.keys(byWeek).sort());
+
     let sorted = Object.entries(byWeek)
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([week, total], i, arr) => {
@@ -95,6 +92,8 @@ export function WeeklyRatesChart({ driverIds }: { driverIds?: Set<string> }) {
     if (period === 'last10') {
       sorted = sorted.slice(-10);
     }
+
+    console.log('[WeeklyChart] Semanas en gráfica:', sorted.map(s => s.week));
 
     let trend: { value: string; positive: boolean } | null = null;
     if (sorted.length >= 2) {
@@ -184,7 +183,7 @@ export function WeeklyRatesChart({ driverIds }: { driverIds?: Set<string> }) {
                   const item = data[index];
                   const pct = item?.pctChange;
                   const valText = `$${Number(value).toLocaleString()}`;
-                  const pctText = pct !== null && pct !== undefined ? ` ${pct >= 0 ? 'â†‘' : 'â†“'}${Math.abs(pct).toFixed(1)}%` : '';
+                  const pctText = pct !== null && pct !== undefined ? ` ${pct >= 0 ? '↑' : '↓'}${Math.abs(pct).toFixed(1)}%` : '';
                   return (
                     <text x={x} y={y - 12} textAnchor="middle" fontSize={11} fontWeight={700}>
                       <tspan fill="hsl(var(--foreground))">{valText}</tspan>
@@ -202,4 +201,3 @@ export function WeeklyRatesChart({ driverIds }: { driverIds?: Set<string> }) {
     </div>
   );
 }
-
