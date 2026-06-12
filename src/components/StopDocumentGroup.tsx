@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { PodDocument } from '@/hooks/usePodDocuments';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
-import { Image, FileText, Download, Trash2, Copy, CheckSquare, Square, Loader2, Eye } from 'lucide-react';
+import { Image, FileText, Download, Trash2, Copy, CheckSquare, Square, Loader2, Eye, Upload } from 'lucide-react';
 import { copyImageToClipboard } from '@/lib/clipboardUtils';
 import { toast } from '@/hooks/use-toast';
 
@@ -13,6 +13,9 @@ interface StopDocumentGroupProps {
   onOpen: (doc: PodDocument) => void;
   onDownload: (doc: PodDocument) => void;
   onDelete: (id: string) => void;
+  onUpload?: (files: FileList) => void;
+  uploading?: boolean;
+  uploadLabel?: string;
 }
 
 // Resuelve la URL firmada de un doc
@@ -143,10 +146,11 @@ function DocCard({
   );
 }
 
-export const StopDocumentGroup = ({ label, docs, onOpen, onDownload, onDelete }: StopDocumentGroupProps) => {
+export const StopDocumentGroup = ({ label, docs, onOpen, onDownload, onDelete, onUpload, uploading, uploadLabel }: StopDocumentGroupProps) => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [copyIndex, setCopyIndex] = useState(0);
   const [copying, setCopying] = useState(false);
+  const inputId = useMemo(() => `stop-upload-${Math.random().toString(36).slice(2)}`, []);
 
   const imageDocs = useMemo(() => docs.filter(d => d.file_type === 'image'), [docs]);
 
@@ -197,24 +201,54 @@ export const StopDocumentGroup = ({ label, docs, onOpen, onDownload, onDelete }:
     }
   };
 
-  if (docs.length === 0) return null;
+  if (docs.length === 0 && !onUpload) return null;
 
   return (
     <div className="space-y-2">
-      {label && (
+      {(label || onUpload) && (
         <div className="flex items-center justify-between">
-          <p className="text-xs font-medium text-muted-foreground">{label}</p>
-          {imageDocs.length > 0 && (
-            <button
-              onClick={toggleSelectAll}
-              className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
-              type="button"
-            >
-              {selectedIds.size === imageDocs.length ? <CheckSquare className="h-3 w-3" /> : <Square className="h-3 w-3" />}
-              {selectedIds.size === imageDocs.length ? 'Deseleccionar' : 'Seleccionar todo'}
-            </button>
-          )}
+          {label && <p className="text-xs font-medium text-muted-foreground">{label}</p>}
+          <div className="flex items-center gap-2 ml-auto">
+            {imageDocs.length > 0 && (
+              <button
+                onClick={toggleSelectAll}
+                className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+                type="button"
+              >
+                {selectedIds.size === imageDocs.length ? <CheckSquare className="h-3 w-3" /> : <Square className="h-3 w-3" />}
+                {selectedIds.size === imageDocs.length ? 'Deseleccionar' : 'Seleccionar todo'}
+              </button>
+            )}
+            {onUpload && (
+              <>
+                <button
+                  onClick={() => document.getElementById(inputId)?.click()}
+                  disabled={uploading}
+                  className="text-xs text-primary hover:text-primary/80 flex items-center gap-1 border border-border rounded px-1.5 py-0.5"
+                  type="button"
+                >
+                  {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
+                  {uploadLabel || 'Subir'}
+                </button>
+                <input
+                  id={inputId}
+                  type="file"
+                  accept="image/*,.pdf"
+                  multiple
+                  className="hidden"
+                  onChange={e => {
+                    if (e.target.files) onUpload(e.target.files);
+                    e.target.value = '';
+                  }}
+                />
+              </>
+            )}
+          </div>
         </div>
+      )}
+
+      {docs.length === 0 && (
+        <p className="text-xs text-muted-foreground italic">Sin archivos</p>
       )}
 
       {/* Tarjetas de documentos */}

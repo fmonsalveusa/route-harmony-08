@@ -13,7 +13,6 @@ interface StopInfo {
 
 export const PickupPicturesSection = ({ loadId }: { loadId: string }) => {
   const { pods, loading, uploading, uploadPod, deletePod, openPod, downloadPod } = usePodDocuments(loadId);
-
   const [pickupStops, setPickupStops] = useState<StopInfo[]>([]);
   const [firstPickupStopId, setFirstPickupStopId] = useState<string | null>(null);
   const [stopsLoaded, setStopsLoaded] = useState(false);
@@ -46,26 +45,22 @@ export const PickupPicturesSection = ({ loadId }: { loadId: string }) => {
   const groupedDocs = useMemo(() => {
     if (!showGroupHeaders) return null;
     const groups: { stop: StopInfo | null; docs: typeof pickupDocs }[] = [];
-
     for (const stop of pickupStops) {
       groups.push({
         stop,
         docs: pickupDocs.filter(p => p.stop_id === stop.id),
       });
     }
-
     const unassigned = pickupDocs.filter(p => !p.stop_id);
     if (unassigned.length > 0) {
       groups.push({ stop: null, docs: unassigned });
     }
-
     return groups;
   }, [pickupDocs, pickupStops, showGroupHeaders]);
 
-  const handleFileChange = async (files: FileList | null) => {
-    if (!files) return;
+  const handleFileChange = async (files: FileList, stopId?: string) => {
     for (let i = 0; i < files.length; i++) {
-      await uploadPod(files[i], firstPickupStopId || undefined);
+      await uploadPod(files[i], stopId);
     }
   };
 
@@ -75,32 +70,31 @@ export const PickupPicturesSection = ({ loadId }: { loadId: string }) => {
         <h5 className="font-semibold flex items-center gap-1.5">
           <Camera className="h-3.5 w-3.5 text-primary" /> Pick Up Pictures — BOL & Load
         </h5>
-        <Button
-          variant="outline"
-          size="sm"
-          className="gap-1.5 text-xs h-7"
-          disabled={uploading}
-          onClick={() => document.getElementById(`pickup-file-${loadId}`)?.click()}
-        >
-          {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
-          Subir BOL
-        </Button>
+        {!showGroupHeaders && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5 text-xs h-7"
+            disabled={uploading}
+            onClick={() => document.getElementById(`pickup-file-${loadId}`)?.click()}
+          >
+            {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
+            Subir BOL
+          </Button>
+        )}
         <input
           id={`pickup-file-${loadId}`}
           type="file"
           accept="image/*,.pdf"
           multiple
           className="hidden"
-          onChange={e => { handleFileChange(e.target.files); e.target.value = ''; }}
+          onChange={e => { if (e.target.files) handleFileChange(e.target.files, firstPickupStopId || undefined); e.target.value = ''; }}
         />
       </div>
-
       {loading && <p className="text-xs text-muted-foreground">Cargando fotos...</p>}
-
       {!loading && pickupDocs.length === 0 && (
         <p className="text-xs text-muted-foreground italic ml-1">Sin archivos de Pick Up</p>
       )}
-
       {!loading && pickupDocs.length > 0 && !showGroupHeaders && (
         <StopDocumentGroup
           label={null}
@@ -110,7 +104,6 @@ export const PickupPicturesSection = ({ loadId }: { loadId: string }) => {
           onDelete={deletePod}
         />
       )}
-
       {!loading && groupedDocs && groupedDocs.map((group, i) => (
         <StopDocumentGroup
           key={group.stop?.id || 'unassigned'}
@@ -123,6 +116,9 @@ export const PickupPicturesSection = ({ loadId }: { loadId: string }) => {
           onOpen={openPod}
           onDownload={downloadPod}
           onDelete={deletePod}
+          onUpload={group.stop ? (files) => handleFileChange(files, group.stop!.id) : undefined}
+          uploading={uploading}
+          uploadLabel="Subir"
         />
       ))}
     </div>

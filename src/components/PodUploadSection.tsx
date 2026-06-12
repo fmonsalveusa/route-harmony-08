@@ -65,12 +65,14 @@ export const PodUploadSection = ({ loadId }: PodUploadSectionProps) => {
     return groups;
   }, [deliveryPods, deliveryStops, showGroupHeaders]);
 
-  const handleFileChange = async (files: FileList | null) => {
+  const handleFileChange = async (files: FileList | null, stopId?: string) => {
     if (!files) return;
     for (let i = 0; i < files.length; i++) {
-      await uploadPod(files[i]);
+      await uploadPod(files[i], stopId);
     }
   };
+
+  const firstDeliveryStopId = deliveryStops[0]?.id;
 
   return (
     <div className="p-3 rounded-lg bg-card border text-sm space-y-3">
@@ -79,16 +81,18 @@ export const PodUploadSection = ({ loadId }: PodUploadSectionProps) => {
           <FileText className="h-3.5 w-3.5 text-primary" /> POD — Proof of Delivery
         </h5>
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-1.5 text-xs h-7"
-            disabled={uploading}
-            onClick={() => fileInputRef.current?.click()}
-          >
-            {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
-            Subir POD
-          </Button>
+          {!showGroupHeaders && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 text-xs h-7"
+              disabled={uploading}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
+              Subir POD
+            </Button>
+          )}
         </div>
         <input
           ref={fileInputRef}
@@ -96,7 +100,7 @@ export const PodUploadSection = ({ loadId }: PodUploadSectionProps) => {
           accept="image/*,.pdf"
           multiple
           className="hidden"
-          onChange={e => handleFileChange(e.target.files)}
+          onChange={e => { handleFileChange(e.target.files, firstDeliveryStopId); e.target.value = ''; }}
         />
       </div>
 
@@ -128,6 +132,9 @@ export const PodUploadSection = ({ loadId }: PodUploadSectionProps) => {
           onOpen={openPod}
           onDownload={downloadPod}
           onDelete={deletePod}
+          onUpload={group.stop ? (files) => handleFileChange(files, group.stop!.id) : undefined}
+          uploading={uploading}
+          uploadLabel="Subir"
         />
       ))}
     </div>
