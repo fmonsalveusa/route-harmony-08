@@ -628,10 +628,11 @@ const Tracking = () => {
                                 setEditLocationDriver(driver.id);
                                 setLocationInput((driver as any).manual_location_address || '');
                               }}
-                              className="shrink-0 p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                              title="Edit Location"
+                              className="shrink-0 px-2 py-1 rounded text-[10px] font-medium border border-border hover:bg-muted text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap flex items-center gap-1"
+                              title="New Location"
                             >
                               <Pencil className="h-3 w-3" />
+                              New Location
                             </button>
                           </div>
                         </div>
@@ -664,10 +665,11 @@ const Tracking = () => {
                                     setEditLocationDriver(driver.id);
                                     setLocationInput((driver as any).manual_location_address || '');
                                   }}
-                                  className="shrink-0 p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                                  title="Set Location"
+                                  className="shrink-0 px-2 py-1 rounded text-[10px] font-medium border border-border hover:bg-muted text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap flex items-center gap-1"
+                                  title="New Location"
                                 >
                                   <Pencil className="h-3 w-3" />
+                                  New Location
                                 </button>
                               )}
                             </div>
@@ -685,10 +687,11 @@ const Tracking = () => {
                                 setEditLocationDriver(driver.id);
                                 setLocationInput((driver as any).manual_location_address || '');
                               }}
-                              className="shrink-0 p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                              title="Set Location"
+                              className="shrink-0 px-2 py-1 rounded text-[10px] font-medium border border-border hover:bg-muted text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap flex items-center gap-1"
+                              title="New Location"
                             >
                               <Pencil className="h-3 w-3" />
+                              New Location
                             </button>
                           </div>
                         )
