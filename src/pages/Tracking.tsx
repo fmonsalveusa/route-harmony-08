@@ -665,7 +665,7 @@ const Tracking = () => {
                         setEditLocationDriver(driver.id);
                         setLocationInput((driver as any).manual_location_address || '');
                       }}
-                      className="shrink-0 self-center px-3 py-2 rounded-md text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white transition-colors whitespace-nowrap flex items-center gap-1"
+                      className="shrink-0 self-center px-3 py-2 rounded-md text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-blue-600 transition-colors whitespace-nowrap flex items-center gap-1"
                       title="New Location"
                     >
                       <Pencil className="h-3 w-3" />
