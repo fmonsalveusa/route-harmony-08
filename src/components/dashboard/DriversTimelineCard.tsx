@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Users, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Users, ChevronLeft, ChevronRight, X, Copy, Check } from 'lucide-react';
 
 interface Load {
   id: string;
@@ -75,6 +75,7 @@ const MIN_DAY_WIDTH = 120;
 export const DriversTimelineCard = ({ loads, drivers, trucks = [] }: Props) => {
   const [weekOffset, setWeekOffset] = useState(0);
   const [selectedLoad, setSelectedLoad] = useState<SelectedLoadInfo | null>(null);
+  const [copiedField, setCopiedField] = useState<'pickup' | 'delivery' | null>(null);
   const [containerWidth, setContainerWidth] = useState(0);
   const cardRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -98,6 +99,7 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [] }: Props) => {
   // Close popup on outside click
   useEffect(() => {
     if (!selectedLoad) return;
+    setCopiedField(null);
     const handler = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       if (target.closest('[data-load-popup]')) return;
@@ -220,6 +222,12 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [] }: Props) => {
   const rpm = selectedLoad?.load.miles && selectedLoad.load.miles > 0
     ? (selectedLoad.load.total_rate / selectedLoad.load.miles).toFixed(2)
     : 'N/A';
+
+  const handleCopy = (text: string, field: 'pickup' | 'delivery') => {
+    navigator.clipboard.writeText(text);
+    setCopiedField(field);
+    setTimeout(() => setCopiedField(null), 1500);
+  };
 
   return (
     <Card ref={cardRef} className="relative">
@@ -464,16 +472,34 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [] }: Props) => {
               <div className="border-t border-border pt-2 space-y-1.5 text-[12px]">
                 <div className="flex items-start gap-2">
                   <span className="text-green-600 font-bold mt-0.5">P</span>
-                  <div>
-                    <p className="font-semibold text-foreground">{formatCityState(load.origin)}</p>
-                    <p className="text-muted-foreground">{load.pickup_date || '—'}</p>
+                  <div className="flex-1 flex items-center justify-between gap-2">
+                    <div>
+                      <p className="font-semibold text-foreground">{formatCityState(load.origin)}</p>
+                      <p className="text-muted-foreground">{load.pickup_date || '—'}</p>
+                    </div>
+                    <button
+                      onClick={() => handleCopy(formatCityState(load.origin), 'pickup')}
+                      className="shrink-0 p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                      title="Copiar ciudad y estado"
+                    >
+                      {copiedField === 'pickup' ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
+                    </button>
                   </div>
                 </div>
                 <div className="flex items-start gap-2">
                   <span className="text-red-600 font-bold mt-0.5">D</span>
-                  <div>
-                    <p className="font-semibold text-foreground">{formatCityState(load.destination)}</p>
-                    <p className="text-muted-foreground">{load.delivery_date || '—'}</p>
+                  <div className="flex-1 flex items-center justify-between gap-2">
+                    <div>
+                      <p className="font-semibold text-foreground">{formatCityState(load.destination)}</p>
+                      <p className="text-muted-foreground">{load.delivery_date || '—'}</p>
+                    </div>
+                    <button
+                      onClick={() => handleCopy(formatCityState(load.destination), 'delivery')}
+                      className="shrink-0 p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                      title="Copiar ciudad y estado"
+                    >
+                      {copiedField === 'delivery' ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
+                    </button>
                   </div>
                 </div>
               </div>
