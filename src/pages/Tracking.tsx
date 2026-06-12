@@ -530,7 +530,7 @@ const Tracking = () => {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         {/* Map */}
         <Card className="lg:col-span-3 overflow-hidden">
-          <div className="h-[520px]">
+          <div className="h-[260px]">
             <MapContainer
               center={mapCenter}
               zoom={mapZoom}
@@ -838,7 +838,7 @@ const Tracking = () => {
       </div>
 
       {/* Drivers Load Timeline — scoped to dispatcher's drivers */}
-      <div className="lg:w-[calc(66.666%-0.5rem)]">
+      <div className="lg:w-[calc(75%-0.5rem)]">
         <DriversTimelineCard
           loads={scopedAllLoads}
           drivers={dispatcherDriverIds ? drivers.filter(d => dispatcherDriverIds.has(d.id)) : drivers}
