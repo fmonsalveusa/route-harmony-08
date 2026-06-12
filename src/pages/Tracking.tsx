@@ -672,7 +672,12 @@ const Tracking = () => {
                   ? { address: lastDel.address, date: lastDel.date, isActive: false }
                   : null;
                 return (
-                  <div key={driver.id} className="p-3 rounded-lg border border-border hover:border-primary/30 transition-all">
+                  <div
+                    key={driver.id}
+                    className={`p-3 rounded-lg border-l-4 border border-border hover:border-primary/30 transition-all ${
+                      activeLoad ? 'border-l-[#266aad] bg-[#266aad]/[0.03]' : 'border-l-[hsl(152,60%,40%)] bg-[hsl(152,60%,40%)]/[0.03]'
+                    }`}
+                  >
                     <div className="flex items-center gap-2 mb-2">
                       <div className="p-1.5 rounded-full bg-[hsl(152,60%,40%)]/10">
                         <User className="h-3.5 w-3.5 text-[hsl(152,60%,40%)]" />
@@ -680,6 +685,15 @@ const Tracking = () => {
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-semibold truncate">{driver.name}</p>
                       </div>
+                      <span
+                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold whitespace-nowrap ${
+                          activeLoad
+                            ? 'bg-[#266aad]/15 text-[#266aad]'
+                            : 'bg-[hsl(152,60%,40%)]/15 text-[hsl(152,60%,40%)]'
+                        }`}
+                      >
+                        {activeLoad ? 'On Load' : 'Empty'}
+                      </span>
                       {(() => {
                         const loc = driverLocations.find(dl => dl.driver_id === driver.id);
                         const isGpsActive = loc && (Date.now() - new Date(loc.updated_at).getTime()) < 5 * 60 * 1000;
