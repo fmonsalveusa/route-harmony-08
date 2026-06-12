@@ -619,7 +619,7 @@ const Tracking = () => {
                             <MapPin className="h-3 w-3 text-[hsl(38,92%,50%)]" />
                             Manual Location
                           </p>
-                          <p className="text-xs leading-tight mt-0.5 pl-4">
+                          <p className="text-base font-semibold leading-tight mt-0.5 pl-4">
                             {(driver as any).manual_location_address}
                           </p>
                         </div>
@@ -632,7 +632,7 @@ const Tracking = () => {
                           <div className="flex items-start gap-1 mt-0.5">
                             <MapPin className={`h-3 w-3 shrink-0 mt-0.5 ${displayInfo.isActive ? 'text-primary' : 'text-destructive'}`} />
                             <div className="flex items-center gap-1">
-                              <span className="text-xs leading-tight">
+                              <span className="text-base font-semibold leading-tight">
                                 {extractCityState(displayInfo.address)}
                               </span>
                               <button
