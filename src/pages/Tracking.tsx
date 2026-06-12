@@ -690,7 +690,7 @@ const Tracking = () => {
         </Card>
 
         {/* Side Panel - Next Plan */}
-        <Card className="flex flex-col overflow-hidden h-[1040px]">
+        <Card className="flex flex-col overflow-hidden h-[1040px] lg:row-span-2">
           <CardHeader className="pb-2 px-3 pt-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -835,15 +835,15 @@ const Tracking = () => {
             )}
           </CardContent>
         </Card>
-      </div>
 
-      {/* Drivers Load Timeline — scoped to dispatcher's drivers */}
-      <div className="lg:w-[calc(75%-0.5rem)]">
-        <DriversTimelineCard
-          loads={scopedAllLoads}
-          drivers={dispatcherDriverIds ? drivers.filter(d => dispatcherDriverIds.has(d.id)) : drivers}
-          trucks={trucks}
-        />
+        {/* Drivers Load Timeline — debajo del mapa, misma columna */}
+        <div className="lg:col-span-3">
+          <DriversTimelineCard
+            loads={scopedAllLoads}
+            drivers={dispatcherDriverIds ? drivers.filter(d => dispatcherDriverIds.has(d.id)) : drivers}
+            trucks={trucks}
+          />
+        </div>
       </div>
 
       {/* Selected Load Detail */}
