@@ -579,10 +579,11 @@ const Tracking = () => {
                 return (
                   <div
                     key={driver.id}
-                    className={`p-3 rounded-lg border-l-4 border border-border hover:border-primary/30 transition-all ${
+                    className={`p-3 rounded-lg border-l-4 border border-border hover:border-primary/30 transition-all flex items-start gap-2 ${
                       activeLoad ? 'border-l-[hsl(152,60%,40%)] bg-[hsl(152,60%,40%)]/[0.03]' : 'border-l-[hsl(25,95%,53%)] bg-[hsl(25,95%,53%)]/[0.03]'
                     }`}
                   >
+                    <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-2">
                       <div className="p-1.5 rounded-full bg-[hsl(152,60%,40%)]/10">
                         <User className="h-3.5 w-3.5 text-[hsl(152,60%,40%)]" />
@@ -619,22 +620,9 @@ const Tracking = () => {
                             <MapPin className="h-3 w-3 text-[hsl(38,92%,50%)]" />
                             Manual Location
                           </p>
-                          <div className="flex items-center gap-1">
-                            <p className="text-base font-semibold leading-tight mt-0.5 pl-4">
-                              {(driver as any).manual_location_address}
-                            </p>
-                            <button
-                              onClick={() => {
-                                setEditLocationDriver(driver.id);
-                                setLocationInput((driver as any).manual_location_address || '');
-                              }}
-                              className="shrink-0 px-2 py-1 rounded text-[10px] font-medium border border-border hover:bg-muted text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap flex items-center gap-1"
-                              title="New Location"
-                            >
-                              <Pencil className="h-3 w-3" />
-                              New Location
-                            </button>
-                          </div>
+                          <p className="text-base font-semibold leading-tight mt-0.5 pl-4">
+                            {(driver as any).manual_location_address}
+                          </p>
                         </div>
                       )}
                       {displayInfo ? (
@@ -659,19 +647,6 @@ const Tracking = () => {
                               >
                                 {copiedDriverId === driver.id ? <Check className="h-3 w-3 text-green-600" /> : <Copy className="h-3 w-3" />}
                               </button>
-                              {!((driver as any).manual_location_address) && (
-                                <button
-                                  onClick={() => {
-                                    setEditLocationDriver(driver.id);
-                                    setLocationInput((driver as any).manual_location_address || '');
-                                  }}
-                                  className="shrink-0 px-2 py-1 rounded text-[10px] font-medium border border-border hover:bg-muted text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap flex items-center gap-1"
-                                  title="New Location"
-                                >
-                                  <Pencil className="h-3 w-3" />
-                                  New Location
-                                </button>
-                              )}
                             </div>
                           </div>
                           {displayInfo.date && (
@@ -680,23 +655,22 @@ const Tracking = () => {
                         </div>
                       ) : (
                         !((driver as any).manual_location_address) && (
-                          <div className="flex items-center gap-1 mt-1">
-                            <p className="text-[10px] italic">No delivery history</p>
-                            <button
-                              onClick={() => {
-                                setEditLocationDriver(driver.id);
-                                setLocationInput((driver as any).manual_location_address || '');
-                              }}
-                              className="shrink-0 px-2 py-1 rounded text-[10px] font-medium border border-border hover:bg-muted text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap flex items-center gap-1"
-                              title="New Location"
-                            >
-                              <Pencil className="h-3 w-3" />
-                              New Location
-                            </button>
-                          </div>
+                          <p className="text-[10px] italic mt-1">No delivery history</p>
                         )
                       )}
                     </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setEditLocationDriver(driver.id);
+                        setLocationInput((driver as any).manual_location_address || '');
+                      }}
+                      className="shrink-0 self-center px-3 py-2 rounded-md text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white transition-colors whitespace-nowrap flex items-center gap-1"
+                      title="New Location"
+                    >
+                      <Pencil className="h-3 w-3" />
+                      New Location
+                    </button>
                   </div>
                 );
               })
