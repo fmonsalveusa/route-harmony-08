@@ -528,8 +528,155 @@ const Tracking = () => {
 
       {/* Main layout: Map + Side Panel */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+        {/* Side Panel - Next Plan */}
+        <Card className="flex flex-col overflow-hidden h-[1040px] lg:row-span-2 lg:col-start-1">
+          <CardHeader className="pb-2 px-3 pt-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                NEXT PLAN ({availableDrivers.length})
+              </CardTitle>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs gap-1"
+                onClick={handleExportNextPlan}
+              >
+                <Download className="h-3 w-3" />
+                Export
+              </Button>
+            </div>
+            {!isDispatcher && (
+              <Select value={dispatcherFilter} onValueChange={setDispatcherFilter}>
+                <SelectTrigger className="w-full h-8 text-xs mt-2">
+                  <SelectValue placeholder="All Dispatchers" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Dispatchers</SelectItem>
+                  {dispatchers.filter(d => d.status === 'active').map(d => (
+                    <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </CardHeader>
+          <CardContent className="flex-1 overflow-y-auto px-3 pb-3 space-y-2">
+            {availableDrivers.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
+                <User className="h-8 w-8 mb-2 opacity-40" />
+                <p className="text-sm">No drivers</p>
+              </div>
+            ) : (
+              availableDrivers.map(driver => {
+                const lastDel = lastDeliveryStops[driver.id];
+                const activeLoad = activeLoadByDriver[driver.id];
+                const activeLastStop = activeLoad ? getLastStop(activeLoad) : null;
+                const displayInfo = activeLastStop
+                  ? { address: activeLastStop.address, date: activeLoad.delivery_date || activeLoad.pickup_date || '', isActive: true }
+                  : lastDel
+                  ? { address: lastDel.address, date: lastDel.date, isActive: false }
+                  : null;
+                return (
+                  <div
+                    key={driver.id}
+                    className={`p-3 rounded-lg border-l-4 border border-border hover:border-primary/30 transition-all ${
+                      activeLoad ? 'border-l-[hsl(152,60%,40%)] bg-[hsl(152,60%,40%)]/[0.03]' : 'border-l-[hsl(25,95%,53%)] bg-[hsl(25,95%,53%)]/[0.03]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="p-1.5 rounded-full bg-[hsl(152,60%,40%)]/10">
+                        <User className="h-3.5 w-3.5 text-[hsl(152,60%,40%)]" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold truncate">{driver.name}</p>
+                      </div>
+                      <span
+                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wide whitespace-nowrap text-white ${
+                          activeLoad ? 'bg-[hsl(152,60%,40%)]' : 'bg-[hsl(25,95%,53%)]'
+                        }`}
+                      >
+                        {activeLoad ? 'LOADED' : 'EMPTY'}
+                      </span>
+                      {(() => {
+                        const loc = driverLocations.find(dl => dl.driver_id === driver.id);
+                        const isGpsActive = loc && (Date.now() - new Date(loc.updated_at).getTime()) < 5 * 60 * 1000;
+                        return isGpsActive ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[hsl(152,60%,40%)]/15 text-[hsl(152,60%,40%)] text-[10px] font-semibold animate-pulse">
+                            <Navigation className="h-3 w-3" />
+                            GPS
+                          </span>
+                        ) : null;
+                      })()}
+                      {driver.phone && (
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">{driver.phone}</span>
+                      )}
+                    </div>
+                    <div className="space-y-1 text-xs text-muted-foreground">
+                      {/* Manual location override */}
+                      {(driver as any).manual_location_address && (
+                        <div className="mt-1.5 pt-1.5 border-t">
+                          <p className="text-[10px] font-medium text-foreground flex items-center gap-1">
+                            <MapPin className="h-3 w-3 text-[hsl(38,92%,50%)]" />
+                            Manual Location
+                          </p>
+                          <p className="text-xs leading-tight mt-0.5 pl-4">
+                            {(driver as any).manual_location_address}
+                          </p>
+                        </div>
+                      )}
+                      {displayInfo ? (
+                        <div className="mt-1.5 pt-1.5 border-t">
+                          <p className="text-[10px] font-medium text-foreground">
+                            {displayInfo.isActive ? 'Next Stop (Active Load)' : 'Last Delivery'}
+                          </p>
+                          <div className="flex items-start gap-1 mt-0.5">
+                            <MapPin className={`h-3 w-3 shrink-0 mt-0.5 ${displayInfo.isActive ? 'text-primary' : 'text-destructive'}`} />
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs leading-tight">
+                                {extractCityState(displayInfo.address)}
+                              </span>
+                              <button
+                                onClick={() => {
+                                  navigator.clipboard.writeText(extractCityState(displayInfo.address));
+                                  setCopiedDriverId(driver.id);
+                                  setTimeout(() => setCopiedDriverId(null), 1500);
+                                }}
+                                className="shrink-0 p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                                title="Copiar ciudad y estado"
+                              >
+                                {copiedDriverId === driver.id ? <Check className="h-3 w-3 text-green-600" /> : <Copy className="h-3 w-3" />}
+                              </button>
+                            </div>
+                          </div>
+                          {displayInfo.date && (
+                            <p className="text-xs mt-0.5 opacity-70">{format(parseISO(displayInfo.date), 'MMM dd, yyyy')}</p>
+                          )}
+                        </div>
+                      ) : (
+                        !((driver as any).manual_location_address) && <p className="text-[10px] italic mt-1">No delivery history</p>
+                      )}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full mt-2 h-7 text-xs gap-1"
+                      onClick={() => {
+                        setEditLocationDriver(driver.id);
+                        setLocationInput((driver as any).manual_location_address || '');
+                      }}
+                    >
+                      <Pencil className="h-3 w-3" />
+                      {(driver as any).manual_location_address ? 'Edit Location' : 'Set Location'}
+                    </Button>
+                  </div>
+                );
+              })
+            )}
+          </CardContent>
+        </Card>
+
         {/* Map */}
-        <Card className="lg:col-span-3 overflow-hidden self-start">
+        <Card className="lg:col-span-3 lg:col-start-2 overflow-hidden self-start">
           <div className="h-[520px]">
             <MapContainer
               center={mapCenter}
@@ -689,155 +836,8 @@ const Tracking = () => {
           </div>
         </Card>
 
-        {/* Side Panel - Next Plan */}
-        <Card className="flex flex-col overflow-hidden h-[1040px] lg:row-span-2">
-          <CardHeader className="pb-2 px-3 pt-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                NEXT PLAN ({availableDrivers.length})
-              </CardTitle>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 text-xs gap-1"
-                onClick={handleExportNextPlan}
-              >
-                <Download className="h-3 w-3" />
-                Export
-              </Button>
-            </div>
-            {!isDispatcher && (
-              <Select value={dispatcherFilter} onValueChange={setDispatcherFilter}>
-                <SelectTrigger className="w-full h-8 text-xs mt-2">
-                  <SelectValue placeholder="All Dispatchers" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Dispatchers</SelectItem>
-                  {dispatchers.filter(d => d.status === 'active').map(d => (
-                    <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          </CardHeader>
-          <CardContent className="flex-1 overflow-y-auto px-3 pb-3 space-y-2">
-            {availableDrivers.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
-                <User className="h-8 w-8 mb-2 opacity-40" />
-                <p className="text-sm">No drivers</p>
-              </div>
-            ) : (
-              availableDrivers.map(driver => {
-                const lastDel = lastDeliveryStops[driver.id];
-                const activeLoad = activeLoadByDriver[driver.id];
-                const activeLastStop = activeLoad ? getLastStop(activeLoad) : null;
-                const displayInfo = activeLastStop
-                  ? { address: activeLastStop.address, date: activeLoad.delivery_date || activeLoad.pickup_date || '', isActive: true }
-                  : lastDel
-                  ? { address: lastDel.address, date: lastDel.date, isActive: false }
-                  : null;
-                return (
-                  <div
-                    key={driver.id}
-                    className={`p-3 rounded-lg border-l-4 border border-border hover:border-primary/30 transition-all ${
-                      activeLoad ? 'border-l-[hsl(152,60%,40%)] bg-[hsl(152,60%,40%)]/[0.03]' : 'border-l-[hsl(25,95%,53%)] bg-[hsl(25,95%,53%)]/[0.03]'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="p-1.5 rounded-full bg-[hsl(152,60%,40%)]/10">
-                        <User className="h-3.5 w-3.5 text-[hsl(152,60%,40%)]" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold truncate">{driver.name}</p>
-                      </div>
-                      <span
-                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wide whitespace-nowrap text-white ${
-                          activeLoad ? 'bg-[hsl(152,60%,40%)]' : 'bg-[hsl(25,95%,53%)]'
-                        }`}
-                      >
-                        {activeLoad ? 'LOADED' : 'EMPTY'}
-                      </span>
-                      {(() => {
-                        const loc = driverLocations.find(dl => dl.driver_id === driver.id);
-                        const isGpsActive = loc && (Date.now() - new Date(loc.updated_at).getTime()) < 5 * 60 * 1000;
-                        return isGpsActive ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[hsl(152,60%,40%)]/15 text-[hsl(152,60%,40%)] text-[10px] font-semibold animate-pulse">
-                            <Navigation className="h-3 w-3" />
-                            GPS
-                          </span>
-                        ) : null;
-                      })()}
-                      {driver.phone && (
-                        <span className="text-xs text-muted-foreground whitespace-nowrap">{driver.phone}</span>
-                      )}
-                    </div>
-                    <div className="space-y-1 text-xs text-muted-foreground">
-                      {/* Manual location override */}
-                      {(driver as any).manual_location_address && (
-                        <div className="mt-1.5 pt-1.5 border-t">
-                          <p className="text-[10px] font-medium text-foreground flex items-center gap-1">
-                            <MapPin className="h-3 w-3 text-[hsl(38,92%,50%)]" />
-                            Manual Location
-                          </p>
-                          <p className="text-xs leading-tight mt-0.5 pl-4">
-                            {(driver as any).manual_location_address}
-                          </p>
-                        </div>
-                      )}
-                      {displayInfo ? (
-                        <div className="mt-1.5 pt-1.5 border-t">
-                          <p className="text-[10px] font-medium text-foreground">
-                            {displayInfo.isActive ? 'Next Stop (Active Load)' : 'Last Delivery'}
-                          </p>
-                          <div className="flex items-start gap-1 mt-0.5">
-                            <MapPin className={`h-3 w-3 shrink-0 mt-0.5 ${displayInfo.isActive ? 'text-primary' : 'text-destructive'}`} />
-                            <div className="flex items-center gap-1">
-                              <span className="text-xs leading-tight">
-                                {extractCityState(displayInfo.address)}
-                              </span>
-                              <button
-                                onClick={() => {
-                                  navigator.clipboard.writeText(extractCityState(displayInfo.address));
-                                  setCopiedDriverId(driver.id);
-                                  setTimeout(() => setCopiedDriverId(null), 1500);
-                                }}
-                                className="shrink-0 p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                                title="Copiar ciudad y estado"
-                              >
-                                {copiedDriverId === driver.id ? <Check className="h-3 w-3 text-green-600" /> : <Copy className="h-3 w-3" />}
-                              </button>
-                            </div>
-                          </div>
-                          {displayInfo.date && (
-                            <p className="text-xs mt-0.5 opacity-70">{format(parseISO(displayInfo.date), 'MMM dd, yyyy')}</p>
-                          )}
-                        </div>
-                      ) : (
-                        !((driver as any).manual_location_address) && <p className="text-[10px] italic mt-1">No delivery history</p>
-                      )}
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="w-full mt-2 h-7 text-xs gap-1"
-                      onClick={() => {
-                        setEditLocationDriver(driver.id);
-                        setLocationInput((driver as any).manual_location_address || '');
-                      }}
-                    >
-                      <Pencil className="h-3 w-3" />
-                      {(driver as any).manual_location_address ? 'Edit Location' : 'Set Location'}
-                    </Button>
-                  </div>
-                );
-              })
-            )}
-          </CardContent>
-        </Card>
-
         {/* Drivers Load Timeline — debajo del mapa, misma columna */}
-        <div className="lg:col-span-3">
+        <div className="lg:col-span-3 lg:col-start-2">
           <DriversTimelineCard
             loads={scopedAllLoads}
             drivers={dispatcherDriverIds ? drivers.filter(d => dispatcherDriverIds.has(d.id)) : drivers}
