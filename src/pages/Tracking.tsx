@@ -276,10 +276,34 @@ const Tracking = () => {
       .filter(d => effectiveDispatcherFilter === 'all' || d.dispatcher_id === effectiveDispatcherFilter);
   }, [drivers, dispatcherFilter, userDispatcherId]);
 
-  // Fetch last delivery location for available drivers
+  // Para cada driver, la carga activa cuya delivery_date (o pickup_date si no hay) es la mas reciente/lejana
+  const activeLoadByDriver = useMemo(() => {
+    const map: Record<string, LoadWithStops> = {};
+    enrichedLoads.forEach(load => {
+      if (!load.driver_id) return;
+      const loadDate = load.delivery_date || load.pickup_date || '';
+      const existing = map[load.driver_id];
+      if (!existing) {
+        map[load.driver_id] = load;
+      } else {
+        const existingDate = existing.delivery_date || existing.pickup_date || '';
+        if (loadDate > existingDate) map[load.driver_id] = load;
+      }
+    });
+    return map;
+  }, [enrichedLoads]);
+
+  // Ultima parada (stop_order mas alto) de una carga
+  const getLastStop = (load: LoadWithStops): LoadStop | null => {
+    if (load.stops.length === 0) return null;
+    return [...load.stops].sort((a, b) => b.stop_order - a.stop_order)[0];
+  };
+
+  // Fetch last delivery location solo para drivers sin carga activa
   useEffect(() => {
-    if (availableDrivers.length === 0) return;
-    const driverIds = availableDrivers.map(d => d.id);
+    const driversWithoutActive = availableDrivers.filter(d => !activeLoadByDriver[d.id]);
+    if (driversWithoutActive.length === 0) { setLastDeliveryStops({}); return; }
+    const driverIds = driversWithoutActive.map(d => d.id);
 
     // Get last delivered load per driver
     supabase
@@ -327,7 +351,7 @@ const Tracking = () => {
         }
         setLastDeliveryStops(result);
       });
-  }, [availableDrivers.length]);
+  }, [availableDrivers, activeLoadByDriver]);
 
   // Filter loads — dispatchers only see loads of their assigned drivers
   const filteredLoads = useMemo(() => {
@@ -640,6 +664,13 @@ const Tracking = () => {
             ) : (
               availableDrivers.map(driver => {
                 const lastDel = lastDeliveryStops[driver.id];
+                const activeLoad = activeLoadByDriver[driver.id];
+                const activeLastStop = activeLoad ? getLastStop(activeLoad) : null;
+                const displayInfo = activeLastStop
+                  ? { address: activeLastStop.address, date: activeLoad.delivery_date || activeLoad.pickup_date || '', isActive: true }
+                  : lastDel
+                  ? { address: lastDel.address, date: lastDel.date, isActive: false }
+                  : null;
                 return (
                   <div key={driver.id} className="p-3 rounded-lg border border-border hover:border-primary/30 transition-all">
                     <div className="flex items-center gap-2 mb-2">
@@ -676,28 +707,30 @@ const Tracking = () => {
                           </p>
                         </div>
                       )}
-                      {lastDel ? (
+                      {displayInfo ? (
                         <div className="mt-1.5 pt-1.5 border-t">
-                          <p className="text-[10px] font-medium text-foreground">Last Delivery</p>
+                          <p className="text-[10px] font-medium text-foreground">
+                            {displayInfo.isActive ? 'Next Stop (Active Load)' : 'Last Delivery'}
+                          </p>
                           <div className="flex items-start gap-1 mt-0.5">
-                            <MapPin className="h-3 w-3 shrink-0 mt-0.5 text-destructive" />
+                            <MapPin className={`h-3 w-3 shrink-0 mt-0.5 ${displayInfo.isActive ? 'text-primary' : 'text-destructive'}`} />
                             <div className="flex-1 flex items-center justify-between gap-2">
                               <span className="text-xs leading-tight">
                                 {(() => {
-                                  const parts = lastDel.address.split(',').map(p => p.trim()).filter(Boolean);
+                                  const parts = displayInfo.address.split(',').map(p => p.trim()).filter(Boolean);
                                   if (parts.length >= 2) {
                                     const city = parts[parts.length - 2];
                                     const stateZip = parts[parts.length - 1];
                                     const state = stateZip.replace(/\d{5}(-\d{4})?/, '').trim();
                                     return state ? `${city}, ${state}` : city;
                                   }
-                                  return lastDel.address;
+                                  return displayInfo.address;
                                 })()}
                               </span>
                               <button
                                 onClick={() => {
-                                  const parts = lastDel.address.split(',').map(p => p.trim()).filter(Boolean);
-                                  let cityState = lastDel.address;
+                                  const parts = displayInfo.address.split(',').map(p => p.trim()).filter(Boolean);
+                                  let cityState = displayInfo.address;
                                   if (parts.length >= 2) {
                                     const city = parts[parts.length - 2];
                                     const stateZip = parts[parts.length - 1];
@@ -715,8 +748,8 @@ const Tracking = () => {
                               </button>
                             </div>
                           </div>
-                          {lastDel.date && (
-                            <p className="text-xs mt-0.5 opacity-70">{format(parseISO(lastDel.date), 'MMM dd, yyyy')}</p>
+                          {displayInfo.date && (
+                            <p className="text-xs mt-0.5 opacity-70">{format(parseISO(displayInfo.date), 'MMM dd, yyyy')}</p>
                           )}
                         </div>
                       ) : (
