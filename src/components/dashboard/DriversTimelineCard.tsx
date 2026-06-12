@@ -213,9 +213,16 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [] }: Props) => {
   }
 
   const formatCityState = (location: string) => {
-    // Try to extract "City, ST" from addresses like "City, ST" or "City, State, ..."
-    const parts = location.split(',').map(s => s.trim());
-    if (parts.length >= 2) return `${parts[0]}, ${parts[1]}`;
+    // Maneja direcciones completas como "123 Main St, Atlanta, GA 30301"
+    // y devuelve solo "Atlanta, GA"
+    const parts = location.split(',').map(s => s.trim()).filter(Boolean);
+    if (parts.length >= 2) {
+      const city = parts[parts.length - 2];
+      const stateZip = parts[parts.length - 1];
+      // Quita el código postal si viene pegado al estado
+      const state = stateZip.replace(/\d{5}(-\d{4})?/, '').trim();
+      return state ? `${city}, ${state}` : city;
+    }
     return location;
   };
 
