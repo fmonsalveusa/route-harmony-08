@@ -269,23 +269,12 @@ const Tracking = () => {
     return () => { cancelled = true; };
   }, [allStops]);
 
-  // Available drivers: those with no active load (dispatched/in_transit)
-  const driversWithActiveLoad = useMemo(() => {
-    const activeDriverIds = new Set<string>();
-    loads.forEach(l => {
-      if (['dispatched', 'in_transit', 'on_site_pickup', 'picked_up', 'on_site_delivery'].includes(l.status) && l.driver_id) {
-        activeDriverIds.add(l.driver_id);
-      }
-    });
-    return activeDriverIds;
-  }, [loads]);
-
   const availableDrivers = useMemo(() => {
     const effectiveDispatcherFilter = userDispatcherId ?? dispatcherFilter;
     return drivers
-      .filter(d => d.status !== 'inactive' && !driversWithActiveLoad.has(d.id))
+      .filter(d => d.status !== 'inactive')
       .filter(d => effectiveDispatcherFilter === 'all' || d.dispatcher_id === effectiveDispatcherFilter);
-  }, [drivers, driversWithActiveLoad, dispatcherFilter, userDispatcherId]);
+  }, [drivers, dispatcherFilter, userDispatcherId]);
 
   // Fetch last delivery location for available drivers
   useEffect(() => {
@@ -619,13 +608,13 @@ const Tracking = () => {
           </div>
         </Card>
 
-        {/* Side Panel - Drivers Available */}
+        {/* Side Panel - Next Plan */}
         <Card className="flex flex-col overflow-hidden h-[520px]">
           <CardHeader className="pb-2 px-3 pt-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
                 <Users className="h-4 w-4" />
-                Drivers Available ({availableDrivers.length})
+                NEXT PLAN ({availableDrivers.length})
               </CardTitle>
             </div>
             {!isDispatcher && (
@@ -646,7 +635,7 @@ const Tracking = () => {
             {availableDrivers.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
                 <User className="h-8 w-8 mb-2 opacity-40" />
-                <p className="text-sm">No available drivers</p>
+                <p className="text-sm">No drivers</p>
               </div>
             ) : (
               availableDrivers.map(driver => {
