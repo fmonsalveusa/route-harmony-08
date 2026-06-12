@@ -792,7 +792,7 @@ const Tracking = () => {
                           </p>
                           <div className="flex items-start gap-1 mt-0.5">
                             <MapPin className={`h-3 w-3 shrink-0 mt-0.5 ${displayInfo.isActive ? 'text-primary' : 'text-destructive'}`} />
-                            <div className="flex-1 flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1">
                               <span className="text-xs leading-tight">
                                 {extractCityState(displayInfo.address)}
                               </span>
