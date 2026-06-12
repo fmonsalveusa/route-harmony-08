@@ -675,7 +675,7 @@ const Tracking = () => {
                   <div
                     key={driver.id}
                     className={`p-3 rounded-lg border-l-4 border border-border hover:border-primary/30 transition-all ${
-                      activeLoad ? 'border-l-[#266aad] bg-[#266aad]/[0.03]' : 'border-l-[hsl(152,60%,40%)] bg-[hsl(152,60%,40%)]/[0.03]'
+                      activeLoad ? 'border-l-[hsl(152,60%,40%)] bg-[hsl(152,60%,40%)]/[0.03]' : 'border-l-[hsl(25,95%,53%)] bg-[hsl(25,95%,53%)]/[0.03]'
                     }`}
                   >
                     <div className="flex items-center gap-2 mb-2">
@@ -686,13 +686,11 @@ const Tracking = () => {
                         <p className="text-sm font-semibold truncate">{driver.name}</p>
                       </div>
                       <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold whitespace-nowrap ${
-                          activeLoad
-                            ? 'bg-[#266aad]/15 text-[#266aad]'
-                            : 'bg-[hsl(152,60%,40%)]/15 text-[hsl(152,60%,40%)]'
+                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wide whitespace-nowrap text-white ${
+                          activeLoad ? 'bg-[hsl(152,60%,40%)]' : 'bg-[hsl(25,95%,53%)]'
                         }`}
                       >
-                        {activeLoad ? 'On Load' : 'Empty'}
+                        {activeLoad ? 'LOADED' : 'EMPTY'}
                       </span>
                       {(() => {
                         const loc = driverLocations.find(dl => dl.driver_id === driver.id);
