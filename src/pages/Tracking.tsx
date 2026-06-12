@@ -529,8 +529,8 @@ const Tracking = () => {
       {/* Main layout: Map + Side Panel */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         {/* Map */}
-        <Card className="lg:col-span-3 overflow-hidden">
-          <div className="h-[260px]">
+        <Card className="lg:col-span-3 overflow-hidden self-start">
+          <div className="h-[520px]">
             <MapContainer
               center={mapCenter}
               zoom={mapZoom}
