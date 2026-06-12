@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { StatusBadge } from '@/components/StatusBadge';
-import { MapPin, Package, Navigation, Clock, Search, ChevronRight, AlertTriangle, Eye, User, Users, Pencil, Loader2, Copy, Check } from 'lucide-react';
+import { MapPin, Package, Navigation, Clock, Search, ChevronRight, AlertTriangle, Eye, User, Users, Pencil, Loader2, Copy, Check, Download } from 'lucide-react';
 import { DriversTimelineCard } from '@/components/dashboard/DriversTimelineCard';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, Tooltip as LeafletTooltip, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -299,6 +299,63 @@ const Tracking = () => {
     return [...load.stops].sort((a, b) => b.stop_order - a.stop_order)[0];
   };
 
+  const extractCityState = (address: string): string => {
+    const parts = address.split(',').map(p => p.trim()).filter(Boolean);
+    if (parts.length >= 2) {
+      const city = parts[parts.length - 2];
+      const stateZip = parts[parts.length - 1];
+      const state = stateZip.replace(/\d{5}(-\d{4})?/, '').trim();
+      return state ? `${city}, ${state}` : city;
+    }
+    return address;
+  };
+
+  const handleExportNextPlan = () => {
+    const rows = availableDrivers.map(driver => {
+      const lastDel = lastDeliveryStops[driver.id];
+      const activeLoad = activeLoadByDriver[driver.id];
+      const activeLastStop = activeLoad ? getLastStop(activeLoad) : null;
+      const displayInfo = activeLastStop
+        ? { address: activeLastStop.address, date: activeLoad.delivery_date || activeLoad.pickup_date || '' }
+        : lastDel
+        ? { address: lastDel.address, date: lastDel.date }
+        : null;
+
+      const dispatcher = dispatchers.find(d => d.id === driver.dispatcher_id);
+
+      return {
+        driver: driver.name,
+        status: activeLoad ? 'LOADED' : 'EMPTY',
+        location: (driver as any).manual_location_address
+          ? (driver as any).manual_location_address
+          : displayInfo
+          ? extractCityState(displayInfo.address)
+          : '',
+        date: displayInfo?.date || '',
+        dispatcher: dispatcher?.name || '',
+        phone: driver.phone || '',
+      };
+    });
+
+    const headers = ['Driver', 'Status', 'Location', 'Date', 'Dispatcher', 'Phone'];
+    const csvRows = [
+      headers.join(','),
+      ...rows.map(r =>
+        [r.driver, r.status, r.location, r.date, r.dispatcher, r.phone]
+          .map(v => `"${String(v).replace(/"/g, '""')}"`)
+          .join(',')
+      ),
+    ];
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `next-plan-${format(new Date(), 'yyyy-MM-dd_HHmm')}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   // Fetch last delivery location solo para drivers sin carga activa
   useEffect(() => {
     const driversWithoutActive = availableDrivers.filter(d => !activeLoadByDriver[d.id]);
@@ -470,9 +527,9 @@ const Tracking = () => {
       </div>
 
       {/* Main layout: Map + Side Panel */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         {/* Map */}
-        <Card className="lg:col-span-2 overflow-hidden">
+        <Card className="lg:col-span-3 overflow-hidden">
           <div className="h-[520px]">
             <MapContainer
               center={mapCenter}
@@ -633,13 +690,22 @@ const Tracking = () => {
         </Card>
 
         {/* Side Panel - Next Plan */}
-        <Card className="flex flex-col overflow-hidden h-[520px]">
+        <Card className="flex flex-col overflow-hidden h-[1040px]">
           <CardHeader className="pb-2 px-3 pt-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
                 <Users className="h-4 w-4" />
                 NEXT PLAN ({availableDrivers.length})
               </CardTitle>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs gap-1"
+                onClick={handleExportNextPlan}
+              >
+                <Download className="h-3 w-3" />
+                Export
+              </Button>
             </div>
             {!isDispatcher && (
               <Select value={dispatcherFilter} onValueChange={setDispatcherFilter}>
@@ -728,28 +794,11 @@ const Tracking = () => {
                             <MapPin className={`h-3 w-3 shrink-0 mt-0.5 ${displayInfo.isActive ? 'text-primary' : 'text-destructive'}`} />
                             <div className="flex-1 flex items-center justify-between gap-2">
                               <span className="text-xs leading-tight">
-                                {(() => {
-                                  const parts = displayInfo.address.split(',').map(p => p.trim()).filter(Boolean);
-                                  if (parts.length >= 2) {
-                                    const city = parts[parts.length - 2];
-                                    const stateZip = parts[parts.length - 1];
-                                    const state = stateZip.replace(/\d{5}(-\d{4})?/, '').trim();
-                                    return state ? `${city}, ${state}` : city;
-                                  }
-                                  return displayInfo.address;
-                                })()}
+                                {extractCityState(displayInfo.address)}
                               </span>
                               <button
                                 onClick={() => {
-                                  const parts = displayInfo.address.split(',').map(p => p.trim()).filter(Boolean);
-                                  let cityState = displayInfo.address;
-                                  if (parts.length >= 2) {
-                                    const city = parts[parts.length - 2];
-                                    const stateZip = parts[parts.length - 1];
-                                    const state = stateZip.replace(/\d{5}(-\d{4})?/, '').trim();
-                                    cityState = state ? `${city}, ${state}` : city;
-                                  }
-                                  navigator.clipboard.writeText(cityState);
+                                  navigator.clipboard.writeText(extractCityState(displayInfo.address));
                                   setCopiedDriverId(driver.id);
                                   setTimeout(() => setCopiedDriverId(null), 1500);
                                 }}
