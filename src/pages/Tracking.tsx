@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { StatusBadge } from '@/components/StatusBadge';
-import { MapPin, Package, Navigation, Clock, Search, ChevronRight, AlertTriangle, Eye, User, Users, Pencil, Loader2 } from 'lucide-react';
+import { MapPin, Package, Navigation, Clock, Search, ChevronRight, AlertTriangle, Eye, User, Users, Pencil, Loader2, Copy, Check } from 'lucide-react';
 import { DriversTimelineCard } from '@/components/dashboard/DriversTimelineCard';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, Tooltip as LeafletTooltip, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -138,6 +138,7 @@ const Tracking = () => {
   const [mapCenter, setMapCenter] = useState<[number, number]>([39.8283, -98.5795]);
   const [mapZoom, setMapZoom] = useState(4);
   const [lastDeliveryStops, setLastDeliveryStops] = useState<Record<string, { address: string; lat: number; lng: number; date: string }>>({});
+  const [copiedDriverId, setCopiedDriverId] = useState<string | null>(null);
 
   // Manual location dialog state
   const [editLocationDriver, setEditLocationDriver] = useState<string | null>(null);
@@ -691,20 +692,39 @@ const Tracking = () => {
                           <p className="text-[10px] font-medium text-foreground">Last Delivery</p>
                           <div className="flex items-start gap-1 mt-0.5">
                             <MapPin className="h-3 w-3 shrink-0 mt-0.5 text-destructive" />
-                            <span className="text-xs leading-tight">
-                              {(() => {
-                                const parts = lastDel.address.split(',').map(p => p.trim());
-                                if (parts.length >= 3) {
-                                  const stateZip = parts[parts.length - 1];
-                                  const state = stateZip.replace(/\d{5}(-\d{4})?/, '').trim();
-                                  const city = parts[parts.length - 2];
-                                  return state ? `${city}, ${state}` : `${city}`;
-                                } else if (parts.length === 2) {
+                            <div className="flex-1 flex items-center justify-between gap-2">
+                              <span className="text-xs leading-tight">
+                                {(() => {
+                                  const parts = lastDel.address.split(',').map(p => p.trim()).filter(Boolean);
+                                  if (parts.length >= 2) {
+                                    const city = parts[parts.length - 2];
+                                    const stateZip = parts[parts.length - 1];
+                                    const state = stateZip.replace(/\d{5}(-\d{4})?/, '').trim();
+                                    return state ? `${city}, ${state}` : city;
+                                  }
                                   return lastDel.address;
-                                }
-                                return lastDel.address;
-                              })()}
-                            </span>
+                                })()}
+                              </span>
+                              <button
+                                onClick={() => {
+                                  const parts = lastDel.address.split(',').map(p => p.trim()).filter(Boolean);
+                                  let cityState = lastDel.address;
+                                  if (parts.length >= 2) {
+                                    const city = parts[parts.length - 2];
+                                    const stateZip = parts[parts.length - 1];
+                                    const state = stateZip.replace(/\d{5}(-\d{4})?/, '').trim();
+                                    cityState = state ? `${city}, ${state}` : city;
+                                  }
+                                  navigator.clipboard.writeText(cityState);
+                                  setCopiedDriverId(driver.id);
+                                  setTimeout(() => setCopiedDriverId(null), 1500);
+                                }}
+                                className="shrink-0 p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                                title="Copiar ciudad y estado"
+                              >
+                                {copiedDriverId === driver.id ? <Check className="h-3 w-3 text-green-600" /> : <Copy className="h-3 w-3" />}
+                              </button>
+                            </div>
                           </div>
                           {lastDel.date && (
                             <p className="text-xs mt-0.5 opacity-70">{format(parseISO(lastDel.date), 'MMM dd, yyyy')}</p>
