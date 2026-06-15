@@ -439,7 +439,14 @@ const Loads = () => {
                             <div className="text-base font-bold text-foreground">{driver?.name || <span className="text-muted-foreground italic font-normal">Sin asignar</span>}</div>
                             <div className="text-muted-foreground text-xs">{trucks.find(t => t.id === load.truck_id)?.unit_number ? `Unit #${trucks.find(t => t.id === load.truck_id)!.unit_number}` : '—'}</div>
                           </td>
-                          <td className="p-3 text-foreground">{load.broker_client || '—'}</td>
+                          <td className="p-3 text-foreground">
+                            <div>{load.broker_client || '—'}</div>
+                            {(load.notes || '').toUpperCase().includes('TARP') && (
+                              <span className="inline-flex items-center mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide text-white bg-[hsl(25,95%,53%)] whitespace-nowrap">
+                                NEEDS TARP
+                              </span>
+                            )}
+                          </td>
                           <td className="p-3 hidden md:table-cell">
                             {(() => { const { city, state } = extractCityState(load.origin); return (
                               <div className="flex items-center gap-1.5">

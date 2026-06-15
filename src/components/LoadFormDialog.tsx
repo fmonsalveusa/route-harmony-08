@@ -369,6 +369,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
           referenceNumber: extracted.referenceNumber || prev.referenceNumber,
           brokerClient: extracted.brokerClient || prev.brokerClient,
           miles: extracted.miles || prev.miles,
+          notes: extracted.notes || prev.notes,
         }));
 
         // Auto-match carrier name to a company
