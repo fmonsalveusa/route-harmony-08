@@ -30,7 +30,7 @@ export default function DriverDashboard() {
       .from('loads')
       .select('*')
       .eq('driver_id', d.id)
-      .not('status', 'in', '("delivered","paid","tonu","cancelled")')
+      .not('status', 'in', '("planned","delivered","paid","tonu","cancelled")')
       .order('pickup_date', { ascending: true });
     setActiveLoads(loads || []);
 
