@@ -21,7 +21,7 @@ export default function DriverLoads() {
     setLoading(true);
     const { data: driver } = await supabase.from('drivers').select('id').eq('email', profile.email).maybeSingle();
     if (!driver) { setLoading(false); return; }
-    const { data } = await supabase.from('loads').select('*').eq('driver_id', driver.id).order('pickup_date', { ascending: false });
+    const { data } = await supabase.from('loads').select('*').eq('driver_id', driver.id).neq('status', 'planned').order('pickup_date', { ascending: false });
     setLoads(data || []);
     setLoading(false);
   }, [profile?.email]);
