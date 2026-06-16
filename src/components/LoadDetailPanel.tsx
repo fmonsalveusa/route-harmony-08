@@ -157,7 +157,7 @@ function CopyLoadInfoButton({ load, totalMiles, emptyMiles, rpm, driver, dispatc
   );
 }
 
-function BrokerScoreRow({ brokerName }: { brokerName: string | null | undefined }) {
+function BrokerScoreRow({ brokerName, hideLabel }: { brokerName: string | null | undefined; hideLabel?: boolean }) {
   const { getScoreForBroker, upsertScore } = useBrokerScores();
   const [adding, setAdding] = useState(false);
   const [letterInput, setLetterInput] = useState('');
@@ -192,7 +192,7 @@ function BrokerScoreRow({ brokerName }: { brokerName: string | null | undefined 
   return (
     <div>
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="font-medium">{brokerName || '—'}</span>
+        {!hideLabel && <span className="font-medium">{brokerName || '—'}</span>}
         {existing?.mc_number && (
           <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#266aad]/10 text-[#266aad] border border-[#266aad]/20">
             MC# {existing.mc_number}
@@ -1357,114 +1357,91 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
           </div>
 
           {/* Structured table layout */}
-          <table className="w-full rounded-lg border bg-card overflow-hidden text-sm border-collapse table-fixed">
-            <colgroup>
-              <col style={{ width: '22%' }} />
-              <col style={{ width: '78%' }} />
-            </colgroup>
-            <tbody>
+          <div className="rounded-lg border bg-card overflow-hidden text-sm">
 
-            {/* Broker */}
-            <tr className="border-b">
-              <td className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Broker:</td>
-              <td className="px-3 py-2">
-                <BrokerScoreRow brokerName={load.broker_client} />
-              </td>
-            </tr>
+            {/* Fila 1: Broker + Rate */}
+            <div className="flex items-center justify-between px-4 py-2.5 border-b">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-base">{load.broker_client || '—'}</span>
+                <BrokerScoreRow brokerName={load.broker_client} hideLabel />
+              </div>
+              <span className="text-lg font-semibold text-primary">${Number(load.total_rate).toLocaleString()}</span>
+            </div>
 
-            {/* Rate */}
-            <tr className="border-b">
-              <td className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">$ Rate:</td>
-              <td className="px-3 py-2 font-bold text-primary text-base">${Number(load.total_rate).toLocaleString()}</td>
-            </tr>
-
-            {/* Driver + Type inline */}
-            <tr className="border-b">
-              <td className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Driver:</td>
-              <td className="px-3 py-2">
-                <div className="flex items-center gap-3">
-                  <span className="font-medium">{driver?.name || 'Sin asignar'}</span>
-                  {truck?.truck_type && (
-                    <span className="text-xs text-muted-foreground border-l pl-3">{truck.truck_type}</span>
-                  )}
-                </div>
-              </td>
-            </tr>
-
-            {/* Empty Miles + Miles inline */}
-            <tr className="border-b">
-              <td className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Miles:</td>
-              <td className="px-3 py-2">
-                <div className="flex items-center gap-4 flex-wrap">
-                  <span className="font-bold text-primary">{totalMiles > 0 ? totalMiles.toLocaleString() : '—'}</span>
-                  <span className="text-xs text-muted-foreground border-l pl-3">
-                    Empty: <span className="font-bold text-amber-500">{emptyMiles > 0 ? emptyMiles.toLocaleString() : '—'}</span>
-                    <Popover open={editingEmptyOrigin} onOpenChange={(open) => {
-                      setEditingEmptyOrigin(open);
-                      if (open) setCustomOriginInput(emptyMilesOrigin || '');
-                    }}>
-                      <PopoverTrigger asChild>
-                        <button className="ml-1 p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground" title="Editar origen">
-                          <Pencil className="h-3 w-3" />
-                        </button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-80" align="start">
-                        <div className="space-y-2">
-                          <p className="text-xs font-medium">Nuevo origen de millas vacías</p>
-                          <Input
-                            placeholder="Ej: Dallas, TX 75001"
-                            value={customOriginInput}
-                            onChange={(e) => setCustomOriginInput(e.target.value)}
-                            className="text-xs h-8"
-                            disabled={recalculating}
-                            onKeyDown={(e) => { if (e.key === 'Enter') void handleRecalculateEmptyMiles(); }}
-                          />
-                          <div className="flex gap-2 justify-end">
-                            <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setEditingEmptyOrigin(false)} disabled={recalculating}>Cancelar</Button>
-                            <Button size="sm" className="h-7 text-xs gap-1" onClick={() => void handleRecalculateEmptyMiles()} disabled={recalculating || !customOriginInput.trim()}>
-                              {recalculating && <Loader2 className="h-3 w-3 animate-spin" />}Recalcular
-                            </Button>
-                          </div>
+            {/* Fila 2: Empty Miles | Miles | RPM */}
+            <div className="grid grid-cols-3 border-b">
+              <div className="px-4 py-2.5 border-r">
+                <div className="text-[11px] text-muted-foreground font-medium mb-0.5">Empty Miles</div>
+                <div className="flex items-center gap-1">
+                  <span className="text-xl font-semibold text-amber-500">{emptyMiles > 0 ? emptyMiles.toLocaleString() : '—'}</span>
+                  <Popover open={editingEmptyOrigin} onOpenChange={(open) => {
+                    setEditingEmptyOrigin(open);
+                    if (open) setCustomOriginInput(emptyMilesOrigin || '');
+                  }}>
+                    <PopoverTrigger asChild>
+                      <button className="p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground" title="Editar origen">
+                        <Pencil className="h-3 w-3" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80" align="start">
+                      <div className="space-y-2">
+                        <p className="text-xs font-medium">Nuevo origen de millas vacías</p>
+                        <Input
+                          placeholder="Ej: Dallas, TX 75001"
+                          value={customOriginInput}
+                          onChange={(e) => setCustomOriginInput(e.target.value)}
+                          className="text-xs h-8"
+                          disabled={recalculating}
+                          onKeyDown={(e) => { if (e.key === 'Enter') void handleRecalculateEmptyMiles(); }}
+                        />
+                        <div className="flex gap-2 justify-end">
+                          <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setEditingEmptyOrigin(false)} disabled={recalculating}>Cancelar</Button>
+                          <Button size="sm" className="h-7 text-xs gap-1" onClick={() => void handleRecalculateEmptyMiles()} disabled={recalculating || !customOriginInput.trim()}>
+                            {recalculating && <Loader2 className="h-3 w-3 animate-spin" />}Recalcular
+                          </Button>
                         </div>
-                      </PopoverContent>
-                    </Popover>
-                  </span>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 </div>
-                {emptyMilesOrigin && <div className="text-[10px] text-muted-foreground mt-0.5">desde {emptyMilesOrigin}</div>}
-              </td>
-            </tr>
+                {emptyMilesOrigin && <div className="text-[10px] text-muted-foreground truncate">desde {emptyMilesOrigin}</div>}
+              </div>
+              <div className="px-4 py-2.5 border-r">
+                <div className="text-[11px] text-muted-foreground font-medium mb-0.5">Miles</div>
+                <span className="text-xl font-semibold text-primary">{totalMiles > 0 ? totalMiles.toLocaleString() : '—'}</span>
+              </div>
+              <div className="px-4 py-2.5">
+                <div className="text-[11px] text-muted-foreground font-medium mb-0.5">RPM</div>
+                <span className={`text-xl font-semibold ${rpmColorClass}`}>{rpm > 0 ? `$${rpm.toFixed(2)}` : '—'}</span>
+              </div>
+            </div>
 
-            {/* Dispatcher + RPM inline */}
-            <tr className={canSeeGrossRate && rcGrossRate ? 'border-b' : ''}>
-              <td className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Dispatcher:</td>
-              <td className="px-3 py-2">
-                <div className="flex items-center gap-3">
-                  <span className="font-medium">{dispatcher?.name || '—'}</span>
-                  {rpm > 0 && (
-                    <span className="text-xs text-muted-foreground border-l pl-3">
-                      RPM: <span className={`font-bold ${rpmColorClass}`}>${rpm.toFixed(2)}</span>
-                    </span>
-                  )}
-                </div>
-              </td>
-            </tr>
+            {/* Fila 3: Driver + Dispatcher */}
+            <div className="grid grid-cols-2 border-b">
+              <div className="px-4 py-2.5 border-r">
+                <div className="text-[11px] text-muted-foreground font-medium mb-0.5">Driver</div>
+                <div className="font-medium">{driver?.name || 'Sin asignar'} <span className="text-muted-foreground text-xs">· {truck?.truck_type || '—'}</span></div>
+              </div>
+              <div className="px-4 py-2.5">
+                <div className="text-[11px] text-muted-foreground font-medium mb-0.5">Dispatcher</div>
+                <div className="font-medium">{dispatcher?.name || '—'}</div>
+              </div>
+            </div>
 
             {/* Gross Rate — solo Admin / Accounting / Master Admin */}
             {canSeeGrossRate && rcGrossRate && (
-              <tr>
-                <td className="px-3 py-2 bg-amber-500/10 font-medium text-amber-700 dark:text-amber-400 whitespace-nowrap border-r text-xs">Gross Rate:</td>
-                <td className="px-3 py-2">
-                  <div className="flex items-center gap-3">
-                    <span className="font-bold text-amber-700 dark:text-amber-400">${Number(rcGrossRate).toLocaleString()}</span>
-                    <span className="text-xs text-muted-foreground border-l pl-3">
-                      Comisión broker: <span className="font-bold text-amber-700 dark:text-amber-400">${(Number(rcGrossRate) - Number(load.total_rate)).toLocaleString()}</span>
-                    </span>
-                  </div>
-                </td>
-              </tr>
+              <div className="grid grid-cols-2 bg-amber-500/10">
+                <div className="px-4 py-2.5 border-r border-amber-200/30">
+                  <div className="text-[11px] text-amber-700 dark:text-amber-400 font-medium mb-0.5">Gross Rate</div>
+                  <div className="font-semibold text-amber-700 dark:text-amber-400">${Number(rcGrossRate).toLocaleString()}</div>
+                </div>
+                <div className="px-4 py-2.5">
+                  <div className="text-[11px] text-amber-700 dark:text-amber-400 font-medium mb-0.5">Comisión broker</div>
+                  <div className="font-semibold text-amber-700 dark:text-amber-400">${(Number(rcGrossRate) - Number(load.total_rate)).toLocaleString()}</div>
+                </div>
+              </div>
             )}
-            </tbody>
-          </table>
+          </div>
 
           {/* Load Adjustments */}
           {(['in_transit', 'delivered', 'tonu'].includes(load.status)) && (
