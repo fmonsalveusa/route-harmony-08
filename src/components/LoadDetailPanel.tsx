@@ -1351,9 +1351,36 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
         {/* Info */}
           <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <h4 className="font-semibold text-sm text-foreground">Load Detail</h4>
-            <CopyLoadInfoButton load={load} totalMiles={totalMiles} emptyMiles={emptyMiles} rpm={rpm} driver={driver} dispatcher={dispatcher} />
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <h4 className="font-semibold text-sm text-foreground">Load Detail</h4>
+              <CopyLoadInfoButton load={load} totalMiles={totalMiles} emptyMiles={emptyMiles} rpm={rpm} driver={driver} dispatcher={dispatcher} />
+            </div>
+            <div className="flex items-center gap-1.5">
+              {load.pdf_url && (
+                <>
+                  <Button variant="outline" size="sm" className="gap-1 h-7 px-2 text-[11px] text-green-700 border-green-300 hover:bg-green-50" onClick={() => { void openOriginalPdf(); }}>
+                    <FileText className="h-3 w-3" /> PDF
+                  </Button>
+                  <Button variant="outline" size="sm" className="gap-1 h-7 px-2 text-[11px] text-green-700 border-green-300 hover:bg-green-50" onClick={() => { void downloadOriginalPdf(); }}>
+                    <Download className="h-3 w-3" /> PDF
+                  </Button>
+                </>
+              )}
+              {canSeeGrossRate && rcOriginalUrl && (
+                <>
+                  <Button variant="outline" size="sm" className="gap-1 h-7 px-2 text-[11px] text-red-600 border-red-300 hover:bg-red-50" onClick={() => { void openRcOriginalPdf(); }}>
+                    <FileText className="h-3 w-3" /> RC
+                  </Button>
+                  <Button variant="outline" size="sm" className="gap-1 h-7 px-2 text-[11px] text-red-600 border-red-300 hover:bg-red-50" onClick={() => { void downloadRcOriginalPdf(); }}>
+                    <Download className="h-3 w-3" /> RC
+                  </Button>
+                </>
+              )}
+              <Button variant="outline" size="sm" className="gap-1 h-7 px-2 text-[11px] hover:bg-blue-50" style={{ color: '#266aad', borderColor: '#266aad88' }} onClick={() => setBolDialogOpen(true)}>
+                <Download className="h-3 w-3" /> BOL
+              </Button>
+            </div>
           </div>
 
           {/* Structured table layout */}
@@ -1515,54 +1542,6 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
             )}
           </div>
 
-          {/* PDF + RC Original + BOL — misma fila */}
-          <div className={`grid gap-3 ${canSeeGrossRate && rcOriginalUrl ? 'grid-cols-3' : 'grid-cols-2'}`}>
-            {/* Documento Original */}
-            {load.pdf_url ? (
-              <div className="p-2.5 rounded-lg bg-green-800 text-sm">
-                <h5 className="font-semibold mb-1.5 flex items-center gap-1.5 text-xs text-white">
-                  <FileText className="h-3 w-3 text-white" /> Documento Original (PDF)
-                </h5>
-                <div className="flex gap-1.5">
-                  <Button variant="outline" size="sm" className="gap-1 text-[11px] h-7 px-2 bg-white border-white text-green-800 hover:bg-green-50 hover:text-green-900" onClick={() => { void openOriginalPdf(); }}>
-                    <ExternalLink className="h-3 w-3" /> Ver
-                  </Button>
-                  <Button variant="outline" size="sm" className="gap-1 text-[11px] h-7 px-2 bg-white border-white text-green-800 hover:bg-green-50 hover:text-green-900" onClick={() => { void downloadOriginalPdf(); }}>
-                    <Download className="h-3 w-3" /> Descargar
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div />
-            )}
-
-            {/* RC Original — solo Admin / Accounting / Master Admin */}
-            {canSeeGrossRate && rcOriginalUrl && (
-              <div className="p-2.5 rounded-lg bg-red-600 text-sm">
-                <h5 className="font-semibold mb-1.5 flex items-center gap-1.5 text-xs text-white">
-                  <FileText className="h-3 w-3 text-white" /> RC Original FACTORING — Solo Admin
-                </h5>
-                <div className="flex gap-1.5">
-                  <Button variant="outline" size="sm" className="gap-1 text-[11px] h-7 px-2 bg-white border-white text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => { void openRcOriginalPdf(); }}>
-                    <ExternalLink className="h-3 w-3" /> Ver
-                  </Button>
-                  <Button variant="outline" size="sm" className="gap-1 text-[11px] h-7 px-2 bg-white border-white text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => { void downloadRcOriginalPdf(); }}>
-                    <Download className="h-3 w-3" /> Descargar
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {/* Bill of Lading */}
-            <div className="p-2.5 rounded-lg text-sm" style={{ backgroundColor: '#266aad' }}>
-              <h5 className="font-semibold mb-1.5 flex items-center gap-1.5 text-xs text-white">
-                <FileText className="h-3 w-3 text-white" /> Bill of Lading (BOL)
-              </h5>
-              <Button variant="outline" size="sm" className="gap-1 text-[11px] h-7 px-2 bg-white border-white hover:bg-blue-50" style={{ color: '#266aad' }} onClick={() => setBolDialogOpen(true)}>
-                <Download className="h-3 w-3" /> Generar BOL
-              </Button>
-            </div>
-          </div>
           <BolFormDialog
             open={bolDialogOpen}
             onOpenChange={setBolDialogOpen}
