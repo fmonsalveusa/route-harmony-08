@@ -400,7 +400,6 @@ const Loads = () => {
                 <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Ruta</th>
                 <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Pickup</th>
                 <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Delivery</th>
-                <th className="text-right p-3 font-medium text-muted-foreground">Rate</th>
                 <th className="text-right p-3 font-medium text-muted-foreground hidden md:table-cell whitespace-nowrap">DH-O</th>
                 <th className="text-right p-3 font-medium text-muted-foreground hidden md:table-cell">Miles</th>
                 <th className="text-right p-3 font-medium text-muted-foreground">Rate</th>
