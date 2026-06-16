@@ -1471,7 +1471,11 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
                   const nameLabel = stop.type === 'pickup' ? dbStop?.shipper : dbStop?.consignee;
                   const stopTypeLabel = stop.type === 'pickup' ? 'Pick Up' : 'Delivery';
                   const stopDate = dbStop?.date || (stop.type === 'pickup' ? load.pickup_date : load.delivery_date);
-                  const copyText = [nameLabel, stop.address, stopTypeLabel].filter(Boolean).join('\n');
+                  const copyText = [
+                    nameLabel,
+                    stop.address,
+                    stopDate ? `${stopTypeLabel}: ${formatDate(stopDate)}` : stopTypeLabel,
+                  ].filter(Boolean).join('\n');
                   return (
                     <div key={i} className="flex items-start gap-2">
                       <div className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white ${stop.type === 'pickup' ? 'bg-[hsl(152,60%,40%)]' : 'bg-[hsl(0,72%,51%)]'}`}>
@@ -1488,8 +1492,8 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
                             </div>
                           )}
                         </div>
-                        {/* Fila 2: direccion + boton copiar */}
-                        <div className="flex items-center justify-between gap-2">
+                        {/* Fila 2: direccion + boton copiar pegado */}
+                        <div className="flex items-center gap-1">
                           <div className="font-medium text-sm">{stop.address}</div>
                           <CopyStopButton text={copyText} />
                         </div>
