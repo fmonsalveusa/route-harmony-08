@@ -65,11 +65,8 @@ async function runMaintenanceCheck() {
         .update({ miles_accumulated, status: finalStatus } as any)
         .eq('id', item.id);
 
-      // Notificar solo si el status empeoró
-      if (
-        finalStatus !== oldStatus &&
-        (finalStatus === 'warning' || finalStatus === 'due')
-      ) {
+      // Notificar si el status es warning o due (todos los dias mientras persista)
+      if (finalStatus === 'warning' || finalStatus === 'due') {
         const tenant_id = await getTenantId();
         const label = finalStatus === 'due' ? '⚠️ OVERDUE' : '⚡ Approaching Due';
         await supabase.from('notifications' as any).insert({
