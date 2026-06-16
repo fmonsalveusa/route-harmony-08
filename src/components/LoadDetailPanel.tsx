@@ -1526,8 +1526,8 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
                         {stop.type === 'pickup' ? 'P' : 'D'}
                       </div>
                       <div className="flex-1">
-                        <div className="flex items-start justify-between gap-2">
-                          <div>
+                          <div className="flex items-start gap-2">
+                          <div className="flex-1">
                             {nameLabel && (
                               <div className="font-semibold text-sm text-foreground">{nameLabel}</div>
                             )}
