@@ -4,6 +4,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { getTenantId } from '@/hooks/useTenantId';
 
 async function runMaintenanceCheck() {
+  // Verificar que hay sesion activa antes de correr
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return;
+
   const { data: items, error } = await supabase
     .from('truck_maintenance' as any)
     .select('*')
@@ -100,7 +104,9 @@ export function useMaintenanceAutoCheck() {
   const dailyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const check = async () => {
+    console.log('[MaintenanceAutoCheck] Running check...');
     await runMaintenanceCheck();
+    console.log('[MaintenanceAutoCheck] Done.');
     qc.invalidateQueries({ queryKey: ['truck_maintenance'] });
     qc.invalidateQueries({ queryKey: ['notifications'] });
   };
