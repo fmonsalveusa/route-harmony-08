@@ -69,6 +69,8 @@ async function runMaintenanceCheck() {
       if (finalStatus === 'warning' || finalStatus === 'due') {
         const tenant_id = await getTenantId();
         const label = finalStatus === 'due' ? '⚠️ OVERDUE' : '⚡ Approaching Due';
+
+        // Notificacion en app
         await supabase.from('notifications' as any).insert({
           tenant_id,
           title: `Maintenance ${label}`,
@@ -77,6 +79,24 @@ async function runMaintenanceCheck() {
           }. ${miles_accumulated.toLocaleString()} mi accumulated.`,
           type: 'maintenance',
         } as any);
+
+        // WhatsApp al driver asignado al camion
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) {
+            await supabase.functions.invoke('send-maintenance-whatsapp', {
+              body: {
+                maintenanceId: item.id,
+                maintenanceType: item.maintenance_type,
+                status: finalStatus,
+                milesAccumulated: miles_accumulated,
+                truckId: item.truck_id,
+              },
+            });
+          }
+        } catch (e) {
+          console.warn('[MaintenanceAutoCheck] WhatsApp send failed:', e);
+        }
       }
     }
   }
@@ -95,14 +115,35 @@ function msUntilNext8am(): number {
   return next8am.getTime() - now.getTime();
 }
 
+const STORAGE_KEY = 'maintenance_last_check_date';
+
+function getLastCheckDate(): string | null {
+  try { return localStorage.getItem(STORAGE_KEY); } catch { return null; }
+}
+
+function setLastCheckDate(): void {
+  try { localStorage.setItem(STORAGE_KEY, new Date().toISOString().slice(0, 10)); } catch {}
+}
+
+function shouldRunCheck(): boolean {
+  const last = getLastCheckDate();
+  const today = new Date().toISOString().slice(0, 10);
+  return last !== today;
+}
+
 export function useMaintenanceAutoCheck() {
   const qc = useQueryClient();
   const ranOnce = useRef(false);
   const dailyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const check = async () => {
+    if (!shouldRunCheck()) {
+      console.log('[MaintenanceAutoCheck] Already ran today, skipping.');
+      return;
+    }
     console.log('[MaintenanceAutoCheck] Running check...');
     await runMaintenanceCheck();
+    setLastCheckDate();
     console.log('[MaintenanceAutoCheck] Done.');
     qc.invalidateQueries({ queryKey: ['truck_maintenance'] });
     qc.invalidateQueries({ queryKey: ['notifications'] });
@@ -111,22 +152,22 @@ export function useMaintenanceAutoCheck() {
   const scheduleDailyCheck = () => {
     const ms = msUntilNext8am();
     dailyTimer.current = setTimeout(() => {
+      // Forzar el check aunque ya haya corrido hoy (es el disparo de las 8am)
+      localStorage.removeItem(STORAGE_KEY);
       check();
-      // Después del primer disparo, repetir cada 24h exactas
-      dailyTimer.current = setInterval(check, 24 * 60 * 60 * 1000);
+      dailyTimer.current = setInterval(() => {
+        localStorage.removeItem(STORAGE_KEY);
+        check();
+      }, 24 * 60 * 60 * 1000);
     }, ms);
   };
 
   useEffect(() => {
-    // Correr una vez al montar (al abrir/recargar la app)
     if (!ranOnce.current) {
       ranOnce.current = true;
       check();
     }
-
-    // Programar el check diario a las 8:00am
     scheduleDailyCheck();
-
     return () => {
       if (dailyTimer.current) clearTimeout(dailyTimer.current);
     };
