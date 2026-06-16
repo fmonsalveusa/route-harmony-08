@@ -1504,6 +1504,18 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
                             <span className="ml-2 text-primary font-semibold">↳ {stop.distanceFromPrev.toLocaleString()} mi desde parada anterior</span>
                           )}
                         </div>
+                        {dbStop?.shipper && stop.type === 'pickup' && (
+                          <div className="text-xs mt-0.5">
+                            <span className="text-muted-foreground">Shipper: </span>
+                            <span className="font-medium text-foreground">{dbStop.shipper}</span>
+                          </div>
+                        )}
+                        {dbStop?.consignee && stop.type === 'delivery' && (
+                          <div className="text-xs mt-0.5">
+                            <span className="text-muted-foreground">Consignee: </span>
+                            <span className="font-medium text-foreground">{dbStop.consignee}</span>
+                          </div>
+                        )}
                         {dbStop?.id && (
                           <StopPhotoSection loadId={load.id} stopId={dbStop.id} isFirst={i === 0} stopType={stop.type} />
                         )}

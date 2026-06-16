@@ -13,6 +13,8 @@ export interface LoadStop {
   lat: number | null;
   lng: number | null;
   distance_from_prev: number | null;
+  shipper: string | null;
+  consignee: string | null;
   created_at: string;
 }
 
@@ -22,6 +24,8 @@ export interface CreateStopInput {
   address: string;
   stop_order: number;
   date?: string;
+  shipper?: string;
+  consignee?: string;
 }
 
 const stopsQueryKey = (loadId: string) => ['load_stops', loadId];
@@ -74,6 +78,8 @@ export function useLoadStops(loadId?: string) {
         address: s.address,
         stop_order: s.stop_order ?? i,
         date: s.date || null,
+        shipper: s.shipper || null,
+        consignee: s.consignee || null,
         tenant_id,
       }));
 

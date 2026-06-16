@@ -23,6 +23,8 @@ interface StopEntry {
   stop_type: 'pickup' | 'delivery';
   address: string;
   date: string;
+  shipper?: string;
+  consignee?: string;
 }
 
 interface LoadFormData {
@@ -392,6 +394,8 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
             stop_type: s.stop_type || 'delivery',
             address: s.address || '',
             date: s.date || '',
+            shipper: s.shipper || '',
+            consignee: s.consignee || '',
           })));
         } else if (extracted.origin || extracted.destination) {
           setStopEntries([
@@ -646,6 +650,8 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
         address: s.address,
         stop_order: i,
         date: s.date || undefined,
+        shipper: s.shipper || undefined,
+        consignee: s.consignee || undefined,
       })));
     }
 
