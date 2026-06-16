@@ -1365,29 +1365,28 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
               <col style={{ width: '26%' }} />
             </colgroup>
             <tbody>
-            {/* Broker row - full width */}
+            {/* Fila 1: Broker + Rate */}
             <tr className="border-b">
               <td className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Broker:</td>
-              <td colSpan={3} className="px-3 py-2">
+              <td className="px-3 py-2 border-r">
                 <BrokerScoreRow brokerName={load.broker_client} />
               </td>
+              <td className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">$ Rate:</td>
+              <td className="px-3 py-2 font-bold text-primary">${Number(load.total_rate).toLocaleString()}</td>
             </tr>
 
-
-            {/* Weight / Type row */}
+            {/* Fila 2: Driver + Type */}
             <tr className="border-b">
-              <td className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Weight:</td>
-              <td className="px-3 py-2 font-medium border-r">{load.weight ? `${load.weight.toLocaleString()} lbs` : '—'}</td>
+              <td className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Driver:</td>
+              <td className="px-3 py-2 font-medium border-r">{driver?.name || 'Sin asignar'}</td>
               <td className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Type:</td>
               <td className="px-3 py-2 font-medium">{truck?.truck_type || '—'}</td>
             </tr>
 
-            {/* Miles / Empty Miles row */}
+            {/* Fila 3: Empty Miles + Miles + RPM */}
             <tr className="border-b">
-              <td className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Miles:</td>
-              <td className="px-3 py-2 font-bold text-primary border-r">{totalMiles > 0 ? totalMiles.toLocaleString() : '—'}</td>
-              <td className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Empty Miles:</td>
-              <td className="px-3 py-2">
+              <td className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Empty Mi:</td>
+              <td className="px-3 py-2 border-r">
                 <div className="flex items-center gap-1">
                   <span className="font-bold text-amber-500">{emptyMiles > 0 ? emptyMiles.toLocaleString() : '—'}</span>
                   <Popover open={editingEmptyOrigin} onOpenChange={(open) => {
@@ -1425,23 +1424,22 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
                 </div>
                 {emptyMilesOrigin && <div className="text-[10px] text-muted-foreground truncate max-w-[200px]">desde {emptyMilesOrigin}</div>}
               </td>
+              <td className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Miles:</td>
+              <td className="px-3 py-2">
+                <div className="flex items-center gap-3">
+                  <span className="font-bold text-primary">{totalMiles > 0 ? totalMiles.toLocaleString() : '—'}</span>
+                  <span className="text-muted-foreground text-xs">RPM:</span>
+                  <span className={`font-bold text-xs ${rpmColorClass}`}>{rpm > 0 ? `$${rpm.toFixed(2)}` : '—'}</span>
+                </div>
+              </td>
             </tr>
 
-            {/* Driver / RPM row */}
-            <tr className="border-b">
-              <td className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Driver:</td>
-              <td className="px-3 py-2 font-medium border-r">{driver?.name || 'Sin asignar'}</td>
-              <td className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">$ RPM:</td>
-              <td className={`px-3 py-2 font-bold ${rpmColorClass}`}>{rpm > 0 ? `$${rpm.toFixed(2)}` : '—'}</td>
-            </tr>
-
-            {/* Dispatcher / Rate row */}
+            {/* Fila 4: Dispatcher */}
             <tr className={canSeeGrossRate && rcGrossRate ? 'border-b' : ''}>
               <td className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Dispatcher:</td>
-              <td className="px-3 py-2 font-medium border-r">{dispatcher?.name || '—'}</td>
-              <td className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">$ Rate:</td>
-              <td className="px-3 py-2 font-bold text-primary">${Number(load.total_rate).toLocaleString()}</td>
+              <td colSpan={3} className="px-3 py-2 font-medium">{dispatcher?.name || '—'}</td>
             </tr>
+
             {/* Gross Rate row — solo Admin / Accounting / Master Admin */}
             {canSeeGrossRate && rcGrossRate && (
               <tr>
