@@ -434,16 +434,16 @@ const Loads = () => {
 
                   const avatarColors = (() => {
                     switch (load.status) {
-                      case 'planned':          return 'bg-[#e2e8f0] text-[#475569]';
-                      case 'dispatched':       return 'bg-[#bfdbfe] text-[#1d4ed8]';
-                      case 'in_transit':       return 'bg-[#d9f99d] text-[#3f6212]';
-                      case 'on_site_pickup':   return 'bg-[#a5f3fc] text-[#0e7490]';
-                      case 'picked_up':        return 'bg-[#f5d0fe] text-[#a21caf]';
-                      case 'on_site_delivery': return 'bg-[#fed7aa] text-[#c2410c]';
-                      case 'delivered':        return 'bg-[#bbf7d0] text-[#178504]';
-                      case 'tonu':             return 'bg-[#fde68a] text-[#92400e]';
-                      case 'cancelled':        return 'bg-[#fecaca] text-[#b91c1c]';
-                      default:                 return 'bg-muted text-muted-foreground';
+                      case 'planned':          return 'bg-[#94A3B8]';
+                      case 'dispatched':       return 'bg-[#2563EB]';
+                      case 'in_transit':       return 'bg-[#65A30D]';
+                      case 'on_site_pickup':   return 'bg-[#06B6D4]';
+                      case 'picked_up':        return 'bg-[#D946EF]';
+                      case 'on_site_delivery': return 'bg-[#F97316]';
+                      case 'delivered':        return 'bg-[#178504]';
+                      case 'tonu':             return 'bg-[#B45309]';
+                      case 'cancelled':        return 'bg-[#DC2626]';
+                      default:                 return 'bg-muted';
                     }
                   })();
 
@@ -451,7 +451,7 @@ const Loads = () => {
                       <Fragment key={load.id}>
                         <tr
                           id={`load-row-${load.id}`}
-                          className={`border-b last:border-0 glass-row cursor-pointer ${statusBorderColor} ${isOdd ? 'bg-muted/60' : ''} ${isExpanded ? 'glass-row-expanded' : ''}`}
+                          className={`border-b last:border-0 glass-row cursor-pointer ${statusBorderColor} ${isOdd ? 'bg-muted/80' : ''} ${isExpanded ? 'glass-row-expanded' : ''}`}
                           onClick={() => {
                             const newId = isExpanded ? null : load.id;
                             setExpandedId(newId);
@@ -469,12 +469,12 @@ const Loads = () => {
                           <td className="p-3">
                             <div className="flex items-center gap-2">
                               {driver ? (
-                                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-semibold flex-shrink-0 ${avatarColors}`}>
+                                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 text-white ${avatarColors}`}>
                                   {driver.name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()}
                                 </div>
                               ) : (
                                 <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-                                  <span className="text-[10px] text-muted-foreground">—</span>
+                                  <span className="text-xs text-muted-foreground">—</span>
                                 </div>
                               )}
                               <div>
