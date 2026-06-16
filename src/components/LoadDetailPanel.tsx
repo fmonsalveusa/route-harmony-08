@@ -1356,30 +1356,38 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
               <h4 className="font-semibold text-sm text-foreground">Load Detail</h4>
               <CopyLoadInfoButton load={load} totalMiles={totalMiles} emptyMiles={emptyMiles} rpm={rpm} driver={driver} dispatcher={dispatcher} />
             </div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               {load.pdf_url && (
-                <>
-                  <Button variant="outline" size="sm" className="gap-1 h-7 px-2 text-[11px] text-green-700 border-green-300 hover:bg-green-50" onClick={() => { void openOriginalPdf(); }}>
-                    <FileText className="h-3 w-3" /> PDF
+                <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-green-800 text-white text-[11px]">
+                  <FileText className="h-3 w-3 flex-shrink-0" />
+                  <span className="font-medium">PDF</span>
+                  <Button variant="outline" size="sm" className="gap-1 h-6 px-1.5 text-[10px] bg-white border-white text-green-800 hover:bg-green-50 ml-1" onClick={() => { void openOriginalPdf(); }}>
+                    <ExternalLink className="h-2.5 w-2.5" /> Ver
                   </Button>
-                  <Button variant="outline" size="sm" className="gap-1 h-7 px-2 text-[11px] text-green-700 border-green-300 hover:bg-green-50" onClick={() => { void downloadOriginalPdf(); }}>
-                    <Download className="h-3 w-3" /> PDF
+                  <Button variant="outline" size="sm" className="gap-1 h-6 px-1.5 text-[10px] bg-white border-white text-green-800 hover:bg-green-50" onClick={() => { void downloadOriginalPdf(); }}>
+                    <Download className="h-2.5 w-2.5" /> Bajar
                   </Button>
-                </>
+                </div>
               )}
               {canSeeGrossRate && rcOriginalUrl && (
-                <>
-                  <Button variant="outline" size="sm" className="gap-1 h-7 px-2 text-[11px] text-red-600 border-red-300 hover:bg-red-50" onClick={() => { void openRcOriginalPdf(); }}>
-                    <FileText className="h-3 w-3" /> RC
+                <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-red-600 text-white text-[11px]">
+                  <FileText className="h-3 w-3 flex-shrink-0" />
+                  <span className="font-medium">RC</span>
+                  <Button variant="outline" size="sm" className="gap-1 h-6 px-1.5 text-[10px] bg-white border-white text-red-600 hover:bg-red-50 ml-1" onClick={() => { void openRcOriginalPdf(); }}>
+                    <ExternalLink className="h-2.5 w-2.5" /> Ver
                   </Button>
-                  <Button variant="outline" size="sm" className="gap-1 h-7 px-2 text-[11px] text-red-600 border-red-300 hover:bg-red-50" onClick={() => { void downloadRcOriginalPdf(); }}>
-                    <Download className="h-3 w-3" /> RC
+                  <Button variant="outline" size="sm" className="gap-1 h-6 px-1.5 text-[10px] bg-white border-white text-red-600 hover:bg-red-50" onClick={() => { void downloadRcOriginalPdf(); }}>
+                    <Download className="h-2.5 w-2.5" /> Bajar
                   </Button>
-                </>
+                </div>
               )}
-              <Button variant="outline" size="sm" className="gap-1 h-7 px-2 text-[11px] hover:bg-blue-50" style={{ color: '#266aad', borderColor: '#266aad88' }} onClick={() => setBolDialogOpen(true)}>
-                <Download className="h-3 w-3" /> BOL
-              </Button>
+              <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-white text-[11px]" style={{ backgroundColor: '#266aad' }}>
+                <FileText className="h-3 w-3 flex-shrink-0" />
+                <span className="font-medium">BOL</span>
+                <Button variant="outline" size="sm" className="gap-1 h-6 px-1.5 text-[10px] bg-white border-white hover:bg-blue-50 ml-1" style={{ color: '#266aad' }} onClick={() => setBolDialogOpen(true)}>
+                  <Download className="h-2.5 w-2.5" /> Generar
+                </Button>
+              </div>
             </div>
           </div>
 
