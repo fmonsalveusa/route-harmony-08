@@ -419,30 +419,32 @@ const Loads = () => {
 
                   const statusBorderColor = (() => {
                     switch (load.status) {
-                      case 'dispatched': return 'border-l-[3px] border-l-green-500';
-                      case 'picked_up': return 'border-l-[3px] border-l-blue-500';
-                      case 'in_transit': return 'border-l-[3px] border-l-cyan-500';
-                      case 'on_site_pickup':
-                      case 'on_site_delivery': return 'border-l-[3px] border-l-amber-500';
-                      case 'delivered': return 'border-l-[3px] border-l-purple-500';
-                      case 'paid': return 'border-l-[3px] border-l-emerald-600';
-                      case 'cancelled':
-                      case 'tonu': return 'border-l-[3px] border-l-red-400';
-                      default: return 'border-l-[3px] border-l-transparent';
+                      case 'planned':          return 'border-l-[3px] border-l-[hsl(48,92%,50%)]';
+                      case 'dispatched':       return 'border-l-[3px] border-l-[hsl(80,65%,45%)]';
+                      case 'in_transit':       return 'border-l-[3px] border-l-[hsl(140,60%,40%)]';
+                      case 'on_site_pickup':   return 'border-l-[3px] border-l-[hsl(170,60%,40%)]';
+                      case 'picked_up':        return 'border-l-[3px] border-l-[#15babd]';
+                      case 'on_site_delivery': return 'border-l-[3px] border-l-[#266aad]';
+                      case 'delivered':        return 'border-l-[3px] border-l-[hsl(270,55%,50%)]';
+                      case 'paid':             return 'border-l-[3px] border-l-[hsl(152,60%,40%)]';
+                      case 'tonu':             return 'border-l-[3px] border-l-[hsl(25,85%,50%)]';
+                      case 'cancelled':        return 'border-l-[3px] border-l-[hsl(0,72%,50%)]';
+                      default:                 return 'border-l-[3px] border-l-transparent';
                     }
                   })();
 
                   const avatarColors = (() => {
                     switch (load.status) {
-                      case 'dispatched':       return 'bg-green-100 text-green-700';
-                      case 'picked_up':        return 'bg-blue-100 text-blue-700';
-                      case 'in_transit':       return 'bg-cyan-100 text-cyan-700';
-                      case 'on_site_pickup':
-                      case 'on_site_delivery': return 'bg-amber-100 text-amber-700';
-                      case 'delivered':        return 'bg-purple-100 text-purple-700';
-                      case 'paid':             return 'bg-emerald-100 text-emerald-700';
-                      case 'cancelled':
-                      case 'tonu':             return 'bg-red-100 text-red-500';
+                      case 'planned':          return 'bg-[hsl(48,92%,85%)] text-[hsl(48,92%,30%)]';
+                      case 'dispatched':       return 'bg-[hsl(80,65%,85%)] text-[hsl(80,65%,30%)]';
+                      case 'in_transit':       return 'bg-[hsl(140,60%,85%)] text-[hsl(140,60%,30%)]';
+                      case 'on_site_pickup':   return 'bg-[hsl(170,60%,85%)] text-[hsl(170,60%,30%)]';
+                      case 'picked_up':        return 'bg-[#d0f5f5] text-[#0d8a8d]';
+                      case 'on_site_delivery': return 'bg-[#dce8f5] text-[#1a4f82]';
+                      case 'delivered':        return 'bg-[hsl(270,55%,88%)] text-[hsl(270,55%,35%)]';
+                      case 'paid':             return 'bg-[hsl(152,60%,85%)] text-[hsl(152,60%,30%)]';
+                      case 'tonu':             return 'bg-[hsl(25,85%,88%)] text-[hsl(25,85%,35%)]';
+                      case 'cancelled':        return 'bg-[hsl(0,72%,88%)] text-[hsl(0,72%,35%)]';
                       default:                 return 'bg-muted text-muted-foreground';
                     }
                   })();
