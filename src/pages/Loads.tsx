@@ -451,7 +451,7 @@ const Loads = () => {
                       <Fragment key={load.id}>
                         <tr
                           id={`load-row-${load.id}`}
-                          className={`border-b last:border-0 glass-row cursor-pointer ${statusBorderColor} ${isOdd ? 'bg-muted/80' : ''} ${isExpanded ? 'glass-row-expanded' : ''}`}
+                          className={`border-b last:border-b-0 glass-row cursor-pointer ${statusBorderColor} ${isOdd ? 'bg-muted/80' : ''} ${isExpanded ? 'glass-row-expanded' : ''}`}
                           onClick={() => {
                             const newId = isExpanded ? null : load.id;
                             setExpandedId(newId);
