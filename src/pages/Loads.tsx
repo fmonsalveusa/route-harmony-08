@@ -414,11 +414,29 @@ const Loads = () => {
                   const driver = drivers.find(d => d.id === load.driver_id);
                   const dispatcher = dispatchers.find(d => d.id === load.dispatcher_id);
                   const isExpanded = expandedId === load.id;
+                  const rowIndex = loads.indexOf(load);
+                  const isOdd = rowIndex % 2 !== 0;
+
+                  const statusBorderColor = (() => {
+                    switch (load.status) {
+                      case 'dispatched': return 'border-l-[3px] border-l-green-500';
+                      case 'picked_up': return 'border-l-[3px] border-l-blue-500';
+                      case 'in_transit': return 'border-l-[3px] border-l-cyan-500';
+                      case 'on_site_pickup':
+                      case 'on_site_delivery': return 'border-l-[3px] border-l-amber-500';
+                      case 'delivered': return 'border-l-[3px] border-l-purple-500';
+                      case 'paid': return 'border-l-[3px] border-l-emerald-600';
+                      case 'cancelled':
+                      case 'tonu': return 'border-l-[3px] border-l-red-400';
+                      default: return 'border-l-[3px] border-l-transparent';
+                    }
+                  })();
+
                     return (
                       <Fragment key={load.id}>
                         <tr
                           id={`load-row-${load.id}`}
-                          className={`border-b last:border-0 glass-row cursor-pointer ${isExpanded ? 'glass-row-expanded' : ''}`}
+                          className={`border-b last:border-0 glass-row cursor-pointer ${statusBorderColor} ${isOdd ? 'bg-muted/30' : ''} ${isExpanded ? 'glass-row-expanded' : ''}`}
                           onClick={() => {
                             const newId = isExpanded ? null : load.id;
                             setExpandedId(newId);
@@ -475,7 +493,7 @@ const Loads = () => {
                             <div>{formatDate(load.delivery_date)}</div>
                             {load.delivery_date && load.delivery_date.split('T')[0] === new Date().toLocaleDateString('en-CA') && (
                               <span style={{ backgroundColor: '#ea580c', color: 'white', fontSize: '10px', fontWeight: 600, padding: '2px 6px', borderRadius: '4px', display: 'inline-block', marginTop: '2px' }}>
-                                Delivery Today
+                                TODAY
                               </span>
                             )}
                           </td>
