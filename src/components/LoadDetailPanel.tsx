@@ -1362,10 +1362,14 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
             {/* Fila 1: Broker + Rate */}
             <div className="flex items-center justify-between px-4 py-2.5 border-b">
               <div className="flex items-center gap-2">
-                <span className="font-semibold text-base">{load.broker_client || '—'}</span>
+                <span className="text-muted-foreground font-medium">Broker:</span>
+                <span className="font-semibold">{load.broker_client || '—'}</span>
                 <BrokerScoreRow brokerName={load.broker_client} hideLabel />
               </div>
-              <span className="text-lg font-semibold text-primary">${Number(load.total_rate).toLocaleString()}</span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-muted-foreground font-medium">Rate:</span>
+                <span className="font-semibold text-primary">${Number(load.total_rate).toLocaleString()}</span>
+              </div>
             </div>
 
             {/* Fila 2: Empty Miles | Miles | RPM */}
@@ -1373,7 +1377,7 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
               <div className="px-4 py-2.5 border-r">
                 <div className="text-[11px] text-muted-foreground font-medium mb-0.5">Empty Miles</div>
                 <div className="flex items-center gap-1">
-                  <span className="text-xl font-semibold text-amber-500">{emptyMiles > 0 ? emptyMiles.toLocaleString() : '—'}</span>
+                  <span className="text-base font-semibold text-amber-500">{emptyMiles > 0 ? emptyMiles.toLocaleString() : '—'}</span>
                   <Popover open={editingEmptyOrigin} onOpenChange={(open) => {
                     setEditingEmptyOrigin(open);
                     if (open) setCustomOriginInput(emptyMilesOrigin || '');
@@ -1408,11 +1412,11 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
               </div>
               <div className="px-4 py-2.5 border-r">
                 <div className="text-[11px] text-muted-foreground font-medium mb-0.5">Miles</div>
-                <span className="text-xl font-semibold text-primary">{totalMiles > 0 ? totalMiles.toLocaleString() : '—'}</span>
+                <span className="text-base font-semibold text-primary">{totalMiles > 0 ? totalMiles.toLocaleString() : '—'}</span>
               </div>
               <div className="px-4 py-2.5">
                 <div className="text-[11px] text-muted-foreground font-medium mb-0.5">RPM</div>
-                <span className={`text-xl font-semibold ${rpmColorClass}`}>{rpm > 0 ? `$${rpm.toFixed(2)}` : '—'}</span>
+                <span className={`text-base font-semibold ${rpmColorClass}`}>{rpm > 0 ? `$${rpm.toFixed(2)}` : '—'}</span>
               </div>
             </div>
 
