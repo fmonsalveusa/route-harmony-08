@@ -392,22 +392,22 @@ const Loads = () => {
         <div className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-[15px]">
-              <thead><tr className="border-b glass-table-header">
+              <thead><tr className="border-b bg-muted/40">
                 <th className="w-8 p-3"></th>
-                <th className="text-left p-3 font-medium text-muted-foreground">Load #</th>
-                <th className="text-left p-3 font-medium text-muted-foreground">Driver/Truck</th>
-                <th className="text-left p-3 font-medium text-muted-foreground">Broker</th>
-                <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Ruta</th>
-                <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Pickup</th>
-                <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Delivery</th>
-                <th className="text-right p-3 font-medium text-muted-foreground hidden md:table-cell whitespace-nowrap">DH-O</th>
-                <th className="text-right p-3 font-medium text-muted-foreground hidden md:table-cell">Miles</th>
-                <th className="text-right p-3 font-medium text-muted-foreground">Rate</th>
-                <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Dispatcher</th>
-                <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
-                <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Delivered</th>
-                <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Factoring</th>
-                <th className="text-right p-3 font-medium text-muted-foreground">Acciones</th>
+                <th className="text-left p-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Load #</th>
+                <th className="text-left p-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Driver/Truck</th>
+                <th className="text-left p-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Broker</th>
+                <th className="text-left p-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider hidden md:table-cell">Ruta</th>
+                <th className="text-left p-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Pickup</th>
+                <th className="text-left p-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Delivery</th>
+                <th className="text-right p-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider hidden md:table-cell whitespace-nowrap">DH-O</th>
+                <th className="text-right p-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider hidden md:table-cell">Miles</th>
+                <th className="text-right p-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Rate</th>
+                <th className="text-left p-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Dispatcher</th>
+                <th className="text-left p-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
+                <th className="text-left p-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Delivered</th>
+                <th className="text-left p-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Factoring</th>
+                <th className="text-right p-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Acciones</th>
               </tr></thead>
               <tbody>
                 {loads.map(load => {
@@ -452,8 +452,21 @@ const Loads = () => {
                           </td>
                           <td className="p-3 font-medium text-primary">{load.reference_number}</td>
                           <td className="p-3">
-                            <div className="text-base font-bold text-foreground">{driver?.name || <span className="text-muted-foreground italic font-normal">Sin asignar</span>}</div>
-                            <div className="text-muted-foreground text-xs">{trucks.find(t => t.id === load.truck_id)?.unit_number ? `Unit #${trucks.find(t => t.id === load.truck_id)!.unit_number}` : '—'}</div>
+                            <div className="flex items-center gap-2">
+                              {driver ? (
+                                <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-semibold flex-shrink-0">
+                                  {driver.name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()}
+                                </div>
+                              ) : (
+                                <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                                  <span className="text-[10px] text-muted-foreground">—</span>
+                                </div>
+                              )}
+                              <div>
+                                <div className="text-sm font-medium text-foreground">{driver?.name || <span className="text-muted-foreground italic font-normal">Sin asignar</span>}</div>
+                                <div className="text-muted-foreground text-xs">{trucks.find(t => t.id === load.truck_id)?.unit_number ? `Unit #${trucks.find(t => t.id === load.truck_id)!.unit_number}` : '—'}</div>
+                              </div>
+                            </div>
                           </td>
                           <td className="p-3 text-foreground">
                             <div>{load.broker_client || '—'}</div>
@@ -474,15 +487,9 @@ const Loads = () => {
                                     <div className="w-px h-3 bg-border" />
                                     <MapPin className="h-3.5 w-3.5 text-red-500 flex-shrink-0" />
                                   </div>
-                                  <div className="space-y-1">
-                                    <div>
-                                      <div className="font-medium text-foreground uppercase text-xs">{originCity}</div>
-                                      {originState && <div className="text-muted-foreground text-[11px]">{originState}</div>}
-                                    </div>
-                                    <div>
-                                      <div className="font-medium text-foreground uppercase text-xs">{destCity}</div>
-                                      {destState && <div className="text-muted-foreground text-[11px]">{destState}</div>}
-                                    </div>
+                                  <div className="space-y-1.5">
+                                    <div className="text-xs font-medium text-foreground">{originCity}{originState ? `, ${originState}` : ''}</div>
+                                    <div className="text-xs font-medium text-foreground">{destCity}{destState ? `, ${destState}` : ''}</div>
                                   </div>
                                 </div>
                               );
@@ -612,15 +619,15 @@ const Loads = () => {
                             </Select>
                           </td>
                           <td className="p-3 text-right" onClick={e => e.stopPropagation()}>
-                            <div className="flex justify-end gap-1.5">
-                              <Button variant="ghost" size="sm" className="glass-action-btn tint-green" onClick={() => handleGenerateInvoice(load)} title="Invoice">
-                                 <FileText className="h-4 w-4" /> Invoice
-                               </Button>
-                              <Button variant="ghost" size="sm" className="glass-action-btn tint-amber" onClick={() => { setEditLoad(load); setShowForm(true); }} title="Edit">
-                                <Pencil className="h-4 w-4" /> Edit
+                            <div className="flex justify-end gap-1">
+                              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground" onClick={() => handleGenerateInvoice(load)} title="Invoice">
+                                <FileText className="h-3.5 w-3.5" /> Invoice
                               </Button>
-                              <Button variant="ghost" size="sm" className="glass-action-btn tint-red" onClick={async (e) => { e.stopPropagation(); e.preventDefault(); if (window.confirm(`¿Eliminar carga ${load.reference_number}? Esta acción es permanente.`)) { await deleteLoad(load.id); } }} title="Delete">
-                                <Trash2 className="h-4 w-4" /> Delete
+                              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={() => { setEditLoad(load); setShowForm(true); }} title="Edit">
+                                <Pencil className="h-3.5 w-3.5" /> Edit
+                              </Button>
+                              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1 text-red-500 hover:text-red-600 hover:bg-red-50" onClick={async (e) => { e.stopPropagation(); e.preventDefault(); if (window.confirm(`¿Eliminar carga ${load.reference_number}? Esta acción es permanente.`)) { await deleteLoad(load.id); } }} title="Delete">
+                                <Trash2 className="h-3.5 w-3.5" /> Delete
                               </Button>
                             </div>
                             <InlinePodInput loadId={load.id} inputRefMap={inputRefMap} />
