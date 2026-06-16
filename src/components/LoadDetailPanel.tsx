@@ -1478,22 +1478,27 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
                         {stop.type === 'pickup' ? 'P' : 'D'}
                       </div>
                       <div className="flex-1">
-                        <div className="flex items-start gap-2">
-                          <div className="flex-1">
-                            {nameLabel && (
-                              <div className="font-semibold text-sm text-foreground">{nameLabel}</div>
-                            )}
-                            <div className="font-medium text-sm">{stop.address}</div>
-                            <div className="text-muted-foreground text-xs flex items-center gap-2">
-                              <span>{stopTypeLabel}</span>
-                              {stopDate && <span className="font-medium text-foreground">{formatDate(stopDate)}</span>}
-                              {stop.distanceFromPrev != null && (
-                                <span className="text-primary font-semibold">↳ {stop.distanceFromPrev.toLocaleString()} mi desde parada anterior</span>
-                              )}
+                        {/* Fila 1: nombre + fecha */}
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="font-semibold text-sm text-foreground">{nameLabel || stopTypeLabel}</div>
+                          {stopDate && (
+                            <div className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0">
+                              <span className="font-medium text-muted-foreground">{stopTypeLabel} Date: </span>
+                              <span className="font-semibold text-foreground">{formatDate(stopDate)}</span>
                             </div>
-                          </div>
+                          )}
+                        </div>
+                        {/* Fila 2: direccion + boton copiar */}
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="font-medium text-sm">{stop.address}</div>
                           <CopyStopButton text={copyText} />
                         </div>
+                        {/* Fila 3: distancia */}
+                        {stop.distanceFromPrev != null && (
+                          <div className="text-xs text-primary font-semibold">
+                            ↳ {stop.distanceFromPrev.toLocaleString()} mi desde parada anterior
+                          </div>
+                        )}
                         {dbStop?.id && (
                           <StopPhotoSection loadId={load.id} stopId={dbStop.id} isFirst={i === 0} stopType={stop.type} />
                         )}
