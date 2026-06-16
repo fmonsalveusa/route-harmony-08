@@ -112,6 +112,24 @@ interface LoadDetailPanelProps {
   onLoadDataUpdated?: () => void;
 }
 
+function CopyStopButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = () => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+  return (
+    <button
+      onClick={handleCopy}
+      className="flex-shrink-0 p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+      title="Copiar dirección"
+    >
+      {copied ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
+    </button>
+  );
+}
+
 function CopyLoadInfoButton({ load, totalMiles, emptyMiles, rpm, driver, dispatcher }: {
   load: DbLoad; totalMiles: number; emptyMiles: number; rpm: number;
   driver?: { name: string } | undefined; dispatcher?: { name: string } | undefined;
@@ -1500,21 +1518,28 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
                 {resolvedStops.map((stop, i) => {
                   const dbStop = dbStops.find(s => s.address === stop.address);
                   const nameLabel = stop.type === 'pickup' ? dbStop?.shipper : dbStop?.consignee;
+                  const stopTypeLabel = stop.type === 'pickup' ? 'Pick Up' : 'Delivery';
+                  const copyText = [nameLabel, stop.address, stopTypeLabel].filter(Boolean).join('\n');
                   return (
                     <div key={i} className="flex items-start gap-2">
                       <div className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white ${stop.type === 'pickup' ? 'bg-[hsl(152,60%,40%)]' : 'bg-[hsl(0,72%,51%)]'}`}>
                         {stop.type === 'pickup' ? 'P' : 'D'}
                       </div>
                       <div className="flex-1">
-                        {nameLabel && (
-                          <div className="font-semibold text-sm text-foreground">{nameLabel}</div>
-                        )}
-                        <div className="font-medium text-sm">{stop.address}</div>
-                        <div className="text-muted-foreground text-xs">
-                          {stop.type === 'pickup' ? 'Pick Up' : 'Delivery'}
-                          {stop.distanceFromPrev != null && (
-                            <span className="ml-2 text-primary font-semibold">↳ {stop.distanceFromPrev.toLocaleString()} mi desde parada anterior</span>
-                          )}
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            {nameLabel && (
+                              <div className="font-semibold text-sm text-foreground">{nameLabel}</div>
+                            )}
+                            <div className="font-medium text-sm">{stop.address}</div>
+                            <div className="text-muted-foreground text-xs">
+                              {stopTypeLabel}
+                              {stop.distanceFromPrev != null && (
+                                <span className="ml-2 text-primary font-semibold">↳ {stop.distanceFromPrev.toLocaleString()} mi desde parada anterior</span>
+                              )}
+                            </div>
+                          </div>
+                          <CopyStopButton text={copyText} />
                         </div>
                         {dbStop?.id && (
                           <StopPhotoSection loadId={load.id} stopId={dbStop.id} isFirst={i === 0} stopType={stop.type} />
