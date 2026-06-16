@@ -496,14 +496,13 @@ const Loads = () => {
                               const { city: originCity, state: originState } = extractCityState(load.origin);
                               const { city: destCity, state: destState } = extractCityState(load.destination);
                               return (
-                                <div className="flex items-start gap-2">
-                                  <div className="flex flex-col items-center pt-1 gap-0.5">
+                                <div className="space-y-1.5">
+                                  <div className="flex items-center gap-1.5">
                                     <MapPin className="h-3.5 w-3.5 text-green-600 flex-shrink-0" />
-                                    <div className="w-px h-3 bg-border" />
-                                    <MapPin className="h-3.5 w-3.5 text-red-500 flex-shrink-0" />
-                                  </div>
-                                  <div className="space-y-1.5">
                                     <div className="text-xs font-medium text-foreground">{originCity}{originState ? `, ${originState}` : ''}</div>
+                                  </div>
+                                  <div className="flex items-center gap-1.5">
+                                    <MapPin className="h-3.5 w-3.5 text-red-500 flex-shrink-0" />
                                     <div className="text-xs font-medium text-foreground">{destCity}{destState ? `, ${destState}` : ''}</div>
                                   </div>
                                 </div>
