@@ -1,15 +1,15 @@
 import { Badge } from '@/components/ui/badge';
 
 const statusConfig: Record<string, { label: string; className: string }> = {
-  planned:          { label: 'Planned',          className: 'bg-[#CBD5E1] text-[#334155]' },
-  dispatched:       { label: 'Dispatched',        className: 'bg-[#EDE928] text-[#3a3600]' },
-  in_transit:       { label: 'In Transit',        className: 'bg-[#86F705] text-[#1a3300]' },
-  on_site_pickup:   { label: 'On Site - Pickup',  className: 'bg-[#0EA5E9] text-white' },
-  picked_up:        { label: 'Picked Up',         className: 'bg-[#7C3AED] text-white' },
-  on_site_delivery: { label: 'On Site - Delivery',className: 'bg-[#FF9D00] text-white' },
-  delivered:        { label: 'Delivered',         className: 'bg-[#015C05] text-white' },
-  tonu:             { label: 'TONU',              className: 'bg-[#EB00FF] text-white' },
-  cancelled:        { label: 'Canceled',          className: 'bg-[#F70515] text-white' },
+  planned:          { label: 'Planned',          className: 'bg-[#94A3B8] text-white' },
+  dispatched:       { label: 'Dispatched',        className: 'bg-[#2563EB] text-white' },
+  in_transit:       { label: 'In Transit',        className: 'bg-[#65A30D] text-white' },
+  on_site_pickup:   { label: 'On Site - Pickup',  className: 'bg-[#06B6D4] text-white' },
+  picked_up:        { label: 'Picked Up',         className: 'bg-[#D946EF] text-white' },
+  on_site_delivery: { label: 'On Site - Delivery',className: 'bg-[#F97316] text-white' },
+  delivered:        { label: 'Delivered',         className: 'bg-[#178504] text-white' },
+  tonu:             { label: 'TONU',              className: 'bg-[#B45309] text-white' },
+  cancelled:        { label: 'Canceled',          className: 'bg-[#DC2626] text-white' },
   // Factoring statuses
   pending_factoring: { label: 'Pending', className: 'bg-[hsl(38,92%,50%)] text-white' },
   in_progress_factoring: { label: 'In Progress', className: 'bg-[#266aad] text-white' },

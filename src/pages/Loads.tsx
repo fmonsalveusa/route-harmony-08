@@ -419,30 +419,30 @@ const Loads = () => {
 
                   const statusBorderColor = (() => {
                     switch (load.status) {
-                      case 'planned':          return 'border-l-[3px] border-l-[#CBD5E1]';
-                      case 'dispatched':       return 'border-l-[3px] border-l-[#EDE928]';
-                      case 'in_transit':       return 'border-l-[3px] border-l-[#86F705]';
-                      case 'on_site_pickup':   return 'border-l-[3px] border-l-[#0EA5E9]';
-                      case 'picked_up':        return 'border-l-[3px] border-l-[#7C3AED]';
-                      case 'on_site_delivery': return 'border-l-[3px] border-l-[#FF9D00]';
-                      case 'delivered':        return 'border-l-[3px] border-l-[#015C05]';
-                      case 'tonu':             return 'border-l-[3px] border-l-[#EB00FF]';
-                      case 'cancelled':        return 'border-l-[3px] border-l-[#F70515]';
+                      case 'planned':          return 'border-l-[3px] border-l-[#94A3B8]';
+                      case 'dispatched':       return 'border-l-[3px] border-l-[#2563EB]';
+                      case 'in_transit':       return 'border-l-[3px] border-l-[#65A30D]';
+                      case 'on_site_pickup':   return 'border-l-[3px] border-l-[#06B6D4]';
+                      case 'picked_up':        return 'border-l-[3px] border-l-[#D946EF]';
+                      case 'on_site_delivery': return 'border-l-[3px] border-l-[#F97316]';
+                      case 'delivered':        return 'border-l-[3px] border-l-[#178504]';
+                      case 'tonu':             return 'border-l-[3px] border-l-[#B45309]';
+                      case 'cancelled':        return 'border-l-[3px] border-l-[#DC2626]';
                       default:                 return 'border-l-[3px] border-l-transparent';
                     }
                   })();
 
                   const avatarColors = (() => {
                     switch (load.status) {
-                      case 'planned':          return 'bg-[#e8edf2] text-[#334155]';
-                      case 'dispatched':       return 'bg-[#f9f7b0] text-[#3a3600]';
-                      case 'in_transit':       return 'bg-[#d4f9a0] text-[#1a3300]';
-                      case 'on_site_pickup':   return 'bg-[#bae8f9] text-[#0369a1]';
-                      case 'picked_up':        return 'bg-[#ddd6fe] text-[#5b21b6]';
-                      case 'on_site_delivery': return 'bg-[#ffe4b0] text-[#92400e]';
-                      case 'delivered':        return 'bg-[#bbf7d0] text-[#015C05]';
-                      case 'tonu':             return 'bg-[#f5d0fe] text-[#7e22ce]';
-                      case 'cancelled':        return 'bg-[#fee2e2] text-[#b91c1c]';
+                      case 'planned':          return 'bg-[#e2e8f0] text-[#475569]';
+                      case 'dispatched':       return 'bg-[#bfdbfe] text-[#1d4ed8]';
+                      case 'in_transit':       return 'bg-[#d9f99d] text-[#3f6212]';
+                      case 'on_site_pickup':   return 'bg-[#a5f3fc] text-[#0e7490]';
+                      case 'picked_up':        return 'bg-[#f5d0fe] text-[#a21caf]';
+                      case 'on_site_delivery': return 'bg-[#fed7aa] text-[#c2410c]';
+                      case 'delivered':        return 'bg-[#bbf7d0] text-[#178504]';
+                      case 'tonu':             return 'bg-[#fde68a] text-[#92400e]';
+                      case 'cancelled':        return 'bg-[#fecaca] text-[#b91c1c]';
                       default:                 return 'bg-muted text-muted-foreground';
                     }
                   })();
