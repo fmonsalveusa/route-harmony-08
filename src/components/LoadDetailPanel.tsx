@@ -1359,18 +1359,22 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
             <tr className="border-b">
               <td className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Pick Up:</td>
               <td className="px-3 py-2 font-medium border-r">
-                <div className="flex items-center gap-1">
-                  {(() => {
-                    const pickupStop = resolvedStops.find(s => s.type === 'pickup') || null;
-                    const addr = pickupStop?.address || load.origin;
-                    return (
-                      <>
+                {(() => {
+                  const pickupStop = resolvedStops.find(s => s.type === 'pickup') || null;
+                  const dbPickupStop = dbStops.find(s => s.stop_type === 'pickup');
+                  const addr = pickupStop?.address || load.origin;
+                  return (
+                    <div>
+                      {dbPickupStop?.shipper && (
+                        <div className="text-xs text-muted-foreground font-medium mb-0.5">{dbPickupStop.shipper}</div>
+                      )}
+                      <div className="flex items-center gap-1">
                         <span className="truncate">{addr}</span>
                         <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(addr)}`} target="_blank" rel="noopener noreferrer" className="flex-shrink-0 p-0.5 rounded hover:bg-muted text-primary"><Navigation className="h-3 w-3" /></a>
-                      </>
-                    );
-                  })()}
-                </div>
+                      </div>
+                    </div>
+                  );
+                })()}
               </td>
               <td className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Pickup:</td>
               <td className="px-3 py-2 font-medium">{formatDate(load.pickup_date)}</td>
@@ -1380,18 +1384,22 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
             <tr className="border-b">
               <td className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Delivery:</td>
               <td className="px-3 py-2 font-medium border-r">
-                <div className="flex items-center gap-1">
-                  {(() => {
-                    const deliveryStop = resolvedStops.filter(s => s.type === 'delivery').pop() || null;
-                    const addr = deliveryStop?.address || load.destination;
-                    return (
-                      <>
+                {(() => {
+                  const deliveryStop = resolvedStops.filter(s => s.type === 'delivery').pop() || null;
+                  const dbDeliveryStop = [...dbStops].filter(s => s.stop_type === 'delivery').pop();
+                  const addr = deliveryStop?.address || load.destination;
+                  return (
+                    <div>
+                      {dbDeliveryStop?.consignee && (
+                        <div className="text-xs text-muted-foreground font-medium mb-0.5">{dbDeliveryStop.consignee}</div>
+                      )}
+                      <div className="flex items-center gap-1">
                         <span className="truncate">{addr}</span>
                         <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(addr)}`} target="_blank" rel="noopener noreferrer" className="flex-shrink-0 p-0.5 rounded hover:bg-muted text-primary"><Navigation className="h-3 w-3" /></a>
-                      </>
-                    );
-                  })()}
-                </div>
+                      </div>
+                    </div>
+                  );
+                })()}
               </td>
               <td className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Delivery:</td>
               <td className="px-3 py-2 font-medium">{formatDate(load.delivery_date)}</td>
