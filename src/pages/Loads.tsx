@@ -394,20 +394,20 @@ const Loads = () => {
             <table className="w-full text-[15px]">
               <thead><tr className="border-b bg-muted/40">
                 <th className="w-8 p-3"></th>
-                <th className="text-left p-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Load #</th>
-                <th className="text-left p-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Driver/Truck</th>
-                <th className="text-left p-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Broker</th>
-                <th className="text-left p-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider hidden md:table-cell">Ruta</th>
-                <th className="text-left p-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Pickup</th>
-                <th className="text-left p-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Delivery</th>
-                <th className="text-right p-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider hidden md:table-cell whitespace-nowrap">DH-O</th>
-                <th className="text-right p-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider hidden md:table-cell">Miles</th>
-                <th className="text-right p-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Rate</th>
-                <th className="text-left p-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Dispatcher</th>
-                <th className="text-left p-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
-                <th className="text-left p-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Delivered</th>
-                <th className="text-left p-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Factoring</th>
-                <th className="text-right p-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Acciones</th>
+                <th className="text-left p-3 text-xs font-bold text-muted-foreground uppercase tracking-wider">Load #</th>
+                <th className="text-left p-3 text-xs font-bold text-muted-foreground uppercase tracking-wider">Driver/Truck</th>
+                <th className="text-left p-3 text-xs font-bold text-muted-foreground uppercase tracking-wider">Broker</th>
+                <th className="text-left p-3 text-xs font-bold text-muted-foreground uppercase tracking-wider hidden md:table-cell">Ruta</th>
+                <th className="text-left p-3 text-xs font-bold text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Pickup</th>
+                <th className="text-left p-3 text-xs font-bold text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Delivery</th>
+                <th className="text-right p-3 text-xs font-bold text-muted-foreground uppercase tracking-wider hidden md:table-cell whitespace-nowrap">DH-O</th>
+                <th className="text-right p-3 text-xs font-bold text-muted-foreground uppercase tracking-wider hidden md:table-cell">Miles</th>
+                <th className="text-right p-3 text-xs font-bold text-muted-foreground uppercase tracking-wider">Rate</th>
+                <th className="text-left p-3 text-xs font-bold text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Dispatcher</th>
+                <th className="text-left p-3 text-xs font-bold text-muted-foreground uppercase tracking-wider">Status</th>
+                <th className="text-left p-3 text-xs font-bold text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Delivered</th>
+                <th className="text-left p-3 text-xs font-bold text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Factoring</th>
+                <th className="text-right p-3 text-xs font-bold text-muted-foreground uppercase tracking-wider">Acciones</th>
               </tr></thead>
               <tbody>
                 {loads.map(load => {
@@ -429,6 +429,21 @@ const Loads = () => {
                       case 'cancelled':
                       case 'tonu': return 'border-l-[3px] border-l-red-400';
                       default: return 'border-l-[3px] border-l-transparent';
+                    }
+                  })();
+
+                  const avatarColors = (() => {
+                    switch (load.status) {
+                      case 'dispatched':       return 'bg-green-100 text-green-700';
+                      case 'picked_up':        return 'bg-blue-100 text-blue-700';
+                      case 'in_transit':       return 'bg-cyan-100 text-cyan-700';
+                      case 'on_site_pickup':
+                      case 'on_site_delivery': return 'bg-amber-100 text-amber-700';
+                      case 'delivered':        return 'bg-purple-100 text-purple-700';
+                      case 'paid':             return 'bg-emerald-100 text-emerald-700';
+                      case 'cancelled':
+                      case 'tonu':             return 'bg-red-100 text-red-500';
+                      default:                 return 'bg-muted text-muted-foreground';
                     }
                   })();
 
@@ -454,7 +469,7 @@ const Loads = () => {
                           <td className="p-3">
                             <div className="flex items-center gap-2">
                               {driver ? (
-                                <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-semibold flex-shrink-0">
+                                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-semibold flex-shrink-0 ${avatarColors}`}>
                                   {driver.name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()}
                                 </div>
                               ) : (
