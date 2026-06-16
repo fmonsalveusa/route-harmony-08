@@ -419,32 +419,30 @@ const Loads = () => {
 
                   const statusBorderColor = (() => {
                     switch (load.status) {
-                      case 'planned':          return 'border-l-[3px] border-l-[hsl(48,92%,50%)]';
-                      case 'dispatched':       return 'border-l-[3px] border-l-[hsl(80,65%,45%)]';
-                      case 'in_transit':       return 'border-l-[3px] border-l-[hsl(140,60%,40%)]';
-                      case 'on_site_pickup':   return 'border-l-[3px] border-l-[hsl(170,60%,40%)]';
-                      case 'picked_up':        return 'border-l-[3px] border-l-[#15babd]';
-                      case 'on_site_delivery': return 'border-l-[3px] border-l-[#266aad]';
-                      case 'delivered':        return 'border-l-[3px] border-l-[hsl(270,55%,50%)]';
-                      case 'paid':             return 'border-l-[3px] border-l-[hsl(152,60%,40%)]';
-                      case 'tonu':             return 'border-l-[3px] border-l-[hsl(25,85%,50%)]';
-                      case 'cancelled':        return 'border-l-[3px] border-l-[hsl(0,72%,50%)]';
+                      case 'planned':          return 'border-l-[3px] border-l-[#CBD5E1]';
+                      case 'dispatched':       return 'border-l-[3px] border-l-[#EDE928]';
+                      case 'in_transit':       return 'border-l-[3px] border-l-[#86F705]';
+                      case 'on_site_pickup':   return 'border-l-[3px] border-l-[#0EA5E9]';
+                      case 'picked_up':        return 'border-l-[3px] border-l-[#7C3AED]';
+                      case 'on_site_delivery': return 'border-l-[3px] border-l-[#FF9D00]';
+                      case 'delivered':        return 'border-l-[3px] border-l-[#015C05]';
+                      case 'tonu':             return 'border-l-[3px] border-l-[#EB00FF]';
+                      case 'cancelled':        return 'border-l-[3px] border-l-[#F70515]';
                       default:                 return 'border-l-[3px] border-l-transparent';
                     }
                   })();
 
                   const avatarColors = (() => {
                     switch (load.status) {
-                      case 'planned':          return 'bg-[hsl(48,92%,85%)] text-[hsl(48,92%,30%)]';
-                      case 'dispatched':       return 'bg-[hsl(80,65%,85%)] text-[hsl(80,65%,30%)]';
-                      case 'in_transit':       return 'bg-[hsl(140,60%,85%)] text-[hsl(140,60%,30%)]';
-                      case 'on_site_pickup':   return 'bg-[hsl(170,60%,85%)] text-[hsl(170,60%,30%)]';
-                      case 'picked_up':        return 'bg-[#d0f5f5] text-[#0d8a8d]';
-                      case 'on_site_delivery': return 'bg-[#dce8f5] text-[#1a4f82]';
-                      case 'delivered':        return 'bg-[hsl(270,55%,88%)] text-[hsl(270,55%,35%)]';
-                      case 'paid':             return 'bg-[hsl(152,60%,85%)] text-[hsl(152,60%,30%)]';
-                      case 'tonu':             return 'bg-[hsl(25,85%,88%)] text-[hsl(25,85%,35%)]';
-                      case 'cancelled':        return 'bg-[hsl(0,72%,88%)] text-[hsl(0,72%,35%)]';
+                      case 'planned':          return 'bg-[#e8edf2] text-[#334155]';
+                      case 'dispatched':       return 'bg-[#f9f7b0] text-[#3a3600]';
+                      case 'in_transit':       return 'bg-[#d4f9a0] text-[#1a3300]';
+                      case 'on_site_pickup':   return 'bg-[#bae8f9] text-[#0369a1]';
+                      case 'picked_up':        return 'bg-[#ddd6fe] text-[#5b21b6]';
+                      case 'on_site_delivery': return 'bg-[#ffe4b0] text-[#92400e]';
+                      case 'delivered':        return 'bg-[#bbf7d0] text-[#015C05]';
+                      case 'tonu':             return 'bg-[#f5d0fe] text-[#7e22ce]';
+                      case 'cancelled':        return 'bg-[#fee2e2] text-[#b91c1c]';
                       default:                 return 'bg-muted text-muted-foreground';
                     }
                   })();
