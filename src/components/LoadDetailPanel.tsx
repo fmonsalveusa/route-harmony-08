@@ -1359,18 +1359,16 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
           {/* Structured table layout */}
           <table className="w-full rounded-lg border bg-card overflow-hidden text-sm border-collapse table-fixed">
             <colgroup>
-              <col style={{ width: '14%' }} />
-              <col style={{ width: '19%' }} />
-              <col style={{ width: '14%' }} />
-              <col style={{ width: '19%' }} />
-              <col style={{ width: '14%' }} />
-              <col style={{ width: '20%' }} />
+              <col style={{ width: '16%' }} />
+              <col style={{ width: '34%' }} />
+              <col style={{ width: '16%' }} />
+              <col style={{ width: '34%' }} />
             </colgroup>
             <tbody>
             {/* Fila 1: Broker + Rate */}
             <tr className="border-b">
               <td className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Broker:</td>
-              <td colSpan={3} className="px-3 py-2 border-r">
+              <td className="px-3 py-2 border-r">
                 <BrokerScoreRow brokerName={load.broker_client} />
               </td>
               <td className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">$ Rate:</td>
@@ -1380,12 +1378,12 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
             {/* Fila 2: Driver + Type */}
             <tr className="border-b">
               <td className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Driver:</td>
-              <td colSpan={3} className="px-3 py-2 font-medium border-r">{driver?.name || 'Sin asignar'}</td>
+              <td className="px-3 py-2 font-medium border-r">{driver?.name || 'Sin asignar'}</td>
               <td className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Type:</td>
               <td className="px-3 py-2 font-medium">{truck?.truck_type || '—'}</td>
             </tr>
 
-            {/* Fila 3: Empty Miles | Miles | RPM */}
+            {/* Fila 3: Empty Miles | Miles | RPM — todo en una fila de 4 cols */}
             <tr className="border-b">
               <td className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Empty Mi:</td>
               <td className="px-3 py-2 border-r">
@@ -1427,15 +1425,19 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
                 {emptyMilesOrigin && <div className="text-[10px] text-muted-foreground truncate max-w-[160px]">desde {emptyMilesOrigin}</div>}
               </td>
               <td className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Miles:</td>
-              <td className="px-3 py-2 font-bold text-primary border-r">{totalMiles > 0 ? totalMiles.toLocaleString() : '—'}</td>
-              <td className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">RPM:</td>
-              <td className={`px-3 py-2 font-bold ${rpmColorClass}`}>{rpm > 0 ? `$${rpm.toFixed(2)}` : '—'}</td>
+              <td className="px-3 py-2">
+                <div className="flex items-center gap-4">
+                  <span className="font-bold text-primary">{totalMiles > 0 ? totalMiles.toLocaleString() : '—'}</span>
+                  <span className="text-muted-foreground font-medium text-sm">RPM:</span>
+                  <span className={`font-bold ${rpmColorClass}`}>{rpm > 0 ? `$${rpm.toFixed(2)}` : '—'}</span>
+                </div>
+              </td>
             </tr>
 
             {/* Fila 4: Dispatcher */}
             <tr className={canSeeGrossRate && rcGrossRate ? 'border-b' : ''}>
               <td className="px-3 py-2 bg-muted/50 font-medium text-muted-foreground whitespace-nowrap border-r">Dispatcher:</td>
-              <td colSpan={5} className="px-3 py-2 font-medium">{dispatcher?.name || '—'}</td>
+              <td colSpan={3} className="px-3 py-2 font-medium">{dispatcher?.name || '—'}</td>
             </tr>
 
             {/* Gross Rate row — solo Admin / Accounting / Master Admin */}
