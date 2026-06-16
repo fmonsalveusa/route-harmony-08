@@ -397,8 +397,7 @@ const Loads = () => {
                 <th className="text-left p-3 font-medium text-muted-foreground">Load #</th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Driver/Truck</th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Broker</th>
-                <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Origin</th>
-                <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Destination</th>
+                <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Ruta</th>
                 <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Pickup</th>
                 <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Delivery</th>
                 <th className="text-right p-3 font-medium text-muted-foreground">Rate</th>
@@ -448,20 +447,29 @@ const Loads = () => {
                             )}
                           </td>
                           <td className="p-3 hidden md:table-cell">
-                            {(() => { const { city, state } = extractCityState(load.origin); return (
-                              <div className="flex items-center gap-1.5">
-                                <MapPin className="h-3.5 w-3.5 text-green-600 flex-shrink-0" />
-                                <div><div className="font-medium text-foreground uppercase text-xs">{city}</div>{state && <div className="text-muted-foreground text-[11px]">{state}</div>}</div>
-                              </div>
-                            ); })()}
-                          </td>
-                          <td className="p-3 hidden md:table-cell">
-                            {(() => { const { city, state } = extractCityState(load.destination); return (
-                              <div className="flex items-center gap-1.5">
-                                <MapPin className="h-3.5 w-3.5 text-red-500 flex-shrink-0" />
-                                <div><div className="font-medium text-foreground uppercase text-xs">{city}</div>{state && <div className="text-muted-foreground text-[11px]">{state}</div>}</div>
-                              </div>
-                            ); })()}
+                            {(() => {
+                              const { city: originCity, state: originState } = extractCityState(load.origin);
+                              const { city: destCity, state: destState } = extractCityState(load.destination);
+                              return (
+                                <div className="flex items-start gap-2">
+                                  <div className="flex flex-col items-center pt-1 gap-0.5">
+                                    <MapPin className="h-3.5 w-3.5 text-green-600 flex-shrink-0" />
+                                    <div className="w-px h-3 bg-border" />
+                                    <MapPin className="h-3.5 w-3.5 text-red-500 flex-shrink-0" />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <div>
+                                      <div className="font-medium text-foreground uppercase text-xs">{originCity}</div>
+                                      {originState && <div className="text-muted-foreground text-[11px]">{originState}</div>}
+                                    </div>
+                                    <div>
+                                      <div className="font-medium text-foreground uppercase text-xs">{destCity}</div>
+                                      {destState && <div className="text-muted-foreground text-[11px]">{destState}</div>}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })()}
                           </td>
                           <td className="p-3 hidden lg:table-cell text-muted-foreground">{formatDate(load.pickup_date)}</td>
                           <td className="p-3 hidden lg:table-cell text-muted-foreground">
@@ -472,7 +480,9 @@ const Loads = () => {
                               </span>
                             )}
                           </td>
-                          <td className="p-3 text-right font-semibold">${Number(load.total_rate).toLocaleString()}</td>
+                          <td className="p-3 text-right">
+                            <div className="text-base font-bold text-green-600">${Number(load.total_rate).toLocaleString()}</div>
+                          </td>
                           <td className="p-3 text-right hidden md:table-cell text-muted-foreground">{load.empty_miles && Number(load.empty_miles) > 0 ? Number(load.empty_miles).toLocaleString() : '—'}</td>
                           <td className="p-3 text-right hidden md:table-cell text-muted-foreground">{load.miles && Number(load.miles) > 0 ? Number(load.miles).toLocaleString() : '—'}</td>
                           <td className="p-3 text-right hidden md:table-cell">
