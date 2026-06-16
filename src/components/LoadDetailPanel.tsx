@@ -1499,31 +1499,23 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
               <div className="space-y-3">
                 {resolvedStops.map((stop, i) => {
                   const dbStop = dbStops.find(s => s.address === stop.address);
+                  const nameLabel = stop.type === 'pickup' ? dbStop?.shipper : dbStop?.consignee;
                   return (
                     <div key={i} className="flex items-start gap-2">
                       <div className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white ${stop.type === 'pickup' ? 'bg-[hsl(152,60%,40%)]' : 'bg-[hsl(0,72%,51%)]'}`}>
                         {stop.type === 'pickup' ? 'P' : 'D'}
                       </div>
                       <div className="flex-1">
-                        <div className="font-medium">{stop.address}</div>
+                        {nameLabel && (
+                          <div className="font-semibold text-sm text-foreground">{nameLabel}</div>
+                        )}
+                        <div className="font-medium text-sm">{stop.address}</div>
                         <div className="text-muted-foreground text-xs">
                           {stop.type === 'pickup' ? 'Pick Up' : 'Delivery'}
                           {stop.distanceFromPrev != null && (
                             <span className="ml-2 text-primary font-semibold">↳ {stop.distanceFromPrev.toLocaleString()} mi desde parada anterior</span>
                           )}
                         </div>
-                        {dbStop?.shipper && stop.type === 'pickup' && (
-                          <div className="text-xs mt-0.5">
-                            <span className="text-muted-foreground">Shipper: </span>
-                            <span className="font-medium text-foreground">{dbStop.shipper}</span>
-                          </div>
-                        )}
-                        {dbStop?.consignee && stop.type === 'delivery' && (
-                          <div className="text-xs mt-0.5">
-                            <span className="text-muted-foreground">Consignee: </span>
-                            <span className="font-medium text-foreground">{dbStop.consignee}</span>
-                          </div>
-                        )}
                         {dbStop?.id && (
                           <StopPhotoSection loadId={load.id} stopId={dbStop.id} isFirst={i === 0} stopType={stop.type} />
                         )}
