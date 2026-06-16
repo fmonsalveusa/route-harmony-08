@@ -402,6 +402,8 @@ const Loads = () => {
                 <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Delivery</th>
                 <th className="text-right p-3 font-medium text-muted-foreground">Rate</th>
                 <th className="text-right p-3 font-medium text-muted-foreground hidden md:table-cell whitespace-nowrap">DH-O</th>
+                <th className="text-right p-3 font-medium text-muted-foreground hidden md:table-cell">Miles</th>
+                <th className="text-right p-3 font-medium text-muted-foreground">Rate</th>
                 <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Dispatcher</th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
                 <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Delivered</th>
@@ -478,6 +480,8 @@ const Loads = () => {
                               </span>
                             )}
                           </td>
+                          <td className="p-3 text-right hidden md:table-cell text-muted-foreground">{load.empty_miles && Number(load.empty_miles) > 0 ? Number(load.empty_miles).toLocaleString() : '—'}</td>
+                          <td className="p-3 text-right hidden md:table-cell text-muted-foreground">{load.miles && Number(load.miles) > 0 ? Number(load.miles).toLocaleString() : '—'}</td>
                           <td className="p-3 text-right">
                             <div className="text-base font-bold text-green-600">${Number(load.total_rate).toLocaleString()}</div>
                             {load.miles && Number(load.miles) > 0 && (() => {
@@ -492,11 +496,9 @@ const Loads = () => {
                                 if (rpm >= 1.70) colorClass = 'text-green-600';
                                 else if (rpm >= 1.40) colorClass = 'text-amber-500';
                               }
-                              return <div className={`text-[11px] font-medium ${colorClass}`}>${rpm.toFixed(2)}/mi</div>;
+                              return <div className="text-xs font-medium text-muted-foreground">${rpm.toFixed(2)}/mi</div>;
                             })()}
                           </td>
-                          <td className="p-3 text-right hidden md:table-cell text-muted-foreground">{load.empty_miles && Number(load.empty_miles) > 0 ? Number(load.empty_miles).toLocaleString() : '—'}</td>
-                          <td className="p-3 text-right hidden md:table-cell text-muted-foreground">{load.miles && Number(load.miles) > 0 ? Number(load.miles).toLocaleString() : '—'}</td>
                           <td className="p-3 hidden lg:table-cell">{dispatcher?.name || '—'}</td>
                           <td className="p-3" onClick={e => e.stopPropagation()}>
                             <Select value={load.status} onValueChange={async (val) => {
