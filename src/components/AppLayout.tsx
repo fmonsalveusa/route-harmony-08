@@ -18,6 +18,7 @@ import { LiveNotificationToasts } from '@/components/LiveNotificationToasts';
 import { MeetingAlertModal } from '@/components/MeetingAlertModal';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { supabase } from '@/integrations/supabase/client';
+import { useMaintenanceAutoCheck } from '@/hooks/useMaintenanceAutoCheck';
 
 interface NavItem {
   label: string;
@@ -89,6 +90,9 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
   const [collapsed, setCollapsed] = useState(false);
   const [pendingDrivers, setPendingDrivers] = useState(0);
   const { createLoad } = useLoads();
+
+  // Auto-check de mantenimiento al iniciar y cada día a las 8am
+  useMaintenanceAutoCheck();
 
   useEffect(() => {
     if (!profile?.tenant_id) return;
