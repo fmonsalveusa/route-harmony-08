@@ -33,7 +33,12 @@ export function ServiceHistoryDialog({ open, onOpenChange, maintenanceId, mainte
           </p>
         ) : (
           <div className="space-y-3">
-            {logs.map((log, idx) => (
+            {logs.map((log, idx) => {
+              const prevLog = logs[idx + 1]; // logs está ordenado DESC, el siguiente es el anterior
+              const milesDriven = prevLog
+                ? Number(log.odometer_miles) - Number(prevLog.odometer_miles)
+                : null;
+              return (
               <div
                 key={log.id}
                 className="relative pl-6 pb-3 border-l-2 border-muted last:border-l-0"
@@ -42,7 +47,14 @@ export function ServiceHistoryDialog({ open, onOpenChange, maintenanceId, mainte
                 <div className={`absolute -left-[5px] top-1 w-2 h-2 rounded-full ${idx === 0 ? 'bg-primary' : 'bg-muted-foreground/40'}`} />
 
                 <div className="rounded-md border bg-card p-3 space-y-1.5">
-                  <p className="text-sm font-semibold">{formatDate(log.performed_at)}</p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold">{formatDate(log.performed_at)}</p>
+                    {milesDriven !== null && milesDriven > 0 && (
+                      <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                        +{milesDriven.toLocaleString()} mi desde último servicio
+                      </span>
+                    )}
+                  </div>
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
                     <span className="flex items-center gap-1">
                       <Gauge className="h-3 w-3" />
@@ -59,7 +71,7 @@ export function ServiceHistoryDialog({ open, onOpenChange, maintenanceId, mainte
                   {log.notes && <p className="text-xs text-muted-foreground">{log.notes}</p>}
                 </div>
               </div>
-            ))}
+            );})}
           </div>
         )}
       </DialogContent>
