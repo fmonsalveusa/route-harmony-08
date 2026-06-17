@@ -138,13 +138,7 @@ async function runMaintenanceCheck() {
 
 function msUntilNext8am(): number {
   const now = new Date();
-  const next8am = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate(),
-    8, 0, 0, 0
-  );
-  // Si ya pasaron las 8am de hoy, apunta al día siguiente
+  const next8am = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 8, 0, 0, 0);
   if (now >= next8am) next8am.setDate(next8am.getDate() + 1);
   return next8am.getTime() - now.getTime();
 }
@@ -165,46 +159,46 @@ function shouldRunCheck(): boolean {
   return last !== today;
 }
 
+// Flag global para evitar que multiples instancias del hook programen timers
+let globalTimerScheduled = false;
+
 export function useMaintenanceAutoCheck() {
   const qc = useQueryClient();
   const ranOnce = useRef(false);
-  const dailyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const check = async () => {
-    if (!shouldRunCheck()) {
+  const check = async (force = false) => {
+    if (!force && !shouldRunCheck()) {
       console.log('[MaintenanceAutoCheck] Already ran today, skipping.');
       return;
     }
     console.log('[MaintenanceAutoCheck] Running check...');
+    setLastCheckDate(); // Marcar ANTES de correr para evitar runs concurrentes
     await runMaintenanceCheck();
-    setLastCheckDate();
     console.log('[MaintenanceAutoCheck] Done.');
     qc.invalidateQueries({ queryKey: ['truck_maintenance'] });
     qc.invalidateQueries({ queryKey: ['notifications'] });
   };
 
-  const scheduleDailyCheck = () => {
-    const ms = msUntilNext8am();
-    dailyTimer.current = setTimeout(() => {
-      // Forzar el check aunque ya haya corrido hoy (es el disparo de las 8am)
-      localStorage.removeItem(STORAGE_KEY);
-      check();
-      dailyTimer.current = setInterval(() => {
-        localStorage.removeItem(STORAGE_KEY);
-        check();
-      }, 24 * 60 * 60 * 1000);
-    }, ms);
-  };
-
   useEffect(() => {
+    // Correr una vez al montar si no ha corrido hoy
     if (!ranOnce.current) {
       ranOnce.current = true;
-      check();
+      void check();
     }
-    scheduleDailyCheck();
-    return () => {
-      if (dailyTimer.current) clearTimeout(dailyTimer.current);
-    };
+
+    // Programar el check diario a las 8am — solo una vez globalmente
+    if (!globalTimerScheduled) {
+      globalTimerScheduled = true;
+      const scheduleNext = () => {
+        const ms = msUntilNext8am();
+        console.log(`[MaintenanceAutoCheck] Proximo check en ${Math.round(ms / 3600000)}h`);
+        setTimeout(() => {
+          void check(true); // forzar aunque ya haya corrido hoy
+          scheduleNext();   // programar el siguiente dia
+        }, ms);
+      };
+      scheduleNext();
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 }
