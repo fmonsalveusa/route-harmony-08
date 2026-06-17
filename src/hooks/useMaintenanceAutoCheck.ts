@@ -69,6 +69,23 @@ async function runMaintenanceCheck() {
       if (finalStatus === 'warning' || finalStatus === 'due') {
         const tenant_id = await getTenantId();
         const label = finalStatus === 'due' ? '⚠️ OVERDUE' : '⚡ Approaching Due';
+        const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+
+        // Verificar si ya existe notificacion de este mantenimiento hoy
+        const { data: existing } = await supabase
+          .from('notifications' as any)
+          .select('id')
+          .eq('tenant_id', tenant_id)
+          .eq('type', 'maintenance')
+          .ilike('message', `${item.maintenance_type}%`)
+          .gte('created_at', `${today}T00:00:00`)
+          .lte('created_at', `${today}T23:59:59`)
+          .limit(1);
+
+        if (existing && (existing as any[]).length > 0) {
+          console.log(`[MaintenanceAutoCheck] Notificacion ya enviada hoy para ${item.maintenance_type}, skipping.`);
+          continue;
+        }
 
         // Notificacion en app
         await supabase.from('notifications' as any).insert({
