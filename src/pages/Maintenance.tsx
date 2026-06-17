@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Wrench, Plus, AlertTriangle, CheckCircle, Clock, RefreshCw, List, Truck } from 'lucide-react';
+import { Wrench, Plus, RefreshCw, List, Truck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTruckMaintenance, DbTruckMaintenance } from '@/hooks/useTruckMaintenance';
@@ -10,11 +9,9 @@ import { useTrucks } from '@/hooks/useTrucks';
 import { useDrivers } from '@/hooks/useDrivers';
 import { MaintenanceFormDialog } from '@/components/maintenance/MaintenanceFormDialog';
 import { MaintenanceCard } from '@/components/maintenance/MaintenanceCard';
-
 import { AllServicesTable } from '@/components/maintenance/AllServicesTable';
 import { LogServiceDialog } from '@/components/maintenance/LogServiceDialog';
 import { ServiceHistoryDialog } from '@/components/maintenance/ServiceHistoryDialog';
-import { StatCard } from '@/components/StatCard';
 
 const Maintenance = () => {
   const { maintenanceItems, loading, createMaintenance, updateMaintenance, deleteMaintenance, recalculateMiles, logNewService } = useTruckMaintenance();
@@ -70,30 +67,37 @@ const Maintenance = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-primary/10">
-            <Wrench className="h-6 w-6 text-primary" />
-          </div>
+          <Wrench className="h-5 w-5 text-muted-foreground" />
           <div>
-            <h1 className="text-2xl font-bold">Truck Maintenance</h1>
-            <p className="text-sm text-muted-foreground">Track and schedule maintenance for your fleet</p>
+            <h1 className="text-lg font-semibold">Truck Maintenance</h1>
+            <p className="text-xs text-muted-foreground">Fleet maintenance tracker</p>
           </div>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={handleRecalcAll} disabled={recalculating}>
-            <RefreshCw className={`h-4 w-4 mr-1 ${recalculating ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${recalculating ? 'animate-spin' : ''}`} />
             Recalculate
           </Button>
-          <Button onClick={() => { setEditItem(null); setFormOpen(true); }}>
-            <Plus className="h-4 w-4 mr-1" /> Add Maintenance
+          <Button size="sm" onClick={() => { setEditItem(null); setFormOpen(true); }}>
+            <Plus className="h-3.5 w-3.5 mr-1.5" /> Add Maintenance
           </Button>
         </div>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard title="Total Schedules" value={totalSchedules} icon={CheckCircle} />
-        <StatCard title="Approaching Due" value={warningCount} icon={Clock} iconClassName="bg-amber-500/10 text-amber-500" />
-        <StatCard title="Overdue" value={dueCount} icon={AlertTriangle} iconClassName="bg-destructive/10 text-destructive" />
+      <div className="grid grid-cols-3 gap-3">
+        <div className="bg-muted/50 rounded-lg px-4 py-3">
+          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-1">Total Schedules</p>
+          <p className="text-2xl font-semibold">{totalSchedules}</p>
+        </div>
+        <div className="bg-muted/50 rounded-lg px-4 py-3">
+          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-1">Approaching Due</p>
+          <p className={`text-2xl font-semibold ${warningCount > 0 ? 'text-amber-600' : ''}`}>{warningCount}</p>
+        </div>
+        <div className="bg-muted/50 rounded-lg px-4 py-3">
+          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-1">Overdue</p>
+          <p className={`text-2xl font-semibold ${dueCount > 0 ? 'text-destructive' : ''}`}>{dueCount}</p>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -132,52 +136,73 @@ const Maintenance = () => {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
             </div>
           ) : Object.keys(grouped).length === 0 ? (
-            <Card>
-              <CardContent className="py-12 text-center text-muted-foreground">
-                <Wrench className="h-10 w-10 mx-auto mb-3 opacity-30" />
-                <p>No maintenance schedules yet. Click "Add Maintenance" to get started.</p>
-              </CardContent>
-            </Card>
+            <div className="py-12 text-center text-muted-foreground">
+              <Wrench className="h-10 w-10 mx-auto mb-3 opacity-30" />
+              <p className="text-sm">No maintenance schedules yet. Click "Add Maintenance" to get started.</p>
+            </div>
           ) : (
-            Object.entries(grouped)
-              .sort(([a], [b]) => {
-                const truckA = trucks.find(t => t.id === a);
-                const truckB = trucks.find(t => t.id === b);
-                const unitA = truckA?.unit_number || '';
-                const unitB = truckB?.unit_number || '';
-                return unitA.localeCompare(unitB, undefined, { numeric: true });
-              })
-              .map(([truckId, items]) => (
-              <motion.div
-                key={truckId}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mb-4"
-              >
-                <div className="glass-card overflow-hidden">
-                  <div className="px-5 py-3 border-b bg-muted/30">
-                    <h3 className="font-semibold text-sm">{getTruckLabel(truckId)}</h3>
-                  </div>
-                  <CardContent className="p-4">
-                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                      {items.filter(i => i.interval_miles || i.interval_days).map(item => (
-                        <MaintenanceCard
-                          key={item.id}
-                          item={item}
-                          onEdit={() => { setEditItem(item); setFormOpen(true); }}
-                          onDelete={() => deleteMaintenance(item.id)}
-                          onLogService={() => setLogItem(item)}
-                          onViewHistory={() => setHistoryItem(item)}
-                        />
-                      ))}
-                    </div>
-                    {items.filter(i => i.interval_miles || i.interval_days).length === 0 && (
-                      <p className="text-sm text-muted-foreground text-center py-4">No recurring maintenance for this truck.</p>
-                    )}
-                  </CardContent>
-                </div>
-              </motion.div>
-            ))
+            <div className="space-y-4">
+              {Object.entries(grouped)
+                .sort(([a], [b]) => {
+                  const truckA = trucks.find(t => t.id === a);
+                  const truckB = trucks.find(t => t.id === b);
+                  return (truckA?.unit_number || '').localeCompare(truckB?.unit_number || '', undefined, { numeric: true });
+                })
+                .map(([truckId, items]) => {
+                  const recurringItems = items.filter(i => i.interval_miles || i.interval_days);
+                  const dueItems = recurringItems.filter(i => i.status === 'due').length;
+                  const warnItems = recurringItems.filter(i => i.status === 'warning').length;
+                  const truck = trucks.find(t => t.id === truckId);
+
+                  return (
+                    <motion.div
+                      key={truckId}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                    >
+                      {/* Truck header */}
+                      <div className="flex items-center gap-2 px-3 py-2 bg-muted/40 rounded-lg mb-2">
+                        <Truck className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm font-medium">{truck?.unit_number}</span>
+                        <span className="text-sm text-muted-foreground">— {truck?.make || ''} {truck?.model || ''}</span>
+                        <div className="ml-auto flex gap-1.5">
+                          {dueItems > 0 && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-sm bg-[#FCEBEB] text-[#A32D2D]">
+                              {dueItems} due
+                            </span>
+                          )}
+                          {warnItems > 0 && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-sm bg-[#FAEEDA] text-[#854F0B]">
+                              {warnItems} warning
+                            </span>
+                          )}
+                          {dueItems === 0 && warnItems === 0 && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-sm bg-[#EAF3DE] text-[#3B6D11]">OK</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Cards grid */}
+                      {recurringItems.length > 0 ? (
+                        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                          {recurringItems.map(item => (
+                            <MaintenanceCard
+                              key={item.id}
+                              item={item}
+                              onEdit={() => { setEditItem(item); setFormOpen(true); }}
+                              onDelete={() => deleteMaintenance(item.id)}
+                              onLogService={() => setLogItem(item)}
+                              onViewHistory={() => setHistoryItem(item)}
+                            />
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground text-center py-3">No recurring maintenance for this truck.</p>
+                      )}
+                    </motion.div>
+                  );
+                })}
+            </div>
           )}
         </TabsContent>
 
