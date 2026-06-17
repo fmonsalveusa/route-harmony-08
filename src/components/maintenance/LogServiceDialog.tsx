@@ -106,12 +106,32 @@ export function LogServiceDialog({ open, onOpenChange, maintenanceType, onSubmit
 
   const handleSubmit = async () => {
     setSaving(true);
+
+    // Si hay texto pero no coordenadas, geocodificar antes de guardar
+    let finalLat = serviceLat;
+    let finalLng = serviceLng;
+    if (serviceLocation && (!finalLat || !finalLng)) {
+      try {
+        const res = await fetch(
+          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(serviceLocation)}.json?access_token=${MAPBOX_TOKEN}&country=us&types=place,address&limit=1`
+        );
+        const data = await res.json();
+        if (data.features?.[0]) {
+          finalLng = data.features[0].center[0];
+          finalLat = data.features[0].center[1];
+          console.log(`[LogServiceDialog] Geocoded "${serviceLocation}" → ${finalLat}, ${finalLng}`);
+        }
+      } catch (e) {
+        console.warn('[LogServiceDialog] Geocoding fallback failed:', e);
+      }
+    }
+
     const ok = await onSubmit({
       last_performed_at: date,
       last_miles: Number(miles) || 0,
       service_location: serviceLocation || null,
-      service_lat: serviceLat,
-      service_lng: serviceLng,
+      service_lat: finalLat,
+      service_lng: finalLng,
       cost: cost ? Number(cost) : null,
       tax_amount: taxAmount ? Number(taxAmount) : null,
       vendor: vendor || null,
