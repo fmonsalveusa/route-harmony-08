@@ -53,10 +53,6 @@ const Maintenance = () => {
     return acc;
   }, {});
 
-  const totalSchedules = maintenanceItems.length;
-  const warningCount = maintenanceItems.filter(m => m.status === 'warning').length;
-  const dueCount = maintenanceItems.filter(m => m.status === 'due').length;
-
   const getTruckLabel = (id: string) => {
     const t = trucks.find(t => t.id === id);
     return t ? `${t.unit_number} — ${t.make || ''} ${t.model || ''}` : id;
@@ -81,22 +77,6 @@ const Maintenance = () => {
           <Button size="sm" onClick={() => { setEditItem(null); setFormOpen(true); }}>
             <Plus className="h-3.5 w-3.5 mr-1.5" /> Add Maintenance
           </Button>
-        </div>
-      </div>
-
-      {/* Summary Cards */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="bg-muted/50 rounded-lg px-4 py-3">
-          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-1">Total Schedules</p>
-          <p className="text-2xl font-semibold">{totalSchedules}</p>
-        </div>
-        <div className="bg-muted/50 rounded-lg px-4 py-3">
-          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-1">Approaching Due</p>
-          <p className={`text-2xl font-semibold ${warningCount > 0 ? 'text-amber-600' : ''}`}>{warningCount}</p>
-        </div>
-        <div className="bg-muted/50 rounded-lg px-4 py-3">
-          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-1">Overdue</p>
-          <p className={`text-2xl font-semibold ${dueCount > 0 ? 'text-destructive' : ''}`}>{dueCount}</p>
         </div>
       </div>
 
