@@ -462,11 +462,11 @@ const Loads = () => {
                             }
                           }}
                         >
-                          <td className="p-3 text-muted-foreground">
+                          <td className="p-4 text-muted-foreground">
                             {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                           </td>
-                          <td className="p-3 font-medium text-primary">{load.reference_number}</td>
-                          <td className="p-3">
+                          <td className="p-4 font-medium text-primary">{load.reference_number}</td>
+                          <td className="p-4">
                             <div className="flex items-center gap-2">
                               {driver ? (
                                 <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 text-white ${avatarColors}`}>
@@ -483,7 +483,7 @@ const Loads = () => {
                               </div>
                             </div>
                           </td>
-                          <td className="p-3 text-foreground">
+                          <td className="p-4 text-foreground">
                             <div>{load.broker_client || '—'}</div>
                             {(load.notes || '').toUpperCase().includes('TARP') && (
                               <span className="inline-flex items-center mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide text-white bg-[hsl(25,95%,53%)] whitespace-nowrap">
@@ -491,7 +491,7 @@ const Loads = () => {
                               </span>
                             )}
                           </td>
-                          <td className="p-3 hidden md:table-cell">
+                          <td className="p-4 hidden md:table-cell">
                             {(() => {
                               const { city: originCity, state: originState } = extractCityState(load.origin);
                               const { city: destCity, state: destState } = extractCityState(load.destination);
@@ -509,8 +509,8 @@ const Loads = () => {
                               );
                             })()}
                           </td>
-                          <td className="p-3 hidden lg:table-cell text-muted-foreground">{formatDate(load.pickup_date)}</td>
-                          <td className="p-3 hidden lg:table-cell text-muted-foreground">
+                          <td className="p-4 hidden lg:table-cell text-muted-foreground">{formatDate(load.pickup_date)}</td>
+                          <td className="p-4 hidden lg:table-cell text-muted-foreground">
                             <div>{formatDate(load.delivery_date)}</div>
                             {load.delivery_date && load.delivery_date.split('T')[0] === new Date().toLocaleDateString('en-CA') && (
                               <span style={{ backgroundColor: '#ea580c', color: 'white', fontSize: '10px', fontWeight: 600, padding: '2px 6px', borderRadius: '4px', display: 'inline-block', marginTop: '2px' }}>
@@ -518,9 +518,9 @@ const Loads = () => {
                               </span>
                             )}
                           </td>
-                          <td className="p-3 text-right hidden md:table-cell text-muted-foreground">{load.empty_miles && Number(load.empty_miles) > 0 ? Number(load.empty_miles).toLocaleString() : '—'}</td>
-                          <td className="p-3 text-right hidden md:table-cell text-muted-foreground">{load.miles && Number(load.miles) > 0 ? Number(load.miles).toLocaleString() : '—'}</td>
-                          <td className="p-3 text-right">
+                          <td className="p-4 text-right hidden md:table-cell text-muted-foreground">{load.empty_miles && Number(load.empty_miles) > 0 ? Number(load.empty_miles).toLocaleString() : '—'}</td>
+                          <td className="p-4 text-right hidden md:table-cell text-muted-foreground">{load.miles && Number(load.miles) > 0 ? Number(load.miles).toLocaleString() : '—'}</td>
+                          <td className="p-4 text-right">
                             <div className="text-base font-bold text-green-600">${Number(load.total_rate).toLocaleString()}</div>
                             {load.miles && Number(load.miles) > 0 && (() => {
                               const rpm = Number(load.total_rate) / Number(load.miles);
@@ -537,8 +537,8 @@ const Loads = () => {
                               return <div className="text-xs font-medium text-muted-foreground">${rpm.toFixed(2)}/mi</div>;
                             })()}
                           </td>
-                          <td className="p-3 hidden lg:table-cell">{dispatcher?.name || '—'}</td>
-                          <td className="p-3" onClick={e => e.stopPropagation()}>
+                          <td className="p-4 hidden lg:table-cell">{dispatcher?.name || '—'}</td>
+                          <td className="p-4" onClick={e => e.stopPropagation()}>
                             <Select value={load.status} onValueChange={async (val) => {
                               const prevStatus = load.status;
                               const updates: any = { status: val };
@@ -584,10 +584,10 @@ const Loads = () => {
                               </SelectContent>
                             </Select>
                           </td>
-                          <td className="p-3 hidden lg:table-cell text-muted-foreground">
+                          <td className="p-4 hidden lg:table-cell text-muted-foreground">
                             {load.status === 'delivered' ? formatDate(load.delivery_date) : '—'}
                           </td>
-                          <td className="p-3 hidden lg:table-cell" onClick={e => e.stopPropagation()}>
+                          <td className="p-4 hidden lg:table-cell" onClick={e => e.stopPropagation()}>
                             <Select
                               value={load.factoring || ''}
                               disabled={generatingPaymentIds.has(load.id)}
@@ -632,7 +632,7 @@ const Loads = () => {
                               </SelectContent>
                             </Select>
                           </td>
-                          <td className="p-3 text-right" onClick={e => e.stopPropagation()}>
+                          <td className="p-4 text-right" onClick={e => e.stopPropagation()}>
                             <div className="flex justify-end gap-1">
                               <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground" onClick={() => handleGenerateInvoice(load)} title="Invoice">
                                 <FileText className="h-3.5 w-3.5" /> Invoice
