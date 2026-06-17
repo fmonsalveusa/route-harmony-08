@@ -107,12 +107,12 @@ async function runMaintenanceCheck() {
 
         const unitLabel = (truck as any)?.unit_number ? `Unit #${(truck as any).unit_number}` : '';
         const driverLabel = (driver as any)?.name ? (driver as any).name : '';
-        const contextLabel = [unitLabel, driverLabel].filter(Boolean).join(' — ');
+        const contextLabel = [unitLabel, driverLabel].filter(Boolean).join(' - ');
 
         // Notificacion en app
         await supabase.from('notifications' as any).insert({
           tenant_id,
-          title: `Maintenance ${label}${contextLabel ? ` · ${unitLabel}` : ''}`,
+          title: `Maintenance ${label}${unitLabel ? ` | ${unitLabel}` : ''}`,
           message: `${item.maintenance_type} is ${
             finalStatus === 'due' ? 'overdue' : 'approaching due date'
           }.${contextLabel ? ` ${contextLabel}.` : ''} ${miles_accumulated.toLocaleString()} mi accumulated.`,
