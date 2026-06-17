@@ -325,20 +325,29 @@ export function useTruckMaintenance() {
         .maybeSingle();
 
       if (activeLoad && (activeLoad as any)?.destination) {
-        // Calcular millas desde ubicacion del servicio hasta el delivery de la carga activa
-        const destEncoded = encodeURIComponent((activeLoad as any).destination);
-        const coordsFrom = `${input.service_lng},${input.service_lat}`;
         try {
-          const res = await fetch(
-            `https://api.mapbox.com/directions/v5/mapbox/driving/${coordsFrom};${destEncoded}?access_token=${MAPBOX_TOKEN}&geometries=geojson`
+          // Geocodificar el destino de la carga activa
+          const destAddress = (activeLoad as any).destination;
+          const geocodeRes = await fetch(
+            `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(destAddress)}.json?access_token=${MAPBOX_TOKEN}&country=us&types=address,place&limit=1`
           );
-          const data = await res.json();
-          if (data?.routes?.[0]?.distance) {
-            // Convertir metros a millas
-            miles_carried_forward = Math.round(data.routes[0].distance * 0.000621371);
+          const geocodeData = await geocodeRes.json();
+          const destCoords = geocodeData.features?.[0]?.center; // [lng, lat]
+
+          if (destCoords) {
+            const coordsFrom = `${input.service_lng},${input.service_lat}`;
+            const coordsTo = `${destCoords[0]},${destCoords[1]}`;
+            const dirRes = await fetch(
+              `https://api.mapbox.com/directions/v5/mapbox/driving/${coordsFrom};${coordsTo}?access_token=${MAPBOX_TOKEN}&geometries=geojson`
+            );
+            const dirData = await dirRes.json();
+            if (dirData?.routes?.[0]?.distance) {
+              miles_carried_forward = Math.round(dirData.routes[0].distance * 0.000621371);
+              console.log(`[logNewService] miles_carried_forward calculado: ${miles_carried_forward} mi`);
+            }
           }
         } catch (e) {
-          console.warn('[logNewService] Error calculando miles_carried_forward con Mapbox:', e);
+          console.warn('[logNewService] Error calculando miles_carried_forward:', e);
         }
       } else if (!activeLoad) {
         // Camion vacio — calcular millas desde ultimo delivery hasta ubicacion del servicio
