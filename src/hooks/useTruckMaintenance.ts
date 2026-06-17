@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { getTenantId } from '@/hooks/useTenantId';
+import { MAPBOX_TOKEN } from '@/lib/mapConfig';
 
 export interface DbTruckMaintenance {
   id: string;
@@ -325,7 +326,6 @@ export function useTruckMaintenance() {
 
       if (activeLoad && (activeLoad as any)?.destination) {
         // Calcular millas desde ubicacion del servicio hasta el delivery de la carga activa
-        const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
         const destEncoded = encodeURIComponent((activeLoad as any).destination);
         const coordsFrom = `${input.service_lng},${input.service_lat}`;
         try {

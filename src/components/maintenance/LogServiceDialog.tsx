@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Camera, X, Loader2 } from 'lucide-react';
 import { PAYMENT_METHODS } from '@/components/expenses/expenseConstants';
 import { supabase } from '@/integrations/supabase/client';
+import { MAPBOX_TOKEN, mapboxGeocode } from '@/lib/mapConfig';
 
 interface Props {
   open: boolean;
@@ -51,8 +52,6 @@ export function LogServiceDialog({ open, onOpenChange, maintenanceType, onSubmit
   const [invoicePhotoUrl, setInvoicePhotoUrl] = useState<string | null>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
-
-  const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 
   const searchLocation = async (query: string) => {
     if (!query || query.length < 3) { setLocationSuggestions([]); return; }
@@ -112,13 +111,10 @@ export function LogServiceDialog({ open, onOpenChange, maintenanceType, onSubmit
     let finalLng = serviceLng;
     if (serviceLocation && (!finalLat || !finalLng)) {
       try {
-        const res = await fetch(
-          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(serviceLocation)}.json?access_token=${MAPBOX_TOKEN}&country=us&types=place,address&limit=1`
-        );
-        const data = await res.json();
-        if (data.features?.[0]) {
-          finalLng = data.features[0].center[0];
-          finalLat = data.features[0].center[1];
+        const coords = await mapboxGeocode(serviceLocation);
+        if (coords) {
+          finalLng = coords[0];
+          finalLat = coords[1];
           console.log(`[LogServiceDialog] Geocoded "${serviceLocation}" → ${finalLat}, ${finalLng}`);
         }
       } catch (e) {
