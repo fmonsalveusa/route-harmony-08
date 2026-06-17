@@ -1500,9 +1500,9 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
                   const stopTypeLabel = stop.type === 'pickup' ? 'Pick Up' : 'Delivery';
                   const stopDate = dbStop?.date || (stop.type === 'pickup' ? load.pickup_date : load.delivery_date);
                   const copyText = [
+                    stopTypeLabel,
                     nameLabel,
-                    stop.address,
-                    stopDate ? `${stopTypeLabel}: ${formatDate(stopDate)}` : stopTypeLabel,
+                    stop.address?.toUpperCase(),
                   ].filter(Boolean).join('\n');
                   return (
                     <div key={i} className="flex items-start gap-2">
