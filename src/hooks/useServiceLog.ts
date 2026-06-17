@@ -18,6 +18,8 @@ export interface DbServiceLog {
 
 export function useServiceLog(maintenanceId: string | null) {
   const qc = useQueryClient();
+
+  const { data: logs = [], isLoading } = useQuery({
     queryKey: ['service_log', maintenanceId],
     queryFn: async (): Promise<DbServiceLog[]> => {
       if (!maintenanceId) return [];
