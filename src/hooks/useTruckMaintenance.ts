@@ -222,26 +222,29 @@ export function useTruckMaintenance() {
   }, [invalidate]);
 
   const recalculateMiles = useCallback(async (truckId: string) => {
-    // Get all maintenance items for this truck
     const items = maintenanceItems.filter(m => m.truck_id === truckId);
     if (!items.length) return;
 
     for (const item of items) {
-      // Sum loaded + empty miles from loads since last service
+      // Sumar millas de cargas COMPLETADAS después del último servicio
       const { data, error } = await supabase
         .from('loads' as any)
-        .select('miles, empty_miles')
+        .select('miles, empty_miles, updated_at')
         .eq('truck_id', truckId)
-        .gte('pickup_date', item.last_performed_at)
-        .in('status', ['in_transit', 'picked_up', 'on_site_delivery', 'delivered', 'paid']);
+        .in('status', ['delivered', 'paid'])
+        .gte('updated_at', item.last_performed_at);
 
       if (error) { console.error(error); continue; }
 
-      const miles_accumulated = ((data as any[]) || []).reduce((sum, l) => {
+      const milesFromLoads = ((data as any[]) || []).reduce((sum, l) => {
         return sum + (Number(l.miles) || 0) + (Number(l.empty_miles) || 0);
       }, 0);
 
-      // Compute status
+      // miles_accumulated = millas acreditadas al hacer el servicio + millas de cargas completadas después
+      const miles_carried_forward = (item as any).miles_carried_forward || 0;
+      const miles_accumulated = miles_carried_forward + milesFromLoads;
+
+      // Calcular status por millas
       let milesStatus = 'ok';
       if (item.interval_miles && item.interval_miles > 0) {
         const pct = miles_accumulated / item.interval_miles;
@@ -249,11 +252,10 @@ export function useTruckMaintenance() {
         else if (pct >= 0.8) milesStatus = 'warning';
       }
 
+      // Calcular status por fecha
       let dateStatus = 'ok';
       if (item.next_due_date) {
-        const dueDate = new Date(item.next_due_date);
-        const now = new Date();
-        const daysUntil = (dueDate.getTime() - now.getTime()) / 86400000;
+        const daysUntil = (new Date(item.next_due_date).getTime() - Date.now()) / 86400000;
         if (daysUntil <= 0) dateStatus = 'due';
         else if (daysUntil <= 30) dateStatus = 'warning';
       }
@@ -269,7 +271,7 @@ export function useTruckMaintenance() {
         .update({ miles_accumulated, status: finalStatus } as any)
         .eq('id', item.id);
 
-      // Create notification if status worsened
+      // Notificar si el status empeoró
       if (finalStatus !== oldStatus && (finalStatus === 'warning' || finalStatus === 'due')) {
         const tenant_id = await getTenantId();
         const label = finalStatus === 'due' ? '⚠️ OVERDUE' : '⚡ Approaching';
@@ -287,6 +289,9 @@ export function useTruckMaintenance() {
   const logNewService = useCallback(async (id: string, input: {
     last_performed_at: string;
     last_miles: number;
+    service_location?: string | null;
+    service_lat?: number | null;
+    service_lng?: number | null;
     cost?: number | null;
     tax_amount?: number | null;
     vendor?: string | null;
@@ -303,6 +308,57 @@ export function useTruckMaintenance() {
     const next_due_date = item.interval_days
       ? new Date(new Date(input.last_performed_at).getTime() + item.interval_days * 86400000).toISOString().split('T')[0]
       : null;
+
+    // Calcular miles_carried_forward si hay ubicacion del servicio
+    let miles_carried_forward = 0;
+
+    if (input.service_lat && input.service_lng) {
+      // Buscar si hay carga activa para este camion
+      const { data: activeLoad } = await supabase
+        .from('loads' as any)
+        .select('id, miles, empty_miles, origin, destination')
+        .eq('truck_id', item.truck_id)
+        .in('status', ['in_transit', 'picked_up', 'on_site_pickup', 'on_site_delivery'])
+        .order('pickup_date', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (activeLoad && (activeLoad as any)?.destination) {
+        // Calcular millas desde ubicacion del servicio hasta el delivery de la carga activa
+        const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
+        const destEncoded = encodeURIComponent((activeLoad as any).destination);
+        const coordsFrom = `${input.service_lng},${input.service_lat}`;
+        try {
+          const res = await fetch(
+            `https://api.mapbox.com/directions/v5/mapbox/driving/${coordsFrom};${destEncoded}?access_token=${MAPBOX_TOKEN}&geometries=geojson`
+          );
+          const data = await res.json();
+          if (data?.routes?.[0]?.distance) {
+            // Convertir metros a millas
+            miles_carried_forward = Math.round(data.routes[0].distance * 0.000621371);
+          }
+        } catch (e) {
+          console.warn('[logNewService] Error calculando miles_carried_forward con Mapbox:', e);
+        }
+      } else if (!activeLoad) {
+        // Camion vacio — calcular millas desde ultimo delivery hasta ubicacion del servicio
+        const { data: lastLoad } = await supabase
+          .from('loads' as any)
+          .select('destination')
+          .eq('truck_id', item.truck_id)
+          .in('status', ['delivered', 'paid'])
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (lastLoad && (lastLoad as any)?.destination) {
+          // Estas millas ya deberían estar contadas en el acumulado, no se agregan al siguiente log
+          miles_carried_forward = 0;
+        }
+      }
+    }
+
+    console.log(`[logNewService] miles_carried_forward: ${miles_carried_forward}`);
 
     let expense_id: string | null = null;
     if (input.create_expense !== false && input.cost && input.cost > 0) {
@@ -345,6 +401,9 @@ export function useTruckMaintenance() {
       vendor: input.vendor || null,
       expense_id,
       invoice_photo_url: input.invoice_photo_url || null,
+      service_location: input.service_location || null,
+      service_lat: input.service_lat || null,
+      service_lng: input.service_lng || null,
     } as any);
 
     const { error } = await supabase.from('truck_maintenance' as any)
@@ -353,7 +412,8 @@ export function useTruckMaintenance() {
         last_miles: input.last_miles,
         next_due_miles,
         next_due_date,
-        miles_accumulated: 0,
+        miles_accumulated: miles_carried_forward, // Inicia con las millas acreditadas del tramo posterior
+        miles_carried_forward,
         status: 'ok',
         cost: input.cost || null,
         vendor: input.vendor || null,

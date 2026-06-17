@@ -16,6 +16,9 @@ interface Props {
   onSubmit: (data: {
     last_performed_at: string;
     last_miles: number;
+    service_location?: string | null;
+    service_lat?: number | null;
+    service_lng?: number | null;
     cost?: number | null;
     tax_amount?: number | null;
     vendor?: string | null;
@@ -30,6 +33,13 @@ interface Props {
 export function LogServiceDialog({ open, onOpenChange, maintenanceType, onSubmit }: Props) {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [miles, setMiles] = useState('');
+  const [serviceLocation, setServiceLocation] = useState('');
+  const [serviceLat, setServiceLat] = useState<number | null>(null);
+  const [serviceLng, setServiceLng] = useState<number | null>(null);
+  const [locationSuggestions, setLocationSuggestions] = useState<any[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const locationDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [cost, setCost] = useState('');
   const [taxAmount, setTaxAmount] = useState('');
   const [vendor, setVendor] = useState('');
@@ -41,6 +51,38 @@ export function LogServiceDialog({ open, onOpenChange, maintenanceType, onSubmit
   const [invoicePhotoUrl, setInvoicePhotoUrl] = useState<string | null>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
+
+  const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
+
+  const searchLocation = async (query: string) => {
+    if (!query || query.length < 3) { setLocationSuggestions([]); return; }
+    setLoadingSuggestions(true);
+    try {
+      const res = await fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${MAPBOX_TOKEN}&country=us&types=place,address&limit=5`
+      );
+      const data = await res.json();
+      setLocationSuggestions(data.features || []);
+      setShowSuggestions(true);
+    } catch { setLocationSuggestions([]); }
+    finally { setLoadingSuggestions(false); }
+  };
+
+  const handleLocationInput = (val: string) => {
+    setServiceLocation(val);
+    setServiceLat(null);
+    setServiceLng(null);
+    if (locationDebounce.current) clearTimeout(locationDebounce.current);
+    locationDebounce.current = setTimeout(() => searchLocation(val), 350);
+  };
+
+  const selectLocation = (feature: any) => {
+    setServiceLocation(feature.place_name);
+    setServiceLat(feature.center[1]);
+    setServiceLng(feature.center[0]);
+    setLocationSuggestions([]);
+    setShowSuggestions(false);
+  };
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -67,6 +109,9 @@ export function LogServiceDialog({ open, onOpenChange, maintenanceType, onSubmit
     const ok = await onSubmit({
       last_performed_at: date,
       last_miles: Number(miles) || 0,
+      service_location: serviceLocation || null,
+      service_lat: serviceLat,
+      service_lng: serviceLng,
       cost: cost ? Number(cost) : null,
       tax_amount: taxAmount ? Number(taxAmount) : null,
       vendor: vendor || null,
@@ -99,6 +144,35 @@ export function LogServiceDialog({ open, onOpenChange, maintenanceType, onSubmit
               <div>
                 <Label>Current Odometer (miles)</Label>
                 <Input type="number" value={miles} onChange={e => setMiles(e.target.value)} placeholder="160000" />
+              </div>
+              <div className="md:col-span-2 relative">
+                <Label>Service Location <span className="text-muted-foreground font-normal">(ciudad donde se realizó el servicio)</span></Label>
+                <Input
+                  value={serviceLocation}
+                  onChange={e => handleLocationInput(e.target.value)}
+                  onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                  placeholder="Ej: Atlanta, GA"
+                  autoComplete="off"
+                />
+                {loadingSuggestions && <div className="absolute right-3 top-9 text-xs text-muted-foreground">Buscando...</div>}
+                {showSuggestions && locationSuggestions.length > 0 && (
+                  <div className="absolute z-50 w-full bg-popover border rounded-md shadow-md mt-1 max-h-48 overflow-y-auto">
+                    {locationSuggestions.map((f: any) => (
+                      <div
+                        key={f.id}
+                        className="px-3 py-2 text-sm cursor-pointer hover:bg-muted"
+                        onMouseDown={() => selectLocation(f)}
+                      >
+                        {f.place_name}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {serviceLat && serviceLng && (
+                  <div className="text-[10px] text-muted-foreground mt-0.5">
+                    ✓ Coordenadas: {serviceLat.toFixed(4)}, {serviceLng.toFixed(4)}
+                  </div>
+                )}
               </div>
             </div>
           </div>

@@ -21,18 +21,23 @@ async function runMaintenanceCheck() {
     const truckItems = (items as any[]).filter((m: any) => m.truck_id === truckId);
 
     for (const item of truckItems) {
-      // Sumar millas acumuladas desde el último servicio
+      // Sumar solo cargas COMPLETADAS después del último servicio
       const { data: loads } = await supabase
         .from('loads' as any)
-        .select('miles, empty_miles')
+        .select('miles, empty_miles, updated_at')
         .eq('truck_id', truckId)
-        .gte('pickup_date', item.last_performed_at)
-        .in('status', ['in_transit', 'picked_up', 'on_site_delivery', 'delivered', 'paid']);
+        .in('status', ['delivered', 'paid'])
+        .gte('updated_at', item.last_performed_at);
 
-      const miles_accumulated = ((loads as any[]) || []).reduce(
+      const milesFromLoads = ((loads as any[]) || []).reduce(
         (sum: number, l: any) => sum + (Number(l.miles) || 0) + (Number(l.empty_miles) || 0),
         0
       );
+
+      // miles_accumulated = miles_carried_forward (millas acreditadas al hacer el servicio)
+      //                   + millas de cargas completadas después del servicio
+      const miles_carried_forward = (item as any).miles_carried_forward || 0;
+      const miles_accumulated = miles_carried_forward + milesFromLoads;
 
       // Status por millas
       let milesStatus = 'ok';
