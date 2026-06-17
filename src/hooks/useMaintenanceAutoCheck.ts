@@ -69,7 +69,7 @@ async function runMaintenanceCheck() {
       if (finalStatus === 'warning' || finalStatus === 'due') {
         const tenant_id = await getTenantId();
         const label = finalStatus === 'due' ? '⚠️ OVERDUE' : '⚡ Approaching Due';
-        const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+        const today = new Date().toISOString().slice(0, 10);
 
         // Verificar si ya existe notificacion de este mantenimiento hoy
         const { data: existing } = await supabase
@@ -87,13 +87,30 @@ async function runMaintenanceCheck() {
           continue;
         }
 
+        // Obtener unit number del camion y nombre del driver
+        const { data: truck } = await supabase
+          .from('trucks' as any)
+          .select('unit_number')
+          .eq('id', item.truck_id)
+          .maybeSingle();
+
+        const { data: driver } = await supabase
+          .from('drivers' as any)
+          .select('name')
+          .eq('truck_id', item.truck_id)
+          .maybeSingle();
+
+        const unitLabel = (truck as any)?.unit_number ? `Unit #${(truck as any).unit_number}` : '';
+        const driverLabel = (driver as any)?.name ? (driver as any).name : '';
+        const contextLabel = [unitLabel, driverLabel].filter(Boolean).join(' — ');
+
         // Notificacion en app
         await supabase.from('notifications' as any).insert({
           tenant_id,
-          title: `Maintenance ${label}`,
+          title: `Maintenance ${label}${contextLabel ? ` · ${unitLabel}` : ''}`,
           message: `${item.maintenance_type} is ${
             finalStatus === 'due' ? 'overdue' : 'approaching due date'
-          }. ${miles_accumulated.toLocaleString()} mi accumulated.`,
+          }.${contextLabel ? ` ${contextLabel}.` : ''} ${miles_accumulated.toLocaleString()} mi accumulated.`,
           type: 'maintenance',
         } as any);
 
