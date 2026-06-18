@@ -360,18 +360,27 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
 
       if (data?.success && data?.data) {
         const extracted = data.data;
+
+        // Sanitizar — si el valor no es un numero valido, usar el valor anterior
+        const safeNum = (val: any, fallback: any) => {
+          const n = Number(val);
+          return (!val || val === '<UNKNOWN>' || isNaN(n)) ? fallback : n;
+        };
+        const safeStr = (val: any, fallback: any) =>
+          (!val || val === '<UNKNOWN>') ? fallback : val;
+
         setFormData(prev => ({
           ...prev,
-          origin: extracted.origin || prev.origin,
-          destination: extracted.destination || prev.destination,
-          pickupDate: extracted.pickupDate || prev.pickupDate,
-          deliveryDate: extracted.deliveryDate || prev.deliveryDate,
-          weight: extracted.weight || prev.weight,
-          totalRate: extracted.totalRate || prev.totalRate,
-          referenceNumber: extracted.referenceNumber || prev.referenceNumber,
-          brokerClient: extracted.brokerClient || prev.brokerClient,
-          miles: extracted.miles || prev.miles,
-          notes: extracted.notes || prev.notes,
+          origin: safeStr(extracted.origin, prev.origin),
+          destination: safeStr(extracted.destination, prev.destination),
+          pickupDate: safeStr(extracted.pickupDate, prev.pickupDate),
+          deliveryDate: safeStr(extracted.deliveryDate, prev.deliveryDate),
+          weight: safeNum(extracted.weight, prev.weight),
+          totalRate: safeNum(extracted.totalRate, prev.totalRate),
+          referenceNumber: safeStr(extracted.referenceNumber, prev.referenceNumber),
+          brokerClient: safeStr(extracted.brokerClient, prev.brokerClient),
+          miles: safeNum(extracted.miles, prev.miles),
+          notes: safeStr(extracted.notes, prev.notes),
         }));
 
         // Auto-match carrier name to a company
