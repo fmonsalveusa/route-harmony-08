@@ -64,16 +64,17 @@ export function useLoadStops(loadId?: string) {
   }, [loadId, queryClient]);
 
   const saveStops = useCallback(async (targetLoadId: string, newStops: Omit<CreateStopInput, 'load_id'>[]) => {
-    // Guardar fotos existentes antes de borrar — mapa de address → photos
+    // Guardar mapping de address → stop_id antes de borrar
     const { data: existingData } = await supabase
       .from('load_stops')
-      .select('address, photos')
+      .select('id, address, photos')
       .eq('load_id', targetLoadId);
 
-    const photosMap = new Map<string, any>(
-      ((existingData as any[]) || [])
-        .filter(s => s.photos)
-        .map(s => [s.address?.toLowerCase().trim(), s.photos])
+    const existingMap = new Map<string, { id: string; photos: any }>(
+      ((existingData as any[]) || []).map(s => [
+        s.address?.toLowerCase().trim(),
+        { id: s.id, photos: s.photos }
+      ])
     );
 
     await supabase.from('load_stops').delete().eq('load_id', targetLoadId);
@@ -81,7 +82,7 @@ export function useLoadStops(loadId?: string) {
     if (newStops.length > 0) {
       const tenant_id = await getTenantId();
       const inserts = newStops.map((s, i) => {
-        const savedPhotos = photosMap.get(s.address?.toLowerCase().trim());
+        const existing = existingMap.get(s.address?.toLowerCase().trim());
         return {
           load_id: targetLoadId,
           stop_type: s.stop_type,
@@ -91,15 +92,31 @@ export function useLoadStops(loadId?: string) {
           shipper: (s as any).shipper || null,
           consignee: (s as any).consignee || null,
           tenant_id,
-          ...(savedPhotos ? { photos: savedPhotos } : {}),
+          ...(existing?.photos ? { photos: existing.photos } : {}),
         };
       });
 
-      const { error } = await supabase.from('load_stops').insert(inserts);
-      if (error) console.error('Error saving load stops:', error);
+      const { data: insertedStops, error } = await supabase
+        .from('load_stops')
+        .insert(inserts)
+        .select('id, address');
+
+      if (error) {
+        console.error('Error saving load stops:', error);
+      } else if (insertedStops) {
+        // Actualizar pod_documents con los nuevos stop_ids
+        for (const newStop of insertedStops as any[]) {
+          const oldStop = existingMap.get(newStop.address?.toLowerCase().trim());
+          if (oldStop?.id && oldStop.id !== newStop.id) {
+            await supabase
+              .from('pod_documents' as any)
+              .update({ stop_id: newStop.id } as any)
+              .eq('stop_id', oldStop.id);
+          }
+        }
+      }
     }
 
-    // Invalidar caché para que el panel refleje los nuevos stops
     await queryClient.invalidateQueries({ queryKey: stopsQueryKey(targetLoadId) });
   }, [queryClient]);
 
