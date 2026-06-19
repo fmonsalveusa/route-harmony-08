@@ -301,6 +301,59 @@ async function applyRecurringDeductions(payments: any[], tenant_id: string | nul
   }
 }
 
+/**
+ * Update PENDING payments for a load when the RC rate changes.
+ * Paid payments are never touched — they stay as accounting records.
+ * Recalculates amount using the percentage_applied already stored.
+ */
+export async function updatePaymentsForLoad(loadId: string, newTotalRate: number) {
+  // Obtener pagos existentes de este load
+  const { data: existing, error } = await supabase
+    .from('payments')
+    .select('id, recipient_type, recipient_id, percentage_applied, status, amount, total_rate')
+    .eq('load_id', loadId);
+
+  if (error || !existing || existing.length === 0) return;
+
+  const pendingPayments = (existing as any[]).filter(p => p.status === 'pending');
+  if (pendingPayments.length === 0) {
+    console.log('[updatePaymentsForLoad] No pending payments to update — paid payments preserved');
+    return;
+  }
+
+  const totalRate = Number(newTotalRate);
+  let updatedCount = 0;
+
+  for (const payment of pendingPayments) {
+    const pct = Number(payment.percentage_applied);
+    if (pct <= 0) continue;
+
+    const newAmount = Math.round((totalRate * pct / 100) * 100) / 100;
+
+    // Solo actualizar si el monto cambio
+    if (newAmount === Number(payment.amount) && totalRate === Number(payment.total_rate)) continue;
+
+    const { error: updateError } = await supabase
+      .from('payments')
+      .update({
+        amount: newAmount,
+        total_rate: totalRate,
+      } as any)
+      .eq('id', payment.id);
+
+    if (updateError) {
+      console.error('[updatePaymentsForLoad] Error updating payment:', updateError);
+    } else {
+      updatedCount++;
+      console.log(`[updatePaymentsForLoad] Updated ${payment.recipient_type} payment: $${payment.amount} → $${newAmount}`);
+    }
+  }
+
+  if (updatedCount > 0) {
+    toast({ title: `${updatedCount} pago(s) actualizado(s) con el nuevo rate` });
+  }
+}
+
 /** Delete only PENDING payments for a load (paid payments are preserved as accounting record) */
 export async function deletePaymentsForLoad(loadId: string) {
   const { data: existing } = await supabase

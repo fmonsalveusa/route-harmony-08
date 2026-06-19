@@ -16,6 +16,7 @@ import { useCompanies } from '@/hooks/useCompanies';
 import { useLoadStops } from '@/hooks/useLoadStops';
 import type { DbLoad, CreateLoadInput } from '@/hooks/useLoads';
 import { createNotification } from '@/hooks/useNotifications';
+import { updatePaymentsForLoad } from '@/hooks/usePayments';
 import { useAuth } from '@/contexts/AuthContext';
 import { getTenantId } from '@/hooks/useTenantId';
 
@@ -672,6 +673,13 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
     // Notify driver when a load is assigned (new or changed driver)
     const assignedDriverId = selectedDriver;
     const previousDriverId = editLoad?.driver_id;
+
+    // Si es edicion y el rate cambio, actualizar pagos pendientes automaticamente
+    if (editLoad?.id && payload.total_rate && payload.total_rate !== editLoad.total_rate) {
+      console.log(`[LoadFormDialog] Rate changed: $${editLoad.total_rate} → $${payload.total_rate} — updating pending payments`);
+      await updatePaymentsForLoad(editLoad.id, payload.total_rate);
+    }
+
     if (assignedDriverId && assignedDriverId !== previousDriverId) {
       const driverName = drivers.find(d => d.id === assignedDriverId)?.name || '';
       const refNum = payload.reference_number;
