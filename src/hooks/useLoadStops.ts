@@ -13,8 +13,6 @@ export interface LoadStop {
   lat: number | null;
   lng: number | null;
   distance_from_prev: number | null;
-  shipper: string | null;
-  consignee: string | null;
   created_at: string;
 }
 
@@ -24,8 +22,6 @@ export interface CreateStopInput {
   address: string;
   stop_order: number;
   date?: string;
-  shipper?: string;
-  consignee?: string;
 }
 
 const stopsQueryKey = (loadId: string) => ['load_stops', loadId];
@@ -68,20 +64,36 @@ export function useLoadStops(loadId?: string) {
   }, [loadId, queryClient]);
 
   const saveStops = useCallback(async (targetLoadId: string, newStops: Omit<CreateStopInput, 'load_id'>[]) => {
+    // Guardar fotos existentes antes de borrar — mapa de address → photos
+    const { data: existingData } = await supabase
+      .from('load_stops')
+      .select('address, photos')
+      .eq('load_id', targetLoadId);
+
+    const photosMap = new Map<string, any>(
+      ((existingData as any[]) || [])
+        .filter(s => s.photos)
+        .map(s => [s.address?.toLowerCase().trim(), s.photos])
+    );
+
     await supabase.from('load_stops').delete().eq('load_id', targetLoadId);
 
     if (newStops.length > 0) {
       const tenant_id = await getTenantId();
-      const inserts = newStops.map((s, i) => ({
-        load_id: targetLoadId,
-        stop_type: s.stop_type,
-        address: s.address,
-        stop_order: s.stop_order ?? i,
-        date: s.date || null,
-        shipper: s.shipper || null,
-        consignee: s.consignee || null,
-        tenant_id,
-      }));
+      const inserts = newStops.map((s, i) => {
+        const savedPhotos = photosMap.get(s.address?.toLowerCase().trim());
+        return {
+          load_id: targetLoadId,
+          stop_type: s.stop_type,
+          address: s.address,
+          stop_order: s.stop_order ?? i,
+          date: s.date || null,
+          shipper: (s as any).shipper || null,
+          consignee: (s as any).consignee || null,
+          tenant_id,
+          ...(savedPhotos ? { photos: savedPhotos } : {}),
+        };
+      });
 
       const { error } = await supabase.from('load_stops').insert(inserts);
       if (error) console.error('Error saving load stops:', error);
