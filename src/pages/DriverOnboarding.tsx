@@ -55,6 +55,8 @@ export default function DriverOnboarding() {
     address: '', city: '', zip: '',
     birthday: null as string | null,
     emergency_contact_name: '', emergency_phone: '',
+    bank_name: '', account_holder_name: '', routing_number: '',
+    account_number: '', account_type: 'checking',
   });
   const [driverFiles, setDriverFiles] = useState<Record<string, File>>({});
 
@@ -395,6 +397,59 @@ export default function DriverOnboarding() {
                       onFileChange={f => setDriverFiles(prev => ({ ...prev, [doc.key]: f }))}
                     />
                   ))}
+                </div>
+              </div>
+
+              {/* Banking Information */}
+              <div className="border-t pt-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Label className="text-base font-semibold">Banking Information</Label>
+                  <span className="text-xs text-muted-foreground">(ACH Direct Deposit)</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label>Account Holder Name</Label>
+                    <Input
+                      value={driver.account_holder_name}
+                      onChange={e => setDriver(d => ({ ...d, account_holder_name: e.target.value }))}
+                      placeholder="Full name as it appears on the account"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Bank Name</Label>
+                    <Input
+                      value={driver.bank_name}
+                      onChange={e => setDriver(d => ({ ...d, bank_name: e.target.value }))}
+                      placeholder="e.g. Chase, Bank of America"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Account Type</Label>
+                    <Select value={driver.account_type} onValueChange={v => setDriver(d => ({ ...d, account_type: v }))}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="checking">Checking</SelectItem>
+                        <SelectItem value="savings">Savings</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Routing Number</Label>
+                    <Input
+                      value={driver.routing_number}
+                      onChange={e => setDriver(d => ({ ...d, routing_number: e.target.value.replace(/\D/g, '').slice(0, 9) }))}
+                      placeholder="9-digit routing number"
+                      maxLength={9}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Account Number</Label>
+                    <Input
+                      value={driver.account_number}
+                      onChange={e => setDriver(d => ({ ...d, account_number: e.target.value.replace(/\D/g, '') }))}
+                      placeholder="Account number"
+                    />
+                  </div>
                 </div>
               </div>
 

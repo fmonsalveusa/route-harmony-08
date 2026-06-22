@@ -148,6 +148,28 @@ export function DriverDetailDialog({ open, onOpenChange, driver, truckLabel, dis
             </div>
           </section>
 
+          {/* Banking Information */}
+          {((driver as any).bank_name || (driver as any).routing_number || (driver as any).account_number) && (
+            <section className="space-y-2 border-t pt-4">
+              <h3 className="font-semibold text-sm border-b pb-1">Banking Information (ACH)</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3">
+                <Info label="Account Holder">{(driver as any).account_holder_name || '—'}</Info>
+                <Info label="Bank Name">{(driver as any).bank_name || '—'}</Info>
+                <Info label="Account Type">{(driver as any).account_type ? (driver as any).account_type.charAt(0).toUpperCase() + (driver as any).account_type.slice(1) : '—'}</Info>
+                <Info label="Routing Number">
+                  {(driver as any).routing_number
+                    ? `****${(driver as any).routing_number.slice(-4)}`
+                    : '—'}
+                </Info>
+                <Info label="Account Number">
+                  {(driver as any).account_number
+                    ? `****${(driver as any).account_number.slice(-4)}`
+                    : '—'}
+                </Info>
+              </div>
+            </section>
+          )}
+
           {/* Documents */}
           <section className="space-y-2 border-t pt-4">
             <h3 className="font-semibold text-sm border-b pb-1">Documents</h3>
