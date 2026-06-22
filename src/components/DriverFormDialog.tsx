@@ -30,7 +30,7 @@ interface DriverFormDialogProps {
 const emptyForm: DriverInput = {
   name: '', email: '', phone: '', license: '',
   license_expiry: null, medical_card_expiry: null,
-  status: 'available', service_type: 'owner_operator',
+  status: 'pending', service_type: 'owner_operator',
   dispatcher_id: null, truck_id: null,
   investor_id: null, investor_name: null, pay_percentage: 0, investor_pay_percentage: 0,
   factoring_percentage: 2,
@@ -210,9 +210,8 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
             <Select value={form.status} onValueChange={v => set('status', v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
+                <SelectItem value="pending">Pending</SelectItem>
                 <SelectItem value="available">Available</SelectItem>
-                <SelectItem value="assigned">Assigned</SelectItem>
-                <SelectItem value="resting">Off Duty</SelectItem>
                 <SelectItem value="inactive">Inactive</SelectItem>
               </SelectContent>
             </Select>
