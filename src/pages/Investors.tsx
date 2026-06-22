@@ -22,9 +22,30 @@ const InvestorFormDialog = ({
   investor?: DbInvestor | null;
   onSubmit: (data: InvestorInput) => Promise<void>;
 }) => {
-  const getInitialForm = (): InvestorInput => investor
-    ? { name: investor.name, email: investor.email || '', phone: investor.phone || '', notes: investor.notes || '', pay_percentage: investor.pay_percentage ?? 0 }
-    : { name: '', email: '', phone: '', notes: '', pay_percentage: 0 };
+  const getInitialForm = (): InvestorInput => investor ? {
+    name: investor.name,
+    email: investor.email || '',
+    phone: investor.phone || '',
+    notes: investor.notes || '',
+    pay_percentage: investor.pay_percentage ?? 0,
+    address: investor.address || '',
+    city: investor.city || '',
+    state: investor.state || '',
+    zip: investor.zip || '',
+    business_name: investor.business_name || '',
+    ein: investor.ein || '',
+    ssn_last4: investor.ssn_last4 || '',
+    bank_name: investor.bank_name || '',
+    account_holder_name: investor.account_holder_name || '',
+    routing_number: investor.routing_number || '',
+    account_number: investor.account_number || '',
+    account_type: investor.account_type || 'checking',
+  } : {
+    name: '', email: '', phone: '', notes: '', pay_percentage: 0,
+    address: '', city: '', state: '', zip: '',
+    business_name: '', ein: '', ssn_last4: '',
+    bank_name: '', account_holder_name: '', routing_number: '', account_number: '', account_type: 'checking',
+  };
 
   const [form, setForm] = useState<InvestorInput>(getInitialForm);
   const [saving, setSaving] = useState(false);
@@ -51,6 +72,18 @@ const InvestorFormDialog = ({
         phone: form.phone?.trim() || null,
         notes: form.notes?.trim() || null,
         pay_percentage: Number(form.pay_percentage) || 0,
+        address: form.address?.trim() || null,
+        city: form.city?.trim() || null,
+        state: form.state?.trim() || null,
+        zip: form.zip?.trim() || null,
+        business_name: form.business_name?.trim() || null,
+        ein: form.ein?.trim() || null,
+        ssn_last4: form.ssn_last4?.trim() || null,
+        bank_name: form.bank_name?.trim() || null,
+        account_holder_name: form.account_holder_name?.trim() || null,
+        routing_number: form.routing_number?.trim() || null,
+        account_number: form.account_number?.trim() || null,
+        account_type: form.account_type || 'checking',
       });
       onOpenChange(false);
     } finally {
@@ -60,50 +93,80 @@ const InvestorFormDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={handleOpen}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{investor ? 'Edit Investor' : 'New Investor'}</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 py-2">
-          <div className="space-y-2">
-            <Label>Name *</Label>
-            <Input
-              value={form.name}
-              onChange={e => set('name', e.target.value)}
-              placeholder="Full name"
-              autoFocus
-            />
+        <div className="space-y-6 py-2">
+
+          {/* Basic Info */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Personal Information</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2 sm:col-span-2">
+                <Label>Full Name *</Label>
+                <Input value={form.name} onChange={e => set('name', e.target.value)} placeholder="Full name" autoFocus />
+              </div>
+              <div className="space-y-2">
+                <Label>Email</Label>
+                <Input type="email" value={form.email || ''} onChange={e => set('email', e.target.value)} placeholder="investor@email.com" />
+              </div>
+              <div className="space-y-2">
+                <Label>Phone</Label>
+                <Input value={form.phone || ''} onChange={e => set('phone', e.target.value)} placeholder="555-0000" />
+              </div>
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <Label>Email</Label>
-            <Input
-              type="email"
-              value={form.email || ''}
-              onChange={e => set('email', e.target.value)}
-              placeholder="investor@email.com"
-            />
+          {/* Address */}
+          <div className="space-y-3 border-t pt-4">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Address</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2 sm:col-span-2">
+                <Label>Street Address</Label>
+                <Input value={form.address || ''} onChange={e => set('address', e.target.value)} placeholder="123 Main St" />
+              </div>
+              <div className="space-y-2">
+                <Label>City</Label>
+                <Input value={form.city || ''} onChange={e => set('city', e.target.value)} placeholder="Miami" />
+              </div>
+              <div className="space-y-2">
+                <Label>State</Label>
+                <Input value={form.state || ''} onChange={e => set('state', e.target.value)} placeholder="FL" maxLength={2} />
+              </div>
+              <div className="space-y-2">
+                <Label>Zip Code</Label>
+                <Input value={form.zip || ''} onChange={e => set('zip', e.target.value)} placeholder="33101" />
+              </div>
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <Label>Phone</Label>
-            <Input
-              value={form.phone || ''}
-              onChange={e => set('phone', e.target.value)}
-              placeholder="555-0000"
-            />
+          {/* Business Info */}
+          <div className="space-y-3 border-t pt-4">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Business Information <span className="text-xs font-normal normal-case">(opcional)</span></h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2 sm:col-span-2">
+                <Label>Business Name (LLC / Corp)</Label>
+                <Input value={form.business_name || ''} onChange={e => set('business_name', e.target.value)} placeholder="e.g. Smith Transport LLC" />
+              </div>
+              <div className="space-y-2">
+                <Label>EIN (si tiene empresa)</Label>
+                <Input value={form.ein || ''} onChange={e => set('ein', e.target.value)} placeholder="XX-XXXXXXX" />
+              </div>
+              <div className="space-y-2">
+                <Label>SSN Last 4 (si es persona natural)</Label>
+                <Input value={form.ssn_last4 || ''} onChange={e => set('ssn_last4', e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="XXXX" maxLength={4} />
+              </div>
+            </div>
           </div>
 
-          {/* Pay percentage — key field */}
-          <div className="space-y-2 p-3 rounded-lg border-2 border-violet-400/50 bg-violet-50 dark:bg-violet-950/20">
+          {/* Pay % */}
+          <div className="space-y-2 border-t pt-4 p-3 rounded-lg border-2 border-violet-400/50 bg-violet-50 dark:bg-violet-950/20">
             <Label className="font-semibold text-violet-700 dark:text-violet-300 flex items-center gap-1.5">
               <Percent className="h-4 w-4" /> Investor Pay % ⭐
             </Label>
             <Input
-              type="number"
-              min={0}
-              max={100}
-              step={0.5}
+              type="number" min={0} max={100} step={0.5}
               value={form.pay_percentage ?? ''}
               onChange={e => set('pay_percentage', e.target.value)}
               placeholder="e.g. 75"
@@ -111,18 +174,49 @@ const InvestorFormDialog = ({
             />
             <p className="text-xs text-violet-600 dark:text-violet-400">
               Percentage of each load's total rate paid to this investor.
-              This value auto-fills when the investor is assigned to a driver.
             </p>
           </div>
 
-          <div className="space-y-2">
-            <Label>Notes</Label>
-            <Input
-              value={form.notes || ''}
-              onChange={e => set('notes', e.target.value)}
-              placeholder="Optional notes"
-            />
+          {/* Banking */}
+          <div className="space-y-3 border-t pt-4">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Banking Information <span className="text-xs font-normal normal-case">(ACH Direct Deposit)</span></h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2 sm:col-span-2">
+                <Label>Account Holder Name</Label>
+                <Input value={form.account_holder_name || ''} onChange={e => set('account_holder_name', e.target.value)} placeholder="Full name as it appears on the account" />
+              </div>
+              <div className="space-y-2">
+                <Label>Bank Name</Label>
+                <Input value={form.bank_name || ''} onChange={e => set('bank_name', e.target.value)} placeholder="e.g. Chase, Bank of America" />
+              </div>
+              <div className="space-y-2">
+                <Label>Account Type</Label>
+                <select
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={form.account_type || 'checking'}
+                  onChange={e => set('account_type', e.target.value)}
+                >
+                  <option value="checking">Checking</option>
+                  <option value="savings">Savings</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label>Routing Number</Label>
+                <Input value={form.routing_number || ''} onChange={e => set('routing_number', e.target.value.replace(/\D/g, '').slice(0, 9))} placeholder="9-digit routing number" maxLength={9} />
+              </div>
+              <div className="space-y-2">
+                <Label>Account Number</Label>
+                <Input value={form.account_number || ''} onChange={e => set('account_number', e.target.value.replace(/\D/g, ''))} placeholder="Account number" />
+              </div>
+            </div>
           </div>
+
+          {/* Notes */}
+          <div className="space-y-2 border-t pt-4">
+            <Label>Notes</Label>
+            <Input value={form.notes || ''} onChange={e => set('notes', e.target.value)} placeholder="Optional notes" />
+          </div>
+
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
@@ -266,20 +360,20 @@ const Investors = () => {
               <th className="text-left p-4 font-medium text-muted-foreground">Name</th>
               <th className="text-left p-4 font-medium text-muted-foreground">Email</th>
               <th className="text-left p-4 font-medium text-muted-foreground">Phone</th>
+              <th className="text-left p-4 font-medium text-muted-foreground hidden md:table-cell">Location</th>
               <th className="text-center p-4 font-medium text-muted-foreground">Pay %</th>
               <th className="text-center p-4 font-medium text-muted-foreground">Drivers</th>
               <th className="text-right p-4 font-medium text-muted-foreground">Pending</th>
-              <th className="text-left p-4 font-medium text-muted-foreground">Notes</th>
               <th className="text-right p-4 font-medium text-muted-foreground">Actions</th>
             </tr>
           </thead>
           <tbody>
             {loading && (
-              <tr><td colSpan={8} className="text-center p-8 text-muted-foreground">Loading...</td></tr>
+              <tr><td colSpan={7} className="text-center p-8 text-muted-foreground">Loading...</td></tr>
             )}
             {!loading && filtered.length === 0 && (
               <tr>
-                <td colSpan={8} className="text-center p-8 text-muted-foreground">
+                <td colSpan={7} className="text-center p-8 text-muted-foreground">
                   {search ? 'No investors match your search.' : 'No investors yet — click "New Investor" to add one.'}
                 </td>
               </tr>
@@ -304,6 +398,9 @@ const Investors = () => {
                     ? <span className="flex items-center gap-1"><Phone className="h-3.5 w-3.5" />{formatPhone(inv.phone)}</span>
                     : '—'}
                 </td>
+                <td className="p-4 text-muted-foreground text-xs hidden md:table-cell">
+                  {inv.city && inv.state ? `${inv.city}, ${inv.state}` : inv.city || inv.state || '—'}
+                </td>
                 <td className="p-4 text-center">
                   <span className="inline-flex items-center justify-center rounded-full bg-violet-500/10 text-violet-600 dark:text-violet-400 text-xs font-semibold min-w-[40px] h-6 px-2">
                     {inv.pay_percentage}%
@@ -318,9 +415,6 @@ const Investors = () => {
                   {pendingPerInvestor[inv.id] > 0
                     ? <span className="font-semibold text-amber-500">${pendingPerInvestor[inv.id].toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
                     : <span className="text-muted-foreground text-xs">—</span>}
-                </td>
-                <td className="p-4 text-muted-foreground text-xs max-w-[180px] truncate">
-                  {inv.notes || '—'}
                 </td>
                 <td className="p-4 text-right">
                   <div className="flex items-center justify-end gap-1.5">

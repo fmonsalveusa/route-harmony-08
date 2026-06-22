@@ -13,6 +13,25 @@ export interface DbInvestor {
   tenant_id: string | null;
   created_at: string;
   updated_at: string;
+  // Address
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  zip: string | null;
+  // Business
+  business_name: string | null;
+  ein: string | null;
+  ssn_last4: string | null;
+  // Banking
+  bank_name: string | null;
+  account_holder_name: string | null;
+  routing_number: string | null;
+  account_number: string | null;
+  account_type: string | null;
+  // Documents
+  w9_url: string | null;
+  service_agreement_url: string | null;
+  leasing_agreement_url: string | null;
 }
 
 export interface InvestorInput {
@@ -21,6 +40,25 @@ export interface InvestorInput {
   phone?: string | null;
   notes?: string | null;
   pay_percentage: number;
+  // Address
+  address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zip?: string | null;
+  // Business
+  business_name?: string | null;
+  ein?: string | null;
+  ssn_last4?: string | null;
+  // Banking
+  bank_name?: string | null;
+  account_holder_name?: string | null;
+  routing_number?: string | null;
+  account_number?: string | null;
+  account_type?: string | null;
+  // Documents
+  w9_url?: string | null;
+  service_agreement_url?: string | null;
+  leasing_agreement_url?: string | null;
 }
 
 export function useInvestors() {
@@ -104,5 +142,35 @@ export function useInvestors() {
     return true;
   }, []);
 
-  return { investors, loading, createInvestor, updateInvestor, deleteInvestor, refetch: fetchInvestors };
+  const uploadDocument = useCallback(async (file: File, investorId: string, docType: string): Promise<string | null> => {
+    const ext = file.name.split('.').pop();
+    const path = `investors/${investorId}/${docType}_${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from('driver-documents').upload(path, file);
+    if (error) {
+      toastRef.current({ title: 'Error uploading document', description: error.message, variant: 'destructive' });
+      return null;
+    }
+    const { data: urlData } = await supabase.storage.from('driver-documents').createSignedUrl(path, 31536000);
+    return urlData?.signedUrl || null;
+  }, []);
+
+  const getDocSignedUrl = useCallback(async (storedUrl: string): Promise<string | null> => {
+    try {
+      const match = storedUrl.match(/\/driver-documents\/([^?]+)/);
+      let path: string;
+      if (match) {
+        path = decodeURIComponent(match[1]);
+      } else if (storedUrl.startsWith('http')) {
+        return storedUrl;
+      } else {
+        path = storedUrl;
+      }
+      const { data } = await supabase.storage.from('driver-documents').createSignedUrl(path, 3600);
+      return data?.signedUrl || storedUrl;
+    } catch {
+      return storedUrl;
+    }
+  }, []);
+
+  return { investors, loading, createInvestor, updateInvestor, deleteInvestor, refetch: fetchInvestors, uploadDocument, getDocSignedUrl };
 }
