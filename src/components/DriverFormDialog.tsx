@@ -335,18 +335,21 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
                   </SelectContent>
                 </Select>
                 <div className="flex gap-2 items-center">
-                  <Input
-                    type="number"
-                    min={0} max={100} step={0.5}
-                    className="h-8 text-xs"
-                    placeholder="% del rate total"
-                    value={newInvestor.pay_percentage}
-                    onChange={e => setNewInvestor(prev => ({ ...prev, pay_percentage: e.target.value }))}
-                  />
+                  <div className="flex-1 space-y-1">
+                    <label className="text-[11px] text-muted-foreground font-medium">% del Rate Total de cada carga</label>
+                    <Input
+                      type="number"
+                      min={0} max={100} step={0.5}
+                      className="h-8 text-xs"
+                      placeholder="Ej: 15"
+                      value={newInvestor.pay_percentage}
+                      onChange={e => setNewInvestor(prev => ({ ...prev, pay_percentage: e.target.value }))}
+                    />
+                  </div>
                   <Button
                     type="button"
                     size="sm"
-                    className="h-8 text-xs"
+                    className="h-8 text-xs mt-4"
                     disabled={!newInvestor.investor_id || !newInvestor.pay_percentage}
                     onClick={async () => {
                       if (!onAddInvestor || !newInvestor.investor_id) return;
@@ -374,7 +377,7 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
                   >
                     Agregar
                   </Button>
-                  <Button type="button" size="sm" variant="ghost" className="h-8 text-xs" onClick={() => setAddingInvestor(false)}>
+                  <Button type="button" size="sm" variant="ghost" className="h-8 text-xs mt-4" onClick={() => setAddingInvestor(false)}>
                     Cancelar
                   </Button>
                 </div>
