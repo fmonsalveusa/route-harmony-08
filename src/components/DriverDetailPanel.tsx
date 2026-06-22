@@ -217,6 +217,28 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
         <Info label="Earned This Month">${Number(driver.earnings_this_month).toLocaleString()}</Info>
       </div>
 
+      {/* Banking Information */}
+      {((driver as any).bank_name || (driver as any).routing_number || (driver as any).account_number) && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3 border-t pt-3">
+          <div className="sm:col-span-4">
+            <p className="text-xs font-semibold text-muted-foreground mb-2">Banking Information (ACH)</p>
+          </div>
+          <Info label="Account Holder">{(driver as any).account_holder_name || '—'}</Info>
+          <Info label="Bank Name">{(driver as any).bank_name || '—'}</Info>
+          <Info label="Account Type">
+            {(driver as any).account_type
+              ? (driver as any).account_type.charAt(0).toUpperCase() + (driver as any).account_type.slice(1)
+              : '—'}
+          </Info>
+          <Info label="Routing Number">
+            {(driver as any).routing_number ? `****${String((driver as any).routing_number).slice(-4)}` : '—'}
+          </Info>
+          <Info label="Account Number">
+            {(driver as any).account_number ? `****${String((driver as any).account_number).slice(-4)}` : '—'}
+          </Info>
+        </div>
+      )}
+
       {/* Documents */}
       <div className="border-t pt-3">
         <div className="flex items-center justify-between mb-2">
