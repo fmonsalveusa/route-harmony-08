@@ -351,3 +351,40 @@ export async function deletePaymentsForLoad(loadId: string) {
     toast({ title: `${pendingIds.length} pago(s) pendiente(s) eliminados` });
   }
 }
+
+/**
+ * Update PENDING payments for a load when the RC rate changes.
+ * Paid payments are never touched — they stay as accounting records.
+ */
+export async function updatePaymentsForLoad(loadId: string, newTotalRate: number) {
+  const { data: existing, error } = await supabase
+    .from('payments')
+    .select('id, recipient_type, percentage_applied, status, amount, total_rate')
+    .eq('load_id', loadId);
+
+  if (error || !existing || existing.length === 0) return;
+
+  const pendingPayments = (existing as any[]).filter(p => p.status === 'pending');
+  if (pendingPayments.length === 0) return;
+
+  const totalRate = Number(newTotalRate);
+  let updatedCount = 0;
+
+  for (const payment of pendingPayments) {
+    const pct = Number(payment.percentage_applied);
+    if (pct <= 0) continue;
+    const newAmount = Math.round((totalRate * pct / 100) * 100) / 100;
+    if (newAmount === Number(payment.amount) && totalRate === Number(payment.total_rate)) continue;
+
+    const { error: updateError } = await supabase
+      .from('payments')
+      .update({ amount: newAmount, total_rate: totalRate } as any)
+      .eq('id', payment.id);
+
+    if (!updateError) updatedCount++;
+  }
+
+  if (updatedCount > 0) {
+    toast({ title: `${updatedCount} pago(s) actualizado(s) con el nuevo rate` });
+  }
+}
