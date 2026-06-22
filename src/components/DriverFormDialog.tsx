@@ -39,7 +39,9 @@ const emptyForm: DriverInput = {
   address: null, city: null, zip: null,
   birthday: null,
   emergency_contact_name: null, emergency_phone: null,
-};
+  bank_name: null, account_holder_name: null,
+  routing_number: null, account_number: null, account_type: 'checking',
+} as any;
 
 type DocKey = 'license_photo' | 'medical_card_photo' | 'form_w9' | 'leasing_agreement' | 'service_agreement' | 'employment_contract';
 
@@ -97,7 +99,12 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
         birthday: driver.birthday,
         emergency_contact_name: driver.emergency_contact_name,
         emergency_phone: driver.emergency_phone,
-      });
+        bank_name: (driver as any).bank_name || null,
+        account_holder_name: (driver as any).account_holder_name || null,
+        routing_number: (driver as any).routing_number || null,
+        account_number: (driver as any).account_number || null,
+        account_type: (driver as any).account_type || 'checking',
+      } as any);
     } else {
       setForm(emptyForm);
     }
@@ -394,6 +401,59 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
           </div>
 
           <DatePickerField label="Hire Date" value={form.hire_date} onChange={v => set('hire_date', v || todayET())} />
+        </div>
+
+        {/* Banking Information */}
+        <div className="mt-6 space-y-3">
+          <h3 className="font-semibold text-sm">Banking Information <span className="text-xs font-normal text-muted-foreground">(ACH Direct Deposit)</span></h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2 sm:col-span-2">
+              <Label>Account Holder Name</Label>
+              <Input
+                value={(form as any).account_holder_name || ''}
+                onChange={e => set('account_holder_name' as any, e.target.value)}
+                placeholder="Full name as it appears on the account"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Bank Name</Label>
+              <Input
+                value={(form as any).bank_name || ''}
+                onChange={e => set('bank_name' as any, e.target.value)}
+                placeholder="e.g. Chase, Bank of America"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Account Type</Label>
+              <Select
+                value={(form as any).account_type || 'checking'}
+                onValueChange={v => set('account_type' as any, v)}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="checking">Checking</SelectItem>
+                  <SelectItem value="savings">Savings</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Routing Number</Label>
+              <Input
+                value={(form as any).routing_number || ''}
+                onChange={e => set('routing_number' as any, e.target.value.replace(/\D/g, '').slice(0, 9))}
+                placeholder="9-digit routing number"
+                maxLength={9}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Account Number</Label>
+              <Input
+                value={(form as any).account_number || ''}
+                onChange={e => set('account_number' as any, e.target.value.replace(/\D/g, ''))}
+                placeholder="Account number"
+              />
+            </div>
+          </div>
         </div>
 
         {/* Document uploads */}
