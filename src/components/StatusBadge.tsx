@@ -18,6 +18,9 @@ const statusConfig: Record<string, { label: string; className: string }> = {
   available: { label: 'Available', className: 'bg-[hsl(152,60%,40%)] text-white' },
   inactive: { label: 'Inactive', className: 'bg-[hsl(0,72%,51%)] text-white' },
   pending: { label: 'Pending', className: 'bg-[hsl(38,92%,50%)] text-white' },
+  // Truck statuses
+  active: { label: 'Active', className: 'bg-[hsl(152,60%,40%)] text-white' },
+  maintenance: { label: 'Maintenance', className: 'bg-[hsl(38,92%,50%)] text-white' },
   // Invoice statuses
   invoice_pending: { label: 'Pending', className: 'bg-[hsl(38,92%,50%)] text-white' },
   invoice_sent: { label: 'Sent', className: 'bg-[#266aad] text-white' },
