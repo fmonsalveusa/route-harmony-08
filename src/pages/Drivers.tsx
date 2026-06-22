@@ -39,7 +39,7 @@ const PAGE_SIZES = [25, 50, 100];
 
 const Drivers = () => {
   const { role, profile } = useAuth();
-  const { drivers, loading, createDriver, updateDriver, deleteDriver, uploadDocument, getDocSignedUrl, refetch } = useDrivers();
+  const { drivers, loading, createDriver, updateDriver, deleteDriver, uploadDocument, getDocSignedUrl, refetch, addDriverInvestor, removeDriverInvestor, updateDriverInvestor } = useDrivers();
   const { trucks } = useTrucks();
   const { dispatchers } = useDispatchers();
   const { investors } = useInvestors();
@@ -436,7 +436,18 @@ const Drivers = () => {
         </Tabs>
       )}
 
-      <DriverFormDialog open={formOpen} onOpenChange={setFormOpen} driver={editingDriver} onSubmit={handleSubmit} trucks={trucks} dispatchers={dispatchers} investors={investors} />
+      <DriverFormDialog
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        driver={editingDriver}
+        onSubmit={handleSubmit}
+        trucks={trucks}
+        dispatchers={dispatchers}
+        investors={investors}
+        onAddInvestor={addDriverInvestor}
+        onRemoveInvestor={removeDriverInvestor}
+        onUpdateInvestor={updateDriverInvestor}
+      />
       <DriverDetailDialog open={!!detailDriver} onOpenChange={open => !open && setDetailDriver(null)} driver={detailDriver} truckLabel={detailDriver ? getTruckLabel(detailDriver.truck_id) : null} dispatcherName={detailDriver ? dispatchers.find(d => d.id === detailDriver.dispatcher_id)?.name || null : null} getDocSignedUrl={getDocSignedUrl} />
       <GenerateOnboardingLinkDialog open={onboardingOpen} onOpenChange={setOnboardingOpen} dispatchers={dispatchers} />
       <TerminationLetterDialog

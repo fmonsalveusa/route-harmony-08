@@ -98,7 +98,6 @@ export async function generatePaymentsForLoad(load: {
   commission_percentage: number;
   dispatch_service_percentage?: number;
 } | null) {
-  // Prevent concurrent executions for the same load (e.g. double-click on "ready")
   if (inFlightPaymentGenerations.has(load.id)) {
     console.warn(`[Payments] Generation already in progress for load ${load.id} — skipping`);
     return;
@@ -124,20 +123,45 @@ export async function generatePaymentsForLoad(load: {
     });
   }
 
-  // Investor payment
-  if (driver && driver.investor_pay_percentage && driver.investor_pay_percentage > 0 && driver.investor_name) {
-    const investorAmount = totalRate * (driver.investor_pay_percentage / 100);
-    paymentsToInsert.push({
-      load_id: load.id,
-      recipient_type: 'investor',
-      // Use investor_id when available (new drivers) — fallback to driver.id for legacy records
-      recipient_id: driver.investor_id || driver.id,
-      recipient_name: driver.investor_name,
-      load_reference: load.reference_number,
-      amount: Math.round(investorAmount * 100) / 100,
-      percentage_applied: driver.investor_pay_percentage,
-      total_rate: totalRate,
-    });
+  // Investor payments — leer de driver_investors (soporta múltiples)
+  if (driver) {
+    const { data: driverInvestors } = await supabase
+      .from('driver_investors' as any)
+      .select('*')
+      .eq('driver_id', driver.id)
+      .eq('is_active', true);
+
+    if (driverInvestors && (driverInvestors as any[]).length > 0) {
+      // Usar nueva tabla driver_investors
+      for (const inv of driverInvestors as any[]) {
+        if (inv.pay_percentage > 0 && inv.investor_name) {
+          const investorAmount = totalRate * (inv.pay_percentage / 100);
+          paymentsToInsert.push({
+            load_id: load.id,
+            recipient_type: 'investor',
+            recipient_id: inv.investor_id || driver.id,
+            recipient_name: inv.investor_name,
+            load_reference: load.reference_number,
+            amount: Math.round(investorAmount * 100) / 100,
+            percentage_applied: inv.pay_percentage,
+            total_rate: totalRate,
+          });
+        }
+      }
+    } else if (driver.investor_pay_percentage && driver.investor_pay_percentage > 0 && driver.investor_name) {
+      // Fallback: usar campos legacy del driver si no hay registros en driver_investors
+      const investorAmount = totalRate * (driver.investor_pay_percentage / 100);
+      paymentsToInsert.push({
+        load_id: load.id,
+        recipient_type: 'investor',
+        recipient_id: driver.investor_id || driver.id,
+        recipient_name: driver.investor_name,
+        load_reference: load.reference_number,
+        amount: Math.round(investorAmount * 100) / 100,
+        percentage_applied: driver.investor_pay_percentage,
+        total_rate: totalRate,
+      });
+    }
   }
 
   // Dispatcher payment is now generated manually from the Payments > Dispatchers tab
@@ -298,59 +322,6 @@ async function applyRecurringDeductions(payments: any[], tenant_id: string | nul
     if (error) {
       console.error('Error applying recurring deductions:', error);
     }
-  }
-}
-
-/**
- * Update PENDING payments for a load when the RC rate changes.
- * Paid payments are never touched — they stay as accounting records.
- * Recalculates amount using the percentage_applied already stored.
- */
-export async function updatePaymentsForLoad(loadId: string, newTotalRate: number) {
-  // Obtener pagos existentes de este load
-  const { data: existing, error } = await supabase
-    .from('payments')
-    .select('id, recipient_type, recipient_id, percentage_applied, status, amount, total_rate')
-    .eq('load_id', loadId);
-
-  if (error || !existing || existing.length === 0) return;
-
-  const pendingPayments = (existing as any[]).filter(p => p.status === 'pending');
-  if (pendingPayments.length === 0) {
-    console.log('[updatePaymentsForLoad] No pending payments to update — paid payments preserved');
-    return;
-  }
-
-  const totalRate = Number(newTotalRate);
-  let updatedCount = 0;
-
-  for (const payment of pendingPayments) {
-    const pct = Number(payment.percentage_applied);
-    if (pct <= 0) continue;
-
-    const newAmount = Math.round((totalRate * pct / 100) * 100) / 100;
-
-    // Solo actualizar si el monto cambio
-    if (newAmount === Number(payment.amount) && totalRate === Number(payment.total_rate)) continue;
-
-    const { error: updateError } = await supabase
-      .from('payments')
-      .update({
-        amount: newAmount,
-        total_rate: totalRate,
-      } as any)
-      .eq('id', payment.id);
-
-    if (updateError) {
-      console.error('[updatePaymentsForLoad] Error updating payment:', updateError);
-    } else {
-      updatedCount++;
-      console.log(`[updatePaymentsForLoad] Updated ${payment.recipient_type} payment: $${payment.amount} → $${newAmount}`);
-    }
-  }
-
-  if (updatedCount > 0) {
-    toast({ title: `${updatedCount} pago(s) actualizado(s) con el nuevo rate` });
   }
 }
 

@@ -4,14 +4,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Upload, FileText, X } from 'lucide-react';
+import { Upload, FileText, X, Plus, Trash2 } from 'lucide-react';
 import { todayET } from '@/lib/dateUtils';
-import { DbDriver, DriverInput } from '@/hooks/useDrivers';
+import { DbDriver, DriverInput, DriverInvestor, DriverInvestorInput } from '@/hooks/useDrivers';
 import { DbTruck } from '@/hooks/useTrucks';
 import { DbDispatcher } from '@/hooks/useDispatchers';
 import { DbInvestor } from '@/hooks/useInvestors';
 import { toast } from 'sonner';
 import { US_STATES } from '@/lib/usStates';
+import { supabase } from '@/integrations/supabase/client';
 
 interface DriverFormDialogProps {
   open: boolean;
@@ -21,6 +22,9 @@ interface DriverFormDialogProps {
   trucks: DbTruck[];
   dispatchers: DbDispatcher[];
   investors?: DbInvestor[];
+  onAddInvestor?: (driverId: string, input: DriverInvestorInput) => Promise<boolean>;
+  onRemoveInvestor?: (id: string) => Promise<boolean>;
+  onUpdateInvestor?: (id: string, input: Partial<DriverInvestorInput>) => Promise<boolean>;
 }
 
 const emptyForm: DriverInput = {
@@ -48,12 +52,32 @@ const docFields: { key: DocKey; label: string; urlKey: string }[] = [
   { key: 'employment_contract', label: 'Employment Contract', urlKey: 'employment_contract_url' },
 ];
 
-export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks, dispatchers, investors = [] }: DriverFormDialogProps) {
+export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks, dispatchers, investors = [], onAddInvestor, onRemoveInvestor, onUpdateInvestor }: DriverFormDialogProps) {
   const [form, setForm] = useState<DriverInput>(emptyForm);
   const [files, setFiles] = useState<Record<string, File | null>>({});
   const [deletedDocs, setDeletedDocs] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
+  // Múltiples investors
+  const [driverInvestors, setDriverInvestors] = useState<DriverInvestor[]>([]);
+  const [newInvestor, setNewInvestor] = useState<{ investor_id: string; pay_percentage: string }>({ investor_id: '', pay_percentage: '' });
+  const [addingInvestor, setAddingInvestor] = useState(false);
+
+  // Cargar investors del driver al abrir
+  useEffect(() => {
+    if (driver?.id && open) {
+      supabase
+        .from('driver_investors' as any)
+        .select('*')
+        .eq('driver_id', driver.id)
+        .eq('is_active', true)
+        .order('created_at', { ascending: true })
+        .then(({ data }) => setDriverInvestors((data as any) || []));
+    } else {
+      setDriverInvestors([]);
+    }
+  }, [driver?.id, open]);
 
   useEffect(() => {
     if (driver) {
@@ -236,56 +260,128 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
             </Select>
           </div>
 
-          <div className="space-y-2 p-3 rounded-lg border-2 border-violet-400/50 bg-violet-50 dark:bg-violet-950/20 md:col-span-2">
-            <Label className="font-semibold text-violet-700 dark:text-violet-300">Investor ⭐</Label>
-            <Select
-              value={(form as any).investor_id || 'none'}
-              onValueChange={v => {
-                if (v === 'none') {
-                  set('investor_id' as any, null);
-                  set('investor_name', null);
-                  set('investor_pay_percentage', 0);
-                } else {
-                  const inv = investors.find(i => i.id === v);
-                  set('investor_id' as any, v);
-                  set('investor_name', inv?.name || null);
-                  // Auto-fill pay % from investor definition
-                  set('investor_pay_percentage', inv?.pay_percentage ?? 0);
-                }
-              }}
-            >
-              <SelectTrigger><SelectValue placeholder="No investor assigned" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">— No investor —</SelectItem>
-                {investors.map(inv => (
-                  <SelectItem key={inv.id} value={inv.id}>
-                    {inv.name} · {inv.pay_percentage}%{inv.email ? ` · ${inv.email}` : ''}
-                  </SelectItem>
+          <div className="space-y-3 p-3 rounded-lg border-2 border-violet-400/50 bg-violet-50 dark:bg-violet-950/20 md:col-span-2">
+            <div className="flex items-center justify-between">
+              <Label className="font-semibold text-violet-700 dark:text-violet-300">Investors ⭐</Label>
+              {driver?.id && driverInvestors.length < 2 && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs gap-1 border-violet-400 text-violet-700"
+                  onClick={() => setAddingInvestor(true)}
+                >
+                  <Plus className="h-3 w-3" /> Add Investor
+                </Button>
+              )}
+            </div>
+
+            {/* Lista de investors existentes */}
+            {driverInvestors.length > 0 ? (
+              <div className="space-y-2">
+                {driverInvestors.map((inv, idx) => (
+                  <div key={inv.id} className="flex items-center gap-2 p-2 rounded-md bg-white dark:bg-violet-950/40 border border-violet-200">
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium truncate">{inv.investor_name}</div>
+                      <div className="text-xs text-muted-foreground">{inv.pay_percentage}% del rate total</div>
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                      onClick={async () => {
+                        if (onRemoveInvestor) {
+                          await onRemoveInvestor(inv.id);
+                          setDriverInvestors(prev => prev.filter(i => i.id !== inv.id));
+                        }
+                      }}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 ))}
-              </SelectContent>
-            </Select>
-            {investors.length === 0 && (
+              </div>
+            ) : (
               <p className="text-xs text-violet-600 dark:text-violet-400">
-                No investors yet — go to the Investors page to create them first.
+                No investors asignados. {!driver?.id && 'Guarda el driver primero para agregar investors.'}
               </p>
+            )}
+
+            {/* Formulario para agregar nuevo investor */}
+            {addingInvestor && driver?.id && (
+              <div className="space-y-2 p-2 rounded-md border border-violet-300 bg-white dark:bg-violet-950/40">
+                <div className="text-xs font-medium text-violet-700">Nuevo Investor</div>
+                <Select
+                  value={newInvestor.investor_id}
+                  onValueChange={v => {
+                    const inv = investors.find(i => i.id === v);
+                    setNewInvestor(prev => ({
+                      ...prev,
+                      investor_id: v,
+                      pay_percentage: inv?.pay_percentage?.toString() || prev.pay_percentage,
+                    }));
+                  }}
+                >
+                  <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Seleccionar investor" /></SelectTrigger>
+                  <SelectContent>
+                    {investors
+                      .filter(inv => !driverInvestors.some(di => di.investor_id === inv.id))
+                      .map(inv => (
+                        <SelectItem key={inv.id} value={inv.id}>
+                          {inv.name}{inv.pay_percentage ? ` · ${inv.pay_percentage}%` : ''}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+                <div className="flex gap-2 items-center">
+                  <Input
+                    type="number"
+                    min={0} max={100} step={0.5}
+                    className="h-8 text-xs"
+                    placeholder="% del rate total"
+                    value={newInvestor.pay_percentage}
+                    onChange={e => setNewInvestor(prev => ({ ...prev, pay_percentage: e.target.value }))}
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="h-8 text-xs"
+                    disabled={!newInvestor.investor_id || !newInvestor.pay_percentage}
+                    onClick={async () => {
+                      if (!onAddInvestor || !newInvestor.investor_id) return;
+                      const inv = investors.find(i => i.id === newInvestor.investor_id);
+                      if (!inv) return;
+                      const ok = await onAddInvestor(driver.id, {
+                        investor_id: newInvestor.investor_id,
+                        investor_name: inv.name,
+                        investor_email: inv.email || null,
+                        pay_percentage: Number(newInvestor.pay_percentage),
+                      });
+                      if (ok) {
+                        // Recargar investors
+                        const { data } = await supabase
+                          .from('driver_investors' as any)
+                          .select('*')
+                          .eq('driver_id', driver.id)
+                          .eq('is_active', true)
+                          .order('created_at', { ascending: true });
+                        setDriverInvestors((data as any) || []);
+                        setNewInvestor({ investor_id: '', pay_percentage: '' });
+                        setAddingInvestor(false);
+                      }
+                    }}
+                  >
+                    Agregar
+                  </Button>
+                  <Button type="button" size="sm" variant="ghost" className="h-8 text-xs" onClick={() => setAddingInvestor(false)}>
+                    Cancelar
+                  </Button>
+                </div>
+              </div>
             )}
           </div>
 
-          <div className="space-y-2">
-            <Label>% Investor Pay</Label>
-            <Input
-              type="number"
-              min={0} max={100} step={0.5}
-              value={form.investor_pay_percentage ?? ''}
-              onChange={e => set('investor_pay_percentage', Number(e.target.value))}
-              placeholder="Auto-filled from investor"
-            />
-            {(form as any).investor_id && (
-              <p className="text-xs text-muted-foreground">
-                Auto-filled from investor. Edit only if this driver has a different rate.
-              </p>
-            )}
-          </div>
           <div className="space-y-2">
             <Label>% Driver Pay</Label>
             <Input type="number" value={form.pay_percentage} onChange={e => set('pay_percentage', Number(e.target.value))} />

@@ -4,6 +4,25 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { getTenantId } from '@/hooks/useTenantId';
 
+export interface DriverInvestor {
+  id: string;
+  driver_id: string;
+  investor_id: string | null;
+  investor_name: string;
+  investor_email: string | null;
+  pay_percentage: number;
+  is_active: boolean;
+  tenant_id: string | null;
+  created_at: string;
+}
+
+export interface DriverInvestorInput {
+  investor_id?: string | null;
+  investor_name: string;
+  investor_email?: string | null;
+  pay_percentage: number;
+}
+
 export interface DbDriver {
   id: string;
   name: string;
@@ -159,6 +178,69 @@ export function useDrivers() {
     }
   };
 
+  // ── Driver Investors ──────────────────────────────────────────────────────
+
+  const getDriverInvestors = async (driverId: string): Promise<DriverInvestor[]> => {
+    const { data, error } = await supabase
+      .from('driver_investors' as any)
+      .select('*')
+      .eq('driver_id', driverId)
+      .eq('is_active', true)
+      .order('created_at', { ascending: true });
+    if (error) { console.error('Error fetching driver investors:', error); return []; }
+    return (data as any) || [];
+  };
+
+  const addDriverInvestor = async (driverId: string, input: DriverInvestorInput): Promise<boolean> => {
+    // Max 2 investors por driver
+    const existing = await getDriverInvestors(driverId);
+    if (existing.length >= 2) {
+      toast({ title: 'Máximo 2 investors por driver', variant: 'destructive' });
+      return false;
+    }
+    const tenant_id = await getTenantId();
+    const { error } = await supabase.from('driver_investors' as any).insert({
+      driver_id: driverId,
+      investor_id: input.investor_id || null,
+      investor_name: input.investor_name,
+      investor_email: input.investor_email || null,
+      pay_percentage: input.pay_percentage,
+      tenant_id,
+    } as any);
+    if (error) {
+      toast({ title: 'Error adding investor', description: error.message, variant: 'destructive' });
+      return false;
+    }
+    toast({ title: 'Investor agregado correctamente' });
+    return true;
+  };
+
+  const updateDriverInvestor = async (id: string, input: Partial<DriverInvestorInput>): Promise<boolean> => {
+    const { error } = await supabase
+      .from('driver_investors' as any)
+      .update(input as any)
+      .eq('id', id);
+    if (error) {
+      toast({ title: 'Error updating investor', description: error.message, variant: 'destructive' });
+      return false;
+    }
+    toast({ title: 'Investor actualizado' });
+    return true;
+  };
+
+  const removeDriverInvestor = async (id: string): Promise<boolean> => {
+    const { error } = await supabase
+      .from('driver_investors' as any)
+      .update({ is_active: false } as any)
+      .eq('id', id);
+    if (error) {
+      toast({ title: 'Error removing investor', description: error.message, variant: 'destructive' });
+      return false;
+    }
+    toast({ title: 'Investor removido' });
+    return true;
+  };
+
   const createDriversBulk = async (inputs: DriverInput[]): Promise<{ success: number; errors: number }> => {
     const tenant_id = await getTenantId();
     const records = inputs.map(input => ({ ...input, tenant_id }));
@@ -172,5 +254,5 @@ export function useDrivers() {
     return { success: count, errors: inputs.length - count };
   };
 
-  return { drivers, loading, createDriver, createDriversBulk, updateDriver, deleteDriver, uploadDocument, getDocSignedUrl, refetch };
+  return { drivers, loading, createDriver, createDriversBulk, updateDriver, deleteDriver, uploadDocument, getDocSignedUrl, refetch, getDriverInvestors, addDriverInvestor, updateDriverInvestor, removeDriverInvestor };
 }
