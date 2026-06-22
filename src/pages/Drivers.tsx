@@ -297,8 +297,6 @@ const Drivers = () => {
                           <SelectContent>
                             <SelectItem value="pending"><StatusBadge status="pending" /></SelectItem>
                             <SelectItem value="available"><StatusBadge status="available" /></SelectItem>
-                            <SelectItem value="assigned"><StatusBadge status="assigned" /></SelectItem>
-                            <SelectItem value="resting"><StatusBadge status="resting" /></SelectItem>
                             <SelectItem value="inactive"><StatusBadge status="inactive" /></SelectItem>
                           </SelectContent>
                         </Select>
