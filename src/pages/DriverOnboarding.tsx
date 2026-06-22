@@ -33,7 +33,8 @@ const TRUCK_DOC_FIELDS = [
   { key: 'cargo_area_photo', label: 'Cargo Area Photo' },
 ];
 
-const STEP_LABELS_OO = ['Driver Info', 'Truck Info', 'Documents', 'Review'];
+const STEP_LABELS_OO = ['Owner Info', 'Truck Info', 'Documents', 'Review'];
+const STEP_LABELS_OO_WITH_DRIVER = ['Owner + Driver Info', 'Truck Info', 'Documents', 'Review'];
 const STEP_LABELS_CD = ['Driver Info', 'Documents', 'Review'];
 
 export default function DriverOnboarding() {
@@ -59,6 +60,20 @@ export default function DriverOnboarding() {
     account_number: '', account_type: 'checking',
   });
   const [driverFiles, setDriverFiles] = useState<Record<string, File>>({});
+
+  // OO que no maneja — si es false, captura info del driver por separado
+  const [isDriverOwner, setIsDriverOwner] = useState<boolean | null>(null);
+
+  // Datos del driver contratado (cuando el OO no maneja)
+  const [secondDriver, setSecondDriver] = useState({
+    name: '', email: '', phone: '', license: '',
+    state: null as string | null,
+    license_expiry: null as string | null,
+    medical_card_expiry: null as string | null,
+    birthday: null as string | null,
+    emergency_contact_name: '', emergency_phone: '',
+  });
+  const [secondDriverFiles, setSecondDriverFiles] = useState<Record<string, File>>({});
 
   // Truck form
   const [truck, setTruck] = useState({
@@ -137,6 +152,16 @@ export default function DriverOnboarding() {
       const formData = new FormData();
       formData.append('token', token!);
       formData.append('driver_data', JSON.stringify(driver));
+      formData.append('is_driver_owner', JSON.stringify(isDriverOwner !== false));
+
+      // Si el OO no maneja, enviar datos del driver contratado
+      if (isOO && isDriverOwner === false) {
+        formData.append('second_driver_data', JSON.stringify(secondDriver));
+        for (const [key, file] of Object.entries(secondDriverFiles)) {
+          formData.append(`second_driver_${key}`, file);
+        }
+      }
+
       if (isOO) {
         formData.append('truck_data', JSON.stringify(truck));
       }
@@ -262,7 +287,9 @@ export default function DriverOnboarding() {
 
   const isOO = tokenData?.service_type !== 'company_driver';
   const totalSteps = isOO ? 4 : 3;
-  const stepLabels = isOO ? STEP_LABELS_OO : STEP_LABELS_CD;
+  const stepLabels = isOO
+    ? (isDriverOwner === false ? STEP_LABELS_OO_WITH_DRIVER : STEP_LABELS_OO)
+    : STEP_LABELS_CD;
 
   // Map logical steps for company driver: 1=Info, 2=Docs, 3=Review
   // For OO: 1=Info, 2=Truck, 3=Docs, 4=Review
@@ -453,8 +480,118 @@ export default function DriverOnboarding() {
                 </div>
               </div>
 
+              {/* Pregunta: ¿Eres tú quien maneja el camión? — solo para OO */}
+              {isOO && (
+                <div className="border-t pt-4">
+                  <div className="rounded-lg border-2 border-blue-300 bg-blue-50 dark:bg-blue-950/20 p-4 space-y-3">
+                    <Label className="text-base font-semibold text-blue-800 dark:text-blue-200">
+                      🚛 ¿Serás tú quien maneje el camión?
+                    </Label>
+                    <p className="text-xs text-blue-600 dark:text-blue-400">
+                      Si otra persona va a manejar tu camión, necesitamos su información también.
+                    </p>
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setIsDriverOwner(true)}
+                        className={`flex-1 py-2.5 rounded-lg border-2 text-sm font-semibold transition-all ${
+                          isDriverOwner === true
+                            ? 'border-blue-500 bg-blue-500 text-white'
+                            : 'border-blue-200 bg-white text-blue-700 hover:border-blue-400'
+                        }`}
+                      >
+                        ✓ Sí, yo manejo
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsDriverOwner(false)}
+                        className={`flex-1 py-2.5 rounded-lg border-2 text-sm font-semibold transition-all ${
+                          isDriverOwner === false
+                            ? 'border-orange-500 bg-orange-500 text-white'
+                            : 'border-orange-200 bg-white text-orange-700 hover:border-orange-400'
+                        }`}
+                      >
+                        ✗ Otro driver maneja
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Formulario del driver contratado */}
+                  {isDriverOwner === false && (
+                    <div className="mt-4 space-y-4 p-4 rounded-lg border-2 border-orange-300 bg-orange-50 dark:bg-orange-950/20">
+                      <div>
+                        <Label className="text-base font-semibold text-orange-800 dark:text-orange-200">Información del Driver</Label>
+                        <p className="text-xs text-orange-600 mt-1">Información de la persona que manejará el camión.</p>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-2 sm:col-span-2">
+                          <Label>Full Name *</Label>
+                          <Input value={secondDriver.name} onChange={e => setSecondDriver(d => ({ ...d, name: e.target.value }))} placeholder="John Smith" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Email *</Label>
+                          <Input type="email" value={secondDriver.email} onChange={e => setSecondDriver(d => ({ ...d, email: e.target.value }))} placeholder="driver@email.com" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Phone *</Label>
+                          <Input value={secondDriver.phone} onChange={e => setSecondDriver(d => ({ ...d, phone: e.target.value }))} placeholder="555-0000" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Driver License # *</Label>
+                          <Input value={secondDriver.license} onChange={e => setSecondDriver(d => ({ ...d, license: e.target.value }))} placeholder="CDL-XXXXX" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>State</Label>
+                          <Select value={secondDriver.state || 'none'} onValueChange={v => setSecondDriver(d => ({ ...d, state: v === 'none' ? null : v }))}>
+                            <SelectTrigger><SelectValue placeholder="Select state" /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">— Select —</SelectItem>
+                              {US_STATES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <OnboardingDateField label="License Expiry *" value={secondDriver.license_expiry} onChange={v => setSecondDriver(d => ({ ...d, license_expiry: v }))} />
+                        <OnboardingDateField label="Medical Card Expiry *" value={secondDriver.medical_card_expiry} onChange={v => setSecondDriver(d => ({ ...d, medical_card_expiry: v }))} />
+                        <OnboardingDateField label="Birthday" value={secondDriver.birthday} onChange={v => setSecondDriver(d => ({ ...d, birthday: v }))} />
+                        <div className="space-y-2">
+                          <Label>Emergency Contact Name</Label>
+                          <Input value={secondDriver.emergency_contact_name} onChange={e => setSecondDriver(d => ({ ...d, emergency_contact_name: e.target.value }))} placeholder="Jane Doe" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Emergency Phone</Label>
+                          <Input value={secondDriver.emergency_phone} onChange={e => setSecondDriver(d => ({ ...d, emergency_phone: e.target.value }))} placeholder="555-1234" />
+                        </div>
+                      </div>
+
+                      {/* Documentos del driver contratado */}
+                      <div className="border-t pt-3 mt-3">
+                        <Label className="text-sm font-semibold">Driver Documents</Label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+                          {DRIVER_DOC_FIELDS.map(doc => (
+                            <OnboardingFileField
+                              key={`second_${doc.key}`}
+                              label={doc.label}
+                              file={secondDriverFiles[doc.key]}
+                              onFileChange={f => setSecondDriverFiles(prev => ({ ...prev, [doc.key]: f }))}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="flex justify-end pt-2">
-                <Button onClick={() => { if (validateStep1()) setStep(isOO ? 2 : docStep); }}>
+                <Button
+                  onClick={() => {
+                    if (isOO && isDriverOwner === null) {
+                      toast.error('Por favor indica si eres tú quien maneja el camión');
+                      return;
+                    }
+                    if (validateStep1()) setStep(isOO ? 2 : docStep);
+                  }}
+                >
                   {isOO ? 'Next: Truck Info →' : 'Next: Documents →'}
                 </Button>
               </div>
