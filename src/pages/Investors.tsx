@@ -379,13 +379,16 @@ const Investors = () => {
               </tr>
             )}
             {filtered.map(inv => (
-              <tr key={inv.id} className="border-b last:border-0 glass-row">
+              <tr key={inv.id} className="border-b last:border-0 glass-row border-l-[3px] border-l-[#185FA5]">
                 <td className="p-4 font-semibold">
                   <div className="flex items-center gap-2">
-                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                      <Landmark className="h-4 w-4 text-primary" />
+                    <div className="h-8 w-8 rounded-full bg-[#185FA5]/10 flex items-center justify-center shrink-0">
+                      <Landmark className="h-4 w-4 text-[#185FA5]" />
                     </div>
                     {inv.name}
+                    {inv.business_name && (
+                      <span className="text-xs text-muted-foreground font-normal">{inv.business_name}</span>
+                    )}
                   </div>
                 </td>
                 <td className="p-4 text-muted-foreground">
@@ -417,19 +420,15 @@ const Investors = () => {
                     : <span className="text-muted-foreground text-xs">—</span>}
                 </td>
                 <td className="p-4 text-right">
-                  <div className="flex items-center justify-end gap-1.5">
-                    <button
-                      className="glass-action-btn tint-amber inline-flex items-center"
-                      onClick={() => { setEditingInvestor(inv); setFormOpen(true); }}
-                    >
-                      <Pencil className="h-4 w-4" /> Edit
-                    </button>
-                    <button
-                      className="glass-action-btn tint-red inline-flex items-center"
-                      onClick={() => setDeleteConfirmId(inv.id)}
-                    >
-                      <Trash2 className="h-4 w-4" /> Delete
-                    </button>
+                  <div className="flex items-center justify-end gap-1">
+                    <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                      onClick={() => { setEditingInvestor(inv); setFormOpen(true); }}>
+                      <Pencil className="h-3.5 w-3.5" /> Edit
+                    </Button>
+                    <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1 text-red-500 hover:text-red-600 hover:bg-red-50"
+                      onClick={() => setDeleteConfirmId(inv.id)}>
+                      <Trash2 className="h-3.5 w-3.5" /> Delete
+                    </Button>
                   </div>
                 </td>
               </tr>

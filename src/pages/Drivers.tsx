@@ -223,17 +223,30 @@ const Drivers = () => {
                 const initials = driver.name.split(' ').map(n => n[0]).join('');
                 const isExpanded = expandedId === driver.id;
                 const dispatcher = dispatchers.find(d => d.id === driver.dispatcher_id);
+
+                const statusBorder = driver.status === 'available'
+                  ? 'border-l-[3px] border-l-[#639922]'
+                  : driver.status === 'inactive'
+                  ? 'border-l-[3px] border-l-[#DC2626]'
+                  : 'border-l-[3px] border-l-[#EF9F27]'; // pending
+
+                const avatarBg = driver.status === 'available'
+                  ? 'bg-[#639922]'
+                  : driver.status === 'inactive'
+                  ? 'bg-[#DC2626]'
+                  : 'bg-[#EF9F27]';
+
                 return (
                   <>{/* Fragment needed for expand row */}
-                    <tr key={driver.id} className={cn("border-b glass-row cursor-pointer", driver.status === 'pending' && "bg-yellow-50/50", isExpanded && "glass-row-expanded")} onClick={() => setExpandedId(isExpanded ? null : driver.id)}>
+                    <tr key={driver.id} className={cn("border-b glass-row cursor-pointer", statusBorder, isExpanded && "glass-row-expanded")} onClick={() => setExpandedId(isExpanded ? null : driver.id)}>
                       <td className="p-3 text-muted-foreground">
                         {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                       </td>
                       <td className="p-3">
                         <div className="flex items-center gap-3">
-                          <Avatar className="h-9 w-9">
-                            <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm">{initials}</AvatarFallback>
-                          </Avatar>
+                          <div className={`h-9 w-9 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0 ${avatarBg}`}>
+                            {initials.slice(0, 2).toUpperCase()}
+                          </div>
                           <div className="flex flex-col items-start">
                             <span className="font-semibold flex items-center gap-1.5">
                               {driver.name}
@@ -301,21 +314,21 @@ const Drivers = () => {
                           </SelectContent>
                         </Select>
                       </td>
-                      <td className="p-3" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center justify-end gap-1.5">
-                          <Button variant="ghost" size="sm" className="glass-action-btn tint-green" onClick={() => setDetailDriver(driver)} title="Detail">
-                            <Eye className="h-4 w-4" /> Detail
+                      <td className="p-4" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-end gap-1">
+                          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1 text-green-600 hover:text-green-700 hover:bg-green-50" onClick={() => setDetailDriver(driver)} title="Detail">
+                            <Eye className="h-3.5 w-3.5" /> Detail
                           </Button>
                           {!isDispatcher && (
                             <>
-                              <Button variant="ghost" size="sm" className="glass-action-btn tint-amber" onClick={() => { setEditingDriver(driver); setFormOpen(true); }} title="Edit">
-                                <Pencil className="h-4 w-4" /> Edit
+                              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={() => { setEditingDriver(driver); setFormOpen(true); }} title="Edit">
+                                <Pencil className="h-3.5 w-3.5" /> Edit
                               </Button>
-                              <Button variant="ghost" size="sm" className="glass-action-btn" onClick={() => setTerminationDriver(driver)} title="Termination Letter">
-                                <FileText className="h-4 w-4" /> Termination
+                              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground" onClick={() => setTerminationDriver(driver)} title="Termination Letter">
+                                <FileText className="h-3.5 w-3.5" /> Termination
                               </Button>
-                              <Button variant="ghost" size="sm" className="glass-action-btn tint-red" onClick={async () => { if (window.confirm(`Delete driver ${driver.name}? This action is permanent.`)) { await deleteDriver(driver.id); } }} title="Delete">
-                                <Trash2 className="h-4 w-4" /> Delete
+                              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1 text-red-500 hover:text-red-600 hover:bg-red-50" onClick={async () => { if (window.confirm(`Delete driver ${driver.name}? This action is permanent.`)) { await deleteDriver(driver.id); } }} title="Delete">
+                                <Trash2 className="h-3.5 w-3.5" /> Delete
                               </Button>
                             </>
                           )}

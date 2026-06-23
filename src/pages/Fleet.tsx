@@ -125,16 +125,30 @@ const Fleet = () => {
               ) : paged.map(truck => {
                 const isExpanded = expandedId === truck.id;
                 const driverName = getDriverName(truck.id);
+
+                const statusBorder = truck.status === 'active'
+                  ? 'border-l-[3px] border-l-[#639922]'
+                  : truck.status === 'inactive'
+                  ? 'border-l-[3px] border-l-[#DC2626]'
+                  : 'border-l-[3px] border-l-[#EF9F27]'; // maintenance
+
+                const iconBg = truck.status === 'active'
+                  ? 'bg-[#639922]/10 text-[#639922]'
+                  : truck.status === 'inactive'
+                  ? 'bg-[#DC2626]/10 text-[#DC2626]'
+                  : 'bg-[#EF9F27]/10 text-[#EF9F27]';
+
+                return (
                 return (
                   <>
-                    <tr key={truck.id} className={`border-b glass-row cursor-pointer ${isExpanded ? 'glass-row-expanded' : ''}`} onClick={() => setExpandedId(isExpanded ? null : truck.id)}>
+                    <tr key={truck.id} className={`border-b glass-row cursor-pointer ${statusBorder} ${isExpanded ? 'glass-row-expanded' : ''}`} onClick={() => setExpandedId(isExpanded ? null : truck.id)}>
                       <td className="p-3 text-muted-foreground">
                         {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                       </td>
                       <td className="p-3">
                         <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                            <TruckIcon className="h-4 w-4 text-primary" />
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${iconBg}`}>
+                            <TruckIcon className="h-4 w-4" />
                           </div>
                           <div className="flex flex-col">
                             <span className="font-bold text-base">#{truck.unit_number}</span>
@@ -183,17 +197,17 @@ const Fleet = () => {
                           </SelectContent>
                         </Select>
                       </td>
-                      <td className="p-3" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center justify-end gap-1.5">
-                          <button className="glass-action-btn tint-green inline-flex items-center" onClick={() => setDetailTruck(truck)} title="Detail">
-                            <Eye className="h-4 w-4" /> Detail
-                          </button>
-                          <button className="glass-action-btn tint-amber inline-flex items-center" onClick={() => openEdit(truck)} title="Edit">
-                            <Pencil className="h-4 w-4" /> Edit
-                          </button>
-                          <button className="glass-action-btn tint-red inline-flex items-center" onClick={async () => { if (window.confirm(`Delete truck Unit #${truck.unit_number}? This action is permanent.`)) { await deleteTruck(truck.id); } }} title="Delete">
-                            <Trash2 className="h-4 w-4" /> Delete
-                          </button>
+                      <td className="p-4" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-end gap-1">
+                          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1 text-green-600 hover:text-green-700 hover:bg-green-50" onClick={() => setDetailTruck(truck)} title="Detail">
+                            <Eye className="h-3.5 w-3.5" /> Detail
+                          </Button>
+                          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={() => openEdit(truck)} title="Edit">
+                            <Pencil className="h-3.5 w-3.5" /> Edit
+                          </Button>
+                          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1 text-red-500 hover:text-red-600 hover:bg-red-50" onClick={async () => { if (window.confirm(`Delete truck Unit #${truck.unit_number}? This action is permanent.`)) { await deleteTruck(truck.id); } }} title="Delete">
+                            <Trash2 className="h-3.5 w-3.5" /> Delete
+                          </Button>
                         </div>
                       </td>
                     </tr>

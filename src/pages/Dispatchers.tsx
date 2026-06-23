@@ -3,20 +3,10 @@ import { useDispatchers, DbDispatcher, DispatcherInput } from '@/hooks/useDispat
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { DispatcherFormDialog } from '@/components/DispatcherFormDialog';
 import { StatusBadge } from '@/components/StatusBadge';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Plus, Phone, Mail, Percent, Pencil, Trash2, ChevronDown } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatPhone } from '@/lib/phoneUtils';
-
-const dispatcherStatusColor = (status: string) => {
-  switch (status) {
-    case 'active': return 'bg-green-600';
-    case 'inactive': return 'bg-red-600';
-    default: return 'bg-gray-500';
-  }
-};
 
 const Dispatchers = () => {
   const { dispatchers, loading, createDispatcher, updateDispatcher, deleteDispatcher } = useDispatchers();
@@ -39,69 +29,105 @@ const Dispatchers = () => {
     return dispatchers;
   };
 
-  const renderDispatcherCard = (d: DbDispatcher) => {
-    const initials = d.name.split(' ').map(n => n[0]).join('');
-    return (
-      <div key={d.id} className="glass-card hover:shadow-xl transition-shadow animate-fade-in overflow-hidden">
-        <div className="p-5">
-          <div className="flex items-start gap-4">
-            <Avatar className="h-12 w-12">
-              <AvatarFallback className="bg-info/15 text-info font-semibold">{initials}</AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <h3 className="font-semibold truncate">{d.name}</h3>
-            </div>
-            <Select value={d.status} onValueChange={v => updateDispatcher(d.id, { status: v })}>
-              <SelectTrigger className="h-8 w-[140px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:hidden bg-transparent">
-                <span className="flex items-center justify-between w-full gap-1">
-                  <StatusBadge status={d.status} className="text-[11px] px-3 py-1.5" />
-                  <span className="inline-flex h-5 w-5 items-center justify-center rounded border border-border bg-muted/40 text-muted-foreground ml-auto">
-                    <ChevronDown className="h-3 w-3 shrink-0" />
+  const renderTable = (list: DbDispatcher[]) => (
+    <div className="rounded-lg border overflow-hidden">
+      <table className="w-full">
+        <thead>
+          <tr className="border-b glass-table-header">
+            <th className="text-left p-3 text-xs font-bold text-muted-foreground uppercase tracking-wider">Dispatcher</th>
+            <th className="text-left p-3 text-xs font-bold text-muted-foreground uppercase tracking-wider hidden md:table-cell">Email</th>
+            <th className="text-left p-3 text-xs font-bold text-muted-foreground uppercase tracking-wider hidden md:table-cell">Phone</th>
+            <th className="text-center p-3 text-xs font-bold text-muted-foreground uppercase tracking-wider">Commission 1</th>
+            <th className="text-center p-3 text-xs font-bold text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Commission 2</th>
+            <th className="text-center p-3 text-xs font-bold text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Dispatch Svc</th>
+            <th className="text-left p-3 text-xs font-bold text-muted-foreground uppercase tracking-wider">Status</th>
+            <th className="text-right p-3 text-xs font-bold text-muted-foreground uppercase tracking-wider">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {list.length === 0 ? (
+            <tr><td colSpan={8} className="text-center p-8 text-muted-foreground">No dispatchers found.</td></tr>
+          ) : list.map(d => {
+            const initials = d.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
+            const statusBorder = d.status === 'active'
+              ? 'border-l-[3px] border-l-[#639922]'
+              : 'border-l-[3px] border-l-[#DC2626]';
+            const avatarBg = d.status === 'active' ? 'bg-[#639922]' : 'bg-[#DC2626]';
+
+            return (
+              <tr key={d.id} className={`border-b last:border-b-0 glass-row ${statusBorder}`}>
+                <td className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className={`h-9 w-9 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0 ${avatarBg}`}>
+                      {initials}
+                    </div>
+                    <span className="font-semibold">{d.name}</span>
+                  </div>
+                </td>
+                <td className="p-4 text-muted-foreground hidden md:table-cell">
+                  {d.email
+                    ? <a href={`mailto:${d.email}`} className="flex items-center gap-1 hover:text-primary text-sm"><Mail className="h-3.5 w-3.5" />{d.email}</a>
+                    : '—'}
+                </td>
+                <td className="p-4 text-muted-foreground hidden md:table-cell">
+                  {d.phone
+                    ? <span className="flex items-center gap-1 text-sm"><Phone className="h-3.5 w-3.5" />{formatPhone(d.phone)}</span>
+                    : '—'}
+                </td>
+                <td className="p-4 text-center">
+                  <span className="inline-flex items-center justify-center rounded-full bg-violet-500/10 text-violet-600 text-xs font-semibold min-w-[40px] h-6 px-2">
+                    {d.commission_percentage}%
                   </span>
-                </span>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="active"><StatusBadge status="active" /></SelectItem>
-                <SelectItem value="inactive"><StatusBadge status="inactive" /></SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="mt-4 space-y-2 text-sm">
-            <div className="flex items-center gap-2 text-muted-foreground"><Mail className="h-3.5 w-3.5" />{d.email}</div>
-            <div className="flex items-center gap-2 text-muted-foreground"><Phone className="h-3.5 w-3.5" />{formatPhone(d.phone)}</div>
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Percent className="h-3.5 w-3.5" />
-              <span>Commission 1: {d.commission_percentage}%</span>
-            </div>
-            {(d.commission_2_percentage ?? 0) > 0 && (
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Percent className="h-3.5 w-3.5" />
-                <span>Commission 2: {d.commission_2_percentage}%</span>
-              </div>
-            )}
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Percent className="h-3.5 w-3.5" />
-              <span>Dispatch Service: {d.dispatch_service_percentage}%</span>
-            </div>
-          </div>
-
-          <div className="mt-3 pt-3 border-t flex justify-end gap-1.5">
-            <button className="glass-action-btn tint-amber inline-flex items-center" onClick={() => { setEditingDispatcher(d); setFormOpen(true); }} title="Edit">
-              <Pencil className="h-4 w-4" /> Edit
-            </button>
-            <button className="glass-action-btn tint-red inline-flex items-center" onClick={async () => { if (window.confirm(`Delete dispatcher ${d.name}? This action is permanent.`)) { await deleteDispatcher(d.id); } }} title="Delete">
-              <Trash2 className="h-4 w-4" /> Delete
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
+                </td>
+                <td className="p-4 text-center hidden lg:table-cell">
+                  {(d.commission_2_percentage ?? 0) > 0
+                    ? <span className="inline-flex items-center justify-center rounded-full bg-violet-500/10 text-violet-600 text-xs font-semibold min-w-[40px] h-6 px-2">{d.commission_2_percentage}%</span>
+                    : <span className="text-muted-foreground text-xs">—</span>}
+                </td>
+                <td className="p-4 text-center hidden lg:table-cell">
+                  <span className="inline-flex items-center justify-center rounded-full bg-blue-500/10 text-blue-600 text-xs font-semibold min-w-[40px] h-6 px-2">
+                    {d.dispatch_service_percentage}%
+                  </span>
+                </td>
+                <td className="p-4" onClick={e => e.stopPropagation()}>
+                  <Select value={d.status} onValueChange={v => updateDispatcher(d.id, { status: v })}>
+                    <SelectTrigger className="h-8 w-[140px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:hidden bg-transparent">
+                      <span className="flex items-center justify-between w-full gap-1">
+                        <StatusBadge status={d.status} className="text-[11px] px-3 py-1.5" />
+                        <span className="inline-flex h-5 w-5 items-center justify-center rounded border border-border bg-muted/40 text-muted-foreground ml-auto">
+                          <ChevronDown className="h-3 w-3 shrink-0" />
+                        </span>
+                      </span>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active"><StatusBadge status="active" /></SelectItem>
+                      <SelectItem value="inactive"><StatusBadge status="inactive" /></SelectItem>
+                    </SelectContent>
+                  </Select>
+                </td>
+                <td className="p-4 text-right" onClick={e => e.stopPropagation()}>
+                  <div className="flex items-center justify-end gap-1">
+                    <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                      onClick={() => { setEditingDispatcher(d); setFormOpen(true); }}>
+                      <Pencil className="h-3.5 w-3.5" /> Edit
+                    </Button>
+                    <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1 text-red-500 hover:text-red-600 hover:bg-red-50"
+                      onClick={async () => { if (window.confirm(`Delete dispatcher ${d.name}? This action is permanent.`)) { await deleteDispatcher(d.id); } }}>
+                      <Trash2 className="h-3.5 w-3.5" /> Delete
+                    </Button>
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="page-header">Dispatchers</h1>
           <p className="page-description">Dispatcher and commission management</p>
@@ -116,19 +142,19 @@ const Dispatchers = () => {
       ) : (
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
-            <TabsTrigger value="active">Active <span className={`text-xs rounded-full px-2 py-0.5 font-semibold ${activeTab === 'active' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{dispatchers.filter(d => d.status !== 'inactive').length}</span></TabsTrigger>
-            <TabsTrigger value="inactive">Inactive <span className={`text-xs rounded-full px-2 py-0.5 font-semibold ${activeTab === 'inactive' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{dispatchers.filter(d => d.status === 'inactive').length}</span></TabsTrigger>
-            <TabsTrigger value="all">All <span className={`text-xs rounded-full px-2 py-0.5 font-semibold ${activeTab === 'all' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{dispatchers.length}</span></TabsTrigger>
+            <TabsTrigger value="active">
+              Active <span className={`ml-1.5 text-xs rounded-full px-2 py-0.5 font-semibold ${activeTab === 'active' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{dispatchers.filter(d => d.status !== 'inactive').length}</span>
+            </TabsTrigger>
+            <TabsTrigger value="inactive">
+              Inactive <span className={`ml-1.5 text-xs rounded-full px-2 py-0.5 font-semibold ${activeTab === 'inactive' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{dispatchers.filter(d => d.status === 'inactive').length}</span>
+            </TabsTrigger>
+            <TabsTrigger value="all">
+              All <span className={`ml-1.5 text-xs rounded-full px-2 py-0.5 font-semibold ${activeTab === 'all' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{dispatchers.length}</span>
+            </TabsTrigger>
           </TabsList>
           {['active', 'inactive', 'all'].map(tab => (
             <TabsContent key={tab} value={tab}>
-              {getFilteredByTab(tab).length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">No dispatchers found.</p>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                  {getFilteredByTab(tab).map(renderDispatcherCard)}
-                </div>
-              )}
+              {renderTable(getFilteredByTab(tab))}
             </TabsContent>
           ))}
         </Tabs>
