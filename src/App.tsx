@@ -43,6 +43,7 @@ import DriverLoadDetail from "./pages/driver-app/DriverLoadDetail";
 import DriverPayments from "./pages/driver-app/DriverPayments";
 import DriverProfile from "./pages/driver-app/DriverProfile";
 import DriverTracking from "./pages/driver-app/DriverTracking";
+import InvestorLoads from "./pages/driver-app/InvestorLoads";
 import { DriverTrackingProvider } from "./contexts/DriverTrackingContext";
 import { isNativePlatform } from "./lib/nativeTracking";
 import { UpdatePrompt } from "./components/UpdatePrompt";
@@ -158,6 +159,12 @@ const DriverWrapper = () => {
   );
 };
 
+// Router de loads — driver ve sus cargas, investor ve cargas de solo lectura
+const InvestorLoadsRouter = () => {
+  const { role } = useAuth();
+  return role === 'investor' ? <InvestorLoads /> : <DriverLoads />;
+};
+
 const AppRoutes = () => {
   const { user, loading, role } = useAuth();
 
@@ -182,7 +189,7 @@ const AppRoutes = () => {
       {/* Driver mobile routes */}
       <Route path="/driver" element={<DriverWrapper />}>
         <Route index element={<DriverDashboard />} />
-        <Route path="loads" element={<DriverLoads />} />
+        <Route path="loads" element={<InvestorLoadsRouter />} />
         <Route path="loads/:loadId" element={<DriverLoadDetail />} />
         <Route path="payments" element={<DriverPayments />} />
         <Route path="profile" element={<DriverProfile />} />
