@@ -133,10 +133,10 @@ const Fleet = () => {
                   : 'border-l-[3px] border-l-[#EF9F27]'; // maintenance
 
                 const iconBg = truck.status === 'active'
-                  ? 'bg-[#639922]/10 text-[#639922]'
+                  ? 'border-2 border-[#639922] text-[#639922] bg-white'
                   : truck.status === 'inactive'
-                  ? 'bg-[#DC2626]/10 text-[#DC2626]'
-                  : 'bg-[#EF9F27]/10 text-[#EF9F27]';
+                  ? 'border-2 border-[#DC2626] text-[#DC2626] bg-white'
+                  : 'border-2 border-[#EF9F27] text-[#EF9F27] bg-white';
 
                 return (
                   <>
@@ -146,7 +146,7 @@ const Fleet = () => {
                       </td>
                       <td className="p-3">
                         <div className="flex items-center gap-2">
-                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${iconBg}`}>
+                          <div className={`w-9 h-9 rounded-full flex items-center justify-center ${iconBg}`}>
                             <TruckIcon className="h-4 w-4" />
                           </div>
                           <div className="flex flex-col">
