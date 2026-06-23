@@ -1,15 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { DbDriver } from '@/hooks/useDrivers';
-import { FileText, ExternalLink, Loader2, Download, Trash2 } from 'lucide-react';
+import { FileText, ExternalLink, Loader2, Download, Plus } from 'lucide-react';
 import { formatDate } from '@/lib/dateUtils';
 import { formatPhone } from '@/lib/phoneUtils';
 import { ExpiryBadge } from '@/components/ExpiryBadge';
 import { generateOnboardingSummaryPdf } from '@/lib/onboardingDocPdf';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { DocCardGrid } from '@/components/DocCardGrid';
+import { getTenantId } from '@/hooks/useTenantId';
 
 function Info({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -40,10 +42,13 @@ interface Props {
 
 export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSignedUrl, truck, onUpdateDriver }: Props) {
   const [loadingDoc, setLoadingDoc] = useState<string | null>(null);
-  const [deletingTermination, setDeletingTermination] = useState(false);
   const [termLetterDeleted, setTermLetterDeleted] = useState(false);
   const [leasingDocs, setLeasingDocs] = useState<Array<{ id: string; company_name: string; file_url: string }>>([]);
   const [leasingLoading, setLeasingLoading] = useState(true);
+  const [addingLeasing, setAddingLeasing] = useState(false);
+  const [newLeasingCompany, setNewLeasingCompany] = useState('');
+  const [uploadingLeasing, setUploadingLeasing] = useState(false);
+  const leasingFileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setLeasingLoading(true);
@@ -137,6 +142,51 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
     a.download = `${driver.name.replace(/\s+/g, '_')}_Summary.pdf`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const refreshLeasingDocs = () => {
+    supabase
+      .from('driver_leasing_agreements' as any)
+      .select('id, company_name, file_url')
+      .eq('driver_id', driver.id)
+      .order('company_name')
+      .then(({ data }) => setLeasingDocs((data as any) || []));
+  };
+
+  const handleAddLeasing = async (file: File) => {
+    if (!newLeasingCompany.trim()) {
+      toast({ title: 'Ingresa el nombre de la empresa', variant: 'destructive' });
+      return;
+    }
+    setUploadingLeasing(true);
+    try {
+      const ext = file.name.split('.').pop();
+      const path = `${driver.id}/leasing_${Date.now()}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from('driver-documents')
+        .upload(path, file, { upsert: true });
+      if (uploadError) throw uploadError;
+
+      const tenant_id = await getTenantId();
+      const { error: insertError } = await supabase
+        .from('driver_leasing_agreements' as any)
+        .insert({
+          driver_id: driver.id,
+          company_name: newLeasingCompany.trim(),
+          file_url: path,
+          tenant_id,
+        } as any);
+      if (insertError) throw insertError;
+
+      toast({ title: `Leasing (${newLeasingCompany.trim()}) agregado` });
+      setNewLeasingCompany('');
+      setAddingLeasing(false);
+      refreshLeasingDocs();
+    } catch (err: any) {
+      toast({ title: 'Error subiendo leasing', description: err.message, variant: 'destructive' });
+    } finally {
+      setUploadingLeasing(false);
+    }
   };
 
   const handleViewDoc = async (url: string, key: string) => {
@@ -243,10 +293,49 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
       <div className="border-t pt-3">
         <div className="flex items-center justify-between mb-2">
           <p className="text-xs font-semibold text-muted-foreground">Documents</p>
-          <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={e => { e.stopPropagation(); handleDownloadPdf(); }}>
-            <Download className="h-3.5 w-3.5" /> Download PDF
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={() => setAddingLeasing(v => !v)}>
+              <Plus className="h-3 w-3" /> Add Leasing
+            </Button>
+            <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={e => { e.stopPropagation(); handleDownloadPdf(); }}>
+              <Download className="h-3.5 w-3.5" /> Download PDF
+            </Button>
+          </div>
         </div>
+
+        {/* Formulario para agregar nuevo leasing */}
+        {addingLeasing && (
+          <div className="mb-3 p-3 rounded-lg border border-dashed border-primary/40 bg-primary/5 space-y-2">
+            <p className="text-xs font-medium text-muted-foreground">Nuevo Leasing Agreement</p>
+            <Input
+              placeholder="Nombre de la empresa (ej: AG AR Transportation)"
+              value={newLeasingCompany}
+              onChange={e => setNewLeasingCompany(e.target.value)}
+              className="h-8 text-xs"
+            />
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                className="h-7 text-xs gap-1"
+                disabled={!newLeasingCompany.trim() || uploadingLeasing}
+                onClick={() => leasingFileRef.current?.click()}
+              >
+                {uploadingLeasing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
+                {uploadingLeasing ? 'Subiendo...' : 'Seleccionar PDF'}
+              </Button>
+              <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => { setAddingLeasing(false); setNewLeasingCompany(''); }}>
+                Cancelar
+              </Button>
+            </div>
+            <input
+              ref={leasingFileRef}
+              type="file"
+              accept=".pdf,image/*"
+              className="hidden"
+              onChange={e => { const f = e.target.files?.[0]; if (f) handleAddLeasing(f); }}
+            />
+          </div>
+        )}
         <DocCardGrid
           docs={[
             ...docFields.map(doc => {
