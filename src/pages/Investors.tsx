@@ -379,7 +379,7 @@ const Investors = () => {
               </tr>
             )}
             {filtered.map(inv => (
-              <tr key={inv.id} className="border-b last:border-0 glass-row border-l-[3px] border-l-[#185FA5]">
+              <tr key={inv.id} className="border-b last:border-b-0 glass-row border-l-[3px] border-l-[#185FA5]">
                 <td className="p-4 font-semibold">
                   <div className="flex items-center gap-2">
                     <div className="h-8 w-8 rounded-full bg-[#185FA5]/10 flex items-center justify-center shrink-0">
