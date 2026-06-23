@@ -139,7 +139,6 @@ const Fleet = () => {
                   : 'bg-[#EF9F27]/10 text-[#EF9F27]';
 
                 return (
-                return (
                   <>
                     <tr key={truck.id} className={`border-b glass-row cursor-pointer ${statusBorder} ${isExpanded ? 'glass-row-expanded' : ''}`} onClick={() => setExpandedId(isExpanded ? null : truck.id)}>
                       <td className="p-3 text-muted-foreground">
