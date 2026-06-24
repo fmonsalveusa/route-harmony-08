@@ -641,6 +641,19 @@ const Tracking = () => {
                       {driver.phone && (
                         <span className="text-xs text-muted-foreground whitespace-nowrap">{driver.phone}</span>
                       )}
+                      {/* Copy Info button — misma línea que el nombre del driver */}
+                      <button
+                        onClick={() => {
+                          copyDriverInfo(driver);
+                          setCopiedInfoId(driver.id);
+                          setTimeout(() => setCopiedInfoId(null), 1500);
+                        }}
+                        className="shrink-0 px-2 py-1 rounded-md text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-green-600 transition-colors whitespace-nowrap flex items-center gap-1"
+                        title="Copy Driver Info"
+                      >
+                        {copiedInfoId === driver.id ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                        Copy Info
+                      </button>
                     </div>
                     <div className="space-y-1 text-xs text-muted-foreground">
                       {/* Manual location override */}
@@ -688,32 +701,21 @@ const Tracking = () => {
                           <p className="text-[10px] italic mt-1">No delivery history</p>
                         )
                       )}
+                      {/* New Location button — debajo de la ubicación */}
+                      <div className="mt-1.5 pt-1.5 border-t">
+                        <button
+                          onClick={() => {
+                            setEditLocationDriver(driver.id);
+                            setLocationInput((driver as any).manual_location_address || '');
+                          }}
+                          className="px-3 py-1.5 rounded-md text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-blue-600 transition-colors whitespace-nowrap flex items-center gap-1"
+                          title="New Location"
+                        >
+                          <Pencil className="h-3 w-3" />
+                          New Location
+                        </button>
+                      </div>
                     </div>
-                    </div>
-                    <div className="shrink-0 self-center flex flex-col gap-1">
-                      <button
-                        onClick={() => {
-                          setEditLocationDriver(driver.id);
-                          setLocationInput((driver as any).manual_location_address || '');
-                        }}
-                        className="px-3 py-2 rounded-md text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-blue-600 transition-colors whitespace-nowrap flex items-center gap-1"
-                        title="New Location"
-                      >
-                        <Pencil className="h-3 w-3" />
-                        New Location
-                      </button>
-                      <button
-                        onClick={() => {
-                          copyDriverInfo(driver);
-                          setCopiedInfoId(driver.id);
-                          setTimeout(() => setCopiedInfoId(null), 1500);
-                        }}
-                        className="px-3 py-2 rounded-md text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-green-600 transition-colors whitespace-nowrap flex items-center gap-1"
-                        title="Copy Driver Info"
-                      >
-                        {copiedInfoId === driver.id ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                        Copy Info
-                      </button>
                     </div>
                   </div>
                 );
