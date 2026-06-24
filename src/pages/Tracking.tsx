@@ -21,6 +21,7 @@ import { MAPBOX_TILE_URL, MAPBOX_TILE_OPTIONS, mapboxGeocode } from '@/lib/mapCo
 import { LoadStop } from '@/hooks/useLoadStops';
 import { format, parseISO, isToday } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
+import { formatPhone } from '@/lib/phoneUtils';
 
 // Fix default marker icons
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -139,6 +140,7 @@ const Tracking = () => {
   const [mapZoom, setMapZoom] = useState(4);
   const [lastDeliveryStops, setLastDeliveryStops] = useState<Record<string, { address: string; lat: number; lng: number; date: string }>>({});
   const [copiedDriverId, setCopiedDriverId] = useState<string | null>(null);
+  const [copiedInfoId, setCopiedInfoId] = useState<string | null>(null);
 
   // Manual location dialog state
   const [editLocationDriver, setEditLocationDriver] = useState<string | null>(null);
@@ -440,6 +442,34 @@ const Tracking = () => {
   const dispatchedCount = scopedActiveLoads.filter(l => l.status === 'dispatched').length;
   const deliveriesToday = scopedAllLoads.filter(l => l.delivery_date && isToday(parseISO(l.delivery_date)) && l.status !== 'cancelled').length;
 
+  const copyDriverInfo = (driver: typeof drivers[0]) => {
+    const truck = trucks.find(t => t.id === driver.truck_id);
+    const dispatcher = dispatchers.find(d => d.id === driver.dispatcher_id);
+    const truckType = truck?.truck_type || '';
+    const isHotshot = truckType.toLowerCase().includes('hotshot');
+
+    const truckLines = isHotshot
+      ? `Truck #: ${truck?.unit_number || ''}\nTruck Type: Hotshot\nTrailer (ft): ${truck?.trailer_length_ft || ''}`
+      : `Truck #: ${truck?.unit_number || ''}\nTruck Type: Box Truck\nBack Door: ${truck?.rear_door_width_in && truck?.rear_door_height_in ? `${truck.rear_door_width_in}" x ${truck.rear_door_height_in}"` : ''}`;
+
+    const truckHtmlLines = isHotshot
+      ? `Truck #: ${truck?.unit_number || ''}<br>Truck Type: Hotshot<br>Trailer (ft): ${truck?.trailer_length_ft || ''}`
+      : `Truck #: ${truck?.unit_number || ''}<br>Truck Type: Box Truck<br>Back Door: ${truck?.rear_door_width_in && truck?.rear_door_height_in ? `${truck.rear_door_width_in}" x ${truck.rear_door_height_in}"` : ''}`;
+
+    const plain = `*Driver Info:*\nDriver Name: ${driver.name}\nPhone Number: ${formatPhone(driver.phone)}\n\n*Truck Info:*\n${truckLines}\n\n*Dispatcher Info:*\nDispatcher Name: ${dispatcher?.name || ''}\nDispatcher Phone Number: ${formatPhone(dispatcher?.phone)}\n\nETA to Pick up: `;
+    const html = `<b>Driver Info:</b><br>Driver Name: ${driver.name}<br>Phone Number: ${formatPhone(driver.phone)}<br><br><b>Truck Info:</b><br>${truckHtmlLines}<br><br><b>Dispatcher Info:</b><br>Dispatcher Name: ${dispatcher?.name || ''}<br>Dispatcher Phone Number: ${formatPhone(dispatcher?.phone)}<br><br>ETA to Pick up: `;
+
+    try {
+      navigator.clipboard.write([new ClipboardItem({
+        'text/plain': new Blob([plain], { type: 'text/plain' }),
+        'text/html': new Blob([html], { type: 'text/html' }),
+      })]);
+    } catch {
+      navigator.clipboard.writeText(plain);
+    }
+    toast({ title: 'Copied to clipboard' });
+  };
+
   const handleSelectLoad = (load: LoadWithStops) => {
     setSelectedLoadId(load.id);
     // Find center from stops or route
@@ -660,17 +690,31 @@ const Tracking = () => {
                       )}
                     </div>
                     </div>
-                    <button
-                      onClick={() => {
-                        setEditLocationDriver(driver.id);
-                        setLocationInput((driver as any).manual_location_address || '');
-                      }}
-                      className="shrink-0 self-center px-3 py-2 rounded-md text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-blue-600 transition-colors whitespace-nowrap flex items-center gap-1"
-                      title="New Location"
-                    >
-                      <Pencil className="h-3 w-3" />
-                      New Location
-                    </button>
+                    <div className="shrink-0 self-center flex flex-col gap-1">
+                      <button
+                        onClick={() => {
+                          setEditLocationDriver(driver.id);
+                          setLocationInput((driver as any).manual_location_address || '');
+                        }}
+                        className="px-3 py-2 rounded-md text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-blue-600 transition-colors whitespace-nowrap flex items-center gap-1"
+                        title="New Location"
+                      >
+                        <Pencil className="h-3 w-3" />
+                        New Location
+                      </button>
+                      <button
+                        onClick={() => {
+                          copyDriverInfo(driver);
+                          setCopiedInfoId(driver.id);
+                          setTimeout(() => setCopiedInfoId(null), 1500);
+                        }}
+                        className="px-3 py-2 rounded-md text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-green-600 transition-colors whitespace-nowrap flex items-center gap-1"
+                        title="Copy Driver Info"
+                      >
+                        {copiedInfoId === driver.id ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                        Copy Info
+                      </button>
+                    </div>
                   </div>
                 );
               })
