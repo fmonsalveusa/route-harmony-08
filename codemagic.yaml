@@ -29,7 +29,7 @@ workflows:
             --type IOS_APP_STORE \
             --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
             --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
-            --private-key "$APP_STORE_CONNECT_PRIVATE_KEY" \
+            --private-key "$APP_STORE_CONNECT_PUBLISHER_PRIVATE_KEY" \
             --create
           xcode-project use-profiles
       - name: Install provisioning profile manually
