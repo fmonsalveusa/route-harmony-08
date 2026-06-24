@@ -83,9 +83,8 @@ workflows:
       - ios/App/App.xcarchive/**
     publishing:
       app_store_connect:
-        api_key: $APP_STORE_CONNECT_PUBLISHER_PRIVATE_KEY
-        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
-        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        apple_id: $APPLE_ID
+        password: $APP_SPECIFIC_PASSWORD
         submit_to_testflight: true
 
   android-workflow:
@@ -127,3 +126,4 @@ workflows:
             -Pandroid.injected.signing.key.password=$ANDROID_KEY_PASSWORD
     artifacts:
       - android/app/build/outputs/**/*.aab
+
