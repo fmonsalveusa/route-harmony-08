@@ -1,5 +1,4 @@
 import { useState, useRef, useMemo, Fragment, useEffect, useCallback } from 'react';
-import { useLocation } from 'react-router-dom';
 
 import { formatDate, todayET } from '@/lib/dateUtils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -89,20 +88,7 @@ const Loads = () => {
   const [showForm, setShowForm] = useState(false);
   const [editLoad, setEditLoad] = useState<DbLoad | null>(null);
   const [rcRefreshKey, setRcRefreshKey] = useState(0);
-  const location = useLocation();
   const [expandedId, setExpandedId] = useState<string | null>(null);
-
-  // Abrir carga desde state de navegación (viene de Tracking page)
-  useEffect(() => {
-    const openLoadId = (location.state as any)?.openLoadId;
-    if (openLoadId && loads.length > 0) {
-      setExpandedId(openLoadId);
-      window.history.replaceState({}, '');
-      setTimeout(() => {
-        document.getElementById(`load-row-${openLoadId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 300);
-    }
-  }, [location.state, loads]);
   const [deleteTarget, setDeleteTarget] = useState<DbLoad | null>(null);
   const [podUploadLoadId, setPodUploadLoadId] = useState<string | null>(null);
   const [showImportWizard, setShowImportWizard] = useState(false);

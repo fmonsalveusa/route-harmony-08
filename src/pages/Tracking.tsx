@@ -589,7 +589,7 @@ const Tracking = () => {
                   className="flex-1 gap-1.5"
                   onClick={() => {
                     setSelectedDriverLoad(null);
-                    navigate('/loads', { state: { openLoadId: load.id } });
+                    navigate('/loads');
                   }}
                 >
                   <ExternalLink className="h-3.5 w-3.5" />
