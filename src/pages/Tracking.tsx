@@ -619,11 +619,10 @@ const Tracking = () => {
                         activeLoad ? 'bg-[hsl(152,60%,40%)]' : 'bg-[hsl(25,95%,53%)]'
                       }`}
                     >
-                      <span
-                        className="text-white text-[9px] font-bold tracking-widest whitespace-nowrap"
-                        style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
-                      >
-                        {activeLoad ? 'LOADED' : 'EMPTY'}
+                      <span className="text-white text-[11px] font-bold flex flex-col items-center gap-0.5">
+                        {(activeLoad ? 'LOADED' : 'EMPTY').split('').map((letter, i) => (
+                          <span key={i}>{letter}</span>
+                        ))}
                       </span>
                     </div>
                     <div className="flex-1 min-w-0 p-3">
