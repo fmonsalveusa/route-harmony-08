@@ -89,8 +89,8 @@ const Loads = () => {
   const [showForm, setShowForm] = useState(false);
   const [editLoad, setEditLoad] = useState<DbLoad | null>(null);
   const [rcRefreshKey, setRcRefreshKey] = useState(0);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   // Abrir carga desde query param ?load=id (viene de Tracking page)
   useEffect(() => {
