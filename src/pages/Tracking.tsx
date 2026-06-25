@@ -516,11 +516,15 @@ const Tracking = () => {
 
           {load ? (
             <div className="space-y-4">
-              {/* Load # */}
+              {/* Load # y Broker */}
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs text-muted-foreground">Load #</p>
                   <p className="text-lg font-bold text-primary">{load.reference_number}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-muted-foreground">Broker</p>
+                  <p className="text-sm font-semibold truncate max-w-[180px]">{load.broker_client || '—'}</p>
                 </div>
                 {truck && (
                   <div className="text-right">
@@ -531,7 +535,11 @@ const Tracking = () => {
               </div>
 
               {/* Stats */}
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-4 gap-3">
+                <div className="bg-muted/40 rounded-lg p-3 text-center">
+                  <p className="text-xs text-muted-foreground">Weight</p>
+                  <p className="text-base font-bold">{load.weight ? `${Number(load.weight).toLocaleString()} lbs` : '—'}</p>
+                </div>
                 <div className="bg-muted/40 rounded-lg p-3 text-center">
                   <p className="text-xs text-muted-foreground">Empty Miles</p>
                   <p className="text-base font-bold">{load.empty_miles ? Number(load.empty_miles).toLocaleString() : '—'}</p>
@@ -543,14 +551,6 @@ const Tracking = () => {
                 <div className="bg-muted/40 rounded-lg p-3 text-center">
                   <p className="text-xs text-muted-foreground">RPM</p>
                   <p className={`text-base font-bold ${rpmColor}`}>{rpm ? `$${rpm}` : '—'}</p>
-                </div>
-                <div className="bg-muted/40 rounded-lg p-3 text-center">
-                  <p className="text-xs text-muted-foreground">Weight</p>
-                  <p className="text-base font-bold">{load.weight ? `${Number(load.weight).toLocaleString()} lbs` : '—'}</p>
-                </div>
-                <div className="bg-muted/40 rounded-lg p-3 text-center col-span-2">
-                  <p className="text-xs text-muted-foreground">Broker</p>
-                  <p className="text-base font-bold truncate">{load.broker_client || '—'}</p>
                 </div>
               </div>
 
