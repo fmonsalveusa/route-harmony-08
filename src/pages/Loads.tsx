@@ -1,5 +1,4 @@
 import { useState, useRef, useMemo, Fragment, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
 
 import { formatDate, todayET } from '@/lib/dateUtils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -89,21 +88,20 @@ const Loads = () => {
   const [showForm, setShowForm] = useState(false);
   const [editLoad, setEditLoad] = useState<DbLoad | null>(null);
   const [rcRefreshKey, setRcRefreshKey] = useState(0);
-  const [searchParams, setSearchParams] = useSearchParams();
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   // Abrir carga desde query param ?load=id (viene de Tracking page)
   useEffect(() => {
-    const loadId = searchParams.get('load');
+    const params = new URLSearchParams(window.location.search);
+    const loadId = params.get('load');
     if (loadId && loads.length > 0) {
       setExpandedId(loadId);
-      setSearchParams({}, { replace: true }); // limpiar el param de la URL
-      // Scroll al row de la carga
+      window.history.replaceState({}, '', window.location.pathname);
       setTimeout(() => {
         document.getElementById(`load-row-${loadId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }, 300);
     }
-  }, [searchParams, loads, setSearchParams]);
+  }, [loads]);
   const [deleteTarget, setDeleteTarget] = useState<DbLoad | null>(null);
   const [podUploadLoadId, setPodUploadLoadId] = useState<string | null>(null);
   const [showImportWizard, setShowImportWizard] = useState(false);
