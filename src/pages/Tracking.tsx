@@ -673,7 +673,7 @@ const Tracking = () => {
                           <p className="text-[10px] font-medium text-foreground">
                             {displayInfo.isActive ? 'Next Stop (Active Load)' : 'Last Delivery'}
                           </p>
-                          <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+                          <div className="flex items-center gap-1 mt-0.5">
                             <MapPin className={`h-3 w-3 shrink-0 ${displayInfo.isActive ? 'text-primary' : 'text-destructive'}`} />
                             <span className="text-base font-semibold leading-tight">
                               {extractCityState(displayInfo.address)}
@@ -689,6 +689,7 @@ const Tracking = () => {
                             >
                               {copiedDriverId === driver.id ? <Check className="h-3 w-3 text-green-600" /> : <Copy className="h-3 w-3" />}
                             </button>
+                            <div className="flex-1" />
                             <button
                               onClick={() => {
                                 setEditLocationDriver(driver.id);
