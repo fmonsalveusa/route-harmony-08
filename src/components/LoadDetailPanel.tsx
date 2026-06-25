@@ -1467,6 +1467,18 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
               </div>
             </div>
 
+            {/* Fila 4: Weight */}
+            <div className="grid grid-cols-2 border-b">
+              <div className="px-4 py-2.5 border-r">
+                <div className="text-[11px] text-muted-foreground font-medium mb-0.5 flex items-center gap-1">
+                  <Weight className="h-3 w-3" /> Weight
+                </div>
+                <div className="font-semibold">
+                  {(load as any).weight ? `${Number((load as any).weight).toLocaleString()} lbs` : '—'}
+                </div>
+              </div>
+            </div>
+
             {/* Gross Rate — solo Admin / Accounting / Master Admin */}
             {canSeeGrossRate && rcGrossRate && (
               <div className="grid grid-cols-2 bg-amber-500/10">
@@ -1478,6 +1490,18 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
                   <div className="text-[11px] text-amber-700 dark:text-amber-400 font-medium mb-0.5">Comisión broker</div>
                   <div className="font-semibold text-amber-700 dark:text-amber-400">${(Number(rcGrossRate) - Number(load.total_rate)).toLocaleString()}</div>
                 </div>
+              </div>
+            )}
+
+            {/* Notes */}
+            {(load as any).notes && (
+              <div className="px-4 py-3 border-t">
+                <div className="text-[11px] text-muted-foreground font-medium mb-1 flex items-center gap-1">
+                  <FileText className="h-3 w-3" /> Notes
+                </div>
+                <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
+                  {(load as any).notes}
+                </p>
               </div>
             )}
           </div>
