@@ -1408,7 +1408,15 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
             </div>
 
             {/* Fila 2: Empty Miles | Miles | RPM */}
-            <div className="grid grid-cols-3 border-b">
+            <div className="grid grid-cols-4 border-b">
+              <div className="px-4 py-2.5 border-r">
+                <div className="text-[11px] text-muted-foreground font-medium mb-0.5 flex items-center gap-1">
+                  <Weight className="h-3 w-3" /> Weight
+                </div>
+                <div className="font-semibold">
+                  {(load as any).weight ? `${Number((load as any).weight).toLocaleString()} lbs` : '—'}
+                </div>
+              </div>
               <div className="px-4 py-2.5 border-r">
                 <div className="text-[11px] text-muted-foreground font-medium mb-0.5">Empty Miles</div>
                 <div className="flex items-center gap-1">
@@ -1464,18 +1472,6 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
               <div className="px-4 py-2.5">
                 <div className="text-[11px] text-muted-foreground font-medium mb-0.5">Dispatcher</div>
                 <div className="font-medium">{dispatcher?.name || '—'}</div>
-              </div>
-            </div>
-
-            {/* Fila 4: Weight */}
-            <div className="grid grid-cols-2 border-b">
-              <div className="px-4 py-2.5 border-r">
-                <div className="text-[11px] text-muted-foreground font-medium mb-0.5 flex items-center gap-1">
-                  <Weight className="h-3 w-3" /> Weight
-                </div>
-                <div className="font-semibold">
-                  {(load as any).weight ? `${Number((load as any).weight).toLocaleString()} lbs` : '—'}
-                </div>
               </div>
             </div>
 
