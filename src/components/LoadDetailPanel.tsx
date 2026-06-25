@@ -1414,7 +1414,7 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
                   <Weight className="h-3 w-3" /> Weight
                 </div>
                 <div className="font-semibold">
-                  {(load as any).weight ? `${Number((load as any).weight).toLocaleString()} lbs` : '—'}
+                  {load.weight ? `${Number(load.weight).toLocaleString()} lbs` : '—'}
                 </div>
               </div>
               <div className="px-4 py-2.5 border-r">
@@ -1490,13 +1490,13 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
             )}
 
             {/* Notes */}
-            {(load as any).notes && (
+            {load.notes && (
               <div className="px-4 py-3 border-t">
                 <div className="text-[11px] text-muted-foreground font-medium mb-1 flex items-center gap-1">
                   <FileText className="h-3 w-3" /> Notes
                 </div>
                 <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
-                  {(load as any).notes}
+                  {load.notes}
                 </p>
               </div>
             )}
