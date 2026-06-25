@@ -673,24 +673,33 @@ const Tracking = () => {
                           <p className="text-[10px] font-medium text-foreground">
                             {displayInfo.isActive ? 'Next Stop (Active Load)' : 'Last Delivery'}
                           </p>
-                          <div className="flex items-start gap-1 mt-0.5">
-                            <MapPin className={`h-3 w-3 shrink-0 mt-0.5 ${displayInfo.isActive ? 'text-primary' : 'text-destructive'}`} />
-                            <div className="flex items-center gap-1">
-                              <span className="text-base font-semibold leading-tight">
-                                {extractCityState(displayInfo.address)}
-                              </span>
-                              <button
-                                onClick={() => {
-                                  navigator.clipboard.writeText(extractCityState(displayInfo.address));
-                                  setCopiedDriverId(driver.id);
-                                  setTimeout(() => setCopiedDriverId(null), 1500);
-                                }}
-                                className="shrink-0 p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                                title="Copiar ciudad y estado"
-                              >
-                                {copiedDriverId === driver.id ? <Check className="h-3 w-3 text-green-600" /> : <Copy className="h-3 w-3" />}
-                              </button>
-                            </div>
+                          <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+                            <MapPin className={`h-3 w-3 shrink-0 ${displayInfo.isActive ? 'text-primary' : 'text-destructive'}`} />
+                            <span className="text-base font-semibold leading-tight">
+                              {extractCityState(displayInfo.address)}
+                            </span>
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(extractCityState(displayInfo.address));
+                                setCopiedDriverId(driver.id);
+                                setTimeout(() => setCopiedDriverId(null), 1500);
+                              }}
+                              className="shrink-0 p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                              title="Copiar ciudad y estado"
+                            >
+                              {copiedDriverId === driver.id ? <Check className="h-3 w-3 text-green-600" /> : <Copy className="h-3 w-3" />}
+                            </button>
+                            <button
+                              onClick={() => {
+                                setEditLocationDriver(driver.id);
+                                setLocationInput((driver as any).manual_location_address || '');
+                              }}
+                              className="px-2 py-0.5 rounded-md text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-blue-600 transition-colors whitespace-nowrap flex items-center gap-1"
+                              title="New Location"
+                            >
+                              <Pencil className="h-3 w-3" />
+                              New Location
+                            </button>
                           </div>
                           {displayInfo.date && (
                             <p className="text-xs mt-0.5 opacity-70">{format(parseISO(displayInfo.date), 'MMM dd, yyyy')}</p>
@@ -701,20 +710,6 @@ const Tracking = () => {
                           <p className="text-[10px] italic mt-1">No delivery history</p>
                         )
                       )}
-                      {/* New Location button — debajo de la ubicación */}
-                      <div className="mt-1.5 pt-1.5 border-t">
-                        <button
-                          onClick={() => {
-                            setEditLocationDriver(driver.id);
-                            setLocationInput((driver as any).manual_location_address || '');
-                          }}
-                          className="px-3 py-1.5 rounded-md text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-blue-600 transition-colors whitespace-nowrap flex items-center gap-1"
-                          title="New Location"
-                        >
-                          <Pencil className="h-3 w-3" />
-                          New Location
-                        </button>
-                      </div>
                     </div>
                     </div>
                   </div>
