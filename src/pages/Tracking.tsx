@@ -12,7 +12,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { StatusBadge } from '@/components/StatusBadge';
-import { MapPin, Package, Navigation, Clock, Search, ChevronRight, AlertTriangle, Eye, User, Users, Pencil, Loader2, Copy, Check, Download } from 'lucide-react';
+import { MapPin, Package, Navigation, Clock, Search, ChevronRight, AlertTriangle, Eye, User, Users, Pencil, Loader2, Copy, Check, Download, ExternalLink, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { DriversTimelineCard } from '@/components/dashboard/DriversTimelineCard';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, Tooltip as LeafletTooltip, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -141,6 +142,8 @@ const Tracking = () => {
   const [lastDeliveryStops, setLastDeliveryStops] = useState<Record<string, { address: string; lat: number; lng: number; date: string }>>({});
   const [copiedDriverId, setCopiedDriverId] = useState<string | null>(null);
   const [copiedInfoId, setCopiedInfoId] = useState<string | null>(null);
+  const [selectedDriverLoad, setSelectedDriverLoad] = useState<{ driver: typeof drivers[0]; load: LoadWithStops | null; lastDelivered?: { address: string; date: string } } | null>(null);
+  const navigate = useNavigate();
 
   // Manual location dialog state
   const [editLocationDriver, setEditLocationDriver] = useState<string | null>(null);
@@ -486,6 +489,141 @@ const Tracking = () => {
     }
   };
 
+  // Modal de detalle de carga
+  const LoadDetailModal = () => {
+    if (!selectedDriverLoad) return null;
+    const { driver, load, lastDelivered } = selectedDriverLoad;
+    const truck = trucks.find(t => t.id === driver.truck_id);
+    const rpm = load && load.miles && Number(load.miles) > 0
+      ? (Number(load.total_rate) / Number(load.miles)).toFixed(2)
+      : null;
+    const rpmColor = rpm
+      ? Number(rpm) >= 1.90 ? 'text-green-600' : Number(rpm) >= 1.60 ? 'text-amber-500' : 'text-red-500'
+      : '';
+
+    return (
+      <Dialog open={!!selectedDriverLoad} onOpenChange={() => setSelectedDriverLoad(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <User className="h-4 w-4" />
+              {driver.name}
+              <span className={`ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold text-white ${load ? 'bg-[hsl(152,60%,40%)]' : 'bg-[hsl(25,95%,53%)]'}`}>
+                {load ? 'LOADED' : 'EMPTY'}
+              </span>
+            </DialogTitle>
+          </DialogHeader>
+
+          {load ? (
+            <div className="space-y-4">
+              {/* Load # */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground">Load #</p>
+                  <p className="text-lg font-bold text-primary">{load.reference_number}</p>
+                </div>
+                {truck && (
+                  <div className="text-right">
+                    <p className="text-xs text-muted-foreground">Truck</p>
+                    <p className="text-sm font-semibold">Unit #{truck.unit_number}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Stats */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="bg-muted/40 rounded-lg p-3 text-center">
+                  <p className="text-xs text-muted-foreground">Empty Miles</p>
+                  <p className="text-base font-bold">{load.empty_miles ? Number(load.empty_miles).toLocaleString() : '—'}</p>
+                </div>
+                <div className="bg-muted/40 rounded-lg p-3 text-center">
+                  <p className="text-xs text-muted-foreground">Miles</p>
+                  <p className="text-base font-bold">{load.miles ? Number(load.miles).toLocaleString() : '—'}</p>
+                </div>
+                <div className="bg-muted/40 rounded-lg p-3 text-center">
+                  <p className="text-xs text-muted-foreground">RPM</p>
+                  <p className={`text-base font-bold ${rpmColor}`}>{rpm ? `$${rpm}` : '—'}</p>
+                </div>
+              </div>
+
+              {/* Paradas */}
+              {load.stops.length > 0 && (
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-2">Route & Stops</p>
+                  <div className="space-y-0">
+                    {[...load.stops].sort((a, b) => a.stop_order - b.stop_order).map((stop, i) => (
+                      <div key={stop.id} className="flex items-start gap-2">
+                        <div className="flex flex-col items-center">
+                          <div className={`w-3 h-3 rounded-full shrink-0 mt-0.5 ${
+                            stop.stop_type === 'pickup' ? 'bg-blue-500' :
+                            stop.stop_type === 'delivery' ? 'bg-green-500' : 'bg-amber-400'
+                          }`} />
+                          {i < load.stops.length - 1 && <div className="w-px h-5 bg-border" />}
+                        </div>
+                        <div className="pb-2 min-w-0">
+                          <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{stop.stop_type}</p>
+                          <p className="text-sm font-medium leading-tight">{stop.address}</p>
+                          {stop.scheduled_date && (
+                            <p className="text-xs text-muted-foreground">{format(parseISO(stop.scheduled_date), 'MMM dd, yyyy')}</p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Botones */}
+              <div className="flex gap-2 pt-2 border-t">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 gap-1.5"
+                  onClick={() => {
+                    setSelectedDriverLoad(null);
+                    navigate(`/loads?load=${load.id}`);
+                  }}
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  View Full Load
+                </Button>
+                {(load as any).rate_confirmation_url && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 gap-1.5"
+                    onClick={() => window.open((load as any).rate_confirmation_url, '_blank')}
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" />
+                    Rate Confirmation
+                  </Button>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">No active load.</p>
+              {lastDelivered && (
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-1">Last Delivery</p>
+                  <div className="flex items-start gap-2">
+                    <MapPin className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-semibold">{lastDelivered.address}</p>
+                      {lastDelivered.date && (
+                        <p className="text-xs text-muted-foreground">{format(parseISO(lastDelivered.date), 'MMM dd, yyyy')}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    );
+  };
+
   return (
     <div className="space-y-4">
       <div>
@@ -609,9 +747,10 @@ const Tracking = () => {
                 return (
                   <div
                     key={driver.id}
-                    className={`rounded-lg border border-border hover:border-primary/30 transition-all flex overflow-hidden ${
+                    className={`rounded-lg border border-border hover:border-primary/30 transition-all flex overflow-hidden cursor-pointer ${
                       activeLoad ? 'bg-[hsl(152,60%,40%)]/[0.03]' : 'bg-[hsl(25,95%,53%)]/[0.03]'
                     }`}
+                    onClick={() => setSelectedDriverLoad({ driver, load: activeLoad || null, lastDelivered: lastDel ? { address: lastDel.address, date: lastDel.date } : undefined })}
                   >
                     {/* Badge vertical izquierdo */}
                     <div
@@ -619,7 +758,7 @@ const Tracking = () => {
                         activeLoad ? 'bg-[hsl(152,60%,40%)]' : 'bg-[hsl(25,95%,53%)]'
                       }`}
                     >
-                      <span className="text-white text-[11px] font-bold flex flex-col items-center gap-0.5">
+                      <span className="text-white text-[9px] font-bold flex flex-col items-center gap-0">
                         {(activeLoad ? 'LOADED' : 'EMPTY').split('').map((letter, i) => (
                           <span key={i}>{letter}</span>
                         ))}
@@ -648,7 +787,8 @@ const Tracking = () => {
                       )}
                       {/* Copy Info button — misma línea que el nombre del driver */}
                       <button
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           copyDriverInfo(driver);
                           setCopiedInfoId(driver.id);
                           setTimeout(() => setCopiedInfoId(null), 1500);
@@ -696,7 +836,8 @@ const Tracking = () => {
                             </button>
                             <div className="flex-1" />
                             <button
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 setEditLocationDriver(driver.id);
                                 setLocationInput((driver as any).manual_location_address || '');
                               }}
@@ -997,6 +1138,8 @@ const Tracking = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <LoadDetailModal />
     </div>
   );
 };
