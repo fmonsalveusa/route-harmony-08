@@ -544,6 +544,14 @@ const Tracking = () => {
                   <p className="text-xs text-muted-foreground">RPM</p>
                   <p className={`text-base font-bold ${rpmColor}`}>{rpm ? `$${rpm}` : '—'}</p>
                 </div>
+                <div className="bg-muted/40 rounded-lg p-3 text-center">
+                  <p className="text-xs text-muted-foreground">Weight</p>
+                  <p className="text-base font-bold">{load.weight ? `${Number(load.weight).toLocaleString()} lbs` : '—'}</p>
+                </div>
+                <div className="bg-muted/40 rounded-lg p-3 text-center col-span-2">
+                  <p className="text-xs text-muted-foreground">Broker</p>
+                  <p className="text-base font-bold truncate">{load.broker_client || '—'}</p>
+                </div>
               </div>
 
               {/* Paradas */}
