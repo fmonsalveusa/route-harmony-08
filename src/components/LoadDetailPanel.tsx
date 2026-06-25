@@ -1503,8 +1503,10 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
           </div>
 
           {/* Load Adjustments */}
-          {(['in_transit', 'delivered', 'tonu'].includes(load.status)) && (
+          {load.status !== 'delivered' ? (
             <LoadAdjustmentsSection loadId={load.id} />
+          ) : (
+            <LoadAdjustmentsSection loadId={load.id} hideIfEmpty />
           )}
 
           {/* Stops / Route breakdown */}

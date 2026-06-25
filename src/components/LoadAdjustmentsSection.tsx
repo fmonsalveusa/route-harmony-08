@@ -10,9 +10,10 @@ import { Plus, Trash2, X } from 'lucide-react';
 
 interface LoadAdjustmentsSectionProps {
   loadId: string;
+  hideIfEmpty?: boolean;
 }
 
-export function LoadAdjustmentsSection({ loadId }: LoadAdjustmentsSectionProps) {
+export function LoadAdjustmentsSection({ loadId, hideIfEmpty = false }: LoadAdjustmentsSectionProps) {
   const { adjustments, availableRecipients, loading, addAdjustment, deleteAdjustment } = useLoadAdjustments(loadId);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -24,6 +25,9 @@ export function LoadAdjustmentsSection({ loadId }: LoadAdjustmentsSectionProps) 
 
   // Don't render if no driver is assigned (no recipients available)
   if (!loading && availableRecipients.length === 0) return null;
+
+  // Si hideIfEmpty=true (ej: delivered), solo mostrar si hay ajustes
+  if (!loading && hideIfEmpty && adjustments.length === 0) return null;
 
   const resetForm = () => {
     setType('deduction');
