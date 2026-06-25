@@ -517,21 +517,19 @@ const Tracking = () => {
           {load ? (
             <div className="space-y-4">
               {/* Load # y Broker */}
-              <div className="flex items-center justify-between">
+              <div className="grid grid-cols-3 gap-2">
                 <div>
                   <p className="text-xs text-muted-foreground">Load #</p>
                   <p className="text-lg font-bold text-primary">{load.reference_number}</p>
                 </div>
-                <div className="text-right">
+                <div className="text-center">
                   <p className="text-xs text-muted-foreground">Broker</p>
-                  <p className="text-sm font-semibold truncate max-w-[180px]">{load.broker_client || '—'}</p>
+                  <p className="text-sm font-semibold truncate">{load.broker_client || '—'}</p>
                 </div>
-                {truck && (
-                  <div className="text-right">
-                    <p className="text-xs text-muted-foreground">Truck</p>
-                    <p className="text-sm font-semibold">Unit #{truck.unit_number}</p>
-                  </div>
-                )}
+                <div className="text-right">
+                  <p className="text-xs text-muted-foreground">Truck</p>
+                  <p className="text-sm font-semibold">{truck ? `Unit #${truck.unit_number}` : '—'}</p>
+                </div>
               </div>
 
               {/* Stats */}
