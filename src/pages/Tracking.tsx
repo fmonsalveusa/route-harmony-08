@@ -609,11 +609,24 @@ const Tracking = () => {
                 return (
                   <div
                     key={driver.id}
-                    className={`p-3 rounded-lg border-l-4 border border-border hover:border-primary/30 transition-all flex items-start gap-2 ${
-                      activeLoad ? 'border-l-[hsl(152,60%,40%)] bg-[hsl(152,60%,40%)]/[0.03]' : 'border-l-[hsl(25,95%,53%)] bg-[hsl(25,95%,53%)]/[0.03]'
+                    className={`rounded-lg border border-border hover:border-primary/30 transition-all flex overflow-hidden ${
+                      activeLoad ? 'bg-[hsl(152,60%,40%)]/[0.03]' : 'bg-[hsl(25,95%,53%)]/[0.03]'
                     }`}
                   >
-                    <div className="flex-1 min-w-0">
+                    {/* Badge vertical izquierdo */}
+                    <div
+                      className={`flex items-center justify-center w-7 shrink-0 ${
+                        activeLoad ? 'bg-[hsl(152,60%,40%)]' : 'bg-[hsl(25,95%,53%)]'
+                      }`}
+                    >
+                      <span
+                        className="text-white text-[9px] font-bold tracking-widest whitespace-nowrap"
+                        style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
+                      >
+                        {activeLoad ? 'LOADED' : 'EMPTY'}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0 p-3">
                     <div className="flex items-center gap-2 mb-2">
                       <div className="p-1.5 rounded-full bg-[hsl(152,60%,40%)]/10">
                         <User className="h-3.5 w-3.5 text-[hsl(152,60%,40%)]" />
@@ -621,13 +634,6 @@ const Tracking = () => {
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-semibold truncate">{driver.name}</p>
                       </div>
-                      <span
-                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wide whitespace-nowrap text-white ${
-                          activeLoad ? 'bg-[hsl(152,60%,40%)]' : 'bg-[hsl(25,95%,53%)]'
-                        }`}
-                      >
-                        {activeLoad ? 'LOADED' : 'EMPTY'}
-                      </span>
                       {(() => {
                         const loc = driverLocations.find(dl => dl.driver_id === driver.id);
                         const isGpsActive = loc && (Date.now() - new Date(loc.updated_at).getTime()) < 5 * 60 * 1000;
