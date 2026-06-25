@@ -830,7 +830,8 @@ const Tracking = () => {
                               {extractCityState(displayInfo.address)}
                             </span>
                             <button
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 navigator.clipboard.writeText(extractCityState(displayInfo.address));
                                 setCopiedDriverId(driver.id);
                                 setTimeout(() => setCopiedDriverId(null), 1500);
