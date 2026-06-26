@@ -137,6 +137,14 @@ const Tracking = () => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [dispatcherFilter, setDispatcherFilter] = useState<string>('all');
+
+  // Default dispatcher filter para fmonsalve.usa@gmail.com → Francisco Monsalve
+  useEffect(() => {
+    if (profile?.email?.toLowerCase() === 'fmonsalve.usa@gmail.com' && dispatchers.length > 0) {
+      const francisco = dispatchers.find(d => d.name?.toLowerCase().includes('francisco monsalve'));
+      if (francisco) setDispatcherFilter(francisco.id);
+    }
+  }, [profile?.email, dispatchers]);
   const [mapCenter, setMapCenter] = useState<[number, number]>([39.8283, -98.5795]);
   const [mapZoom, setMapZoom] = useState(4);
   const [lastDeliveryStops, setLastDeliveryStops] = useState<Record<string, { address: string; lat: number; lng: number; date: string }>>({});
