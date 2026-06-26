@@ -13,23 +13,23 @@ const statusConfig: Record<string, { label: string; className: string }> = {
   // Factoring statuses
   pending_factoring: { label: 'Pending', className: 'bg-[hsl(38,92%,50%)] text-white' },
   in_progress_factoring: { label: 'In Progress', className: 'bg-[#266aad] text-white' },
-  ready_factoring: { label: 'Ready', className: 'bg-[hsl(152,60%,40%)] text-white' },
+  ready_factoring: { label: 'Ready', className: 'bg-[#178504] text-white' },
   // Driver statuses
-  available: { label: 'Available', className: 'bg-[hsl(152,60%,40%)] text-white' },
+  available: { label: 'Available', className: 'bg-[#178504] text-white' },
   inactive: { label: 'Inactive', className: 'bg-[hsl(0,72%,51%)] text-white' },
   pending: { label: 'Pending', className: 'bg-[hsl(38,92%,50%)] text-white' },
   // Payment statuses
   paid:       { label: 'Paid',        className: 'bg-[#178504] text-white' },
   in_process: { label: 'In Progress', className: 'bg-[#266aad] text-white' },
   // Truck statuses
-  active: { label: 'Active', className: 'bg-[hsl(152,60%,40%)] text-white' },
+  active: { label: 'Active', className: 'bg-[#178504] text-white' },
   maintenance: { label: 'Maintenance', className: 'bg-[hsl(38,92%,50%)] text-white' },
   // Invoice statuses
   invoice_pending: { label: 'Pending', className: 'bg-[hsl(38,92%,50%)] text-white' },
   invoice_sent: { label: 'Sent', className: 'bg-[#266aad] text-white' },
-  invoice_paid: { label: 'Paid', className: 'bg-[hsl(152,60%,40%)] text-white' },
+  invoice_paid: { label: 'Paid', className: 'bg-[#178504] text-white' },
   // Document statuses
-  completed: { label: 'Completed', className: 'bg-[hsl(152,60%,40%)] text-white' },
+  completed: { label: 'Completed', className: 'bg-[#178504] text-white' },
 };
 
 export const StatusBadge = ({ status, className: extraClass }: { status: string; className?: string }) => {
