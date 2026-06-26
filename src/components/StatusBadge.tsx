@@ -16,7 +16,7 @@ const statusConfig: Record<string, { label: string; className: string }> = {
   ready_factoring: { label: 'Ready', className: 'bg-[#178504] text-white' },
   // Driver statuses
   available: { label: 'Available', className: 'bg-[#178504] text-white' },
-  inactive: { label: 'Inactive', className: 'bg-[hsl(0,72%,51%)] text-white' },
+  inactive: { label: 'Inactive', className: 'bg-[#DC2626] text-white' },
   pending: { label: 'Pending', className: 'bg-[hsl(38,92%,50%)] text-white' },
   // Payment statuses
   paid:       { label: 'Paid',        className: 'bg-[#178504] text-white' },
