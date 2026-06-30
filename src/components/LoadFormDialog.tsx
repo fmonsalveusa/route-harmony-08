@@ -193,7 +193,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       setSelectedDriver('');
       setSelectedTruck('');
       setSelectedDispatcher('');
-      setSelectedStatus('planned');
+      setSelectedStatus('dispatched');
       setSelectedServiceType('');
       setSelectedCompany(companies.find(c => c.is_primary)?.id ?? '');
       setExtractionStatus('idle');
