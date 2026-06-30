@@ -15,6 +15,7 @@ export interface DbDispatcher {
   dispatch_service_percentage: number;
   pay_type: string;
   start_date: string;
+  color: string;
   created_at: string;
   updated_at: string;
 }
@@ -29,6 +30,7 @@ export interface DispatcherInput {
   dispatch_service_percentage: number;
   pay_type: string;
   start_date: string;
+  color?: string;
 }
 
 const DISPATCHERS_QUERY_KEY = ['dispatchers'];

@@ -23,6 +23,7 @@ const emptyForm: DispatcherInput = {
   dispatch_service_percentage: 0,
   pay_type: 'per_rate',
   start_date: todayET(),
+  color: '#94A3B8',
 };
 
 export function DispatcherFormDialog({ open, onOpenChange, dispatcher, onSubmit }: Props) {
@@ -37,6 +38,7 @@ export function DispatcherFormDialog({ open, onOpenChange, dispatcher, onSubmit 
         commission_2_percentage: dispatcher.commission_2_percentage,
         dispatch_service_percentage: dispatcher.dispatch_service_percentage,
         pay_type: dispatcher.pay_type, start_date: dispatcher.start_date,
+        color: dispatcher.color || '#94A3B8',
       });
     } else {
       setForm(emptyForm);
@@ -115,6 +117,29 @@ export function DispatcherFormDialog({ open, onOpenChange, dispatcher, onSubmit 
           <div className="space-y-2">
             <Label>Start Date</Label>
             <Input type="date" value={form.start_date} onChange={e => set('start_date', e.target.value)} />
+          </div>
+          <div className="space-y-2 sm:col-span-2">
+            <Label>Color</Label>
+            <div className="flex items-center gap-3">
+              <input
+                type="color"
+                value={form.color || '#94A3B8'}
+                onChange={e => set('color', e.target.value)}
+                className="h-9 w-14 rounded border cursor-pointer"
+              />
+              <Input
+                value={form.color || '#94A3B8'}
+                onChange={e => set('color', e.target.value)}
+                placeholder="#94A3B8"
+                className="font-mono text-sm"
+              />
+              <div
+                className="h-9 w-9 rounded-full flex items-center justify-center text-white font-semibold text-xs flex-shrink-0"
+                style={{ backgroundColor: form.color || '#94A3B8' }}
+              >
+                {form.name ? form.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : '—'}
+              </div>
+            </div>
           </div>
         </div>
         <div className="flex justify-end gap-2 mt-6">

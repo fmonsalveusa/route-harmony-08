@@ -52,13 +52,13 @@ const Dispatchers = () => {
             const statusBorder = d.status === 'active'
               ? 'border-l-[3px] border-l-[#639922]'
               : 'border-l-[3px] border-l-[#DC2626]';
-            const avatarBg = d.status === 'active' ? 'bg-[#639922]' : 'bg-[#DC2626]';
+            const avatarColor = d.color || '#94A3B8';
 
             return (
               <tr key={d.id} className={`border-b last:border-b-0 glass-row ${statusBorder}`}>
                 <td className="p-4">
                   <div className="flex items-center gap-3">
-                    <div className={`h-9 w-9 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0 ${avatarBg}`}>
+                    <div className="h-9 w-9 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0" style={{ backgroundColor: avatarColor }}>
                       {initials}
                     </div>
                     <span className="font-semibold">{d.name}</span>
