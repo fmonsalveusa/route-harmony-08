@@ -253,8 +253,8 @@ const Loads = () => {
             <SelectContent>
               <SelectItem value="all">All Drivers</SelectItem>
               {(dispatcherDriverIds
-                ? drivers.filter((d) => dispatcherDriverIds.has(d.id))
-                : drivers
+                ? drivers.filter((d) => dispatcherDriverIds.has(d.id) && d.status === 'available')
+                : drivers.filter(d => d.status === 'available')
               ).map(d => (
                 <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
               ))}
@@ -432,20 +432,7 @@ const Loads = () => {
                     }
                   })();
 
-                  const avatarColors = (() => {
-                    switch (load.status) {
-                      case 'planned':          return 'bg-[#94A3B8]';
-                      case 'dispatched':       return 'bg-[#2563EB]';
-                      case 'in_transit':       return 'bg-[#65A30D]';
-                      case 'on_site_pickup':   return 'bg-[#06B6D4]';
-                      case 'picked_up':        return 'bg-[#D946EF]';
-                      case 'on_site_delivery': return 'bg-[#F97316]';
-                      case 'delivered':        return 'bg-[#178504]';
-                      case 'tonu':             return 'bg-[#B45309]';
-                      case 'cancelled':        return 'bg-[#DC2626]';
-                      default:                 return 'bg-muted';
-                    }
-                  })();
+                  const dispatcherColor = dispatcher?.color || '#94A3B8';
 
                     return (
                       <Fragment key={load.id}>
@@ -469,7 +456,7 @@ const Loads = () => {
                           <td className="p-4">
                             <div className="flex items-center gap-2">
                               {driver ? (
-                                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 text-white ${avatarColors}`}>
+                                <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 text-white" style={{ backgroundColor: dispatcherColor }}>
                                   {driver.name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()}
                                 </div>
                               ) : (
