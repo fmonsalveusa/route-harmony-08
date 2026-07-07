@@ -32,6 +32,7 @@ export interface DbInvestor {
   w9_url: string | null;
   service_agreement_url: string | null;
   leasing_agreement_url: string | null;
+  status: string;
 }
 
 export interface InvestorInput {
@@ -59,6 +60,7 @@ export interface InvestorInput {
   w9_url?: string | null;
   service_agreement_url?: string | null;
   leasing_agreement_url?: string | null;
+  status?: string;
 }
 
 export function useInvestors() {

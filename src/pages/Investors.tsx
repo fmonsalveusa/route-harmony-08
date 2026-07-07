@@ -9,7 +9,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Landmark, Pencil, Trash2, PlusCircle, Search, Phone, Mail, Users, DollarSign, X, Percent } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { StatusBadge } from '@/components/StatusBadge';
+import { ChevronDown, Landmark, Pencil, Trash2, PlusCircle, Search, Phone, Mail, Users, DollarSign, X, Percent } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatPhone } from '@/lib/phoneUtils';
 
@@ -244,6 +247,7 @@ const Investors = () => {
   const [search, setSearch] = useState('');
   const [formOpen, setFormOpen] = useState(false);
   const [editingInvestor, setEditingInvestor] = useState<DbInvestor | null>(null);
+  const [activeTab, setActiveTab] = useState('active');
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   // Count drivers per investor
@@ -274,14 +278,17 @@ const Investors = () => {
   );
 
   const filtered = useMemo(() => {
-    if (!search.trim()) return investors;
+    let list = investors;
+    if (activeTab === 'active') list = list.filter(i => (i.status || 'active') !== 'inactive');
+    if (activeTab === 'inactive') list = list.filter(i => i.status === 'inactive');
+    if (!search.trim()) return list;
     const q = search.toLowerCase();
-    return investors.filter(i =>
+    return list.filter(i =>
       i.name.toLowerCase().includes(q) ||
       (i.email || '').toLowerCase().includes(q) ||
       (i.phone || '').toLowerCase().includes(q)
     );
-  }, [investors, search]);
+  }, [investors, search, activeTab]);
 
   const deleteTarget = investors.find(i => i.id === deleteConfirmId);
   const assignedToDelete = deleteTarget ? (driversPerInvestor[deleteTarget.id] || 0) : 0;
@@ -352,8 +359,22 @@ const Investors = () => {
         )}
       </div>
 
+      {/* Tabs por status */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="active">
+            Active <span className={`ml-1.5 text-xs rounded-full px-2 py-0.5 font-semibold ${activeTab === 'active' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{investors.filter(i => (i.status || 'active') !== 'inactive').length}</span>
+          </TabsTrigger>
+          <TabsTrigger value="inactive">
+            Inactive <span className={`ml-1.5 text-xs rounded-full px-2 py-0.5 font-semibold ${activeTab === 'inactive' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{investors.filter(i => i.status === 'inactive').length}</span>
+          </TabsTrigger>
+          <TabsTrigger value="all">
+            All <span className={`ml-1.5 text-xs rounded-full px-2 py-0.5 font-semibold ${activeTab === 'all' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{investors.length}</span>
+          </TabsTrigger>
+        </TabsList>
+
       {/* Table */}
-      <div className="glass-card overflow-hidden">
+      <div className="glass-card overflow-hidden mt-4">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b glass-table-header">
@@ -364,6 +385,7 @@ const Investors = () => {
               <th className="text-center p-4 font-medium text-muted-foreground">Pay %</th>
               <th className="text-center p-4 font-medium text-muted-foreground">Drivers</th>
               <th className="text-right p-4 font-medium text-muted-foreground">Pending</th>
+              <th className="text-left p-4 font-medium text-muted-foreground">Status</th>
               <th className="text-right p-4 font-medium text-muted-foreground">Actions</th>
             </tr>
           </thead>
@@ -419,6 +441,22 @@ const Investors = () => {
                     ? <span className="font-semibold text-amber-500">${pendingPerInvestor[inv.id].toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
                     : <span className="text-muted-foreground text-xs">—</span>}
                 </td>
+                <td className="p-4" onClick={e => e.stopPropagation()}>
+                  <Select value={inv.status || 'active'} onValueChange={v => updateInvestor(inv.id, { status: v })}>
+                    <SelectTrigger className="h-8 w-[140px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:hidden bg-transparent">
+                      <span className="flex items-center justify-between w-full gap-1">
+                        <StatusBadge status={inv.status || 'active'} className="text-[11px] px-3 py-1.5" />
+                        <span className="inline-flex h-5 w-5 items-center justify-center rounded border border-border bg-muted/40 text-muted-foreground ml-auto">
+                          <ChevronDown className="h-3 w-3 shrink-0" />
+                        </span>
+                      </span>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active"><StatusBadge status="active" /></SelectItem>
+                      <SelectItem value="inactive"><StatusBadge status="inactive" /></SelectItem>
+                    </SelectContent>
+                  </Select>
+                </td>
                 <td className="p-4 text-right">
                   <div className="flex items-center justify-end gap-1">
                     <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
@@ -436,6 +474,7 @@ const Investors = () => {
           </tbody>
         </table>
       </div>
+      </Tabs>
 
       {/* Create / Edit dialog */}
       <InvestorFormDialog
