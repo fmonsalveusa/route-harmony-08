@@ -209,7 +209,7 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
       const tenant_id      = await getTenantId();
       const imageDataUrls  = pages.map((p) => p.colorEnhanced ?? p.original);
       const pdfBlob        = await scanToPdf(imageDataUrls);
-      const fileName       = `scan_${Date.now()}_${pages.length}p.pdf`;
+      const fileName       = `${docLabel} #${loadRef}.pdf`;
       const filePath       = `pods/${stop.load_id}/${stop.id}_${fileName}`;
 
       const { error: uploadError } = await supabase.storage

@@ -199,7 +199,7 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
     try {
       const dataUrl = await takeNativePhoto();
       if (dataUrl) {
-        await uploadDataUrl(dataUrl, `camera_${Date.now()}.jpg`);
+        await uploadDataUrl(dataUrl, `${stop.stop_type === 'pickup' ? 'BOL' : 'POD'} #${loadRef}.jpg`);
       }
     } catch (err: any) {
       console.error('Native camera failed:', err);
@@ -216,7 +216,7 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
     try {
       const urls = await pickFromGallery();
       for (const dataUrl of urls) {
-        await uploadDataUrl(dataUrl, `gallery_${Date.now()}.jpg`);
+        await uploadDataUrl(dataUrl, `${stop.stop_type === 'pickup' ? 'BOL' : 'POD'} #${loadRef}.jpg`);
       }
     } catch (err: any) {
       console.error('Native gallery failed:', err);
