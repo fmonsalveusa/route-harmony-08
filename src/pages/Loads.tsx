@@ -711,7 +711,7 @@ const Loads = () => {
           <DialogHeader>
             <DialogTitle>Subir POD — Proof of Delivery</DialogTitle>
           </DialogHeader>
-          {podUploadLoadId && <PodUploadSection loadId={podUploadLoadId} />}
+          {podUploadLoadId && <PodUploadSection loadId={podUploadLoadId} referenceNumber={loads.find(l => l.id === podUploadLoadId)?.reference_number} />}
           <DialogFooter>
             <Button variant="outline" onClick={() => setPodUploadLoadId(null)}>Cerrar</Button>
           </DialogFooter>

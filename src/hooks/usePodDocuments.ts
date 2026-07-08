@@ -25,7 +25,7 @@ export interface PodDocument {
   created_at: string;
 }
 
-export function usePodDocuments(loadId: string) {
+export function usePodDocuments(loadId: string, referenceNumber?: string) {
   const [pods, setPods] = useState<PodDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -50,13 +50,20 @@ export function usePodDocuments(loadId: string) {
     fetchPods();
   }, [fetchPods]);
 
-  const uploadPod = useCallback(async (file: File, stopId?: string) => {
+  const uploadPod = useCallback(async (file: File, stopId?: string, stopType?: 'pickup' | 'delivery') => {
     setUploading(true);
     try {
       const isImage = file.type.startsWith('image/');
       const compressed = isImage ? await compressImage(file) : file;
-      const ext = isImage ? 'jpg' : file.name.split('.').pop();
-      const storagePath = `pods/${loadId}/${Date.now()}_${ext === 'jpg' ? file.name.replace(/\.[^.]+$/, '.jpg') : file.name}`;
+      const ext = isImage ? 'jpg' : (file.name.split('.').pop() || 'pdf');
+
+      // Generar nombre descriptivo: BOL #(load#) para pickup, POD #(load#) para delivery
+      const prefix = stopType === 'pickup' ? 'BOL' : 'POD';
+      const loadRef = referenceNumber || loadId.slice(0, 8);
+      const timestamp = Date.now();
+      const descriptiveName = `${prefix} #${loadRef}.${ext}`;
+      const storageFileName = `${timestamp}_${descriptiveName}`;
+      const storagePath = `pods/${loadId}/${storageFileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('driver-documents')
@@ -74,14 +81,14 @@ export function usePodDocuments(loadId: string) {
           load_id: loadId,
           stop_id: stopId || null,
           file_url: storagePath,
-          file_name: file.name,
+          file_name: descriptiveName,
           file_type: fileType,
           tenant_id,
         } as any);
 
       if (insertError) throw insertError;
 
-      toast({ title: 'POD uploaded', description: file.name });
+      toast({ title: `${prefix} uploaded`, description: descriptiveName });
       await fetchPods();
     } catch (err: any) {
       console.error('Error uploading POD:', err);

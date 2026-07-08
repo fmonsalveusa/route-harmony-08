@@ -14,10 +14,11 @@ interface StopInfo {
 
 interface PodUploadSectionProps {
   loadId: string;
+  referenceNumber?: string;
 }
 
-export const PodUploadSection = ({ loadId }: PodUploadSectionProps) => {
-  const { pods, loading, uploading, uploadPod, deletePod, openPod, downloadPod } = usePodDocuments(loadId);
+export const PodUploadSection = ({ loadId, referenceNumber }: PodUploadSectionProps) => {
+  const { pods, loading, uploading, uploadPod, deletePod, openPod, downloadPod } = usePodDocuments(loadId, referenceNumber);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [deliveryStops, setDeliveryStops] = useState<StopInfo[]>([]);
@@ -65,10 +66,10 @@ export const PodUploadSection = ({ loadId }: PodUploadSectionProps) => {
     return groups;
   }, [deliveryPods, deliveryStops, showGroupHeaders]);
 
-  const handleFileChange = async (files: FileList | null, stopId?: string) => {
+  const handleFileChange = async (files: FileList | null, stopId?: string, stopType: 'pickup' | 'delivery' = 'delivery') => {
     if (!files) return;
     for (let i = 0; i < files.length; i++) {
-      await uploadPod(files[i], stopId);
+      await uploadPod(files[i], stopId, stopType);
     }
   };
 
@@ -100,7 +101,7 @@ export const PodUploadSection = ({ loadId }: PodUploadSectionProps) => {
           accept="image/*,.pdf"
           multiple
           className="hidden"
-          onChange={e => { handleFileChange(e.target.files, firstDeliveryStopId); e.target.value = ''; }}
+          onChange={e => { handleFileChange(e.target.files, firstDeliveryStopId, 'delivery'); e.target.value = ''; }}
         />
       </div>
 
@@ -132,7 +133,7 @@ export const PodUploadSection = ({ loadId }: PodUploadSectionProps) => {
           onOpen={openPod}
           onDownload={downloadPod}
           onDelete={deletePod}
-          onUpload={group.stop ? (files) => handleFileChange(files, group.stop!.id) : undefined}
+          onUpload={group.stop ? (files) => handleFileChange(files, group.stop!.id, 'delivery') : undefined}
           uploading={uploading}
           uploadLabel="Subir"
         />

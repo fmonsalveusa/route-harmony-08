@@ -11,8 +11,8 @@ interface StopInfo {
   stop_order: number;
 }
 
-export const PickupPicturesSection = ({ loadId }: { loadId: string }) => {
-  const { pods, loading, uploading, uploadPod, deletePod, openPod, downloadPod } = usePodDocuments(loadId);
+export const PickupPicturesSection = ({ loadId, referenceNumber }: { loadId: string; referenceNumber?: string }) => {
+  const { pods, loading, uploading, uploadPod, deletePod, openPod, downloadPod } = usePodDocuments(loadId, referenceNumber);
   const [pickupStops, setPickupStops] = useState<StopInfo[]>([]);
   const [firstPickupStopId, setFirstPickupStopId] = useState<string | null>(null);
   const [stopsLoaded, setStopsLoaded] = useState(false);
@@ -58,9 +58,9 @@ export const PickupPicturesSection = ({ loadId }: { loadId: string }) => {
     return groups;
   }, [pickupDocs, pickupStops, showGroupHeaders]);
 
-  const handleFileChange = async (files: FileList, stopId?: string) => {
+  const handleFileChange = async (files: FileList, stopId?: string, stopType: 'pickup' | 'delivery' = 'pickup') => {
     for (let i = 0; i < files.length; i++) {
-      await uploadPod(files[i], stopId);
+      await uploadPod(files[i], stopId, stopType);
     }
   };
 
@@ -88,7 +88,7 @@ export const PickupPicturesSection = ({ loadId }: { loadId: string }) => {
           accept="image/*,.pdf"
           multiple
           className="hidden"
-          onChange={e => { if (e.target.files) handleFileChange(e.target.files, firstPickupStopId || undefined); e.target.value = ''; }}
+          onChange={e => { if (e.target.files) handleFileChange(e.target.files, firstPickupStopId || undefined, 'pickup'); e.target.value = ''; }}
         />
       </div>
       {loading && <p className="text-xs text-muted-foreground">Cargando fotos...</p>}
@@ -116,7 +116,7 @@ export const PickupPicturesSection = ({ loadId }: { loadId: string }) => {
           onOpen={openPod}
           onDownload={downloadPod}
           onDelete={deletePod}
-          onUpload={group.stop ? (files) => handleFileChange(files, group.stop!.id) : undefined}
+          onUpload={group.stop ? (files) => handleFileChange(files, group.stop!.id, 'pickup') : undefined}
           uploading={uploading}
           uploadLabel="Subir"
         />
