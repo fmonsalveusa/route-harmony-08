@@ -199,7 +199,9 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
     try {
       const dataUrl = await takeNativePhoto();
       if (dataUrl) {
-        await uploadDataUrl(dataUrl, `${stop.stop_type === 'pickup' ? 'BOL' : 'POD'} #${loadRef}.jpg`);
+        const prefix = stop.stop_type === 'pickup' ? 'PIC' : 'DEL';
+        const imgCount = stopPods.filter(p => p.file_type === 'image' || p.file_name?.match(/\.(jpg|jpeg|png)/i)).length + 1;
+        await uploadDataUrl(dataUrl, `${prefix} #${loadRef} ${imgCount}.jpg`);
       }
     } catch (err: any) {
       console.error('Native camera failed:', err);
@@ -215,8 +217,11 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
   const handleNativeGallery = async () => {
     try {
       const urls = await pickFromGallery();
+      const prefix = stop.stop_type === 'pickup' ? 'PIC' : 'DEL';
+      let imgCount = stopPods.filter(p => p.file_type === 'image' || p.file_name?.match(/\.(jpg|jpeg|png)/i)).length;
       for (const dataUrl of urls) {
-        await uploadDataUrl(dataUrl, `${stop.stop_type === 'pickup' ? 'BOL' : 'POD'} #${loadRef}.jpg`);
+        imgCount++;
+        await uploadDataUrl(dataUrl, `${prefix} #${loadRef} ${imgCount}.jpg`);
       }
     } catch (err: any) {
       console.error('Native gallery failed:', err);
@@ -235,12 +240,23 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
     setUploading(true);
 
     const tenant_id = await getTenantId();
+    const prefix = stop.stop_type === 'pickup' ? 'PIC' : 'DEL';
+    let imgCount = stopPods.filter(p => p.file_type === 'image' || p.file_name?.match(/\.(jpg|jpeg|png)/i)).length;
 
     for (const file of Array.from(files)) {
       const isImage = file.type.startsWith('image/');
       const compressed = isImage ? await compressImage(file) : file;
       const ext = isImage ? 'jpg' : file.name.split('.').pop();
       const filePath = `pods/${stop.load_id}/${stop.id}_${Date.now()}.${ext}`;
+
+      // Nombre descriptivo: PIC/DEL para imágenes, BOL/POD para PDFs
+      let descriptiveName: string;
+      if (isImage) {
+        imgCount++;
+        descriptiveName = `${prefix} #${loadRef} ${imgCount}.jpg`;
+      } else {
+        descriptiveName = `${stop.stop_type === 'pickup' ? 'BOL' : 'POD'} #${loadRef}.pdf`;
+      }
 
       const { error: uploadError } = await supabase.storage
         .from('driver-documents')
@@ -254,7 +270,7 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
       await supabase.from('pod_documents').insert({
         load_id: stop.load_id,
         stop_id: stop.id,
-        file_name: file.name,
+        file_name: descriptiveName,
         file_url: filePath,
         file_type: file.type.startsWith('image/') ? 'image' : 'pdf',
         tenant_id,
