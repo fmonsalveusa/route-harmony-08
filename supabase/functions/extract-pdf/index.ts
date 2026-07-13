@@ -182,6 +182,14 @@ serve(async (req) => {
                         type: "string",
                         description: "Date for this stop in YYYY-MM-DD format, empty if not found",
                       },
+                      shipper: {
+                        type: "string",
+                        description: "Company or person name shipping/sending the cargo at this pickup stop. Empty string if not a pickup or not found.",
+                      },
+                      consignee: {
+                        type: "string",
+                        description: "Company or person name receiving the cargo at this delivery stop. Empty string if not a delivery or not found.",
+                      },
                     },
                     required: ["stopType", "address"],
                   },
@@ -208,12 +216,25 @@ serve(async (req) => {
                 type: "text",
                 text: `You are a data extraction assistant for a trucking/logistics company.
 Extract ALL stops from this rate confirmation or BOL document.
-For each stop address, extract ONLY the physical address (street, city, state, zip). Do NOT include company name or facility name.
-Example: Instead of "ABC Warehouse - 123 Main St, Houston, TX 77001", return "123 Main St, Houston, TX 77001".
-Return stops in route order (first pickup first, last delivery last).
-If a field cannot be found, use empty string or 0 for numbers.
-Dates must be in YYYY-MM-DD format.
-Extract all load/shipment information including ALL pickup and delivery stops.`,
+
+STOP TYPES: Stops labeled PU, PU1, PU 1, PICK, PICKUP, or similar = pickup. Stops labeled SO, SO2, DEL, DELIVERY, DROP, or similar = delivery.
+
+FOR EACH STOP, extract the company/facility name as Shipper (pickup) or Consignee (delivery). Look for:
+- Explicit labels: "Name: Midwest Service Center", "Shipper: ABC Corp", "Ship From: XYZ"
+- Names above or near the address without a label: "LANE WYTHEVILLE\n510 Kents Lane..."
+- Company names at the beginning of a stop block
+- Warehouse, plant, or distribution center names
+NEVER leave shipper/consignee empty if ANY company or facility name appears in the stop block.
+
+For the address field: extract ONLY the physical address (street number, street name, city, state, zip). Never include the company name in the address field.
+
+Examples:
+- "Name: Midwest Service Center\nAddress: 408 S. Shelby Street, Hobart IN 46342" → shipper="Midwest Service Center", address="408 S. Shelby Street, Hobart, IN 46342"
+- "LANE WYTHEVILLE\n510 Kents Lane\nWYTHEVILLE, VA 24382" → shipper="LANE WYTHEVILLE", address="510 Kents Lane, Wytheville, VA 24382"
+- "Name: Paragon\n5775 E 10 Mile Rd, Warren MI 48091" → consignee="Paragon", address="5775 E 10 Mile Rd, Warren, MI 48091"
+
+Return stops in route order (pickups first, deliveries last).
+Dates must be in YYYY-MM-DD format. If not found, use empty string or 0 for numbers.`,
               },
             ],
           },
@@ -269,6 +290,8 @@ Extract all load/shipment information including ALL pickup and delivery stops.`,
         stop_type: s.stopType,
         address:   s.address,
         date:      s.date || "",
+        shipper:   s.shipper || "",
+        consignee: s.consignee || "",
       })),
     };
 
