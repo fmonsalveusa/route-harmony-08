@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { StatusBadge } from '@/components/StatusBadge';
 import { ChevronDown, Landmark, Pencil, Trash2, PlusCircle, Search, Phone, Mail, Users, DollarSign, X, Percent } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -260,6 +261,19 @@ const Investors = () => {
     return map;
   }, [drivers]);
 
+  // Lista de nombres de drivers por investor (para el tooltip)
+  const driverNamesPerInvestor = useMemo(() => {
+    const map: Record<string, string[]> = {};
+    drivers.forEach(d => {
+      const invId = (d as any).investor_id;
+      if (invId) {
+        if (!map[invId]) map[invId] = [];
+        map[invId].push(d.name);
+      }
+    });
+    return map;
+  }, [drivers]);
+
   // Pending payment amount per investor (by recipient_id = investor.id for new payments)
   const pendingPerInvestor = useMemo(() => {
     const map: Record<string, number> = {};
@@ -433,7 +447,22 @@ const Investors = () => {
                 </td>
                 <td className="p-4 text-center">
                   {driversPerInvestor[inv.id] > 0
-                    ? <span className="inline-flex items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-semibold min-w-[24px] h-6 px-2">{driversPerInvestor[inv.id]}</span>
+                    ? (
+                      <TooltipProvider delayDuration={200}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="inline-flex items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-semibold min-w-[24px] h-6 px-2 cursor-help">{driversPerInvestor[inv.id]}</span>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <div className="text-xs">
+                              {(driverNamesPerInvestor[inv.id] || []).map((name, i) => (
+                                <div key={i}>{name}</div>
+                              ))}
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )
                     : <span className="text-muted-foreground text-xs">—</span>}
                 </td>
                 <td className="p-4 text-right">
