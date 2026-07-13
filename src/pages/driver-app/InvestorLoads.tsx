@@ -55,7 +55,7 @@ export default function InvestorLoads() {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [loadingPdf, setLoadingPdf] = useState<string | null>(null);
 
-  // Obtener los driver IDs asignados a este investor (vía email → investor → driver_investors)
+  // Drivers asignados a este investor (vía email → investor → driver_investors)
   const [myDriverIds, setMyDriverIds] = useState<Set<string> | null>(null);
   useEffect(() => {
     if (!profile?.email) return;
@@ -65,10 +65,7 @@ export default function InvestorLoads() {
         .select('id')
         .ilike('email', profile.email)
         .maybeSingle();
-      if (!inv || !(inv as any).id) {
-        setMyDriverIds(new Set());
-        return;
-      }
+      if (!inv || !(inv as any).id) { setMyDriverIds(new Set()); return; }
       const { data: links } = await supabase
         .from('driver_investors' as any)
         .select('driver_id')
@@ -78,12 +75,11 @@ export default function InvestorLoads() {
     })();
   }, [profile?.email]);
 
-  // Cargas de los drivers asignados a este investor (solo entregadas, no activas)
+  // Cargas de los drivers asignados (activas + entregadas)
   const myLoads = (myDriverIds
-    ? loads.filter(l => l.driver_id && myDriverIds.has(l.driver_id) && ['delivered', 'tonu'].includes(l.status))
+    ? loads.filter(l => l.driver_id && myDriverIds.has(l.driver_id))
     : []
   ).sort((a, b) => {
-    // Más recientes primero
     const da = a.pickup_date || a.created_at;
     const db = b.pickup_date || b.created_at;
     return db.localeCompare(da);

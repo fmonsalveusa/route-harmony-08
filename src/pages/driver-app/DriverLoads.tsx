@@ -14,19 +14,55 @@ export default function DriverLoads() {
   const { profile } = useAuth();
   const navigate = useNavigate();
   const [loads, setLoads] = useState<any[]>([]);
+  const [investorLoads, setInvestorLoads] = useState<any[]>([]);
+  const [ownDriverId, setOwnDriverId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchLoads = useCallback(async () => {
     if (!profile?.email) return;
     setLoading(true);
+
+    // Cargas propias como driver
     const { data: driver } = await supabase.from('drivers').select('id').eq('email', profile.email).maybeSingle();
-    if (!driver) { setLoading(false); return; }
-    const { data } = await supabase.from('loads').select('*').eq('driver_id', driver.id).neq('status', 'planned').order('pickup_date', { ascending: false });
-    setLoads(data || []);
+    const driverId = driver?.id || null;
+    setOwnDriverId(driverId);
+    if (driverId) {
+      const { data } = await supabase.from('loads').select('*').eq('driver_id', driverId).neq('status', 'planned').order('pickup_date', { ascending: false });
+      setLoads(data || []);
+    } else {
+      setLoads([]);
+    }
+
+    // ¿Es también investor? → cargas de sus drivers asignados (excluye las propias)
+    const { data: inv } = await supabase.from('investors' as any).select('id').ilike('email', profile.email).maybeSingle();
+    if (inv && (inv as any).id) {
+      const { data: links } = await supabase
+        .from('driver_investors' as any)
+        .select('driver_id')
+        .eq('investor_id', (inv as any).id)
+        .eq('is_active', true);
+      const assignedIds = ((links as any) || []).map((l: any) => l.driver_id).filter((id: string) => id !== driverId);
+      if (assignedIds.length > 0) {
+        const { data: invLoadsData } = await supabase
+          .from('loads')
+          .select('*')
+          .in('driver_id', assignedIds)
+          .neq('status', 'planned')
+          .order('pickup_date', { ascending: false });
+        setInvestorLoads(invLoadsData || []);
+      } else {
+        setInvestorLoads([]);
+      }
+    } else {
+      setInvestorLoads([]);
+    }
+
     setLoading(false);
   }, [profile?.email]);
 
   useEffect(() => { fetchLoads(); }, [fetchLoads]);
+
+  const isAlsoInvestor = investorLoads.length > 0;
 
   const statusBadge = (status: string) => {
     const styles: Record<string, string> = {
@@ -148,6 +184,7 @@ export default function DriverLoads() {
           <TabsList className="w-full">
             <TabsTrigger value="active" className="flex-1">Active ({active.length})</TabsTrigger>
             <TabsTrigger value="completed" className="flex-1">Completed ({completed.length})</TabsTrigger>
+            {isAlsoInvestor && <TabsTrigger value="investor" className="flex-1">Investor ({investorLoads.length})</TabsTrigger>}
           </TabsList>
           <TabsContent value="active" className="space-y-2 mt-3">
             {active.length === 0 ? <p className="text-sm text-muted-foreground text-center py-8">No active loads</p> : active.map(l => <LoadCard key={l.id} load={l} />)}
@@ -155,6 +192,12 @@ export default function DriverLoads() {
           <TabsContent value="completed" className="space-y-2 mt-3">
             {completed.length === 0 ? <p className="text-sm text-muted-foreground text-center py-8">No completed loads yet</p> : completed.map(l => <LoadCard key={l.id} load={l} />)}
           </TabsContent>
+          {isAlsoInvestor && (
+            <TabsContent value="investor" className="space-y-2 mt-3">
+              <p className="text-xs text-muted-foreground mb-1">Loads from drivers assigned to you as investor</p>
+              {investorLoads.map(l => <LoadCard key={l.id} load={l} />)}
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </PullToRefresh>
