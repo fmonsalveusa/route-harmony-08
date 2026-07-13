@@ -78,9 +78,9 @@ export default function InvestorLoads() {
     })();
   }, [profile?.email]);
 
-  // Cargas de los drivers asignados a este investor
+  // Cargas de los drivers asignados a este investor (solo entregadas, no activas)
   const myLoads = (myDriverIds
-    ? loads.filter(l => l.driver_id && myDriverIds.has(l.driver_id))
+    ? loads.filter(l => l.driver_id && myDriverIds.has(l.driver_id) && ['delivered', 'tonu'].includes(l.status))
     : []
   ).sort((a, b) => {
     // Más recientes primero
