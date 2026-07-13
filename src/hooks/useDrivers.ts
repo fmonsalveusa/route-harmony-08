@@ -199,6 +199,37 @@ export function useDrivers() {
       return false;
     }
     const tenant_id = await getTenantId();
+
+    // Evitar duplicados: buscar si ya existe un registro (activo o inactivo)
+    // para este driver + investor y reactivarlo en vez de crear uno nuevo
+    if (input.investor_id) {
+      const { data: prior } = await supabase
+        .from('driver_investors' as any)
+        .select('id')
+        .eq('driver_id', driverId)
+        .eq('investor_id', input.investor_id)
+        .limit(1)
+        .maybeSingle();
+
+      if (prior && (prior as any).id) {
+        const { error: reactivateError } = await supabase
+          .from('driver_investors' as any)
+          .update({
+            is_active: true,
+            investor_name: input.investor_name,
+            investor_email: input.investor_email || null,
+            pay_percentage: input.pay_percentage,
+          } as any)
+          .eq('id', (prior as any).id);
+        if (reactivateError) {
+          toast({ title: 'Error adding investor', description: reactivateError.message, variant: 'destructive' });
+          return false;
+        }
+        toast({ title: 'Investor agregado correctamente' });
+        return true;
+      }
+    }
+
     const { error } = await supabase.from('driver_investors' as any).insert({
       driver_id: driverId,
       investor_id: input.investor_id || null,
