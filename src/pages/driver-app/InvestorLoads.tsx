@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLoads } from '@/hooks/useLoads';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDriverPayments } from '@/hooks/useDriverPayments';
@@ -50,20 +50,44 @@ const STATUS_BADGE: Record<string, string> = {
 export default function InvestorLoads() {
   const { loads, loading, fetchLoads } = useLoads();
   const { investorPayments } = useDriverPayments();
+  const { profile } = useAuth();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [loadingPdf, setLoadingPdf] = useState<string | null>(null);
 
-  // Solo cargas que tienen pago del investor
-  const investorLoadIds = new Set(investorPayments.map(p => p.load_id));
-  const myLoads = loads
-    .filter(l => investorLoadIds.has(l.id))
-    .sort((a, b) => {
-      // Más recientes primero
-      const da = a.pickup_date || a.created_at;
-      const db = b.pickup_date || b.created_at;
-      return db.localeCompare(da);
-    });
+  // Obtener los driver IDs asignados a este investor (vía email → investor → driver_investors)
+  const [myDriverIds, setMyDriverIds] = useState<Set<string> | null>(null);
+  useEffect(() => {
+    if (!profile?.email) return;
+    (async () => {
+      const { data: inv } = await supabase
+        .from('investors' as any)
+        .select('id')
+        .ilike('email', profile.email)
+        .maybeSingle();
+      if (!inv || !(inv as any).id) {
+        setMyDriverIds(new Set());
+        return;
+      }
+      const { data: links } = await supabase
+        .from('driver_investors' as any)
+        .select('driver_id')
+        .eq('investor_id', (inv as any).id)
+        .eq('is_active', true);
+      setMyDriverIds(new Set(((links as any) || []).map((l: any) => l.driver_id)));
+    })();
+  }, [profile?.email]);
+
+  // Cargas de los drivers asignados a este investor
+  const myLoads = (myDriverIds
+    ? loads.filter(l => l.driver_id && myDriverIds.has(l.driver_id))
+    : []
+  ).sort((a, b) => {
+    // Más recientes primero
+    const da = a.pickup_date || a.created_at;
+    const db = b.pickup_date || b.created_at;
+    return db.localeCompare(da);
+  });
 
   const openPdf = async (url: string, loadId: string) => {
     if (!url) return;
