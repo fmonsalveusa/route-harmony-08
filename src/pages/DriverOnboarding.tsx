@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Upload, FileCheck, CheckCircle2, Truck, User, Send, Download } from 'lucide-react';
+import { Upload, FileCheck, CheckCircle2, Truck, User, Send, Download, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -768,19 +768,35 @@ export default function DriverOnboarding() {
                 <div className="grid grid-cols-1 gap-2 text-sm bg-muted/50 p-4 rounded-lg">
                   {isOO ? (
                     <>
-                      <div className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-green-500" /> W-9 Form</div>
-                      <div className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-green-500" /> Leasing Agreement</div>
-                      <div className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-green-500" /> Service Agreement</div>
+                      <div className="flex items-center gap-2">
+                        {signedDocs.w9 ? <CheckCircle2 className="h-4 w-4 text-green-500" /> : <AlertCircle className="h-4 w-4 text-red-500" />}
+                        W-9 Form {!signedDocs.w9 && <span className="text-red-500 text-xs">(missing)</span>}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {signedDocs.leasing ? <CheckCircle2 className="h-4 w-4 text-green-500" /> : <AlertCircle className="h-4 w-4 text-red-500" />}
+                        Leasing Agreement {!signedDocs.leasing && <span className="text-red-500 text-xs">(missing — required)</span>}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {signedDocs.service ? <CheckCircle2 className="h-4 w-4 text-green-500" /> : <AlertCircle className="h-4 w-4 text-red-500" />}
+                        Service Agreement {!signedDocs.service && <span className="text-red-500 text-xs">(missing)</span>}
+                      </div>
                     </>
                   ) : (
-                    <div className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-green-500" /> Employment Contract</div>
+                    <div className="flex items-center gap-2">
+                      {signedDocs.employment ? <CheckCircle2 className="h-4 w-4 text-green-500" /> : <AlertCircle className="h-4 w-4 text-red-500" />}
+                      Employment Contract {!signedDocs.employment && <span className="text-red-500 text-xs">(missing)</span>}
+                    </div>
                   )}
                 </div>
               </div>
 
               <div className="flex justify-between pt-2">
                 <Button variant="outline" onClick={() => setStep(docStep)}>← Back</Button>
-                <Button onClick={handleSubmit} disabled={submitting} className="gap-2">
+                <Button
+                  onClick={handleSubmit}
+                  disabled={submitting || (isOO && (!signedDocs.w9 || !signedDocs.leasing || !signedDocs.service)) || (!isOO && !signedDocs.employment)}
+                  className="gap-2"
+                >
                   {submitting ? 'Submitting...' : '✓ Submit Onboarding'}
                 </Button>
               </div>
