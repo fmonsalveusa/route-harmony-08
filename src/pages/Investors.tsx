@@ -1,6 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { useInvestors, DbInvestor, InvestorInput } from '@/hooks/useInvestors';
 import { useDrivers } from '@/hooks/useDrivers';
 import { usePayments } from '@/hooks/usePayments';
@@ -251,28 +252,38 @@ const Investors = () => {
   const [activeTab, setActiveTab] = useState('active');
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
-  // Count drivers per investor
+  // Cargar driver_investors activos (relación many-to-many real)
+  const [driverInvestorLinks, setDriverInvestorLinks] = useState<{ driver_id: string; investor_id: string }[]>([]);
+  useEffect(() => {
+    supabase
+      .from('driver_investors' as any)
+      .select('driver_id, investor_id')
+      .eq('is_active', true)
+      .then(({ data }) => setDriverInvestorLinks((data as any) || []));
+  }, []);
+
+  // Count drivers per investor (usando driver_investors)
   const driversPerInvestor = useMemo(() => {
     const map: Record<string, number> = {};
-    drivers.forEach(d => {
-      const invId = (d as any).investor_id;
-      if (invId) map[invId] = (map[invId] || 0) + 1;
+    driverInvestorLinks.forEach(link => {
+      if (link.investor_id) map[link.investor_id] = (map[link.investor_id] || 0) + 1;
     });
     return map;
-  }, [drivers]);
+  }, [driverInvestorLinks]);
 
   // Lista de nombres de drivers por investor (para el tooltip)
   const driverNamesPerInvestor = useMemo(() => {
     const map: Record<string, string[]> = {};
-    drivers.forEach(d => {
-      const invId = (d as any).investor_id;
-      if (invId) {
-        if (!map[invId]) map[invId] = [];
-        map[invId].push(d.name);
+    const driverById = new Map(drivers.map(d => [d.id, d.name]));
+    driverInvestorLinks.forEach(link => {
+      if (link.investor_id) {
+        if (!map[link.investor_id]) map[link.investor_id] = [];
+        const name = driverById.get(link.driver_id);
+        if (name) map[link.investor_id].push(name);
       }
     });
     return map;
-  }, [drivers]);
+  }, [driverInvestorLinks, drivers]);
 
   // Pending payment amount per investor (by recipient_id = investor.id for new payments)
   const pendingPerInvestor = useMemo(() => {
