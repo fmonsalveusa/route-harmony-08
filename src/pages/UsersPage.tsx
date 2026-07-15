@@ -8,8 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Plus, Shield, Calculator, Headphones, Truck as TruckIcon, Loader2, Pencil, Trash2, ChevronDown } from 'lucide-react';
+import { Plus, Shield, Calculator, Headphones, Truck as TruckIcon, Loader2, Pencil, Trash2, ChevronDown, Landmark } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { formatPhone } from '@/lib/phoneUtils';
 
@@ -18,6 +19,7 @@ const roleIcons: Record<string, any> = {
   accounting: Calculator,
   dispatcher: Headphones,
   driver: TruckIcon,
+  investor: Landmark,
 };
 
 const roleBadgeStyles: Record<string, string> = {
@@ -25,6 +27,7 @@ const roleBadgeStyles: Record<string, string> = {
   accounting: 'bg-warning/15 text-warning',
   dispatcher: 'bg-info/15 text-info',
   driver: 'bg-success/15 text-success',
+  investor: 'bg-violet-500/15 text-violet-600',
 };
 
 const roleLabels: Record<string, string> = {
@@ -32,6 +35,7 @@ const roleLabels: Record<string, string> = {
   accounting: 'Accounting',
   dispatcher: 'Dispatcher',
   driver: 'Driver',
+  investor: 'Investor',
 };
 
 interface UserRow {
@@ -51,6 +55,11 @@ const UsersPage = () => {
   const [editingUser, setEditingUser] = useState<UserRow | null>(null);
   const [deletingUser, setDeletingUser] = useState<UserRow | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [activeTab, setActiveTab] = useState('active');
+
+  const activeUsers = users.filter(u => u.is_active);
+  const inactiveUsers = users.filter(u => !u.is_active);
+  const visibleUsers = activeTab === 'active' ? activeUsers : activeTab === 'inactive' ? inactiveUsers : users;
 
   const fetchUsers = useCallback(async () => {
     if (!profile?.tenant_id) return;
@@ -108,7 +117,20 @@ const UsersPage = () => {
         </Button>
       </div>
 
-      <div className="glass-card overflow-hidden">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="active">
+            Active <span className={`ml-1.5 text-xs rounded-full px-2 py-0.5 font-semibold ${activeTab === 'active' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{activeUsers.length}</span>
+          </TabsTrigger>
+          <TabsTrigger value="inactive">
+            Inactive <span className={`ml-1.5 text-xs rounded-full px-2 py-0.5 font-semibold ${activeTab === 'inactive' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{inactiveUsers.length}</span>
+          </TabsTrigger>
+          <TabsTrigger value="all">
+            All <span className={`ml-1.5 text-xs rounded-full px-2 py-0.5 font-semibold ${activeTab === 'all' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{users.length}</span>
+          </TabsTrigger>
+        </TabsList>
+
+      <div className="glass-card overflow-hidden mt-4">
         <div className="p-0">
           {loading ? (
             <div className="flex items-center justify-center py-12">
@@ -128,9 +150,9 @@ const UsersPage = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {users.length === 0 ? (
-                    <tr><td colSpan={6} className="p-8 text-center text-muted-foreground">No users registered</td></tr>
-                  ) : users.map(u => {
+                  {visibleUsers.length === 0 ? (
+                    <tr><td colSpan={6} className="p-8 text-center text-muted-foreground">No users in this tab</td></tr>
+                  ) : visibleUsers.map(u => {
                     const initials = u.full_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
                     const RoleIcon = roleIcons[u.role] || Shield;
                     return (
@@ -191,6 +213,7 @@ const UsersPage = () => {
           )}
         </div>
       </div>
+      </Tabs>
 
       <UserFormDialog open={dialogOpen} onOpenChange={setDialogOpen} user={editingUser} onSuccess={fetchUsers} />
 
