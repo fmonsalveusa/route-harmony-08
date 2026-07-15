@@ -14,6 +14,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { StatusBadge } from '@/components/StatusBadge';
+import { CreateAccessButton } from '@/components/CreateAccessButton';
 import { ChevronDown, Landmark, Pencil, Trash2, PlusCircle, Search, Phone, Mail, Users, DollarSign, X, Percent } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatPhone } from '@/lib/phoneUtils';
@@ -503,6 +504,7 @@ const Investors = () => {
                       onClick={() => { setEditingInvestor(inv); setFormOpen(true); }}>
                       <Pencil className="h-3.5 w-3.5" /> Edit
                     </Button>
+                    <CreateAccessButton name={inv.name} email={inv.email} phone={inv.phone} role="investor" />
                     <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1 text-red-500 hover:text-red-600 hover:bg-red-50"
                       onClick={() => setDeleteConfirmId(inv.id)}>
                       <Trash2 className="h-3.5 w-3.5" /> Delete

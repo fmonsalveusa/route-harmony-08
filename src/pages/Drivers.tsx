@@ -19,6 +19,7 @@ import { DriverDetailDialog } from '@/components/DriverDetailDialog';
 import { DriverDetailPanel } from '@/components/DriverDetailPanel';
 import { GenerateOnboardingLinkDialog } from '@/components/GenerateOnboardingLinkDialog';
 import { TerminationLetterDialog } from '@/components/TerminationLetterDialog';
+import { CreateAccessButton } from '@/components/CreateAccessButton';
 import { toast } from '@/hooks/use-toast';
 import { ExpiryIndicators } from '@/components/ExpiryIndicators';
 import { supabase } from '@/integrations/supabase/client';
@@ -324,6 +325,7 @@ const Drivers = () => {
                               <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={() => { setEditingDriver(driver); setFormOpen(true); }} title="Edit">
                                 <Pencil className="h-3.5 w-3.5" /> Edit
                               </Button>
+                              <CreateAccessButton name={driver.name} email={driver.email} phone={driver.phone} role="driver" />
                               <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground" onClick={() => setTerminationDriver(driver)} title="Termination Letter">
                                 <FileText className="h-3.5 w-3.5" /> Termination
                               </Button>

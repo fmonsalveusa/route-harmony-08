@@ -3,6 +3,7 @@ import { useDispatchers, DbDispatcher, DispatcherInput } from '@/hooks/useDispat
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { DispatcherFormDialog } from '@/components/DispatcherFormDialog';
 import { StatusBadge } from '@/components/StatusBadge';
+import { CreateAccessButton } from '@/components/CreateAccessButton';
 import { Button } from '@/components/ui/button';
 import { Plus, Phone, Mail, Percent, Pencil, Trash2, ChevronDown } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -111,6 +112,7 @@ const Dispatchers = () => {
                       onClick={() => { setEditingDispatcher(d); setFormOpen(true); }}>
                       <Pencil className="h-3.5 w-3.5" /> Edit
                     </Button>
+                    <CreateAccessButton name={d.name} email={d.email} phone={d.phone} role="dispatcher" />
                     <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1 text-red-500 hover:text-red-600 hover:bg-red-50"
                       onClick={async () => { if (window.confirm(`Delete dispatcher ${d.name}? This action is permanent.`)) { await deleteDispatcher(d.id); } }}>
                       <Trash2 className="h-3.5 w-3.5" /> Delete
