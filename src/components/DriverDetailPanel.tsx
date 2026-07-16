@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Fragment } from 'react';
 import { DbDriver } from '@/hooks/useDrivers';
 import { FileText, ExternalLink, Loader2, Download, Plus } from 'lucide-react';
 import { formatDate } from '@/lib/dateUtils';
@@ -49,6 +49,25 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
   const [newLeasingCompany, setNewLeasingCompany] = useState('');
   const [uploadingLeasing, setUploadingLeasing] = useState(false);
   const leasingFileRef = useRef<HTMLInputElement>(null);
+
+  // Investors reales — vienen de driver_investors, no de los campos viejos en drivers
+  const [investors, setInvestors] = useState<Array<{ investor_name: string; investor_email: string | null; pay_percentage: number }>>([]);
+  const [investorsLoading, setInvestorsLoading] = useState(true);
+
+  useEffect(() => {
+    setInvestorsLoading(true);
+    supabase
+      .from('driver_investors' as any)
+      .select('investor_name, investor_email, pay_percentage')
+      .eq('driver_id', driver.id)
+      .eq('is_active', true)
+      .order('created_at')
+      .then(({ data, error }) => {
+        if (error) console.error('[DriverDetailPanel] driver_investors query error:', error);
+        setInvestors((data as any) || []);
+        setInvestorsLoading(false);
+      });
+  }, [driver.id]);
 
   useEffect(() => {
     setLeasingLoading(true);
@@ -252,9 +271,23 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3 border-t pt-3">
         <Info label="Dispatcher">{dispatcherName || 'Unassigned'}</Info>
         <Info label="Truck">{truckLabel || 'Unassigned'}</Info>
-        <Info label="Investor">{driver.investor_name || '—'}</Info>
-        <Info label="Investor Email">{(driver as any).investor_email || '—'}</Info>
-        <Info label="% Investor Pay">{driver.investor_pay_percentage ?? '—'}%</Info>
+        {investorsLoading ? (
+          <Info label="Investor">Loading...</Info>
+        ) : investors.length === 0 ? (
+          <>
+            <Info label="Investor">—</Info>
+            <Info label="Investor Email">—</Info>
+            <Info label="% Investor Pay">—</Info>
+          </>
+        ) : (
+          investors.map((inv, i) => (
+            <Fragment key={i}>
+              <Info label={investors.length > 1 ? `Investor ${i + 1}` : 'Investor'}>{inv.investor_name || '—'}</Info>
+              <Info label="Investor Email">{inv.investor_email || '—'}</Info>
+              <Info label="% Investor Pay">{inv.pay_percentage ?? '—'}%</Info>
+            </Fragment>
+          ))
+        )}
       </div>
 
       {/* Pay & Performance */}
