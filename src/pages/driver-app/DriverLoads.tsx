@@ -110,7 +110,18 @@ export default function DriverLoads() {
   };
 
   const active = loads.filter(l => !['delivered', 'paid', 'tonu', 'cancelled'].includes(l.status));
-  const completed = loads.filter(l => ['delivered', 'paid'].includes(l.status));
+
+  // Cargas de mis drivers (como investor): activas van a "Your Drivers", completadas al archivo
+  const investorActive = investorLoads.filter(l => !['delivered', 'paid', 'tonu', 'cancelled'].includes(l.status));
+  const investorCompleted = investorLoads.filter(l => ['delivered', 'paid'].includes(l.status));
+
+  // Completed mezcla mis cargas + las de mis drivers, más recientes primero
+  const completed = [...loads.filter(l => ['delivered', 'paid'].includes(l.status)), ...investorCompleted]
+    .sort((a, b) => {
+      const da = a.delivery_date || a.pickup_date || a.created_at || '';
+      const db = b.delivery_date || b.pickup_date || b.created_at || '';
+      return db.localeCompare(da);
+    });
 
   if (loading) return <div className="flex items-center justify-center h-40"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" /></div>;
 
@@ -199,21 +210,25 @@ export default function DriverLoads() {
         <Tabs defaultValue="active">
           <TabsList className="w-full">
             <TabsTrigger value="active" className="flex-1">Active ({active.length})</TabsTrigger>
+            {isAlsoInvestor && <TabsTrigger value="investor" className="flex-1">Your Drivers ({investorActive.length})</TabsTrigger>}
             <TabsTrigger value="completed" className="flex-1">Completed ({completed.length})</TabsTrigger>
-            {isAlsoInvestor && <TabsTrigger value="investor" className="flex-1">Investor ({investorLoads.length})</TabsTrigger>}
           </TabsList>
           <TabsContent value="active" className="space-y-2 mt-3">
             {active.length === 0 ? <p className="text-sm text-muted-foreground text-center py-8">No active loads</p> : active.map(l => <LoadCard key={l.id} load={l} />)}
           </TabsContent>
-          <TabsContent value="completed" className="space-y-2 mt-3">
-            {completed.length === 0 ? <p className="text-sm text-muted-foreground text-center py-8">No completed loads yet</p> : completed.map(l => <LoadCard key={l.id} load={l} />)}
-          </TabsContent>
           {isAlsoInvestor && (
             <TabsContent value="investor" className="space-y-2 mt-3">
-              <p className="text-xs text-muted-foreground mb-1">Loads from drivers assigned to you as investor</p>
-              {investorLoads.map(l => <LoadCard key={l.id} load={l} showDriver />)}
+              <p className="text-xs text-muted-foreground mb-1">Active loads from drivers assigned to you as investor</p>
+              {investorActive.length === 0
+                ? <p className="text-sm text-muted-foreground text-center py-8">No active loads from your drivers</p>
+                : investorActive.map(l => <LoadCard key={l.id} load={l} showDriver />)}
             </TabsContent>
           )}
+          <TabsContent value="completed" className="space-y-2 mt-3">
+            {completed.length === 0
+              ? <p className="text-sm text-muted-foreground text-center py-8">No completed loads yet</p>
+              : completed.map(l => <LoadCard key={l.id} load={l} showDriver={l.driver_id !== ownDriverId} />)}
+          </TabsContent>
         </Tabs>
       </div>
     </PullToRefresh>
