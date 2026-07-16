@@ -1,6 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useTrucks, DbTruck, TruckInput } from '@/hooks/useTrucks';
 import { useDrivers } from '@/hooks/useDrivers';
+import { useDispatchers } from '@/hooks/useDispatchers';
+import { useAuth } from '@/contexts/AuthContext';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { TruckFormDialog } from '@/components/TruckFormDialog';
@@ -37,6 +39,26 @@ const Fleet = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [vinFilter, setVinFilter] = useState('all');
   const [plateFilter, setPlateFilter] = useState('all');
+  const [dispatcherFilter, setDispatcherFilter] = useState('all');
+
+  const { dispatchers } = useDispatchers();
+  const { profile } = useAuth();
+
+  // Default dispatcher filter para fmonsalve.usa@gmail.com → Francisco Monsalve
+  useEffect(() => {
+    if (profile?.email?.toLowerCase() === 'fmonsalve.usa@gmail.com' && dispatchers.length > 0) {
+      const francisco = dispatchers.find(d => d.name?.toLowerCase().includes('francisco monsalve'));
+      if (francisco) setDispatcherFilter(francisco.id);
+    }
+  }, [profile?.email, dispatchers]);
+
+  // Camiones que pertenecen al dispatcher seleccionado (vía el driver que los tiene asignados)
+  const dispatcherTruckIds = useMemo(() => {
+    if (dispatcherFilter === 'all') return null;
+    return new Set(
+      drivers.filter(d => d.dispatcher_id === dispatcherFilter && d.truck_id).map(d => d.truck_id as string)
+    );
+  }, [dispatcherFilter, drivers]);
 
   // Build unique VIN and plate lists from ALL trucks (any status)
   const uniqueVins = useMemo(() => {
@@ -92,6 +114,9 @@ const Fleet = () => {
     }
     if (plateFilter !== 'all') {
       filtered = filtered.filter(t => t.license_plate === plateFilter);
+    }
+    if (dispatcherTruckIds) {
+      filtered = filtered.filter(t => dispatcherTruckIds.has(t.id));
     }
     return filtered;
   };
@@ -271,6 +296,17 @@ const Fleet = () => {
             className="pl-9 h-9"
           />
         </div>
+        <Select value={dispatcherFilter} onValueChange={v => { setDispatcherFilter(v); setPage(1); }}>
+          <SelectTrigger className="h-9 w-full sm:w-52">
+            <SelectValue placeholder="Filter by Dispatcher" />
+          </SelectTrigger>
+          <SelectContent className="max-h-60">
+            <SelectItem value="all">All Dispatchers</SelectItem>
+            {dispatchers.filter(d => d.status !== 'inactive').map(d => (
+              <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <Select value={vinFilter} onValueChange={v => { setVinFilter(v); setPage(1); }}>
           <SelectTrigger className="h-9 w-full sm:w-52">
             <SelectValue placeholder="Filter by VIN" />
