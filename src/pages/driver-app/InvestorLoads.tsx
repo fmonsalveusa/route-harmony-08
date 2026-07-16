@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { PullToRefresh } from '@/components/driver-app/PullToRefresh';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, ChevronDown, ChevronUp, FileText, ExternalLink, DollarSign } from 'lucide-react';
+import { MapPin, ChevronDown, ChevronUp, FileText, ExternalLink, DollarSign, User } from 'lucide-react';
 import { formatDate } from '@/lib/dateUtils';
 
 // Extrae ciudad y estado de una dirección
@@ -57,6 +57,7 @@ export default function InvestorLoads() {
 
   // Drivers asignados a este investor (vía email → investor → driver_investors)
   const [myDriverIds, setMyDriverIds] = useState<Set<string> | null>(null);
+  const [driverNames, setDriverNames] = useState<Map<string, string>>(new Map());
   useEffect(() => {
     if (!profile?.email) return;
     (async () => {
@@ -71,7 +72,17 @@ export default function InvestorLoads() {
         .select('driver_id')
         .eq('investor_id', (inv as any).id)
         .eq('is_active', true);
-      setMyDriverIds(new Set(((links as any) || []).map((l: any) => l.driver_id)));
+      const ids = ((links as any) || []).map((l: any) => l.driver_id);
+      setMyDriverIds(new Set(ids));
+
+      // Nombres de los drivers para mostrarlos en cada carga
+      if (ids.length > 0) {
+        const { data: drvs } = await supabase
+          .from('drivers' as any)
+          .select('id, name')
+          .in('id', ids);
+        setDriverNames(new Map(((drvs as any) || []).map((d: any) => [d.id, d.name])));
+      }
     })();
   }, [profile?.email]);
 
@@ -148,6 +159,12 @@ export default function InvestorLoads() {
                         </span>
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5">{load.broker_client || '—'}</p>
+                      {load.driver_id && driverNames.get(load.driver_id) && (
+                        <p className="text-xs font-medium text-foreground mt-0.5 flex items-center gap-1">
+                          <User className="h-3 w-3 text-muted-foreground" />
+                          {driverNames.get(load.driver_id)}
+                        </p>
+                      )}
                     </div>
                     <div className="text-right flex-shrink-0">
                       <div className="text-base font-bold text-green-600">${Number(load.total_rate).toLocaleString()}</div>

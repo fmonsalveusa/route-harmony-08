@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar } from 'lucide-react';
+import { Calendar, User } from 'lucide-react';
 import { formatDate } from '@/lib/dateUtils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LoadProgressBar } from '@/components/driver-app/LoadProgressBar';
@@ -15,6 +15,7 @@ export default function DriverLoads() {
   const navigate = useNavigate();
   const [loads, setLoads] = useState<any[]>([]);
   const [investorLoads, setInvestorLoads] = useState<any[]>([]);
+  const [driverNames, setDriverNames] = useState<Map<string, string>>(new Map());
   const [ownDriverId, setOwnDriverId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -50,6 +51,13 @@ export default function DriverLoads() {
           .neq('status', 'planned')
           .order('pickup_date', { ascending: false });
         setInvestorLoads(invLoadsData || []);
+
+        // Nombres de los drivers para mostrarlos en cada carga del tab Investor
+        const { data: drvs } = await supabase
+          .from('drivers' as any)
+          .select('id, name')
+          .in('id', assignedIds);
+        setDriverNames(new Map(((drvs as any) || []).map((d: any) => [d.id, d.name])));
       } else {
         setInvestorLoads([]);
       }
@@ -119,7 +127,7 @@ export default function DriverLoads() {
     return `$${(Number(load.total_rate) / miles).toFixed(2)}`;
   };
 
-  const LoadCard = ({ load }: { load: any }) => {
+  const LoadCard = ({ load, showDriver }: { load: any; showDriver?: boolean }) => {
     const isActive = !['delivered', 'paid', 'tonu', 'cancelled'].includes(load.status);
 
     return (
@@ -129,6 +137,14 @@ export default function DriverLoads() {
             <span className="text-base font-bold">Load #{load.reference_number}</span>
             <Badge className={statusBadge(load.status)}>{statusLabel(load.status)}</Badge>
           </div>
+
+          {/* Driver — solo en el tab Investor */}
+          {showDriver && driverNames.get(load.driver_id) && (
+            <div className="flex items-center gap-1.5 text-sm">
+              <User className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="font-medium">{driverNames.get(load.driver_id)}</span>
+            </div>
+          )}
 
           {/* Route Timeline */}
           <div className="flex items-center gap-2">
@@ -195,7 +211,7 @@ export default function DriverLoads() {
           {isAlsoInvestor && (
             <TabsContent value="investor" className="space-y-2 mt-3">
               <p className="text-xs text-muted-foreground mb-1">Loads from drivers assigned to you as investor</p>
-              {investorLoads.map(l => <LoadCard key={l.id} load={l} />)}
+              {investorLoads.map(l => <LoadCard key={l.id} load={l} showDriver />)}
             </TabsContent>
           )}
         </Tabs>
