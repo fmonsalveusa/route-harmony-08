@@ -55,6 +55,15 @@ const Drivers = () => {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [dispatcherFilter, setDispatcherFilter] = useState<string>('all');
+
+  // Default dispatcher filter para fmonsalve.usa@gmail.com → Francisco Monsalve
+  useEffect(() => {
+    if (profile?.email?.toLowerCase() === 'fmonsalve.usa@gmail.com' && dispatchers.length > 0) {
+      const francisco = dispatchers.find(d => d.name?.toLowerCase().includes('francisco monsalve'));
+      if (francisco) setDispatcherFilter(francisco.id);
+    }
+  }, [profile?.email, dispatchers]);
+
   const [activeDriverIds, setActiveDriverIds] = useState<Set<string>>(new Set());
   const [terminationDriver, setTerminationDriver] = useState<DbDriver | null>(null);
   const [tenantName, setTenantName] = useState('');
