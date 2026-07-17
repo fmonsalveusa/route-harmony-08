@@ -26,8 +26,9 @@ interface DriverPaymentsResult {
   investorPayments: DriverPayment[];
 }
 
-// PostgREST revienta con .in() de cientos de IDs (URL muy larga) → chunks de 100
-const CHUNK = 100;
+// PostgREST revienta con .in() de muchos IDs (la URL se hace enorme).
+// 50 UUIDs ≈ 2000 caracteres, que es el rango seguro.
+const CHUNK = 50;
 
 async function selectInChunks(
   ids: string[],
