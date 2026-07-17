@@ -18,12 +18,19 @@ interface Props {
   onComplete: () => void;
 }
 
+/**
+ * Una opción del dropdown.
+ * - Modo driver:   un registro por driver.
+ * - Modo investor: un registro por PAR driver×investor (un driver puede tener 2 investors),
+ *                  leído de driver_investors — no de los campos viejos en drivers.
+ */
 interface RecipientOption {
-  id: string;
-  name: string;
-  pay_percentage: number;
-  investor_pay_percentage: number | null;
-  investor_name: string | null;
+  key: string;            // único: driverId (driver) | `${driverId}::${investorName}` (investor)
+  driverId: string;
+  driverName: string;
+  label: string;          // lo que se ve en el dropdown
+  pct: number;            // % por defecto
+  recipientName: string;  // lo que se guarda en payments.recipient_name
 }
 
 interface LoadOption {
@@ -36,9 +43,11 @@ interface LoadOption {
   destination: string;
 }
 
+const CHUNK = 100;
+
 export const ManualPaymentDialog = ({ open, onOpenChange, recipientType, onComplete }: Props) => {
-  const [drivers, setDrivers] = useState<RecipientOption[]>([]);
-  const [selectedDriverId, setSelectedDriverId] = useState('');
+  const [options, setOptions] = useState<RecipientOption[]>([]);
+  const [selectedKey, setSelectedKey] = useState('');
   const [allLoads, setAllLoads] = useState<LoadOption[]>([]);
   const [selectedLoadIds, setSelectedLoadIds] = useState<Set<string>>(new Set());
   const [loadingLoads, setLoadingLoads] = useState(false);
@@ -47,33 +56,90 @@ export const ManualPaymentDialog = ({ open, onOpenChange, recipientType, onCompl
   const [dateTo, setDateTo] = useState('');
   const [customPct, setCustomPct] = useState<number | null>(null);
 
-  // Fetch drivers that can receive this payment type
+  // Cargar opciones del dropdown
   useEffect(() => {
     if (!open) return;
     (async () => {
-      let query = supabase.from('drivers').select('id, name, pay_percentage, investor_pay_percentage, investor_name').neq('status', 'inactive').order('name');
-      // For investors, only show drivers that have an investor
-      const { data } = await query;
-      let options = (data as RecipientOption[]) || [];
-      if (recipientType === 'investor') {
-        options = options.filter(d => d.investor_name && (d.investor_pay_percentage ?? 0) > 0);
+      const { data: drvs, error: drvError } = await supabase
+        .from('drivers')
+        .select('id, name, pay_percentage')
+        .neq('status', 'inactive')
+        .order('name');
+
+      if (drvError || !drvs) {
+        console.error('drivers query error:', drvError);
+        setOptions([]);
+        return;
       }
-      setDrivers(options);
+
+      if (recipientType === 'driver') {
+        setOptions(drvs.map((d: any) => ({
+          key: d.id,
+          driverId: d.id,
+          driverName: d.name,
+          label: d.name,
+          pct: d.pay_percentage ?? 0,
+          recipientName: d.name,
+        })));
+        return;
+      }
+
+      // Modo investor: pares driver×investor desde driver_investors (chunked por límite de PostgREST)
+      const driverIds = drvs.map((d: any) => d.id);
+      const driverNameById = new Map(drvs.map((d: any) => [d.id, d.name]));
+      const links: any[] = [];
+
+      for (let i = 0; i < driverIds.length; i += CHUNK) {
+        const { data, error } = await supabase
+          .from('driver_investors' as any)
+          .select('driver_id, investor_name, pay_percentage')
+          .eq('is_active', true)
+          .in('driver_id', driverIds.slice(i, i + CHUNK));
+        if (error) {
+          console.error('driver_investors query error:', error);
+          toast({ title: 'Error cargando investors', description: error.message, variant: 'destructive' });
+          setOptions([]);
+          return;
+        }
+        links.push(...(data || []));
+      }
+
+      const pairs = links
+        .filter(l => l.investor_name)
+        .map(l => ({
+          key: `${l.driver_id}::${l.investor_name}`,
+          driverId: l.driver_id,
+          driverName: driverNameById.get(l.driver_id) || '',
+          label: `${l.investor_name} (${driverNameById.get(l.driver_id) || '—'})`,
+          pct: Number(l.pay_percentage) || 0,
+          recipientName: l.investor_name as string,
+        }))
+        .sort((a, b) => a.label.localeCompare(b.label));
+
+      setOptions(pairs);
     })();
   }, [open, recipientType]);
 
-  // When driver changes, fetch loads without existing payments of this type
-  const fetchLoads = useCallback(async (driverId: string) => {
+  // Cargas sin pago de este tipo para el recipient seleccionado
+  const fetchLoads = useCallback(async (opt: RecipientOption) => {
     setLoadingLoads(true);
     setSelectedLoadIds(new Set());
     setDateFrom('');
     setDateTo('');
 
-    const { data: loadsData } = await supabase
+    const { data: loadsData, error: loadsError } = await supabase
       .from('loads')
       .select('id, reference_number, broker_client, total_rate, created_at, origin, destination')
-      .eq('driver_id', driverId)
+      .eq('driver_id', opt.driverId)
       .order('created_at', { ascending: false });
+
+    if (loadsError) {
+      console.error('loads query error:', loadsError);
+      toast({ title: 'Error cargando cargas', description: loadsError.message, variant: 'destructive' });
+      setAllLoads([]);
+      setLoadingLoads(false);
+      return;
+    }
 
     if (!loadsData || loadsData.length === 0) {
       setAllLoads([]);
@@ -81,24 +147,24 @@ export const ManualPaymentDialog = ({ open, onOpenChange, recipientType, onCompl
       return;
     }
 
-    // Get existing payments of this type for these loads
+    // Chequeo de pagos existentes — chunked y con manejo de error.
+    // En modo investor filtramos también por recipient_name: un mismo driver puede tener
+    // 2 investors, cada uno con su propio pago sobre la misma carga.
     const loadIds = loadsData.map((l: any) => l.id);
-    const recipientId = driverId;
-
-    // PostgREST revienta con .in() de cientos de IDs (URL muy larga) → chunks de 100.
-    // Si falla, abortamos: mejor no mostrar nada que mostrar cargas ya pagadas como pendientes.
-    const CHUNK = 100;
     const paidLoadIds = new Set<string>();
     let queryFailed = false;
 
     for (let i = 0; i < loadIds.length; i += CHUNK) {
-      const chunk = loadIds.slice(i, i + CHUNK);
-      const { data: pays, error: paysError } = await supabase
+      let q = supabase
         .from('payments')
         .select('load_id')
         .eq('recipient_type', recipientType)
-        .eq('recipient_id', recipientId)
-        .in('load_id', chunk);
+        .eq('recipient_id', opt.driverId)
+        .in('load_id', loadIds.slice(i, i + CHUNK));
+
+      if (recipientType === 'investor') q = q.eq('recipient_name', opt.recipientName);
+
+      const { data: pays, error: paysError } = await q;
       if (paysError) { console.error('payments error:', paysError); queryFailed = true; break; }
       (pays || []).forEach((p: any) => paidLoadIds.add(p.load_id));
     }
@@ -114,20 +180,16 @@ export const ManualPaymentDialog = ({ open, onOpenChange, recipientType, onCompl
       return;
     }
 
-    const availableLoads = (loadsData as LoadOption[]).filter(l => !paidLoadIds.has(l.id));
-
-    setAllLoads(availableLoads);
+    setAllLoads((loadsData as LoadOption[]).filter(l => !paidLoadIds.has(l.id)));
     setLoadingLoads(false);
-  }, [drivers, recipientType]);
+  }, [recipientType]);
 
-  const handleDriverChange = (id: string) => {
-    setSelectedDriverId(id);
-    const d = drivers.find(dr => dr.id === id);
-    const defaultPct = recipientType === 'investor'
-      ? (d?.investor_pay_percentage ?? 0)
-      : (d?.pay_percentage ?? 0);
-    setCustomPct(defaultPct);
-    fetchLoads(id);
+  const handleRecipientChange = (key: string) => {
+    setSelectedKey(key);
+    const opt = options.find(o => o.key === key);
+    if (!opt) return;
+    setCustomPct(opt.pct);
+    fetchLoads(opt);
   };
 
   const filteredLoads = useMemo(() => {
@@ -155,32 +217,27 @@ export const ManualPaymentDialog = ({ open, onOpenChange, recipientType, onCompl
     }
   };
 
-  const driver = drivers.find(d => d.id === selectedDriverId);
-  const defaultPct = recipientType === 'investor'
-    ? (driver?.investor_pay_percentage ?? 0)
-    : (driver?.pay_percentage ?? 0);
-  const pct = customPct ?? defaultPct;
+  const selectedOption = options.find(o => o.key === selectedKey);
+  const pct = customPct ?? selectedOption?.pct ?? 0;
 
   const selectedTotal = filteredLoads
     .filter(l => selectedLoadIds.has(l.id))
     .reduce((sum, l) => sum + (Number(l.total_rate) * pct / 100), 0);
 
   const handleSubmit = async () => {
-    if (!driver || selectedLoadIds.size === 0) return;
+    if (!selectedOption || selectedLoadIds.size === 0) return;
     setSubmitting(true);
 
     const tenant_id = await getTenantId();
     const selectedLoads = filteredLoads.filter(l => selectedLoadIds.has(l.id));
-
-    const recipientName = recipientType === 'investor' ? (driver.investor_name || driver.name) : driver.name;
 
     const paymentsToInsert = selectedLoads.map(l => {
       const amount = Math.round(Number(l.total_rate) * pct / 100 * 100) / 100;
       return {
         load_id: l.id,
         recipient_type: recipientType,
-        recipient_id: driver.id,
-        recipient_name: recipientName,
+        recipient_id: selectedOption.driverId,
+        recipient_name: selectedOption.recipientName,
         load_reference: l.reference_number,
         amount,
         percentage_applied: pct,
@@ -203,7 +260,7 @@ export const ManualPaymentDialog = ({ open, onOpenChange, recipientType, onCompl
 
   const handleClose = (o: boolean) => {
     if (!o) {
-      setSelectedDriverId('');
+      setSelectedKey('');
       setAllLoads([]);
       setSelectedLoadIds(new Set());
       setDateFrom('');
@@ -225,26 +282,25 @@ export const ManualPaymentDialog = ({ open, onOpenChange, recipientType, onCompl
         <div className="space-y-4 flex-1 overflow-hidden flex flex-col">
           {/* Recipient selector */}
           <div className="space-y-1">
-            <label className="text-sm font-medium">{recipientLabel === 'Investor' ? 'Driver (Investor)' : 'Driver'}</label>
-            <Select value={selectedDriverId} onValueChange={handleDriverChange}>
+            <label className="text-sm font-medium">{recipientType === 'investor' ? 'Investor (Driver)' : 'Driver'}</label>
+            <Select value={selectedKey} onValueChange={handleRecipientChange}>
               <SelectTrigger><SelectValue placeholder={`Select ${recipientLabel.toLowerCase()}...`} /></SelectTrigger>
-              <SelectContent className="bg-popover z-50">
-                {drivers.map(d => {
-                  const dPct = recipientType === 'investor'
-                    ? (d.investor_pay_percentage ?? 0)
-                    : d.pay_percentage;
-                  return (
-                    <SelectItem key={d.id} value={d.id}>
-                      {recipientType === 'investor' ? `${d.investor_name} (${d.name})` : d.name} — {dPct}%
-                    </SelectItem>
-                  );
-                })}
+              <SelectContent className="bg-popover z-50 max-h-72">
+                {options.length === 0 ? (
+                  <div className="px-2 py-3 text-sm text-muted-foreground text-center">
+                    {recipientType === 'investor' ? 'No investors assigned' : 'No drivers'}
+                  </div>
+                ) : options.map(o => (
+                  <SelectItem key={o.key} value={o.key}>
+                    {o.label} — {o.pct}%
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
 
           {/* Custom percentage */}
-          {selectedDriverId && (
+          {selectedKey && (
             <div className="space-y-1">
               <label className="text-sm font-medium">% Applied</label>
               <Input
@@ -260,7 +316,7 @@ export const ManualPaymentDialog = ({ open, onOpenChange, recipientType, onCompl
           )}
 
           {/* Date filters */}
-          {selectedDriverId && !loadingLoads && allLoads.length > 0 && (
+          {selectedKey && !loadingLoads && allLoads.length > 0 && (
             <div className="flex flex-wrap items-end gap-3">
               <div className="space-y-1">
                 <label className="text-xs font-medium text-muted-foreground">From</label>
@@ -279,7 +335,7 @@ export const ManualPaymentDialog = ({ open, onOpenChange, recipientType, onCompl
           )}
 
           {/* Loads list */}
-          {selectedDriverId && (
+          {selectedKey && (
             <div className="flex-1 overflow-hidden flex flex-col">
               <div className="flex items-center justify-between mb-2">
                 <label className="text-sm font-medium">Available Loads ({filteredLoads.length})</label>
