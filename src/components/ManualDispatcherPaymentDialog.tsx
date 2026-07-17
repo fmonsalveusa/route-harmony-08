@@ -93,25 +93,48 @@ export const ManualDispatcherPaymentDialog = ({ open, onOpenChange, onComplete }
 
     // Get existing dispatcher payments for these loads (check both payments table and items table)
     const loadIds = loadsData.map((l: any) => l.id);
-    
-    // Check dispatcher_payment_items for consolidated payments
-    const { data: existingItems } = await supabase
-      .from('dispatcher_payment_items')
-      .select('load_id')
-      .in('load_id', loadIds);
 
-    // Also check legacy individual payments
-    const { data: existingPayments } = await supabase
-      .from('payments')
-      .select('load_id')
-      .eq('recipient_type', 'dispatcher')
-      .eq('recipient_id', dispatcherId)
-      .in('load_id', loadIds);
+    // PostgREST revienta con .in() de cientos de IDs (URL muy larga) → chunks de 100.
+    // Si una query falla, abortamos: es mejor no mostrar nada que mostrar cargas
+    // ya pagadas como si estuvieran pendientes.
+    const CHUNK = 100;
+    const paidLoadIds = new Set<string>();
+    let queryFailed = false;
 
-    const paidLoadIds = new Set([
-      ...((existingItems || []).map((p: any) => p.load_id)),
-      ...((existingPayments || []).map((p: any) => p.load_id)),
-    ]);
+    for (let i = 0; i < loadIds.length; i += CHUNK) {
+      const chunk = loadIds.slice(i, i + CHUNK);
+
+      // Consolidated payments
+      const { data: items, error: itemsError } = await supabase
+        .from('dispatcher_payment_items')
+        .select('load_id')
+        .in('load_id', chunk);
+      if (itemsError) { console.error('dispatcher_payment_items error:', itemsError); queryFailed = true; break; }
+      (items || []).forEach((p: any) => paidLoadIds.add(p.load_id));
+
+      // Legacy individual payments
+      const { data: pays, error: paysError } = await supabase
+        .from('payments')
+        .select('load_id')
+        .eq('recipient_type', 'dispatcher')
+        .eq('recipient_id', dispatcherId)
+        .in('load_id', chunk);
+      if (paysError) { console.error('payments error:', paysError); queryFailed = true; break; }
+      (pays || []).forEach((p: any) => paidLoadIds.add(p.load_id));
+    }
+
+    if (queryFailed) {
+      toast({
+        title: 'Error verificando pagos',
+        description: 'No se pudo confirmar qué cargas ya están pagadas. Intenta de nuevo.',
+        variant: 'destructive',
+      });
+      setAllLoads([]);
+      setDrivers([]);
+      setLoadingLoads(false);
+      return;
+    }
+
     const availableLoads = (loadsData as LoadOption[]).filter(l => !paidLoadIds.has(l.id));
 
     // Fetch driver info for available loads
