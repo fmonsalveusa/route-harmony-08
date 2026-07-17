@@ -83,17 +83,37 @@ export const ManualPaymentDialog = ({ open, onOpenChange, recipientType, onCompl
 
     // Get existing payments of this type for these loads
     const loadIds = loadsData.map((l: any) => l.id);
-    const driver = drivers.find(d => d.id === driverId);
     const recipientId = driverId;
 
-    const { data: existingPayments } = await supabase
-      .from('payments')
-      .select('load_id')
-      .eq('recipient_type', recipientType)
-      .eq('recipient_id', recipientId)
-      .in('load_id', loadIds);
+    // PostgREST revienta con .in() de cientos de IDs (URL muy larga) → chunks de 100.
+    // Si falla, abortamos: mejor no mostrar nada que mostrar cargas ya pagadas como pendientes.
+    const CHUNK = 100;
+    const paidLoadIds = new Set<string>();
+    let queryFailed = false;
 
-    const paidLoadIds = new Set((existingPayments || []).map((p: any) => p.load_id));
+    for (let i = 0; i < loadIds.length; i += CHUNK) {
+      const chunk = loadIds.slice(i, i + CHUNK);
+      const { data: pays, error: paysError } = await supabase
+        .from('payments')
+        .select('load_id')
+        .eq('recipient_type', recipientType)
+        .eq('recipient_id', recipientId)
+        .in('load_id', chunk);
+      if (paysError) { console.error('payments error:', paysError); queryFailed = true; break; }
+      (pays || []).forEach((p: any) => paidLoadIds.add(p.load_id));
+    }
+
+    if (queryFailed) {
+      toast({
+        title: 'Error verificando pagos',
+        description: 'No se pudo confirmar qué cargas ya están pagadas. Intenta de nuevo.',
+        variant: 'destructive',
+      });
+      setAllLoads([]);
+      setLoadingLoads(false);
+      return;
+    }
+
     const availableLoads = (loadsData as LoadOption[]).filter(l => !paidLoadIds.has(l.id));
 
     setAllLoads(availableLoads);
