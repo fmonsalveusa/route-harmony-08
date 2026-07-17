@@ -26,37 +26,68 @@ interface DriverPaymentsResult {
   investorPayments: DriverPayment[];
 }
 
+// PostgREST revienta con .in() de cientos de IDs (URL muy larga) → chunks de 100
+const CHUNK = 100;
+
+async function selectInChunks(
+  ids: string[],
+  queryFn: (chunk: string[]) => any,
+  label: string
+): Promise<any[]> {
+  const out: any[] = [];
+  for (let i = 0; i < ids.length; i += CHUNK) {
+    const { data, error } = await queryFn(ids.slice(i, i + CHUNK));
+    if (error) {
+      console.error(`[useDriverPayments] ${label} error:`, error);
+      continue; // seguimos con el resto; peor un dato incompleto que nada
+    }
+    out.push(...(data || []));
+  }
+  return out;
+}
+
 async function enrichPayments(data: any[]): Promise<DriverPayment[]> {
   if (!data.length) return [];
 
   const loadIds = [...new Set(data.map(p => p.load_id))];
   const paymentIds = data.map(p => p.id);
 
-  // Cargas, ajustes y drivers en paralelo — antes eran secuenciales
-  const [{ data: loads }, { data: adjustments }] = await Promise.all([
-    supabase.from('loads').select('id, origin, destination, driver_id').in('id', loadIds),
-    supabase.from('payment_adjustments').select('*').in('payment_id', paymentIds),
+  const [loads, adjustments] = await Promise.all([
+    selectInChunks(
+      loadIds,
+      chunk => supabase.from('loads').select('id, origin, destination, driver_id').in('id', chunk),
+      'loads'
+    ),
+    selectInChunks(
+      paymentIds,
+      chunk => supabase.from('payment_adjustments').select('*').in('payment_id', chunk),
+      'payment_adjustments'
+    ),
   ]);
 
-  const loadMap = new Map((loads || []).map((l: any) => [l.id, l]));
-  const driverIds = [...new Set((loads || []).map((l: any) => l.driver_id).filter(Boolean))];
+  const loadMap = new Map(loads.map((l: any) => [l.id, l]));
+  const driverIds = [...new Set(loads.map((l: any) => l.driver_id).filter(Boolean))] as string[];
 
-  const { data: drivers } = driverIds.length
-    ? await supabase.from('drivers').select('id, name').in('id', driverIds)
-    : { data: [] as any[] };
+  const drivers = driverIds.length
+    ? await selectInChunks(
+        driverIds,
+        chunk => supabase.from('drivers').select('id, name').in('id', chunk),
+        'drivers'
+      )
+    : [];
 
-  const driverMap = new Map((drivers || []).map((d: any) => [d.id, d.name]));
+  const driverMap = new Map(drivers.map((d: any) => [d.id, d.name]));
 
   const adjMap = new Map<string, number>();
-  for (const adj of (adjustments || []) as any[]) {
+  for (const adj of adjustments as any[]) {
     const current = adjMap.get(adj.payment_id) || 0;
     const val = adj.adjustment_type === 'addition' ? adj.amount : -adj.amount;
     adjMap.set(adj.payment_id, current + val);
   }
 
   return data.map(p => {
-  const load = loadMap.get(p.load_id);
-      const totalAdj = adjMap.get(p.id) || 0;
+    const load = loadMap.get(p.load_id);
+    const totalAdj = adjMap.get(p.id) || 0;
     return {
       ...p,
       origin: load?.origin || '',
@@ -69,13 +100,28 @@ async function enrichPayments(data: any[]): Promise<DriverPayment[]> {
 }
 
 async function fetchDriverPaymentsFromDb(email: string): Promise<DriverPaymentsResult> {
-    // Buscar driver e investor drivers EN PARALELO
-  const [{ data: driver }, { data: investorDrivers }] = await Promise.all([
-    supabase.from('drivers').select('id').eq('email', email).maybeSingle(),
-    supabase.from('drivers' as any).select('id, name').eq('investor_email', email),
+  // ── Driver: ¿este email es un driver? ──────────────────────────────────
+  // ── Investor: ¿este email es un investor? → sus drivers vía driver_investors
+  //    (NO usamos drivers.investor_email: es un campo viejo que quedó desactualizado)
+  const [{ data: driver }, { data: investor }] = await Promise.all([
+    supabase.from('drivers').select('id').ilike('email', email).maybeSingle(),
+    supabase.from('investors' as any).select('id, name').ilike('email', email).maybeSingle(),
   ]);
-    
-  // Buscar pagos de driver e investor EN PARALELO
+
+  // Drivers asignados a este investor
+  let investorDriverIds: string[] = [];
+  const investorName = investor ? (investor as any).name as string : null;
+
+  if (investor && (investor as any).id) {
+    const { data: links, error: linksError } = await supabase
+      .from('driver_investors' as any)
+      .select('driver_id')
+      .eq('investor_id', (investor as any).id)
+      .eq('is_active', true);
+    if (linksError) console.error('[useDriverPayments] driver_investors error:', linksError);
+    investorDriverIds = ((links as any) || []).map((l: any) => l.driver_id);
+  }
+
   const [driverPaymentsRaw, investorPaymentsRaw] = await Promise.all([
     driver
       ? supabase
@@ -84,22 +130,29 @@ async function fetchDriverPaymentsFromDb(email: string): Promise<DriverPaymentsR
           .eq('recipient_id', driver.id)
           .eq('recipient_type', 'driver')
           .order('created_at', { ascending: false })
-      : Promise.resolve({ data: [], error: null }),
+          .then(({ data }) => data || [])
+      : Promise.resolve([] as any[]),
 
-    investorDrivers && investorDrivers.length > 0
-      ? supabase
-          .from('payments')
-          .select('*')
-          .in('recipient_id', investorDrivers.map((d: any) => d.id))
-          .eq('recipient_type', 'investor')
-          .order('created_at', { ascending: false })
-      : Promise.resolve({ data: [], error: null }),
+    // Filtramos por recipient_name además del driver: un driver puede tener 2 investors
+    // y sus pagos comparten recipient_id — sin el nombre, cada uno vería los del otro.
+    investorDriverIds.length > 0 && investorName
+      ? selectInChunks(
+          investorDriverIds,
+          chunk => supabase
+            .from('payments')
+            .select('*')
+            .in('recipient_id', chunk)
+            .eq('recipient_type', 'investor')
+            .eq('recipient_name', investorName)
+            .order('created_at', { ascending: false }),
+          'investor payments'
+        )
+      : Promise.resolve([] as any[]),
   ]);
 
-  // Enriquecer pagos con datos de loads y ajustes EN PARALELO
   const [payments, investorPayments] = await Promise.all([
-    enrichPayments((driverPaymentsRaw.data as any[]) || []),
-    enrichPayments((investorPaymentsRaw.data as any[]) || []),
+    enrichPayments(driverPaymentsRaw as any[]),
+    enrichPayments(investorPaymentsRaw as any[]),
   ]);
 
   return { payments, investorPayments };
