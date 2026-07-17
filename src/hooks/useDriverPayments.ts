@@ -133,20 +133,46 @@ async function fetchDriverPaymentsFromDb(email: string): Promise<DriverPaymentsR
           .then(({ data }) => data || [])
       : Promise.resolve([] as any[]),
 
-    // Filtramos por recipient_name además del driver: un driver puede tener 2 investors
-    // y sus pagos comparten recipient_id — sin el nombre, cada uno vería los del otro.
-    investorDriverIds.length > 0 && investorName
-      ? selectInChunks(
-          investorDriverIds,
-          chunk => supabase
+    // Los pagos de investor guardan recipient_id de dos formas según la época:
+    //  - la mayoría: el id del INVESTOR
+    //  - algunos legacy: el id del DRIVER
+    // Buscamos ambos. Filtramos por recipient_name porque un driver puede tener
+    // 2 investors y sus pagos comparten recipient_id — sin el nombre, cada uno
+    // vería los del otro.
+    investor && investorName
+      ? (async () => {
+          const byInvestorId = await supabase
             .from('payments')
             .select('*')
-            .in('recipient_id', chunk)
+            .eq('recipient_id', (investor as any).id)
             .eq('recipient_type', 'investor')
-            .eq('recipient_name', investorName)
-            .order('created_at', { ascending: false }),
-          'investor payments'
-        )
+            .order('created_at', { ascending: false })
+            .then(({ data, error }) => {
+              if (error) console.error('[useDriverPayments] investor payments by investor_id error:', error);
+              return data || [];
+            });
+
+          const byDriverIds = investorDriverIds.length > 0
+            ? await selectInChunks(
+                investorDriverIds,
+                chunk => supabase
+                  .from('payments')
+                  .select('*')
+                  .in('recipient_id', chunk)
+                  .eq('recipient_type', 'investor')
+                  .eq('recipient_name', investorName)
+                  .order('created_at', { ascending: false }),
+                'investor payments by driver_id'
+              )
+            : [];
+
+          // Deduplicar por id y ordenar por fecha
+          const byId = new Map<string, any>();
+          [...byInvestorId, ...byDriverIds].forEach((p: any) => byId.set(p.id, p));
+          return [...byId.values()].sort((a, b) =>
+            (b.created_at || '').localeCompare(a.created_at || '')
+          );
+        })()
       : Promise.resolve([] as any[]),
   ]);
 
