@@ -295,6 +295,15 @@ const Tracking = () => {
       .filter(d => effectiveDispatcherFilter === 'all' || d.dispatcher_id === effectiveDispatcherFilter);
   }, [drivers, dispatcherFilter, userDispatcherId]);
 
+  // Orden visual por estado: Buscando (0) → Listo (1) → Standby (2)
+  const sortedDrivers = useMemo(() => {
+    const rank = (id: string) => {
+      const s = searchStatus[id];
+      return s === 'searching' ? 0 : s === 'ready' ? 1 : 2;
+    };
+    return [...availableDrivers].sort((a, b) => rank(a.id) - rank(b.id));
+  }, [availableDrivers, searchStatus]);
+
   // Para cada driver, la carga activa cuya delivery_date (o pickup_date si no hay) es la mas reciente/lejana
   const activeLoadByDriver = useMemo(() => {
     const map: Record<string, LoadWithStops> = {};
@@ -846,7 +855,7 @@ const Tracking = () => {
                 <p className="text-sm">No drivers</p>
               </div>
             ) : (
-              availableDrivers.map(driver => {
+              sortedDrivers.map(driver => {
                 const lastDel = lastDeliveryStops[driver.id];
                 const activeLoad = activeLoadByDriver[driver.id];
                 const activeLastStop = activeLoad ? getLastStop(activeLoad) : null;
@@ -856,15 +865,16 @@ const Tracking = () => {
                   ? { address: lastDel.address, date: lastDel.date, isActive: false }
                   : null;
                 const sStatus = searchStatus[driver.id]; // undefined=standby | 'searching' | 'ready'
-                const statusRing = sStatus === 'ready'
-                  ? 'ring-2 ring-[hsl(152,60%,40%)]'
-                  : sStatus === 'searching'
-                  ? 'ring-2 ring-[hsl(45,93%,47%)]'
-                  : '';
                 return (
                   <div
                     key={driver.id}
-                    className={`rounded-lg border border-border hover:border-primary/30 transition-all flex overflow-hidden cursor-pointer ${statusRing} ${
+                    className={`rounded-lg border transition-all flex overflow-hidden cursor-pointer ${
+                      sStatus === 'ready'
+                        ? 'border-[hsl(152,60%,40%)]/40'
+                        : sStatus === 'searching'
+                        ? 'border-[hsl(45,93%,47%)]/50'
+                        : 'border-border hover:border-primary/30'
+                    } ${
                       activeLoad ? 'bg-[hsl(152,60%,40%)]/[0.03]' : 'bg-[hsl(25,95%,53%)]/[0.03]'
                     }`}
                     onClick={() => setSelectedDriverLoad({ driver, load: activeLoad || null, lastDelivered: lastDel ? { address: lastDel.address, date: lastDel.date } : undefined })}
@@ -881,28 +891,37 @@ const Tracking = () => {
                         ))}
                       </span>
                     </div>
-                    <div className="flex-1 min-w-0 p-3">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="p-1.5 rounded-full bg-[hsl(152,60%,40%)]/10">
-                        <User className="h-3.5 w-3.5 text-[hsl(152,60%,40%)]" />
+                    <div className="flex-1 min-w-0">
+                    {/* Franja de estado sólida en la línea del nombre/teléfono/acciones */}
+                    <div className={`flex items-center gap-2 px-3 py-2 ${
+                      sStatus === 'ready'
+                        ? 'bg-[hsl(152,60%,40%)]'
+                        : sStatus === 'searching'
+                        ? 'bg-[hsl(45,93%,47%)]'
+                        : ''
+                    }`}>
+                      <div className={`p-1.5 rounded-full ${sStatus ? 'bg-white/25' : 'bg-[hsl(152,60%,40%)]/10'}`}>
+                        <User className={`h-3.5 w-3.5 ${sStatus ? 'text-white' : 'text-[hsl(152,60%,40%)]'}`} />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold truncate">{driver.name}</p>
+                        <p className={`text-sm font-semibold truncate ${sStatus ? 'text-white' : ''}`}>{driver.name}</p>
                       </div>
                       {(() => {
                         const loc = driverLocations.find(dl => dl.driver_id === driver.id);
                         const isGpsActive = loc && (Date.now() - new Date(loc.updated_at).getTime()) < 5 * 60 * 1000;
                         return isGpsActive ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[hsl(152,60%,40%)]/15 text-[hsl(152,60%,40%)] text-[10px] font-semibold animate-pulse">
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold animate-pulse ${
+                            sStatus ? 'bg-white/25 text-white' : 'bg-[hsl(152,60%,40%)]/15 text-[hsl(152,60%,40%)]'
+                          }`}>
                             <Navigation className="h-3 w-3" />
                             GPS
                           </span>
                         ) : null;
                       })()}
                       {driver.phone && (
-                        <span className="text-xs text-muted-foreground whitespace-nowrap">{driver.phone}</span>
+                        <span className={`text-xs whitespace-nowrap ${sStatus ? 'text-white/90' : 'text-muted-foreground'}`}>{driver.phone}</span>
                       )}
-                      {/* Copy Info button — misma línea que el nombre del driver */}
+                      {/* Copy Info button */}
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -910,20 +929,22 @@ const Tracking = () => {
                           setCopiedInfoId(driver.id);
                           setTimeout(() => setCopiedInfoId(null), 1500);
                         }}
-                        className="shrink-0 px-2 py-1 rounded-md text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-green-600 transition-colors whitespace-nowrap flex items-center gap-1"
+                        className={`shrink-0 px-2 py-1 rounded-md text-xs font-semibold transition-colors whitespace-nowrap flex items-center gap-1 ${
+                          sStatus ? 'bg-white/20 hover:bg-white/30 text-white' : 'bg-gray-100 hover:bg-gray-200 text-green-600'
+                        }`}
                         title="Copy Driver Info"
                       >
                         {copiedInfoId === driver.id ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
                         Copy Info
                       </button>
-                      {/* Botón de estado de búsqueda: standby → searching → ready */}
+                      {/* Botón de estado: standby → searching → ready */}
                       <button
                         onClick={(e) => cycleSearchStatus(driver.id, e)}
                         className={`shrink-0 px-2 py-1 rounded-md text-[10px] font-bold transition-colors whitespace-nowrap flex items-center gap-1 ${
                           sStatus === 'ready'
-                            ? 'bg-[hsl(152,60%,40%)] text-white'
+                            ? 'bg-white text-[hsl(152,60%,35%)] hover:bg-white/90'
                             : sStatus === 'searching'
-                            ? 'bg-[hsl(45,93%,47%)] text-white'
+                            ? 'bg-white text-[hsl(38,92%,40%)] hover:bg-white/90'
                             : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                         }`}
                         title={sStatus === 'ready' ? 'Listo — click para quitar' : sStatus === 'searching' ? 'Buscando — click para marcar Listo' : 'Standby — click para marcar Buscando'}
@@ -933,7 +954,7 @@ const Tracking = () => {
                           : 'Standby'}
                       </button>
                     </div>
-                    <div className="space-y-1 text-xs text-muted-foreground">
+                    <div className="p-3 pt-2 space-y-1 text-xs text-muted-foreground">
                       {/* Manual location override */}
                       {(driver as any).manual_location_address && (
                         <div className="mt-1.5 pt-1.5 border-t">
