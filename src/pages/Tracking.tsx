@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useLoads, DbLoad } from '@/hooks/useLoads';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useTrucks } from '@/hooks/useTrucks';
@@ -443,8 +443,11 @@ const Tracking = () => {
 
   // Cargar el estado de búsqueda de HOY (compartido entre dispatchers del tenant).
   // Además pre-marca en 'searching' a los drivers que entregan hoy y aún no tienen estado.
+  // IMPORTANTE: solo corre cuando cambian los drivers, NO con cada update de loads/GPS
+  // (si dependiera de `loads`, se re-ejecutaría constantemente y pisaría cambios manuales).
+  const preMarkedRef = useRef(false);
   useEffect(() => {
-    if (!drivers.length) return;
+    if (!drivers.length || preMarkedRef.current) return;
     const today = new Date().toISOString().split('T')[0];
 
     (async () => {
@@ -458,7 +461,8 @@ const Tracking = () => {
       const map: Record<string, 'searching' | 'ready'> = {};
       ((data as any) || []).forEach((r: any) => { map[r.driver_id] = r.status; });
 
-      // Pre-marcar como 'searching' a los que entregan hoy y no tienen estado guardado
+      // Pre-marcar como 'searching' a los que entregan hoy y no tienen estado guardado.
+      // Leemos loads del closure una sola vez; no es dependencia del effect.
       const deliveringTodayIds = new Set(
         loads
           .filter(l => l.driver_id && l.delivery_date && isToday(parseISO(l.delivery_date)) && l.status !== 'cancelled')
@@ -470,8 +474,8 @@ const Tracking = () => {
       });
 
       setSearchStatus(map);
+      preMarkedRef.current = true;
 
-      // Persistir el pre-marcado para que sea consistente entre dispatchers
       if (toPreMark.length > 0) {
         const tenant_id = await getTenantId();
         const rows = toPreMark.map(driver_id => ({
@@ -480,7 +484,7 @@ const Tracking = () => {
         await supabase.from('daily_search_status' as any).upsert(rows, { onConflict: 'driver_id,search_date,tenant_id' });
       }
     })();
-  }, [drivers.length, loads, profile?.id]);
+  }, [drivers.length, profile?.id]);
 
   // Cicla el estado de un driver: standby → searching → ready → standby
   const cycleSearchStatus = async (driverId: string, e: React.MouseEvent) => {
@@ -815,8 +819,8 @@ const Tracking = () => {
               <div className="flex items-center gap-2">
                 {(searchingCount > 0 || readyCount > 0) && (
                   <div className="flex items-center gap-1.5 text-[10px] font-semibold">
-                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-[hsl(45,93%,47%)]/15 text-[hsl(38,92%,40%)]">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[hsl(45,93%,47%)]" />{searchingCount}
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-[hsl(22,90%,48%)]/15 text-[hsl(22,90%,42%)]">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[hsl(22,90%,48%)]" />{searchingCount}
                     </span>
                     <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-[hsl(152,60%,40%)]/15 text-[hsl(152,60%,35%)]">
                       <span className="w-1.5 h-1.5 rounded-full bg-[hsl(152,60%,40%)]" />{readyCount}
@@ -872,7 +876,7 @@ const Tracking = () => {
                       sStatus === 'ready'
                         ? 'border-[hsl(152,60%,40%)]/40'
                         : sStatus === 'searching'
-                        ? 'border-[hsl(45,93%,47%)]/50'
+                        ? 'border-[hsl(22,90%,48%)]/50'
                         : 'border-border hover:border-primary/30'
                     } ${
                       activeLoad ? 'bg-[hsl(152,60%,40%)]/[0.03]' : 'bg-[hsl(25,95%,53%)]/[0.03]'
@@ -897,7 +901,7 @@ const Tracking = () => {
                       sStatus === 'ready'
                         ? 'bg-[hsl(152,60%,40%)]'
                         : sStatus === 'searching'
-                        ? 'bg-[hsl(45,93%,47%)]'
+                        ? 'bg-[hsl(22,90%,48%)]'
                         : ''
                     }`}>
                       <div className={`p-1.5 rounded-full ${sStatus ? 'bg-white/25' : 'bg-[hsl(152,60%,40%)]/10'}`}>
@@ -944,7 +948,7 @@ const Tracking = () => {
                           sStatus === 'ready'
                             ? 'bg-white text-[hsl(152,60%,35%)] hover:bg-white/90'
                             : sStatus === 'searching'
-                            ? 'bg-white text-[hsl(38,92%,40%)] hover:bg-white/90'
+                            ? 'bg-white text-[hsl(22,90%,42%)] hover:bg-white/90'
                             : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                         }`}
                         title={sStatus === 'ready' ? 'Listo — click para quitar' : sStatus === 'searching' ? 'Buscando — click para marcar Listo' : 'Standby — click para marcar Buscando'}
