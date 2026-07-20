@@ -5,6 +5,7 @@ import { useTrucks } from '@/hooks/useTrucks';
 import { useDispatchers } from '@/hooks/useDispatchers';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { getTenantId } from '@/hooks/useTenantId';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -152,6 +153,11 @@ const Tracking = () => {
   const [copiedInfoId, setCopiedInfoId] = useState<string | null>(null);
   const [selectedDriverLoad, setSelectedDriverLoad] = useState<{ driver: typeof drivers[0]; load: LoadWithStops | null; lastDelivered?: { address: string; date: string } } | null>(null);
   const navigate = useNavigate();
+
+  // Estado de búsqueda diaria por driver: 'searching' | 'ready'.
+  // Si un driver no está en el map, está en 'standby' (default, no se guarda fila).
+  // Se comparte entre todos los dispatchers del tenant y se reinicia cada día (por search_date).
+  const [searchStatus, setSearchStatus] = useState<Record<string, 'searching' | 'ready'>>({});
 
   // Manual location dialog state
   const [editLocationDriver, setEditLocationDriver] = useState<string | null>(null);
@@ -425,6 +431,82 @@ const Tracking = () => {
         setLastDeliveryStops(result);
       });
   }, [availableDrivers, activeLoadByDriver]);
+
+  // Cargar el estado de búsqueda de HOY (compartido entre dispatchers del tenant).
+  // Además pre-marca en 'searching' a los drivers que entregan hoy y aún no tienen estado.
+  useEffect(() => {
+    if (!drivers.length) return;
+    const today = new Date().toISOString().split('T')[0];
+
+    (async () => {
+      const { data, error } = await supabase
+        .from('daily_search_status' as any)
+        .select('driver_id, status')
+        .eq('search_date', today);
+
+      if (error) { console.error('[Tracking] daily_search_status error:', error); return; }
+
+      const map: Record<string, 'searching' | 'ready'> = {};
+      ((data as any) || []).forEach((r: any) => { map[r.driver_id] = r.status; });
+
+      // Pre-marcar como 'searching' a los que entregan hoy y no tienen estado guardado
+      const deliveringTodayIds = new Set(
+        loads
+          .filter(l => l.driver_id && l.delivery_date && isToday(parseISO(l.delivery_date)) && l.status !== 'cancelled')
+          .map(l => l.driver_id as string)
+      );
+      const toPreMark: string[] = [];
+      deliveringTodayIds.forEach(id => {
+        if (!map[id]) { map[id] = 'searching'; toPreMark.push(id); }
+      });
+
+      setSearchStatus(map);
+
+      // Persistir el pre-marcado para que sea consistente entre dispatchers
+      if (toPreMark.length > 0) {
+        const tenant_id = await getTenantId();
+        const rows = toPreMark.map(driver_id => ({
+          driver_id, search_date: today, status: 'searching', tenant_id, updated_by: profile?.id ?? null,
+        }));
+        await supabase.from('daily_search_status' as any).upsert(rows, { onConflict: 'driver_id,search_date,tenant_id' });
+      }
+    })();
+  }, [drivers.length, loads, profile?.id]);
+
+  // Cicla el estado de un driver: standby → searching → ready → standby
+  const cycleSearchStatus = async (driverId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const current = searchStatus[driverId]; // undefined = standby
+    const next = current === undefined ? 'searching' : current === 'searching' ? 'ready' : undefined;
+
+    // Optimista
+    setSearchStatus(prev => {
+      const copy = { ...prev };
+      if (next === undefined) delete copy[driverId]; else copy[driverId] = next;
+      return copy;
+    });
+
+    const today = new Date().toISOString().split('T')[0];
+    const tenant_id = await getTenantId();
+
+    if (next === undefined) {
+      // standby = borrar la fila del día
+      await supabase.from('daily_search_status' as any)
+        .delete()
+        .eq('driver_id', driverId)
+        .eq('search_date', today)
+        .eq('tenant_id', tenant_id);
+    } else {
+      await supabase.from('daily_search_status' as any).upsert(
+        { driver_id: driverId, search_date: today, status: next, tenant_id, updated_by: profile?.id ?? null, updated_at: new Date().toISOString() },
+        { onConflict: 'driver_id,search_date,tenant_id' }
+      );
+    }
+  };
+
+  // Contadores para el header
+  const searchingCount = Object.values(searchStatus).filter(s => s === 'searching').length;
+  const readyCount = Object.values(searchStatus).filter(s => s === 'ready').length;
 
   // Filter loads — dispatchers only see loads of their assigned drivers
   const filteredLoads = useMemo(() => {
@@ -721,15 +803,27 @@ const Tracking = () => {
                 <Users className="h-4 w-4" />
                 NEXT PLAN ({availableDrivers.length})
               </CardTitle>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 text-xs gap-1"
-                onClick={handleExportNextPlan}
-              >
-                <Download className="h-3 w-3" />
-                Export
-              </Button>
+              <div className="flex items-center gap-2">
+                {(searchingCount > 0 || readyCount > 0) && (
+                  <div className="flex items-center gap-1.5 text-[10px] font-semibold">
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-[hsl(45,93%,47%)]/15 text-[hsl(38,92%,40%)]">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[hsl(45,93%,47%)]" />{searchingCount}
+                    </span>
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-[hsl(152,60%,40%)]/15 text-[hsl(152,60%,35%)]">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[hsl(152,60%,40%)]" />{readyCount}
+                    </span>
+                  </div>
+                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs gap-1"
+                  onClick={handleExportNextPlan}
+                >
+                  <Download className="h-3 w-3" />
+                  Export
+                </Button>
+              </div>
             </div>
             {!isDispatcher && (
               <Select value={dispatcherFilter} onValueChange={setDispatcherFilter}>
@@ -761,10 +855,16 @@ const Tracking = () => {
                   : lastDel
                   ? { address: lastDel.address, date: lastDel.date, isActive: false }
                   : null;
+                const sStatus = searchStatus[driver.id]; // undefined=standby | 'searching' | 'ready'
+                const statusRing = sStatus === 'ready'
+                  ? 'ring-2 ring-[hsl(152,60%,40%)]'
+                  : sStatus === 'searching'
+                  ? 'ring-2 ring-[hsl(45,93%,47%)]'
+                  : '';
                 return (
                   <div
                     key={driver.id}
-                    className={`rounded-lg border border-border hover:border-primary/30 transition-all flex overflow-hidden cursor-pointer ${
+                    className={`rounded-lg border border-border hover:border-primary/30 transition-all flex overflow-hidden cursor-pointer ${statusRing} ${
                       activeLoad ? 'bg-[hsl(152,60%,40%)]/[0.03]' : 'bg-[hsl(25,95%,53%)]/[0.03]'
                     }`}
                     onClick={() => setSelectedDriverLoad({ driver, load: activeLoad || null, lastDelivered: lastDel ? { address: lastDel.address, date: lastDel.date } : undefined })}
@@ -815,6 +915,22 @@ const Tracking = () => {
                       >
                         {copiedInfoId === driver.id ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
                         Copy Info
+                      </button>
+                      {/* Botón de estado de búsqueda: standby → searching → ready */}
+                      <button
+                        onClick={(e) => cycleSearchStatus(driver.id, e)}
+                        className={`shrink-0 px-2 py-1 rounded-md text-[10px] font-bold transition-colors whitespace-nowrap flex items-center gap-1 ${
+                          sStatus === 'ready'
+                            ? 'bg-[hsl(152,60%,40%)] text-white'
+                            : sStatus === 'searching'
+                            ? 'bg-[hsl(45,93%,47%)] text-white'
+                            : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                        }`}
+                        title={sStatus === 'ready' ? 'Listo — click para quitar' : sStatus === 'searching' ? 'Buscando — click para marcar Listo' : 'Standby — click para marcar Buscando'}
+                      >
+                        {sStatus === 'ready' ? <><Check className="h-3 w-3" /> Listo</>
+                          : sStatus === 'searching' ? <><Search className="h-3 w-3" /> Buscando</>
+                          : 'Standby'}
                       </button>
                     </div>
                     <div className="space-y-1 text-xs text-muted-foreground">
