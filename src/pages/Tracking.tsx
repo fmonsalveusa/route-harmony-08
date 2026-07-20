@@ -375,13 +375,16 @@ const Tracking = () => {
     if (driversWithoutActive.length === 0) { setLastDeliveryStops({}); return; }
     const driverIds = driversWithoutActive.map(d => d.id);
 
-    // Get last delivered load per driver
+    // Get last delivered load per driver.
+    // Desempate: cuando dos cargas comparten delivery_date (ej. dos entregas el mismo día),
+    // gana la de created_at más reciente — la registrada después es la última real.
     supabase
       .from('loads')
-      .select('id, driver_id, delivery_date, destination')
+      .select('id, driver_id, delivery_date, destination, created_at')
       .in('driver_id', driverIds)
       .eq('status', 'delivered')
-      .order('delivery_date', { ascending: false })
+      .order('delivery_date', { ascending: false, nullsFirst: false })
+      .order('created_at', { ascending: false })
       .then(async ({ data: deliveredLoads }) => {
         if (!deliveredLoads || deliveredLoads.length === 0) return;
 
