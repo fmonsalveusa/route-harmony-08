@@ -151,6 +151,14 @@ const Tracking = () => {
   const [lastDeliveryStops, setLastDeliveryStops] = useState<Record<string, { address: string; lat: number; lng: number; date: string }>>({});
   const [copiedDriverId, setCopiedDriverId] = useState<string | null>(null);
   const [copiedInfoId, setCopiedInfoId] = useState<string | null>(null);
+  // Para el check visual al copiar campos sueltos: guarda `${driverId}:${campo}`
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+  const copyField = (driverId: string, field: string, value: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(value);
+    setCopiedField(`${driverId}:${field}`);
+    setTimeout(() => setCopiedField(null), 1500);
+  };
   const [selectedDriverLoad, setSelectedDriverLoad] = useState<{ driver: typeof drivers[0]; load: LoadWithStops | null; lastDelivered?: { address: string; date: string } } | null>(null);
   const navigate = useNavigate();
 
@@ -920,7 +928,25 @@ const Tracking = () => {
                         <User className={`h-3.5 w-3.5 ${sStatus ? 'text-white' : 'text-[hsl(152,60%,40%)]'}`} />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className={`text-sm font-semibold truncate ${sStatus ? 'text-white' : ''}`}>{driver.name}</p>
+                        <div className="flex items-center gap-1.5">
+                          <p className={`text-sm font-semibold truncate ${sStatus ? 'text-white' : ''}`}>{driver.name}</p>
+                          {/* Copiar nombre */}
+                          <button
+                            onClick={(e) => copyField(driver.id, 'name', driver.name, e)}
+                            className={`shrink-0 p-0.5 rounded transition-colors ${sStatus ? 'text-white/70 hover:text-white hover:bg-white/20' : 'text-muted-foreground hover:text-foreground hover:bg-gray-100'}`}
+                            title="Copiar Nombre"
+                          >
+                            {copiedField === `${driver.id}:name` ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                          </button>
+                        </div>
+                        {(() => {
+                          const truck = trucks.find(t => t.id === driver.truck_id);
+                          return truck?.unit_number ? (
+                            <p className={`text-[11px] leading-tight ${sStatus ? 'text-white/80' : 'text-muted-foreground'}`}>
+                              Unit #{truck.unit_number}
+                            </p>
+                          ) : null;
+                        })()}
                       </div>
                       {(() => {
                         const loc = driverLocations.find(dl => dl.driver_id === driver.id);
@@ -935,7 +961,17 @@ const Tracking = () => {
                         ) : null;
                       })()}
                       {driver.phone && (
-                        <span className={`text-xs whitespace-nowrap ${sStatus ? 'text-white/90' : 'text-muted-foreground'}`}>{driver.phone}</span>
+                        <div className="flex items-center gap-1">
+                          <span className={`text-xs whitespace-nowrap ${sStatus ? 'text-white/90' : 'text-muted-foreground'}`}>{driver.phone}</span>
+                          {/* Copiar teléfono */}
+                          <button
+                            onClick={(e) => copyField(driver.id, 'phone', driver.phone!, e)}
+                            className={`shrink-0 p-0.5 rounded transition-colors ${sStatus ? 'text-white/70 hover:text-white hover:bg-white/20' : 'text-muted-foreground hover:text-foreground hover:bg-gray-100'}`}
+                            title="Copiar Teléfono"
+                          >
+                            {copiedField === `${driver.id}:phone` ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                          </button>
+                        </div>
                       )}
                       {/* Copy Info button */}
                       <button
