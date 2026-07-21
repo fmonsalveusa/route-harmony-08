@@ -304,6 +304,18 @@ const Tracking = () => {
     return [...availableDrivers].sort((a, b) => rank(a.id) - rank(b.id));
   }, [availableDrivers, searchStatus]);
 
+  // IDs de drivers visibles según el filtro de dispatcher del dropdown (Next Plan),
+  // combinado con el scope del rol. Se usa para sincronizar mapa, timeline y stats
+  // con el mismo filtro que Next Plan.
+  // - Si tu rol ya te limita (userDispatcherId), ese scope manda.
+  // - Si eres admin y eliges un dispatcher en el dropdown, filtra por ese.
+  // - 'all' = sin filtro extra.
+  const scopedDriverIds = useMemo(() => {
+    const effective = userDispatcherId ?? (dispatcherFilter !== 'all' ? dispatcherFilter : null);
+    if (!effective) return null; // null = ver todos
+    return new Set(drivers.filter(d => d.dispatcher_id === effective).map(d => d.id));
+  }, [userDispatcherId, dispatcherFilter, drivers]);
+
   // Para cada driver, la carga activa cuya delivery_date (o pickup_date si no hay) es la mas reciente/lejana
   const activeLoadByDriver = useMemo(() => {
     const map: Record<string, LoadWithStops> = {};
@@ -521,11 +533,11 @@ const Tracking = () => {
   const searchingCount = Object.values(searchStatus).filter(s => s === 'searching').length;
   const readyCount = Object.values(searchStatus).filter(s => s === 'ready').length;
 
-  // Filter loads — dispatchers only see loads of their assigned drivers
+  // Filter loads — respeta el scope de rol y el filtro de dispatcher del dropdown
   const filteredLoads = useMemo(() => {
     return enrichedLoads.filter(l => {
-      // Dispatcher isolation: only show loads from their drivers
-      if (dispatcherDriverIds && (!l.driver_id || !dispatcherDriverIds.has(l.driver_id))) return false;
+      // Scope por dispatcher (rol o dropdown): solo cargas de esos drivers
+      if (scopedDriverIds && (!l.driver_id || !scopedDriverIds.has(l.driver_id))) return false;
       if (statusFilter !== 'all' && l.status !== statusFilter) return false;
       if (search) {
         const term = search.toLowerCase();
@@ -536,16 +548,16 @@ const Tracking = () => {
       }
       return true;
     });
-  }, [enrichedLoads, statusFilter, search, drivers, trucks, dispatcherDriverIds]);
+  }, [enrichedLoads, statusFilter, search, drivers, trucks, scopedDriverIds]);
 
   const selectedLoad = enrichedLoads.find(l => l.id === selectedLoadId);
 
-  // Stats — filtered by dispatcher scope when applicable
-  const scopedActiveLoads = dispatcherDriverIds
-    ? activeLoads.filter(l => l.driver_id && dispatcherDriverIds.has(l.driver_id))
+  // Stats — filtered by dispatcher scope (rol o dropdown)
+  const scopedActiveLoads = scopedDriverIds
+    ? activeLoads.filter(l => l.driver_id && scopedDriverIds.has(l.driver_id))
     : activeLoads;
-  const scopedAllLoads = dispatcherDriverIds
-    ? loads.filter(l => l.driver_id && dispatcherDriverIds.has(l.driver_id))
+  const scopedAllLoads = scopedDriverIds
+    ? loads.filter(l => l.driver_id && scopedDriverIds.has(l.driver_id))
     : loads;
   const inTransitCount = scopedActiveLoads.filter(l => l.status === 'in_transit').length;
   const dispatchedCount = scopedActiveLoads.filter(l => l.status === 'dispatched').length;
@@ -1137,9 +1149,9 @@ const Tracking = () => {
                   </div>
                 );
               })}
-              {/* Driver live location markers — filtered by dispatcher scope */}
+              {/* Driver live location markers — filtered by dispatcher scope (rol o dropdown) */}
               {driverLocations
-                .filter(loc => !dispatcherDriverIds || dispatcherDriverIds.has(loc.driver_id))
+                .filter(loc => !scopedDriverIds || scopedDriverIds.has(loc.driver_id))
                 .map(loc => {
                 const driver = drivers.find(d => d.id === loc.driver_id);
                 if (!driver) return null;
@@ -1190,7 +1202,7 @@ const Tracking = () => {
         <div className="lg:col-span-3 lg:col-start-2">
           <DriversTimelineCard
             loads={scopedAllLoads}
-            drivers={dispatcherDriverIds ? drivers.filter(d => dispatcherDriverIds.has(d.id)) : drivers}
+            drivers={scopedDriverIds ? drivers.filter(d => scopedDriverIds.has(d.id)) : drivers}
             trucks={trucks}
           />
         </div>
