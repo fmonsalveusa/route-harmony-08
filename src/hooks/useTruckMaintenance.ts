@@ -231,12 +231,14 @@ export function useTruckMaintenance() {
       // (no espera a que se entregue) e incluye cualquier estado activo o entregado.
       // La carga que estaba en curso al momento del servicio (pickup anterior) se ignora:
       // el corte lo define el odómetro manual (last_miles) al registrar el servicio.
+      // Usamos >= para que una carga recogida el MISMO día del servicio cuente
+      // (caso normal: cambio de aceite en la mañana, luego se sale con carga).
       const { data, error } = await supabase
         .from('loads' as any)
         .select('miles, empty_miles, pickup_date')
         .eq('truck_id', truckId)
         .neq('status', 'cancelled')
-        .gt('pickup_date', item.last_performed_at);
+        .gte('pickup_date', item.last_performed_at);
 
       if (error) { console.error(error); continue; }
 
