@@ -177,22 +177,33 @@ export default function DriverLoadDetail() {
             onClick={async (e) => {
               e.stopPropagation();
               try {
-                let url = load.pdf_url;
-                // Only generate signed URL if it's a relative storage path (not already a full URL)
-                if (!url.startsWith('http://') && !url.startsWith('https://')) {
-                  const path = url.includes('driver-documents/') 
-                    ? url.split('driver-documents/')[1] 
-                    : url;
-                  const { data, error } = await supabase.storage.from('driver-documents').createSignedUrl(path, 3600);
-                  if (error || !data?.signedUrl) {
-                    toast({ title: 'Could not open document', variant: 'destructive' });
-                    return;
-                  }
-                  url = data.signedUrl;
+                // Siempre regeneramos un signed URL fresco desde la RUTA del archivo.
+                // Aunque pdf_url venga como URL completa vieja (con token expirado),
+                // extraemos la ruta interna y creamos un link nuevo — así nunca expira
+                // "el guardado", siempre se genera al momento de abrir.
+                let path = load.pdf_url;
+
+                // Si es una URL completa (formato viejo), sacar solo la ruta del bucket
+                if (path.includes('/object/sign/driver-documents/')) {
+                  path = path.split('/object/sign/driver-documents/')[1].split('?')[0];
+                } else if (path.includes('driver-documents/')) {
+                  path = path.split('driver-documents/')[1];
                 }
-                // Use anchor element to avoid popup blockers on iOS WKWebView
+                // Decodificar %20 y demás (nombres con espacios)
+                try { path = decodeURIComponent(path); } catch { /* ya estaba decodificado */ }
+
+                const { data, error } = await supabase.storage
+                  .from('driver-documents')
+                  .createSignedUrl(path, 3600);
+
+                if (error || !data?.signedUrl) {
+                  toast({ title: 'Could not open document', variant: 'destructive' });
+                  return;
+                }
+
+                // Anchor para evitar bloqueo de popups en iOS WKWebView
                 const a = document.createElement('a');
-                a.href = url;
+                a.href = data.signedUrl;
                 a.target = '_blank';
                 a.rel = 'noopener noreferrer';
                 document.body.appendChild(a);
