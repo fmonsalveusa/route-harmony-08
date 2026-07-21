@@ -55,20 +55,26 @@ const emptyForm: LoadFormData = {
   miles: 0, notes: '',
 };
 
-/** Extrae el path del bucket desde una URL firmada de Supabase y genera una nueva URL válida */
+/** Genera un signed URL válido a partir de una ruta relativa o de una URL firmada vieja */
 async function refreshSignedUrl(url: string): Promise<string> {
   if (!url) return url;
-  // Extraer el path relativo al bucket driver-documents
+  let storagePath = url;
+
+  // Caso 1: URL completa vieja → extraer la ruta interna
   const match = url.match(/\/storage\/v1\/object\/sign\/driver-documents\/([^?]+)/);
   if (match?.[1]) {
-    let storagePath = match[1];
-    try { storagePath = decodeURIComponent(storagePath); } catch {}
-    const { data, error } = await supabase.storage
-      .from('driver-documents')
-      .createSignedUrl(storagePath, 3600); // 1 hora para preview
-    if (!error && data?.signedUrl) return data.signedUrl;
+    storagePath = match[1];
+  } else if (url.startsWith('http')) {
+    return url; // URL externa que no es de nuestro bucket; devolver tal cual
   }
-  return url; // Si no se pudo refrescar, devuelve la URL original
+  // Caso 2: ya es una ruta relativa → se usa directo
+
+  try { storagePath = decodeURIComponent(storagePath); } catch {}
+  const { data, error } = await supabase.storage
+    .from('driver-documents')
+    .createSignedUrl(storagePath, 3600); // 1 hora para preview
+  if (!error && data?.signedUrl) return data.signedUrl;
+  return url;
 }
 
 export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatcherId }: LoadFormDialogProps) => {
@@ -504,9 +510,11 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
     const pickupDate = pickups[0]?.date || formData.pickupDate;
     const deliveryDate = deliveries[deliveries.length - 1]?.date || formData.deliveryDate;
 
-    let pdfUrl: string | undefined = uploadedPdfSignedUrl || editLoad?.pdf_url || undefined;
+    // pdf_url debe guardar la RUTA relativa del archivo (no un signed URL),
+    // porque los signed URLs expiran. El visor regenera el link al abrir.
+    let pdfUrl: string | undefined = uploadedPdfPath || editLoad?.pdf_url || undefined;
 
-    if (pdfFile && !uploadedPdfSignedUrl) {
+    if (pdfFile && !uploadedPdfPath) {
       const fileName = `loads/${Date.now()}_${pdfFile.name}`;
       const { error: uploadError } = await supabase.storage
         .from('driver-documents')
@@ -514,9 +522,13 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       if (uploadError) {
         toast({ title: 'Error', description: 'Failed to upload PDF', variant: 'destructive' });
       } else {
-        const { data: urlData } = await supabase.storage.from('driver-documents').createSignedUrl(fileName, 31536000);
-        pdfUrl = urlData?.signedUrl || undefined;
+        pdfUrl = fileName; // guardamos la ruta, no el signed URL
       }
+    }
+
+    // Si pdf_url viejo venía como URL completa (formato antiguo), extraer la ruta
+    if (pdfUrl && pdfUrl.includes('/object/sign/driver-documents/')) {
+      pdfUrl = decodeURIComponent(pdfUrl.split('/object/sign/driver-documents/')[1].split('?')[0]);
     }
 
     const payload: CreateLoadInput & { status?: string } = {
@@ -553,10 +565,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
           .from('driver-documents')
           .upload(rcStoragePath, rcOriginalFile, { contentType: 'application/pdf' });
         if (!rcUploadError) {
-          const { data: rcUrlData } = await supabase.storage
-            .from('driver-documents')
-            .createSignedUrl(rcStoragePath, 60 * 60 * 24 * 365);
-          rcOriginalUrl = rcUrlData?.signedUrl || null;
+          rcOriginalUrl = rcStoragePath; // ruta relativa, no signed URL (que expira)
         } else {
           console.error('RC Original upload error:', rcUploadError);
         }

@@ -100,17 +100,21 @@ export default function InvestorLoads() {
     if (!url) return;
     setLoadingPdf(loadId);
     try {
-      // Si es una ruta de storage, generar URL firmada
-      if (!url.startsWith('http')) {
-        const { data } = await supabase.storage
-          .from('driver-documents')
-          .createSignedUrl(url, 3600);
-        if (data?.signedUrl) {
-          window.open(data.signedUrl, '_blank', 'noopener');
-          return;
-        }
+      // Siempre regeneramos el signed URL desde la ruta (los guardados expiran)
+      let path = url;
+      if (path.includes('/object/sign/driver-documents/')) {
+        path = path.split('/object/sign/driver-documents/')[1].split('?')[0];
+      } else if (path.includes('driver-documents/')) {
+        path = path.split('driver-documents/')[1];
       }
-      window.open(url, '_blank', 'noopener');
+      try { path = decodeURIComponent(path); } catch { /* ya decodificado */ }
+
+      const { data } = await supabase.storage
+        .from('driver-documents')
+        .createSignedUrl(path, 3600);
+      if (data?.signedUrl) {
+        window.open(data.signedUrl, '_blank', 'noopener');
+      }
     } catch (e) {
       console.error('Error opening PDF:', e);
     } finally {

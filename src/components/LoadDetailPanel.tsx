@@ -580,19 +580,23 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
 
   const resolveDriverDocsUrl = async (url: string): Promise<string> => {
     if (!url) return '';
+    let storagePath = url;
 
+    // URL completa vieja → extraer la ruta interna
     const match = url.match(/\/storage\/v1\/object\/sign\/driver-documents\/([^?]+)/);
     if (match?.[1]) {
-      let storagePath = match[1];
-      try { storagePath = decodeURIComponent(storagePath); } catch {}
-
-      const { data, error } = await supabase.storage
-        .from('driver-documents')
-        .createSignedUrl(storagePath, 3600);
-
-      if (!error && data?.signedUrl) return data.signedUrl;
+      storagePath = match[1];
+    } else if (url.startsWith('http')) {
+      return url; // URL externa que no es de nuestro bucket
     }
+    // Si no era URL completa, ya es una ruta relativa → se usa directo
 
+    try { storagePath = decodeURIComponent(storagePath); } catch {}
+    const { data, error } = await supabase.storage
+      .from('driver-documents')
+      .createSignedUrl(storagePath, 3600);
+
+    if (!error && data?.signedUrl) return data.signedUrl;
     return url;
   };
 
