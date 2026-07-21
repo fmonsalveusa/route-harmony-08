@@ -973,7 +973,9 @@ const Tracking = () => {
                           </button>
                         </div>
                       )}
-                      {/* Copy Info button */}
+                    </div>
+                    {/* Línea 2: acciones — Copy Info a la izquierda, estado a la derecha */}
+                    <div className="flex items-center justify-between px-3 py-1.5">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -981,22 +983,19 @@ const Tracking = () => {
                           setCopiedInfoId(driver.id);
                           setTimeout(() => setCopiedInfoId(null), 1500);
                         }}
-                        className={`shrink-0 px-2 py-1 rounded-md text-xs font-semibold transition-colors whitespace-nowrap flex items-center gap-1 ${
-                          sStatus ? 'bg-white/20 hover:bg-white/30 text-white' : 'bg-gray-100 hover:bg-gray-200 text-green-600'
-                        }`}
+                        className="shrink-0 px-2 py-1 rounded-md text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-green-600 transition-colors whitespace-nowrap flex items-center gap-1"
                         title="Copy Driver Info"
                       >
                         {copiedInfoId === driver.id ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
                         Copy Info
                       </button>
-                      {/* Botón de estado: standby → searching → ready */}
                       <button
                         onClick={(e) => cycleSearchStatus(driver.id, e)}
                         className={`shrink-0 px-2 py-1 rounded-md text-[10px] font-bold transition-colors whitespace-nowrap flex items-center gap-1 ${
                           sStatus === 'ready'
-                            ? 'bg-white text-[hsl(152,60%,35%)] hover:bg-white/90'
+                            ? 'bg-[hsl(152,60%,40%)] text-white hover:bg-[hsl(152,60%,35%)]'
                             : sStatus === 'searching'
-                            ? 'bg-white text-[hsl(22,90%,42%)] hover:bg-white/90'
+                            ? 'bg-[hsl(22,90%,48%)] text-white hover:bg-[hsl(22,90%,42%)]'
                             : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                         }`}
                         title={sStatus === 'ready' ? 'Listo — click para quitar' : sStatus === 'searching' ? 'Buscando — click para marcar Listo' : 'Standby — click para marcar Buscando'}
