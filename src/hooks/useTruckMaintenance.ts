@@ -3,7 +3,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { getTenantId } from '@/hooks/useTenantId';
-import { MAPBOX_TOKEN } from '@/lib/mapConfig';
 
 export interface DbTruckMaintenance {
   id: string;
@@ -227,18 +226,17 @@ export function useTruckMaintenance() {
     if (!items.length) return;
 
     for (const item of items) {
-      // Sumar millas de cargas COMPLETADAS entregadas DESPUÉS del último servicio.
-      // BUG anterior: filtraba por updated_at (cuándo se tocó el registro), no por
-      // cuándo se recorrieron las millas. Un load viejo re-editado se colaba y
-      // duplicaba millas ya contadas → status DUE falso. Usamos delivery_date,
-      // que es cuándo realmente ocurrió el viaje, y > (estrictamente después)
-      // para no re-contar el propio día del servicio.
+      // Acumulado = millas (cargadas + vacías) de TODAS las cargas asignadas al camión
+      // cuyo pickup ocurrió DESPUÉS del último servicio. Cuenta apenas se asigna la carga
+      // (no espera a que se entregue) e incluye cualquier estado activo o entregado.
+      // La carga que estaba en curso al momento del servicio (pickup anterior) se ignora:
+      // el corte lo define el odómetro manual (last_miles) al registrar el servicio.
       const { data, error } = await supabase
         .from('loads' as any)
-        .select('miles, empty_miles, delivery_date')
+        .select('miles, empty_miles, pickup_date')
         .eq('truck_id', truckId)
-        .in('status', ['delivered', 'paid'])
-        .gt('delivery_date', item.last_performed_at);
+        .neq('status', 'cancelled')
+        .gt('pickup_date', item.last_performed_at);
 
       if (error) { console.error(error); continue; }
 
@@ -246,9 +244,9 @@ export function useTruckMaintenance() {
         return sum + (Number(l.miles) || 0) + (Number(l.empty_miles) || 0);
       }, 0);
 
-      // miles_accumulated = millas acreditadas al hacer el servicio + millas de cargas completadas después
-      const miles_carried_forward = (item as any).miles_carried_forward || 0;
-      const miles_accumulated = miles_carried_forward + milesFromLoads;
+      // El acumulado es directamente las millas rodadas desde el servicio.
+      // Ya no usamos miles_carried_forward (lógica de geocoding eliminada).
+      const miles_accumulated = milesFromLoads;
 
       // Calcular status por millas
       let milesStatus = 'ok';
@@ -315,65 +313,6 @@ export function useTruckMaintenance() {
       ? new Date(new Date(input.last_performed_at).getTime() + item.interval_days * 86400000).toISOString().split('T')[0]
       : null;
 
-    // Calcular miles_carried_forward si hay ubicacion del servicio
-    let miles_carried_forward = 0;
-
-    if (input.service_lat && input.service_lng) {
-      // Buscar si hay carga activa para este camion
-      const { data: activeLoad } = await supabase
-        .from('loads' as any)
-        .select('id, miles, empty_miles, origin, destination')
-        .eq('truck_id', item.truck_id)
-        .in('status', ['in_transit', 'picked_up', 'on_site_pickup', 'on_site_delivery'])
-        .order('pickup_date', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (activeLoad && (activeLoad as any)?.destination) {
-        try {
-          // Geocodificar el destino de la carga activa
-          const destAddress = (activeLoad as any).destination;
-          const geocodeRes = await fetch(
-            `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(destAddress)}.json?access_token=${MAPBOX_TOKEN}&country=us&types=address,place&limit=1`
-          );
-          const geocodeData = await geocodeRes.json();
-          const destCoords = geocodeData.features?.[0]?.center; // [lng, lat]
-
-          if (destCoords) {
-            const coordsFrom = `${input.service_lng},${input.service_lat}`;
-            const coordsTo = `${destCoords[0]},${destCoords[1]}`;
-            const dirRes = await fetch(
-              `https://api.mapbox.com/directions/v5/mapbox/driving/${coordsFrom};${coordsTo}?access_token=${MAPBOX_TOKEN}&geometries=geojson`
-            );
-            const dirData = await dirRes.json();
-            if (dirData?.routes?.[0]?.distance) {
-              miles_carried_forward = Math.round(dirData.routes[0].distance * 0.000621371);
-              console.log(`[logNewService] miles_carried_forward calculado: ${miles_carried_forward} mi`);
-            }
-          }
-        } catch (e) {
-          console.warn('[logNewService] Error calculando miles_carried_forward:', e);
-        }
-      } else if (!activeLoad) {
-        // Camion vacio — calcular millas desde ultimo delivery hasta ubicacion del servicio
-        const { data: lastLoad } = await supabase
-          .from('loads' as any)
-          .select('destination')
-          .eq('truck_id', item.truck_id)
-          .in('status', ['delivered', 'paid'])
-          .order('updated_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        if (lastLoad && (lastLoad as any)?.destination) {
-          // Estas millas ya deberían estar contadas en el acumulado, no se agregan al siguiente log
-          miles_carried_forward = 0;
-        }
-      }
-    }
-
-    console.log(`[logNewService] miles_carried_forward: ${miles_carried_forward}`);
-
     let expense_id: string | null = null;
     if (input.create_expense !== false && input.cost && input.cost > 0) {
       const tenant_id = await getTenantId();
@@ -426,8 +365,7 @@ export function useTruckMaintenance() {
         last_miles: input.last_miles,
         next_due_miles,
         next_due_date,
-        miles_accumulated: miles_carried_forward, // Inicia con las millas acreditadas del tramo posterior
-        miles_carried_forward,
+        miles_accumulated: 0, // El servicio corta el contador: arranca desde 0 (odómetro = last_miles)
         status: 'ok',
         cost: input.cost || null,
         vendor: input.vendor || null,
