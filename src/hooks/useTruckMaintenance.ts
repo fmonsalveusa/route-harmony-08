@@ -227,13 +227,18 @@ export function useTruckMaintenance() {
     if (!items.length) return;
 
     for (const item of items) {
-      // Sumar millas de cargas COMPLETADAS después del último servicio
+      // Sumar millas de cargas COMPLETADAS entregadas DESPUÉS del último servicio.
+      // BUG anterior: filtraba por updated_at (cuándo se tocó el registro), no por
+      // cuándo se recorrieron las millas. Un load viejo re-editado se colaba y
+      // duplicaba millas ya contadas → status DUE falso. Usamos delivery_date,
+      // que es cuándo realmente ocurrió el viaje, y > (estrictamente después)
+      // para no re-contar el propio día del servicio.
       const { data, error } = await supabase
         .from('loads' as any)
-        .select('miles, empty_miles, updated_at')
+        .select('miles, empty_miles, delivery_date')
         .eq('truck_id', truckId)
         .in('status', ['delivered', 'paid'])
-        .gte('updated_at', item.last_performed_at);
+        .gt('delivery_date', item.last_performed_at);
 
       if (error) { console.error(error); continue; }
 
