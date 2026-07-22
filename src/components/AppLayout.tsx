@@ -5,7 +5,7 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Truck, Users, Package, MapPin, FileText,
   LogOut, DollarSign, UserCog,
-  Headphones, Menu, Building2, Plus, Receipt, Trophy, Wrench, X, FileSignature, MoreHorizontal, ChevronLeft, ChevronRight, Landmark } from
+  Headphones, Menu, Building2, Plus, Receipt, Trophy, Wrench, X, FileSignature, MoreHorizontal, ChevronLeft, ChevronRight, Landmark, Radio } from
 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -58,6 +58,7 @@ const moreItems: NavItem[] = [
 const adminItems: NavItem[] = [
   { label: 'Companies', icon: Building2, path: '/companies', permission: 'companies' },
   { label: 'Users', icon: UserCog, path: '/users', permission: 'users' },
+  { label: 'ELD Accounts', icon: Radio, path: '/eld-accounts', permission: 'fleet', adminAndAccountingOnly: true },
 ];
 
 const allNavItems: NavItem[] = [
