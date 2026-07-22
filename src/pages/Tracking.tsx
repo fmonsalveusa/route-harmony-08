@@ -1,10 +1,11 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useLoads, DbLoad } from '@/hooks/useLoads';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useTrucks } from '@/hooks/useTrucks';
 import { useDispatchers } from '@/hooks/useDispatchers';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { getTenantId } from '@/hooks/useTenantId';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -137,13 +138,34 @@ const Tracking = () => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [dispatcherFilter, setDispatcherFilter] = useState<string>('all');
+
+  // Default dispatcher filter para fmonsalve.usa@gmail.com → Francisco Monsalve
+  useEffect(() => {
+    if (profile?.email?.toLowerCase() === 'fmonsalve.usa@gmail.com' && dispatchers.length > 0) {
+      const francisco = dispatchers.find(d => d.name?.toLowerCase().includes('francisco monsalve'));
+      if (francisco) setDispatcherFilter(francisco.id);
+    }
+  }, [profile?.email, dispatchers]);
   const [mapCenter, setMapCenter] = useState<[number, number]>([39.8283, -98.5795]);
   const [mapZoom, setMapZoom] = useState(4);
   const [lastDeliveryStops, setLastDeliveryStops] = useState<Record<string, { address: string; lat: number; lng: number; date: string }>>({});
   const [copiedDriverId, setCopiedDriverId] = useState<string | null>(null);
   const [copiedInfoId, setCopiedInfoId] = useState<string | null>(null);
+  // Para el check visual al copiar campos sueltos: guarda `${driverId}:${campo}`
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+  const copyField = (driverId: string, field: string, value: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(value);
+    setCopiedField(`${driverId}:${field}`);
+    setTimeout(() => setCopiedField(null), 1500);
+  };
   const [selectedDriverLoad, setSelectedDriverLoad] = useState<{ driver: typeof drivers[0]; load: LoadWithStops | null; lastDelivered?: { address: string; date: string } } | null>(null);
   const navigate = useNavigate();
+
+  // Estado de búsqueda diaria por driver: 'searching' | 'ready'.
+  // Si un driver no está en el map, está en 'standby' (default, no se guarda fila).
+  // Se comparte entre todos los dispatchers del tenant y se reinicia cada día (por search_date).
+  const [searchStatus, setSearchStatus] = useState<Record<string, 'searching' | 'ready'>>({});
 
   // Manual location dialog state
   const [editLocationDriver, setEditLocationDriver] = useState<string | null>(null);
@@ -281,6 +303,27 @@ const Tracking = () => {
       .filter(d => effectiveDispatcherFilter === 'all' || d.dispatcher_id === effectiveDispatcherFilter);
   }, [drivers, dispatcherFilter, userDispatcherId]);
 
+  // Orden visual por estado: Buscando (0) → Listo (1) → Standby (2)
+  const sortedDrivers = useMemo(() => {
+    const rank = (id: string) => {
+      const s = searchStatus[id];
+      return s === 'searching' ? 0 : s === 'ready' ? 1 : 2;
+    };
+    return [...availableDrivers].sort((a, b) => rank(a.id) - rank(b.id));
+  }, [availableDrivers, searchStatus]);
+
+  // IDs de drivers visibles según el filtro de dispatcher del dropdown (Next Plan),
+  // combinado con el scope del rol. Se usa para sincronizar mapa, timeline y stats
+  // con el mismo filtro que Next Plan.
+  // - Si tu rol ya te limita (userDispatcherId), ese scope manda.
+  // - Si eres admin y eliges un dispatcher en el dropdown, filtra por ese.
+  // - 'all' = sin filtro extra.
+  const scopedDriverIds = useMemo(() => {
+    const effective = userDispatcherId ?? (dispatcherFilter !== 'all' ? dispatcherFilter : null);
+    if (!effective) return null; // null = ver todos
+    return new Set(drivers.filter(d => d.dispatcher_id === effective).map(d => d.id));
+  }, [userDispatcherId, dispatcherFilter, drivers]);
+
   // Para cada driver, la carga activa cuya delivery_date (o pickup_date si no hay) es la mas reciente/lejana
   const activeLoadByDriver = useMemo(() => {
     const map: Record<string, LoadWithStops> = {};
@@ -367,13 +410,16 @@ const Tracking = () => {
     if (driversWithoutActive.length === 0) { setLastDeliveryStops({}); return; }
     const driverIds = driversWithoutActive.map(d => d.id);
 
-    // Get last delivered load per driver
+    // Get last delivered load per driver.
+    // Desempate: cuando dos cargas comparten delivery_date (ej. dos entregas el mismo día),
+    // gana la de created_at más reciente — la registrada después es la última real.
     supabase
       .from('loads')
-      .select('id, driver_id, delivery_date, destination')
+      .select('id, driver_id, delivery_date, destination, created_at')
       .in('driver_id', driverIds)
       .eq('status', 'delivered')
-      .order('delivery_date', { ascending: false })
+      .order('delivery_date', { ascending: false, nullsFirst: false })
+      .order('created_at', { ascending: false })
       .then(async ({ data: deliveredLoads }) => {
         if (!deliveredLoads || deliveredLoads.length === 0) return;
 
@@ -415,11 +461,91 @@ const Tracking = () => {
       });
   }, [availableDrivers, activeLoadByDriver]);
 
-  // Filter loads — dispatchers only see loads of their assigned drivers
+  // Cargar el estado de búsqueda de HOY (compartido entre dispatchers del tenant).
+  // Además pre-marca en 'searching' a los drivers que entregan hoy y aún no tienen estado.
+  // IMPORTANTE: solo corre cuando cambian los drivers, NO con cada update de loads/GPS
+  // (si dependiera de `loads`, se re-ejecutaría constantemente y pisaría cambios manuales).
+  const preMarkedRef = useRef(false);
+  useEffect(() => {
+    if (!drivers.length || preMarkedRef.current) return;
+    const today = new Date().toISOString().split('T')[0];
+
+    (async () => {
+      const { data, error } = await supabase
+        .from('daily_search_status' as any)
+        .select('driver_id, status')
+        .eq('search_date', today);
+
+      if (error) { console.error('[Tracking] daily_search_status error:', error); return; }
+
+      const map: Record<string, 'searching' | 'ready'> = {};
+      ((data as any) || []).forEach((r: any) => { map[r.driver_id] = r.status; });
+
+      // Pre-marcar como 'searching' a los que entregan hoy y no tienen estado guardado.
+      // Leemos loads del closure una sola vez; no es dependencia del effect.
+      const deliveringTodayIds = new Set(
+        loads
+          .filter(l => l.driver_id && l.delivery_date && isToday(parseISO(l.delivery_date)) && l.status !== 'cancelled')
+          .map(l => l.driver_id as string)
+      );
+      const toPreMark: string[] = [];
+      deliveringTodayIds.forEach(id => {
+        if (!map[id]) { map[id] = 'searching'; toPreMark.push(id); }
+      });
+
+      setSearchStatus(map);
+      preMarkedRef.current = true;
+
+      if (toPreMark.length > 0) {
+        const tenant_id = await getTenantId();
+        const rows = toPreMark.map(driver_id => ({
+          driver_id, search_date: today, status: 'searching', tenant_id, updated_by: profile?.id ?? null,
+        }));
+        await supabase.from('daily_search_status' as any).upsert(rows, { onConflict: 'driver_id,search_date,tenant_id' });
+      }
+    })();
+  }, [drivers.length, profile?.id]);
+
+  // Cicla el estado de un driver: standby → searching → ready → standby
+  const cycleSearchStatus = async (driverId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const current = searchStatus[driverId]; // undefined = standby
+    const next = current === undefined ? 'searching' : current === 'searching' ? 'ready' : undefined;
+
+    // Optimista
+    setSearchStatus(prev => {
+      const copy = { ...prev };
+      if (next === undefined) delete copy[driverId]; else copy[driverId] = next;
+      return copy;
+    });
+
+    const today = new Date().toISOString().split('T')[0];
+    const tenant_id = await getTenantId();
+
+    if (next === undefined) {
+      // standby = borrar la fila del día
+      await supabase.from('daily_search_status' as any)
+        .delete()
+        .eq('driver_id', driverId)
+        .eq('search_date', today)
+        .eq('tenant_id', tenant_id);
+    } else {
+      await supabase.from('daily_search_status' as any).upsert(
+        { driver_id: driverId, search_date: today, status: next, tenant_id, updated_by: profile?.id ?? null, updated_at: new Date().toISOString() },
+        { onConflict: 'driver_id,search_date,tenant_id' }
+      );
+    }
+  };
+
+  // Contadores para el header
+  const searchingCount = Object.values(searchStatus).filter(s => s === 'searching').length;
+  const readyCount = Object.values(searchStatus).filter(s => s === 'ready').length;
+
+  // Filter loads — respeta el scope de rol y el filtro de dispatcher del dropdown
   const filteredLoads = useMemo(() => {
     return enrichedLoads.filter(l => {
-      // Dispatcher isolation: only show loads from their drivers
-      if (dispatcherDriverIds && (!l.driver_id || !dispatcherDriverIds.has(l.driver_id))) return false;
+      // Scope por dispatcher (rol o dropdown): solo cargas de esos drivers
+      if (scopedDriverIds && (!l.driver_id || !scopedDriverIds.has(l.driver_id))) return false;
       if (statusFilter !== 'all' && l.status !== statusFilter) return false;
       if (search) {
         const term = search.toLowerCase();
@@ -430,19 +556,38 @@ const Tracking = () => {
       }
       return true;
     });
-  }, [enrichedLoads, statusFilter, search, drivers, trucks, dispatcherDriverIds]);
+  }, [enrichedLoads, statusFilter, search, drivers, trucks, scopedDriverIds]);
 
   const selectedLoad = enrichedLoads.find(l => l.id === selectedLoadId);
 
-  // Stats — filtered by dispatcher scope when applicable
-  const scopedActiveLoads = dispatcherDriverIds
-    ? activeLoads.filter(l => l.driver_id && dispatcherDriverIds.has(l.driver_id))
+  // Stats — filtered by dispatcher scope (rol o dropdown)
+  const scopedActiveLoads = scopedDriverIds
+    ? activeLoads.filter(l => l.driver_id && scopedDriverIds.has(l.driver_id))
     : activeLoads;
-  const scopedAllLoads = dispatcherDriverIds
-    ? loads.filter(l => l.driver_id && dispatcherDriverIds.has(l.driver_id))
+  const scopedAllLoads = scopedDriverIds
+    ? loads.filter(l => l.driver_id && scopedDriverIds.has(l.driver_id))
     : loads;
-  const inTransitCount = scopedActiveLoads.filter(l => l.status === 'in_transit').length;
-  const dispatchedCount = scopedActiveLoads.filter(l => l.status === 'dispatched').length;
+  // Fecha de hoy en hora Este (America/New_York), formato "Jul 21, 2026".
+  // Usamos en-US + timeZone para que sea la fecha real del Este sin importar la zona del navegador.
+  const todayEastern = new Date().toLocaleDateString('en-US', {
+    timeZone: 'America/New_York',
+    month: 'short',
+    day: '2-digit',
+    year: 'numeric',
+  });
+  const [copiedDate, setCopiedDate] = useState(false);
+  const copyTodayDate = () => {
+    navigator.clipboard.writeText(todayEastern);
+    setCopiedDate(true);
+    setTimeout(() => setCopiedDate(false), 1500);
+  };
+
+  // On Route agrupa toda carga que ya salió: en tránsito + en sitio (pickup/delivery) + cargada
+  const onRouteCount = scopedActiveLoads.filter(l =>
+    ['in_transit', 'on_site_pickup', 'picked_up', 'on_site_delivery'].includes(l.status)
+  ).length;
+  // To Pickup = despachada pero aún no llega al pickup (status dispatched)
+  const toPickupCount = scopedActiveLoads.filter(l => l.status === 'dispatched').length;
   const deliveriesToday = scopedAllLoads.filter(l => l.delivery_date && isToday(parseISO(l.delivery_date)) && l.status !== 'cancelled').length;
 
   const copyDriverInfo = (driver: typeof drivers[0]) => {
@@ -517,21 +662,19 @@ const Tracking = () => {
           {load ? (
             <div className="space-y-4">
               {/* Load # y Broker */}
-              <div className="flex items-center justify-between">
+              <div className="grid grid-cols-3 gap-2">
                 <div>
                   <p className="text-xs text-muted-foreground">Load #</p>
                   <p className="text-lg font-bold text-primary">{load.reference_number}</p>
                 </div>
-                <div className="text-right">
+                <div className="text-center">
                   <p className="text-xs text-muted-foreground">Broker</p>
-                  <p className="text-sm font-semibold truncate max-w-[180px]">{load.broker_client || '—'}</p>
+                  <p className="text-sm font-semibold truncate">{load.broker_client || '—'}</p>
                 </div>
-                {truck && (
-                  <div className="text-right">
-                    <p className="text-xs text-muted-foreground">Truck</p>
-                    <p className="text-sm font-semibold">Unit #{truck.unit_number}</p>
-                  </div>
-                )}
+                <div className="text-right">
+                  <p className="text-xs text-muted-foreground">Truck</p>
+                  <p className="text-sm font-semibold">{truck ? `Unit #${truck.unit_number}` : '—'}</p>
+                </div>
               </div>
 
               {/* Stats */}
@@ -589,7 +732,7 @@ const Tracking = () => {
                   className="flex-1 gap-1.5"
                   onClick={() => {
                     setSelectedDriverLoad(null);
-                    navigate('/loads', { state: { openLoadId: load.id } });
+                    navigate('/loads');
                   }}
                 >
                   <ExternalLink className="h-3.5 w-3.5" />
@@ -634,9 +777,24 @@ const Tracking = () => {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="page-header">Live Tracking</h1>
-        <p className="page-description">Real-time fleet monitoring and load tracking</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="page-header">Live Tracking</h1>
+          <p className="page-description">Real-time fleet monitoring and load tracking</p>
+        </div>
+        {/* Fecha de hoy en hora Este con botón de copiar */}
+        <button
+          type="button"
+          onClick={copyTodayDate}
+          title="Copy today's date"
+          className="flex items-center gap-2 rounded-md border bg-card px-3 py-1.5 text-sm font-medium hover:bg-accent transition-colors shrink-0"
+        >
+          <Clock className="h-4 w-4 text-muted-foreground" />
+          {todayEastern}
+          {copiedDate
+            ? <Check className="h-4 w-4 text-[#5ee14c]" />
+            : <Copy className="h-4 w-4 text-muted-foreground" />}
+        </button>
       </div>
 
       {/* Summary Cards */}
@@ -647,8 +805,8 @@ const Tracking = () => {
               <Navigation className="h-5 w-5 text-[#5ee14c]" />
             </div>
             <div>
-              <p className="text-2xl font-bold">{inTransitCount}</p>
-              <p className="text-xs text-muted-foreground">In Transit</p>
+              <p className="text-2xl font-bold">{onRouteCount}</p>
+              <p className="text-xs text-muted-foreground">On Route</p>
             </div>
           </CardContent>
         </Card>
@@ -658,8 +816,8 @@ const Tracking = () => {
               <Package className="h-5 w-5 text-[hsl(270,60%,50%)]" />
             </div>
             <div>
-              <p className="text-2xl font-bold">{dispatchedCount}</p>
-              <p className="text-xs text-muted-foreground">Dispatched</p>
+              <p className="text-2xl font-bold">{toPickupCount}</p>
+              <p className="text-xs text-muted-foreground">To Pickup</p>
             </div>
           </CardContent>
         </Card>
@@ -712,15 +870,27 @@ const Tracking = () => {
                 <Users className="h-4 w-4" />
                 NEXT PLAN ({availableDrivers.length})
               </CardTitle>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 text-xs gap-1"
-                onClick={handleExportNextPlan}
-              >
-                <Download className="h-3 w-3" />
-                Export
-              </Button>
+              <div className="flex items-center gap-2">
+                {(searchingCount > 0 || readyCount > 0) && (
+                  <div className="flex items-center gap-1.5 text-[10px] font-semibold">
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-[hsl(22,90%,48%)]/15 text-[hsl(22,90%,42%)]">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[hsl(22,90%,48%)]" />{searchingCount}
+                    </span>
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-[hsl(152,60%,40%)]/15 text-[hsl(152,60%,35%)]">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[hsl(152,60%,40%)]" />{readyCount}
+                    </span>
+                  </div>
+                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs gap-1"
+                  onClick={handleExportNextPlan}
+                >
+                  <Download className="h-3 w-3" />
+                  Export
+                </Button>
+              </div>
             </div>
             {!isDispatcher && (
               <Select value={dispatcherFilter} onValueChange={setDispatcherFilter}>
@@ -743,7 +913,7 @@ const Tracking = () => {
                 <p className="text-sm">No drivers</p>
               </div>
             ) : (
-              availableDrivers.map(driver => {
+              sortedDrivers.map(driver => {
                 const lastDel = lastDeliveryStops[driver.id];
                 const activeLoad = activeLoadByDriver[driver.id];
                 const activeLastStop = activeLoad ? getLastStop(activeLoad) : null;
@@ -752,10 +922,17 @@ const Tracking = () => {
                   : lastDel
                   ? { address: lastDel.address, date: lastDel.date, isActive: false }
                   : null;
+                const sStatus = searchStatus[driver.id]; // undefined=standby | 'searching' | 'ready'
                 return (
                   <div
                     key={driver.id}
-                    className={`rounded-lg border border-border hover:border-primary/30 transition-all flex overflow-hidden cursor-pointer ${
+                    className={`rounded-lg border transition-all flex overflow-hidden cursor-pointer ${
+                      sStatus === 'ready'
+                        ? 'border-[hsl(152,60%,40%)]/40'
+                        : sStatus === 'searching'
+                        ? 'border-[hsl(22,90%,48%)]/50'
+                        : 'border-border hover:border-primary/30'
+                    } ${
                       activeLoad ? 'bg-[hsl(152,60%,40%)]/[0.03]' : 'bg-[hsl(25,95%,53%)]/[0.03]'
                     }`}
                     onClick={() => setSelectedDriverLoad({ driver, load: activeLoad || null, lastDelivered: lastDel ? { address: lastDel.address, date: lastDel.date } : undefined })}
@@ -772,28 +949,67 @@ const Tracking = () => {
                         ))}
                       </span>
                     </div>
-                    <div className="flex-1 min-w-0 p-3">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="p-1.5 rounded-full bg-[hsl(152,60%,40%)]/10">
-                        <User className="h-3.5 w-3.5 text-[hsl(152,60%,40%)]" />
+                    <div className="flex-1 min-w-0">
+                    {/* Franja de estado sólida en la línea del nombre/teléfono/acciones */}
+                    <div className={`flex items-center gap-2 px-3 py-2 ${
+                      sStatus === 'ready'
+                        ? 'bg-[hsl(152,60%,40%)]'
+                        : sStatus === 'searching'
+                        ? 'bg-[hsl(22,90%,48%)]'
+                        : ''
+                    }`}>
+                      <div className={`p-1.5 rounded-full ${sStatus ? 'bg-white/25' : 'bg-[hsl(152,60%,40%)]/10'}`}>
+                        <User className={`h-3.5 w-3.5 ${sStatus ? 'text-white' : 'text-[hsl(152,60%,40%)]'}`} />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold truncate">{driver.name}</p>
+                        <div className="flex items-center gap-1.5">
+                          <p className={`text-sm font-semibold truncate ${sStatus ? 'text-white' : ''}`}>{driver.name}</p>
+                          {/* Copiar nombre */}
+                          <button
+                            onClick={(e) => copyField(driver.id, 'name', driver.name, e)}
+                            className={`shrink-0 p-0.5 rounded transition-colors ${sStatus ? 'text-white/70 hover:text-white hover:bg-white/20' : 'text-muted-foreground hover:text-foreground hover:bg-gray-100'}`}
+                            title="Copiar Nombre"
+                          >
+                            {copiedField === `${driver.id}:name` ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                          </button>
+                        </div>
+                        {(() => {
+                          const truck = trucks.find(t => t.id === driver.truck_id);
+                          return truck?.unit_number ? (
+                            <p className={`text-[11px] leading-tight ${sStatus ? 'text-white/80' : 'text-muted-foreground'}`}>
+                              Unit #{truck.unit_number}
+                            </p>
+                          ) : null;
+                        })()}
                       </div>
                       {(() => {
                         const loc = driverLocations.find(dl => dl.driver_id === driver.id);
                         const isGpsActive = loc && (Date.now() - new Date(loc.updated_at).getTime()) < 5 * 60 * 1000;
                         return isGpsActive ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[hsl(152,60%,40%)]/15 text-[hsl(152,60%,40%)] text-[10px] font-semibold animate-pulse">
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold animate-pulse ${
+                            sStatus ? 'bg-white/25 text-white' : 'bg-[hsl(152,60%,40%)]/15 text-[hsl(152,60%,40%)]'
+                          }`}>
                             <Navigation className="h-3 w-3" />
                             GPS
                           </span>
                         ) : null;
                       })()}
                       {driver.phone && (
-                        <span className="text-xs text-muted-foreground whitespace-nowrap">{driver.phone}</span>
+                        <div className="flex items-center gap-1">
+                          <span className={`text-xs whitespace-nowrap ${sStatus ? 'text-white/90' : 'text-muted-foreground'}`}>{driver.phone}</span>
+                          {/* Copiar teléfono */}
+                          <button
+                            onClick={(e) => copyField(driver.id, 'phone', driver.phone!, e)}
+                            className={`shrink-0 p-0.5 rounded transition-colors ${sStatus ? 'text-white/70 hover:text-white hover:bg-white/20' : 'text-muted-foreground hover:text-foreground hover:bg-gray-100'}`}
+                            title="Copiar Teléfono"
+                          >
+                            {copiedField === `${driver.id}:phone` ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                          </button>
+                        </div>
                       )}
-                      {/* Copy Info button — misma línea que el nombre del driver */}
+                    </div>
+                    {/* Línea 2: acciones — Copy Info a la izquierda, estado a la derecha */}
+                    <div className="flex items-center justify-between px-3 py-1.5">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -807,8 +1023,23 @@ const Tracking = () => {
                         {copiedInfoId === driver.id ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
                         Copy Info
                       </button>
+                      <button
+                        onClick={(e) => cycleSearchStatus(driver.id, e)}
+                        className={`shrink-0 px-2 py-1 rounded-md text-[10px] font-bold transition-colors whitespace-nowrap flex items-center gap-1 ${
+                          sStatus === 'ready'
+                            ? 'bg-[hsl(152,60%,40%)] text-white hover:bg-[hsl(152,60%,35%)]'
+                            : sStatus === 'searching'
+                            ? 'bg-[hsl(22,90%,48%)] text-white hover:bg-[hsl(22,90%,42%)]'
+                            : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                        }`}
+                        title={sStatus === 'ready' ? 'Listo — click para quitar' : sStatus === 'searching' ? 'Buscando — click para marcar Listo' : 'Standby — click para marcar Buscando'}
+                      >
+                        {sStatus === 'ready' ? <><Check className="h-3 w-3" /> Listo</>
+                          : sStatus === 'searching' ? <><Search className="h-3 w-3" /> Buscando</>
+                          : 'Standby'}
+                      </button>
                     </div>
-                    <div className="space-y-1 text-xs text-muted-foreground">
+                    <div className="p-3 pt-2 space-y-1 text-xs text-muted-foreground">
                       {/* Manual location override */}
                       {(driver as any).manual_location_address && (
                         <div className="mt-1.5 pt-1.5 border-t">
@@ -832,7 +1063,8 @@ const Tracking = () => {
                               {extractCityState(displayInfo.address)}
                             </span>
                             <button
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 navigator.clipboard.writeText(extractCityState(displayInfo.address));
                                 setCopiedDriverId(driver.id);
                                 setTimeout(() => setCopiedDriverId(null), 1500);
@@ -986,9 +1218,9 @@ const Tracking = () => {
                   </div>
                 );
               })}
-              {/* Driver live location markers — filtered by dispatcher scope */}
+              {/* Driver live location markers — filtered by dispatcher scope (rol o dropdown) */}
               {driverLocations
-                .filter(loc => !dispatcherDriverIds || dispatcherDriverIds.has(loc.driver_id))
+                .filter(loc => !scopedDriverIds || scopedDriverIds.has(loc.driver_id))
                 .map(loc => {
                 const driver = drivers.find(d => d.id === loc.driver_id);
                 if (!driver) return null;
@@ -1039,7 +1271,7 @@ const Tracking = () => {
         <div className="lg:col-span-3 lg:col-start-2">
           <DriversTimelineCard
             loads={scopedAllLoads}
-            drivers={dispatcherDriverIds ? drivers.filter(d => dispatcherDriverIds.has(d.id)) : drivers}
+            drivers={scopedDriverIds ? drivers.filter(d => scopedDriverIds.has(d.id)) : drivers}
             trucks={trucks}
           />
         </div>
