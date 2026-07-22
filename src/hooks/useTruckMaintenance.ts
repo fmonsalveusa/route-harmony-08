@@ -116,21 +116,25 @@ export function useTruckMaintenance() {
 
   const invalidate = useCallback(() => qc.invalidateQueries({ queryKey: QUERY_KEY }), [qc]);
 
-  // Invoca la Edge Function que trae odómetros frescos del ELD (HOS247, etc.)
-  // y actualiza trucks.current_odometer. La función respeta un caché de 5 min,
-  // así que llamarla en cada mount es seguro (no satura la API del ELD).
-  // Devuelve true si al menos una cuenta se sincronizó (para saber si vale recalcular).
-  const syncEldOdometers = useCallback(async (): Promise<boolean> => {
-    try {
-      const { data, error } = await supabase.functions.invoke('sync-eld-odometer');
-      if (error) { console.warn('[ELD sync] failed:', error.message); return false; }
-      const updated = (data?.results || []).some((r: any) => r.updated > 0);
-      return updated;
-    } catch (e) {
-      console.warn('[ELD sync] error:', e);
+  // Guarda el odómetro ingresado manualmente para un camión y recalcula su mantenimiento.
+  // Devuelve true si guardó bien. El recalc lo dispara la página después.
+  const updateTruckOdometer = useCallback(async (truckId: string, odometer: number): Promise<boolean> => {
+    if (!odometer || odometer <= 0) {
+      toastRef.current({ title: 'Odómetro inválido', description: 'Ingresa un valor mayor a 0', variant: 'destructive' });
       return false;
     }
-  }, []);
+    const { error } = await supabase
+      .from('trucks' as any)
+      .update({ current_odometer: odometer, odometer_updated_at: new Date().toISOString() } as any)
+      .eq('id', truckId);
+    if (error) {
+      toastRef.current({ title: 'Error guardando odómetro', description: error.message, variant: 'destructive' });
+      return false;
+    }
+    // Refrescar la lista de camiones para que la UI vea el nuevo odómetro
+    qc.invalidateQueries({ queryKey: ['trucks'] });
+    return true;
+  }, [qc]);
 
   const createMaintenance = useCallback(async (input: MaintenanceInput) => {
     const tenant_id = await getTenantId();
@@ -241,8 +245,10 @@ export function useTruckMaintenance() {
     const items = maintenanceItems.filter(m => m.truck_id === truckId);
     if (!items.length) return;
 
-    // Leer el odómetro del ELD para este camión (si existe). Es la fuente de verdad:
-    // odómetro manda, los loads son solo fallback si no hay lectura de ELD.
+    // Leer el odómetro actual del camión (ingresado manualmente).
+    // El acumulado se calcula SOLO por odómetro: acumulado = odómetro actual − last_miles.
+    // Si no hay odómetro ingresado, no se puede calcular por millas (queda en 0 hasta
+    // que se ingrese el primer odómetro de ese camión).
     let currentOdometer: number | null = null;
     {
       const { data: truck } = await supabase
@@ -255,28 +261,11 @@ export function useTruckMaintenance() {
     }
 
     for (const item of items) {
-      let miles_accumulated: number;
-
+      // acumulado = odómetro actual − odómetro al último servicio (last_miles).
+      // Sin odómetro o sin last_miles, el acumulado por millas queda en 0.
+      let miles_accumulated = 0;
       if (currentOdometer != null && item.last_miles && item.last_miles > 0) {
-        // FUENTE PRIMARIA: odómetro del ELD.
-        // Acumulado = odómetro actual − odómetro al último servicio.
-        // Es exacto y no depende de que los loads tengan millas bien cargadas.
         miles_accumulated = Math.max(0, currentOdometer - item.last_miles);
-      } else {
-        // FALLBACK: sin lectura de ELD (o sin last_miles), contamos por loads.
-        // Millas (cargadas + vacías) de cargas asignadas con pickup >= último servicio.
-        const { data, error } = await supabase
-          .from('loads' as any)
-          .select('miles, empty_miles, pickup_date')
-          .eq('truck_id', truckId)
-          .neq('status', 'cancelled')
-          .gte('pickup_date', item.last_performed_at);
-
-        if (error) { console.error(error); continue; }
-
-        miles_accumulated = ((data as any[]) || []).reduce((sum, l) => {
-          return sum + (Number(l.miles) || 0) + (Number(l.empty_miles) || 0);
-        }, 0);
       }
 
       // Calcular status por millas
@@ -422,7 +411,7 @@ export function useTruckMaintenance() {
     updateMaintenance,
     deleteMaintenance,
     recalculateMiles,
-    syncEldOdometers,
+    updateTruckOdometer,
     logNewService,
     refetch: invalidate,
   };
