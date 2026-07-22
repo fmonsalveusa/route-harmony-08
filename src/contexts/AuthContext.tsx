@@ -241,7 +241,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
-      void processSession(nextSession, event !== 'INITIAL_SESSION');
+      // Al volver el foco a la pestaña, Supabase re-dispara SIGNED_IN aunque sea
+      // la MISMA sesión ya cargada. Si forzáramos refresh ahí, la app se reinicia
+      // (spinner "Conectando") y se pierde el detalle/diálogo abierto. Por eso solo
+      // forzamos refresh en un login REAL: SIGNED_IN de un usuario distinto al ya
+      // cargado. Mismo usuario ya cargado → sin forceRefresh (la optimización de
+      // processSession sale temprano y no recarga nada).
+      const isSameUserAlreadyLoaded =
+        event === 'SIGNED_IN' &&
+        profileLoadedRef.current &&
+        loadedUserIdRef.current === nextSession?.user?.id;
+
+      const forceRefresh = event !== 'INITIAL_SESSION' && !isSameUserAlreadyLoaded;
+
+      void processSession(nextSession, forceRefresh);
     });
 
     const bootstrapAuth = async () => {
