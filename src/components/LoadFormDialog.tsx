@@ -70,10 +70,19 @@ async function refreshSignedUrl(url: string): Promise<string> {
   // Caso 2: ya es una ruta relativa → se usa directo
 
   try { storagePath = decodeURIComponent(storagePath); } catch {}
-  const { data, error } = await supabase.storage
-    .from('driver-documents')
-    .createSignedUrl(storagePath, 3600); // 1 hora para preview
-  if (!error && data?.signedUrl) return data.signedUrl;
+
+  // BLINDAJE: si el archivo no existe en el bucket, createSignedUrl puede LANZAR
+  // una excepción (no solo devolver { error }). Sin este try/catch, esa excepción
+  // sube y crashea la apertura del diálogo de editar. La atrapamos y devolvemos
+  // la URL original: el PDF no se previsualiza, pero el editor abre normal.
+  try {
+    const { data, error } = await supabase.storage
+      .from('driver-documents')
+      .createSignedUrl(storagePath, 3600); // 1 hora para preview
+    if (!error && data?.signedUrl) return data.signedUrl;
+  } catch (e) {
+    console.warn('[refreshSignedUrl] no se pudo firmar el PDF (archivo faltante?):', storagePath, e);
+  }
   return url;
 }
 

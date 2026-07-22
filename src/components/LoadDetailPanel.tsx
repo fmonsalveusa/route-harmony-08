@@ -592,11 +592,17 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
     // Si no era URL completa, ya es una ruta relativa → se usa directo
 
     try { storagePath = decodeURIComponent(storagePath); } catch {}
-    const { data, error } = await supabase.storage
-      .from('driver-documents')
-      .createSignedUrl(storagePath, 3600);
 
-    if (!error && data?.signedUrl) return data.signedUrl;
+    // BLINDAJE: si el archivo no existe, createSignedUrl puede lanzar excepción.
+    // La atrapamos para no romper el flujo; devolvemos la URL original.
+    try {
+      const { data, error } = await supabase.storage
+        .from('driver-documents')
+        .createSignedUrl(storagePath, 3600);
+      if (!error && data?.signedUrl) return data.signedUrl;
+    } catch (e) {
+      console.warn('[resolveDriverDocsUrl] no se pudo firmar el PDF:', storagePath, e);
+    }
     return url;
   };
 
