@@ -1,4 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
+import { Browser } from '@capacitor/browser';
+import { Capacitor } from '@capacitor/core';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -201,14 +203,20 @@ export default function DriverLoadDetail() {
                   return;
                 }
 
-                // Anchor para evitar bloqueo de popups en iOS WKWebView
-                const a = document.createElement('a');
-                a.href = data.signedUrl;
-                a.target = '_blank';
-                a.rel = 'noopener noreferrer';
-                document.body.appendChild(a);
-                a.click();
-                setTimeout(() => document.body.removeChild(a), 100);
+                // En la app instalada (Capacitor), target="_blank" NO abre nada.
+                // Usamos el plugin Browser, que abre el PDF en el navegador del sistema.
+                // En web normal (no nativo), seguimos con el anchor de siempre.
+                if (Capacitor.isNativePlatform()) {
+                  await Browser.open({ url: data.signedUrl });
+                } else {
+                  const a = document.createElement('a');
+                  a.href = data.signedUrl;
+                  a.target = '_blank';
+                  a.rel = 'noopener noreferrer';
+                  document.body.appendChild(a);
+                  a.click();
+                  setTimeout(() => document.body.removeChild(a), 100);
+                }
               } catch {
                 toast({ title: 'Error opening document', variant: 'destructive' });
               }
