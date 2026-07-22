@@ -116,6 +116,22 @@ export function useTruckMaintenance() {
 
   const invalidate = useCallback(() => qc.invalidateQueries({ queryKey: QUERY_KEY }), [qc]);
 
+  // Invoca la Edge Function que trae odómetros frescos del ELD (HOS247, etc.)
+  // y actualiza trucks.current_odometer. La función respeta un caché de 5 min,
+  // así que llamarla en cada mount es seguro (no satura la API del ELD).
+  // Devuelve true si al menos una cuenta se sincronizó (para saber si vale recalcular).
+  const syncEldOdometers = useCallback(async (): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase.functions.invoke('sync-eld-odometer');
+      if (error) { console.warn('[ELD sync] failed:', error.message); return false; }
+      const updated = (data?.results || []).some((r: any) => r.updated > 0);
+      return updated;
+    } catch (e) {
+      console.warn('[ELD sync] error:', e);
+      return false;
+    }
+  }, []);
+
   const createMaintenance = useCallback(async (input: MaintenanceInput) => {
     const tenant_id = await getTenantId();
     const next_due_miles = input.interval_miles ? input.last_miles + input.interval_miles : null;
@@ -225,30 +241,43 @@ export function useTruckMaintenance() {
     const items = maintenanceItems.filter(m => m.truck_id === truckId);
     if (!items.length) return;
 
+    // Leer el odómetro del ELD para este camión (si existe). Es la fuente de verdad:
+    // odómetro manda, los loads son solo fallback si no hay lectura de ELD.
+    let currentOdometer: number | null = null;
+    {
+      const { data: truck } = await supabase
+        .from('trucks' as any)
+        .select('current_odometer')
+        .eq('id', truckId)
+        .maybeSingle();
+      const val = (truck as any)?.current_odometer;
+      if (val != null && Number(val) > 0) currentOdometer = Number(val);
+    }
+
     for (const item of items) {
-      // Acumulado = millas (cargadas + vacías) de TODAS las cargas asignadas al camión
-      // cuyo pickup ocurrió DESPUÉS del último servicio. Cuenta apenas se asigna la carga
-      // (no espera a que se entregue) e incluye cualquier estado activo o entregado.
-      // La carga que estaba en curso al momento del servicio (pickup anterior) se ignora:
-      // el corte lo define el odómetro manual (last_miles) al registrar el servicio.
-      // Usamos >= para que una carga recogida el MISMO día del servicio cuente
-      // (caso normal: cambio de aceite en la mañana, luego se sale con carga).
-      const { data, error } = await supabase
-        .from('loads' as any)
-        .select('miles, empty_miles, pickup_date')
-        .eq('truck_id', truckId)
-        .neq('status', 'cancelled')
-        .gte('pickup_date', item.last_performed_at);
+      let miles_accumulated: number;
 
-      if (error) { console.error(error); continue; }
+      if (currentOdometer != null && item.last_miles && item.last_miles > 0) {
+        // FUENTE PRIMARIA: odómetro del ELD.
+        // Acumulado = odómetro actual − odómetro al último servicio.
+        // Es exacto y no depende de que los loads tengan millas bien cargadas.
+        miles_accumulated = Math.max(0, currentOdometer - item.last_miles);
+      } else {
+        // FALLBACK: sin lectura de ELD (o sin last_miles), contamos por loads.
+        // Millas (cargadas + vacías) de cargas asignadas con pickup >= último servicio.
+        const { data, error } = await supabase
+          .from('loads' as any)
+          .select('miles, empty_miles, pickup_date')
+          .eq('truck_id', truckId)
+          .neq('status', 'cancelled')
+          .gte('pickup_date', item.last_performed_at);
 
-      const milesFromLoads = ((data as any[]) || []).reduce((sum, l) => {
-        return sum + (Number(l.miles) || 0) + (Number(l.empty_miles) || 0);
-      }, 0);
+        if (error) { console.error(error); continue; }
 
-      // El acumulado es directamente las millas rodadas desde el servicio.
-      // Ya no usamos miles_carried_forward (lógica de geocoding eliminada).
-      const miles_accumulated = milesFromLoads;
+        miles_accumulated = ((data as any[]) || []).reduce((sum, l) => {
+          return sum + (Number(l.miles) || 0) + (Number(l.empty_miles) || 0);
+        }, 0);
+      }
 
       // Calcular status por millas
       let milesStatus = 'ok';
@@ -393,6 +422,7 @@ export function useTruckMaintenance() {
     updateMaintenance,
     deleteMaintenance,
     recalculateMiles,
+    syncEldOdometers,
     logNewService,
     refetch: invalidate,
   };

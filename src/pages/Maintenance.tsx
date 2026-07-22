@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Wrench, Plus, RefreshCw, List, Truck } from 'lucide-react';
+import { Wrench, Plus, RefreshCw, List, Truck, Gauge } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -13,8 +13,18 @@ import { AllServicesTable } from '@/components/maintenance/AllServicesTable';
 import { LogServiceDialog } from '@/components/maintenance/LogServiceDialog';
 import { ServiceHistoryDialog } from '@/components/maintenance/ServiceHistoryDialog';
 
+// Formatea cuánto hace que se leyó el odómetro: "5 min", "2 h", "3 d"
+const formatOdometerAge = (iso: string): string => {
+  const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins} min ago`;
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return `${hrs} h ago`;
+  return `${Math.round(hrs / 24)} d ago`;
+};
+
 const Maintenance = () => {
-  const { maintenanceItems, loading, createMaintenance, updateMaintenance, deleteMaintenance, recalculateMiles, logNewService } = useTruckMaintenance();
+  const { maintenanceItems, loading, createMaintenance, updateMaintenance, deleteMaintenance, recalculateMiles, syncEldOdometers, logNewService } = useTruckMaintenance();
   const { trucks } = useTrucks();
   const { drivers } = useDrivers();
   const [formOpen, setFormOpen] = useState(false);
@@ -25,11 +35,15 @@ const Maintenance = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [recalculating, setRecalculating] = useState(false);
 
-  // Recalculate miles on mount for all trucks that have maintenance
+  // Al montar: primero sincroniza odómetros del ELD (caché de 5 min en el servidor),
+  // luego recalcula millas de todos los camiones. El odómetro fresco alimenta el recalc.
   useEffect(() => {
     if (!loading && maintenanceItems.length > 0) {
       const truckIds = [...new Set(maintenanceItems.map(m => m.truck_id))];
-      truckIds.forEach(id => recalculateMiles(id));
+      (async () => {
+        await syncEldOdometers(); // trae odómetros frescos (o usa caché si <5 min)
+        for (const id of truckIds) await recalculateMiles(id);
+      })();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading]);
@@ -145,6 +159,16 @@ const Maintenance = () => {
                         <Truck className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm font-medium">{truck?.unit_number}</span>
                         <span className="text-sm text-muted-foreground">— {truck?.make || ''} {truck?.model || ''}</span>
+                        {/* Odómetro del ELD (si hay lectura) */}
+                        {truck?.current_odometer != null && truck.current_odometer > 0 && (
+                          <span
+                            className="inline-flex items-center gap-1 text-[11px] text-muted-foreground bg-background border rounded px-1.5 py-0.5"
+                            title={truck.odometer_updated_at ? `ELD odometer · updated ${formatOdometerAge(truck.odometer_updated_at)}` : 'ELD odometer'}
+                          >
+                            <Gauge className="h-3 w-3" />
+                            {Math.round(truck.current_odometer).toLocaleString()} mi
+                          </span>
+                        )}
                         <div className="ml-auto flex gap-1.5">
                           {dueItems > 0 && (
                             <span className="text-[10px] font-bold px-2 py-0.5 rounded-sm bg-[#FCEBEB] text-[#A32D2D]">

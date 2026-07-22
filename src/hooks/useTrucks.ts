@@ -35,6 +35,8 @@ export interface DbTruck {
   rear_door_height_in: number | null;
   trailer_length_ft: number | null;
   mega_ramp: string | null;
+  current_odometer: number | null;      // última lectura del ELD (millas)
+  odometer_updated_at: string | null;   // cuándo se leyó
   created_at: string;
   updated_at: string;
 }
