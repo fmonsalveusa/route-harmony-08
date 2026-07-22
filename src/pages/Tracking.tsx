@@ -159,6 +159,9 @@ const Tracking = () => {
     setCopiedField(`${driverId}:${field}`);
     setTimeout(() => setCopiedField(null), 1500);
   };
+  const todayEastern = new Date().toLocaleDateString('en-US', { timeZone: 'America/New_York', month: 'short', day: '2-digit', year: 'numeric' });
+  const [copiedDate, setCopiedDate] = useState(false);
+  const copyTodayDate = () => { navigator.clipboard.writeText(todayEastern); setCopiedDate(true); setTimeout(() => setCopiedDate(false), 1500); };
   const [selectedDriverLoad, setSelectedDriverLoad] = useState<{ driver: typeof drivers[0]; load: LoadWithStops | null; lastDelivered?: { address: string; date: string } } | null>(null);
   const navigate = useNavigate();
 
@@ -832,10 +835,16 @@ const Tracking = () => {
         <Card className="flex flex-col overflow-hidden h-[1040px] lg:row-span-2 lg:col-start-1">
           <CardHeader className="pb-2 px-3 pt-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                NEXT PLAN ({availableDrivers.length})
-              </CardTitle>
+              <div className="flex items-center gap-2">
+                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  NEXT PLAN ({availableDrivers.length})
+                </CardTitle>
+                <button type="button" onClick={copyTodayDate} title="Copy today's date" className="flex items-center gap-1 rounded-md border bg-card px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground hover:bg-accent transition-colors shrink-0">
+                  {todayEastern}
+                  {copiedDate ? <Check className="h-3 w-3 text-[#5ee14c]" /> : <Copy className="h-3 w-3" />}
+                </button>
+              </div>
               <div className="flex items-center gap-2">
                 {(searchingCount > 0 || readyCount > 0) && (
                   <div className="flex items-center gap-1.5 text-[10px] font-semibold">
