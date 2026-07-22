@@ -567,27 +567,8 @@ const Tracking = () => {
   const scopedAllLoads = scopedDriverIds
     ? loads.filter(l => l.driver_id && scopedDriverIds.has(l.driver_id))
     : loads;
-  // Fecha de hoy en hora Este (America/New_York), formato "Jul 21, 2026".
-  // Usamos en-US + timeZone para que sea la fecha real del Este sin importar la zona del navegador.
-  const todayEastern = new Date().toLocaleDateString('en-US', {
-    timeZone: 'America/New_York',
-    month: 'short',
-    day: '2-digit',
-    year: 'numeric',
-  });
-  const [copiedDate, setCopiedDate] = useState(false);
-  const copyTodayDate = () => {
-    navigator.clipboard.writeText(todayEastern);
-    setCopiedDate(true);
-    setTimeout(() => setCopiedDate(false), 1500);
-  };
-
-  // On Route agrupa toda carga que ya salió: en tránsito + en sitio (pickup/delivery) + cargada
-  const onRouteCount = scopedActiveLoads.filter(l =>
-    ['in_transit', 'on_site_pickup', 'picked_up', 'on_site_delivery'].includes(l.status)
-  ).length;
-  // To Pickup = despachada pero aún no llega al pickup (status dispatched)
-  const toPickupCount = scopedActiveLoads.filter(l => l.status === 'dispatched').length;
+  const inTransitCount = scopedActiveLoads.filter(l => l.status === 'in_transit').length;
+  const dispatchedCount = scopedActiveLoads.filter(l => l.status === 'dispatched').length;
   const deliveriesToday = scopedAllLoads.filter(l => l.delivery_date && isToday(parseISO(l.delivery_date)) && l.status !== 'cancelled').length;
 
   const copyDriverInfo = (driver: typeof drivers[0]) => {
@@ -777,24 +758,9 @@ const Tracking = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="page-header">Live Tracking</h1>
-          <p className="page-description">Real-time fleet monitoring and load tracking</p>
-        </div>
-        {/* Fecha de hoy en hora Este con botón de copiar */}
-        <button
-          type="button"
-          onClick={copyTodayDate}
-          title="Copy today's date"
-          className="flex items-center gap-2 rounded-md border bg-card px-3 py-1.5 text-sm font-medium hover:bg-accent transition-colors shrink-0"
-        >
-          <Clock className="h-4 w-4 text-muted-foreground" />
-          {todayEastern}
-          {copiedDate
-            ? <Check className="h-4 w-4 text-[#5ee14c]" />
-            : <Copy className="h-4 w-4 text-muted-foreground" />}
-        </button>
+      <div>
+        <h1 className="page-header">Live Tracking</h1>
+        <p className="page-description">Real-time fleet monitoring and load tracking</p>
       </div>
 
       {/* Summary Cards */}
@@ -805,8 +771,8 @@ const Tracking = () => {
               <Navigation className="h-5 w-5 text-[#5ee14c]" />
             </div>
             <div>
-              <p className="text-2xl font-bold">{onRouteCount}</p>
-              <p className="text-xs text-muted-foreground">On Route</p>
+              <p className="text-2xl font-bold">{inTransitCount}</p>
+              <p className="text-xs text-muted-foreground">In Transit</p>
             </div>
           </CardContent>
         </Card>
@@ -816,8 +782,8 @@ const Tracking = () => {
               <Package className="h-5 w-5 text-[hsl(270,60%,50%)]" />
             </div>
             <div>
-              <p className="text-2xl font-bold">{toPickupCount}</p>
-              <p className="text-xs text-muted-foreground">To Pickup</p>
+              <p className="text-2xl font-bold">{dispatchedCount}</p>
+              <p className="text-xs text-muted-foreground">Dispatched</p>
             </div>
           </CardContent>
         </Card>
