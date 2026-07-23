@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
+﻿import { useState, useMemo, useEffect, useRef } from 'react';
 import { useLoads, DbLoad } from '@/hooks/useLoads';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useTrucks } from '@/hooks/useTrucks';
@@ -139,7 +139,7 @@ const Tracking = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [dispatcherFilter, setDispatcherFilter] = useState<string>('all');
 
-  // Default dispatcher filter para fmonsalve.usa@gmail.com → Francisco Monsalve
+  // Default dispatcher filter para fmonsalve.usa@gmail.com ΓåÆ Francisco Monsalve
   useEffect(() => {
     if (profile?.email?.toLowerCase() === 'fmonsalve.usa@gmail.com' && dispatchers.length > 0) {
       const francisco = dispatchers.find(d => d.name?.toLowerCase().includes('francisco monsalve'));
@@ -165,9 +165,9 @@ const Tracking = () => {
   const [selectedDriverLoad, setSelectedDriverLoad] = useState<{ driver: typeof drivers[0]; load: LoadWithStops | null; lastDelivered?: { address: string; date: string } } | null>(null);
   const navigate = useNavigate();
 
-  // Estado de búsqueda diaria por driver: 'searching' | 'ready'.
-  // Si un driver no está en el map, está en 'standby' (default, no se guarda fila).
-  // Se comparte entre todos los dispatchers del tenant y se reinicia cada día (por search_date).
+  // Estado de b├║squeda diaria por driver: 'searching' | 'ready'.
+  // Si un driver no est├í en el map, est├í en 'standby' (default, no se guarda fila).
+  // Se comparte entre todos los dispatchers del tenant y se reinicia cada d├¡a (por search_date).
   const [searchStatus, setSearchStatus] = useState<Record<string, 'searching' | 'ready'>>({});
 
   // Manual location dialog state
@@ -306,7 +306,7 @@ const Tracking = () => {
       .filter(d => effectiveDispatcherFilter === 'all' || d.dispatcher_id === effectiveDispatcherFilter);
   }, [drivers, dispatcherFilter, userDispatcherId]);
 
-  // Orden visual por estado: Buscando (0) → Listo (1) → Standby (2)
+  // Orden visual por estado: Buscando (0) ΓåÆ Listo (1) ΓåÆ Standby (2)
   const sortedDrivers = useMemo(() => {
     const rank = (id: string) => {
       const s = searchStatus[id];
@@ -315,7 +315,7 @@ const Tracking = () => {
     return [...availableDrivers].sort((a, b) => rank(a.id) - rank(b.id));
   }, [availableDrivers, searchStatus]);
 
-  // IDs de drivers visibles según el filtro de dispatcher del dropdown (Next Plan),
+  // IDs de drivers visibles seg├║n el filtro de dispatcher del dropdown (Next Plan),
   // combinado con el scope del rol. Se usa para sincronizar mapa, timeline y stats
   // con el mismo filtro que Next Plan.
   // - Si tu rol ya te limita (userDispatcherId), ese scope manda.
@@ -414,8 +414,8 @@ const Tracking = () => {
     const driverIds = driversWithoutActive.map(d => d.id);
 
     // Get last delivered load per driver.
-    // Desempate: cuando dos cargas comparten delivery_date (ej. dos entregas el mismo día),
-    // gana la de created_at más reciente — la registrada después es la última real.
+    // Desempate: cuando dos cargas comparten delivery_date (ej. dos entregas el mismo d├¡a),
+    // gana la de created_at m├ís reciente ΓÇö la registrada despu├⌐s es la ├║ltima real.
     supabase
       .from('loads')
       .select('id, driver_id, delivery_date, destination, created_at')
@@ -464,10 +464,10 @@ const Tracking = () => {
       });
   }, [availableDrivers, activeLoadByDriver]);
 
-  // Cargar el estado de búsqueda de HOY (compartido entre dispatchers del tenant).
-  // Además pre-marca en 'searching' a los drivers que entregan hoy y aún no tienen estado.
+  // Cargar el estado de b├║squeda de HOY (compartido entre dispatchers del tenant).
+  // Adem├ís pre-marca en 'searching' a los drivers que entregan hoy y a├║n no tienen estado.
   // IMPORTANTE: solo corre cuando cambian los drivers, NO con cada update de loads/GPS
-  // (si dependiera de `loads`, se re-ejecutaría constantemente y pisaría cambios manuales).
+  // (si dependiera de `loads`, se re-ejecutar├¡a constantemente y pisar├¡a cambios manuales).
   const preMarkedRef = useRef(false);
   useEffect(() => {
     if (!drivers.length || preMarkedRef.current) return;
@@ -509,7 +509,7 @@ const Tracking = () => {
     })();
   }, [drivers.length, profile?.id]);
 
-  // Cicla el estado de un driver: standby → searching → ready → standby
+  // Cicla el estado de un driver: standby ΓåÆ searching ΓåÆ ready ΓåÆ standby
   const cycleSearchStatus = async (driverId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     const current = searchStatus[driverId]; // undefined = standby
@@ -526,7 +526,7 @@ const Tracking = () => {
     const tenant_id = await getTenantId();
 
     if (next === undefined) {
-      // standby = borrar la fila del día
+      // standby = borrar la fila del d├¡a
       await supabase.from('daily_search_status' as any)
         .delete()
         .eq('driver_id', driverId)
@@ -544,7 +544,7 @@ const Tracking = () => {
   const searchingCount = Object.values(searchStatus).filter(s => s === 'searching').length;
   const readyCount = Object.values(searchStatus).filter(s => s === 'ready').length;
 
-  // Filter loads — respeta el scope de rol y el filtro de dispatcher del dropdown
+  // Filter loads ΓÇö respeta el scope de rol y el filtro de dispatcher del dropdown
   const filteredLoads = useMemo(() => {
     return enrichedLoads.filter(l => {
       // Scope por dispatcher (rol o dropdown): solo cargas de esos drivers
@@ -563,7 +563,7 @@ const Tracking = () => {
 
   const selectedLoad = enrichedLoads.find(l => l.id === selectedLoadId);
 
-  // Stats — filtered by dispatcher scope (rol o dropdown)
+  // Stats ΓÇö filtered by dispatcher scope (rol o dropdown)
   const scopedActiveLoads = scopedDriverIds
     ? activeLoads.filter(l => l.driver_id && scopedDriverIds.has(l.driver_id))
     : activeLoads;
@@ -653,31 +653,35 @@ const Tracking = () => {
                 </div>
                 <div className="text-center">
                   <p className="text-xs text-muted-foreground">Broker</p>
-                  <p className="text-sm font-semibold truncate">{load.broker_client || '—'}</p>
+                  <p className="text-sm font-semibold truncate">{load.broker_client || 'ΓÇö'}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-xs text-muted-foreground">Truck</p>
-                  <p className="text-sm font-semibold">{truck ? `Unit #${truck.unit_number}` : '—'}</p>
+                  <p className="text-sm font-semibold">{truck ? `Unit #${truck.unit_number}` : 'ΓÇö'}</p>
                 </div>
               </div>
 
               {/* Stats */}
-              <div className="grid grid-cols-4 gap-3">
+              <div className="grid grid-cols-5 gap-2">
+                <div className="bg-muted/40 rounded-lg p-3 text-center">
+                  <p className="text-xs text-muted-foreground">Rate</p>
+                  <p className="text-base font-bold text-[hsl(152,60%,35%)]">{load.total_rate ? `$${Number(load.total_rate).toLocaleString()}` : 'ΓÇö'}</p>
+                </div>
                 <div className="bg-muted/40 rounded-lg p-3 text-center">
                   <p className="text-xs text-muted-foreground">Weight</p>
-                  <p className="text-base font-bold">{load.weight ? `${Number(load.weight).toLocaleString()} lbs` : '—'}</p>
+                  <p className="text-base font-bold">{load.weight ? `${Number(load.weight).toLocaleString()} lbs` : 'ΓÇö'}</p>
                 </div>
                 <div className="bg-muted/40 rounded-lg p-3 text-center">
                   <p className="text-xs text-muted-foreground">Empty Miles</p>
-                  <p className="text-base font-bold">{load.empty_miles ? Number(load.empty_miles).toLocaleString() : '—'}</p>
+                  <p className="text-base font-bold">{load.empty_miles ? Number(load.empty_miles).toLocaleString() : 'ΓÇö'}</p>
                 </div>
                 <div className="bg-muted/40 rounded-lg p-3 text-center">
                   <p className="text-xs text-muted-foreground">Miles</p>
-                  <p className="text-base font-bold">{load.miles ? Number(load.miles).toLocaleString() : '—'}</p>
+                  <p className="text-base font-bold">{load.miles ? Number(load.miles).toLocaleString() : 'ΓÇö'}</p>
                 </div>
                 <div className="bg-muted/40 rounded-lg p-3 text-center">
                   <p className="text-xs text-muted-foreground">RPM</p>
-                  <p className={`text-base font-bold ${rpmColor}`}>{rpm ? `$${rpm}` : '—'}</p>
+                  <p className={`text-base font-bold ${rpmColor}`}>{rpm ? `$${rpm}` : 'ΓÇö'}</p>
                 </div>
               </div>
 
@@ -925,7 +929,7 @@ const Tracking = () => {
                       </span>
                     </div>
                     <div className="flex-1 min-w-0">
-                    {/* Franja de estado sólida en la línea del nombre/teléfono/acciones */}
+                    {/* Franja de estado s├│lida en la l├¡nea del nombre/tel├⌐fono/acciones */}
                     <div className={`flex items-center gap-2 px-3 py-2 ${
                       sStatus === 'ready'
                         ? 'bg-[hsl(152,60%,40%)]'
@@ -972,18 +976,18 @@ const Tracking = () => {
                       {driver.phone && (
                         <div className="flex items-center gap-1">
                           <span className={`text-xs whitespace-nowrap ${sStatus ? 'text-white/90' : 'text-muted-foreground'}`}>{driver.phone}</span>
-                          {/* Copiar teléfono */}
+                          {/* Copiar tel├⌐fono */}
                           <button
                             onClick={(e) => copyField(driver.id, 'phone', driver.phone!, e)}
                             className={`shrink-0 p-0.5 rounded transition-colors ${sStatus ? 'text-white/70 hover:text-white hover:bg-white/20' : 'text-muted-foreground hover:text-foreground hover:bg-gray-100'}`}
-                            title="Copiar Teléfono"
+                            title="Copiar Tel├⌐fono"
                           >
                             {copiedField === `${driver.id}:phone` ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
                           </button>
                         </div>
                       )}
                     </div>
-                    {/* Línea 2: acciones — Copy Info a la izquierda, estado a la derecha */}
+                    {/* L├¡nea 2: acciones ΓÇö Copy Info a la izquierda, estado a la derecha */}
                     <div className="flex items-center justify-between px-3 py-1.5">
                       <button
                         onClick={(e) => {
@@ -1007,7 +1011,7 @@ const Tracking = () => {
                             ? 'bg-[hsl(22,90%,48%)] text-white hover:bg-[hsl(22,90%,42%)]'
                             : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                         }`}
-                        title={sStatus === 'ready' ? 'Listo — click para quitar' : sStatus === 'searching' ? 'Buscando — click para marcar Listo' : 'Standby — click para marcar Buscando'}
+                        title={sStatus === 'ready' ? 'Listo ΓÇö click para quitar' : sStatus === 'searching' ? 'Buscando ΓÇö click para marcar Listo' : 'Standby ΓÇö click para marcar Buscando'}
                       >
                         {sStatus === 'ready' ? <><Check className="h-3 w-3" /> Listo</>
                           : sStatus === 'searching' ? <><Search className="h-3 w-3" /> Buscando</>
@@ -1123,12 +1127,12 @@ const Tracking = () => {
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 12px', fontSize: 12 }}>
                               <div>
                                 <span style={{ color: '#888' }}>Driver</span>
-                                <p style={{ fontWeight: 600, margin: 0 }}>{driver?.name || '—'}</p>
+                                <p style={{ fontWeight: 600, margin: 0 }}>{driver?.name || 'ΓÇö'}</p>
                               </div>
                               <div>
                                 <span style={{ color: '#888' }}>Truck</span>
                                 <p style={{ fontWeight: 600, margin: 0 }}>
-                                  {load.truck_id ? `#${trucks.find(t => t.id === load.truck_id)?.unit_number || '—'}` : '—'}
+                                  {load.truck_id ? `#${trucks.find(t => t.id === load.truck_id)?.unit_number || 'ΓÇö'}` : 'ΓÇö'}
                                 </p>
                               </div>
                               <div>
@@ -1151,14 +1155,14 @@ const Tracking = () => {
                                 <span style={{ color: '#16a34a', fontWeight: 700 }}>P</span>
                                 <div>
                                   <p style={{ fontWeight: 600, margin: 0 }}>{formatCityState(load.origin)}</p>
-                                  <p style={{ color: '#888', margin: 0 }}>{load.pickup_date || '—'}</p>
+                                  <p style={{ color: '#888', margin: 0 }}>{load.pickup_date || 'ΓÇö'}</p>
                                 </div>
                               </div>
                               <div style={{ display: 'flex', gap: 6 }}>
                                 <span style={{ color: '#dc2626', fontWeight: 700 }}>D</span>
                                 <div>
                                   <p style={{ fontWeight: 600, margin: 0 }}>{formatCityState(load.destination)}</p>
-                                  <p style={{ color: '#888', margin: 0 }}>{load.delivery_date || '—'}</p>
+                                  <p style={{ color: '#888', margin: 0 }}>{load.delivery_date || 'ΓÇö'}</p>
                                 </div>
                               </div>
                             </div>
@@ -1182,7 +1186,7 @@ const Tracking = () => {
                           <div className="text-xs">
                             <strong>{load.reference_number}</strong>
                             <br />
-                            {stop.stop_type === 'pickup' ? '📦 Pickup' : '📍 Delivery'}
+                            {stop.stop_type === 'pickup' ? '≡ƒôª Pickup' : '≡ƒôì Delivery'}
                             <br />
                             {stop.address}
                             {driver && <><br />Driver: {driver.name}</>}
@@ -1193,7 +1197,7 @@ const Tracking = () => {
                   </div>
                 );
               })}
-              {/* Driver live location markers — filtered by dispatcher scope (rol o dropdown) */}
+              {/* Driver live location markers ΓÇö filtered by dispatcher scope (rol o dropdown) */}
               {driverLocations
                 .filter(loc => !scopedDriverIds || scopedDriverIds.has(loc.driver_id))
                 .map(loc => {
@@ -1211,7 +1215,7 @@ const Tracking = () => {
                     <Popup>
                       <div className="text-xs">
                         <strong>{driver.name}</strong>
-                        <br />📍 GPS Live
+                        <br />≡ƒôì GPS Live
                         {loc.speed != null && <><br />Speed: {(loc.speed * 2.237).toFixed(0)} mph</>}
                         <br /><span className="text-muted-foreground">Updated: {new Date(loc.updated_at).toLocaleTimeString()}</span>
                       </div>
@@ -1232,7 +1236,7 @@ const Tracking = () => {
                   <Popup>
                     <div className="text-xs">
                       <strong>{driver.name}</strong>
-                      <br />📍 Manual Location
+                      <br />≡ƒôì Manual Location
                       <br /><span className="text-muted-foreground">{(driver as any).manual_location_address}</span>
                     </div>
                   </Popup>
@@ -1242,7 +1246,7 @@ const Tracking = () => {
           </div>
         </Card>
 
-        {/* Drivers Load Timeline — debajo del mapa, misma columna */}
+        {/* Drivers Load Timeline ΓÇö debajo del mapa, misma columna */}
         <div className="lg:col-span-3 lg:col-start-2">
           <DriversTimelineCard
             loads={scopedAllLoads}
@@ -1259,7 +1263,7 @@ const Tracking = () => {
             <div className="flex items-center justify-between">
               <CardTitle className="text-base flex items-center gap-2">
                 <Eye className="h-4 w-4" />
-                Load Details — {selectedLoad.reference_number}
+                Load Details ΓÇö {selectedLoad.reference_number}
               </CardTitle>
               <StatusBadge status={selectedLoad.status} />
             </div>
@@ -1268,15 +1272,15 @@ const Tracking = () => {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
               <div>
                 <p className="text-muted-foreground text-xs">Broker/Client</p>
-                <p className="font-medium">{selectedLoad.broker_client || '—'}</p>
+                <p className="font-medium">{selectedLoad.broker_client || 'ΓÇö'}</p>
               </div>
               <div>
                 <p className="text-muted-foreground text-xs">Driver</p>
-                <p className="font-medium">{drivers.find(d => d.id === selectedLoad.driver_id)?.name || '—'}</p>
+                <p className="font-medium">{drivers.find(d => d.id === selectedLoad.driver_id)?.name || 'ΓÇö'}</p>
               </div>
               <div>
                 <p className="text-muted-foreground text-xs">Truck</p>
-                <p className="font-medium">{trucks.find(t => t.id === selectedLoad.truck_id)?.unit_number || '—'}</p>
+                <p className="font-medium">{trucks.find(t => t.id === selectedLoad.truck_id)?.unit_number || 'ΓÇö'}</p>
               </div>
               <div>
                 <p className="text-muted-foreground text-xs">Total Rate</p>
@@ -1284,19 +1288,19 @@ const Tracking = () => {
               </div>
               <div>
                 <p className="text-muted-foreground text-xs">Pickup Date</p>
-                <p className="font-medium">{selectedLoad.pickup_date ? format(parseISO(selectedLoad.pickup_date), 'MMM dd, yyyy') : '—'}</p>
+                <p className="font-medium">{selectedLoad.pickup_date ? format(parseISO(selectedLoad.pickup_date), 'MMM dd, yyyy') : 'ΓÇö'}</p>
               </div>
               <div>
                 <p className="text-muted-foreground text-xs">Delivery Date</p>
-                <p className="font-medium">{selectedLoad.delivery_date ? format(parseISO(selectedLoad.delivery_date), 'MMM dd, yyyy') : '—'}</p>
+                <p className="font-medium">{selectedLoad.delivery_date ? format(parseISO(selectedLoad.delivery_date), 'MMM dd, yyyy') : 'ΓÇö'}</p>
               </div>
               <div>
                 <p className="text-muted-foreground text-xs">Miles</p>
-                <p className="font-medium">{selectedLoad.miles > 0 ? `${selectedLoad.miles} mi` : '—'}</p>
+                <p className="font-medium">{selectedLoad.miles > 0 ? `${selectedLoad.miles} mi` : 'ΓÇö'}</p>
               </div>
               <div>
                 <p className="text-muted-foreground text-xs">Cargo Type</p>
-                <p className="font-medium">{selectedLoad.cargo_type || '—'}</p>
+                <p className="font-medium">{selectedLoad.cargo_type || 'ΓÇö'}</p>
               </div>
             </div>
 
