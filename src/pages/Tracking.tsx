@@ -770,43 +770,6 @@ const Tracking = () => {
         <p className="page-description">Real-time fleet monitoring and load tracking</p>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="border-l-4 border-l-[#5ee14c]">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-[#5ee14c]/10">
-              <Navigation className="h-5 w-5 text-[#5ee14c]" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">{inTransitCount}</p>
-              <p className="text-xs text-muted-foreground">In Transit</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-l-4 border-l-[hsl(270,60%,50%)]">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-[hsl(270,60%,50%)]/10">
-              <Package className="h-5 w-5 text-[hsl(270,60%,50%)]" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">{dispatchedCount}</p>
-              <p className="text-xs text-muted-foreground">Dispatched</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-l-4 border-l-primary">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <Clock className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">{deliveriesToday}</p>
-              <p className="text-xs text-muted-foreground">Deliveries Today</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[200px] max-w-sm">
@@ -850,16 +813,6 @@ const Tracking = () => {
                 </button>
               </div>
               <div className="flex items-center gap-2">
-                {(searchingCount > 0 || readyCount > 0) && (
-                  <div className="flex items-center gap-1.5 text-[10px] font-semibold">
-                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-[hsl(22,90%,48%)]/15 text-[hsl(22,90%,42%)]">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[hsl(22,90%,48%)]" />{searchingCount}
-                    </span>
-                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-[hsl(152,60%,40%)]/15 text-[hsl(152,60%,35%)]">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[hsl(152,60%,40%)]" />{readyCount}
-                    </span>
-                  </div>
-                )}
                 <Button
                   variant="outline"
                   size="sm"
