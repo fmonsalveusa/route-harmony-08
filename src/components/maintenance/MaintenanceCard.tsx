@@ -67,7 +67,7 @@ export function MaintenanceCard({ item, onEdit, onDelete, onLogService, onViewHi
             <span>{item.miles_accumulated.toLocaleString()} mi</span>
             <span>{item.interval_miles?.toLocaleString()} mi interval</span>
           </div>
-          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+          <div className="h-3 bg-muted rounded-full overflow-hidden">
             <div
               className={`h-full rounded-full transition-all ${progressColor}`}
               style={{ width: `${milesPercent}%` }}

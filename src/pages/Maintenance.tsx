@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Wrench, Plus, RefreshCw, List, Truck, Gauge, Check, X } from 'lucide-react';
+import { Wrench, Plus, RefreshCw, List, Truck, Gauge, Check, X, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -201,6 +201,16 @@ const Maintenance = () => {
                         <Truck className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm font-medium">{truck?.unit_number}</span>
                         <span className="text-sm text-muted-foreground">— {truck?.make || ''} {truck?.model || ''}</span>
+                        {/* Driver asignado a la unidad */}
+                        {(() => {
+                          const assignedDriver = drivers.find(d => d.id === truck?.driver_id);
+                          return assignedDriver ? (
+                            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                              <User className="h-3 w-3" />
+                              {assignedDriver.name}
+                            </span>
+                          ) : null;
+                        })()}
                         {/* Odómetro manual: click para editar inline */}
                         {editingOdoTruck === truckId ? (
                           <span className="inline-flex items-center gap-1">
