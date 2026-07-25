@@ -12,11 +12,12 @@ interface PositionCallback {
   accuracy: number | null;
 }
 
-const WATCHER_ID_KEY = 'native_bg_watcher_id';
 const BATTERY_SAVER_KEY = 'gps_battery_saver';
 
-// Active watch ID in this JS session
-let currentWatchId: string | null = null;
+// Marca si hay un watcher de background activo en esta sesión JS.
+// El plugin @capgo/background-geolocation maneja un solo stream global (start/stop),
+// no IDs por watcher, así que usamos un booleano.
+let isWatching = false;
 
 /** Check if battery saver mode is enabled */
 export function isBatterySaverEnabled(): boolean {
@@ -29,39 +30,31 @@ export function setBatterySaver(enabled: boolean): void {
 }
 
 /**
- * Returns true if native geolocation is available and not denied.
- * Used by DriverTrackingContext to decide whether to use native or web GPS.
+ * Returns true if native geolocation is available (plataforma nativa).
+ * Usado por DriverTrackingContext para decidir entre nativo o web.
+ * No consultamos permisos aquí porque el plugin los pide al hacer start().
  */
 export async function isBackgroundGeolocationAvailable(): Promise<boolean> {
-  if (!isNativePlatform()) return false;
-  try {
-    const { Geolocation } = await import('@capacitor/geolocation');
-    const perms = await Geolocation.checkPermissions();
-    // 'granted' or 'prompt' — both allow us to proceed (we'll request on start)
-    return perms.location !== 'denied';
-  } catch (e) {
-    console.warn('[NativeTracking] Could not check permissions:', e);
-    return false;
-  }
+  return isNativePlatform();
 }
 
-/** Returns true if a native watcher is currently active in this JS session */
+/** Returns true si hay un watcher nativo activo en esta sesión */
 export function hasActiveWatcher(): boolean {
-  return currentWatchId !== null;
+  return isWatching;
 }
 
 /**
- * Start native GPS tracking using @capacitor/geolocation.
- * On iOS with Background Modes → Location updates enabled in Xcode,
- * this continues sending positions even when the app is in the background.
+ * Inicia el tracking GPS en BACKGROUND usando @capgo/background-geolocation.
+ * A diferencia de @capacitor/geolocation (que solo reporta en foreground),
+ * este plugin sigue reportando ubicaciones con la app minimizada o el teléfono bloqueado.
  *
- * Requires in Info.plist:
- *   NSLocationAlwaysAndWhenInUseUsageDescription
- *   NSLocationAlwaysUsageDescription
+ * Requiere en Info.plist (iOS):
  *   NSLocationWhenInUseUsageDescription
+ *   NSLocationAlwaysAndWhenInUseUsageDescription
+ *   UIBackgroundModes → location
  *
- * Requires in Xcode → Signing & Capabilities → Background Modes:
- *   ✅ Location updates
+ * En Android: muestra una notificación persistente mientras trackea (obligatorio
+ * para background), y en Android 13+ pide permiso POST_NOTIFICATIONS.
  */
 export async function startNativeTracking(
   onPosition: (pos: PositionCallback) => void,
@@ -72,73 +65,84 @@ export async function startNativeTracking(
     return () => {};
   }
 
-  // Clean up any leftover watcher from a previous session
+  // Limpiar cualquier stream anterior antes de arrancar uno nuevo
   await stopNativeTracking();
 
   try {
-    const { Geolocation } = await import('@capacitor/geolocation');
-
-    if (requestPermissions) {
-      const perms = await Geolocation.requestPermissions({ permissions: ['location'] });
-      if (perms.location === 'denied') {
-        throw new Error('PERMISSION_DENIED: Location permission denied. Enable it in Settings → Privacy → Location Services.');
-      }
-    }
+    const { BackgroundGeolocation } = await import('@capgo/background-geolocation');
 
     const batterySaver = isBatterySaverEnabled();
-    console.log('[NativeTracking] Starting watcher, batterySaver:', batterySaver);
+    // distanceFilter: metros que el driver debe moverse para generar un nuevo update.
+    // En modo ahorro filtramos más (menos updates), en modo normal filtramos menos.
+    const distanceFilter = batterySaver ? 100 : 30;
 
-    const watchId = await Geolocation.watchPosition(
+    console.log('[NativeTracking] Starting background watcher, batterySaver:', batterySaver);
+
+    await BackgroundGeolocation.start(
       {
-        enableHighAccuracy: !batterySaver,   // high accuracy = GPS chip; false = network/wifi
-        timeout: 15000,
-        maximumAge: batterySaver ? 30000 : 0,
+        // backgroundMessage definido = el plugin reporta en background (no solo foreground).
+        // En Android este texto va en la notificación persistente obligatoria.
+        backgroundMessage: 'Tracking your location for active loads.',
+        backgroundTitle: 'Dispatch Up — On Route',
+        requestPermissions,
+        stale: false,          // solo ubicaciones actualizadas, no cacheadas
+        distanceFilter,
       },
-      (position, err) => {
-        if (err) {
-          console.error('[NativeTracking] GPS error:', err);
+      (location, error) => {
+        if (error) {
+          console.error('[NativeTracking] GPS error:', error);
+          // El plugin usa code 'NOT_AUTHORIZED' cuando falta permiso.
+          if ((error as any)?.code === 'NOT_AUTHORIZED') {
+            // No lanzamos aquí (estamos en callback async); el contexto ya mostró UI de permisos.
+          }
           return;
         }
-        if (position) {
+        if (location) {
           onPosition({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-            speed: position.coords.speed ?? null,
-            heading: position.coords.heading ?? null,
-            accuracy: position.coords.accuracy ?? null,
+            lat: location.latitude,
+            lng: location.longitude,
+            speed: location.speed ?? null,
+            heading: location.bearing ?? null,   // el plugin llama 'bearing' al heading
+            accuracy: location.accuracy ?? null,
           });
         }
       }
     );
 
-    currentWatchId = watchId;
-    localStorage.setItem(WATCHER_ID_KEY, watchId);
-    console.log('[NativeTracking] Watcher started, id:', watchId);
+    isWatching = true;
+    console.log('[NativeTracking] Background watcher started');
 
     return () => { stopNativeTracking(); };
   } catch (e: any) {
-    console.error('[NativeTracking] Failed to start watcher:', e);
-    currentWatchId = null;
-    localStorage.removeItem(WATCHER_ID_KEY);
-    // Re-throw permission errors so DriverTrackingContext can show a toast
-    if (e?.message?.includes('PERMISSION_DENIED')) throw e;
+    console.error('[NativeTracking] Failed to start background watcher:', e);
+    isWatching = false;
+    if (e?.message?.includes('PERMISSION_DENIED') || e?.code === 'NOT_AUTHORIZED') {
+      throw new Error('PERMISSION_DENIED: Location permission denied. Enable it in Settings.');
+    }
     return () => {};
   }
 }
 
-/** Stop the active native GPS watcher */
+/** Detiene el watcher de background */
 export async function stopNativeTracking(): Promise<void> {
-  const idToRemove = currentWatchId ?? localStorage.getItem(WATCHER_ID_KEY);
-  if (!idToRemove) return;
-
+  if (!isNativePlatform()) return;
   try {
-    const { Geolocation } = await import('@capacitor/geolocation');
-    await Geolocation.clearWatch({ id: idToRemove });
-    console.log('[NativeTracking] Watcher stopped:', idToRemove);
+    const { BackgroundGeolocation } = await import('@capgo/background-geolocation');
+    await BackgroundGeolocation.stop();
+    console.log('[NativeTracking] Background watcher stopped');
   } catch (e) {
     console.error('[NativeTracking] Failed to stop watcher:', e);
   }
+  isWatching = false;
+}
 
-  currentWatchId = null;
-  localStorage.removeItem(WATCHER_ID_KEY);
+/** Abre los ajustes del sistema para que el usuario habilite permisos de ubicación */
+export async function openLocationSettings(): Promise<void> {
+  if (!isNativePlatform()) return;
+  try {
+    const { BackgroundGeolocation } = await import('@capgo/background-geolocation');
+    await BackgroundGeolocation.openSettings();
+  } catch (e) {
+    console.error('[NativeTracking] Failed to open settings:', e);
+  }
 }
