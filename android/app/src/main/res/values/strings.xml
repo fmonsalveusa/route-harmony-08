@@ -4,4 +4,9 @@
     <string name="title_activity_main">Dispatch Up Driver</string>
     <string name="package_name">com.dispatchup.driver</string>
     <string name="custom_url_scheme">com.dispatchup.driver</string>
+    <!-- Nombre del canal de la notificación persistente del tracking en background.
+         Visible cuando el usuario mantiene presionada la notificación. -->
+    <string name="capacitor_background_geolocation_notification_channel_name">Dispatch Up Tracking</string>
+    <!-- Color de la notificación (parseable por android.graphics.Color). Opcional. -->
+    <string name="capacitor_background_geolocation_notification_color">#266AAD</string>
 </resources>
