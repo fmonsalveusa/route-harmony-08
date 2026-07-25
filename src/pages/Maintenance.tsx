@@ -201,9 +201,9 @@ const Maintenance = () => {
                         <Truck className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm font-medium">{truck?.unit_number}</span>
                         <span className="text-sm text-muted-foreground">— {truck?.make || ''} {truck?.model || ''}</span>
-                        {/* Driver asignado a la unidad */}
+                        {/* Driver asignado a la unidad (drivers.truck_id apunta al camión) */}
                         {(() => {
-                          const assignedDriver = drivers.find(d => d.id === truck?.driver_id);
+                          const assignedDriver = drivers.find(d => String((d as any).truck_id) === String(truck?.id));
                           return assignedDriver ? (
                             <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                               <User className="h-3 w-3" />
