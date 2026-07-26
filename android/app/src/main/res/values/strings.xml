@@ -9,4 +9,6 @@
     <string name="capacitor_background_geolocation_notification_channel_name">Dispatch Up Tracking</string>
     <!-- Color de la notificación (parseable por android.graphics.Color). Opcional. -->
     <string name="capacitor_background_geolocation_notification_color">#266AAD</string>
+    <!-- Ícono de la notificación persistente (generado con Android Studio → Notification Icons) -->
+    <string name="capacitor_background_geolocation_notification_icon">drawable/ic_tracking</string>
 </resources>
