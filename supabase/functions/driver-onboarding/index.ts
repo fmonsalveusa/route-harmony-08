@@ -222,6 +222,11 @@ Deno.serve(async (req) => {
 
       // Dynamic leasing agreements
       const leasingInserts: Array<{ driver_id: string; company_id: string; company_name: string; file_url: string; tenant_id: string }> = [];
+      // Mapeo de companyId → columna en la tabla drivers para que el perfil muestre los leasing
+      const LEASING_COLUMN_MAP: Record<string, string> = {
+        "789196fd-825a-45ea-b9e2-6da6bc189b10": "leasing_agreement_url",     // AG-AR
+        "21f1d144-908f-4b6b-85e6-1e15e33ac0a3": "leasing_agreement_58_url",  // 58 Logistics
+      };
       for (const formKey of leasingFileKeys) {
         const companyId = formKey.replace("driver_leasing_", "");
         const file = formData.get(formKey) as File | null;
@@ -230,6 +235,9 @@ Deno.serve(async (req) => {
           if (path) {
             const { data: co } = await supabaseAdmin.from("companies").select("name").eq("id", companyId).single();
             leasingInserts.push({ driver_id: driverId, company_id: companyId, company_name: co?.name ?? companyId, file_url: path, tenant_id: tenantId });
+            // También guardar el path en la columna de drivers para que el perfil lo muestre
+            const col = LEASING_COLUMN_MAP[companyId];
+            if (col) driverDocUrls[col] = path;
           }
         }
       }
