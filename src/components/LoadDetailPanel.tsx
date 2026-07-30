@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { Browser } from '@capacitor/browser';
+import { Capacitor } from '@capacitor/core';
 import { useQueryClient } from '@tanstack/react-query';
 import { formatDate } from '@/lib/dateUtils';
 import { MapPin, Calendar, Weight, DollarSign, User, Truck, Route, Navigation, FileText, Download, ExternalLink, Pencil, Loader2, Copy, Check, Building2, Plus, Upload } from 'lucide-react';
@@ -354,10 +356,14 @@ function StopPhotoSection({ loadId, stopId, isFirst, stopType }: { loadId: strin
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => { setPreviewUrl(null); setPreviewName(''); }}>Cerrar</Button>
             {previewUrl && (
-              <Button asChild>
-                <a href={previewUrl} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="h-4 w-4 mr-2" /> Abrir en nueva pestaña
-                </a>
+              <Button onClick={async () => {
+                if (Capacitor.isNativePlatform()) {
+                  await Browser.open({ url: previewUrl });
+                } else {
+                  window.open(previewUrl, '_blank', 'noopener,noreferrer');
+                }
+              }}>
+                <ExternalLink className="h-4 w-4 mr-2" /> Abrir en nueva pestaña
               </Button>
             )}
           </div>
@@ -606,19 +612,33 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
     return url;
   };
 
+  // Helper: abrir URL en Capacitor (Browser.open) o en web (window.open)
+  const openUrl = async (url: string) => {
+    if (Capacitor.isNativePlatform()) {
+      await Browser.open({ url });
+    } else {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
   const openOriginalPdf = async () => {
     const url = await resolveDriverDocsUrl(load.pdf_url || '');
-    if (url) window.open(url, '_blank', 'noopener,noreferrer');
+    if (url) await openUrl(url);
   };
 
   const openRcOriginalPdf = async () => {
     const url = await resolveDriverDocsUrl(rcOriginalUrl || '');
-    if (url) window.open(url, '_blank', 'noopener,noreferrer');
+    if (url) await openUrl(url);
   };
 
   const downloadRcOriginalPdf = async () => {
     const url = await resolveDriverDocsUrl(rcOriginalUrl || '');
     if (!url) return;
+    // En Capacitor no se puede descargar con anchor, abrimos en el navegador
+    if (Capacitor.isNativePlatform()) {
+      await Browser.open({ url });
+      return;
+    }
     try {
       const res = await fetch(url);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -640,7 +660,10 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
   const downloadOriginalPdf = async () => {
     const url = await resolveDriverDocsUrl(load.pdf_url || '');
     if (!url) return;
-
+    if (Capacitor.isNativePlatform()) {
+      await Browser.open({ url });
+      return;
+    }
     try {
       const res = await fetch(url);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
