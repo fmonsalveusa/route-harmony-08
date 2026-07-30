@@ -152,11 +152,37 @@ const Documents = () => {
       const pdfData = full.signedFileData || full.fileData;
       if (!pdfData) { toast.error('PDF no disponible'); return; }
 
-      // En Capacitor (iOS/Android), el anchor con download no funciona.
-      // iOS WKWebView renderiza PDFs nativamente al navegar al data URL.
-      // El usuario puede volver con el gesto/botón de atrás.
+      // En Capacitor, ni anchor.download ni window.location ni Browser.open funcionan
+      // con data URLs. Mostramos el PDF inline en un overlay con iframe.
+      // iOS WKWebView renderiza PDFs nativamente en iframes.
       if (Capacitor.isNativePlatform()) {
-        window.location.href = pdfData;
+        try {
+          const res = await fetch(pdfData);
+          const blob = await res.blob();
+          const blobUrl = URL.createObjectURL(blob);
+
+          const overlay = document.createElement('div');
+          overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:9999;background:white;display:flex;flex-direction:column;';
+
+          const header = document.createElement('div');
+          header.style.cssText = 'display:flex;justify-content:flex-end;padding:12px 16px;background:#1e3a5f;flex-shrink:0;';
+          const closeBtn = document.createElement('button');
+          closeBtn.textContent = '✕ Cerrar';
+          closeBtn.style.cssText = 'padding:6px 16px;background:white;color:#1e3a5f;border:none;border-radius:6px;font-size:14px;font-weight:600;';
+          closeBtn.onclick = () => { document.body.removeChild(overlay); URL.revokeObjectURL(blobUrl); };
+          header.appendChild(closeBtn);
+
+          const iframe = document.createElement('iframe');
+          iframe.src = blobUrl;
+          iframe.style.cssText = 'flex:1;width:100%;border:none;';
+
+          overlay.appendChild(header);
+          overlay.appendChild(iframe);
+          document.body.appendChild(overlay);
+        } catch (e) {
+          console.error('Error displaying PDF:', e);
+          toast.error('Error al abrir el PDF');
+        }
         return;
       }
 
