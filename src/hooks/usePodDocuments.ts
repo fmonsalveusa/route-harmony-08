@@ -3,8 +3,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { getTenantId } from '@/hooks/useTenantId';
 import { compressImage } from '@/lib/imageCompression';
-import { Browser } from '@capacitor/browser';
-import { Capacitor } from '@capacitor/core';
 
 function extractDriverDocumentsPathFromSignedUrl(url: string): string | null {
   const match = url.match(/\/storage\/v1\/object\/sign\/driver-documents\/([^?]+)/);
@@ -175,23 +173,13 @@ export function usePodDocuments(loadId: string, referenceNumber?: string) {
       toast({ title: 'Error', description: 'No se pudo abrir el archivo (ruta no encontrada)', variant: 'destructive' });
       return;
     }
-    if (Capacitor.isNativePlatform()) {
-      await Browser.open({ url });
-    } else {
-      window.open(url, '_blank', 'noopener,noreferrer');
-    }
+    window.open(url, '_blank', 'noopener,noreferrer');
   }, [resolvePodUrl, toast]);
 
   const downloadPod = useCallback(async (pod: PodDocument) => {
     const url = await resolvePodUrl(pod);
     if (!url) {
       toast({ title: 'Error', description: 'No se pudo descargar el archivo (ruta no encontrada)', variant: 'destructive' });
-      return;
-    }
-
-    // En Capacitor, anchor download no funciona. Abrimos con Browser.
-    if (Capacitor.isNativePlatform()) {
-      await Browser.open({ url });
       return;
     }
 
@@ -210,6 +198,7 @@ export function usePodDocuments(loadId: string, referenceNumber?: string) {
       URL.revokeObjectURL(blobUrl);
     } catch (err) {
       console.error('Error downloading POD:', err);
+      // Fallback: al menos abrirlo
       window.open(url, '_blank', 'noopener,noreferrer');
     }
   }, [resolvePodUrl, toast]);
