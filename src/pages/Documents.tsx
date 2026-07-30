@@ -1,7 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
-import { Filesystem, Directory } from '@capacitor/filesystem';
 import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -154,32 +152,18 @@ const Documents = () => {
       const pdfData = full.signedFileData || full.fileData;
       if (!pdfData) { toast.error('PDF no disponible'); return; }
 
-      const fileName = `signed-${full.fileName}`;
-
-      // En Capacitor, el anchor con data URL no descarga.
-      // Guardamos el archivo con Filesystem y lo abrimos con Browser.
+      // En Capacitor (iOS/Android), el anchor con download no funciona.
+      // iOS WKWebView renderiza PDFs nativamente al navegar al data URL.
+      // El usuario puede volver con el gesto/botón de atrás.
       if (Capacitor.isNativePlatform()) {
-        try {
-          const base64 = pdfData.includes(',') ? pdfData.split(',')[1] : pdfData;
-          const saved = await Filesystem.writeFile({
-            path: fileName,
-            data: base64,
-            directory: Directory.Cache,
-          });
-          // Abrir el archivo guardado
-          const uri = saved.uri || (await Filesystem.getUri({ path: fileName, directory: Directory.Cache })).uri;
-          await Browser.open({ url: uri });
-        } catch (e) {
-          console.error('Error saving/opening PDF on native:', e);
-          toast.error('Error al abrir el PDF');
-        }
+        window.location.href = pdfData;
         return;
       }
 
       // Web: descarga normal con anchor
       const link = document.createElement('a');
       link.href = pdfData;
-      link.download = fileName;
+      link.download = `signed-${full.fileName}`;
       link.click();
     } catch {
       toast.error('Error al descargar el PDF');
