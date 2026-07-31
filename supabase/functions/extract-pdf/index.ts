@@ -182,6 +182,10 @@ serve(async (req) => {
                         type: "string",
                         description: "Date for this stop in YYYY-MM-DD format, empty if not found",
                       },
+                      time: {
+                        type: "string",
+                        description: "Pickup or delivery time window (e.g. '08:00-15:00', '2:00 PM', 'FCFS'). Empty if not found.",
+                      },
                       shipper: {
                         type: "string",
                         description: "Company or person name shipping/sending the cargo at this pickup stop. Empty string if not a pickup or not found.",
@@ -234,7 +238,9 @@ Examples:
 - "Name: Paragon\n5775 E 10 Mile Rd, Warren MI 48091" → consignee="Paragon", address="5775 E 10 Mile Rd, Warren, MI 48091"
 
 Return stops in route order (pickups first, deliveries last).
-Dates must be in YYYY-MM-DD format. If not found, use empty string or 0 for numbers.`,
+Dates must be in YYYY-MM-DD format. If not found, use empty string or 0 for numbers.
+
+TIME EXTRACTION: Look for pickup/delivery time windows, appointment times, or operating hours for each stop. Common formats: "08:00-15:00", "8 AM - 3 PM", "Appointment: 2:00 PM", "PU: 0800-1500", "FCFS" (First Come First Served), "Open 6A-4P". Return the time as shown in the document. If no time is found, use empty string.`,
               },
             ],
           },
@@ -290,6 +296,7 @@ Dates must be in YYYY-MM-DD format. If not found, use empty string or 0 for numb
         stop_type: s.stopType,
         address:   s.address,
         date:      s.date || "",
+        time:      s.time || "",
         shipper:   s.shipper || "",
         consignee: s.consignee || "",
       })),
