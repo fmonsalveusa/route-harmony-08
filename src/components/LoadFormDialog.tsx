@@ -24,6 +24,7 @@ interface StopEntry {
   stop_type: 'pickup' | 'delivery';
   address: string;
   date: string;
+  time: string;
   shipper?: string;
   consignee?: string;
 }
@@ -125,8 +126,8 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
   const [recipients, setRecipients] = useState<Recipient[]>([{ type: 'company', name: 'Empresa', pct: 100 }]);
   const [adjustmentSaved, setAdjustmentSaved] = useState(false);
   const [stopEntries, setStopEntries] = useState<StopEntry[]>([
-    { stop_type: 'pickup', address: '', date: '' },
-    { stop_type: 'delivery', address: '', date: '' },
+    { stop_type: 'pickup', address: '', date: '', time: '' },
+    { stop_type: 'delivery', address: '', date: '', time: '' },
   ]);
 
   // Initialize form when dialog opens or editLoad changes (NOT when existingStops changes)
@@ -223,8 +224,8 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       setRcOriginalUploadedUrl(null);
       setRcOriginalFileName('');
       setStopEntries([
-        { stop_type: 'pickup', address: '', date: '' },
-        { stop_type: 'delivery', address: '', date: '' },
+        { stop_type: 'pickup', address: '', date: '', time: '' },
+        { stop_type: 'delivery', address: '', date: '', time: '' },
       ]);
     }
   }, [editLoad?.id, open, companies]);
@@ -237,11 +238,12 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
         stop_type: s.stop_type as 'pickup' | 'delivery',
         address: s.address,
         date: s.date || '',
+        time: (s as any).time || '',
       })));
     } else {
       setStopEntries([
-        { stop_type: 'pickup', address: editLoad.origin, date: editLoad.pickup_date || '' },
-        { stop_type: 'delivery', address: editLoad.destination, date: editLoad.delivery_date || '' },
+        { stop_type: 'pickup', address: editLoad.origin, date: editLoad.pickup_date || '', time: '' },
+        { stop_type: 'delivery', address: editLoad.destination, date: editLoad.delivery_date || '', time: '' },
       ]);
     }
   }, [existingStops, open, editLoad?.id]);
@@ -264,7 +266,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
 
   const addStop = (type: 'pickup' | 'delivery') => {
     setStopEntries(prev => {
-      const newStop = { stop_type: type, address: '', date: '' };
+      const newStop = { stop_type: type, address: '', date: '', time: '' };
       if (type === 'pickup') {
         // Insertar después del último pickup
         const lastPickupIdx = [...prev].map((s, i) => s.stop_type === 'pickup' ? i : -1).filter(i => i >= 0).pop() ?? -1;
@@ -419,13 +421,14 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
             stop_type: s.stop_type || 'delivery',
             address: s.address || '',
             date: s.date || '',
+            time: s.time || '',
             shipper: s.shipper || '',
             consignee: s.consignee || '',
           })));
         } else if (extracted.origin || extracted.destination) {
           setStopEntries([
-            { stop_type: 'pickup', address: extracted.origin || '', date: extracted.pickupDate || '' },
-            { stop_type: 'delivery', address: extracted.destination || '', date: extracted.deliveryDate || '' },
+            { stop_type: 'pickup', address: extracted.origin || '', date: extracted.pickupDate || '', time: '' },
+            { stop_type: 'delivery', address: extracted.destination || '', date: extracted.deliveryDate || '', time: '' },
           ]);
         }
 
@@ -678,6 +681,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
         address: s.address,
         stop_order: i,
         date: s.date || undefined,
+        time: s.time || undefined,
         shipper: s.shipper || undefined,
         consignee: s.consignee || undefined,
       })));
@@ -1008,6 +1012,12 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
                 onChange={e => updateStop(stop.originalIndex, 'date', e.target.value)}
                 className="w-36"
               />
+              <Input
+                type="time"
+                value={stop.time}
+                onChange={e => updateStop(stop.originalIndex, 'time', e.target.value)}
+                className="w-28"
+              />
               {pickupStops.length > 1 && (
                 <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => removeStop(stop.originalIndex)}>
                   <Trash2 className="h-3.5 w-3.5" />
@@ -1034,6 +1044,12 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
                 value={stop.date}
                 onChange={e => updateStop(stop.originalIndex, 'date', e.target.value)}
                 className="w-36"
+              />
+              <Input
+                type="time"
+                value={stop.time}
+                onChange={e => updateStop(stop.originalIndex, 'time', e.target.value)}
+                className="w-28"
               />
               {deliveryStops.length > 1 && (
                 <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => removeStop(stop.originalIndex)}>

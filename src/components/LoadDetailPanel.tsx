@@ -1554,6 +1554,7 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
                   const nameLabel = stop.type === 'pickup' ? dbStop?.shipper : dbStop?.consignee;
                   const stopTypeLabel = stop.type === 'pickup' ? 'Pick Up' : 'Delivery';
                   const stopDate = dbStop?.date || (stop.type === 'pickup' ? load.pickup_date : load.delivery_date);
+                  const stopTime = (dbStop as any)?.time || null;
                   const copyText = [
                     stopTypeLabel,
                     nameLabel,
@@ -1572,6 +1573,7 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
                             <div className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0">
                               <span className="font-medium text-muted-foreground">{stopTypeLabel} Date: </span>
                               <span className="font-semibold text-foreground">{formatDate(stopDate)}</span>
+                              {stopTime && <span className="font-semibold text-foreground ml-1">{stopTime}</span>}
                             </div>
                           )}
                         </div>

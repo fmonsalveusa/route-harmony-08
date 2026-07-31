@@ -91,6 +91,7 @@ export function useLoadStops(loadId?: string) {
           date: s.date || null,
           shipper: (s as any).shipper || null,
           consignee: (s as any).consignee || null,
+          time: (s as any).time || null,
           tenant_id,
           ...(existing?.photos ? { photos: existing.photos } : {}),
         };
