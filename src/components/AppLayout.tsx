@@ -456,8 +456,10 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
       />
 
       {(role === 'admin' || role === 'dispatcher' || role === 'accounting') && (
-        <LiveNotificationToasts />
-        <MaintenanceReminder />
+        <>
+          <LiveNotificationToasts />
+          <MaintenanceReminder />
+        </>
       )}
       <MeetingAlertModal />
     </div>
