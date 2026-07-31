@@ -1013,10 +1013,10 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
                 className="w-36"
               />
               <Input
-                type="time"
+                placeholder="Hora (ej. 08:00-15:00)"
                 value={stop.time}
                 onChange={e => updateStop(stop.originalIndex, 'time', e.target.value)}
-                className="w-28"
+                className="w-36"
               />
               {pickupStops.length > 1 && (
                 <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => removeStop(stop.originalIndex)}>
@@ -1046,10 +1046,10 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
                 className="w-36"
               />
               <Input
-                type="time"
+                placeholder="Hora (ej. 08:00-15:00)"
                 value={stop.time}
                 onChange={e => updateStop(stop.originalIndex, 'time', e.target.value)}
-                className="w-28"
+                className="w-36"
               />
               {deliveryStops.length > 1 && (
                 <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => removeStop(stop.originalIndex)}>
