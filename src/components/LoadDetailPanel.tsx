@@ -1570,10 +1570,14 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
                         <div className="flex items-start justify-between gap-2">
                           <div className="font-semibold text-sm text-foreground">{nameLabel || stopTypeLabel}</div>
                           {stopDate && (
-                            <div className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0">
-                              <span className="font-medium text-muted-foreground">{stopTypeLabel} Date: </span>
-                              <span className="font-semibold text-foreground">{formatDate(stopDate)}</span>
-                              {stopTime && <span className="font-semibold text-foreground ml-1">{stopTime}</span>}
+                            <div className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0 text-right">
+                              <div>
+                                <span className="font-medium text-muted-foreground">{stopTypeLabel} Date: </span>
+                                <span className="font-semibold text-foreground">{formatDate(stopDate)}</span>
+                              </div>
+                              {stopTime && (
+                                <div className="font-semibold text-foreground">{stopTime}</div>
+                              )}
                             </div>
                           )}
                         </div>
