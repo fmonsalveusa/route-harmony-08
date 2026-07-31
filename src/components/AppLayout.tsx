@@ -15,6 +15,7 @@ import { LoadFormDialog } from '@/components/LoadFormDialog';
 import { useLoads } from '@/hooks/useLoads';
 import { NotificationBell } from '@/components/NotificationBell';
 import { LiveNotificationToasts } from '@/components/LiveNotificationToasts';
+import { MaintenanceReminder } from '@/components/MaintenanceReminder';
 import { MeetingAlertModal } from '@/components/MeetingAlertModal';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { supabase } from '@/integrations/supabase/client';
@@ -456,6 +457,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
 
       {(role === 'admin' || role === 'dispatcher' || role === 'accounting') && (
         <LiveNotificationToasts />
+        <MaintenanceReminder />
       )}
       <MeetingAlertModal />
     </div>
