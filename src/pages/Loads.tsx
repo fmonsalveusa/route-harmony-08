@@ -501,9 +501,17 @@ const Loads = () => {
                               );
                             })()}
                           </td>
-                          <td className="p-4 hidden lg:table-cell text-muted-foreground">{formatDate(load.pickup_date)}</td>
+                          <td className="p-4 hidden lg:table-cell text-muted-foreground">
+                            <div>{formatDate(load.pickup_date)}</div>
+                            {(load as any).pickup_time && (
+                              <div className="text-[11px] text-muted-foreground/70">{(load as any).pickup_time}</div>
+                            )}
+                          </td>
                           <td className="p-4 hidden lg:table-cell text-muted-foreground">
                             <div>{formatDate(load.delivery_date)}</div>
+                            {(load as any).delivery_time && (
+                              <div className="text-[11px] text-muted-foreground/70">{(load as any).delivery_time}</div>
+                            )}
                             {load.delivery_date && load.delivery_date.split('T')[0] === new Date().toLocaleDateString('en-CA') && (
                               <span style={{ backgroundColor: '#ea580c', color: 'white', fontSize: '10px', fontWeight: 600, padding: '2px 6px', borderRadius: '4px', display: 'inline-block', marginTop: '2px' }}>
                                 TODAY

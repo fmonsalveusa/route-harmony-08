@@ -543,12 +543,18 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       pdfUrl = decodeURIComponent(pdfUrl.split('/object/sign/driver-documents/')[1].split('?')[0]);
     }
 
+    // Extraer las horas del primer pickup y último delivery
+    const firstPickup = stopEntries.find(s => s.stop_type === 'pickup');
+    const lastDelivery = [...stopEntries].reverse().find(s => s.stop_type === 'delivery');
+
     const payload: CreateLoadInput & { status?: string } = {
       reference_number: formData.referenceNumber || `RC-${Date.now()}`,
       origin,
       destination,
       pickup_date: pickupDate || undefined,
       delivery_date: deliveryDate || undefined,
+      pickup_time: firstPickup?.time || undefined,
+      delivery_time: lastDelivery?.time || undefined,
       weight: formData.weight,
       total_rate: formData.totalRate,
       driver_id: selectedDriver || undefined,
