@@ -207,6 +207,8 @@ export function useLoads() {
     queryClient.setQueryData<DbLoad[]>(LOADS_QUERY_KEY, (old) =>
       (old ?? []).map(l => l.id === id ? { ...l, ...input } : l)
     );
+    // Refetch para asegurar que todos los campos nuevos se muestren
+    await queryClient.invalidateQueries({ queryKey: LOADS_QUERY_KEY });
     toastRef.current({ title: 'Load updated' });
     return true;
   }, [queryClient]);
