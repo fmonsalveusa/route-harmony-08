@@ -34,6 +34,8 @@ export interface DbLoad {
   company_id: string | null;
   gross_rate?: number | null;
   rc_original_url?: string | null;
+  pickup_time?: string | null;
+  delivery_time?: string | null;
 }
 
 export interface CreateLoadInput {
@@ -60,6 +62,8 @@ export interface CreateLoadInput {
   company_id?: string;
   gross_rate?: number | null;
   rc_original_url?: string | null;
+  pickup_time?: string;
+  delivery_time?: string;
 }
 
 const LOADS_SELECT = [
