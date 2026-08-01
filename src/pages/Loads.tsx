@@ -473,7 +473,7 @@ const Loads = () => {
                           <td className="p-4 text-foreground">
                             <div>{load.broker_client || '—'}</div>
                             {load.delivery_date && load.delivery_date.split('T')[0] === new Date().toLocaleDateString('en-CA') && (
-                              <span className="inline-flex items-center mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide text-white bg-[#266aad] whitespace-nowrap">
+                              <span className="inline-flex items-center mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide text-white bg-[#ea580c] whitespace-nowrap">
                                 TODAY
                               </span>
                             )}
