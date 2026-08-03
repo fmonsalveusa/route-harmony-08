@@ -71,7 +71,7 @@ export function LiveNotificationToasts() {
   useEffect(() => {
     if (!profile?.tenant_id) return;
 
-    const channel = supabase
+    let channel = supabase
       .channel('live-toasts')
       .on(
         'postgres_changes',
@@ -111,10 +111,52 @@ export function LiveNotificationToasts() {
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          // Reintentar conexión después de 5 segundos
+          setTimeout(() => {
+            supabase.removeChannel(channel);
+            channel = supabase
+              .channel('live-toasts-retry-' + Date.now())
+              .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, (payload) => {
+                const n = payload.new as any;
+                if (n.tenant_id !== profile.tenant_id) return;
+                if (n.type === 'new_driver_onboarded' && !isAdmin) return;
+                setToasts((prev) => [{ id: n.id, type: n.type, title: n.title, message: n.message, load_id: n.load_id, created_at: n.created_at }, ...prev].slice(0, 5));
+                if (['status_changed', 'driver_arrived', 'pod_uploaded'].includes(n.type)) {
+                  if (invalidateTimerRef.current) clearTimeout(invalidateTimerRef.current);
+                  invalidateTimerRef.current = setTimeout(() => { queryClient.invalidateQueries({ queryKey: ['loads'] }); invalidateTimerRef.current = null; }, 1500);
+                }
+              })
+              .subscribe();
+          }, 5000);
+        }
+      });
+
+    // Reconectar cuando el usuario vuelve a la pestaña (visibilitychange)
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        supabase.removeChannel(channel);
+        channel = supabase
+          .channel('live-toasts-vis-' + Date.now())
+          .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, (payload) => {
+            const n = payload.new as any;
+            if (n.tenant_id !== profile.tenant_id) return;
+            if (n.type === 'new_driver_onboarded' && !isAdmin) return;
+            setToasts((prev) => [{ id: n.id, type: n.type, title: n.title, message: n.message, load_id: n.load_id, created_at: n.created_at }, ...prev].slice(0, 5));
+            if (['status_changed', 'driver_arrived', 'pod_uploaded'].includes(n.type)) {
+              if (invalidateTimerRef.current) clearTimeout(invalidateTimerRef.current);
+              invalidateTimerRef.current = setTimeout(() => { queryClient.invalidateQueries({ queryKey: ['loads'] }); invalidateTimerRef.current = null; }, 1500);
+            }
+          })
+          .subscribe();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
 
     return () => {
       supabase.removeChannel(channel);
+      document.removeEventListener('visibilitychange', handleVisibility);
       if (invalidateTimerRef.current) clearTimeout(invalidateTimerRef.current);
     };
   }, [profile?.tenant_id]);
