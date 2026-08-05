@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Camera, Check, X, RefreshCw, Download } from 'lucide-react';
 
 interface StopPhotoGridProps {
@@ -37,13 +37,14 @@ export function StopPhotoGrid({
     return url;
   };
 
-  // Resolver URLs al montar
-  useState(() => {
+  // Resolver URLs al montar y cuando cambian las fotos
+  useEffect(() => {
     photos.forEach(async (p) => {
+      if (resolvedUrls[p.id]) return;
       const url = await resolveUrl(p);
       if (url) setResolvedUrls(prev => ({ ...prev, [p.id]: url }));
     });
-  });
+  }, [photos]);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
