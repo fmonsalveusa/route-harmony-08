@@ -20,6 +20,7 @@ import { BolFormDialog } from '@/components/BolFormDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { usePodDocuments } from '@/hooks/usePodDocuments';
 import { StopDocumentGroup } from '@/components/StopDocumentGroup';
+import { StopPhotoGrid } from '@/components/StopPhotoGrid';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { useToast } from '@/hooks/use-toast';
@@ -244,14 +245,12 @@ function BrokerScoreRow({ brokerName, hideLabel }: { brokerName: string | null |
   );
 }
 
-function StopPhotoSection({ loadId, stopId, isFirst, stopType }: { loadId: string; stopId: string; isFirst?: boolean; stopType?: string }) {
+function StopPhotoSection({ loadId, stopId, isFirst, stopType, loadReference }: { loadId: string; stopId: string; isFirst?: boolean; stopType?: string; loadReference?: string }) {
   const { pods, uploading, uploadPod, deletePod, downloadPod, resolvePodUrl } = usePodDocuments(loadId);
-  // Fotos de esta parada + fotos sin stop_id (legacy) solo en la primera parada
   const stopPods = pods.filter(p =>
     p.stop_id === stopId || (isFirst && p.stop_id === null)
   );
 
-  // Separar imágenes y documentos según tipo de parada
   const images = stopPods.filter(p => p.file_type === 'image');
   const docs = stopPods.filter(p => p.file_type !== 'image');
   const docLabel = stopType === 'pickup' ? 'BOL' : 'POD';
@@ -277,18 +276,19 @@ function StopPhotoSection({ loadId, stopId, isFirst, stopType }: { loadId: strin
 
   return (
     <>
-      <div className="mt-2 space-y-1.5">
-        {/* Imágenes */}
-        {images.length > 0 && (
-          <StopDocumentGroup
-            label="Imágenes"
-            docs={images}
-            onOpen={handleOpen}
-            onDownload={downloadPod}
-            onDelete={deletePod}
-          />
-        )}
-        {/* BOL / POD */}
+      <div className="mt-2 space-y-3">
+        {/* Grilla de fotos con tiles etiquetados y zoom */}
+        <StopPhotoGrid
+          photos={images}
+          stopType={(stopType as 'pickup' | 'delivery') || 'pickup'}
+          loadReference={loadReference || ''}
+          resolveUrl={resolvePodUrl}
+          onUpload={async (file) => { await uploadPod(file, stopId); }}
+          onDelete={async (id) => { await deletePod(id); }}
+          uploading={uploading}
+        />
+
+        {/* BOL / POD — se mantiene como estaba */}
         {docs.length > 0 && (
           <StopDocumentGroup
             label={docLabel}
@@ -298,16 +298,8 @@ function StopPhotoSection({ loadId, stopId, isFirst, stopType }: { loadId: strin
             onDelete={deletePod}
           />
         )}
-        {/* Si no hay nada aún, muestra el grupo vacío para mantener estructura */}
-        {stopPods.length === 0 && (
-          <StopDocumentGroup
-            label={null}
-            docs={[]}
-            onOpen={handleOpen}
-            onDownload={downloadPod}
-            onDelete={deletePod}
-          />
-        )}
+
+        {/* Botón para subir BOL/POD (documentos, no fotos) */}
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
@@ -334,7 +326,7 @@ function StopPhotoSection({ loadId, stopId, isFirst, stopType }: { loadId: strin
         </div>
       </div>
 
-      {/* Visor inline */}
+      {/* Visor inline para BOL/POD */}
       <Dialog open={!!previewUrl || loadingPreview} onOpenChange={(open) => { if (!open) { setPreviewUrl(null); setPreviewName(''); } }}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
@@ -1593,7 +1585,7 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
                           </div>
                         )}
                         {dbStop?.id && (
-                          <StopPhotoSection loadId={load.id} stopId={dbStop.id} isFirst={i === 0} stopType={stop.type} />
+                          <StopPhotoSection loadId={load.id} stopId={dbStop.id} isFirst={i === 0} stopType={stop.type} loadReference={load.reference_number} />
                         )}
                       </div>
                     </div>
