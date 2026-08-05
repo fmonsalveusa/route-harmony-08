@@ -23,11 +23,7 @@ export function StopPhotoGrid({
   onDelete,
   uploading,
 }: StopPhotoGridProps) {
-  const [resolvedUrls, setResolvedUrls] = useState<Record<string, string>>(() => {
-    const cached: Record<string, string> = {};
-    photos.forEach(p => { const u = urlCache.get(p.id); if (u) cached[p.id] = u; });
-    return cached;
-  });
+  const [, setResolved] = useState(0);
   const [zoomUrl, setZoomUrl] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -39,17 +35,17 @@ export function StopPhotoGrid({
   const getUrl = async (photo: any): Promise<string> => {
     if (urlCache.has(photo.id)) return urlCache.get(photo.id)!;
     const url = await resolveUrl(photo);
-    if (url) { urlCache.set(photo.id, url); setResolvedUrls(prev => ({ ...prev, [photo.id]: url })); }
+    if (url) { urlCache.set(photo.id, url); setResolved(n => n + 1); }
     return url;
   };
 
   useEffect(() => {
     const pending = photos.filter(p => !urlCache.has(p.id));
     if (!pending.length) return;
-    Promise.all(pending.map(async (p) => {
+    pending.forEach(async (p) => {
       const url = await resolveUrl(p);
-      if (url) { urlCache.set(p.id, url); setResolvedUrls(prev => ({ ...prev, [p.id]: url })); }
-    }));
+      if (url) { urlCache.set(p.id, url); setResolved(n => n + 1); }
+    });
   }, [photos]);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -80,7 +76,7 @@ export function StopPhotoGrid({
         {/* Fotos existentes */}
         {photos.map((photo, idx) => {
           const label = `${prefix} #${loadReference}-${String(idx + 1).padStart(2, '0')}`;
-          const url = resolvedUrls[photo.id];
+          const url = urlCache.get(photo.id);
 
           return (
             <div key={photo.id} className="relative group">
