@@ -1,6 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { Camera, Check, X, RefreshCw, Download } from 'lucide-react';
 
+// Caché global: URLs resueltas persisten entre aperturas del detalle
+const urlCache = new Map<string, string>();
+
 interface StopPhotoGridProps {
   photos: Array<{ id: string; file_name: string; file_url: string }>;
   stopType: 'pickup' | 'delivery';
@@ -20,7 +23,11 @@ export function StopPhotoGrid({
   onDelete,
   uploading,
 }: StopPhotoGridProps) {
-  const [resolvedUrls, setResolvedUrls] = useState<Record<string, string>>({});
+  const [resolvedUrls, setResolvedUrls] = useState<Record<string, string>>(() => {
+    const cached: Record<string, string> = {};
+    photos.forEach(p => { const u = urlCache.get(p.id); if (u) cached[p.id] = u; });
+    return cached;
+  });
   const [zoomUrl, setZoomUrl] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -29,21 +36,20 @@ export function StopPhotoGrid({
 
   const prefix = stopType === 'pickup' ? 'Pick' : 'Del';
 
-  // Resolver URLs para las fotos
   const getUrl = async (photo: any): Promise<string> => {
-    if (resolvedUrls[photo.id]) return resolvedUrls[photo.id];
+    if (urlCache.has(photo.id)) return urlCache.get(photo.id)!;
     const url = await resolveUrl(photo);
-    if (url) setResolvedUrls(prev => ({ ...prev, [photo.id]: url }));
+    if (url) { urlCache.set(photo.id, url); setResolvedUrls(prev => ({ ...prev, [photo.id]: url })); }
     return url;
   };
 
-  // Resolver URLs al montar y cuando cambian las fotos
   useEffect(() => {
-    photos.forEach(async (p) => {
-      if (resolvedUrls[p.id]) return;
+    const pending = photos.filter(p => !urlCache.has(p.id));
+    if (!pending.length) return;
+    Promise.all(pending.map(async (p) => {
       const url = await resolveUrl(p);
-      if (url) setResolvedUrls(prev => ({ ...prev, [p.id]: url }));
-    });
+      if (url) { urlCache.set(p.id, url); setResolvedUrls(prev => ({ ...prev, [p.id]: url })); }
+    }));
   }, [photos]);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
