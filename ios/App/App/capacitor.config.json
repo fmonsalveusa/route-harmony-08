@@ -27,6 +27,7 @@
 		"HapticsPlugin",
 		"PushNotificationsPlugin",
 		"SplashScreenPlugin",
-		"StatusBarPlugin"
+		"StatusBarPlugin",
+		"BackgroundGeolocation"
 	]
 }
