@@ -79,7 +79,7 @@ export function StopPhotoGrid({
             <div key={photo.id} className="relative group">
               {/* Tile */}
               <div
-                className="aspect-square rounded-lg overflow-hidden bg-muted cursor-pointer border border-border hover:border-primary/50 transition-colors"
+                className="aspect-[2/1] rounded-lg overflow-hidden bg-muted cursor-pointer border border-border hover:border-primary/50 transition-colors"
                 onClick={async () => {
                   const resolved = url || await getUrl(photo);
                   if (resolved) setZoomUrl(resolved);
@@ -127,7 +127,7 @@ export function StopPhotoGrid({
 
         {/* Tile vacío para agregar */}
         <div
-          className="aspect-square rounded-lg border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-primary/50 hover:bg-muted/50 transition-colors"
+          className="aspect-[2/1] rounded-lg border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-primary/50 hover:bg-muted/50 transition-colors"
           onClick={() => fileInputRef.current?.click()}
         >
           {uploading ? (
