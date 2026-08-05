@@ -1,9 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Camera, Check, X, RefreshCw, Download } from 'lucide-react';
 
-// Caché global: URLs resueltas persisten entre aperturas del detalle
-const urlCache = new Map<string, string>();
-
 interface StopPhotoGridProps {
   photos: Array<{ id: string; file_name: string; file_url: string }>;
   stopType: 'pickup' | 'delivery';
@@ -23,7 +20,7 @@ export function StopPhotoGrid({
   onDelete,
   uploading,
 }: StopPhotoGridProps) {
-  const [, setResolved] = useState(0);
+  const [urls, setUrls] = useState<Record<string, string>>({});
   const [zoomUrl, setZoomUrl] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -32,20 +29,23 @@ export function StopPhotoGrid({
 
   const prefix = stopType === 'pickup' ? 'Pick' : 'Del';
 
-  const getUrl = async (photo: any): Promise<string> => {
-    if (urlCache.has(photo.id)) return urlCache.get(photo.id)!;
-    const url = await resolveUrl(photo);
-    if (url) { urlCache.set(photo.id, url); setResolved(n => n + 1); }
-    return url;
-  };
-
+  // Resolver TODAS las URLs en paralelo al montar (rápido)
   useEffect(() => {
-    const pending = photos.filter(p => !urlCache.has(p.id));
-    if (!pending.length) return;
-    pending.forEach(async (p) => {
-      const url = await resolveUrl(p);
-      if (url) { urlCache.set(p.id, url); setResolved(n => n + 1); }
-    });
+    let cancelled = false;
+    const resolve = async () => {
+      const results = await Promise.all(
+        photos.map(async (p) => {
+          const url = await resolveUrl(p);
+          return { id: p.id, url };
+        })
+      );
+      if (cancelled) return;
+      const map: Record<string, string> = {};
+      results.forEach(r => { if (r.url) map[r.id] = r.url; });
+      setUrls(map);
+    };
+    if (photos.length > 0) resolve();
+    return () => { cancelled = true; };
   }, [photos]);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -76,17 +76,14 @@ export function StopPhotoGrid({
         {/* Fotos existentes */}
         {photos.map((photo, idx) => {
           const label = `${prefix} #${loadReference}-${String(idx + 1).padStart(2, '0')}`;
-          const url = urlCache.get(photo.id);
+          const url = urls[photo.id];
 
           return (
             <div key={photo.id} className="relative group">
               {/* Tile */}
               <div
                 className="aspect-[2/1] rounded-lg overflow-hidden bg-muted cursor-pointer border border-border hover:border-primary/50 transition-colors"
-                onClick={async () => {
-                  const resolved = url || await getUrl(photo);
-                  if (resolved) setZoomUrl(resolved);
-                }}
+                onClick={() => { if (url) setZoomUrl(url); }}
               >
                 {url ? (
                   <img src={url} alt={label} className="w-full h-full object-cover" />
@@ -126,10 +123,9 @@ export function StopPhotoGrid({
               <button
                 onClick={async (e) => {
                   e.stopPropagation();
-                  const resolved = url || await getUrl(photo);
-                  if (!resolved) return;
+                  if (!url) return;
                   try {
-                    const res = await fetch(resolved);
+                    const res = await fetch(url);
                     const blob = await res.blob();
                     const blobUrl = URL.createObjectURL(blob);
                     const a = document.createElement('a');
@@ -140,7 +136,7 @@ export function StopPhotoGrid({
                     document.body.removeChild(a);
                     URL.revokeObjectURL(blobUrl);
                   } catch {
-                    window.open(resolved, '_blank');
+                    window.open(url, '_blank');
                   }
                 }}
                 className="absolute bottom-6 right-0 bg-black/50 text-white p-1 rounded-bl opacity-0 group-hover:opacity-100 transition-opacity"
