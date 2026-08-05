@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Camera, Check, X, RefreshCw } from 'lucide-react';
+import { Camera, Check, X, RefreshCw, Download } from 'lucide-react';
 
 interface StopPhotoGridProps {
   photos: Array<{ id: string; file_name: string; file_url: string }>;
@@ -117,6 +117,33 @@ export function StopPhotoGrid({
                 className="absolute bottom-6 left-0 right-0 bg-black/50 text-white text-[10px] text-center py-0.5 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
               >
                 Cambiar
+              </button>
+
+              {/* Botón de descarga */}
+              <button
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  const resolved = url || await getUrl(photo);
+                  if (!resolved) return;
+                  try {
+                    const res = await fetch(resolved);
+                    const blob = await res.blob();
+                    const blobUrl = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = blobUrl;
+                    a.download = photo.file_name || `${label}.jpg`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(blobUrl);
+                  } catch {
+                    window.open(resolved, '_blank');
+                  }
+                }}
+                className="absolute bottom-6 right-0 bg-black/50 text-white p-1 rounded-bl opacity-0 group-hover:opacity-100 transition-opacity"
+                title="Descargar"
+              >
+                <Download className="h-3 w-3" />
               </button>
 
               {/* Etiqueta */}
