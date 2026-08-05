@@ -91,10 +91,10 @@ function DocCard({
       selected
         ? 'border-primary ring-2 ring-primary/30 shadow-md'
         : 'border-border hover:border-primary/50 hover:shadow-sm'
-    }`} style={{ width: 64 }}>
+    }`} style={{ width: 120 }}>
 
       {/* Thumbnail area */}
-      <div className="h-8 bg-muted/30 relative">
+      <div className="h-20 bg-muted/30 relative">
         {isImage ? (
           <ImageThumb doc={doc} onClick={onOpen} />
         ) : (
@@ -103,8 +103,8 @@ function DocCard({
             className="w-full h-full flex flex-col items-center justify-center gap-1 text-primary hover:bg-muted/50 transition-colors"
             type="button"
           >
-            <FileText className="h-4 w-4" />
-            <span className="text-[8px] text-muted-foreground">PDF</span>
+            <FileText className="h-6 w-6" />
+            <span className="text-[10px] text-muted-foreground">PDF</span>
           </button>
         )}
 
