@@ -543,9 +543,16 @@ const Tracking = () => {
   // Auto-sync Buscando <-> Listo segun carga activa.
   // - Si un driver en 'searching' recibe una carga activa -> pasa a 'ready'.
   // - Si un driver en 'ready' pierde su carga activa (cancelada/reasignada) -> vuelve a 'searching'.
-  // Solo corre despues del pre-mark inicial para no pisar el estado que se acaba de cargar.
+  // IMPORTANTE: solo dispara cuando el set de drivers con carga activa CAMBIA,
+  // no en cada render. Asi los clicks manuales del dispatcher se respetan
+  // (ej: marcar 'Buscando' a un driver que ya tiene carga para conseguirle la siguiente).
+  const prevActiveIdsRef = useRef<string>('');
   useEffect(() => {
     if (!preMarkedRef.current) return;
+
+    const currentIds = Object.keys(activeLoadByDriver).sort().join(',');
+    if (currentIds === prevActiveIdsRef.current) return;
+    prevActiveIdsRef.current = currentIds;
 
     const updates: Array<{ driver_id: string; newStatus: 'searching' | 'ready' }> = [];
     Object.entries(searchStatus).forEach(([driverId, status]) => {
