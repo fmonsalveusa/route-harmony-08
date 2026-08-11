@@ -540,6 +540,46 @@ const Tracking = () => {
     }
   };
 
+  // Auto-sync Buscando <-> Listo segun carga activa.
+  // - Si un driver en 'searching' recibe una carga activa -> pasa a 'ready'.
+  // - Si un driver en 'ready' pierde su carga activa (cancelada/reasignada) -> vuelve a 'searching'.
+  // Solo corre despues del pre-mark inicial para no pisar el estado que se acaba de cargar.
+  useEffect(() => {
+    if (!preMarkedRef.current) return;
+
+    const updates: Array<{ driver_id: string; newStatus: 'searching' | 'ready' }> = [];
+    Object.entries(searchStatus).forEach(([driverId, status]) => {
+      const hasActiveLoad = !!activeLoadByDriver[driverId];
+      if (status === 'searching' && hasActiveLoad) {
+        updates.push({ driver_id: driverId, newStatus: 'ready' });
+      } else if (status === 'ready' && !hasActiveLoad) {
+        updates.push({ driver_id: driverId, newStatus: 'searching' });
+      }
+    });
+
+    if (updates.length === 0) return;
+
+    setSearchStatus(prev => {
+      const copy = { ...prev };
+      updates.forEach(u => { copy[u.driver_id] = u.newStatus; });
+      return copy;
+    });
+
+    (async () => {
+      const today = new Date().toISOString().split('T')[0];
+      const tenant_id = await getTenantId();
+      const rows = updates.map(u => ({
+        driver_id: u.driver_id,
+        search_date: today,
+        status: u.newStatus,
+        tenant_id,
+        updated_by: profile?.id ?? null,
+        updated_at: new Date().toISOString(),
+      }));
+      await supabase.from('daily_search_status' as any).upsert(rows, { onConflict: 'driver_id,search_date,tenant_id' });
+    })();
+  }, [activeLoadByDriver, searchStatus, profile?.id]);
+
   // Contadores para el header
   const searchingCount = Object.values(searchStatus).filter(s => s === 'searching').length;
   const readyCount = Object.values(searchStatus).filter(s => s === 'ready').length;
