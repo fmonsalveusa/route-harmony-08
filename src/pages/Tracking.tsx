@@ -344,6 +344,20 @@ const Tracking = () => {
     return map;
   }, [enrichedLoads]);
 
+  // Driver tiene carga FUTURA (delivery > hoy). Se usa para decidir estado en Next Plan:
+  // - Sin carga futura (empty o entrega hoy) -> deberia estar Buscando.
+  // - Con carga futura -> puede estar Listo/Standby (ya esta cubierto).
+  const hasFutureLoadByDriver = useMemo(() => {
+    const today = new Date().toISOString().split('T')[0];
+    const map: Record<string, boolean> = {};
+    enrichedLoads.forEach(load => {
+      if (!load.driver_id) return;
+      const deliveryDate = load.delivery_date || '';
+      if (deliveryDate > today) map[load.driver_id] = true;
+    });
+    return map;
+  }, [enrichedLoads]);
+
   // Ultima parada (stop_order mas alto) de una carga
   const getLastStop = (load: LoadWithStops): LoadStop | null => {
     if (load.stops.length === 0) return null;
@@ -470,7 +484,9 @@ const Tracking = () => {
   // (si dependiera de `loads`, se re-ejecutar├¡a constantemente y pisar├¡a cambios manuales).
   const preMarkedRef = useRef(false);
   useEffect(() => {
-    if (!drivers.length || preMarkedRef.current) return;
+    // Esperar a que carguen drivers Y loads antes del pre-mark, sino no podemos
+    // distinguir "empty" de "todavia no llegaron los loads".
+    if (!drivers.length || !loads.length || preMarkedRef.current) return;
     const today = new Date().toISOString().split('T')[0];
 
     (async () => {
@@ -484,16 +500,21 @@ const Tracking = () => {
       const map: Record<string, 'searching' | 'ready'> = {};
       ((data as any) || []).forEach((r: any) => { map[r.driver_id] = r.status; });
 
-      // Pre-marcar como 'searching' a los que entregan hoy y no tienen estado guardado.
-      // Leemos loads del closure una sola vez; no es dependencia del effect.
-      const deliveringTodayIds = new Set(
-        loads
-          .filter(l => l.driver_id && l.delivery_date && isToday(parseISO(l.delivery_date)) && l.status !== 'cancelled')
-          .map(l => l.driver_id as string)
-      );
+      // Pre-marcar como 'searching' a todo driver que NO tenga carga futura y no tenga estado guardado.
+      // Esto cubre: (1) empty totales, (2) los que entregan hoy pero no tienen la siguiente.
+      // Los que ya tienen carga futura quedan sin estado (= Standby por default).
+      const driversWithFuture = new Set<string>();
+      loads.forEach(l => {
+        if (!l.driver_id || !l.delivery_date || l.status === 'cancelled') return;
+        if (l.delivery_date > today) driversWithFuture.add(l.driver_id);
+      });
       const toPreMark: string[] = [];
-      deliveringTodayIds.forEach(id => {
-        if (!map[id]) { map[id] = 'searching'; toPreMark.push(id); }
+      drivers.forEach(d => {
+        if (map[d.id]) return; // ya tiene estado persistido
+        if (!driversWithFuture.has(d.id)) {
+          map[d.id] = 'searching';
+          toPreMark.push(d.id);
+        }
       });
 
       setSearchStatus(map);
@@ -507,7 +528,7 @@ const Tracking = () => {
         await supabase.from('daily_search_status' as any).upsert(rows, { onConflict: 'driver_id,search_date,tenant_id' });
       }
     })();
-  }, [drivers.length, profile?.id]);
+  }, [drivers.length, loads.length, profile?.id]);
 
   // Cicla el estado de un driver: standby ΓåÆ searching ΓåÆ ready ΓåÆ standby
   const cycleSearchStatus = async (driverId: string, e: React.MouseEvent) => {
@@ -540,26 +561,26 @@ const Tracking = () => {
     }
   };
 
-  // Auto-sync Buscando <-> Listo segun carga activa.
-  // - Si un driver en 'searching' recibe una carga activa -> pasa a 'ready'.
-  // - Si un driver en 'ready' pierde su carga activa (cancelada/reasignada) -> vuelve a 'searching'.
-  // IMPORTANTE: solo dispara cuando el set de drivers con carga activa CAMBIA,
-  // no en cada render. Asi los clicks manuales del dispatcher se respetan
-  // (ej: marcar 'Buscando' a un driver que ya tiene carga para conseguirle la siguiente).
+  // Auto-sync Buscando <-> Listo segun carga FUTURA (delivery > hoy).
+  // - Si un driver en 'searching' recibe una carga futura -> pasa a 'ready'.
+  // - Si un driver en 'ready' pierde su carga futura -> vuelve a 'searching'.
+  // Una carga que entrega HOY no cuenta como "cubierto" — el driver sigue buscando la siguiente.
+  // IMPORTANTE: solo dispara cuando el set de drivers con carga futura CAMBIA,
+  // no en cada render. Asi los clicks manuales del dispatcher se respetan.
   const prevActiveIdsRef = useRef<string>('');
   useEffect(() => {
     if (!preMarkedRef.current) return;
 
-    const currentIds = Object.keys(activeLoadByDriver).sort().join(',');
+    const currentIds = Object.keys(hasFutureLoadByDriver).sort().join(',');
     if (currentIds === prevActiveIdsRef.current) return;
     prevActiveIdsRef.current = currentIds;
 
     const updates: Array<{ driver_id: string; newStatus: 'searching' | 'ready' }> = [];
     Object.entries(searchStatus).forEach(([driverId, status]) => {
-      const hasActiveLoad = !!activeLoadByDriver[driverId];
-      if (status === 'searching' && hasActiveLoad) {
+      const hasFuture = !!hasFutureLoadByDriver[driverId];
+      if (status === 'searching' && hasFuture) {
         updates.push({ driver_id: driverId, newStatus: 'ready' });
-      } else if (status === 'ready' && !hasActiveLoad) {
+      } else if (status === 'ready' && !hasFuture) {
         updates.push({ driver_id: driverId, newStatus: 'searching' });
       }
     });
@@ -585,7 +606,7 @@ const Tracking = () => {
       }));
       await supabase.from('daily_search_status' as any).upsert(rows, { onConflict: 'driver_id,search_date,tenant_id' });
     })();
-  }, [activeLoadByDriver, searchStatus, profile?.id]);
+  }, [hasFutureLoadByDriver, searchStatus, profile?.id]);
 
   // Contadores para el header
   const searchingCount = Object.values(searchStatus).filter(s => s === 'searching').length;
