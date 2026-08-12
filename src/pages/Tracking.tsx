@@ -571,27 +571,24 @@ const Tracking = () => {
     }
   };
 
-  // Auto-sync Buscando <-> Listo segun ASIGNACIONES activas (cualquier carga activa).
-  // - Si un driver en 'searching' recibe una carga (aunque entregue hoy) -> pasa a 'ready'.
-  // - Si un driver en 'ready' pierde su carga activa -> vuelve a 'searching'.
-  // Solo dispara cuando REALMENTE cambia una asignacion (usa firma de load-driver pairs),
-  // no en cada render, para no pisar clicks manuales del dispatcher.
-  // La primera corrida despues del pre-mark NO dispara — solo captura la firma inicial.
-  const prevAssignmentsRef = useRef<string | null>(null);
+  // Auto-sync Buscando <-> Listo segun CARGA FUTURA (delivery > hoy):
+  // - 'searching' + tiene carga futura -> 'ready'.
+  // - 'ready' + no tiene carga futura -> 'searching'.
+  // Una carga que entrega HOY NO cuenta — el driver sigue buscando la siguiente.
+  // Corre siempre que cambie la firma de asignaciones (incluye la carga inicial,
+  // para corregir estados stale de la DB).
+  const prevAssignmentsRef = useRef<string>('');
   useEffect(() => {
     if (!preMarkedRef.current) return;
     if (prevAssignmentsRef.current === activeAssignmentsSignature) return;
-
-    const isFirstRun = prevAssignmentsRef.current === null;
     prevAssignmentsRef.current = activeAssignmentsSignature;
-    if (isFirstRun) return; // captura firma inicial sin cambiar nada
 
     const updates: Array<{ driver_id: string; newStatus: 'searching' | 'ready' }> = [];
     Object.entries(searchStatus).forEach(([driverId, status]) => {
-      const hasActive = !!activeLoadByDriver[driverId];
-      if (status === 'searching' && hasActive) {
+      const hasFuture = !!hasFutureLoadByDriver[driverId];
+      if (status === 'searching' && hasFuture) {
         updates.push({ driver_id: driverId, newStatus: 'ready' });
-      } else if (status === 'ready' && !hasActive) {
+      } else if (status === 'ready' && !hasFuture) {
         updates.push({ driver_id: driverId, newStatus: 'searching' });
       }
     });
@@ -617,7 +614,7 @@ const Tracking = () => {
       }));
       await supabase.from('daily_search_status' as any).upsert(rows, { onConflict: 'driver_id,search_date,tenant_id' });
     })();
-  }, [activeAssignmentsSignature, activeLoadByDriver, searchStatus, profile?.id]);
+  }, [activeAssignmentsSignature, hasFutureLoadByDriver, searchStatus, profile?.id]);
 
   // Contadores para el header
   const searchingCount = Object.values(searchStatus).filter(s => s === 'searching').length;
