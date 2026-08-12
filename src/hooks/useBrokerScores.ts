@@ -33,7 +33,7 @@ export function useBrokerScores() {
       return ((data as any[]) ?? []).map((b: any) => ({
         ...b,
         broker_name: b.name,
-        score: null,
+        score: b.score ?? null,
       }));
     },
   });
@@ -46,7 +46,7 @@ export function useBrokerScores() {
 
   const upsertScore = useMutation({
     mutationFn: async (input: { broker_name: string; score?: number; days_to_pay?: number; rating?: string; notes?: string }) => {
-      const { broker_name, score, ...rest } = input;
+      const { broker_name, ...rest } = input;
       // Upsert into brokers table by name
       const { data, error } = await supabase
         .from('brokers' as any)
