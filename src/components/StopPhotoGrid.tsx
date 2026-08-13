@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Camera, Check, X, RefreshCw, Download } from 'lucide-react';
+import { Camera, Check, X, RefreshCw, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface StopPhotoGridProps {
   photos: Array<{ id: string; file_name: string; file_url: string }>;
@@ -21,8 +21,24 @@ export function StopPhotoGrid({
   uploading,
 }: StopPhotoGridProps) {
   const [urls, setUrls] = useState<Record<string, string>>({});
-  const [zoomUrl, setZoomUrl] = useState<string | null>(null);
+  const [zoomIndex, setZoomIndex] = useState<number | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  const closeZoom = () => setZoomIndex(null);
+  const showPrev = () => setZoomIndex(i => i === null ? null : (i - 1 + photos.length) % photos.length);
+  const showNext = () => setZoomIndex(i => i === null ? null : (i + 1) % photos.length);
+
+  // Teclado: flechas y Escape en el visor
+  useEffect(() => {
+    if (zoomIndex === null) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeZoom();
+      else if (e.key === 'ArrowLeft') showPrev();
+      else if (e.key === 'ArrowRight') showNext();
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [zoomIndex, photos.length]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const replaceInputRef = useRef<HTMLInputElement>(null);
   const [replacingId, setReplacingId] = useState<string | null>(null);
@@ -83,7 +99,7 @@ export function StopPhotoGrid({
               {/* Tile */}
               <div
                 className="aspect-[2/1] rounded-lg overflow-hidden bg-muted cursor-pointer border border-border hover:border-primary/50 transition-colors"
-                onClick={() => { if (url) setZoomUrl(url); }}
+                onClick={() => { if (url) setZoomIndex(idx); }}
               >
                 {url ? (
                   <img src={url} alt={label} className="w-full h-full object-cover" />
@@ -171,26 +187,65 @@ export function StopPhotoGrid({
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleUpload} />
       <input ref={replaceInputRef} type="file" accept="image/*" className="hidden" onChange={handleReplace} />
 
-      {/* Modal de zoom */}
-      {zoomUrl && (
-        <div
-          className="fixed inset-0 z-[60] bg-black/85 flex items-center justify-center"
-          onClick={() => setZoomUrl(null)}
-        >
-          <button
-            className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/40 transition-colors z-[61]"
-            onClick={() => setZoomUrl(null)}
+      {/* Modal de zoom con navegacion */}
+      {zoomIndex !== null && photos[zoomIndex] && (() => {
+        const currentPhoto = photos[zoomIndex];
+        const currentUrl = urls[currentPhoto.id];
+        const currentLabel = `${prefix} #${loadReference}-${String(zoomIndex + 1).padStart(2, '0')}`;
+        const hasMultiple = photos.length > 1;
+        return (
+          <div
+            className="fixed inset-0 z-[60] bg-black/85 flex items-center justify-center"
+            onClick={closeZoom}
           >
-            <X className="h-5 w-5 text-white" />
-          </button>
-          <img
-            src={zoomUrl}
-            alt="Zoom"
-            className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg"
-            onClick={(e) => e.stopPropagation()}
-          />
-        </div>
-      )}
+            {/* Cerrar */}
+            <button
+              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/40 transition-colors z-[61]"
+              onClick={closeZoom}
+            >
+              <X className="h-5 w-5 text-white" />
+            </button>
+
+            {/* Contador y etiqueta */}
+            <div className="absolute top-4 left-4 text-white text-sm z-[61] bg-black/40 px-3 py-1 rounded-full">
+              {currentLabel} {hasMultiple && `(${zoomIndex + 1}/${photos.length})`}
+            </div>
+
+            {/* Prev */}
+            {hasMultiple && (
+              <button
+                className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/40 transition-colors z-[61]"
+                onClick={(e) => { e.stopPropagation(); showPrev(); }}
+                title="Anterior (←)"
+              >
+                <ChevronLeft className="h-7 w-7 text-white" />
+              </button>
+            )}
+
+            {/* Next */}
+            {hasMultiple && (
+              <button
+                className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/40 transition-colors z-[61]"
+                onClick={(e) => { e.stopPropagation(); showNext(); }}
+                title="Siguiente (→)"
+              >
+                <ChevronRight className="h-7 w-7 text-white" />
+              </button>
+            )}
+
+            {currentUrl ? (
+              <img
+                src={currentUrl}
+                alt={currentLabel}
+                className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg"
+                onClick={(e) => e.stopPropagation()}
+              />
+            ) : (
+              <RefreshCw className="h-8 w-8 animate-spin text-white" />
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 }
