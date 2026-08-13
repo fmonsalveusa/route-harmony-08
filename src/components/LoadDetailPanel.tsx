@@ -1542,7 +1542,9 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
             {resolvedStops.length > 0 ? (
               <div className="space-y-3">
                 {resolvedStops.map((stop, i) => {
-                  const dbStop = dbStops.find(s => s.address === stop.address);
+                  // Match por indice (resolvedStops mantiene el orden de dbStops).
+                  // Fallback a match por address para casos edge donde el orden pudo desalinearse.
+                  const dbStop = dbStops[i] ?? dbStops.find(s => s.address === stop.address);
                   const nameLabel = stop.type === 'pickup' ? dbStop?.shipper : dbStop?.consignee;
                   const stopTypeLabel = stop.type === 'pickup' ? 'Pick Up' : 'Delivery';
                   const stopDate = dbStop?.date || (stop.type === 'pickup' ? load.pickup_date : load.delivery_date);
