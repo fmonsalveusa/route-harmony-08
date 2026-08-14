@@ -12,7 +12,7 @@ import { useTrucks } from '@/hooks/useTrucks';
 import { useDispatchers } from '@/hooks/useDispatchers';
 import { useCompanies } from '@/hooks/useCompanies';
 import { useInvoices } from '@/hooks/useInvoices';
-import { generatePaymentsForLoad, deletePaymentsForLoad } from '@/hooks/usePayments';
+import { deletePaymentsForLoad } from '@/hooks/usePayments';
 import { generateInvoicePdf } from '@/lib/invoicePdf';
 import { supabase } from '@/integrations/supabase/client';
 import { LoadFormDialog } from '@/components/LoadFormDialog';
@@ -589,20 +589,10 @@ const Loads = () => {
                               onValueChange={async (val) => {
                                 const prevFactoring = load.factoring;
                                 await updateLoad(load.id, { factoring: val });
-                                if (val === 'ready') {
-                                  setGeneratingPaymentIds(prev => new Set(prev).add(load.id));
-                                  try {
-                                    const driverData = drivers.find(d => d.id === load.driver_id) || null;
-                                    const dispatcherData = dispatchers.find(d => d.id === load.dispatcher_id) || null;
-                                    await generatePaymentsForLoad(load, driverData, dispatcherData);
-                                  } finally {
-                                    setGeneratingPaymentIds(prev => {
-                                      const next = new Set(prev);
-                                      next.delete(load.id);
-                                      return next;
-                                    });
-                                  }
-                                } else if (prevFactoring === 'ready' && val !== 'ready') {
+                                // Los pagos (driver + investors) los genera el trigger de DB
+                                // trg_generate_payment_on_factoring_ready cuando factoring pasa a 'ready'.
+                                // No creamos pagos client-side para evitar duplicacion y bugs de sincronizacion.
+                                if (prevFactoring === 'ready' && val !== 'ready') {
                                   await deletePaymentsForLoad(load.id);
                                 }
                               }}>
