@@ -600,12 +600,13 @@ const Tracking = () => {
 
     const updates: Array<{ driver_id: string; newStatus: 'searching' | 'ready' }> = [];
     Object.entries(searchStatus).forEach(([driverId, status]) => {
-      // Respetar cambios manuales — el usuario tiene la ultima palabra por el dia.
-      if (manualStatusIds.has(driverId)) return;
-      const hasFuture = !!hasFutureLoadByDriver[driverId];
-      if (status === 'searching' && hasFuture) {
+      // Solo respetar manual para 'standby' (usuario opto por sacarlo del dia).
+      // 'searching' y 'ready' son estados dinamicos que responden a la realidad.
+      if (manualStatusIds.has(driverId) && status === 'standby') return;
+      const hasActive = !!activeLoadByDriver[driverId];
+      if (status === 'searching' && hasActive) {
         updates.push({ driver_id: driverId, newStatus: 'ready' });
-      } else if (status === 'ready' && !hasFuture) {
+      } else if (status === 'ready' && !hasActive) {
         updates.push({ driver_id: driverId, newStatus: 'searching' });
       }
     });
@@ -631,7 +632,7 @@ const Tracking = () => {
       }));
       await supabase.from('daily_search_status' as any).upsert(rows, { onConflict: 'driver_id,search_date,tenant_id' });
     })();
-  }, [activeAssignmentsSignature, hasFutureLoadByDriver, searchStatus, manualStatusIds, profile?.id]);
+  }, [activeAssignmentsSignature, activeLoadByDriver, searchStatus, manualStatusIds, profile?.id]);
 
   // Contadores para el header
   const searchingCount = Object.values(searchStatus).filter(s => s === 'searching').length;
