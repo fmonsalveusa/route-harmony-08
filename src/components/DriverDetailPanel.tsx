@@ -177,14 +177,19 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
       toast({ title: 'Ingresa el nombre de la empresa', variant: 'destructive' });
       return;
     }
+    if (!file || file.size === 0) {
+      toast({ title: 'Archivo invalido', description: 'El PDF esta vacio o no se pudo leer', variant: 'destructive' });
+      return;
+    }
     setUploadingLeasing(true);
     try {
       const ext = file.name.split('.').pop();
       const path = `${driver.id}/leasing_${Date.now()}.${ext}`;
-      const { error: uploadError } = await supabase.storage
+      const { error: uploadError, data: uploadData } = await supabase.storage
         .from('driver-documents')
         .upload(path, file, { upsert: true });
       if (uploadError) throw uploadError;
+      if (!uploadData?.path) throw new Error('Upload sin path devuelto — verifica permisos del bucket');
 
       const tenant_id = await getTenantId();
       const { error: insertError } = await supabase
@@ -379,7 +384,24 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
             ...((driver as any).leasing_agreement_url ? [{ key: 'leasing_agreement_url', label: 'Leasing Agreement', url: (driver as any).leasing_agreement_url }] : []),
             ...((driver as any).leasing_agreement_venco_url ? [{ key: 'leasing_agreement_venco_url', label: 'Leasing (VENCO)', url: (driver as any).leasing_agreement_venco_url }] : []),
             ...((driver as any).leasing_agreement_58_url ? [{ key: 'leasing_agreement_58_url', label: 'Leasing (58 Log)', url: (driver as any).leasing_agreement_58_url }] : []),
-            ...leasingDocs.map(doc => ({ key: doc.id, label: `Leasing (${doc.company_name})`, url: doc.file_url })),
+            ...leasingDocs.map(doc => ({
+              key: doc.id,
+              label: `Leasing (${doc.company_name})`,
+              url: doc.file_url,
+              onDelete: async () => {
+                // Borrar archivo del storage (si existe) y luego la fila.
+                if (doc.file_url && !doc.file_url.startsWith('http')) {
+                  await supabase.storage.from('driver-documents').remove([doc.file_url]);
+                }
+                const { error } = await supabase.from('driver_leasing_agreements' as any).delete().eq('id', doc.id);
+                if (error) {
+                  toast({ title: 'Error borrando leasing', description: error.message, variant: 'destructive' });
+                  return;
+                }
+                toast({ title: `Leasing (${doc.company_name}) borrado` });
+                refreshLeasingDocs();
+              },
+            })),
           ]}
           getDocSignedUrl={getDocSignedUrl}
           allowUpload={!!onUpdateDriver}

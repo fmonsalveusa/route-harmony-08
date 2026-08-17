@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Image, FileText, Upload, Loader2, Eye, X, ExternalLink } from 'lucide-react';
+import { Image, FileText, Upload, Loader2, Eye, X, ExternalLink, Trash2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 
@@ -8,6 +8,9 @@ export interface DocItem {
   key: string;
   label: string;
   url: string | null;
+  // Solo si el item se puede borrar (ej: leasings agregados en la tabla driver_leasing_agreements).
+  // Los documentos fijos del driver (licencia, W9, etc.) no traen esta funcion.
+  onDelete?: () => Promise<void>;
 }
 
 interface Props {
@@ -126,7 +129,21 @@ function DocCard({
       {/* Footer */}
       <div className="px-1 py-0.5 bg-card border-t">
         <p className="text-[9px] text-foreground font-medium truncate" title={item.label}>{shortName}</p>
-        <div className="flex items-center justify-end mt-0.5">
+        <div className="flex items-center justify-end gap-1 mt-0.5">
+          {item.onDelete && (
+            <button
+              onClick={async e => {
+                e.stopPropagation();
+                if (!confirm(`Borrar ${item.label}?`)) return;
+                try { await item.onDelete!(); } catch (err) { console.error('Delete error:', err); }
+              }}
+              className="text-destructive hover:text-destructive/80"
+              type="button"
+              title="Borrar"
+            >
+              <Trash2 className="h-2.5 w-2.5" />
+            </button>
+          )}
           {allowUpload && (
             <button
               onClick={e => { e.stopPropagation(); fileRef.current?.click(); }}
