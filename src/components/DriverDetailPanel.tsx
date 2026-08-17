@@ -393,9 +393,21 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
                 if (doc.file_url && !doc.file_url.startsWith('http')) {
                   await supabase.storage.from('driver-documents').remove([doc.file_url]);
                 }
-                const { error } = await supabase.from('driver_leasing_agreements' as any).delete().eq('id', doc.id);
+                const { data: deleted, error } = await supabase
+                  .from('driver_leasing_agreements' as any)
+                  .delete()
+                  .eq('id', doc.id)
+                  .select();
                 if (error) {
                   toast({ title: 'Error borrando leasing', description: error.message, variant: 'destructive' });
+                  return;
+                }
+                if (!deleted || (deleted as any[]).length === 0) {
+                  toast({
+                    title: 'No se pudo borrar',
+                    description: 'RLS bloqueo la operacion. Revisar politicas de driver_leasing_agreements.',
+                    variant: 'destructive',
+                  });
                   return;
                 }
                 toast({ title: `Leasing (${doc.company_name}) borrado` });
