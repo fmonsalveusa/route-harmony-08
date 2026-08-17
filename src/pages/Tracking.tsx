@@ -165,10 +165,13 @@ const Tracking = () => {
   const [selectedDriverLoad, setSelectedDriverLoad] = useState<{ driver: typeof drivers[0]; load: LoadWithStops | null; lastDelivered?: { address: string; date: string } } | null>(null);
   const navigate = useNavigate();
 
-  // Estado de b├║squeda diaria por driver: 'searching' | 'ready'.
-  // Si un driver no est├í en el map, est├í en 'standby' (default, no se guarda fila).
-  // Se comparte entre todos los dispatchers del tenant y se reinicia cada d├¡a (por search_date).
-  const [searchStatus, setSearchStatus] = useState<Record<string, 'searching' | 'ready'>>({});
+  // Estado de busqueda diaria por driver: 'searching' | 'ready' | 'standby'.
+  // Si un driver no esta en el map, esta en standby default (auto, sin fila persistida).
+  // 'standby' explicito = usuario lo marco a mano y NO debe ser sobrescrito por auto-sync.
+  // Se comparte entre todos los dispatchers del tenant y se reinicia cada dia (por search_date).
+  const [searchStatus, setSearchStatus] = useState<Record<string, 'searching' | 'ready' | 'standby'>>({});
+  // IDs de drivers cuyo estado fue seteado manualmente hoy. El auto-sync los respeta.
+  const [manualStatusIds, setManualStatusIds] = useState<Set<string>>(new Set());
 
   // Manual location dialog state
   const [editLocationDriver, setEditLocationDriver] = useState<string | null>(null);
@@ -502,13 +505,18 @@ const Tracking = () => {
     (async () => {
       const { data, error } = await supabase
         .from('daily_search_status' as any)
-        .select('driver_id, status')
+        .select('driver_id, status, is_manual')
         .eq('search_date', today);
 
       if (error) { console.error('[Tracking] daily_search_status error:', error); return; }
 
-      const map: Record<string, 'searching' | 'ready'> = {};
-      ((data as any) || []).forEach((r: any) => { map[r.driver_id] = r.status; });
+      const map: Record<string, 'searching' | 'ready' | 'standby'> = {};
+      const manualSet = new Set<string>();
+      ((data as any) || []).forEach((r: any) => {
+        map[r.driver_id] = r.status;
+        if (r.is_manual) manualSet.add(r.driver_id);
+      });
+      setManualStatusIds(manualSet);
 
       // Pre-marcar como 'searching' a todo driver que NO tenga carga futura y no tenga estado guardado.
       // Esto cubre: (1) empty totales, (2) los que entregan hoy pero no tienen la siguiente.
@@ -540,35 +548,42 @@ const Tracking = () => {
     })();
   }, [drivers.length, loads.length, profile?.id]);
 
-  // Cicla el estado de un driver: standby ΓåÆ searching ΓåÆ ready ΓåÆ standby
+  // Cicla el estado de un driver: standby -> searching -> ready -> standby.
+  // Cualquier cambio manual marca is_manual=true para que el auto-sync lo respete.
+  // 'standby' manual se persiste (no se borra la fila) para no confundirse con auto standby.
   const cycleSearchStatus = async (driverId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    const current = searchStatus[driverId]; // undefined = standby
-    const next = current === undefined ? 'searching' : current === 'searching' ? 'ready' : undefined;
+    const current = searchStatus[driverId]; // undefined = auto standby
+    const next: 'searching' | 'ready' | 'standby' =
+      current === undefined || current === 'standby'
+        ? 'searching'
+        : current === 'searching'
+        ? 'ready'
+        : 'standby';
 
     // Optimista
-    setSearchStatus(prev => {
-      const copy = { ...prev };
-      if (next === undefined) delete copy[driverId]; else copy[driverId] = next;
+    setSearchStatus(prev => ({ ...prev, [driverId]: next }));
+    setManualStatusIds(prev => {
+      const copy = new Set(prev);
+      copy.add(driverId);
       return copy;
     });
 
     const today = new Date().toISOString().split('T')[0];
     const tenant_id = await getTenantId();
 
-    if (next === undefined) {
-      // standby = borrar la fila del d├¡a
-      await supabase.from('daily_search_status' as any)
-        .delete()
-        .eq('driver_id', driverId)
-        .eq('search_date', today)
-        .eq('tenant_id', tenant_id);
-    } else {
-      await supabase.from('daily_search_status' as any).upsert(
-        { driver_id: driverId, search_date: today, status: next, tenant_id, updated_by: profile?.id ?? null, updated_at: new Date().toISOString() },
-        { onConflict: 'driver_id,search_date,tenant_id' }
-      );
-    }
+    await supabase.from('daily_search_status' as any).upsert(
+      {
+        driver_id: driverId,
+        search_date: today,
+        status: next,
+        is_manual: true,
+        tenant_id,
+        updated_by: profile?.id ?? null,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'driver_id,search_date,tenant_id' }
+    );
   };
 
   // Auto-sync Buscando <-> Listo segun CARGA FUTURA (delivery > hoy):
@@ -585,6 +600,8 @@ const Tracking = () => {
 
     const updates: Array<{ driver_id: string; newStatus: 'searching' | 'ready' }> = [];
     Object.entries(searchStatus).forEach(([driverId, status]) => {
+      // Respetar cambios manuales — el usuario tiene la ultima palabra por el dia.
+      if (manualStatusIds.has(driverId)) return;
       const hasFuture = !!hasFutureLoadByDriver[driverId];
       if (status === 'searching' && hasFuture) {
         updates.push({ driver_id: driverId, newStatus: 'ready' });
@@ -614,7 +631,7 @@ const Tracking = () => {
       }));
       await supabase.from('daily_search_status' as any).upsert(rows, { onConflict: 'driver_id,search_date,tenant_id' });
     })();
-  }, [activeAssignmentsSignature, hasFutureLoadByDriver, searchStatus, profile?.id]);
+  }, [activeAssignmentsSignature, hasFutureLoadByDriver, searchStatus, manualStatusIds, profile?.id]);
 
   // Contadores para el header
   const searchingCount = Object.values(searchStatus).filter(s => s === 'searching').length;
