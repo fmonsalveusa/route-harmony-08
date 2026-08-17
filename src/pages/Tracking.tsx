@@ -947,7 +947,10 @@ const Tracking = () => {
                   : lastDel
                   ? { address: lastDel.address, date: lastDel.date, isActive: false }
                   : null;
-                const sStatus = searchStatus[driver.id]; // undefined=standby | 'searching' | 'ready'
+                const sStatus = searchStatus[driver.id]; // undefined|'standby' = standby | 'searching' | 'ready'
+                // Solo 'ready' y 'searching' tienen fondo coloreado con texto blanco.
+                // 'standby' (explicit o auto) va con look neutro para que se lea bien.
+                const hasColoredBg = sStatus === 'ready' || sStatus === 'searching';
                 return (
                   <div
                     key={driver.id}
@@ -983,16 +986,16 @@ const Tracking = () => {
                         ? 'bg-[hsl(22,90%,48%)]'
                         : ''
                     }`}>
-                      <div className={`p-1.5 rounded-full ${sStatus ? 'bg-white/25' : 'bg-[hsl(152,60%,40%)]/10'}`}>
-                        <User className={`h-3.5 w-3.5 ${sStatus ? 'text-white' : 'text-[hsl(152,60%,40%)]'}`} />
+                      <div className={`p-1.5 rounded-full ${hasColoredBg ? 'bg-white/25' : 'bg-[hsl(152,60%,40%)]/10'}`}>
+                        <User className={`h-3.5 w-3.5 ${hasColoredBg ? 'text-white' : 'text-[hsl(152,60%,40%)]'}`} />
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">
-                          <p className={`text-sm font-semibold truncate ${sStatus ? 'text-white' : ''}`}>{driver.name}</p>
+                          <p className={`text-sm font-semibold truncate ${hasColoredBg ? 'text-white' : ''}`}>{driver.name}</p>
                           {/* Copiar nombre */}
                           <button
                             onClick={(e) => copyField(driver.id, 'name', driver.name, e)}
-                            className={`shrink-0 p-0.5 rounded transition-colors ${sStatus ? 'text-white/70 hover:text-white hover:bg-white/20' : 'text-muted-foreground hover:text-foreground hover:bg-gray-100'}`}
+                            className={`shrink-0 p-0.5 rounded transition-colors ${hasColoredBg ? 'text-white/70 hover:text-white hover:bg-white/20' : 'text-muted-foreground hover:text-foreground hover:bg-gray-100'}`}
                             title="Copiar Nombre"
                           >
                             {copiedField === `${driver.id}:name` ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
@@ -1001,7 +1004,7 @@ const Tracking = () => {
                         {(() => {
                           const truck = trucks.find(t => t.id === driver.truck_id);
                           return truck?.unit_number ? (
-                            <p className={`text-[11px] leading-tight ${sStatus ? 'text-white/80' : 'text-muted-foreground'}`}>
+                            <p className={`text-[11px] leading-tight ${hasColoredBg ? 'text-white/80' : 'text-muted-foreground'}`}>
                               Unit #{truck.unit_number}
                             </p>
                           ) : null;
@@ -1012,7 +1015,7 @@ const Tracking = () => {
                         const isGpsActive = loc && (Date.now() - new Date(loc.updated_at).getTime()) < 5 * 60 * 1000;
                         return isGpsActive ? (
                           <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold animate-pulse ${
-                            sStatus ? 'bg-white/25 text-white' : 'bg-[hsl(152,60%,40%)]/15 text-[hsl(152,60%,40%)]'
+                            hasColoredBg ? 'bg-white/25 text-white' : 'bg-[hsl(152,60%,40%)]/15 text-[hsl(152,60%,40%)]'
                           }`}>
                             <Navigation className="h-3 w-3" />
                             GPS
@@ -1021,11 +1024,11 @@ const Tracking = () => {
                       })()}
                       {driver.phone && (
                         <div className="flex items-center gap-1">
-                          <span className={`text-xs whitespace-nowrap ${sStatus ? 'text-white/90' : 'text-muted-foreground'}`}>{driver.phone}</span>
+                          <span className={`text-xs whitespace-nowrap ${hasColoredBg ? 'text-white/90' : 'text-muted-foreground'}`}>{driver.phone}</span>
                           {/* Copiar tel├⌐fono */}
                           <button
                             onClick={(e) => copyField(driver.id, 'phone', driver.phone!, e)}
-                            className={`shrink-0 p-0.5 rounded transition-colors ${sStatus ? 'text-white/70 hover:text-white hover:bg-white/20' : 'text-muted-foreground hover:text-foreground hover:bg-gray-100'}`}
+                            className={`shrink-0 p-0.5 rounded transition-colors ${hasColoredBg ? 'text-white/70 hover:text-white hover:bg-white/20' : 'text-muted-foreground hover:text-foreground hover:bg-gray-100'}`}
                             title="Copiar Tel├⌐fono"
                           >
                             {copiedField === `${driver.id}:phone` ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
