@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Plus, Shield, Calculator, Headphones, Truck as TruckIcon, Loader2, Pencil, Trash2, ChevronDown, Landmark } from 'lucide-react';
+import { Plus, Shield, Calculator, Headphones, Truck as TruckIcon, Loader2, Pencil, Trash2, ChevronDown, Landmark, Copy, Check } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { toast } from 'sonner';
@@ -56,6 +56,19 @@ const UsersPage = () => {
   const [deletingUser, setDeletingUser] = useState<UserRow | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [activeTab, setActiveTab] = useState('active');
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // Password compartido para todos los usuarios con rol driver.
+  // Se usa solo para copiar credenciales — no valida ni cambia nada en Auth.
+  const DRIVER_DEFAULT_PASSWORD = 'user2026';
+
+  const copyDriverCredentials = (u: UserRow) => {
+    const text = `Username: ${u.email}\npassword: ${DRIVER_DEFAULT_PASSWORD}`;
+    navigator.clipboard.writeText(text);
+    setCopiedId(u.id);
+    toast.success('Credenciales copiadas');
+    setTimeout(() => setCopiedId(null), 1500);
+  };
 
   const activeUsers = users.filter(u => u.is_active);
   const inactiveUsers = users.filter(u => !u.is_active);
@@ -194,6 +207,16 @@ const UsersPage = () => {
                         </td>
                         <td className="p-3 text-right">
                           <div className="flex items-center justify-end gap-1">
+                            {u.role === 'driver' && (
+                              <button
+                                className="glass-action-btn tint-blue inline-flex items-center gap-1"
+                                onClick={() => copyDriverCredentials(u)}
+                                title="Copiar credenciales del driver"
+                              >
+                                {copiedId === u.id ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                                Credenciales
+                              </button>
+                            )}
                             <button className="glass-action-btn tint-amber inline-flex items-center" onClick={() => handleEdit(u)} title="Edit">
                               <Pencil className="h-4 w-4" /> Edit
                             </button>
