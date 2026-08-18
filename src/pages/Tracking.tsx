@@ -603,10 +603,12 @@ const Tracking = () => {
       // Solo respetar manual para 'standby' (usuario opto por sacarlo del dia).
       // 'searching' y 'ready' son estados dinamicos que responden a la realidad.
       if (manualStatusIds.has(driverId) && status === 'standby') return;
-      const hasActive = !!activeLoadByDriver[driverId];
-      if (status === 'searching' && hasActive) {
+      // Listo = tiene carga FUTURA (delivery > hoy). Una carga que entrega HOY
+      // no cuenta como cubierto — el driver sigue buscando la siguiente.
+      const hasFuture = !!hasFutureLoadByDriver[driverId];
+      if (status === 'searching' && hasFuture) {
         updates.push({ driver_id: driverId, newStatus: 'ready' });
-      } else if (status === 'ready' && !hasActive) {
+      } else if (status === 'ready' && !hasFuture) {
         updates.push({ driver_id: driverId, newStatus: 'searching' });
       }
     });
@@ -632,7 +634,7 @@ const Tracking = () => {
       }));
       await supabase.from('daily_search_status' as any).upsert(rows, { onConflict: 'driver_id,search_date,tenant_id' });
     })();
-  }, [activeAssignmentsSignature, activeLoadByDriver, searchStatus, manualStatusIds, profile?.id]);
+  }, [activeAssignmentsSignature, hasFutureLoadByDriver, searchStatus, manualStatusIds, profile?.id]);
 
   // Contadores para el header
   const searchingCount = Object.values(searchStatus).filter(s => s === 'searching').length;
