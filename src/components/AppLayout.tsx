@@ -58,7 +58,7 @@ const moreItems: NavItem[] = [
 
 const adminItems: NavItem[] = [
   { label: 'Companies', icon: Building2, path: '/companies', permission: 'companies' },
-  { label: 'Users', icon: UserCog, path: '/users', permission: 'users' },
+  { label: 'Users', icon: UserCog, path: '/users', permission: 'users.view.own' },
 ];
 
 const allNavItems: NavItem[] = [

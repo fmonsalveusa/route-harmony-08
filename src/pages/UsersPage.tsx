@@ -48,7 +48,8 @@ interface UserRow {
 }
 
 const UsersPage = () => {
-  const { profile } = useAuth();
+  const { profile, role } = useAuth();
+  const isDispatcherView = role === 'dispatcher';
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -81,11 +82,35 @@ const UsersPage = () => {
     if (!profiles) { setLoading(false); return; }
     const { data: roles } = await supabase.from('user_roles').select('user_id, role').eq('tenant_id', profile.tenant_id);
     const roleMap = new Map((roles || []).map(r => [r.user_id, r.role]));
-    const merged: UserRow[] = profiles.map(p => ({ ...p, role: roleMap.get(p.id) || 'admin' }));
+    let merged: UserRow[] = profiles.map(p => ({ ...p, role: roleMap.get(p.id) || 'admin' }));
+
+    // Dispatcher: ver solo drivers asignados a el (match por email dispatcher -> drivers.dispatcher_id).
+    if (isDispatcherView && profile.email) {
+      const { data: myDispatcher } = await supabase
+        .from('dispatchers')
+        .select('id')
+        .eq('tenant_id', profile.tenant_id)
+        .ilike('email', profile.email)
+        .maybeSingle();
+
+      if (myDispatcher?.id) {
+        const { data: myDrivers } = await supabase
+          .from('drivers')
+          .select('email')
+          .eq('tenant_id', profile.tenant_id)
+          .eq('dispatcher_id', myDispatcher.id);
+        const allowedEmails = new Set((myDrivers || []).map(d => (d.email || '').toLowerCase()).filter(Boolean));
+        merged = merged.filter(u => u.role === 'driver' && allowedEmails.has((u.email || '').toLowerCase()));
+      } else {
+        // El dispatcher logueado no esta en la tabla dispatchers -> no ve a nadie.
+        merged = [];
+      }
+    }
+
     merged.sort((a, b) => (a.full_name || '').localeCompare(b.full_name || '', undefined, { sensitivity: 'base' }));
     setUsers(merged);
     setLoading(false);
-  }, [profile?.tenant_id]);
+  }, [profile?.tenant_id, profile?.email, isDispatcherView]);
 
   useEffect(() => { fetchUsers(); }, [fetchUsers]);
 
@@ -125,9 +150,11 @@ const UsersPage = () => {
           <h1 className="page-header">User Management</h1>
           <p className="page-description">Account and permission administration</p>
         </div>
-        <Button size="sm" className="gap-2" onClick={handleCreate}>
-          <Plus className="h-4 w-4" /> New User
-        </Button>
+        {!isDispatcherView && (
+          <Button size="sm" className="gap-2" onClick={handleCreate}>
+            <Plus className="h-4 w-4" /> New User
+          </Button>
+        )}
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -186,6 +213,9 @@ const UsersPage = () => {
                           </Badge>
                         </td>
                         <td className="p-3" onClick={e => e.stopPropagation()}>
+                          {isDispatcherView ? (
+                            <StatusBadge status={u.is_active ? 'active' : 'inactive'} className="text-[11px] px-3 py-1.5" />
+                          ) : (
                           <Select value={u.is_active ? 'active' : 'inactive'} onValueChange={async (val) => {
                             const newActive = val === 'active';
                             await supabase.from('profiles').update({ is_active: newActive }).eq('id', u.id);
@@ -204,6 +234,7 @@ const UsersPage = () => {
                               <SelectItem value="inactive"><StatusBadge status="inactive" /></SelectItem>
                             </SelectContent>
                           </Select>
+                          )}
                         </td>
                         <td className="p-3 text-right">
                           <div className="flex items-center justify-end gap-1">
@@ -217,13 +248,17 @@ const UsersPage = () => {
                                 Credenciales
                               </button>
                             )}
-                            <button className="glass-action-btn tint-amber inline-flex items-center" onClick={() => handleEdit(u)} title="Edit">
-                              <Pencil className="h-4 w-4" /> Edit
-                            </button>
-                            {u.id !== profile?.id && (
-                              <button className="glass-action-btn tint-red inline-flex items-center" onClick={() => setDeletingUser(u)} title="Delete">
-                                <Trash2 className="h-4 w-4" />
-                              </button>
+                            {!isDispatcherView && (
+                              <>
+                                <button className="glass-action-btn tint-amber inline-flex items-center" onClick={() => handleEdit(u)} title="Edit">
+                                  <Pencil className="h-4 w-4" /> Edit
+                                </button>
+                                {u.id !== profile?.id && (
+                                  <button className="glass-action-btn tint-red inline-flex items-center" onClick={() => setDeletingUser(u)} title="Delete">
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                )}
+                              </>
                             )}
                           </div>
                         </td>

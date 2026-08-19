@@ -54,6 +54,7 @@ const rolePermissions: Record<AppRole, string[]> = {
   dispatcher: [
     'dashboard.own', 'loads.create', 'loads.edit.own', 'loads.view.own',
     'drivers.view.own', 'fleet.view', 'tracking.*', 'reports.own',
+    'users.view.own',
   ],
   driver: ['dashboard.own', 'loads.view.own'],
   investor: ['payments.investor'],
