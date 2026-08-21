@@ -360,13 +360,14 @@ const Tracking = () => {
     return map;
   }, [enrichedLoads]);
 
-  // Firma de asignaciones activas (driver_id:load_id). Cambia cuando se asigna,
-  // reasigna o cancela una carga. Se usa para disparar el auto-sync solo cuando
-  // hay un cambio real de asignacion (no en cada render).
+  // Firma de asignaciones activas (driver_id:load_id:delivery_date).
+  // Cambia cuando se asigna, reasigna, cancela una carga, O cuando cambia la
+  // delivery_date (importante porque afecta si la carga cuenta como "futura").
+  // Se usa para disparar el auto-sync solo cuando hay un cambio real (no en cada render).
   const activeAssignmentsSignature = useMemo(() => {
     return enrichedLoads
       .filter(l => l.driver_id)
-      .map(l => `${l.driver_id}:${l.id}`)
+      .map(l => `${l.driver_id}:${l.id}:${l.delivery_date || ''}`)
       .sort()
       .join(',');
   }, [enrichedLoads]);
