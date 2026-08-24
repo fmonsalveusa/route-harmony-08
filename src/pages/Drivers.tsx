@@ -18,6 +18,7 @@ import { DriverFormDialog } from '@/components/DriverFormDialog';
 import { DriverDetailDialog } from '@/components/DriverDetailDialog';
 import { DriverDetailPanel } from '@/components/DriverDetailPanel';
 import { GenerateOnboardingLinkDialog } from '@/components/GenerateOnboardingLinkDialog';
+import { DispatchServiceClientsSection } from '@/components/DispatchServiceClientsSection';
 import { TerminationLetterDialog } from '@/components/TerminationLetterDialog';
 import { CreateAccessButton } from '@/components/CreateAccessButton';
 import { toast } from '@/hooks/use-toast';
@@ -445,6 +446,7 @@ const Drivers = () => {
             <TabsTrigger value="active" onClick={() => setPage(1)}>Active <span className={`text-xs rounded-full px-2 py-0.5 font-semibold ${filtered.filter(d => d.status !== 'inactive').length > 0 ? 'bg-destructive text-destructive-foreground' : activeTab === 'active' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{filtered.filter(d => d.status !== 'inactive').length}</span></TabsTrigger>
             <TabsTrigger value="inactive" onClick={() => setPage(1)}>Inactive <span className={`text-xs rounded-full px-2 py-0.5 font-semibold ${activeTab === 'inactive' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{filtered.filter(d => d.status === 'inactive').length}</span></TabsTrigger>
             <TabsTrigger value="all" onClick={() => setPage(1)}>All <span className={`text-xs rounded-full px-2 py-0.5 font-semibold ${activeTab === 'all' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{filtered.length}</span></TabsTrigger>
+            <TabsTrigger value="dispatch_clients">Dispatch Clients</TabsTrigger>
           </TabsList>
           {['active', 'inactive', 'all'].map(tab => (
             <TabsContent key={tab} value={tab}>
@@ -455,6 +457,9 @@ const Drivers = () => {
               )}
             </TabsContent>
           ))}
+          <TabsContent value="dispatch_clients">
+            <DispatchServiceClientsSection />
+          </TabsContent>
         </Tabs>
       )}
 
