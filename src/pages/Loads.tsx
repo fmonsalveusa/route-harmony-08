@@ -472,9 +472,14 @@ const Loads = () => {
                           </td>
                           <td className="p-4 text-foreground">
                             <div>{load.broker_client || '—'}</div>
-                            {load.delivery_date && load.delivery_date.split('T')[0] === new Date().toLocaleDateString('en-CA') && (
+                            {load.delivery_date && load.delivery_date.split('T')[0] === new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' }) && (
                               <span className="inline-flex items-center mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide text-white bg-[#ea580c] whitespace-nowrap">
                                 TODAY
+                              </span>
+                            )}
+                            {load.delivery_date && load.delivery_date.split('T')[0] === new Date(Date.now() + 86400000).toLocaleDateString('en-CA', { timeZone: 'America/New_York' }) && (
+                              <span className="inline-flex items-center mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide text-white bg-[#2563eb] whitespace-nowrap">
+                                TOMORROW
                               </span>
                             )}
                             {(load.notes || '').toUpperCase().includes('TARP') && (
