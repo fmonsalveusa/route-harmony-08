@@ -4,11 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Building2, User, Truck as TruckIcon, FileSignature, FileCheck, CheckCircle2, Eye, EyeOff, Upload, ArrowLeft, ArrowRight, Loader2, Plus, Trash2 } from 'lucide-react';
+import { Building2, User, Truck as TruckIcon, FileSignature, FileCheck, CheckCircle2, Eye, EyeOff, Upload, ArrowLeft, ArrowRight, Loader2, Plus, Trash2, Edit2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { US_STATES } from '@/lib/usStates';
 import { toast } from 'sonner';
 import logoImg from '@/assets/logo.png';
+import SignaturePad from './SignaturePad';
+import { DispatchDriverTruckForm } from './DispatchDriverTruckForm';
 
 // Tipos internos del flow
 export interface DispatchCompanyData {
@@ -39,7 +41,6 @@ export interface DispatchInsuranceData {
 }
 
 export interface DispatchDriverEntry {
-  // Datos personales del driver
   name: string;
   email: string;
   phone: string;
@@ -58,10 +59,8 @@ export interface DispatchDriverEntry {
   routing_number: string;
   account_number: string;
   account_type: string;
-  // Documentos del driver
   license_photo?: File;
   medical_card_photo?: File;
-  // Datos del camion
   truck: {
     unit_number: string;
     truck_type: string;
@@ -74,20 +73,16 @@ export interface DispatchDriverEntry {
     registration_expiry: string | null;
     annual_inspection_expiry: string | null;
   };
-  // Documentos del camion
   truck_registration?: File;
   truck_insurance?: File;
   truck_plate_photo?: File;
   truck_side_photo?: File;
   truck_rear_photo?: File;
   cargo_area_photo?: File;
-  // Flag: es el owner de la empresa?
   is_owner?: boolean;
 }
 
-const TRUCK_TYPES = ['Box Truck', 'Hotshot', 'Flatbed', 'Dry Van'];
-
-const emptyDriverEntry = (): DispatchDriverEntry => ({
+export const emptyDriverEntry = (): DispatchDriverEntry => ({
   name: '', email: '', phone: '', license: '',
   state: null, license_expiry: null, medical_card_expiry: null,
   address: '', city: '', zip: '', birthday: null,
@@ -108,17 +103,16 @@ interface Props {
 }
 
 export default function DispatchServiceOnboarding({ token, tokenData, onCompleted }: Props) {
-  // Si el token viene con dispatch_service_client_id, es empresa existente.
   const isExistingCompany = !!tokenData?.dispatch_service_client_id;
 
   const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
 
-  // Estado empresa (solo para nueva empresa)
+  // Estado empresa (empresa nueva)
   const [company, setCompany] = useState<DispatchCompanyData>({
     legal_business_name: '', dba: '', mc_number: '', dot_number: '', ein: '',
     address: '', city: '', state: '', zip: '',
-    phone: '', email: '', owner_full_name: '',
+    phone: '', email: tokenData?.driver_email || '', owner_full_name: tokenData?.driver_name || '',
   });
   const [factoring, setFactoring] = useState<DispatchFactoringData>({
     factoring_company_name: '', factoring_username: '', factoring_password: '',
@@ -129,19 +123,19 @@ export default function DispatchServiceOnboarding({ token, tokenData, onComplete
   const [companyDocs, setCompanyDocs] = useState<{ mc_authority?: File; insurance_cert?: File; w9?: File }>({});
   const [showFactPassword, setShowFactPassword] = useState(false);
 
-  // Firma del agreement (canvas image data URL) — se completa en Fase 3B
+  // Firma del agreement
   const [agreementSignature, setAgreementSignature] = useState<string | null>(null);
+  const [signerName, setSignerName] = useState('');
 
-  // Loop de drivers (para empresa nueva) o un solo driver (empresa existente)
+  // Loop de drivers
   const [drivers, setDrivers] = useState<DispatchDriverEntry[]>([]);
   const [currentDriver, setCurrentDriver] = useState<DispatchDriverEntry>(emptyDriverEntry());
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
-  // Total de pasos segun flow
-  // Empresa nueva: 1 Company, 2 Factoring/Insurance, 3 Company Docs, 4 Sign Agreement, 5 Drivers/Trucks, 6 Review
-  // Empresa existente: 1 Driver Info, 2 Truck Info, 3 Docs, 4 Review
-  const totalSteps = isExistingCompany ? 4 : 6;
+  // Empresa nueva: 6 pasos. Empresa existente: 3 pasos (Driver+Truck, Review, sin Sign Agreement).
+  const totalSteps = isExistingCompany ? 3 : 6;
 
-  // ── Validaciones por step ─────────────────────────────────────────────
+  // ── Validaciones ──────────────────────────────────────────────────────
   const validateCompany = () => {
     const missing: string[] = [];
     if (!company.legal_business_name.trim()) missing.push('Legal Business Name');
@@ -153,18 +147,29 @@ export default function DispatchServiceOnboarding({ token, tokenData, onComplete
     if (missing.length) { toast.error(`Faltan: ${missing.join(', ')}`); return false; }
     return true;
   };
-
-  const validateFactoringInsurance = () => {
-    // Opcional pero recomendado; no bloqueamos
-    return true;
-  };
-
   const validateCompanyDocs = () => {
     const missing: string[] = [];
-    if (!companyDocs.mc_authority) missing.push('MC/DOT Authority PDF');
-    if (!companyDocs.insurance_cert) missing.push('Insurance Certificate PDF');
+    if (!companyDocs.mc_authority) missing.push('MC/DOT Authority');
+    if (!companyDocs.insurance_cert) missing.push('Insurance Certificate');
     if (!companyDocs.w9) missing.push('W9 Form');
     if (missing.length) { toast.error(`Faltan documentos: ${missing.join(', ')}`); return false; }
+    return true;
+  };
+  const validateAgreement = () => {
+    if (!signerName.trim()) { toast.error('Ingresa el nombre completo del firmante'); return false; }
+    if (!agreementSignature) { toast.error('Debes firmar el agreement'); return false; }
+    return true;
+  };
+  const validateDriverEntry = (d: DispatchDriverEntry): boolean => {
+    const missing: string[] = [];
+    if (!d.name.trim()) missing.push('Driver Name');
+    if (!d.email.trim()) missing.push('Email');
+    if (!d.phone.trim()) missing.push('Phone');
+    if (!d.license.trim()) missing.push('License #');
+    if (!d.license_expiry) missing.push('License Expiry');
+    if (!d.medical_card_expiry) missing.push('Medical Card Expiry');
+    if (!d.truck.unit_number.trim()) missing.push('Truck Unit #');
+    if (missing.length) { toast.error(`Faltan: ${missing.join(', ')}`); return false; }
     return true;
   };
 
@@ -172,20 +177,112 @@ export default function DispatchServiceOnboarding({ token, tokenData, onComplete
   const next = () => {
     if (!isExistingCompany) {
       if (step === 1 && !validateCompany()) return;
-      if (step === 2 && !validateFactoringInsurance()) return;
       if (step === 3 && !validateCompanyDocs()) return;
+      if (step === 4 && !validateAgreement()) return;
+      if (step === 5 && drivers.length === 0) {
+        toast.error('Agrega al menos un driver');
+        return;
+      }
+    } else {
+      // Empresa existente: step 1 es Driver+Truck form
+      if (step === 1 && !validateDriverEntry(currentDriver)) return;
     }
     setStep(s => Math.min(s + 1, totalSteps));
   };
   const prev = () => setStep(s => Math.max(1, s - 1));
 
-  // ── Handler de submit final ───────────────────────────────────────────
+  // ── Loop de drivers (empresa nueva) ───────────────────────────────────
+  const saveCurrentDriver = (): boolean => {
+    if (!validateDriverEntry(currentDriver)) return false;
+    if (editingIndex !== null) {
+      setDrivers(prev => prev.map((d, i) => i === editingIndex ? currentDriver : d));
+      setEditingIndex(null);
+    } else {
+      setDrivers(prev => [...prev, currentDriver]);
+    }
+    return true;
+  };
+  const handleSaveAndAddAnother = () => {
+    if (saveCurrentDriver()) {
+      setCurrentDriver(emptyDriverEntry());
+      toast.success('Driver agregado. Puedes agregar otro.');
+    }
+  };
+  const handleSaveAndContinue = () => {
+    if (saveCurrentDriver()) {
+      setCurrentDriver(emptyDriverEntry());
+      setStep(6);
+    }
+  };
+  const handleEditDriver = (idx: number) => {
+    setCurrentDriver(drivers[idx]);
+    setEditingIndex(idx);
+  };
+  const handleRemoveDriver = (idx: number) => {
+    if (!confirm('¿Eliminar este driver?')) return;
+    setDrivers(prev => prev.filter((_, i) => i !== idx));
+    if (editingIndex === idx) {
+      setEditingIndex(null);
+      setCurrentDriver(emptyDriverEntry());
+    }
+  };
+
+  // ── Submit final ──────────────────────────────────────────────────────
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
-      // Sera implementado en Fase 3C. Por ahora solo notificamos.
-      toast.info('Submit pendiente — se implementa en Fase 3C');
-      // onCompleted();
+      // Para empresa existente, guardar el driver actual antes de submitear
+      let finalDrivers = drivers;
+      if (isExistingCompany) {
+        if (!validateDriverEntry(currentDriver)) { setSubmitting(false); return; }
+        finalDrivers = [currentDriver];
+      }
+
+      const formData = new FormData();
+      formData.append('token', token);
+      formData.append('service_type', 'dispatch_service');
+      formData.append('is_existing_company', JSON.stringify(isExistingCompany));
+
+      if (!isExistingCompany) {
+        formData.append('company_data', JSON.stringify(company));
+        formData.append('factoring_data', JSON.stringify(factoring));
+        formData.append('insurance_data', JSON.stringify(insurance));
+        formData.append('signer_name', signerName);
+        if (agreementSignature) formData.append('agreement_signature', agreementSignature);
+        if (companyDocs.mc_authority) formData.append('company_mc_authority', companyDocs.mc_authority);
+        if (companyDocs.insurance_cert) formData.append('company_insurance_cert', companyDocs.insurance_cert);
+        if (companyDocs.w9) formData.append('company_w9', companyDocs.w9);
+      }
+
+      // Serializar drivers (sin archivos)
+      const driversData = finalDrivers.map(d => {
+        const { license_photo, medical_card_photo, truck_registration, truck_insurance, truck_plate_photo, truck_side_photo, truck_rear_photo, cargo_area_photo, ...rest } = d;
+        return rest;
+      });
+      formData.append('drivers_data', JSON.stringify(driversData));
+
+      // Adjuntar archivos con prefijo del indice
+      finalDrivers.forEach((d, idx) => {
+        if (d.license_photo) formData.append(`driver_${idx}_license_photo`, d.license_photo);
+        if (d.medical_card_photo) formData.append(`driver_${idx}_medical_card_photo`, d.medical_card_photo);
+        if (d.truck_registration) formData.append(`driver_${idx}_truck_registration`, d.truck_registration);
+        if (d.truck_insurance) formData.append(`driver_${idx}_truck_insurance`, d.truck_insurance);
+        if (d.truck_plate_photo) formData.append(`driver_${idx}_truck_plate_photo`, d.truck_plate_photo);
+        if (d.truck_side_photo) formData.append(`driver_${idx}_truck_side_photo`, d.truck_side_photo);
+        if (d.truck_rear_photo) formData.append(`driver_${idx}_truck_rear_photo`, d.truck_rear_photo);
+        if (d.cargo_area_photo) formData.append(`driver_${idx}_cargo_area_photo`, d.cargo_area_photo);
+      });
+
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const res = await fetch(`${supabaseUrl}/functions/v1/driver-onboarding`, {
+        method: 'POST',
+        body: formData,
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Submission failed');
+
+      toast.success('Onboarding completado exitosamente!');
+      onCompleted();
     } catch (err: any) {
       toast.error(err.message || 'Error al enviar');
     } finally {
@@ -193,13 +290,12 @@ export default function DispatchServiceOnboarding({ token, tokenData, onComplete
     }
   };
 
-  // ── UI de step tracker ────────────────────────────────────────────────
+  // ── Stepper visual ────────────────────────────────────────────────────
   const stepLabels = isExistingCompany
-    ? ['Driver Info', 'Truck Info', 'Documents', 'Review']
+    ? ['Driver & Truck', 'Review']
     : ['Company', 'Factoring & Insurance', 'Company Docs', 'Sign Agreement', 'Drivers & Trucks', 'Review'];
-
   const stepIcons = isExistingCompany
-    ? [User, TruckIcon, FileCheck, CheckCircle2]
+    ? [User, CheckCircle2]
     : [Building2, FileCheck, FileCheck, FileSignature, User, CheckCircle2];
 
   const renderStepper = () => (
@@ -234,86 +330,8 @@ export default function DispatchServiceOnboarding({ token, tokenData, onComplete
     </div>
   );
 
-  // ── Steps de Empresa NUEVA ─────────────────────────────────────────────
-  const renderCompanyStep = () => (
-    <div className="space-y-4">
-      <div>
-        <h3 className="text-lg font-semibold flex items-center gap-2">
-          <Building2 className="h-5 w-5 text-primary" /> Company Information
-        </h3>
-        <p className="text-sm text-muted-foreground">Datos legales de tu empresa de transporte.</p>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div className="space-y-1 md:col-span-2">
-          <Label>Legal Business Name *</Label>
-          <Input value={company.legal_business_name} onChange={e => setCompany({...company, legal_business_name: e.target.value})} />
-        </div>
-        <div className="space-y-1"><Label>DBA (opcional)</Label><Input value={company.dba} onChange={e => setCompany({...company, dba: e.target.value})} /></div>
-        <div className="space-y-1"><Label>EIN</Label><Input value={company.ein} onChange={e => setCompany({...company, ein: e.target.value})} /></div>
-        <div className="space-y-1"><Label>MC # *</Label><Input value={company.mc_number} onChange={e => setCompany({...company, mc_number: e.target.value})} /></div>
-        <div className="space-y-1"><Label>DOT # *</Label><Input value={company.dot_number} onChange={e => setCompany({...company, dot_number: e.target.value})} /></div>
-        <div className="space-y-1"><Label>Phone *</Label><Input value={company.phone} onChange={e => setCompany({...company, phone: e.target.value})} /></div>
-        <div className="space-y-1"><Label>Email *</Label><Input type="email" value={company.email} onChange={e => setCompany({...company, email: e.target.value})} /></div>
-        <div className="space-y-1 md:col-span-2"><Label>Address</Label><Input value={company.address} onChange={e => setCompany({...company, address: e.target.value})} /></div>
-        <div className="space-y-1"><Label>City</Label><Input value={company.city} onChange={e => setCompany({...company, city: e.target.value})} /></div>
-        <div className="space-y-1">
-          <Label>State</Label>
-          <Select value={company.state || ''} onValueChange={v => setCompany({...company, state: v})}>
-            <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-            <SelectContent>
-              {US_STATES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-1"><Label>Zip</Label><Input value={company.zip} onChange={e => setCompany({...company, zip: e.target.value})} /></div>
-        <div className="space-y-1 md:col-span-2">
-          <Label>Owner / Authorized Representative *</Label>
-          <Input value={company.owner_full_name} onChange={e => setCompany({...company, owner_full_name: e.target.value})} placeholder="Quien firma el agreement" />
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderFactoringInsuranceStep = () => (
-    <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-semibold flex items-center gap-2">
-          <FileCheck className="h-5 w-5 text-primary" /> Factoring & Insurance
-        </h3>
-        <p className="text-sm text-muted-foreground">Datos para tu factoring company y tu poliza de seguro.</p>
-      </div>
-
-      {/* Factoring */}
-      <div>
-        <p className="text-sm font-semibold uppercase text-muted-foreground tracking-wide mb-2">Factoring</p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div className="space-y-1"><Label>Factoring Company</Label><Input value={factoring.factoring_company_name} onChange={e => setFactoring({...factoring, factoring_company_name: e.target.value})} /></div>
-          <div className="space-y-1"><Label>Username</Label><Input value={factoring.factoring_username} onChange={e => setFactoring({...factoring, factoring_username: e.target.value})} /></div>
-          <div className="space-y-1">
-            <Label>Password</Label>
-            <div className="relative">
-              <Input type={showFactPassword ? 'text' : 'password'} value={factoring.factoring_password} onChange={e => setFactoring({...factoring, factoring_password: e.target.value})} className="pr-9" />
-              <button type="button" onClick={() => setShowFactPassword(v => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground">
-                {showFactPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Insurance */}
-      <div>
-        <p className="text-sm font-semibold uppercase text-muted-foreground tracking-wide mb-2">Insurance</p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div className="space-y-1"><Label>Company</Label><Input value={insurance.insurance_company_name} onChange={e => setInsurance({...insurance, insurance_company_name: e.target.value})} /></div>
-          <div className="space-y-1"><Label>Policy #</Label><Input value={insurance.insurance_policy_number} onChange={e => setInsurance({...insurance, insurance_policy_number: e.target.value})} /></div>
-          <div className="space-y-1"><Label>Expires</Label><Input type="date" value={insurance.insurance_expiry_date} onChange={e => setInsurance({...insurance, insurance_expiry_date: e.target.value})} /></div>
-        </div>
-      </div>
-    </div>
-  );
-
-  const FileUploadBox = ({ label, file, onChange, accept = '.pdf,image/*' }: { label: string; file?: File; onChange: (f: File | undefined) => void; accept?: string }) => (
+  // ── Renders de cada step ───────────────────────────────────────────────
+  const FileUploadBox = ({ label, file, onChange, accept = '.pdf,image/*' }: any) => (
     <div className="space-y-1">
       <Label>{label}</Label>
       <div className={cn('border-2 border-dashed rounded-lg p-3 text-center transition-colors', file ? 'border-primary/40 bg-primary/5' : 'border-muted-foreground/30 hover:border-primary/40')}>
@@ -333,56 +351,268 @@ export default function DispatchServiceOnboarding({ token, tokenData, onComplete
     </div>
   );
 
-  const renderCompanyDocsStep = () => (
+  const renderCompanyStep = () => (
     <div className="space-y-4">
       <div>
-        <h3 className="text-lg font-semibold flex items-center gap-2">
-          <FileCheck className="h-5 w-5 text-primary" /> Company Documents
-        </h3>
-        <p className="text-sm text-muted-foreground">Sube los documentos oficiales de tu empresa.</p>
+        <h3 className="text-lg font-semibold flex items-center gap-2"><Building2 className="h-5 w-5 text-primary" /> Company Information</h3>
+        <p className="text-sm text-muted-foreground">Datos legales de tu empresa.</p>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <FileUploadBox label="MC/DOT Authority *" file={companyDocs.mc_authority} onChange={f => setCompanyDocs({...companyDocs, mc_authority: f})} />
-        <FileUploadBox label="Insurance Certificate *" file={companyDocs.insurance_cert} onChange={f => setCompanyDocs({...companyDocs, insurance_cert: f})} />
-        <FileUploadBox label="W9 Form *" file={companyDocs.w9} onChange={f => setCompanyDocs({...companyDocs, w9: f})} />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="space-y-1 md:col-span-2"><Label>Legal Business Name *</Label><Input value={company.legal_business_name} onChange={e => setCompany({...company, legal_business_name: e.target.value})} /></div>
+        <div className="space-y-1"><Label>DBA (opcional)</Label><Input value={company.dba} onChange={e => setCompany({...company, dba: e.target.value})} /></div>
+        <div className="space-y-1"><Label>EIN</Label><Input value={company.ein} onChange={e => setCompany({...company, ein: e.target.value})} /></div>
+        <div className="space-y-1"><Label>MC # *</Label><Input value={company.mc_number} onChange={e => setCompany({...company, mc_number: e.target.value})} /></div>
+        <div className="space-y-1"><Label>DOT # *</Label><Input value={company.dot_number} onChange={e => setCompany({...company, dot_number: e.target.value})} /></div>
+        <div className="space-y-1"><Label>Phone *</Label><Input value={company.phone} onChange={e => setCompany({...company, phone: e.target.value})} /></div>
+        <div className="space-y-1"><Label>Email *</Label><Input type="email" value={company.email} onChange={e => setCompany({...company, email: e.target.value})} /></div>
+        <div className="space-y-1 md:col-span-2"><Label>Address</Label><Input value={company.address} onChange={e => setCompany({...company, address: e.target.value})} /></div>
+        <div className="space-y-1"><Label>City</Label><Input value={company.city} onChange={e => setCompany({...company, city: e.target.value})} /></div>
+        <div className="space-y-1">
+          <Label>State</Label>
+          <Select value={company.state || ''} onValueChange={v => setCompany({...company, state: v})}>
+            <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+            <SelectContent>{US_STATES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1"><Label>Zip</Label><Input value={company.zip} onChange={e => setCompany({...company, zip: e.target.value})} /></div>
+        <div className="space-y-1 md:col-span-2"><Label>Owner / Authorized Representative *</Label><Input value={company.owner_full_name} onChange={e => setCompany({...company, owner_full_name: e.target.value})} placeholder="Quien firma el agreement" /></div>
       </div>
     </div>
   );
 
-  // ── Placeholder para steps siguientes (Fase 3B) ───────────────────────
-  const renderPlaceholder = (label: string) => (
-    <div className="space-y-4">
-      <div className="border-2 border-dashed border-primary/30 rounded-lg p-8 text-center bg-primary/5">
-        <h3 className="text-lg font-semibold text-primary">{label}</h3>
-        <p className="text-sm text-muted-foreground mt-2">
-          Este paso se implementa en Fase 3B — muy pronto.
-        </p>
+  const renderFactoringInsuranceStep = () => (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold flex items-center gap-2"><FileCheck className="h-5 w-5 text-primary" /> Factoring & Insurance</h3>
+        <p className="text-sm text-muted-foreground">Opcional pero recomendado.</p>
       </div>
+      <div>
+        <p className="text-sm font-semibold uppercase text-muted-foreground tracking-wide mb-2">Factoring</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="space-y-1"><Label>Factoring Company</Label><Input value={factoring.factoring_company_name} onChange={e => setFactoring({...factoring, factoring_company_name: e.target.value})} /></div>
+          <div className="space-y-1"><Label>Username</Label><Input value={factoring.factoring_username} onChange={e => setFactoring({...factoring, factoring_username: e.target.value})} /></div>
+          <div className="space-y-1">
+            <Label>Password</Label>
+            <div className="relative">
+              <Input type={showFactPassword ? 'text' : 'password'} value={factoring.factoring_password} onChange={e => setFactoring({...factoring, factoring_password: e.target.value})} className="pr-9" />
+              <button type="button" onClick={() => setShowFactPassword(v => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground">
+                {showFactPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <p className="text-sm font-semibold uppercase text-muted-foreground tracking-wide mb-2">Insurance</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="space-y-1"><Label>Company</Label><Input value={insurance.insurance_company_name} onChange={e => setInsurance({...insurance, insurance_company_name: e.target.value})} /></div>
+          <div className="space-y-1"><Label>Policy #</Label><Input value={insurance.insurance_policy_number} onChange={e => setInsurance({...insurance, insurance_policy_number: e.target.value})} /></div>
+          <div className="space-y-1"><Label>Expires</Label><Input type="date" value={insurance.insurance_expiry_date} onChange={e => setInsurance({...insurance, insurance_expiry_date: e.target.value})} /></div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderCompanyDocsStep = () => (
+    <div className="space-y-4">
+      <div>
+        <h3 className="text-lg font-semibold flex items-center gap-2"><FileCheck className="h-5 w-5 text-primary" /> Company Documents</h3>
+        <p className="text-sm text-muted-foreground">Sube los documentos oficiales de tu empresa.</p>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <FileUploadBox label="MC/DOT Authority *" file={companyDocs.mc_authority} onChange={(f: any) => setCompanyDocs({...companyDocs, mc_authority: f})} />
+        <FileUploadBox label="Insurance Certificate *" file={companyDocs.insurance_cert} onChange={(f: any) => setCompanyDocs({...companyDocs, insurance_cert: f})} />
+        <FileUploadBox label="W9 Form *" file={companyDocs.w9} onChange={(f: any) => setCompanyDocs({...companyDocs, w9: f})} />
+      </div>
+    </div>
+  );
+
+  const renderSignAgreementStep = () => (
+    <div className="space-y-4">
+      <div>
+        <h3 className="text-lg font-semibold flex items-center gap-2"><FileSignature className="h-5 w-5 text-primary" /> Sign Dispatch Service Agreement</h3>
+        <p className="text-sm text-muted-foreground">Al firmar aceptas los términos del contrato de servicios de dispatch (8% comisión sobre gross rate).</p>
+      </div>
+      <div className="bg-muted/30 border rounded-lg p-4 max-h-64 overflow-y-auto text-xs space-y-2">
+        <p className="font-semibold">Resumen del contrato:</p>
+        <ul className="list-disc pl-4 space-y-1 text-muted-foreground">
+          <li>58 Logistics LLC actúa como dispatcher independiente para tu empresa.</li>
+          <li>Comisión: <strong>8% del gross rate</strong> por cada carga aceptada/reservada.</li>
+          <li>Facturación semanal (Net 7).</li>
+          <li>Tú mantienes control operacional total: seguros, permisos, FMCSA/DOT, ELD, HOS.</li>
+          <li>Exclusividad durante la vigencia del contrato.</li>
+          <li>Cualquier parte puede terminar en cualquier momento, sin penalización.</li>
+          <li>Ley aplicable: North Carolina, USA.</li>
+        </ul>
+        <p className="text-[10px] italic pt-2">Al firmar, confirmas que leíste y aceptas la versión completa del agreement bilingüe.</p>
+      </div>
+      <div className="space-y-2">
+        <div className="space-y-1">
+          <Label>Nombre completo del firmante *</Label>
+          <Input value={signerName} onChange={e => setSignerName(e.target.value)} placeholder="Owner / Representante autorizado" />
+          <p className="text-[10px] text-muted-foreground">Debe ser el Owner o representante autorizado de la empresa.</p>
+        </div>
+        <div className="space-y-1">
+          <Label>Firma *</Label>
+          <div className="border rounded-lg p-2 bg-white">
+            <SignaturePad onSignatureChange={setAgreementSignature} width={600} height={180} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderAddDriversStep = () => (
+    <div className="space-y-4">
+      <div>
+        <h3 className="text-lg font-semibold flex items-center gap-2"><User className="h-5 w-5 text-primary" /> Drivers & Trucks</h3>
+        <p className="text-sm text-muted-foreground">Agrega uno o más drivers con sus respectivos camiones.</p>
+      </div>
+
+      {/* Lista de drivers ya agregados */}
+      {drivers.length > 0 && (
+        <div className="space-y-1.5">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Drivers agregados ({drivers.length})</p>
+          {drivers.map((d, i) => (
+            <div key={i} className="flex items-center gap-2 p-2 rounded-md border bg-card">
+              <div className="p-1.5 rounded-full bg-primary/10"><User className="h-3.5 w-3.5 text-primary" /></div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">
+                  {d.name} {d.is_owner && <span className="text-[10px] text-primary font-semibold">(Owner)</span>}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">Unit #{d.truck.unit_number} • {d.truck.truck_type} • {d.phone}</p>
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => handleEditDriver(i)} className="h-7 px-2 text-xs" disabled={editingIndex === i}>
+                <Edit2 className="h-3 w-3 mr-1" /> Editar
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => handleRemoveDriver(i)} className="h-7 px-2 text-xs text-destructive hover:text-destructive">
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Formulario del driver actual */}
+      <div className="border rounded-lg p-3 bg-muted/10">
+        <p className="text-sm font-semibold mb-3">
+          {editingIndex !== null ? `Editando driver #${editingIndex + 1}` : `Nuevo driver #${drivers.length + 1}`}
+        </p>
+        <DispatchDriverTruckForm
+          entry={currentDriver}
+          onChange={(u) => setCurrentDriver(prev => ({ ...prev, ...u }))}
+          onFileChange={(k, f) => setCurrentDriver(prev => ({ ...prev, [k]: f }))}
+          ownerFullName={company.owner_full_name}
+          showOwnerCheckbox
+        />
+        <div className="flex flex-wrap gap-2 mt-4 pt-3 border-t">
+          <Button variant="outline" size="sm" onClick={handleSaveAndAddAnother} className="gap-1">
+            <Plus className="h-3.5 w-3.5" /> Guardar y agregar otro
+          </Button>
+          <Button size="sm" onClick={handleSaveAndContinue} className="gap-1">
+            {editingIndex !== null ? 'Guardar cambios' : 'Guardar y continuar'} <ArrowRight className="h-3.5 w-3.5" />
+          </Button>
+          {editingIndex !== null && (
+            <Button variant="ghost" size="sm" onClick={() => { setEditingIndex(null); setCurrentDriver(emptyDriverEntry()); }} className="gap-1">
+              Cancelar edicion
+            </Button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderReviewStep = () => (
+    <div className="space-y-4">
+      <div>
+        <h3 className="text-lg font-semibold flex items-center gap-2"><CheckCircle2 className="h-5 w-5 text-primary" /> Review & Submit</h3>
+        <p className="text-sm text-muted-foreground">Revisa todos los datos antes de enviar.</p>
+      </div>
+
+      {!isExistingCompany && (
+        <>
+          <div className="border rounded-lg p-3">
+            <p className="text-xs font-semibold uppercase text-muted-foreground mb-1.5">Empresa</p>
+            <div className="text-sm grid grid-cols-2 gap-1">
+              <div><span className="text-muted-foreground">Legal:</span> <span className="font-medium">{company.legal_business_name}</span></div>
+              {company.dba && <div><span className="text-muted-foreground">DBA:</span> <span className="font-medium">{company.dba}</span></div>}
+              <div><span className="text-muted-foreground">MC#:</span> <span className="font-medium">{company.mc_number}</span></div>
+              <div><span className="text-muted-foreground">DOT#:</span> <span className="font-medium">{company.dot_number}</span></div>
+              <div><span className="text-muted-foreground">Owner:</span> <span className="font-medium">{company.owner_full_name}</span></div>
+              <div><span className="text-muted-foreground">Email:</span> <span className="font-medium">{company.email}</span></div>
+            </div>
+          </div>
+          <div className="border rounded-lg p-3">
+            <p className="text-xs font-semibold uppercase text-muted-foreground mb-1.5">Documentos y Firma</p>
+            <ul className="text-sm space-y-0.5 text-muted-foreground">
+              <li>{companyDocs.mc_authority ? '✓' : '✗'} MC/DOT Authority</li>
+              <li>{companyDocs.insurance_cert ? '✓' : '✗'} Insurance Certificate</li>
+              <li>{companyDocs.w9 ? '✓' : '✗'} W9 Form</li>
+              <li>{agreementSignature ? '✓' : '✗'} Agreement firmado por {signerName || '—'}</li>
+            </ul>
+          </div>
+        </>
+      )}
+
+      <div className="border rounded-lg p-3">
+        <p className="text-xs font-semibold uppercase text-muted-foreground mb-1.5">
+          Drivers ({isExistingCompany ? 1 : drivers.length})
+        </p>
+        {isExistingCompany ? (
+          <div className="text-sm">
+            <p className="font-medium">{currentDriver.name}</p>
+            <p className="text-xs text-muted-foreground">Unit #{currentDriver.truck.unit_number} • {currentDriver.truck.truck_type}</p>
+          </div>
+        ) : (
+          <ul className="text-sm space-y-1">
+            {drivers.map((d, i) => (
+              <li key={i} className="flex items-center gap-2">
+                <span className="font-medium">{d.name}</span>
+                <span className="text-xs text-muted-foreground">Unit #{d.truck.unit_number}</span>
+                {d.is_owner && <span className="text-[10px] text-primary font-semibold">(Owner)</span>}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+
+  const renderExistingCompanyDriverStep = () => (
+    <div className="space-y-4">
+      <div>
+        <h3 className="text-lg font-semibold flex items-center gap-2"><User className="h-5 w-5 text-primary" /> Driver & Truck Info</h3>
+        <p className="text-sm text-muted-foreground">Llena tus datos personales y los del camión. La empresa y el agreement ya están registrados.</p>
+      </div>
+      <DispatchDriverTruckForm
+        entry={currentDriver}
+        onChange={(u) => setCurrentDriver(prev => ({ ...prev, ...u }))}
+        onFileChange={(k, f) => setCurrentDriver(prev => ({ ...prev, [k]: f }))}
+      />
     </div>
   );
 
   const renderCurrentStep = () => {
     if (isExistingCompany) {
-      // Flow empresa existente: Driver Info -> Truck Info -> Docs -> Review
       switch (step) {
-        case 1: return renderPlaceholder('Driver Info (Fase 3B)');
-        case 2: return renderPlaceholder('Truck Info (Fase 3B)');
-        case 3: return renderPlaceholder('Documents (Fase 3B)');
-        case 4: return renderPlaceholder('Review (Fase 3B)');
+        case 1: return renderExistingCompanyDriverStep();
+        case 2: return renderReviewStep();
         default: return null;
       }
     }
-    // Flow empresa nueva
     switch (step) {
       case 1: return renderCompanyStep();
       case 2: return renderFactoringInsuranceStep();
       case 3: return renderCompanyDocsStep();
-      case 4: return renderPlaceholder('Sign Dispatch Service Agreement (Fase 3B)');
-      case 5: return renderPlaceholder('Add Drivers & Trucks (Fase 3B)');
-      case 6: return renderPlaceholder('Review & Submit (Fase 3B)');
+      case 4: return renderSignAgreementStep();
+      case 5: return renderAddDriversStep();
+      case 6: return renderReviewStep();
       default: return null;
     }
   };
+
+  // En el step de "Add Drivers", los botones de navegacion los maneja el form (Save & Continue).
+  const isDriversLoopStep = !isExistingCompany && step === 5;
 
   return (
     <div className="min-h-screen bg-muted/30 py-6 px-4">
@@ -397,28 +627,36 @@ export default function DispatchServiceOnboarding({ token, tokenData, onComplete
               Dispatch Service Onboarding
               {isExistingCompany && <span className="ml-2 text-sm font-normal text-muted-foreground">— Empresa existente</span>}
             </CardTitle>
-            <CardDescription>
-              Paso {step} de {totalSteps}
-            </CardDescription>
+            <CardDescription>Paso {step} de {totalSteps}</CardDescription>
           </CardHeader>
           <CardContent>
             {renderStepper()}
             {renderCurrentStep()}
 
-            <div className="flex justify-between mt-6 pt-4 border-t">
-              <Button variant="outline" onClick={prev} disabled={step === 1 || submitting} className="gap-1">
-                <ArrowLeft className="h-4 w-4" /> Back
-              </Button>
-              {step < totalSteps ? (
-                <Button onClick={next} disabled={submitting} className="gap-1">
-                  Next <ArrowRight className="h-4 w-4" />
+            {!isDriversLoopStep && (
+              <div className="flex justify-between mt-6 pt-4 border-t">
+                <Button variant="outline" onClick={prev} disabled={step === 1 || submitting} className="gap-1">
+                  <ArrowLeft className="h-4 w-4" /> Back
                 </Button>
-              ) : (
-                <Button onClick={handleSubmit} disabled={submitting} className="gap-1">
-                  {submitting ? <><Loader2 className="h-4 w-4 animate-spin" /> Submitting...</> : <>Submit <CheckCircle2 className="h-4 w-4" /></>}
+                {step < totalSteps ? (
+                  <Button onClick={next} disabled={submitting} className="gap-1">
+                    Next <ArrowRight className="h-4 w-4" />
+                  </Button>
+                ) : (
+                  <Button onClick={handleSubmit} disabled={submitting} className="gap-1">
+                    {submitting ? <><Loader2 className="h-4 w-4 animate-spin" /> Submitting...</> : <>Submit <CheckCircle2 className="h-4 w-4" /></>}
+                  </Button>
+                )}
+              </div>
+            )}
+            {isDriversLoopStep && (
+              <div className="flex justify-between mt-6 pt-4 border-t">
+                <Button variant="outline" onClick={prev} disabled={submitting} className="gap-1">
+                  <ArrowLeft className="h-4 w-4" /> Back
                 </Button>
-              )}
-            </div>
+                <p className="text-xs text-muted-foreground self-center">Usa los botones del formulario para guardar y avanzar.</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
