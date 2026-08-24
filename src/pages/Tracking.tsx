@@ -601,9 +601,9 @@ const Tracking = () => {
 
     const updates: Array<{ driver_id: string; newStatus: 'searching' | 'ready' }> = [];
     Object.entries(searchStatus).forEach(([driverId, status]) => {
-      // Solo respetar manual para 'standby' (usuario opto por sacarlo del dia).
-      // 'searching' y 'ready' son estados dinamicos que responden a la realidad.
-      if (manualStatusIds.has(driverId) && status === 'standby') return;
+      // Cualquier cambio manual se respeta — el usuario tiene la ultima palabra por el dia.
+      // Al pasar la medianoche (nuevo search_date) los drivers vuelven al modo auto.
+      if (manualStatusIds.has(driverId)) return;
       // Listo = tiene carga FUTURA (delivery > hoy). Una carga que entrega HOY
       // no cuenta como cubierto — el driver sigue buscando la siguiente.
       const hasFuture = !!hasFutureLoadByDriver[driverId];
