@@ -8,6 +8,7 @@ import { Copy, Check, Link2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useTenantId } from '@/hooks/useTenantId';
 import { DbDispatcher } from '@/hooks/useDispatchers';
+import { useDispatchServiceClients } from '@/hooks/useDispatchServiceClients';
 import { toast } from '@/hooks/use-toast';
 
 interface Props {
@@ -16,18 +17,30 @@ interface Props {
   dispatchers: DbDispatcher[];
 }
 
+type ServiceType = 'owner_operator' | 'company_driver' | 'dispatch_service';
+
 export function GenerateOnboardingLinkDialog({ open, onOpenChange, dispatchers }: Props) {
   const tenantId = useTenantId();
+  const { clients: dispatchServiceClients, loading: clientsLoading } = useDispatchServiceClients();
   const [driverName, setDriverName] = useState('');
-  const [serviceType, setServiceType] = useState<'owner_operator' | 'company_driver'>('owner_operator');
+  const [serviceType, setServiceType] = useState<ServiceType>('owner_operator');
   const [dispatcherId, setDispatcherId] = useState<string | null>(null);
+  // Solo aplica cuando serviceType === 'dispatch_service'
+  const [clientMode, setClientMode] = useState<'new' | 'existing'>('new');
+  const [existingClientId, setExistingClientId] = useState<string | null>(null);
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  const isDispatchService = serviceType === 'dispatch_service';
+
   const handleGenerate = async () => {
     if (!tenantId) {
       toast({ title: 'Error', description: 'No tenant found', variant: 'destructive' });
+      return;
+    }
+    if (isDispatchService && clientMode === 'existing' && !existingClientId) {
+      toast({ title: 'Selecciona una empresa existente', variant: 'destructive' });
       return;
     }
     setCreating(true);
@@ -39,7 +52,8 @@ export function GenerateOnboardingLinkDialog({ open, onOpenChange, dispatchers }
           driver_name: driverName.trim() || null,
           service_type: serviceType,
           dispatcher_id: dispatcherId,
-        })
+          dispatch_service_client_id: isDispatchService && clientMode === 'existing' ? existingClientId : null,
+        } as any)
         .select('token')
         .single();
 
@@ -68,6 +82,8 @@ export function GenerateOnboardingLinkDialog({ open, onOpenChange, dispatchers }
       setDriverName('');
       setServiceType('owner_operator');
       setDispatcherId(null);
+      setClientMode('new');
+      setExistingClientId(null);
       setGeneratedLink(null);
       setCopied(false);
     }
@@ -98,14 +114,63 @@ export function GenerateOnboardingLinkDialog({ open, onOpenChange, dispatchers }
             </div>
             <div className="space-y-2">
               <Label>Service Type</Label>
-              <Select value={serviceType} onValueChange={v => setServiceType(v as any)}>
+              <Select value={serviceType} onValueChange={v => setServiceType(v as ServiceType)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="owner_operator">Owner Operator</SelectItem>
                   <SelectItem value="company_driver">Company Driver</SelectItem>
+                  <SelectItem value="dispatch_service">Dispatch Service</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+
+            {isDispatchService && (
+              <>
+                <div className="space-y-2">
+                  <Label>Empresa</Label>
+                  <Select value={clientMode} onValueChange={v => setClientMode(v as 'new' | 'existing')}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="new">Nueva empresa</SelectItem>
+                      <SelectItem value="existing">Empresa existente</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    {clientMode === 'new'
+                      ? 'El onboarding pedira todos los datos de la empresa + firma del agreement.'
+                      : 'El driver solo llenara sus datos personales. La empresa y el agreement ya estan registrados.'}
+                  </p>
+                </div>
+
+                {clientMode === 'existing' && (
+                  <div className="space-y-2">
+                    <Label>Selecciona la empresa</Label>
+                    <Select
+                      value={existingClientId || ''}
+                      onValueChange={v => setExistingClientId(v)}
+                      disabled={clientsLoading}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={clientsLoading ? 'Cargando...' : 'Seleccionar empresa'} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {dispatchServiceClients.map(c => (
+                          <SelectItem key={c.id} value={c.id}>
+                            {c.legal_business_name}{c.mc_number ? ` (MC# ${c.mc_number})` : ''}
+                          </SelectItem>
+                        ))}
+                        {dispatchServiceClients.length === 0 && !clientsLoading && (
+                          <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                            No hay empresas registradas
+                          </div>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </>
+            )}
+
             <div className="space-y-2">
               <Label>Pre-assign Dispatcher (optional)</Label>
               <Select value={dispatcherId || 'none'} onValueChange={v => setDispatcherId(v === 'none' ? null : v)}>
