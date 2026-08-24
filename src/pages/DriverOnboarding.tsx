@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import logoImg from '@/assets/logo.png';
 import { US_STATES } from '@/lib/usStates';
 import DocumentSigningStep, { SignedDocs } from '@/components/onboarding/DocumentSigningStep';
+import DispatchServiceOnboarding from '@/components/onboarding/DispatchServiceOnboarding';
 import { generateOnboardingSummaryPdf } from '@/lib/onboardingDocPdf';
 import { format } from 'date-fns';
 import { formatPhone } from '@/lib/phoneUtils';
@@ -249,6 +250,17 @@ export default function DriverOnboarding() {
           </CardContent>
         </Card>
       </div>
+    );
+  }
+
+  // Dispatch Service tiene su propio flow — redirigir al componente especializado.
+  if (tokenData?.service_type === 'dispatch_service') {
+    return (
+      <DispatchServiceOnboarding
+        token={token!}
+        tokenData={tokenData}
+        onCompleted={() => setCompleted(true)}
+      />
     );
   }
 
