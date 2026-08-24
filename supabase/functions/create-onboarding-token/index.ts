@@ -17,7 +17,7 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { name, email, phone, truck_type, service_type } = await req.json();
+    const { name, email, phone, truck_type, service_type, dispatch_service_client_mc } = await req.json();
 
     if (!name || !email || !phone) {
       return new Response(
@@ -43,6 +43,29 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Si es dispatch_service y viene un MC number, intentar vincular a un client existente.
+    // Si el MC no existe, devolvemos error para que el driver corrija o elija "empresa nueva".
+    let dispatchServiceClientId: string | null = null;
+    if (service_type === "dispatch_service" && dispatch_service_client_mc) {
+      const mcClean = String(dispatch_service_client_mc).trim();
+      const { data: client, error: clientError } = await supabaseAdmin
+        .from("dispatch_service_clients")
+        .select("id")
+        .eq("tenant_id", tenant.id)
+        .eq("mc_number", mcClean)
+        .maybeSingle();
+      if (clientError) {
+        console.error("Client lookup error:", clientError);
+      }
+      if (!client) {
+        return new Response(
+          JSON.stringify({ error: `No encontramos una empresa con MC# ${mcClean}. Verifica el número o selecciona "Nueva empresa".` }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      dispatchServiceClientId = client.id;
+    }
+
     // Create onboarding token
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
@@ -56,6 +79,7 @@ Deno.serve(async (req) => {
         driver_phone: phone,
         truck_type: truck_type || null,
         service_type: service_type || "owner_operator",
+        dispatch_service_client_id: dispatchServiceClientId,
         status: "pending",
         expires_at: expiresAt.toISOString(),
       })

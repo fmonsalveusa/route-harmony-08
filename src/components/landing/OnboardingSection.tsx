@@ -17,6 +17,11 @@ export function OnboardingSection() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", phone: "", truck_type: "Box Truck", service_type: "owner_operator" });
+  // Solo aplica cuando service_type === "dispatch_service"
+  const [dispatchMode, setDispatchMode] = useState<"new" | "existing">("new");
+  const [dispatchClientMc, setDispatchClientMc] = useState("");
+
+  const isDispatchService = form.service_type === "dispatch_service";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,11 +29,21 @@ export function OnboardingSection() {
       toast.error(tr.obErrorRequired);
       return;
     }
+    if (isDispatchService && dispatchMode === "existing" && !dispatchClientMc.trim()) {
+      toast.error(lang === "es" ? "Ingresa el MC# de tu empresa" : "Enter your company MC#");
+      return;
+    }
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("create-onboarding-token", {
-        body: { name: form.name, email: form.email, phone: form.phone, truck_type: form.truck_type, service_type: form.service_type },
-      });
+      const body: any = {
+        name: form.name, email: form.email, phone: form.phone,
+        truck_type: isDispatchService ? null : form.truck_type,
+        service_type: form.service_type,
+      };
+      if (isDispatchService && dispatchMode === "existing") {
+        body.dispatch_service_client_mc = dispatchClientMc.trim();
+      }
+      const { data, error } = await supabase.functions.invoke("create-onboarding-token", { body });
       if (error || !data?.token) throw new Error(data?.error || tr.obErrorCreate);
       toast.success(tr.obSuccess);
       navigate(`/onboarding/${data.token}`);
@@ -129,6 +144,7 @@ export function OnboardingSection() {
                   <SelectContent>
                     <SelectItem value="owner_operator">Owner Operator</SelectItem>
                     <SelectItem value="company_driver">Company Driver</SelectItem>
+                    <SelectItem value="dispatch_service">Dispatch Service</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -146,6 +162,35 @@ export function OnboardingSection() {
                     </SelectContent>
                   </Select>
                 </div>
+              )}
+              {isDispatchService && (
+                <>
+                  <div>
+                    <Label>{lang === "es" ? "¿Tu empresa ya está registrada?" : "Is your company already registered?"}</Label>
+                    <Select value={dispatchMode} onValueChange={(v) => setDispatchMode(v as "new" | "existing")}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="new">{lang === "es" ? "No - Registrar nueva empresa" : "No - Register new company"}</SelectItem>
+                        <SelectItem value="existing">{lang === "es" ? "Sí - Ya está registrada" : "Yes - Already registered"}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {dispatchMode === "new"
+                        ? (lang === "es" ? "Vas a completar todos los datos de la empresa y firmar el agreement." : "You will complete company info and sign the agreement.")
+                        : (lang === "es" ? "Solo necesitas llenar tus datos y los del camión." : "You only need to fill your info and truck data.")}
+                    </p>
+                  </div>
+                  {dispatchMode === "existing" && (
+                    <div>
+                      <Label>{lang === "es" ? "MC# de tu empresa" : "Your company MC#"}</Label>
+                      <Input
+                        placeholder={lang === "es" ? "Ej: 1234567" : "e.g. 1234567"}
+                        value={dispatchClientMc}
+                        onChange={(e) => setDispatchClientMc(e.target.value)}
+                      />
+                    </div>
+                  )}
+                </>
               )}
               <Button type="submit" disabled={loading} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-bold py-3.5 text-base h-auto">
                 {loading ? <Loader2 className="animate-spin mr-2" size={18} /> : null}
