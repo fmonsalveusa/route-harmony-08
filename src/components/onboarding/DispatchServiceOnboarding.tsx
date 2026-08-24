@@ -261,7 +261,7 @@ export default function DispatchServiceOnboarding({ token, tokenData, onComplete
           <Select value={company.state || ''} onValueChange={v => setCompany({...company, state: v})}>
             <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
             <SelectContent>
-              {US_STATES.map(s => <SelectItem key={s.code} value={s.code}>{s.name}</SelectItem>)}
+              {US_STATES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
