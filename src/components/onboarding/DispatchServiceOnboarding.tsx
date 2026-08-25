@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import logoImg from '@/assets/logo.png';
 import SignaturePad from './SignaturePad';
 import { DispatchDriverTruckForm } from './DispatchDriverTruckForm';
+import { DispatchAgreementFullText } from './DispatchAgreementFullText';
 
 // Tipos internos del flow
 export interface DispatchCompanyData {
@@ -126,6 +127,7 @@ export default function DispatchServiceOnboarding({ token, tokenData, onComplete
   // Firma del agreement
   const [agreementSignature, setAgreementSignature] = useState<string | null>(null);
   const [signerName, setSignerName] = useState('');
+  const [showFullAgreement, setShowFullAgreement] = useState(false);
 
   // Loop de drivers
   const [drivers, setDrivers] = useState<DispatchDriverEntry[]>([]);
@@ -433,7 +435,7 @@ export default function DispatchServiceOnboarding({ token, tokenData, onComplete
         <h3 className="text-lg font-semibold flex items-center gap-2"><FileSignature className="h-5 w-5 text-primary" /> Sign Dispatch Service Agreement</h3>
         <p className="text-sm text-muted-foreground">Al firmar aceptas los términos del contrato de servicios de dispatch (8% comisión sobre gross rate).</p>
       </div>
-      <div className="bg-muted/30 border rounded-lg p-4 max-h-64 overflow-y-auto text-xs space-y-2">
+      <div className="bg-muted/30 border rounded-lg p-4 text-xs space-y-2">
         <p className="font-semibold">Resumen del contrato:</p>
         <ul className="list-disc pl-4 space-y-1 text-muted-foreground">
           <li>58 Logistics LLC actúa como dispatcher independiente para tu empresa.</li>
@@ -444,8 +446,31 @@ export default function DispatchServiceOnboarding({ token, tokenData, onComplete
           <li>Cualquier parte puede terminar en cualquier momento, sin penalización.</li>
           <li>Ley aplicable: North Carolina, USA.</li>
         </ul>
-        <p className="text-[10px] italic pt-2">Al firmar, confirmas que leíste y aceptas la versión completa del agreement bilingüe.</p>
       </div>
+
+      {/* Vista expandible del contrato completo */}
+      <div className="border rounded-lg overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setShowFullAgreement(v => !v)}
+          className="w-full flex items-center justify-between px-4 py-2.5 bg-primary/5 hover:bg-primary/10 transition-colors text-sm font-semibold text-primary"
+        >
+          <span className="flex items-center gap-2">
+            <FileCheck className="h-4 w-4" />
+            {showFullAgreement ? 'Ocultar contrato completo' : 'Ver contrato completo (bilingüe)'}
+          </span>
+          <span className="text-xs">{showFullAgreement ? '▲' : '▼'}</span>
+        </button>
+        {showFullAgreement && (
+          <div className="p-4 max-h-[500px] overflow-y-auto bg-white border-t">
+            <DispatchAgreementFullText company={company} signerName={signerName} />
+          </div>
+        )}
+      </div>
+
+      <p className="text-[11px] italic text-muted-foreground">
+        Al firmar, confirmas que leíste y aceptas la versión completa del agreement bilingüe.
+      </p>
       <div className="space-y-2">
         <div className="space-y-1">
           <Label>Nombre completo del firmante *</Label>
