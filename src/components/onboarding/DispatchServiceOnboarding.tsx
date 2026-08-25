@@ -12,6 +12,7 @@ import logoImg from '@/assets/logo.png';
 import SignaturePad from './SignaturePad';
 import { DispatchDriverTruckForm } from './DispatchDriverTruckForm';
 import { DispatchAgreementFullText } from './DispatchAgreementFullText';
+import { generateDispatchAgreementPdf } from '@/lib/dispatchAgreementPdf';
 
 // Tipos internos del flow
 export interface DispatchCompanyData {
@@ -254,6 +255,18 @@ export default function DispatchServiceOnboarding({ token, tokenData, onComplete
         if (companyDocs.mc_authority) formData.append('company_mc_authority', companyDocs.mc_authority);
         if (companyDocs.insurance_cert) formData.append('company_insurance_cert', companyDocs.insurance_cert);
         if (companyDocs.w9) formData.append('company_w9', companyDocs.w9);
+        // Generar PDF del agreement firmado y adjuntarlo
+        if (agreementSignature) {
+          try {
+            const pdfBlob = generateDispatchAgreementPdf({ company, signerName, signatureDataUrl: agreementSignature });
+            formData.append('company_agreement_pdf', pdfBlob, 'dispatch_service_agreement_signed.pdf');
+          } catch (e) {
+            console.error('Error generating agreement PDF:', e);
+            toast.error('Error generando el PDF del agreement');
+            setSubmitting(false);
+            return;
+          }
+        }
       }
 
       // Serializar drivers (sin archivos)
@@ -544,6 +557,28 @@ export default function DispatchServiceOnboarding({ token, tokenData, onComplete
           )}
         </div>
       </div>
+
+      {/* Si ya hay drivers guardados, permitir avanzar al review sin agregar mas */}
+      {drivers.length > 0 && editingIndex === null && (
+        <div className="flex justify-end">
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => {
+              // Si el form actual tiene datos, confirmar antes de descartarlos
+              const hasData = currentDriver.name.trim() || currentDriver.email.trim() || currentDriver.truck.unit_number.trim();
+              if (hasData) {
+                if (!confirm('Tienes datos sin guardar en el formulario actual. ¿Continuar al Review sin guardarlos?')) return;
+              }
+              setCurrentDriver(emptyDriverEntry());
+              setStep(6);
+            }}
+            className="gap-1"
+          >
+            Continuar al Review ({drivers.length} driver{drivers.length !== 1 ? 's' : ''}) <ArrowRight className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      )}
     </div>
   );
 
