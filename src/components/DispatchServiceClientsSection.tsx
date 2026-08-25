@@ -7,8 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
-import { Plus, Pencil, Trash2, ChevronDown, ChevronUp, Building2, Loader2, Eye, EyeOff, Copy, Check } from 'lucide-react';
+import { Plus, Pencil, Trash2, ChevronDown, ChevronUp, Building2, Loader2, Eye, EyeOff, Copy, Check, FileText, ExternalLink, Download } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ClientFormState {
   legal_business_name: string;
@@ -186,6 +187,69 @@ function ClientFormDialog({
   );
 }
 
+// Resuelve un storage path a signed URL (o devuelve http URLs tal cual).
+async function resolveDocUrl(pathOrUrl: string | null | undefined): Promise<string | null> {
+  if (!pathOrUrl) return null;
+  if (pathOrUrl.startsWith('http')) return pathOrUrl;
+  const { data } = await supabase.storage.from('driver-documents').createSignedUrl(pathOrUrl, 3600);
+  return data?.signedUrl || null;
+}
+
+function ClientDocCard({ label, path, colorClass }: { label: string; path: string | null; colorClass?: string }) {
+  const [loading, setLoading] = useState(false);
+  const isMissing = !path;
+
+  const open = async () => {
+    if (!path) return;
+    setLoading(true);
+    const url = await resolveDocUrl(path);
+    setLoading(false);
+    if (!url) { toast({ title: 'Archivo no encontrado', variant: 'destructive' }); return; }
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  const download = async () => {
+    if (!path) return;
+    setLoading(true);
+    const url = await resolveDocUrl(path);
+    if (!url) { setLoading(false); toast({ title: 'Archivo no encontrado', variant: 'destructive' }); return; }
+    try {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = `${label.replace(/\s+/g, '_')}.${path.split('.').pop() || 'pdf'}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+    } catch { window.open(url, '_blank'); }
+    setLoading(false);
+  };
+
+  return (
+    <div className={`border rounded-md p-2 flex flex-col ${isMissing ? 'opacity-50 border-dashed' : 'border-solid'}`}>
+      <div className={`flex items-center justify-center h-10 rounded ${colorClass || 'bg-rose-500/10 text-rose-600'} mb-1.5`}>
+        <FileText className="h-5 w-5" />
+      </div>
+      <p className="text-[10px] font-semibold text-center truncate mb-1" title={label}>{label}</p>
+      {isMissing ? (
+        <p className="text-[9px] text-center text-muted-foreground italic">No subido</p>
+      ) : (
+        <div className="flex gap-1 justify-center">
+          <button onClick={open} disabled={loading} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground" title="Ver">
+            {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <ExternalLink className="h-3 w-3" />}
+          </button>
+          <button onClick={download} disabled={loading} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground" title="Descargar">
+            <Download className="h-3 w-3" />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ClientCard({
   client,
   driverCount,
@@ -305,6 +369,17 @@ function ClientCard({
                 </div>
               </div>
             )}
+
+            {/* Documents */}
+            <div className="pt-2 border-t">
+              <p className="font-semibold text-muted-foreground uppercase tracking-wide text-[10px] mb-1.5">Documents</p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <ClientDocCard label="W9" path={(client as any).w9_url || null} colorClass="bg-blue-500/10 text-blue-600" />
+                <ClientDocCard label="MC/DOT Authority" path={client.mc_authority_url} colorClass="bg-purple-500/10 text-purple-600" />
+                <ClientDocCard label="Insurance Cert" path={client.insurance_cert_url} colorClass="bg-emerald-500/10 text-emerald-600" />
+                <ClientDocCard label="Signed Agreement" path={client.dispatch_service_agreement_url} colorClass="bg-amber-500/10 text-amber-600" />
+              </div>
+            </div>
 
             {/* Drivers */}
             <div className="pt-2 border-t">
