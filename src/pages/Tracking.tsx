@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { StatusBadge } from '@/components/StatusBadge';
-import { MapPin, Package, Navigation, Clock, Search, ChevronRight, AlertTriangle, Eye, User, Users, Pencil, Loader2, Copy, Check, Download, ExternalLink, X } from 'lucide-react';
+import { MapPin, Package, Navigation, Clock, Search, ChevronRight, AlertTriangle, Eye, User, Users, Pencil, Loader2, Copy, Check, Download, ExternalLink, X, Pause, Play } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { DriversTimelineCard } from '@/components/dashboard/DriversTimelineCard';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, Tooltip as LeafletTooltip, useMap } from 'react-leaflet';
@@ -309,13 +309,14 @@ const Tracking = () => {
       .filter(d => effectiveDispatcherFilter === 'all' || d.dispatcher_id === effectiveDispatcherFilter);
   }, [drivers, dispatcherFilter, userDispatcherId]);
 
-  // Orden visual por estado: Buscando (0) ΓåÆ Listo (1) ΓåÆ Standby (2)
+  // Orden visual: Buscando (0) -> Listo (1) -> Standby (2) -> Pausado (3, al final)
   const sortedDrivers = useMemo(() => {
-    const rank = (id: string) => {
-      const s = searchStatus[id];
+    const rank = (d: any) => {
+      if (d.is_paused) return 3;
+      const s = searchStatus[d.id];
       return s === 'searching' ? 0 : s === 'ready' ? 1 : 2;
     };
-    return [...availableDrivers].sort((a, b) => rank(a.id) - rank(b.id));
+    return [...availableDrivers].sort((a, b) => rank(a) - rank(b));
   }, [availableDrivers, searchStatus]);
 
   // IDs de drivers visibles seg├║n el filtro de dispatcher del dropdown (Next Plan),
@@ -530,6 +531,7 @@ const Tracking = () => {
       const toPreMark: string[] = [];
       drivers.forEach(d => {
         if (map[d.id]) return; // ya tiene estado persistido
+        if ((d as any).is_paused) return; // driver pausado — no se auto-marca
         if (!driversWithFuture.has(d.id)) {
           map[d.id] = 'searching';
           toPreMark.push(d.id);
@@ -587,6 +589,49 @@ const Tracking = () => {
     );
   };
 
+  // Pausar/Reanudar driver (vacaciones o inactividad temporal).
+  // Cuando esta pausado: no aparece en el search list, queda fijado en Standby,
+  // el auto-sync lo ignora, y no se pre-marca al cargar la pagina.
+  const togglePauseDriver = async (driverId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const driver = drivers.find(d => d.id === driverId);
+    if (!driver) return;
+    const currentlyPaused = !!(driver as any).is_paused;
+    const willPause = !currentlyPaused;
+
+    // Optimista: si vamos a pausar, forzamos standby local para reflejar visualmente.
+    if (willPause) {
+      setSearchStatus(prev => {
+        const copy = { ...prev };
+        delete copy[driverId]; // remover del map -> aparece como Standby por default
+        return copy;
+      });
+      setManualStatusIds(prev => {
+        const copy = new Set(prev);
+        copy.delete(driverId);
+        return copy;
+      });
+      // Borrar la fila del dia por si tenia estado manual/auto
+      const today = new Date().toISOString().split('T')[0];
+      const tenant_id = await getTenantId();
+      await supabase.from('daily_search_status' as any)
+        .delete()
+        .eq('driver_id', driverId)
+        .eq('search_date', today)
+        .eq('tenant_id', tenant_id);
+    }
+
+    const { error } = await supabase.from('drivers' as any)
+      .update({ is_paused: willPause } as any)
+      .eq('id', driverId);
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: willPause ? `${driver.name} pausado` : `${driver.name} reanudado` });
+    refetchDrivers();
+  };
+
   // Auto-sync Buscando <-> Listo segun CARGA FUTURA (delivery > hoy):
   // - 'searching' + tiene carga futura -> 'ready'.
   // - 'ready' + no tiene carga futura -> 'searching'.
@@ -604,6 +649,9 @@ const Tracking = () => {
       // Cualquier cambio manual se respeta — el usuario tiene la ultima palabra por el dia.
       // Al pasar la medianoche (nuevo search_date) los drivers vuelven al modo auto.
       if (manualStatusIds.has(driverId)) return;
+      // Driver pausado (vacaciones/inactivo temporal) — no se toca desde el auto-sync.
+      const driver = drivers.find(d => d.id === driverId);
+      if ((driver as any)?.is_paused) return;
       // Listo = tiene carga FUTURA (delivery > hoy). Una carga que entrega HOY
       // no cuenta como cubierto — el driver sigue buscando la siguiente.
       const hasFuture = !!hasFutureLoadByDriver[driverId];
@@ -952,20 +1000,23 @@ const Tracking = () => {
                   ? { address: lastDel.address, date: lastDel.date, isActive: false }
                   : null;
                 const sStatus = searchStatus[driver.id]; // undefined|'standby' = standby | 'searching' | 'ready'
+                const isPaused = !!(driver as any).is_paused;
                 // Solo 'ready' y 'searching' tienen fondo coloreado con texto blanco.
-                // 'standby' (explicit o auto) va con look neutro para que se lea bien.
-                const hasColoredBg = sStatus === 'ready' || sStatus === 'searching';
+                // 'standby' (explicit o auto) o pausado -> look neutro para que se lea bien.
+                const hasColoredBg = !isPaused && (sStatus === 'ready' || sStatus === 'searching');
                 return (
                   <div
                     key={driver.id}
                     className={`rounded-lg border transition-all flex overflow-hidden cursor-pointer ${
-                      sStatus === 'ready'
+                      isPaused
+                        ? 'border-slate-400/50 opacity-60'
+                        : sStatus === 'ready'
                         ? 'border-[hsl(152,60%,40%)]/40'
                         : sStatus === 'searching'
                         ? 'border-[hsl(22,90%,48%)]/50'
                         : 'border-border hover:border-primary/30'
                     } ${
-                      activeLoad ? 'bg-[hsl(152,60%,40%)]/[0.03]' : 'bg-[hsl(25,95%,53%)]/[0.03]'
+                      isPaused ? 'bg-slate-50' : activeLoad ? 'bg-[hsl(152,60%,40%)]/[0.03]' : 'bg-[hsl(25,95%,53%)]/[0.03]'
                     }`}
                     onClick={() => setSelectedDriverLoad({ driver, load: activeLoad || null, lastDelivered: lastDel ? { address: lastDel.address, date: lastDel.date } : undefined })}
                   >
@@ -1040,21 +1091,39 @@ const Tracking = () => {
                         </div>
                       )}
                     </div>
-                    {/* L├¡nea 2: acciones ΓÇö Copy Info a la izquierda, estado a la derecha */}
-                    <div className="flex items-center justify-between px-3 py-1.5">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          copyDriverInfo(driver);
-                          setCopiedInfoId(driver.id);
-                          setTimeout(() => setCopiedInfoId(null), 1500);
-                        }}
-                        className="shrink-0 px-2 py-1 rounded-md text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-green-600 transition-colors whitespace-nowrap flex items-center gap-1"
-                        title="Copy Driver Info"
-                      >
-                        {copiedInfoId === driver.id ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                        Copy Info
-                      </button>
+                    {/* L├¡nea 2: acciones ΓÇö Copy Info + Pausa a la izquierda, estado a la derecha */}
+                    <div className="flex items-center justify-between px-3 py-1.5 gap-2">
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            copyDriverInfo(driver);
+                            setCopiedInfoId(driver.id);
+                            setTimeout(() => setCopiedInfoId(null), 1500);
+                          }}
+                          className="shrink-0 px-2 py-1 rounded-md text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-green-600 transition-colors whitespace-nowrap flex items-center gap-1"
+                          title="Copy Driver Info"
+                        >
+                          {copiedInfoId === driver.id ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                          Copy Info
+                        </button>
+                        <button
+                          onClick={(e) => togglePauseDriver(driver.id, e)}
+                          className={`shrink-0 p-1 rounded-md transition-colors ${
+                            isPaused
+                              ? 'bg-emerald-500 text-white hover:bg-emerald-600'
+                              : 'bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700'
+                          }`}
+                          title={isPaused ? 'Reanudar driver' : 'Pausar driver (vacaciones/inactivo temporal)'}
+                        >
+                          {isPaused ? <Play className="h-3 w-3" /> : <Pause className="h-3 w-3" />}
+                        </button>
+                      </div>
+                      {isPaused ? (
+                        <span className="shrink-0 px-2 py-1 rounded-md text-[10px] font-bold bg-slate-600 text-white whitespace-nowrap flex items-center gap-1">
+                          <Pause className="h-3 w-3" /> PAUSADO
+                        </span>
+                      ) : (
                       <button
                         onClick={(e) => cycleSearchStatus(driver.id, e)}
                         className={`shrink-0 px-2 py-1 rounded-md text-[10px] font-bold transition-colors whitespace-nowrap flex items-center gap-1 ${
@@ -1070,6 +1139,7 @@ const Tracking = () => {
                           : sStatus === 'searching' ? <><Search className="h-3 w-3" /> Buscando</>
                           : 'Standby'}
                       </button>
+                      )}
                     </div>
                     <div className="p-3 pt-2 space-y-1 text-xs text-muted-foreground">
                       {/* Manual location override */}
