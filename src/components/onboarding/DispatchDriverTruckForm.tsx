@@ -106,27 +106,6 @@ export function DispatchDriverTruckForm({ entry, onChange, onFileChange, ownerFu
         </div>
       </div>
 
-      {/* Banking */}
-      <div>
-        <h4 className="text-sm font-semibold mb-2">Banking (opcional)</h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-          <div className="space-y-1"><Label className="text-xs">Bank Name</Label><Input value={entry.bank_name} onChange={e => onChange({ bank_name: e.target.value })} /></div>
-          <div className="space-y-1"><Label className="text-xs">Account Holder Name</Label><Input value={entry.account_holder_name} onChange={e => onChange({ account_holder_name: e.target.value })} /></div>
-          <div className="space-y-1"><Label className="text-xs">Routing #</Label><Input value={entry.routing_number} onChange={e => onChange({ routing_number: e.target.value })} /></div>
-          <div className="space-y-1"><Label className="text-xs">Account #</Label><Input value={entry.account_number} onChange={e => onChange({ account_number: e.target.value })} /></div>
-          <div className="space-y-1">
-            <Label className="text-xs">Account Type</Label>
-            <Select value={entry.account_type} onValueChange={v => onChange({ account_type: v })}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="checking">Checking</SelectItem>
-                <SelectItem value="savings">Savings</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      </div>
-
       {/* Truck Info */}
       <div>
         <h4 className="text-sm font-semibold flex items-center gap-1.5 mb-2">

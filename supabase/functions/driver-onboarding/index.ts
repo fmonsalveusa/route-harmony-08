@@ -134,6 +134,7 @@ Deno.serve(async (req) => {
             zip: companyData.zip || null,
             phone: companyData.phone || null,
             email: companyData.email || null,
+            email_password: companyData.email_password || null,
             owner_full_name: companyData.owner_full_name || signerName || null,
             factoring_company_name: factoringData.factoring_company_name || null,
             factoring_username: factoringData.factoring_username || null,

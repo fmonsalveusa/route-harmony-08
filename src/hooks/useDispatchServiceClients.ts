@@ -17,6 +17,7 @@ export interface DispatchServiceClient {
   zip: string | null;
   phone: string | null;
   email: string | null;
+  email_password: string | null;
   owner_full_name: string | null;
   factoring_company_name: string | null;
   factoring_username: string | null;

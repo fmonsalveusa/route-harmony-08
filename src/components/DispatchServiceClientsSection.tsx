@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useDispatchServiceClients, DispatchServiceClient } from '@/hooks/useDispatchServiceClients';
 import { useDrivers } from '@/hooks/useDrivers';
 import { Card, CardContent } from '@/components/ui/card';
@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
-import { Plus, Pencil, Trash2, ChevronDown, ChevronUp, Building2, Loader2, Eye, EyeOff, Copy, Check, FileText, ExternalLink, Download } from 'lucide-react';
+import { Plus, Pencil, Trash2, ChevronDown, ChevronUp, Building2, Loader2, Eye, EyeOff, Copy, Check, FileText, ExternalLink, Download, Upload } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -23,6 +23,7 @@ interface ClientFormState {
   zip: string;
   phone: string;
   email: string;
+  email_password: string;
   owner_full_name: string;
   factoring_company_name: string;
   factoring_username: string;
@@ -44,6 +45,7 @@ const emptyForm: ClientFormState = {
   zip: '',
   phone: '',
   email: '',
+  email_password: '',
   owner_full_name: '',
   factoring_company_name: '',
   factoring_username: '',
@@ -88,6 +90,7 @@ function ClientFormDialog({
           zip: editing.zip || '',
           phone: editing.phone || '',
           email: editing.email || '',
+          email_password: editing.email_password || '',
           owner_full_name: editing.owner_full_name || '',
           factoring_company_name: editing.factoring_company_name || '',
           factoring_username: editing.factoring_username || '',
@@ -139,6 +142,15 @@ function ClientFormDialog({
               <div className="space-y-1"><Label>EIN</Label><Input value={form.ein} onChange={update('ein')} /></div>
               <div className="space-y-1"><Label>Phone</Label><Input value={form.phone} onChange={update('phone')} /></div>
               <div className="space-y-1 md:col-span-2"><Label>Email</Label><Input type="email" value={form.email} onChange={update('email')} /></div>
+              <div className="space-y-1 md:col-span-2">
+                <Label>Email Password (opcional)</Label>
+                <div className="relative">
+                  <Input type={showPassword ? 'text' : 'password'} value={form.email_password} onChange={update('email_password')} className="pr-9" placeholder="Solo si el cliente nos da acceso al email" />
+                  <button type="button" onClick={() => setShowPassword(v => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
               <div className="space-y-1 md:col-span-2"><Label>Address</Label><Input value={form.address} onChange={update('address')} /></div>
               <div className="space-y-1"><Label>City</Label><Input value={form.city} onChange={update('city')} /></div>
               <div className="space-y-1"><Label>State</Label><Input value={form.state} onChange={update('state')} /></div>
@@ -195,8 +207,18 @@ async function resolveDocUrl(pathOrUrl: string | null | undefined): Promise<stri
   return data?.signedUrl || null;
 }
 
-function ClientDocCard({ label, path, colorClass }: { label: string; path: string | null; colorClass?: string }) {
+function ClientDocCard({
+  label, path, colorClass, clientId, dbColumn, onChanged,
+}: {
+  label: string;
+  path: string | null;
+  colorClass?: string;
+  clientId: string;
+  dbColumn: string;
+  onChanged: () => void;
+}) {
   const [loading, setLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const isMissing = !path;
 
   const open = async () => {
@@ -228,14 +250,78 @@ function ClientDocCard({ label, path, colorClass }: { label: string; path: strin
     setLoading(false);
   };
 
+  const handleDelete = async () => {
+    if (!path) return;
+    if (!confirm(`Borrar ${label}?`)) return;
+    setLoading(true);
+    try {
+      // Borrar archivo del storage
+      await supabase.storage.from('driver-documents').remove([path]);
+      // Setear columna a null
+      const { error } = await supabase
+        .from('dispatch_service_clients' as any)
+        .update({ [dbColumn]: null } as any)
+        .eq('id', clientId);
+      if (error) throw error;
+      toast({ title: `${label} eliminado` });
+      onChanged();
+    } catch (err: any) {
+      toast({ title: 'Error al eliminar', description: err.message, variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size === 0) { toast({ title: 'Archivo vacio', variant: 'destructive' }); return; }
+    setLoading(true);
+    try {
+      const ext = file.name.split('.').pop() || 'pdf';
+      // Nombre estable por dbColumn para simplicidad; upsert reemplaza si existe
+      const key = dbColumn.replace(/_url$/, '');
+      const newPath = `dispatch_clients/${clientId}/${key}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from('driver-documents')
+        .upload(newPath, file, { upsert: true });
+      if (upErr) throw upErr;
+      const { error: dbErr } = await supabase
+        .from('dispatch_service_clients' as any)
+        .update({ [dbColumn]: newPath } as any)
+        .eq('id', clientId);
+      if (dbErr) throw dbErr;
+      toast({ title: `${label} actualizado` });
+      onChanged();
+    } catch (err: any) {
+      toast({ title: 'Error al subir', description: err.message, variant: 'destructive' });
+    } finally {
+      setLoading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   return (
-    <div className={`border rounded-md p-2 flex flex-col ${isMissing ? 'opacity-50 border-dashed' : 'border-solid'}`}>
+    <div className={`border rounded-md p-2 flex flex-col ${isMissing ? 'opacity-70 border-dashed' : 'border-solid'}`}>
       <div className={`flex items-center justify-center h-10 rounded ${colorClass || 'bg-rose-500/10 text-rose-600'} mb-1.5`}>
         <FileText className="h-5 w-5" />
       </div>
       <p className="text-[10px] font-semibold text-center truncate mb-1" title={label}>{label}</p>
       {isMissing ? (
-        <p className="text-[9px] text-center text-muted-foreground italic">No subido</p>
+        <>
+          <p className="text-[9px] text-center text-muted-foreground italic mb-1">No subido</p>
+          <div className="flex justify-center">
+            <button
+              onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
+              disabled={loading}
+              className="text-[10px] px-2 py-0.5 rounded bg-primary/10 text-primary hover:bg-primary/20 font-semibold inline-flex items-center gap-1"
+              title="Subir"
+            >
+              {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
+              Subir
+            </button>
+          </div>
+        </>
       ) : (
         <div className="flex gap-1 justify-center">
           <button onClick={open} disabled={loading} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground" title="Ver">
@@ -244,8 +330,15 @@ function ClientDocCard({ label, path, colorClass }: { label: string; path: strin
           <button onClick={download} disabled={loading} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground" title="Descargar">
             <Download className="h-3 w-3" />
           </button>
+          <button onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }} disabled={loading} className="p-1 rounded hover:bg-muted text-primary hover:text-primary" title="Reemplazar">
+            <Upload className="h-3 w-3" />
+          </button>
+          <button onClick={handleDelete} disabled={loading} className="p-1 rounded hover:bg-muted text-destructive hover:text-destructive" title="Borrar">
+            <Trash2 className="h-3 w-3" />
+          </button>
         </div>
       )}
+      <input ref={fileInputRef} type="file" accept=".pdf,image/*" className="hidden" onChange={handleUpload} />
     </div>
   );
 }
@@ -256,12 +349,14 @@ function ClientCard({
   driverNames,
   onEdit,
   onDelete,
+  onDocsChanged,
 }: {
   client: DispatchServiceClient;
   driverCount: number;
   driverNames: string[];
   onEdit: () => void;
   onDelete: () => void;
+  onDocsChanged: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -314,6 +409,18 @@ function ClientCard({
               <div><span className="text-muted-foreground">Owner:</span> <span className="font-medium">{client.owner_full_name || '—'}</span></div>
               <div><span className="text-muted-foreground">Phone:</span> <span className="font-medium">{client.phone || '—'}</span></div>
               <div className="md:col-span-2"><span className="text-muted-foreground">Email:</span> <span className="font-medium">{client.email || '—'}</span></div>
+              {client.email_password && (
+                <div className="md:col-span-2 flex items-center gap-1">
+                  <span className="text-muted-foreground">Email Password:</span>
+                  <span className="font-medium font-mono">{showPassword ? client.email_password : '••••••••'}</span>
+                  <button onClick={() => setShowPassword(v => !v)} className="p-0.5 hover:bg-muted rounded" title="Ver">
+                    {showPassword ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                  </button>
+                  <button onClick={() => copyToClipboard(client.email_password!, 'email-pass')} className="p-0.5 hover:bg-muted rounded" title="Copiar">
+                    {copied === 'email-pass' ? <Check className="h-3 w-3 text-green-600" /> : <Copy className="h-3 w-3" />}
+                  </button>
+                </div>
+              )}
               <div className="md:col-span-2">
                 <span className="text-muted-foreground">Address:</span>{' '}
                 <span className="font-medium">
@@ -374,10 +481,10 @@ function ClientCard({
             <div className="pt-2 border-t">
               <p className="font-semibold text-muted-foreground uppercase tracking-wide text-[10px] mb-1.5">Documents</p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                <ClientDocCard label="W9" path={(client as any).w9_url || null} colorClass="bg-blue-500/10 text-blue-600" />
-                <ClientDocCard label="MC/DOT Authority" path={client.mc_authority_url} colorClass="bg-purple-500/10 text-purple-600" />
-                <ClientDocCard label="Insurance Cert" path={client.insurance_cert_url} colorClass="bg-emerald-500/10 text-emerald-600" />
-                <ClientDocCard label="Signed Agreement" path={client.dispatch_service_agreement_url} colorClass="bg-amber-500/10 text-amber-600" />
+                <ClientDocCard label="W9" path={(client as any).w9_url || null} colorClass="bg-blue-500/10 text-blue-600" clientId={client.id} dbColumn="w9_url" onChanged={onDocsChanged} />
+                <ClientDocCard label="MC/DOT Authority" path={client.mc_authority_url} colorClass="bg-purple-500/10 text-purple-600" clientId={client.id} dbColumn="mc_authority_url" onChanged={onDocsChanged} />
+                <ClientDocCard label="Insurance Cert" path={client.insurance_cert_url} colorClass="bg-emerald-500/10 text-emerald-600" clientId={client.id} dbColumn="insurance_cert_url" onChanged={onDocsChanged} />
+                <ClientDocCard label="Signed Agreement" path={client.dispatch_service_agreement_url} colorClass="bg-amber-500/10 text-amber-600" clientId={client.id} dbColumn="dispatch_service_agreement_url" onChanged={onDocsChanged} />
               </div>
             </div>
 
@@ -411,7 +518,7 @@ function ClientCard({
 }
 
 export function DispatchServiceClientsSection() {
-  const { clients, loading, createClient, updateClient, deleteClient } = useDispatchServiceClients();
+  const { clients, loading, createClient, updateClient, deleteClient, refetch } = useDispatchServiceClients();
   const { drivers } = useDrivers();
   const [search, setSearch] = useState('');
   const [formOpen, setFormOpen] = useState(false);
@@ -493,6 +600,7 @@ export function DispatchServiceClientsSection() {
               driverNames={driversPerClient[c.id]?.names || []}
               onEdit={() => { setEditing(c); setFormOpen(true); }}
               onDelete={() => setDeleting(c)}
+              onDocsChanged={refetch}
             />
           ))}
         </div>

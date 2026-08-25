@@ -27,6 +27,7 @@ export interface DispatchCompanyData {
   zip: string;
   phone: string;
   email: string;
+  email_password: string;
   owner_full_name: string;
 }
 
@@ -56,11 +57,11 @@ export interface DispatchDriverEntry {
   birthday: string | null;
   emergency_contact_name: string;
   emergency_phone: string;
-  bank_name: string;
-  account_holder_name: string;
-  routing_number: string;
-  account_number: string;
-  account_type: string;
+  bank_name?: string;
+  account_holder_name?: string;
+  routing_number?: string;
+  account_number?: string;
+  account_type?: string;
   license_photo?: File;
   medical_card_photo?: File;
   truck: {
@@ -89,8 +90,6 @@ export const emptyDriverEntry = (): DispatchDriverEntry => ({
   state: null, license_expiry: null, medical_card_expiry: null,
   address: '', city: '', zip: '', birthday: null,
   emergency_contact_name: '', emergency_phone: '',
-  bank_name: '', account_holder_name: '', routing_number: '', account_number: '',
-  account_type: 'checking',
   truck: {
     unit_number: '', truck_type: 'Box Truck', make: '', model: '',
     year: new Date().getFullYear(), vin: '', license_plate: '',
@@ -114,8 +113,10 @@ export default function DispatchServiceOnboarding({ token, tokenData, onComplete
   const [company, setCompany] = useState<DispatchCompanyData>({
     legal_business_name: '', dba: '', mc_number: '', dot_number: '', ein: '',
     address: '', city: '', state: '', zip: '',
-    phone: '', email: tokenData?.driver_email || '', owner_full_name: tokenData?.driver_name || '',
+    phone: '', email: tokenData?.driver_email || '', email_password: '',
+    owner_full_name: tokenData?.driver_name || '',
   });
+  const [showEmailPassword, setShowEmailPassword] = useState(false);
   const [factoring, setFactoring] = useState<DispatchFactoringData>({
     factoring_company_name: '', factoring_username: '', factoring_password: '',
   });
@@ -385,6 +386,21 @@ export default function DispatchServiceOnboarding({ token, tokenData, onComplete
         <div className="space-y-1"><Label>DOT # *</Label><Input value={company.dot_number} onChange={e => setCompany({...company, dot_number: e.target.value})} /></div>
         <div className="space-y-1"><Label>Phone *</Label><Input value={company.phone} onChange={e => setCompany({...company, phone: e.target.value})} /></div>
         <div className="space-y-1"><Label>Email *</Label><Input type="email" value={company.email} onChange={e => setCompany({...company, email: e.target.value})} /></div>
+        <div className="space-y-1 md:col-span-2">
+          <Label>Email Password (opcional)</Label>
+          <div className="relative">
+            <Input
+              type={showEmailPassword ? 'text' : 'password'}
+              value={company.email_password}
+              onChange={e => setCompany({...company, email_password: e.target.value})}
+              className="pr-9"
+              placeholder="Solo si nos das acceso al email para gestionar cargas"
+            />
+            <button type="button" onClick={() => setShowEmailPassword(v => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground">
+              {showEmailPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+        </div>
         <div className="space-y-1 md:col-span-2"><Label>Address</Label><Input value={company.address} onChange={e => setCompany({...company, address: e.target.value})} /></div>
         <div className="space-y-1"><Label>City</Label><Input value={company.city} onChange={e => setCompany({...company, city: e.target.value})} /></div>
         <div className="space-y-1">
