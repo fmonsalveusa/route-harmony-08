@@ -258,23 +258,17 @@ export default function DispatchServiceOnboarding({ token, tokenData, onComplete
         // Generar PDF del agreement firmado y adjuntarlo
         if (agreementSignature) {
           try {
-            toast.info('Generando PDF del agreement...');
             const pdfBlob = generateDispatchAgreementPdf({ company, signerName, signatureDataUrl: agreementSignature });
-            if (!pdfBlob || pdfBlob.size === 0) {
-              throw new Error('PDF generado esta vacio (size 0)');
-            }
+            if (!pdfBlob || pdfBlob.size === 0) throw new Error('PDF vacio');
             formData.append('company_agreement_pdf', pdfBlob, 'dispatch_service_agreement_signed.pdf');
-            toast.success(`PDF generado OK (${Math.round(pdfBlob.size / 1024)} KB)`);
           } catch (e: any) {
             console.error('Error generating agreement PDF:', e);
-            const msg = e?.message || String(e);
-            alert(`Error generando el PDF del agreement:\n\n${msg}\n\nStack: ${e?.stack || '(no stack)'}`);
-            toast.error(`PDF error: ${msg}`);
+            toast.error(`Error generando el PDF del agreement: ${e?.message || 'unknown'}`);
             setSubmitting(false);
             return;
           }
         } else {
-          alert('No hay firma capturada del agreement. Volvé al step de firma y firmá.');
+          toast.error('No hay firma capturada. Volvé al step de Sign Agreement.');
           setSubmitting(false);
           return;
         }
