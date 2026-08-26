@@ -13,6 +13,7 @@ import logoImg from '@/assets/logo.png';
 import { US_STATES } from '@/lib/usStates';
 import DocumentSigningStep, { SignedDocs } from '@/components/onboarding/DocumentSigningStep';
 import DispatchServiceOnboarding from '@/components/onboarding/DispatchServiceOnboarding';
+import AddDriverOnlyOnboarding from '@/components/onboarding/AddDriverOnlyOnboarding';
 import { generateOnboardingSummaryPdf } from '@/lib/onboardingDocPdf';
 import { format } from 'date-fns';
 import { formatPhone } from '@/lib/phoneUtils';
@@ -257,6 +258,18 @@ export default function DriverOnboarding() {
   if (tokenData?.service_type === 'dispatch_service') {
     return (
       <DispatchServiceOnboarding
+        token={token!}
+        tokenData={tokenData}
+        onCompleted={() => setCompleted(true)}
+      />
+    );
+  }
+
+  // "Agregar driver a OO existente" — flow reducido: solo datos del driver.
+  const isAddDriverToExistingOO = !!(tokenData?.existing_investor_id && tokenData?.existing_truck_id);
+  if (isAddDriverToExistingOO) {
+    return (
+      <AddDriverOnlyOnboarding
         token={token!}
         tokenData={tokenData}
         onCompleted={() => setCompleted(true)}

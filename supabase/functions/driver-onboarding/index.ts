@@ -67,6 +67,104 @@ Deno.serve(async (req) => {
     const isOO = serviceType !== "company_driver";
 
     // ═══════════════════════════════════════════════════════════════════
+    // FLUJO ADD DRIVER a OO EXISTENTE
+    // Detecta si el token trae existing_investor_id + existing_truck_id.
+    // Solo crea el driver, vinculado al investor y truck ya existentes.
+    // ═══════════════════════════════════════════════════════════════════
+    if (tokenRecord.existing_investor_id && tokenRecord.existing_truck_id) {
+      const driverDataStrAdd = formData.get("driver_data") as string;
+      if (!driverDataStrAdd) {
+        return new Response(JSON.stringify({ error: "Missing driver_data" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      let dData: any;
+      try { dData = JSON.parse(driverDataStrAdd); }
+      catch { return new Response(JSON.stringify({ error: "Invalid driver_data JSON" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }); }
+      if (!dData.name || !dData.email || !dData.phone || !dData.license) {
+        return new Response(JSON.stringify({ error: "Driver requires: name, email, phone, license" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      // Traer info del investor existente para propagarla al driver
+      const { data: investor } = await supabaseAdmin
+        .from("investors")
+        .select("id, name, email")
+        .eq("id", tokenRecord.existing_investor_id)
+        .single();
+
+      // Crear driver vinculado al investor + truck ya existentes
+      const { data: newDriver, error: driverErr } = await supabaseAdmin
+        .from("drivers")
+        .insert({
+          tenant_id: tenantId,
+          name: dData.name,
+          email: dData.email,
+          phone: dData.phone,
+          license: dData.license,
+          license_expiry: dData.license_expiry || null,
+          medical_card_expiry: dData.medical_card_expiry || null,
+          status: "pending",
+          service_type: "owner_operator",
+          dispatcher_id: tokenRecord.dispatcher_id || null,
+          truck_id: tokenRecord.existing_truck_id,
+          hire_date: new Date().toISOString().split("T")[0],
+          state: dData.state || null,
+          address: dData.address || null,
+          city: dData.city || null,
+          zip: dData.zip || null,
+          birthday: dData.birthday || null,
+          emergency_contact_name: dData.emergency_contact_name || null,
+          emergency_phone: dData.emergency_phone || null,
+          investor_id: tokenRecord.existing_investor_id,
+          investor_name: investor?.name || null,
+          investor_email: investor?.email || null,
+        })
+        .select("id")
+        .single();
+      if (driverErr || !newDriver) {
+        console.error("[AddDriver] Driver create error:", driverErr);
+        return new Response(JSON.stringify({ error: "Failed to create driver", detail: driverErr?.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const driverId = newDriver.id;
+
+      // Helper upload
+      const uploadDriverFile = async (file: File, name: string): Promise<string | null> => {
+        if (!file || !(file instanceof File)) return null;
+        const ext = file.name.split(".").pop() || "bin";
+        const path = `${driverId}/${name}.${ext}`;
+        const { error } = await supabaseAdmin.storage.from("driver-documents").upload(path, file, { upsert: true });
+        if (error) { console.error(`[AddDriver] Upload ${path}:`, error); return null; }
+        return path;
+      };
+
+      const licPhoto = formData.get("driver_license_photo") as File | null;
+      const medPhoto = formData.get("driver_medical_card_photo") as File | null;
+      const updates: Record<string, string> = {};
+      if (licPhoto instanceof File) {
+        const url = await uploadDriverFile(licPhoto, "license_photo");
+        if (url) updates.license_photo_url = url;
+      }
+      if (medPhoto instanceof File) {
+        const url = await uploadDriverFile(medPhoto, "medical_card_photo");
+        if (url) updates.medical_card_photo_url = url;
+      }
+      if (Object.keys(updates).length > 0) {
+        await supabaseAdmin.from("drivers").update(updates).eq("id", driverId);
+      }
+
+      // Marcar token como completed
+      await supabaseAdmin.from("onboarding_tokens").update({ status: "completed" }).eq("id", tokenRecord.id);
+
+      return new Response(JSON.stringify({
+        success: true,
+        driver_id: driverId,
+        investor_id: tokenRecord.existing_investor_id,
+        truck_id: tokenRecord.existing_truck_id,
+      }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    // ═══════════════════════════════════════════════════════════════════
+    // FIN FLUJO ADD DRIVER
+    // ═══════════════════════════════════════════════════════════════════
+
+    // ═══════════════════════════════════════════════════════════════════
     // FLUJO DISPATCH SERVICE (separado del flow OO/CD para no interferir)
     // ═══════════════════════════════════════════════════════════════════
     if (serviceType === "dispatch_service") {

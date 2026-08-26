@@ -9,6 +9,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useTenantId } from '@/hooks/useTenantId';
 import { DbDispatcher } from '@/hooks/useDispatchers';
 import { useDispatchServiceClients } from '@/hooks/useDispatchServiceClients';
+import { useInvestors } from '@/hooks/useInvestors';
+import { useTrucks } from '@/hooks/useTrucks';
 import { toast } from '@/hooks/use-toast';
 
 interface Props {
@@ -22,17 +24,25 @@ type ServiceType = 'owner_operator' | 'company_driver' | 'dispatch_service';
 export function GenerateOnboardingLinkDialog({ open, onOpenChange, dispatchers }: Props) {
   const tenantId = useTenantId();
   const { clients: dispatchServiceClients, loading: clientsLoading } = useDispatchServiceClients();
+  const { investors } = useInvestors();
+  const { trucks } = useTrucks();
   const [driverName, setDriverName] = useState('');
   const [serviceType, setServiceType] = useState<ServiceType>('owner_operator');
   const [dispatcherId, setDispatcherId] = useState<string | null>(null);
   // Solo aplica cuando serviceType === 'dispatch_service'
   const [clientMode, setClientMode] = useState<'new' | 'existing'>('new');
   const [existingClientId, setExistingClientId] = useState<string | null>(null);
+  // Solo aplica cuando serviceType === 'owner_operator'
+  const [ooMode, setOoMode] = useState<'new' | 'add_driver'>('new');
+  const [existingInvestorId, setExistingInvestorId] = useState<string | null>(null);
+  const [existingTruckId, setExistingTruckId] = useState<string | null>(null);
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const isDispatchService = serviceType === 'dispatch_service';
+  const isOO = serviceType === 'owner_operator';
+  const isAddDriverToOO = isOO && ooMode === 'add_driver';
 
   const handleGenerate = async () => {
     if (!tenantId) {
@@ -41,6 +51,10 @@ export function GenerateOnboardingLinkDialog({ open, onOpenChange, dispatchers }
     }
     if (isDispatchService && clientMode === 'existing' && !existingClientId) {
       toast({ title: 'Selecciona una empresa existente', variant: 'destructive' });
+      return;
+    }
+    if (isAddDriverToOO && (!existingInvestorId || !existingTruckId)) {
+      toast({ title: 'Selecciona el Owner Operator y el truck', variant: 'destructive' });
       return;
     }
     setCreating(true);
@@ -53,6 +67,8 @@ export function GenerateOnboardingLinkDialog({ open, onOpenChange, dispatchers }
           service_type: serviceType,
           dispatcher_id: dispatcherId,
           dispatch_service_client_id: isDispatchService && clientMode === 'existing' ? existingClientId : null,
+          existing_investor_id: isAddDriverToOO ? existingInvestorId : null,
+          existing_truck_id: isAddDriverToOO ? existingTruckId : null,
         } as any)
         .select('token')
         .single();
@@ -84,6 +100,9 @@ export function GenerateOnboardingLinkDialog({ open, onOpenChange, dispatchers }
       setDispatcherId(null);
       setClientMode('new');
       setExistingClientId(null);
+      setOoMode('new');
+      setExistingInvestorId(null);
+      setExistingTruckId(null);
       setGeneratedLink(null);
       setCopied(false);
     }
@@ -167,6 +186,66 @@ export function GenerateOnboardingLinkDialog({ open, onOpenChange, dispatchers }
                       </SelectContent>
                     </Select>
                   </div>
+                )}
+              </>
+            )}
+
+            {isOO && (
+              <>
+                <div className="space-y-2">
+                  <Label>Modo de registro</Label>
+                  <Select value={ooMode} onValueChange={v => setOoMode(v as 'new' | 'add_driver')}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="new">Nuevo Owner Operator</SelectItem>
+                      <SelectItem value="add_driver">Agregar driver a OO existente</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    {ooMode === 'new'
+                      ? 'Onboarding completo: datos del OO, truck, leasing agreement, etc.'
+                      : 'Solo pide los datos personales del nuevo driver. El OO y el truck ya estan registrados.'}
+                  </p>
+                </div>
+
+                {ooMode === 'add_driver' && (
+                  <>
+                    <div className="space-y-2">
+                      <Label>Owner Operator (Investor)</Label>
+                      <Select value={existingInvestorId || ''} onValueChange={v => setExistingInvestorId(v)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecciona el OO" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {investors.map((inv: any) => (
+                            <SelectItem key={inv.id} value={inv.id}>
+                              {inv.name}{inv.email ? ` (${inv.email})` : ''}
+                            </SelectItem>
+                          ))}
+                          {investors.length === 0 && (
+                            <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                              No hay investors registrados
+                            </div>
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Truck que va a manejar</Label>
+                      <Select value={existingTruckId || ''} onValueChange={v => setExistingTruckId(v)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecciona el truck" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {trucks.filter(t => t.status !== 'inactive').map(t => (
+                            <SelectItem key={t.id} value={t.id}>
+                              Unit #{t.unit_number}{t.truck_type ? ` — ${t.truck_type}` : ''}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </>
                 )}
               </>
             )}
