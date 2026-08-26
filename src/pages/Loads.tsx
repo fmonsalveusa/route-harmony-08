@@ -613,6 +613,7 @@ const Loads = () => {
                                 {[
                                   { value: 'pending', label: 'Pending' },
                                   { value: 'in_progress', label: 'In Progress' },
+                                  { value: 'waiting_for_adjustments', label: 'Waiting for Adjustments' },
                                   { value: 'ready', label: 'Ready' },
                                 ].map(s => (
                                   <SelectItem key={s.value} value={s.value}>

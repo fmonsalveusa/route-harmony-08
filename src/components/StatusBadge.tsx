@@ -13,6 +13,7 @@ const statusConfig: Record<string, { label: string; className: string }> = {
   // Factoring statuses
   pending_factoring: { label: 'Pending', className: 'bg-[hsl(38,92%,50%)] text-white' },
   in_progress_factoring: { label: 'In Progress', className: 'bg-[#266aad] text-white' },
+  waiting_for_adjustments_factoring: { label: 'Waiting for Adjustments', className: 'bg-[#dc2626] text-white' },
   ready_factoring: { label: 'Ready', className: 'bg-[#178504] text-white' },
   // Driver statuses
   available: { label: 'Available', className: 'bg-[#178504] text-white' },
