@@ -21,10 +21,13 @@ export default function AddDriverOnlyOnboarding({ token, tokenData, onCompleted 
   const [submitting, setSubmitting] = useState(false);
   const totalSteps = 2;
 
+  const PLACEHOLDERS = new Set(['Pending', 'pending@onboarding.local', '000-000-0000']);
+  const clean = (v: any) => (v && !PLACEHOLDERS.has(v) ? v : '');
+
   const [driver, setDriver] = useState({
-    name: tokenData?.driver_name || '',
-    email: tokenData?.driver_email || '',
-    phone: tokenData?.driver_phone || '',
+    name: clean(tokenData?.driver_name),
+    email: clean(tokenData?.driver_email),
+    phone: clean(tokenData?.driver_phone),
     license: '',
     state: null as string | null,
     license_expiry: null as string | null,

@@ -110,11 +110,16 @@ export default function DispatchServiceOnboarding({ token, tokenData, onComplete
   const [submitting, setSubmitting] = useState(false);
 
   // Estado empresa (empresa nueva)
+  // Filtrar placeholders enviados por la landing cuando el card se hace directo sin form.
+  const PLACEHOLDERS = new Set(['Pending', 'pending@onboarding.local', '000-000-0000']);
+  const initEmail = tokenData?.driver_email && !PLACEHOLDERS.has(tokenData.driver_email) ? tokenData.driver_email : '';
+  const initName = tokenData?.driver_name && !PLACEHOLDERS.has(tokenData.driver_name) ? tokenData.driver_name : '';
+
   const [company, setCompany] = useState<DispatchCompanyData>({
     legal_business_name: '', dba: '', mc_number: '', dot_number: '', ein: '',
     address: '', city: '', state: '', zip: '',
-    phone: '', email: tokenData?.driver_email || '', email_password: '',
-    owner_full_name: tokenData?.driver_name || '',
+    phone: '', email: initEmail, email_password: '',
+    owner_full_name: initName,
   });
   const [showEmailPassword, setShowEmailPassword] = useState(false);
   const [factoring, setFactoring] = useState<DispatchFactoringData>({

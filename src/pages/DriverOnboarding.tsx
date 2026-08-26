@@ -115,9 +115,17 @@ export default function DriverOnboarding() {
       } else {
         setTokenValid(true);
         setTokenData(data);
-        if (data.driver_name) setDriver(d => ({ ...d, name: data.driver_name }));
-        if ((data as any).driver_email) setDriver(d => ({ ...d, email: (data as any).driver_email }));
-        if ((data as any).driver_phone) setDriver(d => ({ ...d, phone: (data as any).driver_phone }));
+        // Filtrar placeholders enviados por la landing cuando el card se hace directo sin form.
+        const PLACEHOLDERS = new Set(['Pending', 'pending@onboarding.local', '000-000-0000']);
+        if (data.driver_name && !PLACEHOLDERS.has(data.driver_name)) {
+          setDriver(d => ({ ...d, name: data.driver_name }));
+        }
+        if ((data as any).driver_email && !PLACEHOLDERS.has((data as any).driver_email)) {
+          setDriver(d => ({ ...d, email: (data as any).driver_email }));
+        }
+        if ((data as any).driver_phone && !PLACEHOLDERS.has((data as any).driver_phone)) {
+          setDriver(d => ({ ...d, phone: (data as any).driver_phone }));
+        }
         if ((data as any).truck_type) setTruck(t => ({ ...t, truck_type: (data as any).truck_type }));
       }
       setValidating(false);
