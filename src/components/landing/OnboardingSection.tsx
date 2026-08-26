@@ -62,44 +62,47 @@ export function OnboardingSection() {
   const { lang } = useLandingLang();
   const tr = t[lang];
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-  const [selectedService, setSelectedService] = useState<ServiceType | null>(null);
-  const [form, setForm] = useState({ name: "", email: "", phone: "", truck_type: "Box Truck" });
+  const [loadingId, setLoadingId] = useState<ServiceType | null>(null);
+  // Dispatch Service: si el card esta expandido pidiendo nueva/existente + MC#
+  const [dispatchExpanded, setDispatchExpanded] = useState(false);
   const [dispatchMode, setDispatchMode] = useState<"new" | "existing">("new");
   const [dispatchClientMc, setDispatchClientMc] = useState("");
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedService) return;
-    if (!form.name || !form.email || !form.phone) {
-      toast.error(tr.obErrorRequired);
-      return;
-    }
-    if (selectedService === "dispatch_service" && dispatchMode === "existing" && !dispatchClientMc.trim()) {
-      toast.error(lang === "es" ? "Ingresa el MC# de tu empresa" : "Enter your company MC#");
-      return;
-    }
-    setLoading(true);
+  const createTokenAndGo = async (serviceType: ServiceType, extra: any = {}) => {
+    setLoadingId(serviceType);
     try {
-      const body: any = {
-        name: form.name,
-        email: form.email,
-        phone: form.phone,
-        truck_type: selectedService === "dispatch_service" ? null : form.truck_type,
-        service_type: selectedService,
-      };
-      if (selectedService === "dispatch_service" && dispatchMode === "existing") {
-        body.dispatch_service_client_mc = dispatchClientMc.trim();
-      }
+      const body: any = { service_type: serviceType, ...extra };
+      // El edge function requiere name/email/phone; enviamos placeholders (se sobreescriben en el onboarding).
+      body.name = body.name || "Pending";
+      body.email = body.email || "pending@onboarding.local";
+      body.phone = body.phone || "000-000-0000";
       const { data, error } = await supabase.functions.invoke("create-onboarding-token", { body });
       if (error || !data?.token) throw new Error(data?.error || tr.obErrorCreate);
-      toast.success(tr.obSuccess);
       navigate(`/onboarding/${data.token}`);
     } catch (err: any) {
       toast.error(err.message || tr.obErrorGeneric);
-    } finally {
-      setLoading(false);
+      setLoadingId(null);
     }
+  };
+
+  const handleCardClick = (id: ServiceType) => {
+    if (id === "dispatch_service") {
+      // Expandir card para preguntar nueva/existente + MC#
+      setDispatchExpanded(true);
+      return;
+    }
+    // OO y CD: crear token directo y avanzar
+    createTokenAndGo(id);
+  };
+
+  const handleDispatchContinue = () => {
+    if (dispatchMode === "existing" && !dispatchClientMc.trim()) {
+      toast.error(lang === "es" ? "Ingresa el MC# de tu empresa" : "Enter your company MC#");
+      return;
+    }
+    const extra: any = {};
+    if (dispatchMode === "existing") extra.dispatch_service_client_mc = dispatchClientMc.trim();
+    createTokenAndGo("dispatch_service", extra);
   };
 
   const trustItems = [
@@ -122,7 +125,6 @@ export function OnboardingSection() {
             </h2>
             <p className="text-muted-foreground mb-8 leading-relaxed">{tr.obSubtitle}</p>
 
-            {/* Trust indicators */}
             <div className="flex flex-wrap gap-4 mb-8">
               {trustItems.map((item) => (
                 <div key={item.text} className="flex items-center gap-2 bg-card border rounded-lg px-4 py-3">
@@ -132,7 +134,6 @@ export function OnboardingSection() {
               ))}
             </div>
 
-            {/* Benefits */}
             <ul className="space-y-3">
               {tr.obBenefits.map((b) => (
                 <li key={b} className="flex items-center gap-2 text-muted-foreground text-sm">
@@ -154,33 +155,42 @@ export function OnboardingSection() {
                 <UserPlus className="text-accent" size={20} />
               </div>
               <h3 className="font-bold text-foreground text-lg">
-                {selectedService
-                  ? (lang === "es" ? "Completa tus datos" : "Fill in your info")
-                  : (lang === "es" ? "Selecciona tu tipo de servicio" : "Select your service type")}
+                {lang === "es" ? "Selecciona tu tipo de servicio" : "Select your service type"}
               </h3>
             </div>
 
-            {!selectedService ? (
-              // PANTALLA 1: Cards de seleccion
-              <div className="space-y-3">
-                {SERVICE_OPTIONS.map((opt) => {
-                  const Icon = opt.icon;
-                  const title = lang === "es" ? opt.titleEs : opt.titleEn;
-                  const desc = lang === "es" ? opt.descEs : opt.descEn;
-                  const bullets = lang === "es" ? opt.bulletsEs : opt.bulletsEn;
-                  return (
+            <div className="space-y-3">
+              {SERVICE_OPTIONS.map((opt) => {
+                const Icon = opt.icon;
+                const title = lang === "es" ? opt.titleEs : opt.titleEn;
+                const desc = lang === "es" ? opt.descEs : opt.descEn;
+                const bullets = lang === "es" ? opt.bulletsEs : opt.bulletsEn;
+                const isLoading = loadingId === opt.id;
+                const isDispatchExpandedNow = opt.id === "dispatch_service" && dispatchExpanded;
+                return (
+                  <div key={opt.id}>
                     <button
-                      key={opt.id}
                       type="button"
-                      onClick={() => setSelectedService(opt.id)}
+                      disabled={loadingId !== null && loadingId !== opt.id}
+                      onClick={() => handleCardClick(opt.id)}
                       className={cn(
-                        "w-full text-left p-4 rounded-xl border-2 transition-all",
-                        "border-border hover:border-accent hover:bg-accent/5 hover:shadow-md group"
+                        "w-full text-left p-4 rounded-xl border-2 transition-all group",
+                        isDispatchExpandedNow
+                          ? "border-accent bg-accent/5"
+                          : "border-border hover:border-accent hover:bg-accent/5 hover:shadow-md",
+                        loadingId !== null && loadingId !== opt.id ? "opacity-50" : ""
                       )}
                     >
                       <div className="flex items-start gap-3">
-                        <div className="w-11 h-11 rounded-lg bg-accent/10 flex items-center justify-center shrink-0 group-hover:bg-accent group-hover:text-white transition-colors">
-                          <Icon size={22} className="text-accent group-hover:text-white transition-colors" />
+                        <div className={cn(
+                          "w-11 h-11 rounded-lg flex items-center justify-center shrink-0 transition-colors",
+                          isDispatchExpandedNow ? "bg-accent text-white" : "bg-accent/10 group-hover:bg-accent group-hover:text-white"
+                        )}>
+                          {isLoading ? (
+                            <Loader2 className="h-5 w-5 animate-spin text-accent" />
+                          ) : (
+                            <Icon size={22} className={isDispatchExpandedNow ? "text-white" : "text-accent group-hover:text-white transition-colors"} />
+                          )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-2 mb-1">
@@ -198,107 +208,60 @@ export function OnboardingSection() {
                         </div>
                       </div>
                     </button>
-                  );
-                })}
-              </div>
-            ) : (
-              // PANTALLA 2: Formulario segun servicio elegido
-              <form onSubmit={handleSubmit}>
-                {/* Header con servicio elegido + volver */}
-                <button
-                  type="button"
-                  onClick={() => { setSelectedService(null); setDispatchMode("new"); setDispatchClientMc(""); }}
-                  className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mb-4"
-                >
-                  <ArrowLeft className="h-3 w-3" /> {lang === "es" ? "Cambiar servicio" : "Change service"}
-                </button>
 
-                {(() => {
-                  const opt = SERVICE_OPTIONS.find((o) => o.id === selectedService)!;
-                  const Icon = opt.icon;
-                  const title = lang === "es" ? opt.titleEs : opt.titleEn;
-                  return (
-                    <div className="flex items-center gap-2 p-3 rounded-lg bg-accent/5 border border-accent/20 mb-4">
-                      <div className="w-8 h-8 rounded-md bg-accent/15 flex items-center justify-center shrink-0">
-                        <Icon size={16} className="text-accent" />
-                      </div>
-                      <span className="text-sm font-semibold text-foreground">{title}</span>
-                    </div>
-                  );
-                })()}
-
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="ob-name">{tr.obName}</Label>
-                    <Input id="ob-name" placeholder={tr.obNamePh} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
-                  </div>
-                  <div>
-                    <Label htmlFor="ob-email">{tr.obEmail}</Label>
-                    <Input id="ob-email" type="email" placeholder={tr.heroEmail} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
-                  </div>
-                  <div>
-                    <Label htmlFor="ob-phone">{tr.obPhone}</Label>
-                    <Input id="ob-phone" type="tel" placeholder={tr.heroPhone} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} required />
-                  </div>
-
-                  {selectedService === "owner_operator" && (
-                    <div>
-                      <Label>{tr.obTruck}</Label>
-                      <Select value={form.truck_type} onValueChange={(v) => setForm({ ...form, truck_type: v })}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Box Truck">Box Truck</SelectItem>
-                          <SelectItem value="Hotshot">Hotshot</SelectItem>
-                          <SelectItem value="Dry Van">Dry Van</SelectItem>
-                          <SelectItem value="Flatbed">Flatbed</SelectItem>
-                          <SelectItem value="Reefer">Reefer</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-
-                  {selectedService === "dispatch_service" && (
-                    <>
-                      <div>
-                        <Label>{lang === "es" ? "¿Tu empresa ya está registrada?" : "Is your company already registered?"}</Label>
-                        <Select value={dispatchMode} onValueChange={(v) => setDispatchMode(v as "new" | "existing")}>
-                          <SelectTrigger><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="new">{lang === "es" ? "No - Registrar nueva empresa" : "No - Register new company"}</SelectItem>
-                            <SelectItem value="existing">{lang === "es" ? "Sí - Ya está registrada" : "Yes - Already registered"}</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {dispatchMode === "new"
-                            ? (lang === "es" ? "Vas a completar todos los datos de la empresa y firmar el agreement." : "You will complete company info and sign the agreement.")
-                            : (lang === "es" ? "Solo necesitas llenar tus datos y los del camión." : "You only need to fill your info and truck data.")}
-                        </p>
-                      </div>
-                      {dispatchMode === "existing" && (
+                    {/* Sub-formulario para Dispatch Service (nueva/existente + MC#) */}
+                    {isDispatchExpandedNow && (
+                      <div className="mt-2 p-4 rounded-xl border-2 border-dashed border-accent/40 bg-accent/[0.03] space-y-3">
                         <div>
-                          <Label>{lang === "es" ? "MC# de tu empresa" : "Your company MC#"}</Label>
-                          <Input
-                            placeholder={lang === "es" ? "Ej: 1234567" : "e.g. 1234567"}
-                            value={dispatchClientMc}
-                            onChange={(e) => setDispatchClientMc(e.target.value)}
-                          />
+                          <Label className="text-xs">
+                            {lang === "es" ? "¿Tu empresa ya está registrada?" : "Is your company already registered?"}
+                          </Label>
+                          <Select value={dispatchMode} onValueChange={(v) => setDispatchMode(v as "new" | "existing")}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="new">{lang === "es" ? "No - Registrar nueva empresa" : "No - Register new company"}</SelectItem>
+                              <SelectItem value="existing">{lang === "es" ? "Sí - Ya está registrada" : "Yes - Already registered"}</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
-                      )}
-                    </>
-                  )}
-
-                  <Button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-bold py-3.5 text-base h-auto"
-                  >
-                    {loading ? <Loader2 className="animate-spin mr-2" size={18} /> : null}
-                    {loading ? tr.obProcessing : tr.obSubmit}
-                    {!loading && <ArrowRight className="ml-2" size={18} />}
-                  </Button>
-                </div>
-              </form>
-            )}
+                        {dispatchMode === "existing" && (
+                          <div>
+                            <Label className="text-xs">{lang === "es" ? "MC# de tu empresa" : "Your company MC#"}</Label>
+                            <Input
+                              placeholder={lang === "es" ? "Ej: 1234567" : "e.g. 1234567"}
+                              value={dispatchClientMc}
+                              onChange={(e) => setDispatchClientMc(e.target.value)}
+                            />
+                          </div>
+                        )}
+                        <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => { setDispatchExpanded(false); setDispatchMode("new"); setDispatchClientMc(""); }}
+                            className="gap-1 text-xs"
+                          >
+                            <ArrowLeft className="h-3.5 w-3.5" /> {lang === "es" ? "Cancelar" : "Cancel"}
+                          </Button>
+                          <Button
+                            onClick={handleDispatchContinue}
+                            disabled={loadingId !== null}
+                            className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground gap-1"
+                            size="sm"
+                          >
+                            {loadingId === "dispatch_service" ? (
+                              <><Loader2 className="h-4 w-4 animate-spin" /> {lang === "es" ? "Creando..." : "Creating..."}</>
+                            ) : (
+                              <>{lang === "es" ? "Continuar" : "Continue"} <ArrowRight className="h-4 w-4" /></>
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </motion.div>
         </div>
       </div>
