@@ -254,9 +254,11 @@ Deno.serve(async (req) => {
         const mcFile = formData.get("company_mc_authority") as File | null;
         const insFile = formData.get("company_insurance_cert") as File | null;
         const w9File = formData.get("company_w9") as File | null;
+        const noaFile = formData.get("company_noa") as File | null;
         const mcUrl = mcFile ? await uploadDs(mcFile, `dispatch_clients/${clientId}`, "mc_authority") : null;
         const insUrl = insFile ? await uploadDs(insFile, `dispatch_clients/${clientId}`, "insurance_cert") : null;
         const w9Url = w9File ? await uploadDs(w9File, `dispatch_clients/${clientId}`, "w9") : null;
+        const noaUrl = noaFile ? await uploadDs(noaFile, `dispatch_clients/${clientId}`, "noa") : null;
 
         // PDF del agreement firmado (generado client-side) — es el documento legal principal.
         const agreementPdfFile = formData.get("company_agreement_pdf") as File | null;
@@ -285,6 +287,7 @@ Deno.serve(async (req) => {
             mc_authority_url: mcUrl,
             insurance_cert_url: insUrl,
             w9_url: w9Url,
+            noa_url: noaUrl,
             dispatch_service_agreement_url: agreementPdfUrl, // PDF final firmado
           })
           .eq("id", clientId);

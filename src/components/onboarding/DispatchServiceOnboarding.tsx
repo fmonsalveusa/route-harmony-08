@@ -128,7 +128,7 @@ export default function DispatchServiceOnboarding({ token, tokenData, onComplete
   const [insurance, setInsurance] = useState<DispatchInsuranceData>({
     insurance_company_name: '', insurance_policy_number: '', insurance_expiry_date: '',
   });
-  const [companyDocs, setCompanyDocs] = useState<{ mc_authority?: File; insurance_cert?: File; w9?: File }>({});
+  const [companyDocs, setCompanyDocs] = useState<{ mc_authority?: File; insurance_cert?: File; w9?: File; noa?: File }>({});
   const [showFactPassword, setShowFactPassword] = useState(false);
 
   // Firma del agreement
@@ -161,6 +161,7 @@ export default function DispatchServiceOnboarding({ token, tokenData, onComplete
     if (!companyDocs.mc_authority) missing.push('MC/DOT Authority');
     if (!companyDocs.insurance_cert) missing.push('Insurance Certificate');
     if (!companyDocs.w9) missing.push('W9 Form');
+    if (!companyDocs.noa) missing.push('NOA (Notice of Assignment)');
     if (missing.length) { toast.error(`Faltan documentos: ${missing.join(', ')}`); return false; }
     return true;
   };
@@ -261,6 +262,7 @@ export default function DispatchServiceOnboarding({ token, tokenData, onComplete
         if (companyDocs.mc_authority) formData.append('company_mc_authority', companyDocs.mc_authority);
         if (companyDocs.insurance_cert) formData.append('company_insurance_cert', companyDocs.insurance_cert);
         if (companyDocs.w9) formData.append('company_w9', companyDocs.w9);
+        if (companyDocs.noa) formData.append('company_noa', companyDocs.noa);
         // Generar PDF del agreement firmado y adjuntarlo
         if (agreementSignature) {
           try {
@@ -460,10 +462,11 @@ export default function DispatchServiceOnboarding({ token, tokenData, onComplete
         <h3 className="text-lg font-semibold flex items-center gap-2"><FileCheck className="h-5 w-5 text-primary" /> Company Documents</h3>
         <p className="text-sm text-muted-foreground">Sube los documentos oficiales de tu empresa.</p>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <FileUploadBox label="MC/DOT Authority *" file={companyDocs.mc_authority} onChange={(f: any) => setCompanyDocs({...companyDocs, mc_authority: f})} />
         <FileUploadBox label="Insurance Certificate *" file={companyDocs.insurance_cert} onChange={(f: any) => setCompanyDocs({...companyDocs, insurance_cert: f})} />
         <FileUploadBox label="W9 Form *" file={companyDocs.w9} onChange={(f: any) => setCompanyDocs({...companyDocs, w9: f})} />
+        <FileUploadBox label="NOA (Notice of Assignment) *" file={companyDocs.noa} onChange={(f: any) => setCompanyDocs({...companyDocs, noa: f})} />
       </div>
     </div>
   );
@@ -634,6 +637,7 @@ export default function DispatchServiceOnboarding({ token, tokenData, onComplete
               <li>{companyDocs.mc_authority ? '✓' : '✗'} MC/DOT Authority</li>
               <li>{companyDocs.insurance_cert ? '✓' : '✗'} Insurance Certificate</li>
               <li>{companyDocs.w9 ? '✓' : '✗'} W9 Form</li>
+              <li>{companyDocs.noa ? '✓' : '✗'} NOA (Notice of Assignment)</li>
               <li>{agreementSignature ? '✓' : '✗'} Agreement firmado por {signerName || '—'}</li>
             </ul>
           </div>

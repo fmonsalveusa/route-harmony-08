@@ -480,10 +480,11 @@ function ClientCard({
             {/* Documents */}
             <div className="pt-2 border-t">
               <p className="font-semibold text-muted-foreground uppercase tracking-wide text-[10px] mb-1.5">Documents</p>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
                 <ClientDocCard label="W9" path={(client as any).w9_url || null} colorClass="bg-blue-500/10 text-blue-600" clientId={client.id} dbColumn="w9_url" onChanged={onDocsChanged} />
                 <ClientDocCard label="MC/DOT Authority" path={client.mc_authority_url} colorClass="bg-purple-500/10 text-purple-600" clientId={client.id} dbColumn="mc_authority_url" onChanged={onDocsChanged} />
                 <ClientDocCard label="Insurance Cert" path={client.insurance_cert_url} colorClass="bg-emerald-500/10 text-emerald-600" clientId={client.id} dbColumn="insurance_cert_url" onChanged={onDocsChanged} />
+                <ClientDocCard label="NOA" path={(client as any).noa_url || null} colorClass="bg-teal-500/10 text-teal-600" clientId={client.id} dbColumn="noa_url" onChanged={onDocsChanged} />
                 <ClientDocCard label="Signed Agreement" path={client.dispatch_service_agreement_url} colorClass="bg-amber-500/10 text-amber-600" clientId={client.id} dbColumn="dispatch_service_agreement_url" onChanged={onDocsChanged} />
               </div>
             </div>
