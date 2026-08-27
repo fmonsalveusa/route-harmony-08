@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Pencil, Trash2, ChevronDown, ChevronUp, Building2, Loader2, Eye, EyeOff, Copy, Check, FileText, ExternalLink, Download, Upload, Link2, UserPlus } from 'lucide-react';
 import { useTenantId } from '@/hooks/useTenantId';
 import { toast } from '@/hooks/use-toast';
