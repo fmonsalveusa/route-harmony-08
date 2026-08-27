@@ -25,6 +25,7 @@ export interface DispatchServiceClient {
   insurance_company_name: string | null;
   insurance_policy_number: string | null;
   insurance_expiry_date: string | null;
+  highway_phone: string | null;
   insurance_cert_url: string | null;
   mc_authority_url: string | null;
   noa_url: string | null;

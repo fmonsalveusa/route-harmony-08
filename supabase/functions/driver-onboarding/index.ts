@@ -204,6 +204,7 @@ Deno.serve(async (req) => {
         }
         const factoringDataStr = formData.get("factoring_data") as string | null;
         const insuranceDataStr = formData.get("insurance_data") as string | null;
+        const highwayDataStr = formData.get("highway_data") as string | null;
         const signerName = (formData.get("signer_name") as string) || "";
         const agreementSignature = formData.get("agreement_signature") as string | null;
 
@@ -216,6 +217,7 @@ Deno.serve(async (req) => {
 
         const factoringData = factoringDataStr ? JSON.parse(factoringDataStr) : {};
         const insuranceData = insuranceDataStr ? JSON.parse(insuranceDataStr) : {};
+        const highwayData = highwayDataStr ? JSON.parse(highwayDataStr) : {};
 
         const { data: newClient, error: clientError } = await supabaseAdmin
           .from("dispatch_service_clients")
@@ -240,6 +242,7 @@ Deno.serve(async (req) => {
             insurance_company_name: insuranceData.insurance_company_name || null,
             insurance_policy_number: insuranceData.insurance_policy_number || null,
             insurance_expiry_date: insuranceData.insurance_expiry_date || null,
+            highway_phone: highwayData.highway_phone || null,
             agreement_signed_at: agreementSignature ? new Date().toISOString() : null,
           })
           .select("id")

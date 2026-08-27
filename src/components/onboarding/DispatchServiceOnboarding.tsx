@@ -43,6 +43,10 @@ export interface DispatchInsuranceData {
   insurance_expiry_date: string;
 }
 
+export interface DispatchHighwayData {
+  highway_phone: string;
+}
+
 export interface DispatchDriverEntry {
   name: string;
   email: string;
@@ -128,6 +132,7 @@ export default function DispatchServiceOnboarding({ token, tokenData, onComplete
   const [insurance, setInsurance] = useState<DispatchInsuranceData>({
     insurance_company_name: '', insurance_policy_number: '', insurance_expiry_date: '',
   });
+  const [highway, setHighway] = useState<DispatchHighwayData>({ highway_phone: '' });
   const [companyDocs, setCompanyDocs] = useState<{ mc_authority?: File; insurance_cert?: File; w9?: File; noa?: File }>({});
   const [showFactPassword, setShowFactPassword] = useState(false);
 
@@ -257,6 +262,7 @@ export default function DispatchServiceOnboarding({ token, tokenData, onComplete
         formData.append('company_data', JSON.stringify(company));
         formData.append('factoring_data', JSON.stringify(factoring));
         formData.append('insurance_data', JSON.stringify(insurance));
+        formData.append('highway_data', JSON.stringify(highway));
         formData.append('signer_name', signerName);
         if (agreementSignature) formData.append('agreement_signature', agreementSignature);
         if (companyDocs.mc_authority) formData.append('company_mc_authority', companyDocs.mc_authority);
@@ -451,6 +457,20 @@ export default function DispatchServiceOnboarding({ token, tokenData, onComplete
           <div className="space-y-1"><Label>Company</Label><Input value={insurance.insurance_company_name} onChange={e => setInsurance({...insurance, insurance_company_name: e.target.value})} /></div>
           <div className="space-y-1"><Label>Policy #</Label><Input value={insurance.insurance_policy_number} onChange={e => setInsurance({...insurance, insurance_policy_number: e.target.value})} /></div>
           <div className="space-y-1"><Label>Expires</Label><Input type="date" value={insurance.insurance_expiry_date} onChange={e => setInsurance({...insurance, insurance_expiry_date: e.target.value})} /></div>
+        </div>
+      </div>
+
+      <div>
+        <p className="text-sm font-semibold uppercase text-muted-foreground tracking-wide mb-2">Highway Information</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <Label>Phone Number (usado para tener acceso)</Label>
+            <Input
+              value={highway.highway_phone}
+              onChange={e => setHighway({...highway, highway_phone: e.target.value})}
+              placeholder="Ej: (704) 555-0123"
+            />
+          </div>
         </div>
       </div>
     </div>

@@ -33,6 +33,7 @@ interface ClientFormState {
   insurance_company_name: string;
   insurance_policy_number: string;
   insurance_expiry_date: string;
+  highway_phone: string;
 }
 
 const emptyForm: ClientFormState = {
@@ -55,6 +56,7 @@ const emptyForm: ClientFormState = {
   insurance_company_name: '',
   insurance_policy_number: '',
   insurance_expiry_date: '',
+  highway_phone: '',
 };
 
 function ClientFormDialog({
@@ -100,6 +102,7 @@ function ClientFormDialog({
           insurance_company_name: editing.insurance_company_name || '',
           insurance_policy_number: editing.insurance_policy_number || '',
           insurance_expiry_date: editing.insurance_expiry_date || '',
+          highway_phone: editing.highway_phone || '',
         });
       } else {
         setForm(emptyForm);
@@ -186,6 +189,17 @@ function ClientFormDialog({
               <div className="space-y-1"><Label>Company</Label><Input value={form.insurance_company_name} onChange={update('insurance_company_name')} /></div>
               <div className="space-y-1"><Label>Policy #</Label><Input value={form.insurance_policy_number} onChange={update('insurance_policy_number')} /></div>
               <div className="space-y-1"><Label>Expiry Date</Label><Input type="date" value={form.insurance_expiry_date} onChange={update('insurance_expiry_date')} /></div>
+            </div>
+          </div>
+
+          {/* Highway Information */}
+          <div>
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">Highway Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label>Phone Number (usado para tener acceso)</Label>
+                <Input value={form.highway_phone} onChange={update('highway_phone')} placeholder="Ej: (704) 555-0123" />
+              </div>
             </div>
           </div>
         </div>
@@ -475,6 +489,20 @@ function ClientCard({
                   <div><span className="text-muted-foreground">Company:</span> <span className="font-medium">{client.insurance_company_name || '—'}</span></div>
                   <div><span className="text-muted-foreground">Policy #:</span> <span className="font-medium">{client.insurance_policy_number || '—'}</span></div>
                   <div><span className="text-muted-foreground">Expires:</span> <span className="font-medium">{client.insurance_expiry_date || '—'}</span></div>
+                </div>
+              </div>
+            )}
+
+            {/* Highway Information */}
+            {(client as any).highway_phone && (
+              <div className="pt-2 border-t">
+                <p className="font-semibold text-muted-foreground uppercase tracking-wide text-[10px] mb-1">Highway Information</p>
+                <div className="flex items-center gap-1">
+                  <span className="text-muted-foreground">Phone:</span>
+                  <span className="font-medium">{(client as any).highway_phone}</span>
+                  <button onClick={() => copyToClipboard((client as any).highway_phone, 'highway')} className="p-0.5 hover:bg-muted rounded" title="Copiar">
+                    {copied === 'highway' ? <Check className="h-3 w-3 text-green-600" /> : <Copy className="h-3 w-3" />}
+                  </button>
                 </div>
               </div>
             )}
