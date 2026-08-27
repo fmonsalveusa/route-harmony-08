@@ -1,6 +1,8 @@
 import { useState, useMemo, useRef } from 'react';
 import { useDispatchServiceClients, DispatchServiceClient } from '@/hooks/useDispatchServiceClients';
 import { useDrivers } from '@/hooks/useDrivers';
+import { useDispatchers } from '@/hooks/useDispatchers';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -521,14 +523,33 @@ function ClientCard({
 export function DispatchServiceClientsSection() {
   const { clients, loading, createClient, updateClient, deleteClient, refetch } = useDispatchServiceClients();
   const { drivers } = useDrivers();
+  const { dispatchers } = useDispatchers();
+  const { role, profile } = useAuth();
   const [search, setSearch] = useState('');
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<DispatchServiceClient | null>(null);
   const [deleting, setDeleting] = useState<DispatchServiceClient | null>(null);
 
+  // Si el user es dispatcher, encontrar su ID via match por email.
+  const currentDispatcherId = useMemo(() => {
+    if (role !== 'dispatcher' || !profile?.email) return null;
+    const match = dispatchers.find(d => d.email?.toLowerCase() === profile.email.toLowerCase());
+    return match?.id ?? null;
+  }, [role, profile?.email, dispatchers]);
+  const isDispatcherView = role === 'dispatcher';
+
+  // Drivers relevantes segun rol:
+  // - Admin/accounting: todos los drivers.
+  // - Dispatcher: solo los que le corresponden.
+  const relevantDrivers = useMemo(() => {
+    if (!isDispatcherView) return drivers;
+    if (!currentDispatcherId) return [];
+    return drivers.filter(d => d.dispatcher_id === currentDispatcherId);
+  }, [drivers, isDispatcherView, currentDispatcherId]);
+
   const driversPerClient = useMemo(() => {
     const map: Record<string, { count: number; names: string[] }> = {};
-    for (const d of drivers) {
+    for (const d of relevantDrivers) {
       const cid = (d as any).dispatch_service_client_id;
       if (!cid) continue;
       if (!map[cid]) map[cid] = { count: 0, names: [] };
@@ -536,18 +557,24 @@ export function DispatchServiceClientsSection() {
       map[cid].names.push(d.name);
     }
     return map;
-  }, [drivers]);
+  }, [relevantDrivers]);
+
+  // Si dispatcher: solo mostrar clientes donde tenga al menos un driver asignado.
+  const visibleClients = useMemo(() => {
+    if (!isDispatcherView) return clients;
+    return clients.filter(c => driversPerClient[c.id]);
+  }, [clients, isDispatcherView, driversPerClient]);
 
   const filtered = useMemo(() => {
-    if (!search.trim()) return clients;
+    if (!search.trim()) return visibleClients;
     const s = search.toLowerCase();
-    return clients.filter(c =>
+    return visibleClients.filter(c =>
       c.legal_business_name.toLowerCase().includes(s) ||
       (c.dba || '').toLowerCase().includes(s) ||
       (c.mc_number || '').toLowerCase().includes(s) ||
       (c.dot_number || '').toLowerCase().includes(s)
     );
-  }, [clients, search]);
+  }, [visibleClients, search]);
 
   const handleSave = async (form: ClientFormState, id?: string) => {
     const payload: any = {
