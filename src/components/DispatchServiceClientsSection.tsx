@@ -449,7 +449,7 @@ function ClientCard({
             {/* Factoring */}
             {(client.factoring_company_name || client.factoring_username) && (
               <div className="pt-2 border-t">
-                <p className="font-semibold text-muted-foreground uppercase tracking-wide text-[10px] mb-1">Factoring</p>
+                <p className="font-bold text-foreground uppercase tracking-wide text-sm mb-2">Factoring</p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                   <div><span className="text-muted-foreground">Company:</span> <span className="font-medium">{client.factoring_company_name || '—'}</span></div>
                   <div className="flex items-center gap-1">
@@ -484,7 +484,7 @@ function ClientCard({
             {/* Insurance */}
             {(client.insurance_company_name || client.insurance_policy_number) && (
               <div className="pt-2 border-t">
-                <p className="font-semibold text-muted-foreground uppercase tracking-wide text-[10px] mb-1">Insurance</p>
+                <p className="font-bold text-foreground uppercase tracking-wide text-sm mb-2">Insurance</p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                   <div><span className="text-muted-foreground">Company:</span> <span className="font-medium">{client.insurance_company_name || '—'}</span></div>
                   <div><span className="text-muted-foreground">Policy #:</span> <span className="font-medium">{client.insurance_policy_number || '—'}</span></div>
@@ -496,7 +496,7 @@ function ClientCard({
             {/* Highway Information */}
             {(client as any).highway_phone && (
               <div className="pt-2 border-t">
-                <p className="font-semibold text-muted-foreground uppercase tracking-wide text-[10px] mb-1">Highway Information</p>
+                <p className="font-bold text-foreground uppercase tracking-wide text-sm mb-2">Highway Information</p>
                 <div className="flex items-center gap-1">
                   <span className="text-muted-foreground">Phone:</span>
                   <span className="font-medium">{(client as any).highway_phone}</span>
@@ -509,7 +509,7 @@ function ClientCard({
 
             {/* Documents */}
             <div className="pt-2 border-t">
-              <p className="font-semibold text-muted-foreground uppercase tracking-wide text-[10px] mb-1.5">Documents</p>
+              <p className="font-bold text-foreground uppercase tracking-wide text-sm mb-2">Documents</p>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
                 <ClientDocCard label="W9" path={(client as any).w9_url || null} colorClass="bg-blue-500/10 text-blue-600" clientId={client.id} dbColumn="w9_url" onChanged={onDocsChanged} />
                 <ClientDocCard label="MC/DOT Authority" path={client.mc_authority_url} colorClass="bg-purple-500/10 text-purple-600" clientId={client.id} dbColumn="mc_authority_url" onChanged={onDocsChanged} />
@@ -521,7 +521,7 @@ function ClientCard({
 
             {/* Drivers */}
             <div className="pt-2 border-t">
-              <p className="font-semibold text-muted-foreground uppercase tracking-wide text-[10px] mb-1">Drivers vinculados</p>
+              <p className="font-bold text-foreground uppercase tracking-wide text-sm mb-2">Drivers vinculados</p>
               {driverNames.length === 0 ? (
                 <p className="text-muted-foreground italic">Ningun driver vinculado todavia</p>
               ) : (
