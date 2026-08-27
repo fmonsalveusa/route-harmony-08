@@ -9,7 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
-import { Plus, Pencil, Trash2, ChevronDown, ChevronUp, Building2, Loader2, Eye, EyeOff, Copy, Check, FileText, ExternalLink, Download, Upload } from 'lucide-react';
+import { Plus, Pencil, Trash2, ChevronDown, ChevronUp, Building2, Loader2, Eye, EyeOff, Copy, Check, FileText, ExternalLink, Download, Upload, Link2, UserPlus } from 'lucide-react';
+import { useTenantId } from '@/hooks/useTenantId';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -359,6 +360,177 @@ function ClientDocCard({
   );
 }
 
+function AddDriverToClientDialog({
+  open,
+  onOpenChange,
+  clientId,
+  clientName,
+  onLinked,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  clientId: string;
+  clientName: string;
+  onLinked: () => void;
+}) {
+  const { drivers, refetch: refetchDrivers } = useDrivers();
+  const tenantId = useTenantId();
+  const [mode, setMode] = useState<'link' | 'onboard'>('link');
+  const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
+  const [driverNameForToken, setDriverNameForToken] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [generatedLink, setGeneratedLink] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  // Drivers que no tienen empresa asignada o pertenecen a otra empresa
+  const availableDrivers = useMemo(() =>
+    drivers.filter(d => (d as any).dispatch_service_client_id !== clientId),
+  [drivers, clientId]);
+
+  const handleLink = async () => {
+    if (!selectedDriverId) { toast({ title: 'Selecciona un driver', variant: 'destructive' }); return; }
+    setLoading(true);
+    try {
+      const { error } = await supabase.from('drivers' as any)
+        .update({ dispatch_service_client_id: clientId, service_type: 'dispatch_service' } as any)
+        .eq('id', selectedDriverId);
+      if (error) throw error;
+      toast({ title: 'Driver vinculado exitosamente' });
+      onLinked();
+      refetchDrivers();
+      onOpenChange(false);
+    } catch (err: any) {
+      toast({ title: 'Error al vincular', description: err.message, variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGenerateLink = async () => {
+    if (!tenantId) return;
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.from('onboarding_tokens').insert({
+        tenant_id: tenantId,
+        driver_name: driverNameForToken.trim() || null,
+        service_type: 'dispatch_service',
+        dispatch_service_client_id: clientId,
+      } as any).select('token').single();
+      if (error) throw error;
+      const link = `${window.location.origin}/onboarding/${data.token}`;
+      setGeneratedLink(link);
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCopy = () => {
+    if (!generatedLink) return;
+    navigator.clipboard.writeText(generatedLink);
+    setCopied(true);
+    toast({ title: 'Link copiado' });
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleClose = (v: boolean) => {
+    if (!v) {
+      setMode('link');
+      setSelectedDriverId(null);
+      setDriverNameForToken('');
+      setGeneratedLink(null);
+      setCopied(false);
+    }
+    onOpenChange(v);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <UserPlus className="h-5 w-5" />
+            Agregar Driver a {clientName}
+          </DialogTitle>
+        </DialogHeader>
+
+        {!generatedLink ? (
+          <div className="space-y-4 mt-2">
+            <div className="space-y-2">
+              <Label>Modo</Label>
+              <div className="flex gap-2">
+                <Button variant={mode === 'link' ? 'default' : 'outline'} size="sm" onClick={() => setMode('link')} className="flex-1 gap-1">
+                  <Link2 className="h-3.5 w-3.5" /> Vincular existente
+                </Button>
+                <Button variant={mode === 'onboard' ? 'default' : 'outline'} size="sm" onClick={() => setMode('onboard')} className="flex-1 gap-1">
+                  <UserPlus className="h-3.5 w-3.5" /> Generar link
+                </Button>
+              </div>
+            </div>
+
+            {mode === 'link' ? (
+              <>
+                <div className="space-y-2">
+                  <Label>Selecciona el driver</Label>
+                  <Select value={selectedDriverId || ''} onValueChange={v => setSelectedDriverId(v)}>
+                    <SelectTrigger><SelectValue placeholder="Elegir driver..." /></SelectTrigger>
+                    <SelectContent>
+                      {availableDrivers.length === 0 ? (
+                        <div className="px-2 py-1.5 text-xs text-muted-foreground">No hay drivers disponibles</div>
+                      ) : availableDrivers.map(d => (
+                        <SelectItem key={d.id} value={d.id}>{d.name}{d.email ? ` (${d.email})` : ''}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[10px] text-muted-foreground">
+                    Se vincula un driver ya registrado. Si estaba en otra empresa, se reasigna.
+                  </p>
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => handleClose(false)}>Cancel</Button>
+                  <Button onClick={handleLink} disabled={loading || !selectedDriverId}>
+                    {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Vincular'}
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <Label>Nombre del driver (opcional)</Label>
+                  <Input value={driverNameForToken} onChange={e => setDriverNameForToken(e.target.value)} placeholder="Ej: Juan Pérez" />
+                  <p className="text-[10px] text-muted-foreground">
+                    Genera un link para que el driver complete su onboarding. Se auto-vincula a esta empresa.
+                  </p>
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => handleClose(false)}>Cancel</Button>
+                  <Button onClick={handleGenerateLink} disabled={loading}>
+                    {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Generar Link'}
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-4 mt-2">
+            <p className="text-sm text-muted-foreground">Comparte este link con el driver (expira en 7 días):</p>
+            <div className="flex items-center gap-2">
+              <Input readOnly value={generatedLink} className="text-xs" />
+              <Button size="icon" variant="outline" onClick={handleCopy}>
+                {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+              </Button>
+            </div>
+            <div className="flex justify-end">
+              <Button variant="outline" onClick={() => handleClose(false)}>Cerrar</Button>
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function ClientCard({
   client,
   driverCount,
@@ -375,6 +547,7 @@ function ClientCard({
   onDocsChanged: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [addDriverOpen, setAddDriverOpen] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
 
@@ -524,7 +697,17 @@ function ClientCard({
 
             {/* Drivers */}
             <div className="pt-2 border-t">
-              <p className="font-bold text-foreground uppercase tracking-wide text-sm mb-2">Drivers vinculados</p>
+              <div className="flex items-center justify-between mb-2">
+                <p className="font-bold text-foreground uppercase tracking-wide text-sm">Drivers vinculados</p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 gap-1 text-xs"
+                  onClick={(e) => { e.stopPropagation(); setAddDriverOpen(true); }}
+                >
+                  <UserPlus className="h-3.5 w-3.5" /> Agregar Driver
+                </Button>
+              </div>
               {driverNames.length === 0 ? (
                 <p className="text-muted-foreground italic">Ningun driver vinculado todavia</p>
               ) : (
@@ -537,6 +720,14 @@ function ClientCard({
                 </div>
               )}
             </div>
+
+            <AddDriverToClientDialog
+              open={addDriverOpen}
+              onOpenChange={setAddDriverOpen}
+              clientId={client.id}
+              clientName={client.legal_business_name}
+              onLinked={onDocsChanged}
+            />
 
             {/* Agreement */}
             <div className="pt-2 border-t text-[10px] text-muted-foreground">
