@@ -420,8 +420,10 @@ function ClientCard({
 
         {expanded && (
           <div className="p-3 space-y-3 text-xs">
-            {/* Contact */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            {/* General Information */}
+            <div>
+              <p className="font-bold text-foreground uppercase tracking-wide text-sm mb-2">General Information</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               <div><span className="text-muted-foreground">Owner:</span> <span className="font-medium">{client.owner_full_name || '—'}</span></div>
               <div><span className="text-muted-foreground">Phone:</span> <span className="font-medium">{client.phone || '—'}</span></div>
               <div className="md:col-span-2"><span className="text-muted-foreground">Email:</span> <span className="font-medium">{client.email || '—'}</span></div>
@@ -444,6 +446,7 @@ function ClientCard({
                 </span>
               </div>
               {client.ein && <div><span className="text-muted-foreground">EIN:</span> <span className="font-medium">{client.ein}</span></div>}
+              </div>
             </div>
 
             {/* Factoring */}
