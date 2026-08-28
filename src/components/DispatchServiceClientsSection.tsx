@@ -561,8 +561,11 @@ function ClientCard({
   return (
     <Card className="overflow-hidden">
       <CardContent className="p-0">
-        {/* Header */}
-        <div className="flex items-start justify-between p-3 border-b bg-muted/20">
+        {/* Header — toda la fila es clickeable para expandir */}
+        <div
+          className="flex items-start justify-between p-3 border-b bg-muted/20 cursor-pointer hover:bg-muted/40 transition-colors"
+          onClick={() => setExpanded(v => !v)}
+        >
           <div className="flex items-center gap-3 min-w-0 flex-1">
             <div className="p-2 rounded-lg bg-primary/10">
               <Building2 className="h-5 w-5 text-primary" />
@@ -579,15 +582,12 @@ function ClientCard({
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-1 shrink-0">
+          <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
             <Button variant="outline" size="sm" onClick={onEdit} className="h-7 gap-1 text-xs">
               <Pencil className="h-3 w-3" /> Edit
             </Button>
             <Button variant="outline" size="sm" onClick={onDelete} className="h-7 gap-1 text-xs text-destructive hover:text-destructive">
               <Trash2 className="h-3 w-3" />
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => setExpanded(v => !v)} className="h-7 w-7 p-0">
-              {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             </Button>
           </div>
         </div>
