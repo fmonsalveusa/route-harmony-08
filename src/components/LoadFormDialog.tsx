@@ -758,85 +758,60 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl w-[95vw] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-[1400px] w-[97vw] max-h-[95vh] overflow-hidden p-0 flex flex-col gap-0">
+        <DialogHeader className="p-4 border-b shrink-0">
           <DialogTitle>{editLoad ? 'Edit Load' : 'Create New Load'}</DialogTitle>
         </DialogHeader>
 
-        {/* PDF Upload */}
-        <div className="mt-2 p-4 rounded-lg border-2 border-dashed border-primary/30 bg-primary/5">
-            <div className="flex items-center gap-3 mb-3">
-              <FileText className="h-5 w-5 text-primary" />
-              <div>
-                <h4 className="text-sm font-semibold">{editLoad ? 'Replace Rate Confirmation' : 'Extract data from PDF'}</h4>
-                <p className="text-xs text-muted-foreground">{editLoad ? 'Upload a new PDF to update load data' : 'Upload a rate confirmation or BOL'}</p>
-              </div>
+        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(560px,720px)]">
+          {/* ═══ COLUMNA IZQUIERDA — Form ═══ */}
+          <div className="overflow-y-auto p-4 lg:border-r">
+
+        <input ref={fileInputRef} type="file" accept=".pdf" onChange={handlePdfUpload} className="hidden" />
+
+        {/* Extractor + Preview COMPACTO — solo mobile (< lg). En desktop va en la columna derecha. */}
+        <div className="lg:hidden mb-3 space-y-2">
+          <div className="p-3 rounded-lg border-2 border-dashed border-primary/30 bg-primary/5">
+            <div className="flex items-center gap-2 mb-2">
+              <FileText className="h-4 w-4 text-primary" />
+              <h4 className="text-xs font-semibold">{editLoad ? 'Replace Rate Confirmation' : 'Extract data from PDF'}</h4>
             </div>
-            <input ref={fileInputRef} type="file" accept=".pdf" onChange={handlePdfUpload} className="hidden" />
             {extractionStatus === 'idle' && (
               <Button variant="outline" size="sm" className="w-full gap-2" onClick={() => fileInputRef.current?.click()}>
                 <Upload className="h-4 w-4" /> Select PDF
               </Button>
             )}
             {(extractionStatus === 'uploading' || extractionStatus === 'processing') && (
-              <div className="flex flex-col items-center py-4 space-y-3">
-                <div className="text-6xl font-bold text-foreground tabular-nums">
-                  {extractionProgress}<span className="text-4xl">%</span>
+              <div className="flex flex-col items-center py-2 space-y-2">
+                <div className="text-4xl font-bold text-foreground tabular-nums">{extractionProgress}%</div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                  <span>{extractionStatus === 'uploading' ? 'Subiendo...' : 'Extrayendo...'}</span>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                  <span>{extractionStatus === 'uploading' ? 'Subiendo PDF...' : 'Extrayendo con IA...'}</span>
-                </div>
-                <Progress value={extractionProgress} className="h-2 w-full" />
+                <Progress value={extractionProgress} className="h-1.5 w-full" />
               </div>
             )}
             {extractionStatus === 'done' && (
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm text-green-600">
-                  <CheckCircle className="h-4 w-4" /><span>Data extracted from <strong>{pdfFileName}</strong></span>
-                </div>
-                <Button variant="ghost" size="sm" onClick={() => { setExtractionStatus('idle'); fileInputRef.current?.click(); }}>Change PDF</Button>
+              <div className="flex items-center gap-2 text-xs text-green-600">
+                <CheckCircle className="h-4 w-4" /><span className="truncate">{pdfFileName}</span>
               </div>
             )}
             {extractionStatus === 'error' && (
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm text-destructive">
-                  <AlertCircle className="h-4 w-4" /><span>Error. Fill in manually.</span>
-                </div>
-                <Button variant="ghost" size="sm" onClick={() => { setExtractionStatus('idle'); fileInputRef.current?.click(); }}>Retry</Button>
-              </div>
+              <div className="text-xs text-destructive"><AlertCircle className="h-4 w-4 inline mr-1" />Error. Fill in manually.</div>
             )}
           </div>
-
-        {/* PDF Preview */}
-        {pdfPreviewUrl && (
-          <div className="mt-2 p-3 rounded-lg border bg-muted/50">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <FileText className="h-4 w-4 text-primary" />
-                <span>{pdfFileName || 'PDF Original'}</span>
+          {pdfPreviewUrl && (
+            <div className="p-2 rounded-lg border bg-muted/50">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xs font-medium truncate">{pdfFileName || 'PDF'}</span>
+                <Button variant="ghost" size="sm" className="h-6 text-xs text-destructive" onClick={removePdf}><X className="h-3.5 w-3.5" /></Button>
               </div>
-              <div className="flex items-center gap-1">
-                <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" asChild>
-                  <a href={pdfPreviewUrl} target="_blank" rel="noopener noreferrer">
-                    <Eye className="h-3.5 w-3.5" /> Ver
-                  </a>
-                </Button>
-                <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" asChild>
-                  <a href={pdfPreviewUrl} download={pdfFileName || 'document.pdf'}>
-                    <Download className="h-3.5 w-3.5" /> Download
-                  </a>
-                </Button>
-                <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive" onClick={removePdf}>
-                  <X className="h-3.5 w-3.5" />
-                </Button>
+              <div className="rounded border bg-background h-40 overflow-hidden">
+                <iframe src={pdfPreviewUrl} className="w-full h-full" title="PDF Preview" />
               </div>
             </div>
-            <div className="rounded border bg-background h-40 overflow-hidden">
-              <iframe src={pdfPreviewUrl} className="w-full h-full" title="PDF Preview" />
-            </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* RC Original — solo Admin / Accounting / Master Admin */}
         {canSeeGrossRate && (
@@ -1228,7 +1203,93 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
           </div>
         </div>
 
-        <div className="flex justify-end gap-2 mt-4">
+          </div>
+          {/* ═══ FIN COLUMNA IZQUIERDA ═══ */}
+
+          {/* ═══ COLUMNA DERECHA — PDF viewer ═══ */}
+          <div className="hidden lg:flex flex-col overflow-hidden p-4 gap-3 bg-muted/20 min-h-0">
+            {/* Extractor compacto arriba */}
+            <div className="rounded-lg border-2 border-dashed border-primary/30 bg-primary/5 p-3 shrink-0">
+              <div className="flex items-center gap-2 mb-2">
+                <FileText className="h-4 w-4 text-primary shrink-0" />
+                <div className="min-w-0">
+                  <h4 className="text-xs font-semibold truncate">{editLoad ? 'Replace Rate Confirmation' : 'Extract data from PDF'}</h4>
+                  <p className="text-[10px] text-muted-foreground truncate">{editLoad ? 'Upload a new PDF to update' : 'Upload a rate confirmation or BOL'}</p>
+                </div>
+              </div>
+              {extractionStatus === 'idle' && (
+                <Button variant="outline" size="sm" className="w-full gap-2 h-8 text-xs" onClick={() => fileInputRef.current?.click()}>
+                  <Upload className="h-3.5 w-3.5" /> Select PDF
+                </Button>
+              )}
+              {(extractionStatus === 'uploading' || extractionStatus === 'processing') && (
+                <div className="flex flex-col items-center py-2 space-y-2">
+                  <div className="text-5xl font-bold text-foreground tabular-nums">
+                    {extractionProgress}<span className="text-3xl">%</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                    <span>{extractionStatus === 'uploading' ? 'Subiendo PDF...' : 'Extrayendo con IA...'}</span>
+                  </div>
+                  <Progress value={extractionProgress} className="h-1.5 w-full" />
+                </div>
+              )}
+              {extractionStatus === 'done' && (
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 text-xs text-green-600 min-w-0">
+                    <CheckCircle className="h-3.5 w-3.5 shrink-0" /><span className="truncate">Extracted: <strong>{pdfFileName}</strong></span>
+                  </div>
+                  <Button variant="ghost" size="sm" className="h-7 text-xs shrink-0" onClick={() => { setExtractionStatus('idle'); fileInputRef.current?.click(); }}>Change</Button>
+                </div>
+              )}
+              {extractionStatus === 'error' && (
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 text-xs text-destructive">
+                    <AlertCircle className="h-3.5 w-3.5" /><span>Error. Fill in manually.</span>
+                  </div>
+                  <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => { setExtractionStatus('idle'); fileInputRef.current?.click(); }}>Retry</Button>
+                </div>
+              )}
+            </div>
+
+            {/* Preview grande abajo (o placeholder) */}
+            {pdfPreviewUrl ? (
+              <div className="flex-1 min-h-0 flex flex-col rounded-lg border bg-background overflow-hidden">
+                <div className="flex items-center justify-between px-2 py-1 border-b bg-muted/40 shrink-0">
+                  <div className="flex items-center gap-1.5 text-xs font-medium min-w-0">
+                    <FileText className="h-3.5 w-3.5 text-primary shrink-0" />
+                    <span className="truncate">{pdfFileName || 'PDF Original'}</span>
+                  </div>
+                  <div className="flex items-center gap-0.5 shrink-0">
+                    <Button variant="ghost" size="sm" className="h-6 gap-1 text-[10px] px-1.5" asChild>
+                      <a href={pdfPreviewUrl} target="_blank" rel="noopener noreferrer" title="Abrir en pestana nueva">
+                        <Eye className="h-3 w-3" />
+                      </a>
+                    </Button>
+                    <Button variant="ghost" size="sm" className="h-6 gap-1 text-[10px] px-1.5" asChild>
+                      <a href={pdfPreviewUrl} download={pdfFileName || 'document.pdf'} title="Descargar">
+                        <Download className="h-3 w-3" />
+                      </a>
+                    </Button>
+                    <Button variant="ghost" size="sm" className="h-6 gap-1 text-[10px] px-1.5 text-destructive" onClick={removePdf} title="Remover">
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+                <iframe src={pdfPreviewUrl} className="flex-1 w-full" title="PDF Preview" />
+              </div>
+            ) : (
+              <div className="flex-1 min-h-0 flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/20 text-muted-foreground p-8 text-center">
+                <FileText className="h-12 w-12 mb-3 opacity-40" />
+                <p className="text-sm font-medium">Sube un Rate Confirmation</p>
+                <p className="text-xs mt-1">Aparecerá aquí para poder revisarlo mientras completas los datos.</p>
+              </div>
+            )}
+          </div>
+          {/* ═══ FIN COLUMNA DERECHA ═══ */}
+        </div>
+
+        <div className="flex justify-end gap-2 p-4 border-t shrink-0">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
           <Button onClick={handleSubmit}>{editLoad ? 'Guardar Cambios' : 'Crear Carga'}</Button>
         </div>
