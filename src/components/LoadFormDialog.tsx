@@ -758,7 +758,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[1400px] w-[97vw] max-h-[95vh] overflow-hidden p-0 flex flex-col gap-0">
+      <DialogContent className="max-w-[1750px] w-[98vw] max-h-[95vh] overflow-hidden p-0 flex flex-col gap-0">
         <DialogHeader className="p-4 border-b shrink-0">
           <DialogTitle>{editLoad ? 'Edit Load' : 'Create New Load'}</DialogTitle>
         </DialogHeader>
