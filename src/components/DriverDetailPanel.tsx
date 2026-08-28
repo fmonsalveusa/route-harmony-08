@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, Fragment } from 'react';
+import { useState, useEffect, useRef, Fragment } from 'react';
 import { DbDriver } from '@/hooks/useDrivers';
 import { FileText, ExternalLink, Loader2, Download, Plus } from 'lucide-react';
 import { formatDate } from '@/lib/dateUtils';
@@ -9,11 +9,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { format, startOfMonth, endOfMonth, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { DocCardGrid } from '@/components/DocCardGrid';
 import { getTenantId } from '@/hooks/useTenantId';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { StatusBadge } from '@/components/StatusBadge';
 
 function Info({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -32,205 +30,6 @@ const docFields = [
   { key: 'employment_contract_url', label: 'Employment Contract' },
   { key: 'termination_letter_url', label: 'Termination Letter' },
 ];
-
-// ── Sub-componentes de las pestanas Trips y Payroll ──────────────────────
-
-function DriverTripsTab({ driverId }: { driverId: string }) {
-  const [loads, setLoads] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [monthOffset, setMonthOffset] = useState(0); // 0 = mes actual, -1 = mes pasado, +1 = mes siguiente
-
-  const targetDate = useMemo(() => {
-    const d = new Date();
-    d.setMonth(d.getMonth() + monthOffset);
-    return d;
-  }, [monthOffset]);
-
-  const rangeLabel = format(targetDate, 'MMMM yyyy');
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      const start = format(startOfMonth(targetDate), 'yyyy-MM-dd');
-      const end = format(endOfMonth(targetDate), 'yyyy-MM-dd');
-      const { data, error } = await supabase
-        .from('loads')
-        .select('id, reference_number, origin, destination, pickup_date, delivery_date, total_rate, driver_pay_amount, status, factoring')
-        .eq('driver_id', driverId)
-        .gte('delivery_date', start)
-        .lte('delivery_date', end)
-        .order('delivery_date', { ascending: false });
-      if (cancelled) return;
-      if (error) console.error('[Trips] error:', error);
-      setLoads((data as any[]) || []);
-      setLoading(false);
-    })();
-    return () => { cancelled = true; };
-  }, [driverId, targetDate]);
-
-  const totalPay = loads.reduce((s, l) => s + Number(l.driver_pay_amount || 0), 0);
-  const totalRate = loads.reduce((s, l) => s + Number(l.total_rate || 0), 0);
-
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setMonthOffset(o => o - 1)} className="h-7 text-xs">← Prev</Button>
-          <span className="text-sm font-semibold capitalize">{rangeLabel}</span>
-          <Button variant="outline" size="sm" onClick={() => setMonthOffset(o => o + 1)} disabled={monthOffset >= 0} className="h-7 text-xs">Next →</Button>
-          {monthOffset !== 0 && (
-            <Button variant="ghost" size="sm" onClick={() => setMonthOffset(0)} className="h-7 text-xs">Mes actual</Button>
-          )}
-        </div>
-        <div className="text-xs text-muted-foreground">
-          <span className="font-semibold text-foreground">{loads.length}</span> cargas ·
-          Rate total: <span className="font-semibold text-foreground">${totalRate.toLocaleString()}</span> ·
-          Pay total: <span className="font-semibold text-emerald-600">${totalPay.toLocaleString()}</span>
-        </div>
-      </div>
-
-      {loading ? (
-        <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
-      ) : loads.length === 0 ? (
-        <p className="text-center text-muted-foreground py-8 text-sm">No hay cargas en {rangeLabel}.</p>
-      ) : (
-        <div className="border rounded-lg overflow-hidden">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="border-b bg-muted/40 text-left">
-                <th className="p-2 font-medium text-muted-foreground">Ref #</th>
-                <th className="p-2 font-medium text-muted-foreground">Origen → Destino</th>
-                <th className="p-2 font-medium text-muted-foreground">Delivery Date</th>
-                <th className="p-2 font-medium text-muted-foreground text-right">Rate</th>
-                <th className="p-2 font-medium text-muted-foreground text-right">Paid Amount</th>
-                <th className="p-2 font-medium text-muted-foreground">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loads.map(l => (
-                <tr key={l.id} className="border-b last:border-0 hover:bg-muted/20">
-                  <td className="p-2 font-medium text-primary">{l.reference_number}</td>
-                  <td className="p-2">
-                    <div className="truncate max-w-[280px]" title={`${l.origin} → ${l.destination}`}>
-                      {l.origin} → {l.destination}
-                    </div>
-                  </td>
-                  <td className="p-2 text-muted-foreground">{l.delivery_date ? format(parseISO(l.delivery_date), 'MMM dd, yyyy') : '—'}</td>
-                  <td className="p-2 text-right font-semibold">${Number(l.total_rate || 0).toLocaleString()}</td>
-                  <td className="p-2 text-right font-semibold text-emerald-600">${Number(l.driver_pay_amount || 0).toLocaleString()}</td>
-                  <td className="p-2"><StatusBadge status={l.status} className="text-[10px] px-2 py-0.5" /></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function DriverPayrollTab({ driverName, driverId }: { driverName: string; driverId: string }) {
-  const [payments, setPayments] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [monthOffset, setMonthOffset] = useState(0);
-
-  const targetDate = useMemo(() => {
-    const d = new Date();
-    d.setMonth(d.getMonth() + monthOffset);
-    return d;
-  }, [monthOffset]);
-  const rangeLabel = format(targetDate, 'MMMM yyyy');
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      const start = format(startOfMonth(targetDate), 'yyyy-MM-dd');
-      const end = format(endOfMonth(targetDate), 'yyyy-MM-dd');
-      // Filtrar por driver_id (recipient_id) O por nombre (backup para pagos legacy).
-      const { data, error } = await supabase
-        .from('payments')
-        .select('id, load_reference, amount, percentage_applied, total_rate, status, payment_date, created_at, recipient_id, recipient_name')
-        .eq('recipient_type', 'driver')
-        .or(`recipient_id.eq.${driverId},recipient_name.eq.${driverName}`)
-        .gte('created_at', `${start}T00:00:00`)
-        .lte('created_at', `${end}T23:59:59`)
-        .order('created_at', { ascending: false });
-      if (cancelled) return;
-      if (error) console.error('[Payroll] error:', error);
-      setPayments((data as any[]) || []);
-      setLoading(false);
-    })();
-    return () => { cancelled = true; };
-  }, [driverId, driverName, targetDate]);
-
-  const totalAmount = payments.reduce((s, p) => s + Number(p.amount || 0), 0);
-  const paidAmount = payments.filter(p => p.status === 'paid').reduce((s, p) => s + Number(p.amount || 0), 0);
-  const pendingAmount = payments.filter(p => p.status === 'pending').reduce((s, p) => s + Number(p.amount || 0), 0);
-
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setMonthOffset(o => o - 1)} className="h-7 text-xs">← Prev</Button>
-          <span className="text-sm font-semibold capitalize">{rangeLabel}</span>
-          <Button variant="outline" size="sm" onClick={() => setMonthOffset(o => o + 1)} disabled={monthOffset >= 0} className="h-7 text-xs">Next →</Button>
-          {monthOffset !== 0 && (
-            <Button variant="ghost" size="sm" onClick={() => setMonthOffset(0)} className="h-7 text-xs">Mes actual</Button>
-          )}
-        </div>
-        <div className="text-xs text-muted-foreground">
-          <span className="font-semibold text-foreground">{payments.length}</span> pagos ·
-          Total: <span className="font-semibold text-foreground">${totalAmount.toLocaleString()}</span> ·
-          Pagado: <span className="font-semibold text-emerald-600">${paidAmount.toLocaleString()}</span> ·
-          Pendiente: <span className="font-semibold text-amber-600">${pendingAmount.toLocaleString()}</span>
-        </div>
-      </div>
-
-      {loading ? (
-        <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
-      ) : payments.length === 0 ? (
-        <p className="text-center text-muted-foreground py-8 text-sm">No hay pagos en {rangeLabel}.</p>
-      ) : (
-        <div className="border rounded-lg overflow-hidden">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="border-b bg-muted/40 text-left">
-                <th className="p-2 font-medium text-muted-foreground">Fecha creado</th>
-                <th className="p-2 font-medium text-muted-foreground">Load Ref</th>
-                <th className="p-2 font-medium text-muted-foreground text-right">Total Rate</th>
-                <th className="p-2 font-medium text-muted-foreground text-right">%</th>
-                <th className="p-2 font-medium text-muted-foreground text-right">Amount</th>
-                <th className="p-2 font-medium text-muted-foreground">Status</th>
-                <th className="p-2 font-medium text-muted-foreground">Payment Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {payments.map(p => (
-                <tr key={p.id} className="border-b last:border-0 hover:bg-muted/20">
-                  <td className="p-2 text-muted-foreground">{p.created_at ? format(parseISO(p.created_at), 'MMM dd') : '—'}</td>
-                  <td className="p-2 font-medium text-primary">{p.load_reference || '—'}</td>
-                  <td className="p-2 text-right">${Number(p.total_rate || 0).toLocaleString()}</td>
-                  <td className="p-2 text-right text-muted-foreground">{p.percentage_applied}%</td>
-                  <td className="p-2 text-right font-semibold text-emerald-600">${Number(p.amount || 0).toLocaleString()}</td>
-                  <td className="p-2">
-                    <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-                      p.status === 'paid' ? 'bg-emerald-500/15 text-emerald-600' : 'bg-amber-500/15 text-amber-600'
-                    }`}>
-                      {p.status?.toUpperCase() || 'PENDING'}
-                    </span>
-                  </td>
-                  <td className="p-2 text-muted-foreground">{p.payment_date ? format(parseISO(p.payment_date), 'MMM dd, yyyy') : '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  );
-}
 
 interface Props {
   driver: DbDriver;
@@ -433,21 +232,7 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
   };
 
   return (
-    <div className="p-5 bg-muted/20 border-t animate-fade-in">
-      <Tabs defaultValue="general" className="w-full">
-        <TabsList className="w-full justify-start bg-transparent border-b rounded-none p-0 h-auto mb-4">
-          <TabsTrigger value="general" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-2 font-semibold">
-            General Information
-          </TabsTrigger>
-          <TabsTrigger value="trips" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-2 font-semibold">
-            Trips
-          </TabsTrigger>
-          <TabsTrigger value="payroll" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-2 font-semibold">
-            Payroll
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="general" className="space-y-4 mt-0">
+    <div className="p-5 bg-muted/20 border-t space-y-4 animate-fade-in">
       {/* Document Expiry Alerts */}
       {(driver.license_expiry || driver.medical_card_expiry) && (
         <div className="flex flex-wrap gap-2">
@@ -642,16 +427,6 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
           </div>
         )}
       </div>
-        </TabsContent>
-
-        <TabsContent value="trips" className="mt-0">
-          <DriverTripsTab driverId={driver.id} />
-        </TabsContent>
-
-        <TabsContent value="payroll" className="mt-0">
-          <DriverPayrollTab driverId={driver.id} driverName={driver.name} />
-        </TabsContent>
-      </Tabs>
     </div>
   );
 }
