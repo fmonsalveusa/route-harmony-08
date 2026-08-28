@@ -232,104 +232,129 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
   };
 
   return (
-    <div className="p-5 bg-muted/20 border-t space-y-4 animate-fade-in">
-      {/* Document Expiry Alerts */}
+    <div className="p-5 bg-muted/20 border-t animate-fade-in">
+      {/* Document Expiry Alerts — arriba, span completo */}
       {(driver.license_expiry || driver.medical_card_expiry) && (
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 mb-4">
           <ExpiryBadge date={driver.license_expiry} label="Driver License" />
           <ExpiryBadge date={driver.medical_card_expiry} label="Medical Card" />
         </div>
       )}
 
-      {/* Personal Info */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3">
-        <Info label="Email">{driver.email}</Info>
-        <Info label="Phone">{formatPhone(driver.phone)}</Info>
-        <Info label="Birthday">{formatDate((driver as any).birthday) || '—'}</Info>
-        <Info label="Hire Date">{formatDate(driver.hire_date)}</Info>
-        <Info label="Service Type">{driver.service_type?.replace(/_/g, ' ')}</Info>
-      </div>
+      {/* Grid de 3 columnas con separadores verticales */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 lg:divide-x lg:divide-border gap-y-6">
 
-      {/* Address */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3">
-        <Info label="Address">{(driver as any).address || '—'}</Info>
-        <Info label="City">{(driver as any).city || '—'}</Info>
-        <Info label="State">{driver.state || '—'}</Info>
-        <Info label="Zip">{(driver as any).zip || '—'}</Info>
-      </div>
+        {/* ═══ COLUMNA 1 — Informacion General ═══ */}
+        <div className="lg:pr-6 space-y-4">
+          <h3 className="text-sm font-bold uppercase tracking-wide text-foreground border-b pb-2">
+            Información General
+          </h3>
 
-      {/* Emergency Contact */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3 border-t pt-3">
-        <Info label="Emergency Contact">{(driver as any).emergency_contact_name || '—'}</Info>
-        <Info label="Emergency Phone">{formatPhone((driver as any).emergency_phone)}</Info>
-      </div>
-
-      {/* License & Medical */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3 border-t pt-3">
-        <Info label="Driver License #">{driver.license}{driver.state ? ` (${driver.state})` : ''}</Info>
-        <Info label="License Expiry">{formatDate(driver.license_expiry)}</Info>
-        <Info label="Medical Card Expiry">{formatDate(driver.medical_card_expiry)}</Info>
-        <Info label="Factoring %">{driver.factoring_percentage}%</Info>
-      </div>
-
-      {/* Assignments — Dispatcher + Truck */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3 border-t pt-3">
-        <Info label="Dispatcher">{dispatcherName || 'Unassigned'}</Info>
-        <Info label="Truck">{truckLabel || 'Unassigned'}</Info>
-        {driver.service_type === 'dispatch_service' && (
-          <Info label="% Dispatch Service">{(driver as any).dispatch_service_percentage ?? 0}%</Info>
-        )}
-      </div>
-
-      {/* Investor(s) + Pay Percentages — una linea por investor con %Driver Pay solo en la primera */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3">
-        {investorsLoading ? (
-          <Info label="Investor">Loading...</Info>
-        ) : investors.length === 0 ? (
-          <>
-            <Info label="Investor">—</Info>
-            <Info label="Investor Email">—</Info>
-            <Info label="% Investor Pay">—</Info>
-            <Info label="% Driver Pay">{driver.pay_percentage}%</Info>
-          </>
-        ) : (
-          investors.map((inv, i) => (
-            <Fragment key={i}>
-              <Info label={investors.length > 1 ? `Investor ${i + 1}` : 'Investor'}>{inv.investor_name || '—'}</Info>
-              <Info label="Investor Email">{inv.investor_email || '—'}</Info>
-              <Info label="% Investor Pay">{inv.pay_percentage ?? '—'}%</Info>
-              {i === 0 ? <Info label="% Driver Pay">{driver.pay_percentage}%</Info> : <div />}
-            </Fragment>
-          ))
-        )}
-      </div>
-
-      {/* Banking Information */}
-      {((driver as any).bank_name || (driver as any).routing_number || (driver as any).account_number) && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3 border-t pt-3">
-          <div className="sm:col-span-4">
-            <p className="text-xs font-semibold text-muted-foreground mb-2">Banking Information (ACH)</p>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+            <Info label="Email">{driver.email}</Info>
+            <Info label="Phone">{formatPhone(driver.phone)}</Info>
+            <Info label="Birthday">{formatDate((driver as any).birthday) || '—'}</Info>
+            <Info label="Hire Date">{formatDate(driver.hire_date)}</Info>
+            <Info label="Service Type">{driver.service_type?.replace(/_/g, ' ')}</Info>
           </div>
-          <Info label="Account Holder">{(driver as any).account_holder_name || '—'}</Info>
-          <Info label="Bank Name">{(driver as any).bank_name || '—'}</Info>
-          <Info label="Account Type">
-            {(driver as any).account_type
-              ? (driver as any).account_type.charAt(0).toUpperCase() + (driver as any).account_type.slice(1)
-              : '—'}
-          </Info>
-          <Info label="Routing Number">
-            {(driver as any).routing_number ? `****${String((driver as any).routing_number).slice(-4)}` : '—'}
-          </Info>
-          <Info label="Account Number">
-            {(driver as any).account_number ? `****${String((driver as any).account_number).slice(-4)}` : '—'}
-          </Info>
-        </div>
-      )}
 
-      {/* Documents */}
-      <div className="border-t pt-3">
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-xs font-semibold text-muted-foreground">Documents</p>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-3 border-t pt-3">
+            <Info label="Address">{(driver as any).address || '—'}</Info>
+            <Info label="City">{(driver as any).city || '—'}</Info>
+            <Info label="State">{driver.state || '—'}</Info>
+            <Info label="Zip">{(driver as any).zip || '—'}</Info>
+          </div>
+
+          <div className="grid grid-cols-2 gap-x-4 gap-y-3 border-t pt-3">
+            <Info label="Emergency Contact">{(driver as any).emergency_contact_name || '—'}</Info>
+            <Info label="Emergency Phone">{formatPhone((driver as any).emergency_phone)}</Info>
+          </div>
+
+          <div className="grid grid-cols-2 gap-x-4 gap-y-3 border-t pt-3">
+            <Info label="Driver License #">{driver.license}{driver.state ? ` (${driver.state})` : ''}</Info>
+            <Info label="License Expiry">{formatDate(driver.license_expiry)}</Info>
+            <Info label="Medical Card Expiry">{formatDate(driver.medical_card_expiry)}</Info>
+          </div>
+
+          <div className="grid grid-cols-2 gap-x-4 gap-y-3 border-t pt-3">
+            <Info label="Dispatcher">{dispatcherName || 'Unassigned'}</Info>
+            <Info label="Truck">{truckLabel || 'Unassigned'}</Info>
+          </div>
+        </div>
+
+        {/* ═══ COLUMNA 2 — Pagos ═══ */}
+        <div className="lg:px-6 space-y-4">
+          <h3 className="text-sm font-bold uppercase tracking-wide text-foreground border-b pb-2">
+            Pagos
+          </h3>
+
+          <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+            <Info label="% Driver Pay">{driver.pay_percentage}%</Info>
+            <Info label="Factoring %">{driver.factoring_percentage}%</Info>
+            {driver.service_type === 'dispatch_service' && (
+              <Info label="% Dispatch Service">{(driver as any).dispatch_service_percentage ?? 0}%</Info>
+            )}
+          </div>
+
+          {/* Investors */}
+          <div className="border-t pt-3">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Investors</p>
+            {investorsLoading ? (
+              <p className="text-sm text-muted-foreground">Loading...</p>
+            ) : investors.length === 0 ? (
+              <p className="text-sm text-muted-foreground italic">Sin investors asignados</p>
+            ) : (
+              <div className="space-y-3">
+                {investors.map((inv, i) => (
+                  <div key={i} className="p-3 rounded-md bg-card border space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-semibold text-foreground">
+                        {inv.investor_name || '—'}
+                      </p>
+                      <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                        {inv.pay_percentage ?? 0}%
+                      </span>
+                    </div>
+                    {inv.investor_email && (
+                      <p className="text-xs text-muted-foreground truncate">{inv.investor_email}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Banking */}
+          {((driver as any).bank_name || (driver as any).routing_number || (driver as any).account_number) && (
+            <div className="border-t pt-3">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Banking (ACH)</p>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                <Info label="Account Holder">{(driver as any).account_holder_name || '—'}</Info>
+                <Info label="Bank Name">{(driver as any).bank_name || '—'}</Info>
+                <Info label="Account Type">
+                  {(driver as any).account_type
+                    ? (driver as any).account_type.charAt(0).toUpperCase() + (driver as any).account_type.slice(1)
+                    : '—'}
+                </Info>
+                <Info label="Routing Number">
+                  {(driver as any).routing_number ? `****${String((driver as any).routing_number).slice(-4)}` : '—'}
+                </Info>
+                <Info label="Account Number">
+                  {(driver as any).account_number ? `****${String((driver as any).account_number).slice(-4)}` : '—'}
+                </Info>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ═══ COLUMNA 3 — Documentos ═══ */}
+        <div className="lg:pl-6 space-y-4">
+          <div className="flex items-center justify-between border-b pb-2">
+            <h3 className="text-sm font-bold uppercase tracking-wide text-foreground">
+              Documentos
+            </h3>
+          </div>
+
           <div className="flex gap-2">
             <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={() => setAddingLeasing(v => !v)}>
               <Plus className="h-3 w-3" /> Add Leasing
@@ -338,9 +363,8 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
               <Download className="h-3.5 w-3.5" /> Download PDF
             </Button>
           </div>
-        </div>
 
-        {/* Formulario para agregar nuevo leasing */}
+          {/* Formulario para agregar nuevo leasing */}
         {addingLeasing && (
           <div className="mb-3 p-3 rounded-lg border border-dashed border-primary/40 bg-primary/5 space-y-2">
             <p className="text-xs font-medium text-muted-foreground">Nuevo Leasing Agreement</p>
@@ -421,11 +445,14 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
             await onUpdateDriver(driver.id, { [key + (key.endsWith('_url') ? '' : '_url')]: newUrl });
           } : undefined}
         />
-        {leasingLoading && (
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
-            <Loader2 className="h-3 w-3 animate-spin" /> Loading leasing agreements...
-          </div>
-        )}
+          {leasingLoading && (
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
+              <Loader2 className="h-3 w-3 animate-spin" /> Loading leasing agreements...
+            </div>
+          )}
+        </div>
+        {/* ═══ FIN COLUMNA 3 ═══ */}
+
       </div>
     </div>
   );
