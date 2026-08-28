@@ -466,7 +466,7 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
       </div>
 
       {/* Address */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3 border-t pt-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3">
         <Info label="Address">{(driver as any).address || '—'}</Info>
         <Info label="City">{(driver as any).city || '—'}</Info>
         <Info label="State">{driver.state || '—'}</Info>
@@ -487,10 +487,17 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
         <Info label="Factoring %">{driver.factoring_percentage}%</Info>
       </div>
 
-      {/* Assignments */}
+      {/* Assignments — Dispatcher + Truck */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3 border-t pt-3">
         <Info label="Dispatcher">{dispatcherName || 'Unassigned'}</Info>
         <Info label="Truck">{truckLabel || 'Unassigned'}</Info>
+        {driver.service_type === 'dispatch_service' && (
+          <Info label="% Dispatch Service">{(driver as any).dispatch_service_percentage ?? 0}%</Info>
+        )}
+      </div>
+
+      {/* Investor(s) + Pay Percentages — una linea por investor con %Driver Pay solo en la primera */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3">
         {investorsLoading ? (
           <Info label="Investor">Loading...</Info>
         ) : investors.length === 0 ? (
@@ -498,6 +505,7 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
             <Info label="Investor">—</Info>
             <Info label="Investor Email">—</Info>
             <Info label="% Investor Pay">—</Info>
+            <Info label="% Driver Pay">{driver.pay_percentage}%</Info>
           </>
         ) : (
           investors.map((inv, i) => (
@@ -505,19 +513,10 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
               <Info label={investors.length > 1 ? `Investor ${i + 1}` : 'Investor'}>{inv.investor_name || '—'}</Info>
               <Info label="Investor Email">{inv.investor_email || '—'}</Info>
               <Info label="% Investor Pay">{inv.pay_percentage ?? '—'}%</Info>
+              {i === 0 ? <Info label="% Driver Pay">{driver.pay_percentage}%</Info> : <div />}
             </Fragment>
           ))
         )}
-      </div>
-
-      {/* Pay & Performance */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3 border-t pt-3">
-        <Info label="% Driver Pay">{driver.pay_percentage}%</Info>
-        {driver.service_type === 'dispatch_service' && (
-          <Info label="% Dispatch Service">{(driver as any).dispatch_service_percentage ?? 0}%</Info>
-        )}
-        <Info label="Loads This Month">{driver.loads_this_month}</Info>
-        <Info label="Earned This Month">${Number(driver.earnings_this_month).toLocaleString()}</Info>
       </div>
 
       {/* Banking Information */}
