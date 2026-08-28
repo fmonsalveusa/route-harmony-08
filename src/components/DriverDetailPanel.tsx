@@ -255,7 +255,7 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
             <Info label="Phone">{formatPhone(driver.phone)}</Info>
             <Info label="Birthday">{formatDate((driver as any).birthday) || '—'}</Info>
             <Info label="Hire Date">{formatDate(driver.hire_date)}</Info>
-            <Info label="Service Type">{driver.service_type?.replace(/_/g, ' ')}</Info>
+            <Info label="Service Type">{driver.service_type?.replace(/_/g, ' ').toUpperCase()}</Info>
           </div>
 
           <div className="grid grid-cols-2 gap-x-4 gap-y-3 border-t pt-3">
@@ -268,12 +268,6 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
           <div className="grid grid-cols-2 gap-x-4 gap-y-3 border-t pt-3">
             <Info label="Emergency Contact">{(driver as any).emergency_contact_name || '—'}</Info>
             <Info label="Emergency Phone">{formatPhone((driver as any).emergency_phone)}</Info>
-          </div>
-
-          <div className="grid grid-cols-2 gap-x-4 gap-y-3 border-t pt-3">
-            <Info label="Driver License #">{driver.license}{driver.state ? ` (${driver.state})` : ''}</Info>
-            <Info label="License Expiry">{formatDate(driver.license_expiry)}</Info>
-            <Info label="Medical Card Expiry">{formatDate(driver.medical_card_expiry)}</Info>
           </div>
 
           <div className="grid grid-cols-2 gap-x-4 gap-y-3 border-t pt-3">
@@ -290,7 +284,6 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
 
           <div className="grid grid-cols-2 gap-x-4 gap-y-3">
             <Info label="% Driver Pay">{driver.pay_percentage}%</Info>
-            <Info label="Factoring %">{driver.factoring_percentage}%</Info>
             {driver.service_type === 'dispatch_service' && (
               <Info label="% Dispatch Service">{(driver as any).dispatch_service_percentage ?? 0}%</Info>
             )}
@@ -355,7 +348,14 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
             </h3>
           </div>
 
-          <div className="flex gap-2">
+          {/* License & Medical Card info arriba de los documentos */}
+          <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+            <Info label="Driver License #">{driver.license}{driver.state ? ` (${driver.state})` : ''}</Info>
+            <Info label="License Expiry">{formatDate(driver.license_expiry)}</Info>
+            <Info label="Medical Card Expiry">{formatDate(driver.medical_card_expiry)}</Info>
+          </div>
+
+          <div className="flex gap-2 border-t pt-3">
             <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={() => setAddingLeasing(v => !v)}>
               <Plus className="h-3 w-3" /> Add Leasing
             </Button>
