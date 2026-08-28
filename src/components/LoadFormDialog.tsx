@@ -763,9 +763,9 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
           <DialogTitle>{editLoad ? 'Edit Load' : 'Create New Load'}</DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(560px,720px)]">
-          {/* ═══ COLUMNA IZQUIERDA — Form ═══ */}
-          <div className="overflow-y-auto p-4 lg:border-r">
+        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[minmax(560px,720px)_minmax(0,1fr)]">
+          {/* ═══ COLUMNA DERECHA (visual) — Form ═══ */}
+          <div className="overflow-y-auto p-4 lg:order-2">
 
         <input ref={fileInputRef} type="file" accept=".pdf" onChange={handlePdfUpload} className="hidden" />
 
@@ -1204,10 +1204,10 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
         </div>
 
           </div>
-          {/* ═══ FIN COLUMNA IZQUIERDA ═══ */}
+          {/* ═══ FIN COLUMNA (Form, visual derecha) ═══ */}
 
-          {/* ═══ COLUMNA DERECHA — PDF viewer ═══ */}
-          <div className="hidden lg:flex flex-col overflow-hidden p-4 gap-3 bg-muted/20 min-h-0">
+          {/* ═══ COLUMNA IZQUIERDA (visual) — PDF viewer ═══ */}
+          <div className="hidden lg:flex flex-col overflow-hidden p-4 gap-3 bg-muted/20 min-h-0 lg:order-1 lg:border-r">
             {/* Extractor compacto arriba */}
             <div className="rounded-lg border-2 border-dashed border-primary/30 bg-primary/5 p-3 shrink-0">
               <div className="flex items-center gap-2 mb-2">
