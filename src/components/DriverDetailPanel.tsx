@@ -246,8 +246,8 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
 
         {/* ═══ COLUMNA 1 — Informacion General ═══ */}
         <div className="lg:pr-6 space-y-4">
-          <h3 className="text-sm font-bold uppercase tracking-wide text-foreground border-b pb-2">
-            Información General
+          <h3 className="text-lg font-bold uppercase tracking-wide text-foreground border-b pb-2">
+            General Information
           </h3>
 
           <div className="grid grid-cols-2 gap-x-4 gap-y-3">
@@ -278,8 +278,8 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
 
         {/* ═══ COLUMNA 2 — Pagos ═══ */}
         <div className="lg:px-6 space-y-4">
-          <h3 className="text-sm font-bold uppercase tracking-wide text-foreground border-b pb-2">
-            Pagos
+          <h3 className="text-lg font-bold uppercase tracking-wide text-foreground border-b pb-2">
+            Payments
           </h3>
 
           <div className="grid grid-cols-2 gap-x-4 gap-y-3">
@@ -343,8 +343,8 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
         {/* ═══ COLUMNA 3 — Documentos ═══ */}
         <div className="lg:pl-6 space-y-4">
           <div className="flex items-center justify-between border-b pb-2">
-            <h3 className="text-sm font-bold uppercase tracking-wide text-foreground">
-              Documentos
+            <h3 className="text-lg font-bold uppercase tracking-wide text-foreground">
+              Documents
             </h3>
           </div>
 
