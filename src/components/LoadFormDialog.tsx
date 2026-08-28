@@ -108,6 +108,30 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
   const [selectedCompany, setSelectedCompany] = useState('');
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractionStatus, setExtractionStatus] = useState<'idle' | 'uploading' | 'processing' | 'done' | 'error'>('idle');
+  const [extractionProgress, setExtractionProgress] = useState(0);
+
+  // Animar contador de progreso segun el estado.
+  // No hay progreso real desde el edge function, asi que simulamos una animacion
+  // que sube gradualmente hasta un limite y termina en 100% cuando finaliza.
+  useEffect(() => {
+    if (extractionStatus === 'idle' || extractionStatus === 'error') {
+      setExtractionProgress(0);
+      return;
+    }
+    if (extractionStatus === 'done') {
+      setExtractionProgress(100);
+      return;
+    }
+    const target = extractionStatus === 'uploading' ? 25 : 92;
+    const interval = setInterval(() => {
+      setExtractionProgress(prev => {
+        if (prev >= target) return prev;
+        const step = extractionStatus === 'uploading' ? 3 : 1;
+        return Math.min(prev + step, target);
+      });
+    }, 150);
+    return () => clearInterval(interval);
+  }, [extractionStatus]);
   const [pdfFileName, setPdfFileName] = useState('');
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
@@ -755,12 +779,15 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
               </Button>
             )}
             {(extractionStatus === 'uploading' || extractionStatus === 'processing') && (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm">
-                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                  <span>{extractionStatus === 'uploading' ? 'Uploading...' : 'Extracting with AI...'}</span>
+              <div className="flex flex-col items-center py-4 space-y-3">
+                <div className="text-6xl font-bold text-foreground tabular-nums">
+                  {extractionProgress}<span className="text-4xl">%</span>
                 </div>
-                <Progress value={extractionStatus === 'uploading' ? 30 : 70} className="h-2" />
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                  <span>{extractionStatus === 'uploading' ? 'Subiendo PDF...' : 'Extrayendo con IA...'}</span>
+                </div>
+                <Progress value={extractionProgress} className="h-2 w-full" />
               </div>
             )}
             {extractionStatus === 'done' && (
