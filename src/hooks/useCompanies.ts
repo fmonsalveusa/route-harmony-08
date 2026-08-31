@@ -31,7 +31,7 @@ export function useCompanies() {
   const fetchCompanies = useCallback(async () => {
     const { data, error } = await supabase.from('companies').select('*').order('name');
     if (error) { toast.error('Error loading companies'); return; }
-    setCompanies((data as any[]) || []);
+    setCompanies(data || []);
     setLoading(false);
   }, []);
 
@@ -46,14 +46,14 @@ export function useCompanies() {
   };
 
   const updateCompany = async (id: string, updates: Partial<Company>) => {
-    const { error } = await (supabase as any).from('companies').update(updates).eq('id', id);
+    const { error } = await supabase.from('companies').update(updates).eq('id', id);
     if (error) { toast.error('Error updating company'); console.error('Update error:', error); return; }
     toast.success('Company updated');
     fetchCompanies();
   };
 
   const setPrimaryCompany = async (id: string) => {
-    const { error } = await supabase.from('companies').update({ is_primary: true } as any).eq('id', id);
+    const { error } = await supabase.from('companies').update({ is_primary: true }).eq('id', id);
     if (error) { toast.error('Error setting primary company'); return; }
     toast.success('Primary company updated');
     fetchCompanies();
