@@ -55,7 +55,9 @@ const Companies = () => {
 
   const toggleStatus = async (c: Company) => {
     const newStatus = c.status === 'inactive' ? 'active' : 'inactive';
-    await updateCompany(c.id, { status: newStatus } as any);
+    console.log('[toggleStatus] company:', c.name, 'current:', c.status, 'new:', newStatus);
+    alert(`Changing ${c.name} to ${newStatus}`);
+    await updateCompany(c.id, { status: newStatus });
   };
 
   const handleDelete = async (c: Company) => {
