@@ -31,7 +31,7 @@ export function useCompanies() {
   const fetchCompanies = useCallback(async () => {
     const { data, error } = await supabase.from('companies').select('*').order('name');
     if (error) { toast.error('Error loading companies'); return; }
-    setCompanies(data || []);
+    setCompanies((data as any[]) || []);
     setLoading(false);
   }, []);
 
@@ -46,8 +46,8 @@ export function useCompanies() {
   };
 
   const updateCompany = async (id: string, updates: Partial<Company>) => {
-    const { error } = await supabase.from('companies').update(updates).eq('id', id);
-    if (error) { toast.error('Error updating company'); return; }
+    const { error } = await supabase.from('companies').update(updates as any).eq('id', id);
+    if (error) { toast.error('Error updating company'); console.error('Update error:', error); return; }
     toast.success('Company updated');
     fetchCompanies();
   };
