@@ -46,7 +46,7 @@ export function useCompanies() {
   };
 
   const updateCompany = async (id: string, updates: Partial<Company>) => {
-    const { error } = await supabase.from('companies').update(updates as any).eq('id', id);
+    const { error } = await (supabase as any).from('companies').update(updates).eq('id', id);
     if (error) { toast.error('Error updating company'); console.error('Update error:', error); return; }
     toast.success('Company updated');
     fetchCompanies();
