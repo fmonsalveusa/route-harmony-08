@@ -25,7 +25,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { PodUploadSection } from '@/components/PodUploadSection';
-import { Plus, Search, Package, Pencil, Trash2, ChevronDown, ChevronUp, MapPin, Upload, ExternalLink, Filter, FileText, Download } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Plus, Search, Package, Pencil, Trash2, ChevronDown, ChevronUp, MapPin, Upload, ExternalLink, Filter, FileText, Download, CalendarDays } from 'lucide-react';
 import { toast } from 'sonner';
 import type { DbLoad } from '@/hooks/useLoads';
 
@@ -81,7 +83,7 @@ const Loads = () => {
   const [filterDriver, setFilterDriver] = useState<string>('all');
   const [filterTruck, setFilterTruck] = useState<string>('all');
   const [filterDispatcher, setFilterDispatcher] = useState<string>('all');
-  const [filterWeek, setFilterWeek] = useState<string>('all');
+  const [filterWeeks, setFilterWeeks] = useState<Set<number>>(new Set());
   const [filterMonth, setFilterMonth] = useState<string>('all');
   const [filterBroker, setFilterBroker] = useState<string>('all');
   const [filterFactoring, setFilterFactoring] = useState<string>('all');
@@ -163,19 +165,21 @@ const Loads = () => {
       return d && d >= startOfMonth && d < endOfMonth;
     });
   }
-  if (filterWeek !== 'all') {
-    const weekNum = parseInt(filterWeek);
+  if (filterWeeks.size > 0) {
     const year = new Date().getFullYear();
     const jan4 = new Date(year, 0, 4);
     const mondayOfWeek1 = new Date(jan4);
     mondayOfWeek1.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7));
-    const startOfWeek = new Date(mondayOfWeek1);
-    startOfWeek.setDate(mondayOfWeek1.getDate() + (weekNum - 1) * 7);
-    const endOfWeek = new Date(startOfWeek);
-    endOfWeek.setDate(startOfWeek.getDate() + 7);
+    const weekRanges = [...filterWeeks].map(weekNum => {
+      const startOfWeek = new Date(mondayOfWeek1);
+      startOfWeek.setDate(mondayOfWeek1.getDate() + (weekNum - 1) * 7);
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 7);
+      return { startOfWeek, endOfWeek };
+    });
     baseLoads = baseLoads.filter(l => {
       const d = parseLocalDate(l.pickup_date);
-      return d && d >= startOfWeek && d < endOfWeek;
+      return d && weekRanges.some(r => d >= r.startOfWeek && d < r.endOfWeek);
     });
   }
 
@@ -295,12 +299,20 @@ const Loads = () => {
               ))}
             </SelectContent>
           </Select>
-          <Select value={filterWeek} onValueChange={setFilterWeek}>
-            <SelectTrigger className="w-[220px] h-8 text-xs">
-              <SelectValue placeholder="Week" />
-            </SelectTrigger>
-            <SelectContent className="max-h-[300px]">
-              <SelectItem value="all">All Weeks</SelectItem>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5 min-w-[180px] justify-start">
+                <CalendarDays className="h-3.5 w-3.5" />
+                {filterWeeks.size === 0 ? 'All Weeks' : filterWeeks.size === 1 ? `Week ${[...filterWeeks][0]}` : `${filterWeeks.size} Weeks`}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[260px] p-2 max-h-[350px] overflow-y-auto" align="start">
+              <div className="flex items-center justify-between px-2 pb-2 border-b mb-1">
+                <span className="text-xs font-medium">Select Weeks</span>
+                {filterWeeks.size > 0 && (
+                  <button className="text-xs text-muted-foreground hover:text-foreground" onClick={() => setFilterWeeks(new Set())}>Clear</button>
+                )}
+              </div>
               {Array.from({ length: 52 }, (_, i) => {
                 const weekNum = i + 1;
                 const year = new Date().getFullYear();
@@ -312,14 +324,23 @@ const Loads = () => {
                 const end = new Date(start);
                 end.setDate(start.getDate() + 6);
                 const fmt = (d: Date) => `${d.getMonth() + 1}/${d.getDate()}`;
+                const checked = filterWeeks.has(weekNum);
                 return (
-                  <SelectItem key={weekNum} value={String(weekNum)}>
-                    Week {weekNum} (Mon {fmt(start)} - Sun {fmt(end)})
-                  </SelectItem>
+                  <label key={weekNum} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer text-xs">
+                    <Checkbox
+                      checked={checked}
+                      onCheckedChange={() => {
+                        const next = new Set(filterWeeks);
+                        if (checked) next.delete(weekNum); else next.add(weekNum);
+                        setFilterWeeks(next);
+                      }}
+                    />
+                    W{weekNum} ({fmt(start)} - {fmt(end)})
+                  </label>
                 );
               })}
-            </SelectContent>
-          </Select>
+            </PopoverContent>
+          </Popover>
           <Select value={filterBroker} onValueChange={setFilterBroker}>
             <SelectTrigger className="w-[160px] h-8 text-xs">
               <SelectValue placeholder="Broker" />
@@ -342,8 +363,8 @@ const Loads = () => {
               ))}
             </SelectContent>
           </Select>
-          {(filterDriver !== 'all' || filterTruck !== 'all' || filterDispatcher !== 'all' || filterWeek !== 'all' || filterMonth !== 'all' || filterBroker !== 'all' || filterFactoring !== 'all') && (
-            <Button variant="ghost" size="sm" className="h-8 text-xs text-muted-foreground" onClick={() => { setFilterDriver('all'); setFilterTruck('all'); setFilterDispatcher('all'); setFilterWeek('all'); setFilterMonth('all'); setFilterBroker('all'); setFilterFactoring('all'); }}>
+          {(filterDriver !== 'all' || filterTruck !== 'all' || filterDispatcher !== 'all' || filterWeeks.size > 0 || filterMonth !== 'all' || filterBroker !== 'all' || filterFactoring !== 'all') && (
+            <Button variant="ghost" size="sm" className="h-8 text-xs text-muted-foreground" onClick={() => { setFilterDriver('all'); setFilterTruck('all'); setFilterDispatcher('all'); setFilterWeeks(new Set()); setFilterMonth('all'); setFilterBroker('all'); setFilterFactoring('all'); }}>
               Clear filters
             </Button>
           )}
