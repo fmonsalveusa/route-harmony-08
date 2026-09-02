@@ -105,7 +105,13 @@ export function TruckFormDialog({ open, onOpenChange, truck, onSave }: Props) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
           <div className="space-y-2">
             <Label>Unit #</Label>
-            <Input value={form.unit_number} onChange={e => set('unit_number', e.target.value)} placeholder="e.g. 101" />
+            <Input value={form.unit_number} onChange={e => {
+              const val = e.target.value;
+              set('unit_number', val);
+              if (!form.trailer_number || form.trailer_number === form.unit_number) {
+                set('trailer_number', val);
+              }
+            }} placeholder="e.g. 101" />
           </div>
           <div className="space-y-2">
             <Label>Truck Type</Label>
