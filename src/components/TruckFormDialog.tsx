@@ -36,7 +36,7 @@ export function TruckFormDialog({ open, onOpenChange, truck, onSave }: Props) {
     insurance_expiry: null, registration_expiry: null, annual_inspection_expiry: null,
     cargo_length_ft: null, cargo_width_in: null, cargo_height_in: null,
     rear_door_width_in: null, rear_door_height_in: null,
-    trailer_length_ft: null, mega_ramp: null,
+    trailer_number: null, trailer_length_ft: null, mega_ramp: null,
   });
   const [files, setFiles] = useState<Record<string, File>>({});
   const [deletedDocs, setDeletedDocs] = useState<Set<string>>(new Set());
@@ -57,7 +57,7 @@ export function TruckFormDialog({ open, onOpenChange, truck, onSave }: Props) {
           cargo_length_ft: truck.cargo_length_ft, cargo_width_in: truck.cargo_width_in,
           cargo_height_in: truck.cargo_height_in, rear_door_width_in: truck.rear_door_width_in,
           rear_door_height_in: truck.rear_door_height_in,
-          trailer_length_ft: truck.trailer_length_ft, mega_ramp: truck.mega_ramp,
+          trailer_number: truck.trailer_number, trailer_length_ft: truck.trailer_length_ft, mega_ramp: truck.mega_ramp,
         });
       } else {
         setForm({
@@ -137,6 +137,10 @@ export function TruckFormDialog({ open, onOpenChange, truck, onSave }: Props) {
           <div className="space-y-2">
             <Label>License Plate</Label>
             <Input value={form.license_plate || ''} onChange={e => set('license_plate', e.target.value)} placeholder="Ej: TX-4521" />
+          </div>
+          <div className="space-y-2">
+            <Label>Trailer #</Label>
+            <Input value={form.trailer_number || ''} onChange={e => set('trailer_number', e.target.value)} placeholder="Trailer number" />
           </div>
           <div className="space-y-2">
             <Label>Status</Label>

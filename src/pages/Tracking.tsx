@@ -726,12 +726,12 @@ const Tracking = () => {
     const isHotshot = truckType.toLowerCase().includes('hotshot');
 
     const truckLines = isHotshot
-      ? `Truck #: ${truck?.unit_number || ''}\nTruck Type: Hotshot\nTrailer (ft): ${truck?.trailer_length_ft || ''}`
-      : `Truck #: ${truck?.unit_number || ''}\nTruck Type: Box Truck\nBack Door: ${truck?.rear_door_width_in && truck?.rear_door_height_in ? `${truck.rear_door_width_in}" x ${truck.rear_door_height_in}"` : ''}`;
+      ? `Truck #: ${truck?.unit_number || ''}\nTruck Type: Hotshot\nTrailer#: ${truck?.trailer_number || ''}\nTrailer (ft): ${truck?.trailer_length_ft || ''}`
+      : `Truck #: ${truck?.unit_number || ''}\nTruck Type: Box Truck\nTrailer#: ${truck?.trailer_number || ''}\nBack Door: ${truck?.rear_door_width_in && truck?.rear_door_height_in ? `${truck.rear_door_width_in}" x ${truck.rear_door_height_in}"` : ''}`;
 
     const truckHtmlLines = isHotshot
-      ? `Truck #: ${truck?.unit_number || ''}<br>Truck Type: Hotshot<br>Trailer (ft): ${truck?.trailer_length_ft || ''}`
-      : `Truck #: ${truck?.unit_number || ''}<br>Truck Type: Box Truck<br>Back Door: ${truck?.rear_door_width_in && truck?.rear_door_height_in ? `${truck.rear_door_width_in}" x ${truck.rear_door_height_in}"` : ''}`;
+      ? `Truck #: ${truck?.unit_number || ''}<br>Truck Type: Hotshot<br>Trailer#: ${truck?.trailer_number || ''}<br>Trailer (ft): ${truck?.trailer_length_ft || ''}`
+      : `Truck #: ${truck?.unit_number || ''}<br>Truck Type: Box Truck<br>Trailer#: ${truck?.trailer_number || ''}<br>Back Door: ${truck?.rear_door_width_in && truck?.rear_door_height_in ? `${truck.rear_door_width_in}" x ${truck.rear_door_height_in}"` : ''}`;
 
     const plain = `*Driver Info:*\nDriver Name: ${driver.name}\nPhone Number: ${formatPhone(driver.phone)}\n\n*Truck Info:*\n${truckLines}\n\n*Dispatcher Info:*\nDispatcher Name: ${dispatcher?.name || ''}\nDispatcher Phone Number: ${formatPhone(dispatcher?.phone)}\n\nETA to Pick up: `;
     const html = `<b>Driver Info:</b><br>Driver Name: ${driver.name}<br>Phone Number: ${formatPhone(driver.phone)}<br><br><b>Truck Info:</b><br>${truckHtmlLines}<br><br><b>Dispatcher Info:</b><br>Dispatcher Name: ${dispatcher?.name || ''}<br>Dispatcher Phone Number: ${formatPhone(dispatcher?.phone)}<br><br>ETA to Pick up: `;

@@ -33,6 +33,7 @@ export interface DbTruck {
   cargo_height_in: number | null;
   rear_door_width_in: number | null;
   rear_door_height_in: number | null;
+  trailer_number: string | null;
   trailer_length_ft: number | null;
   mega_ramp: string | null;
   current_odometer: number | null;      // última lectura del ELD (millas)
@@ -61,6 +62,7 @@ export interface TruckInput {
   cargo_height_in?: number | null;
   rear_door_width_in?: number | null;
   rear_door_height_in?: number | null;
+  trailer_number?: string | null;
   trailer_length_ft?: number | null;
   mega_ramp?: string | null;
 }
