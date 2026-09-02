@@ -89,17 +89,6 @@ export function TruckDetailPanel({ truck, driverName, getDocSignedUrl, onUpdateT
             <Info label="Max Payload">{truck.max_payload_lbs ? `${truck.max_payload_lbs.toLocaleString()} lbs` : '—'}</Info>
           </div>
 
-          {/* Trailer Info */}
-          <div className="grid grid-cols-2 gap-x-4 gap-y-3 border-t pt-3">
-            <Info label="Trailer #">{truck.trailer_number ?? '—'}</Info>
-            {truck.truck_type === 'Hotshot' && (
-              <>
-                <Info label="Trailer Length (ft)">{truck.trailer_length_ft ?? '—'}</Info>
-                <Info label="Mega Ramp">{truck.mega_ramp || '—'}</Info>
-              </>
-            )}
-          </div>
-
           {/* Box Truck dimensions */}
           {truck.truck_type === 'Box Truck' && (
             <div className="grid grid-cols-2 gap-x-4 gap-y-3 border-t pt-3">
@@ -112,18 +101,16 @@ export function TruckDetailPanel({ truck, driverName, getDocSignedUrl, onUpdateT
           )}
         </div>
 
-        {/* ═══ COLUMNA 2 — Expiry & Maintenance ═══ */}
+        {/* ═══ COLUMNA 2 — Trailer Information ═══ */}
         <div className="lg:px-6 space-y-4">
           <h3 className="text-lg font-bold uppercase tracking-wide text-foreground border-b pb-2">
-            Expiry & Maintenance
+            Trailer Information
           </h3>
 
           <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-            <Info label="Insurance Expiry">{formatDate(truck.insurance_expiry)}</Info>
-            <Info label="Registration Expiry">{formatDate(truck.registration_expiry)}</Info>
-            {(truck as any).annual_inspection_expiry && (
-              <Info label="Annual Inspection Expiry">{formatDate((truck as any).annual_inspection_expiry)}</Info>
-            )}
+            <Info label="Trailer #">{truck.trailer_number ?? '—'}</Info>
+            <Info label="Trailer Length (ft)">{truck.trailer_length_ft ?? '—'}</Info>
+            <Info label="Mega Ramp">{truck.mega_ramp || '—'}</Info>
           </div>
 
           {/* Maintenance Summary */}
@@ -158,6 +145,14 @@ export function TruckDetailPanel({ truck, driverName, getDocSignedUrl, onUpdateT
           <h3 className="text-lg font-bold uppercase tracking-wide text-foreground border-b pb-2">
             Documents
           </h3>
+
+          <div className="grid grid-cols-2 gap-x-4 gap-y-3 mb-3">
+            <Info label="Insurance Expiry">{formatDate(truck.insurance_expiry)}</Info>
+            <Info label="Registration Expiry">{formatDate(truck.registration_expiry)}</Info>
+            {(truck as any).annual_inspection_expiry && (
+              <Info label="Annual Inspection Expiry">{formatDate((truck as any).annual_inspection_expiry)}</Info>
+            )}
+          </div>
 
           <DocCardGrid
             docs={DOC_LABELS.map(doc => ({ key: String(doc.key), label: doc.label, url: truck[doc.key] as string | null }))}
