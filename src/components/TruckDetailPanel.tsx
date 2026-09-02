@@ -59,94 +59,116 @@ export function TruckDetailPanel({ truck, driverName, getDocSignedUrl, onUpdateT
   };
 
   return (
-    <div className="p-5 bg-muted/20 border-t space-y-4 animate-fade-in">
+    <div className="p-5 bg-muted/20 border-t animate-fade-in">
       {/* Document Expiry Alerts */}
       {(truck.registration_expiry || truck.insurance_expiry || (truck as any).annual_inspection_expiry) && (
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 mb-4">
           <ExpiryBadge date={truck.registration_expiry} label="Registration" />
           <ExpiryBadge date={truck.insurance_expiry} label="Insurance" />
           <ExpiryBadge date={(truck as any).annual_inspection_expiry} label="Annual Inspection" />
         </div>
       )}
 
-      {/* General Info */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3">
-        <Info label="Make / Model">{truck.make || '—'} {truck.model || ''}</Info>
-        <Info label="Year">{truck.year ?? '—'}</Info>
-        <Info label="VIN">{truck.vin || '—'}</Info>
-        <Info label="License Plate">{truck.license_plate || '—'}</Info>
-      </div>
+      {/* Grid de 3 columnas con separadores verticales */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 lg:divide-x lg:divide-border gap-y-6">
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3 border-t pt-3">
-        <Info label="Driver">{driverName || 'Unassigned'}</Info>
-        <Info label="Max Payload">{truck.max_payload_lbs ? `${truck.max_payload_lbs.toLocaleString()} lbs` : '—'}</Info>
-        <Info label="Insurance Expiry">{formatDate(truck.insurance_expiry)}</Info>
-        <Info label="Registration Expiry">{formatDate(truck.registration_expiry)}</Info>
-        {(truck as any).annual_inspection_expiry && (
-          <Info label="Annual Inspection Expiry">{formatDate((truck as any).annual_inspection_expiry)}</Info>
-        )}
-      </div>
+        {/* ═══ COLUMNA 1 — General Information ═══ */}
+        <div className="lg:pr-6 space-y-4">
+          <h3 className="text-lg font-bold uppercase tracking-wide text-foreground border-b pb-2">
+            General Information
+          </h3>
 
-      {/* Box Truck dimensions */}
-      {truck.truck_type === 'Box Truck' && (
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-x-6 gap-y-3 border-t pt-3">
-          <Info label="Cargo Length (ft)">{truck.cargo_length_ft ?? '—'}</Info>
-          <Info label="Cargo Width (in)">{truck.cargo_width_in ?? '—'}</Info>
-          <Info label="Cargo Height (in)">{truck.cargo_height_in ?? '—'}</Info>
-          <Info label="Door Width (in)">{truck.rear_door_width_in ?? '—'}</Info>
-          <Info label="Door Height (in)">{truck.rear_door_height_in ?? '—'}</Info>
-        </div>
-      )}
-
-      {/* Hotshot dimensions */}
-      {truck.truck_type === 'Hotshot' && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3 border-t pt-3">
-          <Info label="Trailer #">{truck.trailer_number ?? '—'}</Info>
-          <Info label="Trailer Length (ft)">{truck.trailer_length_ft ?? '—'}</Info>
-          <Info label="Mega Ramp">{truck.mega_ramp || '—'}</Info>
-        </div>
-      )}
-
-      {/* Maintenance Summary */}
-      {truckMaint.length > 0 && (
-        <div className="border-t pt-3">
-          <p className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1">
-            <Wrench className="h-3.5 w-3.5" /> Maintenance
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-            {truckMaint.map(m => {
-              const colors = getStatusColor(m.status);
-              const pct = m.interval_miles && m.interval_miles > 0
-                ? Math.min((m.miles_accumulated / m.interval_miles) * 100, 100) : null;
-              return (
-                <div key={m.id} className={`flex items-center gap-2 px-3 py-2 rounded-md border text-xs ${colors.border} ${colors.bg}`}>
-                  <div className={`w-2 h-2 rounded-full ${colors.dot}`} />
-                  <span className="font-medium flex-1">{m.maintenance_type}</span>
-                  {pct !== null && (
-                    <div className="w-16">
-                      <Progress value={pct} className="h-1.5" />
-                    </div>
-                  )}
-                  <Badge variant="outline" className={`${colors.text} text-[9px] px-1`}>{m.status.toUpperCase()}</Badge>
-                </div>
-              );
-            })}
+          <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+            <Info label="Make">{truck.make || '—'}</Info>
+            <Info label="Model">{truck.model || '—'}</Info>
+            <Info label="Year">{truck.year ?? '—'}</Info>
+            <Info label="Truck Type">{truck.truck_type || '—'}</Info>
+            <Info label="VIN">{truck.vin || '—'}</Info>
+            <Info label="License Plate">{truck.license_plate || '—'}</Info>
+            <Info label="Driver">{driverName || 'Unassigned'}</Info>
+            <Info label="Max Payload">{truck.max_payload_lbs ? `${truck.max_payload_lbs.toLocaleString()} lbs` : '—'}</Info>
           </div>
-        </div>
-      )}
 
-      {/* Documents */}
-      <div className="border-t pt-3">
-        <p className="text-xs font-semibold text-muted-foreground mb-2">Documents</p>
-        <DocCardGrid
-          docs={DOC_LABELS.map(doc => ({ key: String(doc.key), label: doc.label, url: truck[doc.key] as string | null }))}
-          getDocSignedUrl={getDocSignedUrl}
-          allowUpload={!!onUpdateTruck}
-          uploadBasePath={`trucks/${truck.id}`}
-          onUpload={onUpdateTruck ? async (key, newUrl) => {
-            await onUpdateTruck(truck.id, { [key]: newUrl });
-          } : undefined}
-        />
+          {/* Trailer Info */}
+          <div className="grid grid-cols-2 gap-x-4 gap-y-3 border-t pt-3">
+            <Info label="Trailer #">{truck.trailer_number ?? '—'}</Info>
+            {truck.truck_type === 'Hotshot' && (
+              <>
+                <Info label="Trailer Length (ft)">{truck.trailer_length_ft ?? '—'}</Info>
+                <Info label="Mega Ramp">{truck.mega_ramp || '—'}</Info>
+              </>
+            )}
+          </div>
+
+          {/* Box Truck dimensions */}
+          {truck.truck_type === 'Box Truck' && (
+            <div className="grid grid-cols-2 gap-x-4 gap-y-3 border-t pt-3">
+              <Info label="Cargo Length (ft)">{truck.cargo_length_ft ?? '—'}</Info>
+              <Info label="Cargo Width (in)">{truck.cargo_width_in ?? '—'}</Info>
+              <Info label="Cargo Height (in)">{truck.cargo_height_in ?? '—'}</Info>
+              <Info label="Door Width (in)">{truck.rear_door_width_in ?? '—'}</Info>
+              <Info label="Door Height (in)">{truck.rear_door_height_in ?? '—'}</Info>
+            </div>
+          )}
+        </div>
+
+        {/* ═══ COLUMNA 2 — Expiry & Maintenance ═══ */}
+        <div className="lg:px-6 space-y-4">
+          <h3 className="text-lg font-bold uppercase tracking-wide text-foreground border-b pb-2">
+            Expiry & Maintenance
+          </h3>
+
+          <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+            <Info label="Insurance Expiry">{formatDate(truck.insurance_expiry)}</Info>
+            <Info label="Registration Expiry">{formatDate(truck.registration_expiry)}</Info>
+            {(truck as any).annual_inspection_expiry && (
+              <Info label="Annual Inspection Expiry">{formatDate((truck as any).annual_inspection_expiry)}</Info>
+            )}
+          </div>
+
+          {/* Maintenance Summary */}
+          {truckMaint.length > 0 && (
+            <div className="border-t pt-3">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Maintenance Items</p>
+              <div className="space-y-2">
+                {truckMaint.map(m => {
+                  const colors = getStatusColor(m.status);
+                  const pct = m.interval_miles && m.interval_miles > 0
+                    ? Math.min((m.miles_accumulated / m.interval_miles) * 100, 100) : null;
+                  return (
+                    <div key={m.id} className={`flex items-center gap-2 px-3 py-2 rounded-md border text-xs ${colors.border} ${colors.bg}`}>
+                      <div className={`w-2 h-2 rounded-full ${colors.dot}`} />
+                      <span className="font-medium flex-1">{m.maintenance_type}</span>
+                      {pct !== null && (
+                        <div className="w-16">
+                          <Progress value={pct} className="h-1.5" />
+                        </div>
+                      )}
+                      <Badge variant="outline" className={`${colors.text} text-[9px] px-1`}>{m.status.toUpperCase()}</Badge>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ═══ COLUMNA 3 — Documents ═══ */}
+        <div className="lg:pl-6 space-y-4">
+          <h3 className="text-lg font-bold uppercase tracking-wide text-foreground border-b pb-2">
+            Documents
+          </h3>
+
+          <DocCardGrid
+            docs={DOC_LABELS.map(doc => ({ key: String(doc.key), label: doc.label, url: truck[doc.key] as string | null }))}
+            getDocSignedUrl={getDocSignedUrl}
+            allowUpload={!!onUpdateTruck}
+            uploadBasePath={`trucks/${truck.id}`}
+            onUpload={onUpdateTruck ? async (key, newUrl) => {
+              await onUpdateTruck(truck.id, { [key]: newUrl });
+            } : undefined}
+          />
+        </div>
       </div>
     </div>
   );
