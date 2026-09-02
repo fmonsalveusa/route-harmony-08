@@ -101,6 +101,7 @@ export function TruckDetailPanel({ truck, driverName, getDocSignedUrl, onUpdateT
       {/* Hotshot dimensions */}
       {truck.truck_type === 'Hotshot' && (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3 border-t pt-3">
+          <Info label="Trailer #">{truck.trailer_number ?? '—'}</Info>
           <Info label="Trailer Length (ft)">{truck.trailer_length_ft ?? '—'}</Info>
           <Info label="Mega Ramp">{truck.mega_ramp || '—'}</Info>
         </div>

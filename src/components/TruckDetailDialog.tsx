@@ -94,10 +94,11 @@ export function TruckDetailDialog({ open, onOpenChange, truck, getDocSignedUrl }
           )}
 
           {/* Hotshot dimensions */}
-          {truck.truck_type === 'Hotshot' && (truck.trailer_length_ft || truck.mega_ramp) && (
+          {truck.truck_type === 'Hotshot' && (truck.trailer_number || truck.trailer_length_ft || truck.mega_ramp) && (
             <section className="border-t pt-4 space-y-2">
               <h3 className="font-semibold text-sm">Dimensiones Hotshot</h3>
-              <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+              <div className="grid grid-cols-3 gap-x-6 gap-y-3 text-sm">
+                <Info label="Trailer #">{truck.trailer_number ?? '—'}</Info>
                 <Info label="Trailer Length (ft)">{truck.trailer_length_ft ?? '—'}</Info>
                 <Info label="Mega Ramp">{truck.mega_ramp || '—'}</Info>
               </div>
