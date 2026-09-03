@@ -90,7 +90,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
   const [loadDialogOpen, setLoadDialogOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [pendingDrivers, setPendingDrivers] = useState(0);
-  const [pendingDispatcherPayments, setPendingDispatcherPayments] = useState(0);
+  const [pendingPaymentsCount, setPendingPaymentsCount] = useState(0);
   const { createLoad } = useLoads();
 
   // Auto-check de mantenimiento al iniciar y cada día a las 8am
@@ -114,32 +114,20 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
     return () => { supabase.removeChannel(channel); };
   }, [profile?.tenant_id]);
 
-  // Cargas entregadas + ready con dispatcher asignado y sin pago generado todavia.
-  // Sirve para avisar al accounting/admin que hay cargas pendientes de generar
-  // un manual dispatcher payment en Payments > Dispatchers.
   useEffect(() => {
     if (!profile?.tenant_id) return;
-    const fetchPendingDispatchers = async () => {
-      const [{ data: eligible }, { data: paidItems }] = await Promise.all([
-        supabase
-          .from('loads')
-          .select('id')
-          .eq('tenant_id', profile.tenant_id)
-          .eq('status', 'delivered')
-          .eq('factoring', 'ready')
-          .not('dispatcher_id', 'is', null)
-          .gt('dispatcher_pay_amount', 0),
-        supabase.from('dispatcher_payment_items').select('load_id'),
-      ]);
-      const paidSet = new Set((paidItems || []).map((i: any) => i.load_id));
-      const pending = (eligible || []).filter((l: any) => !paidSet.has(l.id)).length;
-      setPendingDispatcherPayments(pending);
+    const fetchPendingPayments = async () => {
+      const { count } = await supabase
+        .from('payments')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending')
+        .in('recipient_type', ['driver', 'investor']);
+      setPendingPaymentsCount(count || 0);
     };
-    fetchPendingDispatchers();
+    fetchPendingPayments();
     const channel = supabase
-      .channel('pending-dispatcher-payments-sidebar')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'loads' }, () => fetchPendingDispatchers())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'dispatcher_payment_items' }, () => fetchPendingDispatchers())
+      .channel('pending-payments-sidebar')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, () => fetchPendingPayments())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [profile?.tenant_id]);
@@ -208,9 +196,9 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
             {pendingDrivers}
           </span>
         )}
-        {item.path === '/payments' && pendingDispatcherPayments > 0 && (
+        {item.path === '/payments' && pendingPaymentsCount > 0 && (
           <span className="inline-flex items-center justify-center h-4 min-w-[16px] px-1 rounded-full bg-orange-500 text-white text-[10px] font-bold leading-none">
-            {pendingDispatcherPayments}
+            {pendingPaymentsCount}
           </span>
         )}
       </Link>
@@ -424,9 +412,9 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
                         {pendingDrivers}
                       </span>
                     )}
-                    {item.path === '/payments' && pendingDispatcherPayments > 0 && (
+                    {item.path === '/payments' && pendingPaymentsCount > 0 && (
                       <span className="ml-auto inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-orange-500 text-white text-[11px] font-bold leading-none">
-                        {pendingDispatcherPayments}
+                        {pendingPaymentsCount}
                       </span>
                     )}
                   </Link>
