@@ -64,15 +64,15 @@ export function useLoadStops(loadId?: string) {
   }, [loadId, queryClient]);
 
   const saveStops = useCallback(async (targetLoadId: string, newStops: Omit<CreateStopInput, 'load_id'>[]) => {
-    // Guardar mapping de address → stop_id antes de borrar
+    // Guardar mapping de stop_order → stop data antes de borrar
     const { data: existingData } = await supabase
       .from('load_stops')
-      .select('id, address, photos')
+      .select('id, stop_order, photos')
       .eq('load_id', targetLoadId);
 
-    const existingMap = new Map<string, { id: string; photos: any }>(
-      ((existingData as any[]) || []).map(s => [
-        s.address?.toLowerCase().trim(),
+    const existingByOrder = new Map<number, { id: string; photos: any }>(
+      ((existingData as any[]) || []).map((s: any) => [
+        s.stop_order as number,
         { id: s.id, photos: s.photos }
       ])
     );
@@ -82,12 +82,13 @@ export function useLoadStops(loadId?: string) {
     if (newStops.length > 0) {
       const tenant_id = await getTenantId();
       const inserts = newStops.map((s, i) => {
-        const existing = existingMap.get(s.address?.toLowerCase().trim());
+        const order = s.stop_order ?? i;
+        const existing = existingByOrder.get(order);
         return {
           load_id: targetLoadId,
           stop_type: s.stop_type,
           address: s.address,
-          stop_order: s.stop_order ?? i,
+          stop_order: order,
           date: s.date || null,
           shipper: (s as any).shipper || null,
           consignee: (s as any).consignee || null,
@@ -100,14 +101,14 @@ export function useLoadStops(loadId?: string) {
       const { data: insertedStops, error } = await supabase
         .from('load_stops')
         .insert(inserts)
-        .select('id, address');
+        .select('id, stop_order');
 
       if (error) {
         console.error('Error saving load stops:', error);
       } else if (insertedStops) {
-        // Actualizar pod_documents con los nuevos stop_ids
+        // Migrar pod_documents a los nuevos stop_ids por stop_order
         for (const newStop of insertedStops as any[]) {
-          const oldStop = existingMap.get(newStop.address?.toLowerCase().trim());
+          const oldStop = existingByOrder.get(newStop.stop_order);
           if (oldStop?.id && oldStop.id !== newStop.id) {
             await supabase
               .from('pod_documents' as any)
