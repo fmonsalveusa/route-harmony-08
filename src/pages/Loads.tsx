@@ -84,6 +84,7 @@ const Loads = () => {
   const [filterTruck, setFilterTruck] = useState<string>('all');
   const [filterDispatcher, setFilterDispatcher] = useState<string>('all');
   const [filterWeeks, setFilterWeeks] = useState<Set<number>>(new Set());
+  const [filterYear, setFilterYear] = useState<string>(String(new Date().getFullYear()));
   const [filterMonth, setFilterMonth] = useState<string>('all');
   const [filterBroker, setFilterBroker] = useState<string>('all');
   const [filterFactoring, setFilterFactoring] = useState<string>('all');
@@ -155,9 +156,16 @@ const Loads = () => {
   // Parse "YYYY-MM-DD" as local time (appending T00:00:00 prevents UTC midnight shift)
   const parseLocalDate = (s: string | null) => s ? new Date(s + 'T00:00:00') : null;
 
+  if (filterYear !== 'all') {
+    const yr = parseInt(filterYear);
+    baseLoads = baseLoads.filter(l => {
+      const d = parseLocalDate(l.pickup_date);
+      return d && d.getFullYear() === yr;
+    });
+  }
   if (filterMonth !== 'all') {
     const monthIdx = parseInt(filterMonth);
-    const year = new Date().getFullYear();
+    const year = filterYear !== 'all' ? parseInt(filterYear) : new Date().getFullYear();
     const startOfMonth = new Date(year, monthIdx, 1);
     const endOfMonth = new Date(year, monthIdx + 1, 1);
     baseLoads = baseLoads.filter(l => {
@@ -166,7 +174,7 @@ const Loads = () => {
     });
   }
   if (filterWeeks.size > 0) {
-    const year = new Date().getFullYear();
+    const year = filterYear !== 'all' ? parseInt(filterYear) : new Date().getFullYear();
     const jan4 = new Date(year, 0, 4);
     const mondayOfWeek1 = new Date(jan4);
     mondayOfWeek1.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7));
@@ -288,6 +296,17 @@ const Loads = () => {
             </SelectContent>
           </Select>
           )}
+          <Select value={filterYear} onValueChange={setFilterYear}>
+            <SelectTrigger className="w-[110px] h-8 text-xs">
+              <SelectValue placeholder="Year" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Years</SelectItem>
+              {Array.from({ length: new Date().getFullYear() - 2024 + 1 }, (_, i) => String(2024 + i)).reverse().map(y => (
+                <SelectItem key={y} value={y}>{y}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Select value={filterMonth} onValueChange={setFilterMonth}>
             <SelectTrigger className="w-[150px] h-8 text-xs">
               <SelectValue placeholder="Month" />
@@ -315,7 +334,7 @@ const Loads = () => {
               </div>
               {Array.from({ length: 52 }, (_, i) => {
                 const weekNum = i + 1;
-                const year = new Date().getFullYear();
+                const year = filterYear !== 'all' ? parseInt(filterYear) : new Date().getFullYear();
                 const jan4 = new Date(year, 0, 4);
                 const mondayOfWeek1 = new Date(jan4);
                 mondayOfWeek1.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7));
@@ -363,8 +382,8 @@ const Loads = () => {
               ))}
             </SelectContent>
           </Select>
-          {(filterDriver !== 'all' || filterTruck !== 'all' || filterDispatcher !== 'all' || filterWeeks.size > 0 || filterMonth !== 'all' || filterBroker !== 'all' || filterFactoring !== 'all') && (
-            <Button variant="ghost" size="sm" className="h-8 text-xs text-muted-foreground" onClick={() => { setFilterDriver('all'); setFilterTruck('all'); setFilterDispatcher('all'); setFilterWeeks(new Set()); setFilterMonth('all'); setFilterBroker('all'); setFilterFactoring('all'); }}>
+          {(filterDriver !== 'all' || filterTruck !== 'all' || filterDispatcher !== 'all' || filterWeeks.size > 0 || filterYear !== String(new Date().getFullYear()) || filterMonth !== 'all' || filterBroker !== 'all' || filterFactoring !== 'all') && (
+            <Button variant="ghost" size="sm" className="h-8 text-xs text-muted-foreground" onClick={() => { setFilterDriver('all'); setFilterTruck('all'); setFilterDispatcher('all'); setFilterWeeks(new Set()); setFilterYear(String(new Date().getFullYear())); setFilterMonth('all'); setFilterBroker('all'); setFilterFactoring('all'); }}>
               Clear filters
             </Button>
           )}
