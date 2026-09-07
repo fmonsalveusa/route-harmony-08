@@ -1432,8 +1432,8 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
               </div>
             </div>
 
-            {/* Fila 2: Empty Miles | Miles | RPM */}
-            <div className="grid grid-cols-4 border-b">
+            {/* Fila 2: Weight | Empty Miles | Miles | Total Miles | RPM | RPM+DH */}
+            <div className="grid grid-cols-6 border-b">
               <div className="px-4 py-2.5 border-r">
                 <div className="text-[11px] text-muted-foreground font-medium mb-0.5 flex items-center gap-1">
                   <Weight className="h-3 w-3" /> Weight
@@ -1482,9 +1482,17 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
                 <div className="text-[11px] text-muted-foreground font-medium mb-0.5">Miles</div>
                 <span className="text-base font-semibold text-primary">{totalMiles > 0 ? totalMiles.toLocaleString() : '—'}</span>
               </div>
-              <div className="px-4 py-2.5">
+              <div className="px-4 py-2.5 border-r">
+                <div className="text-[11px] text-muted-foreground font-medium mb-0.5">Total Miles</div>
+                <span className="text-base font-semibold">{(emptyMiles + totalMiles) > 0 ? (emptyMiles + totalMiles).toLocaleString() : '—'}</span>
+              </div>
+              <div className="px-4 py-2.5 border-r">
                 <div className="text-[11px] text-muted-foreground font-medium mb-0.5">RPM</div>
                 <span className={`text-base font-semibold ${rpmColorClass}`}>{rpm > 0 ? `$${rpm.toFixed(2)}` : '—'}</span>
+              </div>
+              <div className="px-4 py-2.5">
+                <div className="text-[11px] text-muted-foreground font-medium mb-0.5">RPM+DH</div>
+                <span className="text-base font-semibold text-muted-foreground">{(emptyMiles + totalMiles) > 0 ? `$${(Number(load.total_rate) / (emptyMiles + totalMiles)).toFixed(2)}` : '—'}</span>
               </div>
             </div>
 
