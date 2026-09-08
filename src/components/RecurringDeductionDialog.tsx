@@ -30,7 +30,7 @@ const FREQUENCIES = [
 interface RecipientOption {
   id: string;
   name: string;
-  type: 'driver' | 'investor';
+  type: 'driver' | 'investor' | 'dispatcher';
 }
 
 export function RecurringDeductionDialog({ open, onOpenChange }: Props) {
@@ -50,13 +50,17 @@ export function RecurringDeductionDialog({ open, onOpenChange }: Props) {
   useEffect(() => {
     if (!open) return;
     (async () => {
-      const { data } = await supabase.from('drivers').select('id, name, investor_name');
       const opts: RecipientOption[] = [];
-      for (const d of (data as any[]) || []) {
+      const { data: driversData } = await supabase.from('drivers').select('id, name, investor_name');
+      for (const d of (driversData as any[]) || []) {
         opts.push({ id: d.id, name: d.name, type: 'driver' });
         if (d.investor_name) {
           opts.push({ id: d.id, name: d.investor_name, type: 'investor' });
         }
+      }
+      const { data: dispatchersData } = await supabase.from('dispatchers').select('id, name');
+      for (const d of (dispatchersData as any[]) || []) {
+        opts.push({ id: d.id, name: d.name, type: 'dispatcher' });
       }
       setRecipients(opts);
     })();
@@ -152,7 +156,7 @@ export function RecurringDeductionDialog({ open, onOpenChange }: Props) {
                 </div>
                 <div className="space-y-1">
                   <Label>Amount ($)</Label>
-                  <Input type="number" min="0" step="0.01" value={amount} onChange={e => setAmount(e.target.value)} />
+                  <Input type="number" step="0.01" value={amount} onChange={e => setAmount(e.target.value)} placeholder="Positive = deduction, Negative = bonus" />
                 </div>
                 <div className="space-y-1">
                   <Label>Frequency</Label>
@@ -211,7 +215,7 @@ export function RecurringDeductionDialog({ open, onOpenChange }: Props) {
                       <span className="flex-1 font-medium">{d.description}</span>
                       <Badge variant="outline" className="text-xs">{FREQUENCIES.find(f => f.value === d.frequency)?.label}</Badge>
                       {d.effective_from && <span className="text-xs text-muted-foreground">from {d.effective_from}</span>}
-                      <span className="font-semibold text-destructive">-${Number(d.amount).toFixed(2)}</span>
+                      <span className={`font-semibold ${d.amount >= 0 ? 'text-destructive' : 'text-green-600'}`}>{d.amount >= 0 ? `-$${Number(d.amount).toFixed(2)}` : `+$${Math.abs(d.amount).toFixed(2)}`}</span>
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEdit(d)}><Pencil className="h-3.5 w-3.5" /></Button>
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteDeduction(d.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
                     </div>
