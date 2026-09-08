@@ -1058,13 +1058,14 @@ const Tracking = () => {
                         </div>
                         {(() => {
                           const truck = trucks.find(t => t.id === driver.truck_id);
+                          const isCompanyDriver = (driver as any).service_type === 'company_driver';
                           return truck?.unit_number ? (
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center justify-between gap-2">
                               <p className={`text-[11px] leading-tight ${hasColoredBg ? 'text-white/80' : 'text-muted-foreground'}`}>
                                 Unit #{truck.unit_number}
                               </p>
-                              {truck.vin && (
-                                <div className="flex items-center gap-0.5">
+                              {isCompanyDriver && truck.vin && (
+                                <div className="flex items-center gap-0.5 ml-auto">
                                   <p className={`text-[10px] leading-tight ${hasColoredBg ? 'text-white/70' : 'text-muted-foreground/70'}`}>
                                     VIN: {truck.vin}
                                   </p>
