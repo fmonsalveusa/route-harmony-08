@@ -1059,9 +1059,25 @@ const Tracking = () => {
                         {(() => {
                           const truck = trucks.find(t => t.id === driver.truck_id);
                           return truck?.unit_number ? (
-                            <p className={`text-[11px] leading-tight ${hasColoredBg ? 'text-white/80' : 'text-muted-foreground'}`}>
-                              Unit #{truck.unit_number}
-                            </p>
+                            <div className="flex items-center gap-2">
+                              <p className={`text-[11px] leading-tight ${hasColoredBg ? 'text-white/80' : 'text-muted-foreground'}`}>
+                                Unit #{truck.unit_number}
+                              </p>
+                              {truck.vin && (
+                                <div className="flex items-center gap-0.5">
+                                  <p className={`text-[10px] leading-tight ${hasColoredBg ? 'text-white/70' : 'text-muted-foreground/70'}`}>
+                                    VIN: {truck.vin}
+                                  </p>
+                                  <button
+                                    onClick={(e) => copyField(driver.id, 'vin', truck.vin!, e)}
+                                    className={`shrink-0 p-0.5 rounded transition-colors ${hasColoredBg ? 'text-white/70 hover:text-white hover:bg-white/20' : 'text-muted-foreground hover:text-foreground hover:bg-gray-100'}`}
+                                    title="Copiar VIN"
+                                  >
+                                    {copiedField === `${driver.id}:vin` ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                                  </button>
+                                </div>
+                              )}
+                            </div>
                           ) : null;
                         })()}
                       </div>
