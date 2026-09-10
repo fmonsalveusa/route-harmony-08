@@ -841,10 +841,11 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
           }
         }
 
-        // 2) If we already have cached empty miles, use them (any status)
+        // 2) If we already have cached empty miles AND the load is delivered/tonu, use cache
         const hasCachedEmptyMiles = Number((load as any).empty_miles) > 0 && Boolean((load as any).empty_miles_origin);
+        const isTerminal = ['delivered', 'tonu', 'cancelled'].includes(load.status);
 
-        if (hasCachedEmptyMiles) {
+        if (hasCachedEmptyMiles && isTerminal) {
           setEmptyMiles(Number((load as any).empty_miles));
           setEmptyMilesOrigin((load as any).empty_miles_origin || null);
 
@@ -875,18 +876,19 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
           return;
         }
 
-        // 3) Check active loads dispatched BEFORE this one (same driver) — use their last delivery as origin
+        // 3) Check active loads whose delivery_date is BEFORE this load's pickup_date (logical sequence)
         if (!load.driver_id || !load.pickup_date) return;
 
         const activeStatuses = ['dispatched', 'planned', 'in_transit', 'on_site_pickup', 'picked_up', 'on_site_delivery'];
         const { data: activeLoads } = await supabase
           .from('loads')
-          .select('id, pickup_date, created_at')
+          .select('id, delivery_date, created_at')
           .eq('driver_id', load.driver_id)
           .neq('id', load.id)
           .in('status', activeStatuses)
-          .lt('created_at', load.created_at)
-          .order('created_at', { ascending: false })
+          .not('delivery_date', 'is', null)
+          .lte('delivery_date', load.pickup_date)
+          .order('delivery_date', { ascending: false })
           .limit(5);
 
         if (activeLoads && activeLoads.length > 0) {
@@ -913,13 +915,13 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
           }
         }
 
-        // 4) Fallback: last delivery stop from previous DELIVERED/PAID load
+        // 4) Fallback: last delivery stop from previous DELIVERED/TONU load
         const { data: prevLoads } = await supabase
           .from('loads')
           .select('id, delivery_date, created_at')
           .eq('driver_id', load.driver_id)
           .neq('id', load.id)
-          .in('status', ['delivered', 'paid'])
+          .in('status', ['delivered', 'tonu', 'paid'])
           .lte('delivery_date', load.pickup_date)
           .order('delivery_date', { ascending: false })
           .order('created_at', { ascending: false })
