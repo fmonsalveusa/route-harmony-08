@@ -1425,11 +1425,6 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
                 <span className="text-muted-foreground font-medium">Broker:</span>
                 <span className="font-semibold">{load.broker_client || '—'}</span>
                 <BrokerScoreRow brokerName={load.broker_client} hideLabel />
-                {(load.notes || '').toUpperCase().includes('TARP') && (
-                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide text-white bg-[hsl(25,95%,53%)] animate-pulse">
-                    ⚠ NEEDS TARP
-                  </span>
-                )}
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="text-muted-foreground font-medium">Rate:</span>
@@ -1592,6 +1587,11 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
                         <div className="flex items-center gap-1">
                           <div className="font-medium text-sm">{stop.address}</div>
                           <CopyStopButton text={copyText} />
+                          {i === 0 && stop.type === 'pickup' && (load.notes || '').toUpperCase().includes('TARP') && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide text-white bg-[hsl(25,95%,53%)] animate-pulse whitespace-nowrap">
+                              ⚠ NEEDS TARP
+                            </span>
+                          )}
                         </div>
                         {/* Fila 3: distancia */}
                         {stop.distanceFromPrev != null && (

@@ -492,7 +492,14 @@ const Loads = () => {
                           <td className="p-4 text-muted-foreground">
                             {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                           </td>
-                          <td className="p-4 font-medium text-primary">{load.reference_number}</td>
+                          <td className="p-4">
+                            <div className="font-medium text-primary">{load.reference_number}</div>
+                            {(load.notes || '').toUpperCase().includes('TARP') && (
+                              <span className="inline-flex items-center mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide text-white bg-[hsl(25,95%,53%)] whitespace-nowrap">
+                                NEEDS TARP
+                              </span>
+                            )}
+                          </td>
                           <td className="p-4">
                             <div className="flex items-center gap-2">
                               {driver ? (
@@ -520,11 +527,6 @@ const Loads = () => {
                             {load.delivery_date && load.delivery_date.split('T')[0] === new Date(Date.now() + 86400000).toLocaleDateString('en-CA', { timeZone: 'America/New_York' }) && (
                               <span className="inline-flex items-center mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide text-white bg-[#2563eb] whitespace-nowrap">
                                 TOMORROW
-                              </span>
-                            )}
-                            {(load.notes || '').toUpperCase().includes('TARP') && (
-                              <span className="inline-flex items-center mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide text-white bg-[hsl(25,95%,53%)] whitespace-nowrap">
-                                NEEDS TARP
                               </span>
                             )}
                           </td>
