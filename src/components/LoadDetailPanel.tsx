@@ -1584,11 +1584,9 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
                           )}
                         </div>
                         {/* Fila 2: direccion + boton copiar pegado */}
-                        <div className="flex items-center justify-between gap-1">
-                          <div className="flex items-center gap-1">
-                            <div className="font-medium text-sm">{stop.address}</div>
-                            <CopyStopButton text={copyText} />
-                          </div>
+                        <div className="flex items-center gap-3">
+                          <div className="font-medium text-sm">{stop.address}</div>
+                          <CopyStopButton text={copyText} />
                           {i === 0 && stop.type === 'pickup' && (load.notes || '').toUpperCase().includes('TARP') && (
                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide text-white bg-[hsl(25,95%,53%)] animate-pulse whitespace-nowrap">
                               ⚠ NEEDS TARP
