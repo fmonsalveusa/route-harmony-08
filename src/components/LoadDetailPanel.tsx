@@ -1425,6 +1425,11 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
                 <span className="text-muted-foreground font-medium">Broker:</span>
                 <span className="font-semibold">{load.broker_client || '—'}</span>
                 <BrokerScoreRow brokerName={load.broker_client} hideLabel />
+                {(load.notes || '').toUpperCase().includes('TARP') && (
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide text-white bg-[hsl(25,95%,53%)] animate-pulse">
+                    ⚠ NEEDS TARP
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="text-muted-foreground font-medium">Rate:</span>

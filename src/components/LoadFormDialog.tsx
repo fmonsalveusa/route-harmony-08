@@ -422,7 +422,13 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
           referenceNumber: safeStr(extracted.referenceNumber, prev.referenceNumber),
           brokerClient: safeStr(extracted.brokerClient, prev.brokerClient),
           miles: safeNum(extracted.miles, prev.miles),
-          notes: safeStr(extracted.notes, prev.notes),
+          notes: (() => {
+            let n = safeStr(extracted.notes, prev.notes) || '';
+            if (extracted.needsTarp && !n.toUpperCase().includes('TARP')) {
+              n = n ? `${n} | TARP REQUIRED` : 'TARP REQUIRED';
+            }
+            return n;
+          })(),
         }));
 
         // Auto-match carrier name to a company
