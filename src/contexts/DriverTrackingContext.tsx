@@ -275,7 +275,10 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
       lastMovementRef.current = Date.now();
       setPaused(false);
 
-      if (isNativePlatform() && !silent) {
+      // `silent` solo controla si pedimos permisos y mostramos toasts — nunca si
+      // usamos el tracking nativo. Bloquearlo aquí mandaba los arranques
+      // automáticos al fallback web, que muere al cerrar la app.
+      if (isNativePlatform()) {
         try {
           let gpAvailable = true;
           if (!silent) {

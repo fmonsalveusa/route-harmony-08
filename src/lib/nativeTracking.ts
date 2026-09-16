@@ -43,6 +43,79 @@ export function hasActiveWatcher(): boolean {
   return isWatching;
 }
 
+export interface BackgroundPermissionStatus {
+  /** Ubicación en foreground concedida */
+  location: boolean;
+  /** Ubicación en background ("Allow all the time" / "Always") concedida */
+  background: boolean;
+  /** Notificaciones concedidas — Android 13+ las exige para el foreground service */
+  notification: boolean;
+}
+
+async function readPermissions(): Promise<BackgroundPermissionStatus> {
+  const { BackgroundGeolocation } = await import('@capgo/background-geolocation');
+  const s = await BackgroundGeolocation.checkPermissions();
+  return {
+    location: s.location === 'granted',
+    // En iOS 'when_in_use' significa que SOLO tiene foreground — no sirve para background.
+    background: s.backgroundLocation === 'granted' || s.backgroundLocation === 'always',
+    notification: s.notification === 'granted',
+  };
+}
+
+/** Lee el estado de permisos sin mostrar diálogos */
+export async function checkBackgroundPermissions(): Promise<BackgroundPermissionStatus> {
+  if (!isNativePlatform()) return { location: false, background: false, notification: false };
+  try {
+    return await readPermissions();
+  } catch (e) {
+    console.error('[NativeTracking] checkPermissions failed:', e);
+    return { location: false, background: false, notification: false };
+  }
+}
+
+/**
+ * Pide los permisos necesarios para trackear en background.
+ *
+ * El orden importa: Android 10+ rechaza ACCESS_BACKGROUND_LOCATION si se pide
+ * junto con el permiso de foreground. Hay que pedir foreground primero, esperar
+ * que lo concedan, y recién entonces pedir background.
+ *
+ * En Android 11+ el sistema suele negar el de background sin mostrar diálogo —
+ * el usuario tiene que ir a Ajustes y elegir "Permitir todo el tiempo". Por eso
+ * devolvemos el estado en vez de asumir que quedó concedido.
+ */
+export async function requestBackgroundPermissions(): Promise<BackgroundPermissionStatus> {
+  if (!isNativePlatform()) return { location: false, background: false, notification: false };
+
+  try {
+    const { BackgroundGeolocation } = await import('@capgo/background-geolocation');
+
+    let status = await readPermissions();
+
+    // 1) Foreground + notificación (un solo diálogo cada uno)
+    if (!status.location || !status.notification) {
+      const pending: ('location' | 'notification')[] = [];
+      if (!status.location) pending.push('location');
+      if (!status.notification) pending.push('notification');
+      await BackgroundGeolocation.requestPermissions({ permissions: pending });
+      status = await readPermissions();
+    }
+
+    // 2) Background — solo tiene sentido si ya concedieron foreground
+    if (status.location && !status.background) {
+      await BackgroundGeolocation.requestPermissions({ permissions: ['backgroundLocation'] });
+      status = await readPermissions();
+    }
+
+    console.log('[NativeTracking] Permissions after request:', status);
+    return status;
+  } catch (e) {
+    console.error('[NativeTracking] requestPermissions failed:', e);
+    return { location: false, background: false, notification: false };
+  }
+}
+
 /**
  * Inicia el tracking GPS en BACKGROUND usando @capgo/background-geolocation.
  * A diferencia de @capacitor/geolocation (que solo reporta en foreground),
@@ -70,6 +143,19 @@ export async function startNativeTracking(
 
   try {
     const { BackgroundGeolocation } = await import('@capgo/background-geolocation');
+
+    // El plugin en su start() solo pide el permiso de foreground. Sin
+    // ACCESS_BACKGROUND_LOCATION Android entrega ubicaciones únicamente con la
+    // app abierta, así que lo pedimos explícitamente antes de arrancar.
+    if (requestPermissions) {
+      const perms = await requestBackgroundPermissions();
+      if (!perms.location) {
+        throw new Error('PERMISSION_DENIED: Location permission denied. Enable it in Settings.');
+      }
+      if (!perms.background) {
+        console.warn('[NativeTracking] Background location NOT granted — tracking will stop when the app is closed');
+      }
+    }
 
     const batterySaver = isBatterySaverEnabled();
     // distanceFilter: metros que el driver debe moverse para generar un nuevo update.
