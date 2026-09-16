@@ -287,6 +287,7 @@ function StopPhotoSection({ loadId, stopId, isFirst, stopType, loadReference }: 
           onUpload={async (file) => { await uploadPod(file, stopId); }}
           onDelete={async (id) => { await deletePod(id); }}
           uploading={uploading}
+          onSavePdf={async (file) => { await uploadPod(file, stopId, (stopType as 'pickup' | 'delivery') || 'pickup'); }}
         />
 
         {/* BOL / POD — se mantiene como estaba */}

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { Camera, Check, X, RefreshCw, Download, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Camera, Check, X, RefreshCw, Download, ChevronLeft, ChevronRight, ScanLine } from 'lucide-react';
+import { PhotoToScannedPdf } from '@/components/PhotoToScannedPdf';
 
 interface StopPhotoGridProps {
   photos: Array<{ id: string; file_name: string; file_url: string }>;
@@ -9,6 +10,8 @@ interface StopPhotoGridProps {
   onUpload: (file: File) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   uploading: boolean;
+  /** Guarda el PDF escaneado generado a partir de una foto */
+  onSavePdf?: (file: File) => Promise<void>;
 }
 
 export function StopPhotoGrid({
@@ -19,7 +22,9 @@ export function StopPhotoGrid({
   onUpload,
   onDelete,
   uploading,
+  onSavePdf,
 }: StopPhotoGridProps) {
+  const [scanTarget, setScanTarget] = useState<{ url: string; label: string } | null>(null);
   const [urls, setUrls] = useState<Record<string, string>>({});
   const [zoomIndex, setZoomIndex] = useState<number | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -233,6 +238,20 @@ export function StopPhotoGrid({
               </button>
             )}
 
+            {onSavePdf && currentUrl && (
+              <button
+                className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[61] flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm font-semibold shadow-lg hover:bg-primary/90 transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setScanTarget({ url: currentUrl, label: currentLabel });
+                  closeZoom();
+                }}
+              >
+                <ScanLine className="h-4 w-4" />
+                Convertir a PDF escaneado
+              </button>
+            )}
+
             {currentUrl ? (
               <img
                 src={currentUrl}
@@ -246,6 +265,15 @@ export function StopPhotoGrid({
           </div>
         );
       })()}
+
+      {scanTarget && onSavePdf && (
+        <PhotoToScannedPdf
+          imageUrl={scanTarget.url}
+          fileName={`${stopType === 'pickup' ? 'BOL' : 'POD'} #${loadReference}.pdf`}
+          onSave={onSavePdf}
+          onClose={() => setScanTarget(null)}
+        />
+      )}
     </div>
   );
 }
