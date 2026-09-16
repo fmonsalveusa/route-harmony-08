@@ -1538,25 +1538,26 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
             )}
           </div>
 
-          {/* Load Adjustments */}
-          {load.status !== 'delivered' ? (
-            <LoadAdjustmentsSection loadId={load.id} />
-          ) : (
-            <LoadAdjustmentsSection loadId={load.id} hideIfEmpty />
-          )}
+          {/* Load Adjustments + Profitability — lado a lado */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 items-start">
+            {load.status !== 'delivered' ? (
+              <LoadAdjustmentsSection loadId={load.id} />
+            ) : (
+              <LoadAdjustmentsSection loadId={load.id} hideIfEmpty />
+            )}
 
-          {/* Profitability */}
-          <LoadProfitSection
-            loadId={load.id}
-            totalRate={Number(load.total_rate)}
-            loadedMiles={totalMiles}
-            emptyMiles={emptyMiles}
-            pickupDate={load.pickup_date}
-            deliveryDate={load.delivery_date}
-            truck={truck}
-            driver={driver}
-            dispatcher={dispatcher}
-          />
+            <LoadProfitSection
+              loadId={load.id}
+              totalRate={Number(load.total_rate)}
+              loadedMiles={totalMiles}
+              emptyMiles={emptyMiles}
+              pickupDate={load.pickup_date}
+              deliveryDate={load.delivery_date}
+              truck={truck}
+              driver={driver}
+              dispatcher={dispatcher}
+            />
+          </div>
 
           {/* Stops / Route breakdown */}
           <div className="p-3 rounded-lg bg-card border text-sm">
