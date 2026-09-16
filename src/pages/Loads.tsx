@@ -18,6 +18,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { LoadFormDialog } from '@/components/LoadFormDialog';
 import { LoadDetailPanel } from '@/components/LoadDetailPanel';
 import { LoadImportWizard } from '@/components/loads/LoadImportWizard';
+import { DieselPriceControl } from '@/components/DieselPriceControl';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -396,7 +397,9 @@ const Loads = () => {
               <SelectItem value="pickup_date">Sort: Pickup Date</SelectItem>
             </SelectContent>
           </Select>
-      
+          <div className="ml-auto">
+            <DieselPriceControl compact />
+          </div>
       </div>
 
       <div className="flex gap-2 border-b">

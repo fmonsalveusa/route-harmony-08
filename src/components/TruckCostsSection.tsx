@@ -8,7 +8,6 @@ import { useTruckFixedCosts, type DbTruckFixedCost } from '@/hooks/useTruckFixed
 import { useTenantSettings } from '@/hooks/useTenantSettings';
 import type { DbTruck } from '@/hooks/useTrucks';
 import { toast } from 'sonner';
-import { DieselPriceControl } from '@/components/DieselPriceControl';
 
 const COST_TYPES = [
   'Insurance',
@@ -197,7 +196,6 @@ export function TruckCostsSection({ truck }: { truck: DbTruck }) {
                 className="h-9 w-24 text-sm"
               />
             </div>
-            <DieselPriceControl />
           </div>
         </div>
       </div>

@@ -6,7 +6,6 @@ import { Label } from '@/components/ui/label';
 import { useTenantSettings } from '@/hooks/useTenantSettings';
 import type { DbTruck } from '@/hooks/useTrucks';
 import { Settings, CalendarDays } from 'lucide-react';
-import { DieselPriceControl } from '@/components/DieselPriceControl';
 
 interface Props {
   open: boolean;
@@ -28,14 +27,11 @@ export function FixedCostsDialog({ open, onOpenChange }: Props) {
             Cost Settings
           </DialogTitle>
           <DialogDescription>
-            Valores globales. Los costos de cada camión se configuran en Fleet → detalle del camión → Costs &amp; Expenses.
+            Valores globales. Los costos de cada camión se configuran en Fleet → detalle del camión. El precio del diésel está en la página de Loads.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          <DieselPriceControl showRegion />
-          <p className="text-[11px] text-muted-foreground -mt-2">Se actualiza solo cada semana desde EIA. Si lo cambias a mano, la próxima actualización lo reemplaza.</p>
-
           <div className="space-y-1">
             <Label className="text-xs flex items-center gap-1"><CalendarDays className="h-3 w-3" /> Días laborables por mes</Label>
             <div className="flex gap-2">
