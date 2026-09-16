@@ -15,6 +15,7 @@ import { useLoadStops } from '@/hooks/useLoadStops';
 import { supabase } from '@/integrations/supabase/client';
 import { PodUploadSection } from '@/components/PodUploadSection';
 import { LoadAdjustmentsSection } from '@/components/LoadAdjustmentsSection';
+import { LoadProfitSection } from '@/components/LoadProfitSection';
 import { PickupPicturesSection } from '@/components/PickupPicturesSection';
 import { BolFormDialog } from '@/components/BolFormDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -1543,6 +1544,19 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
           ) : (
             <LoadAdjustmentsSection loadId={load.id} hideIfEmpty />
           )}
+
+          {/* Profitability */}
+          <LoadProfitSection
+            loadId={load.id}
+            totalRate={Number(load.total_rate)}
+            loadedMiles={totalMiles}
+            emptyMiles={emptyMiles}
+            pickupDate={load.pickup_date}
+            deliveryDate={load.delivery_date}
+            truck={truck}
+            driver={driver}
+            dispatcher={dispatcher}
+          />
 
           {/* Stops / Route breakdown */}
           <div className="p-3 rounded-lg bg-card border text-sm">

@@ -36,6 +36,7 @@ export interface DbTruck {
   trailer_number: string | null;
   trailer_length_ft: number | null;
   mega_ramp: string | null;
+  mpg: number | null;
   current_odometer: number | null;      // última lectura del ELD (millas)
   odometer_updated_at: string | null;   // cuándo se leyó
   created_at: string;
@@ -65,6 +66,7 @@ export interface TruckInput {
   trailer_number?: string | null;
   trailer_length_ft?: number | null;
   mega_ramp?: string | null;
+  mpg?: number | null;
 }
 
 const TRUCKS_QUERY_KEY = ['trucks'];
