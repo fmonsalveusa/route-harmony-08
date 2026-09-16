@@ -36,6 +36,8 @@ export interface LoadProfitInput {
   dispatchServiceFeePct: number;
   actualExpenses: number;
   dieselPrice: number;
+  /** true si el precio del diésel quedó congelado al entregar */
+  dieselFrozen?: boolean;
   workingDaysPerMonth: number;
 }
 
@@ -85,7 +87,7 @@ export function calculateLoadProfit(input: LoadProfitInput): LoadProfit {
       lines.push({
         label: 'Diésel',
         detail: input.mpg && input.mpg > 0
-          ? `${totalMiles.toLocaleString()} mi ÷ ${input.mpg} mpg × $${input.dieselPrice.toFixed(2)}`
+          ? `${totalMiles.toLocaleString()} mi ÷ ${input.mpg} mpg × $${input.dieselPrice.toFixed(2)}${input.dieselFrozen ? ' (al entregar)' : ''}`
           : 'MPG no configurado',
         amount: gallons * (Number(input.dieselPrice) || 0),
       });

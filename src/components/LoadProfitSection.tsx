@@ -10,6 +10,7 @@ import type { DbDispatcher } from '@/hooks/useDispatchers';
 
 interface Props {
   loadId: string;
+  status: string;
   totalRate: number;
   loadedMiles: number;
   emptyMiles: number;
@@ -23,12 +24,32 @@ interface Props {
 const fmt = (n: number) => '$' + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 export function LoadProfitSection({
-  loadId, totalRate, loadedMiles, emptyMiles, pickupDate, deliveryDate, truck, driver, dispatcher,
+  loadId, status, totalRate, loadedMiles, emptyMiles, pickupDate, deliveryDate, truck, driver, dispatcher,
 }: Props) {
   const { getMonthlyFixedCosts, getCostPerMile } = useTruckFixedCosts();
   const { settings } = useTenantSettings();
   const [actualExpenses, setActualExpenses] = useState(0);
   const [investorPct, setInvestorPct] = useState(0);
+  const [dieselSnapshot, setDieselSnapshot] = useState<number | null>(null);
+
+  // Entregada → precio congelado al entregar. Activa → precio actual.
+  const isFrozen = ['delivered', 'tonu', 'paid'].includes(status);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!isFrozen) { setDieselSnapshot(null); return; }
+    (async () => {
+      const { data } = await (supabase
+        .from('loads' as any)
+        .select('diesel_price_snapshot') as any)
+        .eq('id', loadId)
+        .maybeSingle();
+      if (cancelled) return;
+      const n = Number(data?.diesel_price_snapshot);
+      setDieselSnapshot(Number.isFinite(n) && n > 0 ? n : null);
+    })();
+    return () => { cancelled = true; };
+  }, [loadId, isFrozen]);
 
   useEffect(() => {
     let cancelled = false;
@@ -99,7 +120,8 @@ export function LoadProfitSection({
     factoringPct: Number((driver as any)?.factoring_percentage) || 0,
     dispatchServiceFeePct: Number((driver as any)?.dispatch_service_percentage) || 0,
     actualExpenses,
-    dieselPrice: settings.diesel_price_per_gallon,
+    dieselPrice: dieselSnapshot ?? settings.diesel_price_per_gallon,
+    dieselFrozen: dieselSnapshot != null,
     workingDaysPerMonth: settings.working_days_per_month,
   });
 
