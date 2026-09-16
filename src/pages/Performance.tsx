@@ -408,7 +408,7 @@ export default function Performance() {
             </div>
             <Button variant="outline" size="sm" className="gap-2" onClick={() => setFixedCostsDialogOpen(true)}>
               <Settings className="h-4 w-4" />
-              Fixed Costs
+              Cost Settings
             </Button>
           </div>
         </CardHeader>

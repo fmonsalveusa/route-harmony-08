@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { getStatusColor } from '@/components/maintenance/maintenanceConstants';
 import { DocCardGrid } from '@/components/DocCardGrid';
+import { TruckCostsSection } from '@/components/TruckCostsSection';
 
 function Info({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -165,6 +166,8 @@ export function TruckDetailPanel({ truck, driverName, getDocSignedUrl, onUpdateT
           />
         </div>
       </div>
+
+      <TruckCostsSection truck={truck} />
     </div>
   );
 }

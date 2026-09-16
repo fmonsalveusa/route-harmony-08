@@ -58,7 +58,7 @@ export function useTruckFixedCosts() {
     return true;
   }, [queryClient]);
 
-  const updateFixedCost = useCallback(async (id: string, input: Partial<FixedCostInput>) => {
+  const updateFixedCost = useCallback(async (id: string, input: Partial<FixedCostInput>, silent = false) => {
     const { error } = await supabase
       .from('truck_fixed_costs' as any)
       .update(input as any)
@@ -68,7 +68,7 @@ export function useTruckFixedCosts() {
       return false;
     }
     queryClient.invalidateQueries({ queryKey: QUERY_KEY });
-    toastRef.current({ title: 'Fixed cost updated' });
+    if (!silent) toastRef.current({ title: 'Fixed cost updated' });
     return true;
   }, [queryClient]);
 
@@ -86,10 +86,10 @@ export function useTruckFixedCosts() {
     return true;
   }, [queryClient]);
 
-  /** Get monthly equivalent for a truck */
+  /** Get monthly equivalent for a truck (excludes per-mile costs) */
   const getMonthlyFixedCosts = useCallback((truckId: string) => {
     return fixedCosts
-      .filter(fc => fc.truck_id === truckId)
+      .filter(fc => fc.truck_id === truckId && fc.frequency !== 'per_mile')
       .reduce((sum, fc) => {
         switch (fc.frequency) {
           case 'weekly': return sum + fc.amount * 4.33;
@@ -109,5 +109,12 @@ export function useTruckFixedCosts() {
     }
   }, [getMonthlyFixedCosts]);
 
-  return { fixedCosts, loading, createFixedCost, updateFixedCost, deleteFixedCost, getMonthlyFixedCosts, getPeriodFixedCosts };
+  /** Sum of all per-mile costs for a truck */
+  const getCostPerMile = useCallback((truckId: string) => {
+    return fixedCosts
+      .filter(fc => fc.truck_id === truckId && fc.frequency === 'per_mile')
+      .reduce((sum, fc) => sum + Number(fc.amount || 0), 0);
+  }, [fixedCosts]);
+
+  return { fixedCosts, loading, createFixedCost, updateFixedCost, deleteFixedCost, getMonthlyFixedCosts, getPeriodFixedCosts, getCostPerMile };
 }

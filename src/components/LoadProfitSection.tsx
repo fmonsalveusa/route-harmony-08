@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { TrendingUp, TrendingDown, Settings2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useTruckFixedCosts } from '@/hooks/useTruckFixedCosts';
-import { useTruckVariableCosts } from '@/hooks/useTruckVariableCosts';
 import { useTenantSettings } from '@/hooks/useTenantSettings';
 import { calculateLoadProfit } from '@/lib/loadProfit';
 import type { DbTruck } from '@/hooks/useTrucks';
@@ -26,8 +25,7 @@ const fmt = (n: number) => '$' + Math.abs(n).toLocaleString('en-US', { minimumFr
 export function LoadProfitSection({
   loadId, totalRate, loadedMiles, emptyMiles, pickupDate, deliveryDate, truck, driver, dispatcher,
 }: Props) {
-  const { getMonthlyFixedCosts } = useTruckFixedCosts();
-  const { getCostPerMile } = useTruckVariableCosts();
+  const { getMonthlyFixedCosts, getCostPerMile } = useTruckFixedCosts();
   const { settings } = useTenantSettings();
   const [actualExpenses, setActualExpenses] = useState(0);
   const [investorPct, setInvestorPct] = useState(0);
@@ -128,7 +126,7 @@ export function LoadProfitSection({
       {missingConfig && (
         <div className="flex items-center gap-1.5 mb-2 px-2 py-1.5 rounded bg-amber-50 border border-amber-200 text-[11px] text-amber-800">
           <Settings2 className="h-3 w-3 flex-shrink-0" />
-          Configura MPG y costos del camión #{truck?.unit_number} en Performance → Cost Configuration
+          Configura MPG y costos del camión #{truck?.unit_number} en Fleet → detalle del camión
         </div>
       )}
 
