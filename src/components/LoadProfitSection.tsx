@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { TrendingUp, TrendingDown, Settings2 } from 'lucide-react';
+import { TrendingUp, TrendingDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useTruckFixedCosts } from '@/hooks/useTruckFixedCosts';
 import { useTenantSettings } from '@/hooks/useTenantSettings';
@@ -126,7 +126,6 @@ export function LoadProfitSection({
   });
 
   const isProfit = profit.netProfit >= 0;
-  const missingConfig = isCompanyDriver && (!truck?.mpg || getCostPerMile(truck.id) === 0);
 
   return (
     <div className="p-3 rounded-lg bg-card border text-sm">
@@ -145,12 +144,6 @@ export function LoadProfitSection({
         </span>
       </div>
 
-      {missingConfig && (
-        <div className="flex items-center gap-1.5 mb-2 px-2 py-1.5 rounded bg-amber-50 border border-amber-200 text-[11px] text-amber-800">
-          <Settings2 className="h-3 w-3 flex-shrink-0" />
-          Configura MPG y costos del camión #{truck?.unit_number} en Fleet → detalle del camión
-        </div>
-      )}
 
       <div className="space-y-1">
         {/* Rate de la carga — para dispatch service no es ingreso nuestro */}
