@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useTenantSettings } from '@/hooks/useTenantSettings';
 import type { DbTruck } from '@/hooks/useTrucks';
-import { Settings, Fuel, CalendarDays } from 'lucide-react';
+import { Settings, CalendarDays } from 'lucide-react';
+import { DieselPriceControl } from '@/components/DieselPriceControl';
 
 interface Props {
   open: boolean;
@@ -16,7 +17,6 @@ interface Props {
 /** Settings globales del cálculo de costos. Los costos de cada camión se editan en su detalle (Fleet). */
 export function FixedCostsDialog({ open, onOpenChange }: Props) {
   const { settings, updateSettings } = useTenantSettings();
-  const [dieselPrice, setDieselPrice] = useState('');
   const [workingDays, setWorkingDays] = useState('');
 
   return (
@@ -33,23 +33,8 @@ export function FixedCostsDialog({ open, onOpenChange }: Props) {
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="space-y-1">
-            <Label className="text-xs flex items-center gap-1"><Fuel className="h-3 w-3" /> Precio del diésel ($/galón)</Label>
-            <div className="flex gap-2">
-              <Input
-                type="number"
-                step="0.01"
-                value={dieselPrice}
-                onChange={e => setDieselPrice(e.target.value)}
-                placeholder={settings.diesel_price_per_gallon.toFixed(2)}
-                className="h-9"
-              />
-              <Button size="sm" className="h-9" disabled={!dieselPrice} onClick={async () => {
-                if (await updateSettings({ diesel_price_per_gallon: parseFloat(dieselPrice) })) setDieselPrice('');
-              }}>Save</Button>
-            </div>
-            <p className="text-[11px] text-muted-foreground">Actual: ${settings.diesel_price_per_gallon.toFixed(2)}</p>
-          </div>
+          <DieselPriceControl showRegion />
+          <p className="text-[11px] text-muted-foreground -mt-2">Se actualiza solo cada semana desde EIA. Si lo cambias a mano, la próxima actualización lo reemplaza.</p>
 
           <div className="space-y-1">
             <Label className="text-xs flex items-center gap-1"><CalendarDays className="h-3 w-3" /> Días laborables por mes</Label>

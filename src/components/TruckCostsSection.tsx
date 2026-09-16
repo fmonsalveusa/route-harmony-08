@@ -8,6 +8,7 @@ import { useTruckFixedCosts, type DbTruckFixedCost } from '@/hooks/useTruckFixed
 import { useTenantSettings } from '@/hooks/useTenantSettings';
 import type { DbTruck } from '@/hooks/useTrucks';
 import { toast } from 'sonner';
+import { DieselPriceControl } from '@/components/DieselPriceControl';
 
 const COST_TYPES = [
   'Insurance',
@@ -180,7 +181,7 @@ export function TruckCostsSection({ truck }: { truck: DbTruck }) {
             </div>
           </div>
 
-          <div className="flex items-end gap-3">
+          <div className="flex items-start gap-4 flex-wrap">
             <div>
               <label className="text-xs font-medium text-muted-foreground flex items-center gap-1 mb-1">
                 <Fuel className="h-3 w-3" /> MPG
@@ -196,9 +197,7 @@ export function TruckCostsSection({ truck }: { truck: DbTruck }) {
                 className="h-9 w-24 text-sm"
               />
             </div>
-            <p className="text-xs text-muted-foreground pb-2">
-              Diésel a {money(settings.diesel_price_per_gallon)}/gal (global)
-            </p>
+            <DieselPriceControl />
           </div>
         </div>
       </div>
