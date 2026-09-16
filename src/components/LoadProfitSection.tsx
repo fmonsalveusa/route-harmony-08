@@ -1,21 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { TrendingUp, TrendingDown } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useTruckFixedCosts } from '@/hooks/useTruckFixedCosts';
-import { useTenantSettings } from '@/hooks/useTenantSettings';
-import { calculateLoadProfit } from '@/lib/loadProfit';
+import { useLoadProfitData, DIESEL_SNAPSHOTS_KEY } from '@/hooks/useLoadProfitData';
+import type { DbLoad } from '@/hooks/useLoads';
 import type { DbTruck } from '@/hooks/useTrucks';
 import type { DbDriver } from '@/hooks/useDrivers';
 import type { DbDispatcher } from '@/hooks/useDispatchers';
 
 interface Props {
-  loadId: string;
-  status: string;
-  totalRate: number;
+  load: DbLoad;
+  /** Millas vivas del detalle (pueden recalcularse antes de refrescar la carga) */
   loadedMiles: number;
   emptyMiles: number;
-  pickupDate: string | null;
-  deliveryDate: string | null;
   truck: DbTruck | undefined;
   driver: DbDriver | undefined;
   dispatcher: DbDispatcher | undefined;
@@ -23,114 +19,56 @@ interface Props {
 
 const fmt = (n: number) => '$' + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-export function LoadProfitSection({
-  loadId, status, totalRate, loadedMiles, emptyMiles, pickupDate, deliveryDate, truck, driver, dispatcher,
-}: Props) {
-  const { getMonthlyFixedCosts, getCostPerMile } = useTruckFixedCosts();
-  const { settings } = useTenantSettings();
-  const [actualExpenses, setActualExpenses] = useState(0);
-  const [investorPct, setInvestorPct] = useState(0);
-  const [dieselSnapshot, setDieselSnapshot] = useState<number | null>(null);
+const usDate = (d: string) => {
+  const [y, m, day] = d.split('-');
+  return `${m}/${day}/${y}`;
+};
 
-  // Entregada → precio congelado al entregar. Activa → precio actual.
-  const isFrozen = ['delivered', 'tonu', 'paid'].includes(status);
+function Header({ children }: { children?: React.ReactNode }) {
+  return <h5 className="font-semibold flex items-center gap-1.5">{children}</h5>;
+}
 
+export function LoadProfitSection({ load, loadedMiles, emptyMiles, truck, driver, dispatcher }: Props) {
+  const { getLoadProfit, startDate, loading } = useLoadProfitData();
+  const queryClient = useQueryClient();
+
+  // Al entregar, el trigger congela el diésel — refrescar para leer el valor guardado
   useEffect(() => {
-    let cancelled = false;
-    if (!isFrozen) { setDieselSnapshot(null); return; }
-    (async () => {
-      const { data } = await (supabase
-        .from('loads' as any)
-        .select('diesel_price_snapshot') as any)
-        .eq('id', loadId)
-        .maybeSingle();
-      if (cancelled) return;
-      const n = Number(data?.diesel_price_snapshot);
-      setDieselSnapshot(Number.isFinite(n) && n > 0 ? n : null);
-    })();
-    return () => { cancelled = true; };
-  }, [loadId, isFrozen]);
+    queryClient.invalidateQueries({ queryKey: DIESEL_SNAPSHOTS_KEY });
+  }, [load.status, queryClient]);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const { data } = await (supabase
-        .from('expenses' as any)
-        .select('total_amount') as any)
-        .eq('load_id', loadId);
-      if (cancelled) return;
-      setActualExpenses(((data as any[]) || []).reduce((s, e) => s + (Number(e.total_amount) || 0), 0));
-    })();
-    return () => { cancelled = true; };
-  }, [loadId]);
+  if (loading) return null;
 
-  // Investor % — driver_investors (soporta múltiples) con fallback al campo legacy
-  useEffect(() => {
-    let cancelled = false;
-    if (!driver) { setInvestorPct(0); return; }
-    (async () => {
-      const { data } = await supabase
-        .from('driver_investors' as any)
-        .select('pay_percentage')
-        .eq('driver_id', driver.id)
-        .eq('is_active', true);
-      if (cancelled) return;
-      const rows = (data as any[]) || [];
-      if (rows.length > 0) {
-        setInvestorPct(rows.reduce((s, r) => s + (Number(r.pay_percentage) || 0), 0));
-      } else {
-        setInvestorPct(Number((driver as any).investor_pay_percentage) || 0);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [driver]);
+  const profit = getLoadProfit(load, driver, truck, dispatcher, { loadedMiles, emptyMiles });
 
-  const serviceType = (driver as any)?.service_type || 'owner_operator';
-  const isCompanyDriver = serviceType === 'company_driver';
-  const isDispatchService = serviceType === 'dispatch_service';
-
-  if (isCompanyDriver && !truck) {
+  if (!profit) {
     return (
       <div className="p-3 rounded-lg bg-card border text-sm">
-        <h5 className="font-semibold mb-1 flex items-center gap-1.5">
-          <TrendingUp className="h-3.5 w-3.5 text-primary" /> Rentabilidad
-        </h5>
-        <p className="text-xs text-muted-foreground">Asigna un camión para calcular el profit de esta carga.</p>
+        <Header><TrendingUp className="h-3.5 w-3.5 text-muted-foreground" /> Rentabilidad</Header>
+        <p className="text-xs text-muted-foreground mt-1">
+          No disponible: la carga es anterior al {usDate(startDate)}, fecha en que empezó el cálculo de profit.
+        </p>
       </div>
     );
   }
 
-  const dispatcherPct = isDispatchService
-    ? (Number((dispatcher as any)?.dispatch_service_percentage) || Number((dispatcher as any)?.commission_percentage) || 0)
-    : (Number((dispatcher as any)?.commission_percentage) || 0);
-
-  const profit = calculateLoadProfit({
-    serviceType,
-    totalRate,
-    loadedMiles,
-    emptyMiles,
-    pickupDate,
-    deliveryDate,
-    mpg: Number(truck?.mpg) || null,
-    monthlyFixedCosts: truck ? getMonthlyFixedCosts(truck.id) : 0,
-    costPerMile: truck ? getCostPerMile(truck.id) : 0,
-    driverPayPct: Number((driver as any)?.pay_percentage) || 0,
-    investorPayPct: investorPct,
-    dispatcherPct,
-    factoringPct: Number((driver as any)?.factoring_percentage) || 0,
-    dispatchServiceFeePct: Number((driver as any)?.dispatch_service_percentage) || 0,
-    actualExpenses,
-    dieselPrice: dieselSnapshot ?? settings.diesel_price_per_gallon,
-    dieselFrozen: dieselSnapshot != null,
-    workingDaysPerMonth: settings.working_days_per_month,
-  });
-
+  const isCompanyDriver = profit.serviceType === 'company_driver';
+  const isDispatchService = profit.serviceType === 'dispatch_service';
   const isProfit = profit.netProfit >= 0;
+
+  if (isCompanyDriver && !truck) {
+    return (
+      <div className="p-3 rounded-lg bg-card border text-sm">
+        <Header><TrendingUp className="h-3.5 w-3.5 text-primary" /> Rentabilidad</Header>
+        <p className="text-xs text-muted-foreground mt-1">Asigna un camión para calcular el profit de esta carga.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-3 rounded-lg bg-card border text-sm">
       <div className="flex items-center justify-between mb-2">
-        <h5 className="font-semibold flex items-center gap-1.5">
+        <Header>
           {isProfit
             ? <TrendingUp className="h-3.5 w-3.5 text-[hsl(152,60%,40%)]" />
             : <TrendingDown className="h-3.5 w-3.5 text-destructive" />}
@@ -138,15 +76,13 @@ export function LoadProfitSection({
           <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground uppercase tracking-wide">
             {profit.serviceLabel}
           </span>
-        </h5>
+        </Header>
         <span className="text-[11px] text-muted-foreground">
           {isCompanyDriver && `${profit.totalMiles.toLocaleString()} mi · ${profit.days} día${profit.days > 1 ? 's' : ''}`}
         </span>
       </div>
 
-
       <div className="space-y-1">
-        {/* Rate de la carga — para dispatch service no es ingreso nuestro */}
         {isDispatchService && (
           <div className="flex items-center justify-between py-0.5 text-muted-foreground">
             <span className="text-xs">Rate de la carga</span>

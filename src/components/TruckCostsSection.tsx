@@ -120,6 +120,7 @@ export function TruckCostsSection({ truck }: { truck: DbTruck }) {
     const { error } = await supabase.from('trucks').update({ mpg: n } as any).eq('id', truck.id);
     if (error) { toast.error(error.message); return; }
     queryClient.invalidateQueries({ queryKey: ['trucks'] });
+    queryClient.invalidateQueries({ queryKey: ['profit_data', 'config_history'] });
   };
 
   return (
@@ -127,6 +128,9 @@ export function TruckCostsSection({ truck }: { truck: DbTruck }) {
       <h3 className="text-lg font-bold uppercase tracking-wide text-foreground border-b pb-2 mb-3">
         Costs &amp; Expenses
       </h3>
+      <p className="text-xs text-muted-foreground -mt-1 mb-3">
+        Los cambios aplican a las cargas desde hoy. Las cargas anteriores conservan los valores que tenían.
+      </p>
 
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,32rem)_1fr] gap-6">
         {/* Filas editables */}

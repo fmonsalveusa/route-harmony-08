@@ -1,8 +1,9 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { getTenantId } from '@/hooks/useTenantId';
+import { todayET } from '@/lib/dateUtils';
 
 export interface DbTruckFixedCost {
   id: string;
@@ -11,6 +12,10 @@ export interface DbTruckFixedCost {
   amount: number;
   frequency: string;
   tenant_id: string | null;
+  /** Vigente desde (inclusive) */
+  effective_from?: string | null;
+  /** Vigente hasta (exclusiva). null = vigente hoy */
+  effective_to?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -33,71 +38,116 @@ async function fetchFixedCosts(): Promise<DbTruckFixedCost[]> {
   return (data as any as DbTruckFixedCost[]) ?? [];
 }
 
+const toMonthly = (fc: DbTruckFixedCost) => {
+  switch (fc.frequency) {
+    case 'weekly': return fc.amount * 4.33;
+    case 'yearly': return fc.amount / 12;
+    case 'per_mile': return 0;
+    default: return fc.amount;
+  }
+};
+
+const isActiveOn = (fc: DbTruckFixedCost, date: string) =>
+  (!fc.effective_from || fc.effective_from <= date) && (!fc.effective_to || date < fc.effective_to);
+
 export function useTruckFixedCosts() {
   const { toast } = useToast();
   const toastRef = useRef(toast);
   toastRef.current = toast;
   const queryClient = useQueryClient();
 
-  const { data: fixedCosts = [], isLoading: loading } = useQuery({
+  const { data: allCosts = [], isLoading: loading } = useQuery({
     queryKey: QUERY_KEY,
     queryFn: fetchFixedCosts,
   });
+
+  // Solo las versiones vigentes hoy — lo que se muestra y edita
+  const fixedCosts = useMemo(() => allCosts.filter(fc => !fc.effective_to), [allCosts]);
+
+  const refresh = useCallback(() => queryClient.invalidateQueries({ queryKey: QUERY_KEY }), [queryClient]);
+
+  const fail = (message: string) => {
+    toastRef.current({ title: 'Error', description: message, variant: 'destructive' });
+    return false;
+  };
 
   const createFixedCost = useCallback(async (input: FixedCostInput) => {
     const tenant_id = await getTenantId();
     const { error } = await supabase
       .from('truck_fixed_costs' as any)
-      .insert([{ ...input, tenant_id } as any]);
-    if (error) {
-      toastRef.current({ title: 'Error', description: error.message, variant: 'destructive' });
-      return false;
-    }
-    queryClient.invalidateQueries({ queryKey: QUERY_KEY });
-    toastRef.current({ title: 'Fixed cost added' });
+      .insert([{ ...input, tenant_id, effective_from: todayET() } as any]);
+    if (error) return fail(error.message);
+    await refresh();
     return true;
-  }, [queryClient]);
+  }, [refresh]);
 
-  const updateFixedCost = useCallback(async (id: string, input: Partial<FixedCostInput>, silent = false) => {
-    const { error } = await supabase
-      .from('truck_fixed_costs' as any)
-      .update(input as any)
-      .eq('id', id);
-    if (error) {
-      toastRef.current({ title: 'Error', description: error.message, variant: 'destructive' });
-      return false;
+  /**
+   * Cambia un costo desde hoy. Si la versión vigente empezó hoy se corrige en sitio;
+   * si es de antes, se cierra y se crea una versión nueva — las cargas anteriores no cambian.
+   */
+  const updateFixedCost = useCallback(async (id: string, changes: Partial<FixedCostInput>, silent = false) => {
+    const current = allCosts.find(fc => fc.id === id);
+    if (!current) return false;
+    const today = todayET();
+
+    if (!current.effective_from || current.effective_from >= today) {
+      const { error } = await supabase.from('truck_fixed_costs' as any).update(changes as any).eq('id', id);
+      if (error) return fail(error.message);
+    } else {
+      const { error: closeErr } = await supabase
+        .from('truck_fixed_costs' as any)
+        .update({ effective_to: today } as any)
+        .eq('id', id);
+      if (closeErr) return fail(closeErr.message);
+      const { error: insertErr } = await supabase.from('truck_fixed_costs' as any).insert([{
+        truck_id: current.truck_id,
+        description: changes.description ?? current.description,
+        amount: changes.amount ?? current.amount,
+        frequency: changes.frequency ?? current.frequency,
+        tenant_id: current.tenant_id,
+        effective_from: today,
+      } as any]);
+      if (insertErr) return fail(insertErr.message);
     }
-    queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+
+    await refresh();
     if (!silent) toastRef.current({ title: 'Fixed cost updated' });
     return true;
-  }, [queryClient]);
+  }, [allCosts, refresh]);
 
+  /** Quita un costo desde hoy. Si empezó hoy se borra; si es de antes, se cierra para conservar el historial. */
   const deleteFixedCost = useCallback(async (id: string) => {
-    const { error } = await supabase
-      .from('truck_fixed_costs' as any)
-      .delete()
-      .eq('id', id);
-    if (error) {
-      toastRef.current({ title: 'Error', description: error.message, variant: 'destructive' });
-      return false;
-    }
-    queryClient.invalidateQueries({ queryKey: QUERY_KEY });
-    toastRef.current({ title: 'Fixed cost deleted' });
+    const current = allCosts.find(fc => fc.id === id);
+    const today = todayET();
+    const startedToday = !current?.effective_from || current.effective_from >= today;
+    const { error } = startedToday
+      ? await supabase.from('truck_fixed_costs' as any).delete().eq('id', id)
+      : await supabase.from('truck_fixed_costs' as any).update({ effective_to: today } as any).eq('id', id);
+    if (error) return fail(error.message);
+    await refresh();
     return true;
-  }, [queryClient]);
+  }, [allCosts, refresh]);
 
-  /** Get monthly equivalent for a truck (excludes per-mile costs) */
+  /** Costos mensuales vigentes hoy (excluye por milla) */
   const getMonthlyFixedCosts = useCallback((truckId: string) => {
-    return fixedCosts
-      .filter(fc => fc.truck_id === truckId && fc.frequency !== 'per_mile')
-      .reduce((sum, fc) => {
-        switch (fc.frequency) {
-          case 'weekly': return sum + fc.amount * 4.33;
-          case 'yearly': return sum + fc.amount / 12;
-          default: return sum + fc.amount; // monthly
-        }
-      }, 0);
+    return fixedCosts.filter(fc => fc.truck_id === truckId).reduce((sum, fc) => sum + toMonthly(fc), 0);
   }, [fixedCosts]);
+
+  /** Costos por milla vigentes hoy */
+  const getCostPerMile = useCallback((truckId: string) => {
+    return fixedCosts
+      .filter(fc => fc.truck_id === truckId && fc.frequency === 'per_mile')
+      .reduce((sum, fc) => sum + Number(fc.amount || 0), 0);
+  }, [fixedCosts]);
+
+  /** Costos vigentes en una fecha (YYYY-MM-DD) */
+  const getCostsAt = useCallback((truckId: string, date: string) => {
+    const rows = allCosts.filter(fc => fc.truck_id === truckId && isActiveOn(fc, date));
+    return {
+      monthly: rows.reduce((sum, fc) => sum + toMonthly(fc), 0),
+      perMile: rows.filter(fc => fc.frequency === 'per_mile').reduce((sum, fc) => sum + Number(fc.amount || 0), 0),
+    };
+  }, [allCosts]);
 
   /** Get period-adjusted fixed costs */
   const getPeriodFixedCosts = useCallback((truckId: string, period: 'week' | 'month' | 'year') => {
@@ -109,12 +159,9 @@ export function useTruckFixedCosts() {
     }
   }, [getMonthlyFixedCosts]);
 
-  /** Sum of all per-mile costs for a truck */
-  const getCostPerMile = useCallback((truckId: string) => {
-    return fixedCosts
-      .filter(fc => fc.truck_id === truckId && fc.frequency === 'per_mile')
-      .reduce((sum, fc) => sum + Number(fc.amount || 0), 0);
-  }, [fixedCosts]);
-
-  return { fixedCosts, loading, createFixedCost, updateFixedCost, deleteFixedCost, getMonthlyFixedCosts, getPeriodFixedCosts, getCostPerMile };
+  return {
+    fixedCosts, allCosts, loading,
+    createFixedCost, updateFixedCost, deleteFixedCost,
+    getMonthlyFixedCosts, getPeriodFixedCosts, getCostPerMile, getCostsAt,
+  };
 }

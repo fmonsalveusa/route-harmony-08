@@ -73,6 +73,7 @@ export function useTenantSettings() {
       return false;
     }
     await queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+    queryClient.invalidateQueries({ queryKey: ['profit_data', 'config_history'] });
     if (!silent) toastRef.current({ title: 'Settings updated' });
     return true;
   }, [queryClient]);

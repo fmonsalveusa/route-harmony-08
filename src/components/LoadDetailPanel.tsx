@@ -1548,13 +1548,9 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
             )}
 
             <LoadProfitSection
-              loadId={load.id}
-              status={load.status}
-              totalRate={Number(load.total_rate)}
+              load={load}
               loadedMiles={totalMiles}
               emptyMiles={emptyMiles}
-              pickupDate={load.pickup_date}
-              deliveryDate={load.delivery_date}
               truck={truck}
               driver={driver}
               dispatcher={dispatcher}

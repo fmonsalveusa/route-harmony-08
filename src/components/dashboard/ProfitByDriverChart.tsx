@@ -33,6 +33,7 @@ export function ProfitByDriverChart({ loads, drivers, trucks, dispatchers, servi
       const truck = trucks.find(t => String(t.id) === String(l.truck_id));
       const dispatcher = dispatchers.find(d => d.id === l.dispatcher_id);
       const p = getLoadProfit(l, driver, truck, dispatcher);
+      if (!p) return; // anterior al inicio del cálculo
 
       const row = (byDriver[l.driver_id] ??= { profit: 0, revenue: 0, loads: 0 });
       row.profit += p.netProfit;

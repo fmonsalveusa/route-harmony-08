@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useTruckFixedCosts } from '@/hooks/useTruckFixedCosts';
@@ -9,29 +9,54 @@ import type { DbDriver } from '@/hooks/useDrivers';
 import type { DbTruck } from '@/hooks/useTrucks';
 import type { DbDispatcher } from '@/hooks/useDispatchers';
 
-const FROZEN_STATUSES = ['delivered', 'tonu', 'paid'];
+export const FROZEN_STATUSES = ['delivered', 'tonu', 'paid'];
+/** Día en que empezó el cálculo de profit. Cargas anteriores no se calculan. */
+const DEFAULT_START_DATE = '2026-09-16';
+
+export const DIESEL_SNAPSHOTS_KEY = ['profit_data', 'diesel_snapshots'];
+
+interface HistoryRow {
+  entity_type: string;
+  entity_id: string;
+  field: string;
+  value: number | null;
+  value_text: string | null;
+  effective_from: string;
+}
+
+/** Última fila vigente en la fecha (filas ordenadas por effective_from); si todas son posteriores, la primera */
+function pickAt(rows: HistoryRow[] | undefined, date: string): HistoryRow | undefined {
+  if (!rows || rows.length === 0) return undefined;
+  let found = rows[0];
+  for (const r of rows) {
+    if (r.effective_from <= date) found = r;
+    else break;
+  }
+  return found;
+}
+
+/** Fecha que rige el profit de la carga: su pickup (o su creación si no tiene) */
+export function loadEffectiveDate(load: Pick<DbLoad, 'pickup_date' | 'created_at'>): string {
+  return (load.pickup_date || load.created_at || '').split('T')[0];
+}
 
 /**
- * Datos en lote para calcular el profit de muchas cargas a la vez (gráficas),
- * con la misma lógica que la sección Rentabilidad del detalle de carga.
+ * Profit por carga con los valores vigentes en la fecha de la carga.
+ * Cada cambio de configuración vale desde el día en que se hizo; las cargas anteriores no cambian.
  */
 export function useLoadProfitData() {
-  const { getMonthlyFixedCosts, getCostPerMile } = useTruckFixedCosts();
+  const { getCostsAt } = useTruckFixedCosts();
   const { settings } = useTenantSettings();
 
-  const { data: investorPctByDriver = {} } = useQuery({
-    queryKey: ['profit_data', 'driver_investors'],
-    staleTime: 5 * 60 * 1000,
+  const { data: history = [], isLoading: historyLoading } = useQuery({
+    queryKey: ['profit_data', 'config_history'],
+    staleTime: 60 * 1000,
     queryFn: async () => {
       const { data } = await supabase
-        .from('driver_investors' as any)
-        .select('driver_id, pay_percentage')
-        .eq('is_active', true);
-      const map: Record<string, number> = {};
-      ((data as any[]) || []).forEach(r => {
-        map[r.driver_id] = (map[r.driver_id] || 0) + (Number(r.pay_percentage) || 0);
-      });
-      return map;
+        .from('profit_config_history' as any)
+        .select('entity_type, entity_id, field, value, value_text, effective_from')
+        .order('effective_from', { ascending: true });
+      return ((data as any[]) || []) as HistoryRow[];
     },
   });
 
@@ -52,7 +77,7 @@ export function useLoadProfitData() {
   });
 
   const { data: dieselSnapshotByLoad = {} } = useQuery({
-    queryKey: ['profit_data', 'diesel_snapshots'],
+    queryKey: DIESEL_SNAPSHOTS_KEY,
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { data } = await (supabase
@@ -66,41 +91,76 @@ export function useLoadProfitData() {
     },
   });
 
+  const historyByKey = useMemo(() => {
+    const map: Record<string, HistoryRow[]> = {};
+    history.forEach(r => { (map[`${r.entity_type}:${r.entity_id}:${r.field}`] ??= []).push(r); });
+    return map;
+  }, [history]);
+
+  const startDate = useMemo(
+    () => history.reduce((min, r) => (r.effective_from < min ? r.effective_from : min), DEFAULT_START_DATE),
+    [history],
+  );
+
+  // RLS solo devuelve el historial de este tenant
+  const workingDaysHistory = useMemo(
+    () => history.filter(r => r.entity_type === 'tenant' && r.field === 'working_days_per_month'),
+    [history],
+  );
+
+  /** Valor vigente en la fecha. Si la entidad se creó después, usa su primer valor conocido. */
+  const at = useCallback((type: string, id: string | undefined | null, field: string, date: string) => {
+    if (!id) return undefined;
+    return pickAt(historyByKey[`${type}:${id}:${field}`], date);
+  }, [historyByKey]);
+
+  const num = (row: HistoryRow | undefined, fallback: unknown) =>
+    row ? Number(row.value) || 0 : Number(fallback) || 0;
+
+  /** null si la carga es anterior al inicio del cálculo */
   const getLoadProfit = useCallback((
     load: DbLoad,
     driver: DbDriver | undefined,
     truck: DbTruck | undefined,
     dispatcher: DbDispatcher | undefined,
-  ): LoadProfit => {
-    const serviceType = (driver as any)?.service_type || 'owner_operator';
+    overrides?: { loadedMiles?: number; emptyMiles?: number },
+  ): LoadProfit | null => {
+    const date = loadEffectiveDate(load);
+    if (!date || date < startDate) return null;
+
+    const d = driver as any;
+    const disp = dispatcher as any;
+    const serviceType = at('driver', driver?.id, 'service_type', date)?.value_text || d?.service_type || 'owner_operator';
     const isDispatchService = serviceType === 'dispatch_service';
     const snapshot = FROZEN_STATUSES.includes(load.status) ? dieselSnapshotByLoad[load.id] : undefined;
+    const costs = truck ? getCostsAt(truck.id, date) : { monthly: 0, perMile: 0 };
+    const workingDaysRow = pickAt(workingDaysHistory, date);
+    const tenantWorkingDays = num(workingDaysRow, settings.working_days_per_month) || settings.working_days_per_month;
 
     return calculateLoadProfit({
       serviceType,
       totalRate: Number(load.total_rate) || 0,
-      loadedMiles: Number(load.miles) || 0,
-      emptyMiles: Number((load as any).empty_miles) || 0,
+      loadedMiles: overrides?.loadedMiles ?? (Number(load.miles) || 0),
+      emptyMiles: overrides?.emptyMiles ?? (Number((load as any).empty_miles) || 0),
       pickupDate: load.pickup_date,
       deliveryDate: load.delivery_date,
-      mpg: Number((truck as any)?.mpg) || null,
-      monthlyFixedCosts: truck ? getMonthlyFixedCosts(truck.id) : 0,
-      costPerMile: truck ? getCostPerMile(truck.id) : 0,
-      driverPayPct: Number((driver as any)?.pay_percentage) || 0,
-      investorPayPct: driver
-        ? (investorPctByDriver[driver.id] ?? (Number((driver as any).investor_pay_percentage) || 0))
-        : 0,
+      mpg: num(at('truck', truck?.id, 'mpg', date), (truck as any)?.mpg) || null,
+      monthlyFixedCosts: costs.monthly,
+      costPerMile: costs.perMile,
+      driverPayPct: num(at('driver', driver?.id, 'pay_percentage', date), d?.pay_percentage),
+      investorPayPct: num(at('driver', driver?.id, 'investor_pct', date), d?.investor_pay_percentage),
       dispatcherPct: isDispatchService
-        ? (Number((dispatcher as any)?.dispatch_service_percentage) || Number((dispatcher as any)?.commission_percentage) || 0)
-        : (Number((dispatcher as any)?.commission_percentage) || 0),
-      factoringPct: Number((driver as any)?.factoring_percentage) || 0,
-      dispatchServiceFeePct: Number((driver as any)?.dispatch_service_percentage) || 0,
+        ? (num(at('dispatcher', dispatcher?.id, 'dispatch_service_percentage', date), disp?.dispatch_service_percentage)
+          || num(at('dispatcher', dispatcher?.id, 'commission_percentage', date), disp?.commission_percentage))
+        : num(at('dispatcher', dispatcher?.id, 'commission_percentage', date), disp?.commission_percentage),
+      factoringPct: num(at('driver', driver?.id, 'factoring_percentage', date), d?.factoring_percentage),
+      dispatchServiceFeePct: num(at('driver', driver?.id, 'dispatch_service_percentage', date), d?.dispatch_service_percentage),
       actualExpenses: expensesByLoad[load.id] || 0,
       dieselPrice: snapshot ?? settings.diesel_price_per_gallon,
       dieselFrozen: snapshot != null,
-      workingDaysPerMonth: settings.working_days_per_month,
+      workingDaysPerMonth: tenantWorkingDays,
     });
-  }, [getMonthlyFixedCosts, getCostPerMile, settings, investorPctByDriver, expensesByLoad, dieselSnapshotByLoad]);
+  }, [at, startDate, workingDaysHistory, getCostsAt, settings, expensesByLoad, dieselSnapshotByLoad]);
 
-  return { getLoadProfit };
+  return { getLoadProfit, startDate, loading: historyLoading };
 }
