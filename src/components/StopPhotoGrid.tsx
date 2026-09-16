@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Camera, Check, X, RefreshCw, Download, ChevronLeft, ChevronRight, ScanLine } from 'lucide-react';
+import { Camera, Check, X, RefreshCw, Download, ChevronLeft, ChevronRight, ScanLine, Files } from 'lucide-react';
 import { PhotoToScannedPdf } from '@/components/PhotoToScannedPdf';
 
 interface StopPhotoGridProps {
@@ -24,7 +24,15 @@ export function StopPhotoGrid({
   uploading,
   onSavePdf,
 }: StopPhotoGridProps) {
-  const [scanTarget, setScanTarget] = useState<{ url: string; label: string } | null>(null);
+  const [scanUrls, setScanUrls] = useState<string[] | null>(null);
+  // Modo selección: el orden en que se marcan las fotos es el orden de las páginas del PDF
+  const [selecting, setSelecting] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  const toggleSelected = (id: string) =>
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+
+  const exitSelecting = () => { setSelecting(false); setSelectedIds([]); };
   const [urls, setUrls] = useState<Record<string, string>>({});
   const [zoomIndex, setZoomIndex] = useState<number | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -88,9 +96,43 @@ export function StopPhotoGrid({
   return (
     <div>
       {/* Contador */}
-      <p className="text-xs text-muted-foreground mb-2">
-        {photos.length} foto{photos.length !== 1 ? 's' : ''}
-      </p>
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <p className="text-xs text-muted-foreground">
+          {selecting
+            ? `${selectedIds.length} seleccionada${selectedIds.length !== 1 ? 's' : ''} — marca en el orden de las páginas`
+            : `${photos.length} foto${photos.length !== 1 ? 's' : ''}`}
+        </p>
+        {onSavePdf && photos.length > 1 && (
+          selecting ? (
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => {
+                  const urlsInOrder = selectedIds.map(id => urls[id]).filter(Boolean);
+                  if (urlsInOrder.length === 0) return;
+                  setScanUrls(urlsInOrder);
+                  exitSelecting();
+                }}
+                disabled={selectedIds.length === 0}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-primary text-primary-foreground text-xs font-semibold disabled:opacity-50"
+              >
+                <ScanLine className="h-3.5 w-3.5" />
+                Escanear {selectedIds.length || ''} a un PDF
+              </button>
+              <button onClick={exitSelecting} className="px-2 py-1 rounded-md text-xs text-muted-foreground hover:bg-muted">
+                Cancelar
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setSelecting(true)}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-md border text-xs font-medium text-primary hover:bg-primary/5"
+            >
+              <Files className="h-3.5 w-3.5" />
+              Unir fotos en PDF
+            </button>
+          )
+        )}
+      </div>
 
       {/* Grilla */}
       <div className="grid grid-cols-3 lg:grid-cols-5 gap-2">
@@ -103,8 +145,16 @@ export function StopPhotoGrid({
             <div key={photo.id} className="relative group">
               {/* Tile */}
               <div
-                className="aspect-[2/1] rounded-lg overflow-hidden bg-muted cursor-pointer border border-border hover:border-primary/50 transition-colors"
-                onClick={() => { if (url) setZoomIndex(idx); }}
+                className={`aspect-[2/1] rounded-lg overflow-hidden bg-muted cursor-pointer border transition-colors ${
+                  selecting && selectedIds.includes(photo.id)
+                    ? 'border-primary ring-2 ring-primary'
+                    : 'border-border hover:border-primary/50'
+                }`}
+                onClick={() => {
+                  if (!url) return;
+                  if (selecting) toggleSelected(photo.id);
+                  else setZoomIndex(idx);
+                }}
               >
                 {url ? (
                   <img src={url} alt={label} className="w-full h-full object-cover" />
@@ -116,10 +166,21 @@ export function StopPhotoGrid({
               </div>
 
               {/* ✓ verde arriba izquierda */}
-              <div className="absolute top-1.5 left-1.5 w-5 h-5 rounded-full bg-[#F97316] flex items-center justify-center shadow">
-                <Check className="h-3 w-3 text-white" strokeWidth={3} />
-              </div>
+              {selecting ? (
+                <div
+                  className={`absolute top-1.5 left-1.5 w-5 h-5 rounded-full flex items-center justify-center shadow text-[10px] font-bold pointer-events-none ${
+                    selectedIds.includes(photo.id) ? 'bg-primary text-primary-foreground' : 'bg-white/90 border border-border'
+                  }`}
+                >
+                  {selectedIds.includes(photo.id) ? selectedIds.indexOf(photo.id) + 1 : ''}
+                </div>
+              ) : (
+                <div className="absolute top-1.5 left-1.5 w-5 h-5 rounded-full bg-[#F97316] flex items-center justify-center shadow">
+                  <Check className="h-3 w-3 text-white" strokeWidth={3} />
+                </div>
+              )}
 
+              {!selecting && (<>
               {/* ✕ arriba derecha para borrar */}
               <button
                 onClick={(e) => { e.stopPropagation(); onDelete(photo.id); }}
@@ -165,6 +226,7 @@ export function StopPhotoGrid({
               >
                 <Download className="h-3 w-3" />
               </button>
+              </>)}
 
               {/* Etiqueta */}
               <p className="text-[11px] text-center text-muted-foreground mt-1 truncate">{label}</p>
@@ -243,7 +305,7 @@ export function StopPhotoGrid({
                 className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[61] flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm font-semibold shadow-lg hover:bg-primary/90 transition-colors"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setScanTarget({ url: currentUrl, label: currentLabel });
+                  setScanUrls([currentUrl]);
                   closeZoom();
                 }}
               >
@@ -266,12 +328,12 @@ export function StopPhotoGrid({
         );
       })()}
 
-      {scanTarget && onSavePdf && (
+      {scanUrls && onSavePdf && (
         <PhotoToScannedPdf
-          imageUrl={scanTarget.url}
+          imageUrls={scanUrls}
           fileName={`${stopType === 'pickup' ? 'BOL' : 'POD'} #${loadReference}.pdf`}
           onSave={onSavePdf}
-          onClose={() => setScanTarget(null)}
+          onClose={() => setScanUrls(null)}
         />
       )}
     </div>
