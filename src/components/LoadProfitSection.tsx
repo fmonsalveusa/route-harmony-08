@@ -30,6 +30,7 @@ export function LoadProfitSection({
   const { getCostPerMile } = useTruckVariableCosts();
   const { settings } = useTenantSettings();
   const [actualExpenses, setActualExpenses] = useState(0);
+  const [investorPct, setInvestorPct] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -44,7 +45,32 @@ export function LoadProfitSection({
     return () => { cancelled = true; };
   }, [loadId]);
 
-  if (!truck) {
+  // Investor % — driver_investors (soporta múltiples) con fallback al campo legacy
+  useEffect(() => {
+    let cancelled = false;
+    if (!driver) { setInvestorPct(0); return; }
+    (async () => {
+      const { data } = await supabase
+        .from('driver_investors' as any)
+        .select('pay_percentage')
+        .eq('driver_id', driver.id)
+        .eq('is_active', true);
+      if (cancelled) return;
+      const rows = (data as any[]) || [];
+      if (rows.length > 0) {
+        setInvestorPct(rows.reduce((s, r) => s + (Number(r.pay_percentage) || 0), 0));
+      } else {
+        setInvestorPct(Number((driver as any).investor_pay_percentage) || 0);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [driver]);
+
+  const serviceType = (driver as any)?.service_type || 'owner_operator';
+  const isCompanyDriver = serviceType === 'company_driver';
+  const isDispatchService = serviceType === 'dispatch_service';
+
+  if (isCompanyDriver && !truck) {
     return (
       <div className="p-3 rounded-lg bg-card border text-sm">
         <h5 className="font-semibold mb-1 flex items-center gap-1.5">
@@ -55,25 +81,32 @@ export function LoadProfitSection({
     );
   }
 
+  const dispatcherPct = isDispatchService
+    ? (Number((dispatcher as any)?.dispatch_service_percentage) || Number((dispatcher as any)?.commission_percentage) || 0)
+    : (Number((dispatcher as any)?.commission_percentage) || 0);
+
   const profit = calculateLoadProfit({
+    serviceType,
     totalRate,
     loadedMiles,
     emptyMiles,
     pickupDate,
     deliveryDate,
-    mpg: Number(truck.mpg) || null,
-    monthlyFixedCosts: getMonthlyFixedCosts(truck.id),
-    costPerMile: getCostPerMile(truck.id),
+    mpg: Number(truck?.mpg) || null,
+    monthlyFixedCosts: truck ? getMonthlyFixedCosts(truck.id) : 0,
+    costPerMile: truck ? getCostPerMile(truck.id) : 0,
     driverPayPct: Number((driver as any)?.pay_percentage) || 0,
-    dispatcherPct: Number((dispatcher as any)?.commission_percentage) || 0,
+    investorPayPct: investorPct,
+    dispatcherPct,
     factoringPct: Number((driver as any)?.factoring_percentage) || 0,
+    dispatchServiceFeePct: Number((driver as any)?.dispatch_service_percentage) || 0,
     actualExpenses,
     dieselPrice: settings.diesel_price_per_gallon,
     workingDaysPerMonth: settings.working_days_per_month,
   });
 
   const isProfit = profit.netProfit >= 0;
-  const missingConfig = !truck.mpg || profit.lines.length === 0;
+  const missingConfig = isCompanyDriver && (!truck?.mpg || getCostPerMile(truck.id) === 0);
 
   return (
     <div className="p-3 rounded-lg bg-card border text-sm">
@@ -83,23 +116,39 @@ export function LoadProfitSection({
             ? <TrendingUp className="h-3.5 w-3.5 text-[hsl(152,60%,40%)]" />
             : <TrendingDown className="h-3.5 w-3.5 text-destructive" />}
           Rentabilidad
+          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground uppercase tracking-wide">
+            {profit.serviceLabel}
+          </span>
         </h5>
         <span className="text-[11px] text-muted-foreground">
-          {profit.totalMiles.toLocaleString()} mi · {profit.days} día{profit.days > 1 ? 's' : ''}
+          {isCompanyDriver && `${profit.totalMiles.toLocaleString()} mi · ${profit.days} día${profit.days > 1 ? 's' : ''}`}
         </span>
       </div>
 
       {missingConfig && (
         <div className="flex items-center gap-1.5 mb-2 px-2 py-1.5 rounded bg-amber-50 border border-amber-200 text-[11px] text-amber-800">
           <Settings2 className="h-3 w-3 flex-shrink-0" />
-          Configura MPG y costos del camión #{truck.unit_number} en Performance → Cost Configuration
+          Configura MPG y costos del camión #{truck?.unit_number} en Performance → Cost Configuration
         </div>
       )}
 
       <div className="space-y-1">
+        {/* Rate de la carga — para dispatch service no es ingreso nuestro */}
+        {isDispatchService && (
+          <div className="flex items-center justify-between py-0.5 text-muted-foreground">
+            <span className="text-xs">Rate de la carga</span>
+            <span className="text-xs">{fmt(profit.rate)}</span>
+          </div>
+        )}
+
         <div className="flex items-center justify-between py-1 border-b">
-          <span className="font-medium">Rate</span>
-          <span className="font-semibold text-primary">{fmt(profit.rate)}</span>
+          <div className="min-w-0">
+            <span className="font-medium">{isDispatchService ? 'Dispatch Fee' : 'Rate'}</span>
+            {profit.revenueDetail && (
+              <span className="text-[10px] text-muted-foreground ml-1.5">{profit.revenueDetail}</span>
+            )}
+          </div>
+          <span className="font-semibold text-primary">{fmt(profit.revenue)}</span>
         </div>
 
         {profit.lines.map(line => (
@@ -126,7 +175,8 @@ export function LoadProfitSection({
               {isProfit ? '' : '−'}{fmt(profit.netProfit)}
             </div>
             <div className="text-[11px] text-muted-foreground">
-              {profit.margin.toFixed(1)}% margen · ${profit.profitPerMile.toFixed(2)}/mi
+              {profit.margin.toFixed(1)}% margen
+              {isCompanyDriver && ` · $${profit.profitPerMile.toFixed(2)}/mi`}
             </div>
           </div>
         </div>
