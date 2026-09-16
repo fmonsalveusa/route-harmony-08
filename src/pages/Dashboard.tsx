@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { DashboardFilters } from '@/components/dashboard/DashboardFilters';
 import { RatesByDriverChart } from '@/components/dashboard/RatesByDriverChart';
+import { ProfitByDriverChart } from '@/components/dashboard/ProfitByDriverChart';
 import { WeeklyRatesChart } from '@/components/dashboard/WeeklyRatesChart';
 import { DispatcherCommissionsChart } from '@/components/dashboard/DispatcherCommissionsChart';
 import { MarketAnalysisCard } from '@/components/dashboard/MarketAnalysisCard';
@@ -156,6 +157,17 @@ const AdminDashboard = () => {
           <RatesByDriverChart loads={filteredLoads} drivers={drivers} year={year} month={month} week={week} serviceType={serviceTypeFilter} />
           <WeeklyRatesChart driverIds={filteredDriverIds} />
         </div>
+        {isAdmin && (
+          <div className="pt-2">
+            <ProfitByDriverChart
+              loads={filteredLoads}
+              drivers={drivers}
+              trucks={trucks}
+              dispatchers={dispatchers}
+              serviceType={serviceTypeFilter}
+            />
+          </div>
+        )}
       </div>
 
       {isAdmin && (
