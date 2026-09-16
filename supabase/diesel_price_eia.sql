@@ -18,6 +18,6 @@ GRANT SELECT ON TABLE diesel_prices TO authenticated;
 GRANT ALL ON TABLE diesel_prices TO service_role;
 
 -- 2. Config del tenant: región, de dónde salió el precio y cuándo
-ALTER TABLE tenants ADD COLUMN IF NOT EXISTS diesel_price_region text NOT NULL DEFAULT 'national';
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS diesel_price_region text NOT NULL DEFAULT 'lower_atlantic';
 ALTER TABLE tenants ADD COLUMN IF NOT EXISTS diesel_price_source text NOT NULL DEFAULT 'manual';   -- 'eia' | 'manual'
 ALTER TABLE tenants ADD COLUMN IF NOT EXISTS diesel_price_updated_at date;

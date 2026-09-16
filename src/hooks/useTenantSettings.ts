@@ -22,7 +22,7 @@ export interface TenantSettings {
 const DEFAULTS: TenantSettings = {
   diesel_price_per_gallon: 3.85,
   working_days_per_month: 21,
-  diesel_price_region: 'national',
+  diesel_price_region: 'lower_atlantic',
   diesel_price_source: 'manual',
   diesel_price_updated_at: null,
 };
@@ -42,7 +42,7 @@ async function fetchSettings(): Promise<TenantSettings> {
   return {
     diesel_price_per_gallon: Number(row?.diesel_price_per_gallon) || DEFAULTS.diesel_price_per_gallon,
     working_days_per_month: Number(row?.working_days_per_month) || DEFAULTS.working_days_per_month,
-    diesel_price_region: row?.diesel_price_region === 'lower_atlantic' ? 'lower_atlantic' : 'national',
+    diesel_price_region: row?.diesel_price_region === 'national' ? 'national' : 'lower_atlantic',
     diesel_price_source: row?.diesel_price_source === 'eia' ? 'eia' : 'manual',
     diesel_price_updated_at: row?.diesel_price_updated_at ?? null,
   };
