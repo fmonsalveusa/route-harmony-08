@@ -31,15 +31,18 @@ export function GpsPermissionBanner({ driverId }: { driverId: string | null }) {
     if (lastReported.current === key) return;
     lastReported.current = key;
 
-    await supabase
-      .from('drivers' as any)
-      .update({
-        gps_location_granted: s.location,
-        gps_background_granted: s.background,
-        gps_notification_granted: s.notification,
-        gps_permission_checked_at: new Date().toISOString(),
-      } as any)
-      .eq('id', driverId);
+    // RPC con SECURITY DEFINER: identifica al driver por su sesión, sin depender del RLS de drivers
+    const { data, error } = await supabase.rpc('report_gps_permissions' as any, {
+      p_location: s.location,
+      p_background: s.background,
+      p_notification: s.notification,
+    } as any);
+    if (error) {
+      console.error('[GpsPermissionBanner] report failed:', error);
+      lastReported.current = '';
+    } else if (!data) {
+      console.warn('[GpsPermissionBanner] no driver matched the logged-in email');
+    }
   }, [driverId]);
 
   const refresh = useCallback(async () => {
