@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { StatusBadge } from '@/components/StatusBadge';
-import { MapPin, Package, Navigation, Clock, Search, ChevronRight, AlertTriangle, Eye, User, Users, Pencil, Loader2, Copy, Check, Download, ExternalLink, X, Pause, Play } from 'lucide-react';
+import { MapPin, MapPinOff, Package, Navigation, Clock, Search, ChevronRight, AlertTriangle, Eye, User, Users, Pencil, Loader2, Copy, Check, Download, ExternalLink, X, Pause, Play } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { DriversTimelineCard } from '@/components/dashboard/DriversTimelineCard';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, Tooltip as LeafletTooltip, useMap } from 'react-leaflet';
@@ -1094,6 +1094,17 @@ const Tracking = () => {
                           </span>
                         ) : null;
                       })()}
+                      {(driver as any).gps_background_granted === false && (
+                        <span
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                            hasColoredBg ? 'bg-white/25 text-white' : 'bg-amber-100 text-amber-800'
+                          }`}
+                          title="Sin permiso de ubicación en background — el GPS se apaga al cerrar la app"
+                        >
+                          <MapPinOff className="h-3 w-3" />
+                          NO BG
+                        </span>
+                      )}
                       {driver.phone && (
                         <div className="flex items-center gap-1">
                           <span className={`text-xs whitespace-nowrap ${hasColoredBg ? 'text-white/90' : 'text-muted-foreground'}`}>{driver.phone}</span>
