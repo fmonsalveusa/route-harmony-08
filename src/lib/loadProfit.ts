@@ -110,7 +110,10 @@ export function calculateLoadProfit(input: LoadProfitInput): LoadProfit {
     lines.push({ label: 'Driver pay', detail: `${input.driverPayPct}%`, amount: pct(input.driverPayPct) });
     lines.push({ label: 'Investor pay', detail: `${input.investorPayPct}%`, amount: pct(input.investorPayPct) });
     lines.push({ label: 'Dispatcher', detail: `${input.dispatcherPct}%`, amount: pct(input.dispatcherPct) });
-    lines.push({ label: 'Factoring', detail: `${input.factoringPct}%`, amount: pct(input.factoringPct) });
+    // Owner Operator: el factoring ya va descontado del % del driver/investor
+    if (serviceType !== 'owner_operator') {
+      lines.push({ label: 'Factoring', detail: `${input.factoringPct}%`, amount: pct(input.factoringPct) });
+    }
   }
 
   lines.push({
