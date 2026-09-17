@@ -340,7 +340,8 @@ async function buildAdminReport(supabase: Supa, tenant: any, today: string, stop
   const idle = driverList.filter((d) => d.status === "available" && !busy.has(String(d.id))).map((d) => d.name);
 
   const { data: payments } = await supabase
-    .from("payments").select("amount").eq("tenant_id", tenant.id).eq("status", "pending");
+    // Igual que "Total Pending" de la página Payments: Pending + In Process
+    .from("payments").select("amount").eq("tenant_id", tenant.id).in("status", ["pending", "in_process"]);
   const paymentList = (payments as any[]) || [];
   const pendingTotal = paymentList.reduce((s, p) => s + (Number(p.amount) || 0), 0);
 
