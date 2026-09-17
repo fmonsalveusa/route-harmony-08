@@ -25,6 +25,23 @@ Deno.serve(async (req) => {
   try {
     const { action, group_id } = await req.json().catch(() => ({}));
 
+    // Estado de la conexión del número en Whapi
+    if (action === "status") {
+      const res = await fetch(`${WHAPI}/health`, { headers: auth });
+      if (!res.ok) return json({ connected: false, status: `HTTP ${res.status}` });
+      const health = await res.json().catch(() => ({}));
+      const text = String(health?.status?.text ?? health?.status ?? "UNKNOWN");
+      let phone: string | null = null;
+      try {
+        const me = await fetch(`${WHAPI}/users/profile`, { headers: auth });
+        if (me.ok) {
+          const profile = await me.json();
+          phone = profile?.phone ?? profile?.id ?? null;
+        }
+      } catch { /* el perfil es opcional */ }
+      return json({ connected: text.toUpperCase() === "AUTH", status: text, phone });
+    }
+
     // Mensaje de prueba a un grupo
     if (action === "test") {
       if (!group_id) return json({ error: "group_id required" }, 400);

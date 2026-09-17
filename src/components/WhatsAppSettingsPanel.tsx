@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react';
-import { MessageCircle, Loader2, Send } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Loader2, Send } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { getTenantId } from '@/hooks/useTenantId';
-import { WhatsAppGroupSelect } from '@/components/WhatsAppGroupSelect';
+import { WhatsAppGroupSelect, type WhatsAppGroup } from '@/components/WhatsAppGroupSelect';
 import { toast } from 'sonner';
 
 interface Settings {
@@ -40,12 +39,11 @@ const TOGGLES: { key: keyof Settings; title: string; description: string }[] = [
   },
 ];
 
-export function WhatsAppSettingsDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+export function WhatsAppSettingsPanel({ groups }: { groups?: WhatsAppGroup[] | null }) {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [testing, setTesting] = useState(false);
 
   useEffect(() => {
-    if (!open) return;
     (async () => {
       const tenantId = await getTenantId();
       const { data } = await supabase.from('tenants' as any).select('*').eq('id', tenantId).maybeSingle();
@@ -59,7 +57,7 @@ export function WhatsAppSettingsDialog({ open, onOpenChange }: { open: boolean; 
         wa_expiry_alerts: row?.wa_expiry_alerts ?? true,
       });
     })();
-  }, [open]);
+  }, []);
 
   const save = async (changes: Partial<Settings>) => {
     setSettings(prev => (prev ? { ...prev, ...changes } : prev));
@@ -81,57 +79,48 @@ export function WhatsAppSettingsDialog({ open, onOpenChange }: { open: boolean; 
     }
   };
 
+  if (!settings) {
+    return <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <MessageCircle className="h-5 w-5 text-green-600" /> WhatsApp Settings
-          </DialogTitle>
-          <DialogDescription>
-            Avisos automáticos a los grupos de WhatsApp. Los grupos de drivers, investors y dispatchers se asignan en el perfil de cada uno.
-          </DialogDescription>
-        </DialogHeader>
+    <div className="space-y-4">
+      <div>
+        <p className="text-sm font-medium mb-2">Grupo de administración</p>
+        <WhatsAppGroupSelect
+          className=""
+          groups={groups}
+          groupId={settings.whatsapp_admin_group_id}
+          groupName={settings.whatsapp_admin_group_name}
+          onChange={(id, name) => save({ whatsapp_admin_group_id: id, whatsapp_admin_group_name: name })}
+          hint="Aquí llega el reporte diario."
+        />
+      </div>
 
-        {!settings ? (
-          <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
-        ) : (
-          <div className="space-y-4">
-            <WhatsAppGroupSelect
-              className=""
-              groupId={settings.whatsapp_admin_group_id}
-              groupName={settings.whatsapp_admin_group_name}
-              onChange={(id, name) => save({ whatsapp_admin_group_id: id, whatsapp_admin_group_name: name })}
-              hint="Grupo de administración: aquí llega el reporte diario."
-            />
-
-            <div className="space-y-3">
-              {TOGGLES.map(t => (
-                <div key={t.key} className="flex items-start justify-between gap-3 rounded-lg border p-3">
-                  <div>
-                    <p className="text-sm font-medium">{t.title}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{t.description}</p>
-                  </div>
-                  <Switch
-                    checked={Boolean(settings[t.key])}
-                    onCheckedChange={(v) => save({ [t.key]: v } as Partial<Settings>)}
-                  />
-                </div>
-              ))}
+      <div className="space-y-3">
+        {TOGGLES.map(t => (
+          <div key={t.key} className="flex items-start justify-between gap-3 rounded-lg border p-3">
+            <div>
+              <p className="text-sm font-medium">{t.title}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{t.description}</p>
             </div>
-
-            <Button
-              variant="outline"
-              className="w-full gap-2"
-              onClick={testReport}
-              disabled={testing || !settings.whatsapp_admin_group_id}
-            >
-              {testing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-              Enviar reporte de prueba ahora
-            </Button>
+            <Switch
+              checked={Boolean(settings[t.key])}
+              onCheckedChange={(v) => save({ [t.key]: v } as Partial<Settings>)}
+            />
           </div>
-        )}
-      </DialogContent>
-    </Dialog>
+        ))}
+      </div>
+
+      <Button
+        variant="outline"
+        className="w-full gap-2"
+        onClick={testReport}
+        disabled={testing || !settings.whatsapp_admin_group_id}
+      >
+        {testing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+        Enviar reporte de prueba ahora
+      </Button>
+    </div>
   );
 }

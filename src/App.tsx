@@ -26,6 +26,7 @@ import UsersPage from "./pages/UsersPage";
 import Expenses from "./pages/Expenses";
 import Performance from "./pages/Performance";
 import Maintenance from "./pages/Maintenance";
+import WhatsAppPage from "./pages/WhatsApp";
 import NotFound from "./pages/NotFound";
 import DriverOnboarding from "./pages/DriverOnboarding";
 import Install from "./pages/Install";
@@ -211,6 +212,7 @@ const AppRoutes = () => {
       <Route path="/expenses" element={<ProtectedRoute><Expenses /></ProtectedRoute>} />
       <Route path="/performance" element={<ProtectedRoute><Performance /></ProtectedRoute>} />
       <Route path="/maintenance" element={<ProtectedRoute><Maintenance /></ProtectedRoute>} />
+      <Route path="/whatsapp" element={<ProtectedRoute><WhatsAppPage /></ProtectedRoute>} />
       <Route path="/users" element={<ProtectedRoute><UsersPage /></ProtectedRoute>} />
       <Route path="/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
       <Route path="/documents/upload" element={<ProtectedRoute><SigningUpload /></ProtectedRoute>} />
