@@ -211,7 +211,7 @@ export const AUTOMATIONS: AutomationDefinition[] = [
   {
     id: 'admin_report',
     title: 'Reporte diario de administración',
-    description: 'Cada mañana a las 7am al grupo de administración. El formato del reporte no es editable.',
+    description: 'Cada mañana a las 8am al grupo de administración: cargas activas, pickups y entregas de hoy, entregadas sin POD, drivers sin carga, pagos pendientes, mantenimientos vencidos y facturado de la semana. El formato no es editable.',
     toggle: 'wa_admin_report',
     templates: [],
   },

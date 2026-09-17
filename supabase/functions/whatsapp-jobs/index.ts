@@ -257,12 +257,22 @@ async function runExpiryAlerts(supabase: Supa, tenant: any) {
 async function buildAdminReport(supabase: Supa, tenant: any, today: string, stops: TodayStop[]): Promise<string> {
   const { data: loads } = await supabase
     .from("loads")
-    .select("id, reference_number, driver_id, status, delivered_at")
+    .select("id, reference_number, driver_id, status, delivered_at, pickup_date, total_rate")
     .eq("tenant_id", tenant.id)
     .neq("status", "cancelled");
   const all = (loads as any[]) || [];
   const active = all.filter((l) => !ACTIVE_EXCLUDED.includes(l.status));
-  const unassigned = active.filter((l) => !l.driver_id);
+
+  // Facturado esta semana: rate de las cargas (no canceladas) con pickup de lunes a hoy
+  const [y, m, d] = today.split("-").map(Number);
+  const dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay(); // 0 = domingo
+  const monday = new Date(Date.UTC(y, m - 1, d - ((dow + 6) % 7))).toISOString().split("T")[0];
+  const weekBilled = all
+    .filter((l) => {
+      const p = (l.pickup_date || "").split("T")[0];
+      return p && p >= monday && p <= today;
+    })
+    .reduce((sum, l) => sum + (Number(l.total_rate) || 0), 0);
 
   const twoWeeksAgo = new Date(Date.now() - 14 * 86400_000).toISOString();
   const recentDelivered = all.filter((l) => l.status === "delivered" && l.delivered_at && l.delivered_at >= twoWeeksAgo);
@@ -273,7 +283,7 @@ async function buildAdminReport(supabase: Supa, tenant: any, today: string, stop
 
   const { data: drivers } = await supabase
     .from("drivers")
-    .select("id, name, status, truck_id, license_expiry, medical_card_expiry")
+    .select("id, name, status")
     .eq("tenant_id", tenant.id)
     .neq("status", "inactive");
   const driverList = (drivers as any[]) || [];
@@ -287,29 +297,14 @@ async function buildAdminReport(supabase: Supa, tenant: any, today: string, stop
 
   const { data: trucks } = await supabase
     .from("trucks")
-    .select("id, unit_number, status, insurance_expiry, registration_expiry, annual_inspection_expiry")
-    .eq("tenant_id", tenant.id)
-    .neq("status", "inactive");
+    .select("id, unit_number")
+    .eq("tenant_id", tenant.id);
   const truckList = (trucks as any[]) || [];
   const unitOf = (id: string) => truckList.find((t) => String(t.id) === String(id))?.unit_number;
 
   const { data: maint } = await supabase
     .from("truck_maintenance").select("truck_id, maintenance_type").eq("tenant_id", tenant.id).eq("status", "due");
   const overdueMaint = ((maint as any[]) || []).map((m) => `Unit #${unitOf(m.truck_id) ?? "?"} ${m.maintenance_type}`);
-
-  const expired: string[] = [];
-  for (const d of driverList) {
-    for (const [field, label] of Object.entries(DRIVER_DOCS)) {
-      const e = (d[field] || "").split("T")[0];
-      if (e && e < today) expired.push(`${capitalize(label.replace(/^la /, ""))} — ${d.name}`);
-    }
-  }
-  for (const t of truckList) {
-    for (const [field, label] of Object.entries(TRUCK_DOCS)) {
-      const e = (t[field] || "").split("T")[0];
-      if (e && e < today) expired.push(`${capitalize(label.replace(/^(el|la) /, ""))} — Unit #${t.unit_number}`);
-    }
-  }
 
   const list = (items: string[], max = 6) =>
     items.length === 0 ? "" : ` (${items.slice(0, max).join(", ")}${items.length > max ? `, +${items.length - max}` : ""})`;
@@ -321,13 +316,13 @@ async function buildAdminReport(supabase: Supa, tenant: any, today: string, stop
     `*Reporte diario — ${usDate(today)}*`,
     "",
     `Cargas activas: ${active.length}`,
-    `Pickups hoy: ${pickups} · Entregas hoy: ${deliveries}`,
-    `Cargas sin driver: ${unassigned.length}${list(unassigned.map((l) => `#${l.reference_number}`))}`,
+    `Pickups hoy: ${pickups}`,
+    `Entregas hoy: ${deliveries}`,
     `Entregadas sin POD: ${missingPod.length}${list(missingPod)}`,
-    `Drivers sin carga: ${idle.length}${list(idle)}`,
+    `Drivers sin carga: ${idle.length}${list(idle, 50)}`,
     `Pagos pendientes: ${paymentList.length} por ${money(pendingTotal)}`,
-    `Mantenimientos vencidos: ${overdueMaint.length}${list(overdueMaint, 4)}`,
-    `Documentos vencidos: ${expired.length}${list(expired, 4)}`,
+    `Mantenimientos vencidos: ${overdueMaint.length}${list(overdueMaint)}`,
+    `Facturado esta semana: ${money(weekBilled)}`,
   ].join("\n");
 }
 
@@ -367,11 +362,16 @@ Deno.serve(async (req) => {
         Object.assign(r, await runPodReminders(supabase, tenant));
       }
 
-      if (job === "daily" && fromCron) {
+      // El cron corre en dos horas UTC; solo se envía cuando en Eastern es la hora correcta (cubre horario de verano e invierno)
+      if (job === "daily" && fromCron && etHour() === 7) {
         const stops = await getTodayStops(supabase, tenant.id, today);
         if (on("wa_daily_reminders")) Object.assign(r, await runDailyReminders(supabase, tenant, today, stops));
         if (on("wa_expiry_alerts")) Object.assign(r, await runExpiryAlerts(supabase, tenant));
+      }
+
+      if (job === "admin_report" && fromCron && etHour() === 8) {
         if (on("wa_admin_report") && tenant.whatsapp_admin_group_id) {
+          const stops = await getTodayStops(supabase, tenant.id, today);
           const message = await buildAdminReport(supabase, tenant, today, stops);
           r.admin_report = await sendOnce(supabase, `admin:${tenant.id}:${today}`, {
             tenantId: tenant.id, templateKey: "admin_report", recipientType: "admin",
