@@ -94,6 +94,10 @@ Deno.serve(async (req) => {
     if (event === "assigned" && load.whatsapp_assigned_driver_id === String(load.driver_id)) {
       return json({ skipped: "already notified" });
     }
+    // Mientras está en planned (o ya terminó) no se avisa; sale al pasar a dispatched
+    if (event === "assigned" && ["planned", "cancelled", "delivered", "tonu", "paid"].includes(load.status)) {
+      return json({ skipped: `status ${load.status}` });
+    }
     if (event === "delivered" && (load.status !== "delivered" || load.whatsapp_delivered_sent_at)) {
       return json({ skipped: "not delivered or already notified" });
     }

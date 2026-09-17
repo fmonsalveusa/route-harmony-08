@@ -62,7 +62,7 @@ export const AUTOMATIONS: AutomationDefinition[] = [
   {
     id: 'load_assigned',
     title: 'Carga asignada',
-    description: 'Al asignar una carga a un driver (o reasignarla a otro).',
+    description: 'Al asignar una carga a un driver (o reasignarla a otro). Si la carga está en Planned, se envía cuando pasa a Dispatched.',
     toggle: 'wa_load_assigned',
     templates: [{
       key: 'load_assigned',
