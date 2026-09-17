@@ -149,6 +149,26 @@ export function useTruckFixedCosts() {
     };
   }, [allCosts]);
 
+  /**
+   * Costo fijo de UN día calendario (YYYY-MM-DD), con las versiones vigentes ese día.
+   * Semanal ÷ 7, mensual ÷ días de ese mes, anual ÷ días de ese año. Excluye costos por milla.
+   */
+  const getDailyCostAt = useCallback((truckId: string, date: string) => {
+    const [y, m] = date.split('-').map(Number);
+    const daysInMonth = new Date(Date.UTC(y, m, 0)).getUTCDate();
+    const daysInYear = (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0 ? 366 : 365;
+    return allCosts
+      .filter(fc => fc.truck_id === truckId && fc.frequency !== 'per_mile' && isActiveOn(fc, date))
+      .reduce((sum, fc) => {
+        const amount = Number(fc.amount) || 0;
+        switch (fc.frequency) {
+          case 'weekly': return sum + amount / 7;
+          case 'yearly': return sum + amount / daysInYear;
+          default: return sum + amount / daysInMonth;
+        }
+      }, 0);
+  }, [allCosts]);
+
   /** Get period-adjusted fixed costs */
   const getPeriodFixedCosts = useCallback((truckId: string, period: 'week' | 'month' | 'year') => {
     const monthly = getMonthlyFixedCosts(truckId);
@@ -162,6 +182,6 @@ export function useTruckFixedCosts() {
   return {
     fixedCosts, allCosts, loading,
     createFixedCost, updateFixedCost, deleteFixedCost,
-    getMonthlyFixedCosts, getPeriodFixedCosts, getCostPerMile, getCostsAt,
+    getMonthlyFixedCosts, getPeriodFixedCosts, getCostPerMile, getCostsAt, getDailyCostAt,
   };
 }

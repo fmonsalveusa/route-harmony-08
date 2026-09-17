@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useTruckFixedCosts } from '@/hooks/useTruckFixedCosts';
 import { useTenantSettings } from '@/hooks/useTenantSettings';
-import { calculateLoadProfit, type LoadProfit } from '@/lib/loadProfit';
+import { allocateFixedCost, calculateLoadProfit, type LoadProfit, type LoadSpan } from '@/lib/loadProfit';
 import type { DbLoad } from '@/hooks/useLoads';
 import type { DbDriver } from '@/hooks/useDrivers';
 import type { DbTruck } from '@/hooks/useTrucks';
@@ -45,7 +45,7 @@ export function loadEffectiveDate(load: Pick<DbLoad, 'pickup_date' | 'created_at
  * Cada cambio de configuración vale desde el día en que se hizo; las cargas anteriores no cambian.
  */
 export function useLoadProfitData() {
-  const { getCostsAt } = useTruckFixedCosts();
+  const { getCostsAt, getDailyCostAt } = useTruckFixedCosts();
   const { settings } = useTenantSettings();
 
   const { data: history = [], isLoading: historyLoading } = useQuery({
@@ -91,6 +91,28 @@ export function useLoadProfitData() {
     },
   });
 
+  // Días que ocupa cada carga (no cancelada) por camión, para repartir los días compartidos.
+  // Se traen aparte porque la gráfica filtra por semana y las cargas vecinas pueden quedar fuera.
+  const { data: loadsByTruck = {} } = useQuery({
+    queryKey: ['profit_data', 'truck_load_spans'],
+    staleTime: 60 * 1000,
+    queryFn: async () => {
+      const { data } = await (supabase
+        .from('loads' as any)
+        .select('id, reference_number, truck_id, pickup_date, delivery_date') as any)
+        .neq('status', 'cancelled')
+        .not('truck_id', 'is', null)
+        .gte('pickup_date', '2026-08-01');
+      const map: Record<string, LoadSpan[]> = {};
+      ((data as any[]) || []).forEach(l => {
+        (map[String(l.truck_id)] ??= []).push({
+          id: l.id, ref: l.reference_number, pickupDate: l.pickup_date, deliveryDate: l.delivery_date,
+        });
+      });
+      return map;
+    },
+  });
+
   const historyByKey = useMemo(() => {
     const map: Record<string, HistoryRow[]> = {};
     history.forEach(r => { (map[`${r.entity_type}:${r.entity_id}:${r.field}`] ??= []).push(r); });
@@ -99,12 +121,6 @@ export function useLoadProfitData() {
 
   const startDate = useMemo(
     () => history.reduce((min, r) => (r.effective_from < min ? r.effective_from : min), DEFAULT_START_DATE),
-    [history],
-  );
-
-  // RLS solo devuelve el historial de este tenant
-  const workingDaysHistory = useMemo(
-    () => history.filter(r => r.entity_type === 'tenant' && r.field === 'working_days_per_month'),
     [history],
   );
 
@@ -134,8 +150,12 @@ export function useLoadProfitData() {
     const isDispatchService = serviceType === 'dispatch_service';
     const snapshot = FROZEN_STATUSES.includes(load.status) ? dieselSnapshotByLoad[load.id] : undefined;
     const costs = truck ? getCostsAt(truck.id, date) : { monthly: 0, perMile: 0 };
-    const workingDaysRow = pickAt(workingDaysHistory, date);
-    const tenantWorkingDays = num(workingDaysRow, settings.working_days_per_month) || settings.working_days_per_month;
+
+    // La carga actual con sus fechas vigentes (pueden haber cambiado desde que se cargó la lista)
+    const self: LoadSpan = { id: load.id, ref: load.reference_number, pickupDate: load.pickup_date, deliveryDate: load.delivery_date };
+    const fixedCost = truck && load.status !== 'cancelled'
+      ? allocateFixedCost(self, loadsByTruck[String(truck.id)] ?? [], day => getDailyCostAt(truck.id, day))
+      : { amount: 0, days: 0, sharedWith: [] };
 
     return calculateLoadProfit({
       serviceType,
@@ -145,7 +165,7 @@ export function useLoadProfitData() {
       pickupDate: load.pickup_date,
       deliveryDate: load.delivery_date,
       mpg: num(at('truck', truck?.id, 'mpg', date), (truck as any)?.mpg) || null,
-      monthlyFixedCosts: costs.monthly,
+      fixedCost,
       costPerMile: costs.perMile,
       driverPayPct: num(at('driver', driver?.id, 'pay_percentage', date), d?.pay_percentage),
       investorPayPct: num(at('driver', driver?.id, 'investor_pct', date), d?.investor_pay_percentage),
@@ -158,9 +178,8 @@ export function useLoadProfitData() {
       actualExpenses: expensesByLoad[load.id] || 0,
       dieselPrice: snapshot ?? settings.diesel_price_per_gallon,
       dieselFrozen: snapshot != null,
-      workingDaysPerMonth: tenantWorkingDays,
     });
-  }, [at, startDate, workingDaysHistory, getCostsAt, settings, expensesByLoad, dieselSnapshotByLoad]);
+  }, [at, startDate, loadsByTruck, getCostsAt, getDailyCostAt, settings, expensesByLoad, dieselSnapshotByLoad]);
 
   return { getLoadProfit, startDate, loading: historyLoading };
 }

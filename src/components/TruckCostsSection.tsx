@@ -109,7 +109,8 @@ export function TruckCostsSection({ truck }: { truck: DbTruck }) {
 
   const costs = fixedCosts.filter(fc => fc.truck_id === truck.id);
   const monthly = costs.reduce((s, fc) => s + toMonthly(fc), 0);
-  const daily = settings.working_days_per_month > 0 ? monthly / settings.working_days_per_month : 0;
+  // Costo por día calendario (promedio del año: 365.25 / 12 días por mes)
+  const daily = monthly / (365.25 / 12);
   const perMileCosts = costs.filter(fc => fc.frequency === 'per_mile').reduce((s, fc) => s + Number(fc.amount || 0), 0);
   const mpgNum = parseFloat(mpg) || 0;
   const fuelPerMile = mpgNum > 0 ? settings.diesel_price_per_gallon / mpgNum : 0;
@@ -167,7 +168,7 @@ export function TruckCostsSection({ truck }: { truck: DbTruck }) {
               <span className="font-semibold">{money(monthly)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Por día ({settings.working_days_per_month} días laborables)</span>
+              <span className="text-muted-foreground">Por día (promedio, días calendario)</span>
               <span className="font-semibold text-amber-600">{money(daily)}</span>
             </div>
             <div className="flex justify-between">

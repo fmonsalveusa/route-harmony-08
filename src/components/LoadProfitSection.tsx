@@ -37,6 +37,11 @@ export function LoadProfitSection({ load, loadedMiles, emptyMiles, truck, driver
     queryClient.invalidateQueries({ queryKey: DIESEL_SNAPSHOTS_KEY });
   }, [load.status, queryClient]);
 
+  // Si cambian las fechas o el camión, se recalcula el reparto de días compartidos
+  useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: ['profit_data', 'truck_load_spans'] });
+  }, [load.pickup_date, load.delivery_date, load.truck_id, load.status, queryClient]);
+
   if (loading) return null;
 
   const profit = getLoadProfit(load, driver, truck, dispatcher, { loadedMiles, emptyMiles });

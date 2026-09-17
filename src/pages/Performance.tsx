@@ -5,7 +5,6 @@ import { useDrivers } from '@/hooks/useDrivers';
 import { useTrucks } from '@/hooks/useTrucks';
 import { useDispatchers } from '@/hooks/useDispatchers';
 import { useTruckFixedCosts } from '@/hooks/useTruckFixedCosts';
-import { FixedCostsDialog } from '@/components/FixedCostsDialog';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -67,7 +66,6 @@ export default function Performance() {
   const { dispatchers } = useDispatchers();
   const { getPeriodFixedCosts, fixedCosts } = useTruckFixedCosts();
   const [period, setPeriod] = useState<PeriodKey>('month');
-  const [fixedCostsDialogOpen, setFixedCostsDialogOpen] = useState(false);
   const [breakdownBase, setBreakdownBase] = useState<'expenses' | 'revenue'>('expenses');
 
   const { start, end } = getDateRange(period);
@@ -406,10 +404,6 @@ export default function Performance() {
               <CardTitle className="text-lg">Truck Performance Summary</CardTitle>
               <CardDescription>Company Drivers Only — {periodOptions.find(o => o.value === period)?.label}</CardDescription>
             </div>
-            <Button variant="outline" size="sm" className="gap-2" onClick={() => setFixedCostsDialogOpen(true)}>
-              <Settings className="h-4 w-4" />
-              Cost Settings
-            </Button>
           </div>
         </CardHeader>
         <CardContent className="p-0">
@@ -690,11 +684,6 @@ export default function Performance() {
           </CardContent>
         </Card>
       )}
-      <FixedCostsDialog
-        open={fixedCostsDialogOpen}
-        onOpenChange={setFixedCostsDialogOpen}
-        trucks={companyTrucks}
-      />
     </div>
   );
 }

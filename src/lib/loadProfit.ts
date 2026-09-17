@@ -27,7 +27,8 @@ export interface LoadProfitInput {
   pickupDate: string | null;
   deliveryDate: string | null;
   mpg: number | null;
-  monthlyFixedCosts: number;
+  /** Costo fijo asignado: días calendario de la carga, con los días compartidos repartidos */
+  fixedCost: FixedCostAllocation;
   costPerMile: number;
   driverPayPct: number;
   investorPayPct: number;
@@ -38,7 +39,68 @@ export interface LoadProfitInput {
   dieselPrice: number;
   /** true si el precio del diésel quedó congelado al entregar */
   dieselFrozen?: boolean;
-  workingDaysPerMonth: number;
+}
+
+export interface FixedCostAllocation {
+  /** Monto total de costos fijos que le toca a la carga */
+  amount: number;
+  /** Días que le tocan (fraccionados cuando comparte días con otras cargas del camión) */
+  days: number;
+  /** Cargas del mismo camión con las que comparte algún día */
+  sharedWith: string[];
+}
+
+export interface LoadSpan {
+  id: string;
+  ref: string;
+  pickupDate: string | null;
+  deliveryDate: string | null;
+}
+
+const addDays = (date: string, n: number) => {
+  const [y, m, d] = date.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d + n)).toISOString().split('T')[0];
+};
+
+/** Días calendario que ocupa la carga (pickup → entrega, inclusive). Sin entrega: solo el pickup. */
+function spanOf(l: LoadSpan): { start: string; end: string } | null {
+  const start = (l.pickupDate || '').split('T')[0];
+  if (!start) return null;
+  const rawEnd = (l.deliveryDate || '').split('T')[0];
+  return { start, end: rawEnd && rawEnd >= start ? rawEnd : start };
+}
+
+/**
+ * Reparte los costos fijos del camión por día calendario.
+ * Cada día que la carga ocupa se divide en partes iguales entre todas las cargas
+ * del mismo camión que también ocupan ese día.
+ */
+export function allocateFixedCost(
+  load: LoadSpan,
+  truckLoads: LoadSpan[],
+  dailyCostAt: (date: string) => number,
+): FixedCostAllocation {
+  const span = spanOf(load);
+  if (!span) return { amount: 0, days: 0, sharedWith: [] };
+
+  const others = truckLoads
+    .filter(l => l.id !== load.id)
+    .map(l => ({ load: l, span: spanOf(l) }))
+    .filter((o): o is { load: LoadSpan; span: { start: string; end: string } } => o.span !== null);
+
+  let amount = 0;
+  let days = 0;
+  const sharedWith = new Set<string>();
+
+  for (let day = span.start; day <= span.end; day = addDays(day, 1)) {
+    const overlapping = others.filter(o => o.span.start <= day && day <= o.span.end);
+    const share = 1 / (overlapping.length + 1);
+    amount += share * dailyCostAt(day);
+    days += share;
+    overlapping.forEach(o => sharedWith.add(o.load.ref));
+  }
+
+  return { amount, days, sharedWith: [...sharedWith] };
 }
 
 const SERVICE_LABELS: Record<string, string> = {
@@ -96,13 +158,16 @@ export function calculateLoadProfit(input: LoadProfitInput): LoadProfit {
         detail: `${totalMiles.toLocaleString()} mi × $${(Number(input.costPerMile) || 0).toFixed(3)}`,
         amount: totalMiles * (Number(input.costPerMile) || 0),
       });
-      const dailyFixed = input.workingDaysPerMonth > 0
-        ? (Number(input.monthlyFixedCosts) || 0) / input.workingDaysPerMonth
-        : 0;
+      const fixed = input.fixedCost;
+      const fixedDays = Math.round(fixed.days * 100) / 100;
+      const perDay = fixed.days > 0 ? fixed.amount / fixed.days : 0;
+      const shared = fixed.sharedWith.length > 0
+        ? ` (compartido con ${fixed.sharedWith.map(r => `#${r}`).join(', ')})`
+        : '';
       lines.push({
         label: 'Costos fijos',
-        detail: `${days} día${days > 1 ? 's' : ''} × ${money(dailyFixed)}/día`,
-        amount: dailyFixed * days,
+        detail: `${fixedDays} día${fixedDays === 1 ? '' : 's'} × ${money(perDay)}/día${shared}`,
+        amount: fixed.amount,
       });
     }
 
