@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
 
     const ref = load.reference_number;
     const text = event === "assigned"
-      ? `La carga #${ref} ha sido asignada a ti. Toda la información de la carga está en la app móvil. Cualquier duda déjanos saber.`
+      ? `La carga #${ref} ha sido asignada a ti. Toda la información de la carga está en la app móvil.\nPor favor déjanos saber a qué hora estimas la llegada al Pick up.`
       : `La carga #${ref} ha sido completada exitosamente. Las fotos de la carga y el POD han sido recibidos.`;
 
     await sendToGroup(driver.whatsapp_group_id, text);
