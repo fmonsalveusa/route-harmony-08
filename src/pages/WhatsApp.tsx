@@ -28,7 +28,12 @@ interface Connection {
   connected: boolean;
   status: string;
   phone: string | null;
+  /** Whapi rechazando envíos (límite, pago, token) aunque el número figure conectado */
+  blocked?: { error: string; at: string } | null;
 }
+
+const formatET = (iso: string) =>
+  new Date(iso).toLocaleString('en-US', { timeZone: 'America/New_York', month: '2-digit', day: '2-digit', hour: 'numeric', minute: '2-digit' });
 
 const SERVICE_LABELS: Record<string, string> = {
   company_driver: 'Company Driver',
@@ -211,6 +216,17 @@ export default function WhatsAppPage() {
                 {connection.phone ? `+${String(connection.phone).replace(/^\+/, '')} · ` : ''}
                 {groups ? `${groups.length} grupos disponibles` : 'Cargando grupos...'}
               </p>
+            </>
+          ) : connection.blocked ? (
+            <>
+              <p className="text-sm font-semibold text-destructive">Whapi está rechazando los mensajes — no se están enviando avisos</p>
+              <p className="text-xs text-muted-foreground">
+                {/402|limit|trial|payment|subscription/i.test(connection.blocked.error)
+                  ? 'Límite de mensajes o falta de pago. Revisa el plan en whapi.cloud.'
+                  : 'Problema de autorización. Revisa el token o vuelve a conectar el número en whapi.cloud.'}
+                {' '}Último error: {formatET(connection.blocked.at)}. Cuando se resuelva, envía un mensaje de prueba y dale Verificar.
+              </p>
+              <p className="text-[11px] text-muted-foreground/80 mt-0.5 break-all">{connection.blocked.error}</p>
             </>
           ) : (
             <>

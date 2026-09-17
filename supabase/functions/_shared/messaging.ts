@@ -51,13 +51,45 @@ export async function logMessage(supabase: any, log: MessageLog, status: "sent" 
   }
 }
 
+/** Errores de la cuenta de Whapi (pago, límite, token, desconexión): afectan a todos los avisos */
+export function isAccountError(message: string): boolean {
+  return /HTTP (401|402|403)\b|limit exceeded|trial|payment|subscription|unauthori[sz]ed|not authorized|forbidden/i.test(message);
+}
+
+/** Notificación en el TMS cuando la cuenta de Whapi bloquea envíos (máximo una cada 6 horas) */
+async function notifyAccountError(supabase: any, tenantId: string | null, error: string) {
+  if (!tenantId || !isAccountError(error)) return;
+  try {
+    const since = new Date(Date.now() - 6 * 3600_000).toISOString();
+    const { data: recent } = await supabase
+      .from("notifications").select("id")
+      .eq("tenant_id", tenantId).eq("type", "whatsapp_error").gte("created_at", since).limit(1);
+    if (recent && recent.length > 0) return;
+
+    const reason = /402|limit|trial|payment|subscription/i.test(error)
+      ? "Whapi rechazó el envío por límite de mensajes o falta de pago. Revisa el plan en whapi.cloud."
+      : "Whapi rechazó el envío por un problema de autorización. Revisa el token o vuelve a conectar el número en whapi.cloud.";
+
+    await supabase.from("notifications").insert({
+      tenant_id: tenantId,
+      type: "whatsapp_error",
+      title: "WhatsApp: no se están enviando mensajes",
+      message: `${reason} Detalle: ${error.slice(0, 200)}`,
+    });
+  } catch (e) {
+    console.error("notifyAccountError failed:", e);
+  }
+}
+
 /** Envía texto y lo registra en el historial. Lanza el error si falla. */
 export async function sendTextLogged(supabase: any, log: MessageLog & { groupId: string; message: string }) {
   try {
     await sendWhapiText(log.groupId, log.message);
     await logMessage(supabase, log, "sent");
   } catch (e) {
-    await logMessage(supabase, log, "failed", e instanceof Error ? e.message : String(e));
+    const error = e instanceof Error ? e.message : String(e);
+    await logMessage(supabase, log, "failed", error);
+    await notifyAccountError(supabase, log.tenantId, error);
     throw e;
   }
 }
@@ -73,7 +105,9 @@ export async function sendDocumentLogged(
     await sendWhapiDocument(log.groupId, mediaUrl, filename, log.message);
     await logMessage(supabase, log, "sent");
   } catch (e) {
-    await logMessage(supabase, log, "failed", e instanceof Error ? e.message : String(e));
+    const error = e instanceof Error ? e.message : String(e);
+    await logMessage(supabase, log, "failed", error);
+    await notifyAccountError(supabase, log.tenantId, error);
     throw e;
   }
 }

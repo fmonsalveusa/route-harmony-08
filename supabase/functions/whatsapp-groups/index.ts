@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { logMessage } from "../_shared/messaging.ts";
+import { isAccountError, logMessage } from "../_shared/messaging.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -40,7 +40,27 @@ Deno.serve(async (req) => {
           phone = profile?.phone ?? profile?.id ?? null;
         }
       } catch { /* el perfil es opcional */ }
-      return json({ connected: text.toUpperCase() === "AUTH", status: text, phone });
+      // El número puede figurar conectado aunque Whapi rechace los envíos (límite, pago, token).
+      // Si el último error de cuenta es más reciente que el último envío exitoso, está bloqueado.
+      let blocked: { error: string; at: string } | null = null;
+      const { data: profile } = await supabase.from("profiles").select("tenant_id").eq("id", user.id).maybeSingle();
+      if (profile?.tenant_id) {
+        const since = new Date(Date.now() - 48 * 3600_000).toISOString();
+        const [{ data: lastFailed }, { data: lastSent }] = await Promise.all([
+          supabase.from("whatsapp_message_history").select("error, created_at")
+            .eq("tenant_id", profile.tenant_id).eq("status", "failed").gte("created_at", since)
+            .order("created_at", { ascending: false }).limit(10),
+          supabase.from("whatsapp_message_history").select("created_at")
+            .eq("tenant_id", profile.tenant_id).eq("status", "sent")
+            .order("created_at", { ascending: false }).limit(1).maybeSingle(),
+        ]);
+        const accountFailure = ((lastFailed as any[]) || []).find((f) => isAccountError(f.error || ""));
+        if (accountFailure && (!lastSent || accountFailure.created_at > lastSent.created_at)) {
+          blocked = { error: accountFailure.error, at: accountFailure.created_at };
+        }
+      }
+
+      return json({ connected: text.toUpperCase() === "AUTH" && !blocked, status: text, phone, blocked });
     }
 
     // Mensaje de prueba a un grupo
