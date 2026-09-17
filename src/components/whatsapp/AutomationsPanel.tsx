@@ -11,11 +11,48 @@ import { AUTOMATIONS } from '../../../supabase/functions/_shared/templateDefault
 
 type TenantRow = Record<string, any>;
 
+// Avisos programados que se pueden disparar a mano
+const MANUAL_JOBS: Record<string, { job: string; confirm: string }> = {
+  daily_reminders: {
+    job: 'manual_daily_reminders',
+    confirm: 'Se enviará el recordatorio de hoy a los drivers con pickups o entregas programadas. Los que ya lo recibieron hoy no lo recibirán de nuevo. ¿Continuar?',
+  },
+  pod_reminder: {
+    job: 'manual_pod',
+    confirm: 'Se enviará el recordatorio de POD a las cargas entregadas hace más de 2 horas sin POD (máximo 3 por carga, uno cada 24 horas, entre 7am y 9pm). ¿Continuar?',
+  },
+  expiry_alerts: {
+    job: 'manual_expiry',
+    confirm: 'Se enviarán los avisos de documentos que vencen en 30 o 7 días, hoy, o que siguen vencidos (cada 7 días). Los que ya se enviaron hoy no se repiten. ¿Continuar?',
+  },
+  admin_report: {
+    job: 'admin_report_test',
+    confirm: 'Se enviará el reporte de hoy al grupo de administración. ¿Continuar?',
+  },
+};
+
+function summarize(job: string, r: Record<string, any>): string {
+  if (job === 'manual_daily_reminders') {
+    const parts = [`${r.daily_reminders ?? 0} enviado(s)`];
+    const already = (r.daily_drivers ?? 0) - (r.daily_reminders ?? 0) - (r.daily_no_group ?? 0);
+    if (already > 0) parts.push(`${already} ya lo tenían hoy`);
+    if (r.daily_no_group) parts.push(`${r.daily_no_group} driver(s) sin grupo`);
+    if (r.daily_unassigned) parts.push(`${r.daily_unassigned} carga(s) sin driver`);
+    return (r.daily_drivers ?? 0) === 0 && !r.daily_unassigned ? 'No hay paradas programadas para hoy' : parts.join(' · ');
+  }
+  if (job === 'manual_pod') {
+    if (r.pod_outside_hours) return 'Fuera de horario: los recordatorios de POD solo salen entre 7am y 9pm';
+    return `${r.pod_reminders ?? 0} recordatorio(s) enviado(s)${r.pod_completed ? ` · ${r.pod_completed} carga(s) ya tenían POD` : ''}`;
+  }
+  if (job === 'manual_expiry') return `${r.expiry_alerts ?? 0} aviso(s) enviado(s)`;
+  return 'Reporte enviado al grupo de administración';
+}
+
 export function AutomationsPanel({ groups }: { groups: WhatsAppGroup[] | null }) {
   const [tenant, setTenant] = useState<TenantRow | null>(null);
   const [custom, setCustom] = useState<Record<string, string>>({});
   const [open, setOpen] = useState<string | null>(null);
-  const [testing, setTesting] = useState(false);
+  const [running, setRunning] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const tenantId = await getTenantId();
@@ -58,16 +95,19 @@ export function AutomationsPanel({ groups }: { groups: WhatsAppGroup[] | null })
     toast.success('Se restauró el texto original');
   };
 
-  const testReport = async () => {
-    setTesting(true);
+  const runNow = async (automationId: string) => {
+    const manual = MANUAL_JOBS[automationId];
+    if (!manual || !window.confirm(manual.confirm)) return;
+    setRunning(automationId);
     try {
-      const { data, error } = await supabase.functions.invoke('whatsapp-jobs', { body: { job: 'admin_report_test' } });
+      const { data, error } = await supabase.functions.invoke('whatsapp-jobs', { body: { job: manual.job } });
       if (error || data?.error) throw new Error(data?.error || error?.message);
-      toast.success('Reporte enviado al grupo de administración');
+      const result = Object.values(data?.results ?? {})[0] as Record<string, any> | undefined;
+      toast.success(summarize(manual.job, result ?? {}), { description: 'Detalle en la pestaña Historial.' });
     } catch (e: any) {
       toast.error(`No se pudo enviar: ${e.message}`);
     } finally {
-      setTesting(false);
+      setRunning(null);
     }
   };
 
@@ -98,6 +138,19 @@ export function AutomationsPanel({ groups }: { groups: WhatsAppGroup[] | null })
                   <p className="text-xs text-muted-foreground mt-0.5">{a.description}</p>
                 </div>
               </button>
+              {MANUAL_JOBS[a.id] && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 px-2 text-xs gap-1"
+                  onClick={() => runNow(a.id)}
+                  disabled={running !== null || !enabled || (a.id === 'admin_report' && !tenant.whatsapp_admin_group_id)}
+                  title={!enabled ? 'Activa el aviso para poder enviarlo' : 'Enviar ahora'}
+                >
+                  {running === a.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+                  Enviar ahora
+                </Button>
+              )}
               <Switch checked={enabled} onCheckedChange={v => updateTenant({ [a.toggle]: v })} />
             </div>
 
@@ -116,16 +169,6 @@ export function AutomationsPanel({ groups }: { groups: WhatsAppGroup[] | null })
                         onChange={(id, name) => updateTenant({ whatsapp_admin_group_id: id, whatsapp_admin_group_name: name })}
                       />
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="gap-2"
-                      onClick={testReport}
-                      disabled={testing || !tenant.whatsapp_admin_group_id}
-                    >
-                      {testing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                      Enviar reporte de prueba ahora
-                    </Button>
                   </>
                 )}
                 {a.templates.map(t => (

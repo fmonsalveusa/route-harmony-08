@@ -41,7 +41,7 @@ async function sendOnce(supabase: Supa, key: string, log: MessageLog & { groupId
 // ─── POD ─────────────────────────────────────────────────────────────────────
 async function runPodReminders(supabase: Supa, tenant: any) {
   const hour = etHour();
-  if (hour < 7 || hour >= 21) return { pod: "outside hours" };
+  if (hour < 7 || hour >= 21) return { pod_reminders: 0, pod_completed: 0, pod_outside_hours: true };
 
   const twoHoursAgo = new Date(Date.now() - 2 * 3600_000).toISOString();
   const oneDayAgo = new Date(Date.now() - 24 * 3600_000).toISOString();
@@ -204,10 +204,12 @@ async function runDailyReminders(supabase: Supa, tenant: any, today: string, sto
   }
 
   let sent = 0;
+  let noGroup = 0;
   for (const [driverId, items] of byDriver) {
     const { data: driver } = await supabase
       .from("drivers").select("name, whatsapp_group_id").eq("id", driverId).maybeSingle();
     if (!driver?.whatsapp_group_id) {
+      noGroup++;
       await logMessage(supabase, {
         tenantId: tenant.id, templateKey: items.length > 1 ? "daily_multiple" : items[0].type === "pickup" ? "daily_pickup" : "daily_delivery",
         recipientType: "driver", recipientName: driver?.name ?? null, reference: items.map((s) => `#${s.ref}`).join(", "),
@@ -222,7 +224,12 @@ async function runDailyReminders(supabase: Supa, tenant: any, today: string, sto
     });
     if (ok) sent++;
   }
-  return { daily_reminders: sent };
+  return {
+    daily_reminders: sent,
+    daily_drivers: byDriver.size,
+    daily_no_group: noGroup,
+    daily_unassigned: unassignedRefs.size,
+  };
 }
 
 // ─── Vencimientos ────────────────────────────────────────────────────────────
@@ -401,6 +408,17 @@ Deno.serve(async (req) => {
 
       if (job === "pod" && fromCron && on("wa_pod_reminders")) {
         Object.assign(r, await runPodReminders(supabase, tenant));
+      }
+
+      // Botones "Enviar ahora": solo el tenant del usuario, sin restricción de hora.
+      // Mantienen el control de duplicados, así que solo sale lo que no se había enviado.
+      if (!fromCron && userTenantId) {
+        if (job === "manual_daily_reminders") {
+          const stops = await getTodayStops(supabase, tenant.id, today);
+          Object.assign(r, await runDailyReminders(supabase, tenant, today, stops));
+        }
+        if (job === "manual_expiry") Object.assign(r, await runExpiryAlerts(supabase, tenant));
+        if (job === "manual_pod") Object.assign(r, await runPodReminders(supabase, tenant));
       }
 
       // El cron corre en dos horas UTC; solo se envía cuando en Eastern es la hora correcta (cubre horario de verano e invierno)
