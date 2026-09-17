@@ -11,7 +11,7 @@ import type { DbDispatcher } from '@/hooks/useDispatchers';
 
 export const FROZEN_STATUSES = ['delivered', 'tonu', 'paid'];
 /** Día en que empezó el cálculo de profit. Cargas anteriores no se calculan. */
-const DEFAULT_START_DATE = '2026-09-16';
+const DEFAULT_START_DATE = '2026-09-14';
 
 export const DIESEL_SNAPSHOTS_KEY = ['profit_data', 'diesel_snapshots'];
 
