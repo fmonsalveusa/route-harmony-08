@@ -86,6 +86,19 @@ export const AUTOMATIONS: AutomationDefinition[] = [
     }],
   },
   {
+    id: 'load_cancelled',
+    title: 'Carga cancelada',
+    description: 'Al pasar la carga a Cancelled. Solo si al driver ya se le había avisado que la carga era suya.',
+    toggle: 'wa_load_cancelled',
+    templates: [{
+      key: 'load_cancelled',
+      title: 'Mensaje',
+      description: 'Se envía al grupo del driver.',
+      body: 'La carga #{carga} ha sido cancelada.',
+      variables: LOAD_VARS,
+    }],
+  },
+  {
     id: 'stop_docs',
     title: 'Documentos recibidos en paradas intermedias',
     description: 'Apenas se sube el BOL/POD en PDF a un pickup o a una entrega que no es la última (desde la app del driver o la web). Un mensaje por parada.',

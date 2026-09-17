@@ -76,18 +76,18 @@ Deno.serve(async (req) => {
       if (!stop_id) return json({ error: "Bad request" }, 400);
       return await handleStopDocument(supabase, stop_id);
     }
-    if (!load_id || !["assigned", "delivered"].includes(event)) return json({ error: "Bad request" }, 400);
+    if (!load_id || !["assigned", "delivered", "cancelled"].includes(event)) return json({ error: "Bad request" }, 400);
 
     const { data: load, error: loadErr } = await supabase
       .from("loads")
-      .select("id, tenant_id, reference_number, driver_id, status, origin, destination, whatsapp_assigned_driver_id, whatsapp_delivered_sent_at")
+      .select("id, tenant_id, reference_number, driver_id, status, origin, destination, whatsapp_assigned_driver_id, whatsapp_delivered_sent_at, whatsapp_cancelled_sent_at")
       .eq("id", load_id)
       .maybeSingle();
     if (loadErr || !load) return json({ error: "Load not found" }, 404);
     if (!load.driver_id) return json({ skipped: "no driver" });
 
-    const templateKey = event === "assigned" ? "load_assigned" : "load_delivered";
-    const toggle = event === "assigned" ? "wa_load_assigned" : "wa_load_delivered";
+    const templateKey = event === "assigned" ? "load_assigned" : event === "cancelled" ? "load_cancelled" : "load_delivered";
+    const toggle = event === "assigned" ? "wa_load_assigned" : event === "cancelled" ? "wa_load_cancelled" : "wa_load_delivered";
     if (!(await isEnabled(supabase, load.tenant_id, toggle))) return json({ skipped: "disabled" });
 
     // Evita duplicados si el trigger se disparó más de una vez
@@ -97,6 +97,11 @@ Deno.serve(async (req) => {
     // Mientras está en planned (o ya terminó) no se avisa; sale al pasar a dispatched
     if (event === "assigned" && ["planned", "cancelled", "delivered", "tonu", "paid"].includes(load.status)) {
       return json({ skipped: `status ${load.status}` });
+    }
+    // Cancelada: solo si a ese driver ya se le había avisado de la carga
+    if (event === "cancelled") {
+      if (load.status !== "cancelled" || load.whatsapp_cancelled_sent_at) return json({ skipped: "not cancelled or already notified" });
+      if (load.whatsapp_assigned_driver_id !== String(load.driver_id)) return json({ skipped: "driver was never notified" });
     }
     if (event === "delivered" && (load.status !== "delivered" || load.whatsapp_delivered_sent_at)) {
       return json({ skipped: "not delivered or already notified" });
@@ -162,6 +167,9 @@ Deno.serve(async (req) => {
         .from("loads")
         .update({ whatsapp_assigned_driver_id: String(load.driver_id), whatsapp_assigned_sent_at: new Date().toISOString() })
         .eq("id", load.id);
+    }
+    if (event === "cancelled") {
+      await supabase.from("loads").update({ whatsapp_cancelled_sent_at: new Date().toISOString() }).eq("id", load.id);
     }
 
     return json({ success: true });
