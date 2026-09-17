@@ -82,11 +82,24 @@ const formatCityState = (location: string) => {
   return location;
 };
 
-const createTruckIcon = (heading?: number | null) => {
+/** Ubicación en vivo: actualizada hace menos de 30 min. Más de 24 h: no se muestra. */
+const LIVE_LOCATION_MS = 30 * 60 * 1000;
+const MAX_LOCATION_AGE_MS = 24 * 60 * 60 * 1000;
+
+const formatAge = (ms: number) => {
+  const min = Math.round(ms / 60000);
+  if (min < 60) return `hace ${min} min`;
+  return `hace ${Math.round(min / 60)} h`;
+};
+
+const createTruckIcon = (heading?: number | null, live = true) => {
   const rotation = heading != null ? heading : 0;
+  const style = live
+    ? 'background:#266aad;animation:pulse 2s infinite;'
+    : 'background:#9ca3af;opacity:.85;';
   return new L.DivIcon({
     html: `<div style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;">
-      <div style="width:28px;height:28px;border-radius:50%;background:#266aad;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;animation:pulse 2s infinite;">
+      <div style="width:28px;height:28px;border-radius:50%;${style}border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(${rotation}deg)">
           <path d="M12 2L19 21L12 17L5 21Z"/>
         </svg>
@@ -212,6 +225,13 @@ const Tracking = () => {
   const [driverLocations, setDriverLocations] = useState<Array<{
     driver_id: string; lat: number; lng: number; speed: number | null; heading: number | null; updated_at: string;
   }>>([]);
+
+  // Reloj de 1 minuto para que las ubicaciones pasen a "sin actualizar" sin recargar la página
+  const [nowTick, setNowTick] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNowTick(Date.now()), 60 * 1000);
+    return () => clearInterval(id);
+  }, []);
 
   // Fetch driver locations + realtime
   useEffect(() => {
@@ -1353,21 +1373,27 @@ const Tracking = () => {
                 .filter(loc => !scopedDriverIds || scopedDriverIds.has(loc.driver_id))
                 .map(loc => {
                 const driver = drivers.find(d => d.id === loc.driver_id);
-                if (!driver) return null;
+                // Drivers inactivos o ubicaciones de hace más de 24 h no se muestran
+                if (!driver || driver.status === 'inactive') return null;
+                const age = nowTick - new Date(loc.updated_at).getTime();
+                if (age > MAX_LOCATION_AGE_MS) return null;
+                const live = age <= LIVE_LOCATION_MS;
                 return (
                   <Marker
-                    key={`loc-${loc.driver_id}`}
+                    key={`loc-${loc.driver_id}-${live ? 'live' : 'stale'}`}
                     position={[loc.lat, loc.lng]}
-                    icon={createTruckIcon(loc.heading)}
+                    icon={createTruckIcon(loc.heading, live)}
                   >
                     <LeafletTooltip direction="top" offset={[0, -18]} permanent className="driver-name-tooltip">
-                      <span style={{ fontSize: '11px', fontWeight: 600 }}>{driver.name}</span>
+                      <span style={{ fontSize: '11px', fontWeight: 600, color: live ? undefined : '#6b7280' }}>
+                        {driver.name}{live ? '' : ` · ${formatAge(age)}`}
+                      </span>
                     </LeafletTooltip>
                     <Popup>
                       <div className="text-xs">
                         <strong>{driver.name}</strong>
-                        <br />≡ƒôì GPS Live
-                        {loc.speed != null && <><br />Speed: {(loc.speed * 2.237).toFixed(0)} mph</>}
+                        <br />{live ? 'GPS en vivo' : `Sin actualizar (${formatAge(age)})`}
+                        {live && loc.speed != null && <><br />Speed: {(loc.speed * 2.237).toFixed(0)} mph</>}
                         <br /><span className="text-muted-foreground">Updated: {new Date(loc.updated_at).toLocaleTimeString()}</span>
                       </div>
                     </Popup>
