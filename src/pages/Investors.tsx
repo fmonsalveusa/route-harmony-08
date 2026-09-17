@@ -61,8 +61,13 @@ const InvestorFormDialog = ({
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
 
+  // Recargar el formulario cada vez que se abre (crear o editar otro investor)
+  useEffect(() => {
+    if (open) setForm(getInitialForm());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, investor]);
+
   const handleOpen = (v: boolean) => {
-    if (v) setForm(getInitialForm());
     onOpenChange(v);
   };
 
