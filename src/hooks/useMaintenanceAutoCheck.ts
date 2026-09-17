@@ -17,27 +17,26 @@ async function runMaintenanceCheck() {
 
   const truckIds = [...new Set((items as any[]).map((m: any) => m.truck_id))];
 
+  // Odómetro actual de cada camión (ingresado manualmente)
+  const { data: trucks } = await supabase
+    .from('trucks' as any)
+    .select('id, current_odometer')
+    .in('id', truckIds);
+  const odometerByTruck = new Map(
+    ((trucks as any[]) || []).map((t: any) => [String(t.id), Number(t.current_odometer) || 0])
+  );
+
   for (const truckId of truckIds) {
     const truckItems = (items as any[]).filter((m: any) => m.truck_id === truckId);
+    const currentOdometer = odometerByTruck.get(String(truckId)) || 0;
 
     for (const item of truckItems) {
-      // Sumar solo cargas COMPLETADAS después del último servicio
-      const { data: loads } = await supabase
-        .from('loads' as any)
-        .select('miles, empty_miles, updated_at')
-        .eq('truck_id', truckId)
-        .in('status', ['delivered', 'paid'])
-        .gte('updated_at', item.last_performed_at);
-
-      const milesFromLoads = ((loads as any[]) || []).reduce(
-        (sum: number, l: any) => sum + (Number(l.miles) || 0) + (Number(l.empty_miles) || 0),
-        0
-      );
-
-      // miles_accumulated = miles_carried_forward (millas acreditadas al hacer el servicio)
-      //                   + millas de cargas completadas después del servicio
-      const miles_carried_forward = (item as any).miles_carried_forward || 0;
-      const miles_accumulated = miles_carried_forward + milesFromLoads;
+      // Misma fórmula que la página Maintenance: odómetro actual − odómetro del último servicio.
+      // Antes se sumaban millas de cargas por fecha de modificación, lo que inflaba el acumulado
+      // cada vez que se editaba una carga vieja y marcaba camiones como vencidos sin estarlo.
+      const miles_accumulated = currentOdometer > 0 && item.last_miles > 0
+        ? Math.max(0, currentOdometer - item.last_miles)
+        : 0;
 
       // Status por millas
       let milesStatus = 'ok';
