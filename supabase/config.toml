@@ -41,3 +41,6 @@ verify_jwt = false
 
 [functions.update-diesel-price]
 verify_jwt = false
+
+[functions.load-whatsapp-notify]
+verify_jwt = false

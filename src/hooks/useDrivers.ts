@@ -91,6 +91,8 @@ export interface DriverInput {
   birthday?: string | null;
   emergency_contact_name?: string | null;
   emergency_phone?: string | null;
+  whatsapp_group_id?: string | null;
+  whatsapp_group_name?: string | null;
 }
 
 const DRIVERS_QUERY_KEY = ['drivers'];

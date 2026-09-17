@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { WhatsAppGroupSelect } from '@/components/WhatsAppGroupSelect';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,6 +40,7 @@ const emptyForm: DriverInput = {
   address: null, city: null, zip: null,
   birthday: null,
   emergency_contact_name: null, emergency_phone: null,
+  whatsapp_group_id: null, whatsapp_group_name: null,
   bank_name: null, account_holder_name: null,
   routing_number: null, account_number: null, account_type: 'checking',
 } as any;
@@ -99,6 +101,8 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
         birthday: driver.birthday,
         emergency_contact_name: driver.emergency_contact_name,
         emergency_phone: driver.emergency_phone,
+        whatsapp_group_id: (driver as any).whatsapp_group_id || null,
+        whatsapp_group_name: (driver as any).whatsapp_group_name || null,
         bank_name: (driver as any).bank_name || null,
         account_holder_name: (driver as any).account_holder_name || null,
         routing_number: (driver as any).routing_number || null,
@@ -265,6 +269,12 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
               </SelectContent>
             </Select>
           </div>
+
+          <WhatsAppGroupSelect
+            groupId={form.whatsapp_group_id ?? null}
+            groupName={form.whatsapp_group_name ?? null}
+            onChange={(id, name) => setForm(prev => ({ ...prev, whatsapp_group_id: id, whatsapp_group_name: name }))}
+          />
 
           <div className="space-y-3 p-3 rounded-lg border-2 border-violet-400/50 bg-violet-50 dark:bg-violet-950/20 md:col-span-2">
             <div className="flex items-center justify-between">
