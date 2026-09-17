@@ -117,24 +117,6 @@ async function runMaintenanceCheck() {
           }.${contextLabel ? ` ${contextLabel}.` : ''} ${miles_accumulated.toLocaleString()} mi accumulated.`,
           type: 'maintenance',
         } as any);
-
-        // WhatsApp al driver asignado al camion
-        try {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session) {
-            await supabase.functions.invoke('send-maintenance-whatsapp', {
-              body: {
-                maintenanceId: item.id,
-                maintenanceType: item.maintenance_type,
-                status: finalStatus,
-                milesAccumulated: miles_accumulated,
-                truckId: item.truck_id,
-              },
-            });
-          }
-        } catch (e) {
-          console.warn('[MaintenanceAutoCheck] WhatsApp send failed:', e);
-        }
       }
     }
   }
