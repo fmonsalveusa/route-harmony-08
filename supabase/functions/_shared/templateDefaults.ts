@@ -81,9 +81,31 @@ export const AUTOMATIONS: AutomationDefinition[] = [
       key: 'load_delivered',
       title: 'Mensaje',
       description: 'Se envía al grupo del driver.',
-      body: 'La carga #{carga} ha sido completada exitosamente. Las fotos de la carga y el POD han sido recibidos.',
+      body: 'La carga #{carga} ha sido completada exitosamente. Las fotos de la carga entregada y el POD han sido recibidos.',
       variables: LOAD_VARS,
     }],
+  },
+  {
+    id: 'stop_docs',
+    title: 'Documentos recibidos en paradas intermedias',
+    description: 'Apenas se sube el BOL/POD en PDF a un pickup o a una entrega que no es la última (desde la app del driver o la web). Un mensaje por parada.',
+    toggle: 'wa_stop_docs',
+    templates: [
+      {
+        key: 'stop_docs_pickup',
+        title: 'Pickup',
+        description: 'Al recibir el BOL de un pickup.',
+        body: 'Gracias {nombre}, hemos recibido las fotos y el BOL del pickup de la carga #{carga} en {ciudad}.',
+        variables: [...DRIVER_NAME_VARS, v('carga', 'Número de la carga', 'T2Y-459256'), v('ciudad', 'Ciudad de la parada', 'Rincon, GA')],
+      },
+      {
+        key: 'stop_docs_delivery',
+        title: 'Entrega intermedia',
+        description: 'Al recibir el POD de una entrega que no es la última.',
+        body: 'Gracias {nombre}, hemos recibido las fotos y el POD de la entrega de la carga #{carga} en {ciudad}.',
+        variables: [...DRIVER_NAME_VARS, v('carga', 'Número de la carga', 'T2Y-459256'), v('ciudad', 'Ciudad de la parada', 'Columbia, SC')],
+      },
+    ],
   },
   {
     id: 'pod_reminder',

@@ -6,6 +6,64 @@ import { isEnabled, logMessage, renderMessage, sendTextLogged } from "../_shared
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 
+/** BOL/POD en PDF subido a un pickup o a una entrega que no es la última: un mensaje por parada */
+async function handleStopDocument(supabase: any, stopId: string) {
+  const { data: stop } = await supabase
+    .from("load_stops").select("id, load_id, stop_type, stop_order, address").eq("id", stopId).maybeSingle();
+  if (!stop) return json({ skipped: "stop not found" });
+
+  const { data: load } = await supabase
+    .from("loads").select("id, tenant_id, reference_number, driver_id, status").eq("id", stop.load_id).maybeSingle();
+  if (!load || !load.driver_id || load.status === "cancelled") return json({ skipped: "no load or driver" });
+  if (!(await isEnabled(supabase, load.tenant_id, "wa_stop_docs"))) return json({ skipped: "disabled" });
+
+  // La última entrega la cubre el mensaje de "carga completada"
+  const { data: deliveries } = await supabase
+    .from("load_stops").select("stop_order").eq("load_id", load.id).eq("stop_type", "delivery");
+  const lastDeliveryOrder = Math.max(...((deliveries as any[]) || []).map((d) => d.stop_order ?? 0));
+  const order = stop.stop_order ?? 0;
+  if (stop.stop_type === "delivery" && order === lastDeliveryOrder) return json({ skipped: "final delivery" });
+
+  const templateKey = stop.stop_type === "pickup" ? "stop_docs_pickup" : "stop_docs_delivery";
+  const { data: driver } = await supabase
+    .from("drivers").select("name, whatsapp_group_id").eq("id", load.driver_id).maybeSingle();
+
+  const baseLog = {
+    tenantId: load.tenant_id,
+    templateKey,
+    recipientType: "driver",
+    recipientName: driver?.name ?? null,
+    reference: `Carga #${load.reference_number} · ${stop.stop_type === "pickup" ? "Pickup" : "Entrega"} ${cityState(stop.address)}`,
+  };
+
+  if (!driver?.whatsapp_group_id) {
+    await logMessage(supabase, baseLog, "skipped", "El driver no tiene grupo de WhatsApp");
+    return json({ skipped: "driver without whatsapp group" });
+  }
+
+  // Un solo mensaje por parada. La clave va por número de parada (no por id),
+  // porque las paradas se recrean con ids nuevos al editar la carga.
+  const key = `stopdocs:${load.id}:${stop.stop_type}:${order}`;
+  const { error: claimErr } = await supabase
+    .from("whatsapp_message_log").insert({ tenant_id: load.tenant_id, message_key: key });
+  if (claimErr) return json({ skipped: "already notified" });
+
+  const message = await renderMessage(supabase, load.tenant_id, templateKey, {
+    nombre: (driver.name || "").trim().split(/\s+/)[0],
+    driver: driver.name,
+    carga: load.reference_number,
+    ciudad: cityState(stop.address),
+  });
+
+  try {
+    await sendTextLogged(supabase, { ...baseLog, groupId: driver.whatsapp_group_id, message });
+  } catch (e) {
+    await supabase.from("whatsapp_message_log").delete().eq("message_key", key);
+    throw e;
+  }
+  return json({ success: true });
+}
+
 Deno.serve(async (req) => {
   const secret = Deno.env.get("CRON_SECRET");
   if (!secret || req.headers.get("x-cron-secret") !== secret) return json({ error: "Unauthorized" }, 401);
@@ -13,7 +71,11 @@ Deno.serve(async (req) => {
   const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
   try {
-    const { load_id, event } = await req.json();
+    const { load_id, event, stop_id } = await req.json();
+    if (event === "stop_document") {
+      if (!stop_id) return json({ error: "Bad request" }, 400);
+      return await handleStopDocument(supabase, stop_id);
+    }
     if (!load_id || !["assigned", "delivered"].includes(event)) return json({ error: "Bad request" }, 400);
 
     const { data: load, error: loadErr } = await supabase
