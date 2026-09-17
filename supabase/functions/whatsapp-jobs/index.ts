@@ -263,14 +263,16 @@ async function buildAdminReport(supabase: Supa, tenant: any, today: string, stop
   const all = (loads as any[]) || [];
   const active = all.filter((l) => !ACTIVE_EXCLUDED.includes(l.status));
 
-  // Facturado esta semana: rate de las cargas (no canceladas) con pickup de lunes a hoy
+  // Igual que "Week Revenue" del Dashboard: rate de las cargas no canceladas con pickup
+  // en la semana actual completa (lunes a domingo)
   const [y, m, d] = today.split("-").map(Number);
   const dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay(); // 0 = domingo
   const monday = new Date(Date.UTC(y, m - 1, d - ((dow + 6) % 7))).toISOString().split("T")[0];
+  const nextMonday = new Date(Date.UTC(y, m - 1, d - ((dow + 6) % 7) + 7)).toISOString().split("T")[0];
   const weekBilled = all
     .filter((l) => {
       const p = (l.pickup_date || "").split("T")[0];
-      return p && p >= monday && p <= today;
+      return p && p >= monday && p < nextMonday;
     })
     .reduce((sum, l) => sum + (Number(l.total_rate) || 0), 0);
 
