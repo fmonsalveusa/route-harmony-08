@@ -702,13 +702,16 @@ const Payments = () => {
 
 
       {(() => {
-        const totalPending = allP.filter(p => p.status === 'pending' || p.status === 'in_process').reduce((s, p) => s + Number(p.amount), 0);
-        const totalPaid = allP.filter(p => p.status === 'paid').reduce((s, p) => s + Number(p.amount), 0);
+        const money = (n: number) => `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        const pending = allP.filter(p => p.status === 'pending');
+        const inProcess = allP.filter(p => p.status === 'in_process');
+        const totalPending = pending.reduce((s, p) => s + Number(p.amount), 0);
+        const totalInProcess = inProcess.reduce((s, p) => s + Number(p.amount), 0);
         return (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <StatCard title="Total Pending" value={`$${totalPending.toLocaleString('en-US', { minimumFractionDigits: 2 })}`} icon={Clock} iconClassName="bg-warning/10 text-warning" />
-            <StatCard title="Total Paid" value={`$${totalPaid.toLocaleString('en-US', { minimumFractionDigits: 2 })}`} icon={CheckCircle} iconClassName="bg-success/10 text-success" />
-            <StatCard title="Grand Total" value={`$${(totalPending + totalPaid).toLocaleString('en-US', { minimumFractionDigits: 2 })}`} icon={DollarSign} />
+            <StatCard title="Total Pending" value={money(totalPending)} subtitle={`${pending.length} payments`} icon={Clock} iconClassName="bg-warning/10 text-warning" />
+            <StatCard title="Total In Process" value={money(totalInProcess)} subtitle={`${inProcess.length} payments`} icon={RefreshCw} iconClassName="bg-info/10 text-info" />
+            <StatCard title="Total Pending + In Process" value={money(totalPending + totalInProcess)} subtitle={`${pending.length + inProcess.length} payments`} icon={DollarSign} />
           </div>
         );
       })()}
