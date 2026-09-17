@@ -8,7 +8,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Plus, Search, Phone, Truck as TruckIcon, Pencil, Trash2, Eye, Copy, Link2, ChevronDown, ChevronUp, Navigation, FileText, Check } from 'lucide-react';
+import { Plus, Search, Phone, Truck as TruckIcon, Pencil, Trash2, Eye, Copy, Link2, ChevronDown, ChevronUp, Navigation, FileText, Check, MessageCircle } from 'lucide-react';
+import { WhatsAppSettingsDialog } from '@/components/WhatsAppSettingsDialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useDrivers, DbDriver, DriverInput } from '@/hooks/useDrivers';
 import { useTrucks } from '@/hooks/useTrucks';
@@ -47,6 +48,7 @@ const Drivers = () => {
   const { investors } = useInvestors();
   const [search, setSearch] = useState('');
   const [formOpen, setFormOpen] = useState(false);
+  const [whatsAppSettingsOpen, setWhatsAppSettingsOpen] = useState(false);
   const [editingDriver, setEditingDriver] = useState<DbDriver | null>(null);
   const [deletingDriver, setDeletingDriver] = useState<DbDriver | null>(null);
   const [detailDriver, setDetailDriver] = useState<DbDriver | null>(null);
@@ -405,6 +407,11 @@ const Drivers = () => {
         </div>
         <div className="flex gap-2">
           {!isDispatcher && (
+            <Button size="sm" variant="outline" className="gap-2" onClick={() => setWhatsAppSettingsOpen(true)}>
+              <MessageCircle className="h-4 w-4 text-green-600" /> WhatsApp
+            </Button>
+          )}
+          {!isDispatcher && (
             <Button size="sm" variant="outline" className="gap-2" onClick={() => setOnboardingOpen(true)}>
               <Link2 className="h-4 w-4" /> Onboarding Link
             </Button>
@@ -462,6 +469,8 @@ const Drivers = () => {
           </TabsContent>
         </Tabs>
       )}
+
+      <WhatsAppSettingsDialog open={whatsAppSettingsOpen} onOpenChange={setWhatsAppSettingsOpen} />
 
       <DriverFormDialog
         open={formOpen}

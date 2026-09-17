@@ -47,3 +47,6 @@ verify_jwt = false
 
 [functions.maintenance-whatsapp-notify]
 verify_jwt = false
+
+[functions.whatsapp-jobs]
+verify_jwt = false

@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { loadHasPod } from "../_shared/loadHelpers.ts";
 
 // Llamada solo desde el trigger de loads (autenticada con x-cron-secret)
 const json = (body: unknown, status = 200) =>
@@ -55,19 +56,39 @@ Deno.serve(async (req) => {
     }
 
     const ref = load.reference_number;
+
+    // "Completada" solo se anuncia cuando ya hay POD; si falta, el job de recordatorios lo pide
+    if (event === "delivered") {
+      if (!(await loadHasPod(supabase, load.id))) return json({ skipped: "no POD yet" });
+      // Reservar el envío para que dos disparos simultáneos no manden el mensaje dos veces
+      const { data: claimed } = await supabase
+        .from("loads")
+        .update({ whatsapp_delivered_sent_at: new Date().toISOString() })
+        .eq("id", load.id)
+        .is("whatsapp_delivered_sent_at", null)
+        .select("id");
+      if (!claimed || claimed.length === 0) return json({ skipped: "already notified" });
+    }
+
     const text = event === "assigned"
       ? `La carga #${ref} ha sido asignada a ti. Toda la información de la carga está en la app móvil.\nPor favor déjanos saber a qué hora estimas la llegada al Pick up.`
       : `La carga #${ref} ha sido completada exitosamente. Las fotos de la carga y el POD han sido recibidos.`;
 
-    await sendToGroup(driver.whatsapp_group_id, text);
+    try {
+      await sendToGroup(driver.whatsapp_group_id, text);
+    } catch (sendErr) {
+      if (event === "delivered") {
+        await supabase.from("loads").update({ whatsapp_delivered_sent_at: null }).eq("id", load.id);
+      }
+      throw sendErr;
+    }
 
-    const now = new Date().toISOString();
-    await supabase
-      .from("loads")
-      .update(event === "assigned"
-        ? { whatsapp_assigned_driver_id: String(load.driver_id), whatsapp_assigned_sent_at: now }
-        : { whatsapp_delivered_sent_at: now })
-      .eq("id", load.id);
+    if (event === "assigned") {
+      await supabase
+        .from("loads")
+        .update({ whatsapp_assigned_driver_id: String(load.driver_id), whatsapp_assigned_sent_at: new Date().toISOString() })
+        .eq("id", load.id);
+    }
 
     console.log(`WhatsApp ${event} sent for load ${ref} to ${driver.name}`);
     return json({ success: true });
