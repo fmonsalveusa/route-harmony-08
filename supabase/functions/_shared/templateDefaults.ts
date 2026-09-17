@@ -33,7 +33,13 @@ const LOAD_VARS = [
   v('ciudad_entrega', 'Ciudad de la última entrega', 'Virginia Beach, VA'),
 ];
 
+const DRIVER_NAME_VARS = [
+  v('nombre', 'Primer nombre del driver', 'Pedro'),
+  v('driver', 'Nombre completo del driver', 'Pedro Martinez'),
+];
+
 const STOP_VARS = [
+  ...DRIVER_NAME_VARS,
   v('carga', 'Número de la carga', 'T2Y-459256'),
   v('ciudad', 'Ciudad de la parada', 'Columbia, SC'),
   v('horario', 'Horario de la parada', 'entre las 8:00 am y las 3:00 pm'),
@@ -102,22 +108,22 @@ export const AUTOMATIONS: AutomationDefinition[] = [
         key: 'daily_pickup',
         title: 'Un pickup',
         description: 'Cuando el driver tiene una sola parada hoy y es un pickup.',
-        body: 'Buen día. Le recordamos que hoy tenemos el pickup de la carga #{carga} programado en {ciudad} {horario}. ¿A qué hora estimas la llegada?',
+        body: 'Buen día {nombre}, espero que estés muy bien. Le recordamos que hoy tenemos el pickup de la carga #{carga} programado en {ciudad} {horario}. ¿A qué hora estimas la llegada?',
         variables: STOP_VARS,
       },
       {
         key: 'daily_delivery',
         title: 'Una entrega',
         description: 'Cuando el driver tiene una sola parada hoy y es una entrega.',
-        body: 'Buen día. Le recordamos que hoy tenemos la entrega de la carga #{carga} programada en {ciudad} {horario}. ¿A qué hora estimas la entrega?',
+        body: 'Buen día {nombre}, espero que estés muy bien. Le recordamos que hoy tenemos la entrega de la carga #{carga} programada en {ciudad} {horario}. ¿A qué hora estimas la entrega?',
         variables: STOP_VARS,
       },
       {
         key: 'daily_multiple',
         title: 'Varias paradas',
         description: 'Cuando el driver tiene más de una parada hoy.',
-        body: 'Buen día. Le recordamos lo programado para hoy:\n{paradas}\n¿A qué hora estimas llegar a cada parada?',
-        variables: [v('paradas', 'Lista de paradas, una por línea', '• Pickup de la carga #T2Y-459256 en Rincon, GA a las 8:00 am\n• Entrega de la carga #A-1001 en Columbia, SC entre las 1:00 pm y las 5:00 pm')],
+        body: 'Buen día {nombre}, espero que estés muy bien. Le recordamos lo programado para hoy:\n{paradas}\n¿A qué hora estimas llegar a cada parada?',
+        variables: [...DRIVER_NAME_VARS, v('paradas', 'Lista de paradas, una por línea', '• Pickup de la carga #T2Y-459256 en Rincon, GA a las 8:00 am\n• Entrega de la carga #A-1001 en Columbia, SC entre las 1:00 pm y las 5:00 pm')],
       },
     ],
   },

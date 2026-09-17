@@ -170,21 +170,22 @@ async function getTodayStops(supabase: Supa, tenantId: string, today: string): P
   return result.filter((s) => !(s.type === "pickup" && ["picked_up", "on_site_delivery"].includes(s.loadStatus)));
 }
 
-async function dailyMessage(supabase: Supa, tenantId: string, items: TodayStop[]): Promise<{ key: string; message: string }> {
+async function dailyMessage(supabase: Supa, tenantId: string, items: TodayStop[], driverName: string): Promise<{ key: string; message: string }> {
+  const names = { driver: driverName, nombre: driverName.trim().split(/\s+/)[0] || driverName };
   if (items.length === 1) {
     const s = items[0];
     const key = s.type === "pickup" ? "daily_pickup" : "daily_delivery";
     return {
       key,
       message: await renderMessage(supabase, tenantId, key, {
-        carga: s.ref, ciudad: cityState(s.address), horario: timeWindow(s.time),
+        ...names, carga: s.ref, ciudad: cityState(s.address), horario: timeWindow(s.time),
       }),
     };
   }
   const paradas = items
     .map((s) => `• ${s.type === "pickup" ? "Pickup" : "Entrega"} de la carga #${s.ref} en ${[cityState(s.address), timeWindow(s.time)].filter(Boolean).join(" ")}`)
     .join("\n");
-  return { key: "daily_multiple", message: await renderMessage(supabase, tenantId, "daily_multiple", { paradas }) };
+  return { key: "daily_multiple", message: await renderMessage(supabase, tenantId, "daily_multiple", { ...names, paradas }) };
 }
 
 async function runDailyReminders(supabase: Supa, tenant: any, today: string, stops: TodayStop[]) {
@@ -217,7 +218,7 @@ async function runDailyReminders(supabase: Supa, tenant: any, today: string, sto
       continue;
     }
     items.sort((a, b) => (a.type === b.type ? a.order - b.order : a.type === "pickup" ? -1 : 1));
-    const { key, message } = await dailyMessage(supabase, tenant.id, items);
+    const { key, message } = await dailyMessage(supabase, tenant.id, items, driver.name || "");
     const ok = await sendOnce(supabase, `daily:${driverId}:${today}`, {
       tenantId: tenant.id, templateKey: key, recipientType: "driver", recipientName: driver.name,
       reference: items.map((s) => `#${s.ref}`).join(", "), groupId: driver.whatsapp_group_id, message,
