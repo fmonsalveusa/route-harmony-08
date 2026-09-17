@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { WhatsAppGroupSelect } from '@/components/WhatsAppGroupSelect';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,6 +25,8 @@ const emptyForm: DispatcherInput = {
   pay_type: 'per_rate',
   start_date: todayET(),
   color: '#94A3B8',
+  whatsapp_group_id: null,
+  whatsapp_group_name: null,
 };
 
 export function DispatcherFormDialog({ open, onOpenChange, dispatcher, onSubmit }: Props) {
@@ -39,6 +42,8 @@ export function DispatcherFormDialog({ open, onOpenChange, dispatcher, onSubmit 
         dispatch_service_percentage: dispatcher.dispatch_service_percentage,
         pay_type: dispatcher.pay_type, start_date: dispatcher.start_date,
         color: dispatcher.color || '#94A3B8',
+        whatsapp_group_id: (dispatcher as any).whatsapp_group_id || null,
+        whatsapp_group_name: (dispatcher as any).whatsapp_group_name || null,
       });
     } else {
       setForm(emptyForm);
@@ -118,6 +123,13 @@ export function DispatcherFormDialog({ open, onOpenChange, dispatcher, onSubmit 
             <Label>Start Date</Label>
             <Input type="date" value={form.start_date} onChange={e => set('start_date', e.target.value)} />
           </div>
+          <WhatsAppGroupSelect
+            className="sm:col-span-2"
+            groupId={form.whatsapp_group_id ?? null}
+            groupName={form.whatsapp_group_name ?? null}
+            onChange={(id, name) => setForm(prev => ({ ...prev, whatsapp_group_id: id, whatsapp_group_name: name }))}
+            hint="Aquí llegan los recibos cuando un pago del dispatcher se marca Paid."
+          />
           <div className="space-y-2 sm:col-span-2">
             <Label>Color</Label>
             <div className="flex items-center gap-3">

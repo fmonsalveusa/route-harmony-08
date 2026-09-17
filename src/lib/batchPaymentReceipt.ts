@@ -13,7 +13,8 @@ export async function generateBatchPaymentReceipt(
   recipientType: string,
   items: BatchPaymentItem[],
   companyName?: string,
-) {
+  options?: { save?: boolean },
+): Promise<{ blob: Blob; fileName: string }> {
   const doc = new jsPDF();
   const rawDate = new Date().toISOString().split('T')[0];
   const dateParts = rawDate.split('-');
@@ -152,5 +153,7 @@ export async function generateBatchPaymentReceipt(
   doc.setTextColor(156, 163, 175);
   doc.text('This document is an automatically generated batch payment receipt.', pageWidth / 2, footerY, { align: 'center' });
 
-  doc.save(`Batch_Receipt_${recipientName.replace(/\s+/g, '_')}_${date}.pdf`);
+  const fileName = `Batch_Receipt_${recipientName.replace(/\s+/g, '_')}_${date}.pdf`;
+  if (options?.save !== false) doc.save(fileName);
+  return { blob: doc.output('blob'), fileName };
 }

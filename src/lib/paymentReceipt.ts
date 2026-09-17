@@ -40,7 +40,8 @@ export async function generatePaymentReceipt(
   pickupDate?: string | null,
   deliveryDate?: string | null,
   companyName?: string,
-) {
+  options?: { save?: boolean },
+): Promise<{ blob: Blob; fileName: string }> {
   const doc = new jsPDF();
   const rawDate = payment.payment_date || new Date().toISOString().split('T')[0];
   const dateParts = rawDate.split('T')[0].split('-');
@@ -304,5 +305,7 @@ export async function generatePaymentReceipt(
   doc.setTextColor(156, 163, 175);
   doc.text('This document is an automatically generated payment receipt.', pageWidth / 2, footerY, { align: 'center' });
 
-  doc.save(`Receipt_${payment.load_reference}_${payment.recipient_name.replace(/\s+/g, '_')}.pdf`);
+  const fileName = `Receipt_${payment.load_reference}_${payment.recipient_name.replace(/\s+/g, '_')}.pdf`;
+  if (options?.save !== false) doc.save(fileName);
+  return { blob: doc.output('blob'), fileName };
 }

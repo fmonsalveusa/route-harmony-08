@@ -12,10 +12,12 @@ interface Props {
   groupId: string | null;
   groupName: string | null;
   onChange: (id: string | null, name: string | null) => void;
+  className?: string;
+  hint?: string;
 }
 
 /** Grupo de WhatsApp donde llegan los avisos de cargas del driver */
-export function WhatsAppGroupSelect({ groupId, groupName, onChange }: Props) {
+export function WhatsAppGroupSelect({ groupId, groupName, onChange, className = 'md:col-span-2', hint }: Props) {
   const [groups, setGroups] = useState<Group[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -51,7 +53,7 @@ export function WhatsAppGroupSelect({ groupId, groupName, onChange }: Props) {
   const options: Group[] = groups ?? (groupId ? [{ id: groupId, name: groupName || groupId }] : []);
 
   return (
-    <div className="space-y-2 p-3 rounded-lg border-2 border-green-500/40 bg-green-50 dark:bg-green-950/20 md:col-span-2">
+    <div className={`space-y-2 p-3 rounded-lg border-2 border-green-500/40 bg-green-50 dark:bg-green-950/20 ${className}`}>
       <Label className="font-semibold text-green-700 flex items-center gap-1.5">
         <MessageCircle className="h-4 w-4" /> Grupo de WhatsApp
       </Label>
@@ -82,7 +84,7 @@ export function WhatsAppGroupSelect({ groupId, groupName, onChange }: Props) {
         </Button>
       </div>
       <p className="text-[11px] text-muted-foreground">
-        Aquí llega el aviso cuando se le asigna una carga y cuando se marca Delivered.
+        {hint ?? 'Aquí llegan los avisos de cargas, mantenimiento (Company Drivers) y recibos de pago.'}
       </p>
     </div>
   );

@@ -61,6 +61,8 @@ export interface InvestorInput {
   service_agreement_url?: string | null;
   leasing_agreement_url?: string | null;
   status?: string;
+  whatsapp_group_id?: string | null;
+  whatsapp_group_name?: string | null;
 }
 
 export function useInvestors() {

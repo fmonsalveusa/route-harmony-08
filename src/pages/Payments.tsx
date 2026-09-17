@@ -14,6 +14,7 @@ import { PaymentEditDialog } from '@/components/PaymentEditDialog';
 import { Input } from '@/components/ui/input';
 import { DollarSign, CheckCircle, Clock, Download, Pencil, Trash2, FileText, CheckCheck, X, PlusCircle, Search, ChevronDown } from 'lucide-react';
 import { generatePaymentReceipt, type DispatcherLoadItem } from '@/lib/paymentReceipt';
+import { sendReceiptWhatsApp, singlePaymentCaption, batchPaymentCaption, type ReceiptSendResult } from '@/lib/sendReceiptWhatsApp';
 import { generateBatchPaymentReceipt } from '@/lib/batchPaymentReceipt';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -23,7 +24,7 @@ import { ManualPaymentDialog } from '@/components/ManualPaymentDialog';
 import { RecurringDeductionDialog } from '@/components/RecurringDeductionDialog';
 import { RefreshCw } from 'lucide-react';
 
-const handleGenerateReceipt = async (p: DbPayment) => {
+const handleGenerateReceipt = async (p: DbPayment, options?: { save?: boolean }) => {
   const { data } = await supabase.from('payment_adjustments').select('*').eq('payment_id', p.id).order('created_at', { ascending: true });
   const adjustments = (data as any[]) || [];
   const totalAdj = adjustments.reduce((sum: number, a: any) => sum + (a.adjustment_type === 'addition' ? Number(a.amount) : -Number(a.amount)), 0);
@@ -81,11 +82,10 @@ const handleGenerateReceipt = async (p: DbPayment) => {
         if (comp) companyName = (comp as any).name;
       }
     }
-    await generatePaymentReceipt(p, adjustments, totalAdj, Number(p.amount) + totalAdj, dispatcherItems, loadOrigin, loadDestination, (load as any)?.pickup_date, (load as any)?.delivery_date, companyName);
-    return;
+    return generatePaymentReceipt(p, adjustments, totalAdj, Number(p.amount) + totalAdj, dispatcherItems, loadOrigin, loadDestination, (load as any)?.pickup_date, (load as any)?.delivery_date, companyName, options);
   }
 
-  await generatePaymentReceipt(p, adjustments, totalAdj, Number(p.amount) + totalAdj, dispatcherItems, undefined, undefined, undefined, undefined, companyName);
+  return generatePaymentReceipt(p, adjustments, totalAdj, Number(p.amount) + totalAdj, dispatcherItems, undefined, undefined, undefined, undefined, companyName, options);
 };
 
 interface PaymentsSectionProps {
@@ -286,6 +286,31 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
   const canBatchPay = selectedPayments.length > 0 && new Set(selectedNamesNormalized).size === 1;
   const selectedTotal = selectedPayments.reduce((s, p) => s + Number(p.amount) + (adjMap[p.id] || 0), 0);
 
+  const notifyReceiptResult = (result: ReceiptSendResult) => {
+    if (result === 'sent') toast({ title: 'Recibo enviado por WhatsApp' });
+    else if (result === 'no_group') toast({ title: 'Sin grupo de WhatsApp', description: 'El beneficiario no tiene grupo asignado; no se envió el recibo.' });
+    else toast({ title: 'No se pudo enviar el recibo por WhatsApp', variant: 'destructive' });
+  };
+
+  // Al pasar un pago a Paid se envía el recibo al grupo de WhatsApp del beneficiario
+  const handleStatusChange = async (p: DbPayment, status: string) => {
+    const ok = await updatePaymentStatus(p.id, status);
+    if (!ok || status !== 'paid' || p.status === 'paid') return;
+    const today = new Date().toISOString().split('T')[0];
+    const receipt = await handleGenerateReceipt({ ...p, status: 'paid', payment_date: today }, { save: false });
+    const amount = Number(p.amount) + (adjMap[p.id] || 0);
+    notifyReceiptResult(await sendReceiptWhatsApp({
+      recipientType: p.recipient_type,
+      recipientId: p.recipient_id,
+      recipientName: p.recipient_name,
+      blob: receipt.blob,
+      fileName: receipt.fileName,
+      caption: p.recipient_type === 'dispatcher'
+        ? batchPaymentCaption(amount)
+        : singlePaymentCaption(amount, p.load_reference),
+    }));
+  };
+
   const handleBatchPayAndReceipt = async () => {
     if (!canBatchPay) {
       toast({ title: 'Error', description: 'Select payments from the same beneficiary.', variant: 'destructive' });
@@ -305,8 +330,16 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
         adjustment: adjMap[p.id] || 0,
         finalAmount: Number(p.amount) + (adjMap[p.id] || 0),
       }));
-      await generateBatchPaymentReceipt(selectedPayments[0].recipient_name, selectedPayments[0].recipient_type, items);
+      const receipt = await generateBatchPaymentReceipt(selectedPayments[0].recipient_name, selectedPayments[0].recipient_type, items);
       toast({ title: `${selectedPayments.length} payment(s) marked as paid`, description: 'Batch receipt generated.' });
+      notifyReceiptResult(await sendReceiptWhatsApp({
+        recipientType: selectedPayments[0].recipient_type,
+        recipientId: selectedPayments[0].recipient_id,
+        recipientName: selectedPayments[0].recipient_name,
+        blob: receipt.blob,
+        fileName: receipt.fileName,
+        caption: batchPaymentCaption(selectedTotal),
+      }));
       setSelectedIds(new Set());
       refetch();
     } catch (err: any) {
@@ -578,7 +611,7 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
                     </td>
                     <td className="p-3 text-right font-semibold">${(Number(p.amount) + (adjMap[p.id] || 0)).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
                     <td className="p-3" onClick={e => e.stopPropagation()}>
-                      <Select value={p.status} onValueChange={(val) => updatePaymentStatus(p.id, val)}>
+                      <Select value={p.status} onValueChange={(val) => handleStatusChange(p, val)}>
                         <SelectTrigger className="h-8 w-[155px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:hidden bg-transparent">
                           <span className="flex items-center justify-between w-full gap-1">
                             <StatusBadge status={p.status} className="text-[11px] px-3 py-1.5" />

@@ -31,6 +31,8 @@ export interface DispatcherInput {
   pay_type: string;
   start_date: string;
   color?: string;
+  whatsapp_group_id?: string | null;
+  whatsapp_group_name?: string | null;
 }
 
 const DISPATCHERS_QUERY_KEY = ['dispatchers'];

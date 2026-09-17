@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { WhatsAppGroupSelect } from '@/components/WhatsAppGroupSelect';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -46,11 +47,14 @@ const InvestorFormDialog = ({
     routing_number: investor.routing_number || '',
     account_number: investor.account_number || '',
     account_type: investor.account_type || 'checking',
+    whatsapp_group_id: (investor as any).whatsapp_group_id || null,
+    whatsapp_group_name: (investor as any).whatsapp_group_name || null,
   } : {
     name: '', email: '', phone: '', notes: '', pay_percentage: 0,
     address: '', city: '', state: '', zip: '',
     business_name: '', ein: '', ssn_last4: '',
     bank_name: '', account_holder_name: '', routing_number: '', account_number: '', account_type: 'checking',
+    whatsapp_group_id: null, whatsapp_group_name: null,
   };
 
   const [form, setForm] = useState<InvestorInput>(getInitialForm);
@@ -90,6 +94,8 @@ const InvestorFormDialog = ({
         routing_number: form.routing_number?.trim() || null,
         account_number: form.account_number?.trim() || null,
         account_type: form.account_type || 'checking',
+        whatsapp_group_id: form.whatsapp_group_id || null,
+        whatsapp_group_name: form.whatsapp_group_name || null,
       });
       onOpenChange(false);
     } finally {
@@ -216,6 +222,14 @@ const InvestorFormDialog = ({
               </div>
             </div>
           </div>
+
+          <WhatsAppGroupSelect
+            className=""
+            groupId={form.whatsapp_group_id ?? null}
+            groupName={form.whatsapp_group_name ?? null}
+            onChange={(id, name) => setForm(prev => ({ ...prev, whatsapp_group_id: id, whatsapp_group_name: name }))}
+            hint="Aquí llegan los recibos cuando un pago del investor se marca Paid."
+          />
 
           {/* Notes */}
           <div className="space-y-2 border-t pt-4">
