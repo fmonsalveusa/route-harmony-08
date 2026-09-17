@@ -120,15 +120,39 @@ async function getTodayStops(supabase: Supa, tenantId: string, today: string): P
     .in("load_id", active.map((l) => l.id));
 
   const result: TodayStop[] = [];
-  const loadsWithStops = new Set(((stops as any[]) || []).map((s) => s.load_id));
+  const stopList = (stops as any[]) || [];
+  const loadsWithStops = new Set(stopList.map((s) => s.load_id));
   const byId = new Map(active.map((l) => [l.id, l]));
 
-  for (const s of (stops as any[]) || []) {
-    if ((s.date || "").split("T")[0] !== today || s.arrived_at) continue;
+  // Primer pickup y última entrega de cada carga: si la parada no tiene fecha u hora
+  // (el Rate Confirmation no las traía), usan las de la carga
+  const firstPickup = new Map<string, number>();
+  const lastDelivery = new Map<string, number>();
+  for (const s of stopList) {
+    const order = s.stop_order ?? 0;
+    if (s.stop_type === "pickup" && order < (firstPickup.get(s.load_id) ?? Infinity)) firstPickup.set(s.load_id, order);
+    if (s.stop_type === "delivery" && order > (lastDelivery.get(s.load_id) ?? -Infinity)) lastDelivery.set(s.load_id, order);
+  }
+
+  for (const s of stopList) {
     const l = byId.get(s.load_id);
-    if (!l) continue;
+    if (!l || s.arrived_at) continue;
+    const order = s.stop_order ?? 0;
+    const isFirstPickup = s.stop_type === "pickup" && firstPickup.get(s.load_id) === order;
+    const isLastDelivery = s.stop_type === "delivery" && lastDelivery.get(s.load_id) === order;
+
+    const date = (s.date
+      || (isFirstPickup ? l.pickup_date : null)
+      || (isLastDelivery ? l.delivery_date : null)
+      || "").split("T")[0];
+    if (date !== today) continue;
+
+    const time = s.time
+      || (isFirstPickup ? l.pickup_time : null)
+      || (isLastDelivery ? l.delivery_time : null);
+
     result.push({ loadId: l.id, ref: l.reference_number, driverId: l.driver_id, loadStatus: l.status,
-      type: s.stop_type, address: s.address, time: s.time, order: s.stop_order ?? 0 });
+      type: s.stop_type, address: s.address, time, order });
   }
   // Cargas sin paradas registradas: usar origen/destino de la carga
   for (const l of active) {
@@ -165,16 +189,31 @@ async function dailyMessage(supabase: Supa, tenantId: string, items: TodayStop[]
 
 async function runDailyReminders(supabase: Supa, tenant: any, today: string, stops: TodayStop[]) {
   const byDriver = new Map<string, TodayStop[]>();
+  const unassignedRefs = new Set<string>();
   for (const s of stops) {
-    if (!s.driverId) continue;
+    if (!s.driverId) { unassignedRefs.add(s.ref); continue; }
     if (!byDriver.has(s.driverId)) byDriver.set(s.driverId, []);
     byDriver.get(s.driverId)!.push(s);
   }
+
+  // Dejar constancia en el historial de lo que no se pudo enviar
+  for (const ref of unassignedRefs) {
+    await logMessage(supabase, {
+      tenantId: tenant.id, templateKey: "daily_pickup", reference: `Carga #${ref}`,
+    }, "skipped", "La carga tiene parada hoy pero no tiene driver asignado");
+  }
+
   let sent = 0;
   for (const [driverId, items] of byDriver) {
     const { data: driver } = await supabase
       .from("drivers").select("name, whatsapp_group_id").eq("id", driverId).maybeSingle();
-    if (!driver?.whatsapp_group_id) continue;
+    if (!driver?.whatsapp_group_id) {
+      await logMessage(supabase, {
+        tenantId: tenant.id, templateKey: items.length > 1 ? "daily_multiple" : items[0].type === "pickup" ? "daily_pickup" : "daily_delivery",
+        recipientType: "driver", recipientName: driver?.name ?? null, reference: items.map((s) => `#${s.ref}`).join(", "),
+      }, "skipped", "El driver no tiene grupo de WhatsApp");
+      continue;
+    }
     items.sort((a, b) => (a.type === b.type ? a.order - b.order : a.type === "pickup" ? -1 : 1));
     const { key, message } = await dailyMessage(supabase, tenant.id, items);
     const ok = await sendOnce(supabase, `daily:${driverId}:${today}`, {
