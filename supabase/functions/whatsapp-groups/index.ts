@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { logMessage } from "../_shared/messaging.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -45,12 +46,20 @@ Deno.serve(async (req) => {
     // Mensaje de prueba a un grupo
     if (action === "test") {
       if (!group_id) return json({ error: "group_id required" }, 400);
+      const message = "Mensaje de prueba de Dispatch Up. Las notificaciones llegarán a este grupo.";
+      const { data: profile } = await supabase.from("profiles").select("tenant_id").eq("id", user.id).maybeSingle();
+      const log = { tenantId: profile?.tenant_id ?? null, templateKey: "test", recipientType: "test", groupId: group_id, message, reference: "Botón Probar" };
       const res = await fetch(`${WHAPI}/messages/text`, {
         method: "POST",
         headers: auth,
-        body: JSON.stringify({ to: group_id, body: "Mensaje de prueba de Dispatch Up. Las notificaciones de cargas llegarán a este grupo." }),
+        body: JSON.stringify({ to: group_id, body: message }),
       });
-      if (!res.ok) throw new Error(`Whapi HTTP ${res.status}: ${(await res.text()).slice(0, 300)}`);
+      if (!res.ok) {
+        const err = `Whapi HTTP ${res.status}: ${(await res.text()).slice(0, 300)}`;
+        await logMessage(supabase, log, "failed", err);
+        throw new Error(err);
+      }
+      await logMessage(supabase, log, "sent");
       return json({ success: true });
     }
 

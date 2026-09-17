@@ -9,7 +9,8 @@ import { useDrivers } from '@/hooks/useDrivers';
 import { useInvestors } from '@/hooks/useInvestors';
 import { useDispatchers } from '@/hooks/useDispatchers';
 import { WhatsAppGroupSelect, fetchWhatsAppGroups, type WhatsAppGroup } from '@/components/WhatsAppGroupSelect';
-import { WhatsAppSettingsPanel } from '@/components/WhatsAppSettingsPanel';
+import { AutomationsPanel } from '@/components/whatsapp/AutomationsPanel';
+import { MessageHistory } from '@/components/whatsapp/MessageHistory';
 import { toast } from 'sonner';
 
 type EntityType = 'drivers' | 'investors' | 'dispatchers';
@@ -225,30 +226,45 @@ export default function WhatsAppPage() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
-        {/* Grupos */}
-        <div className="glass-card p-4 xl:col-span-2">
-          <h2 className="text-base font-semibold mb-3">Grupos asignados</h2>
-          <Tabs defaultValue="drivers">
-            <TabsList>
-              <TabsTrigger value="drivers">Drivers ({counter(rows.drivers)})</TabsTrigger>
-              <TabsTrigger value="investors">Investors ({counter(rows.investors)})</TabsTrigger>
-              <TabsTrigger value="dispatchers">Dispatchers ({counter(rows.dispatchers)})</TabsTrigger>
-            </TabsList>
-            {(['drivers', 'investors', 'dispatchers'] as EntityType[]).map(type => (
-              <TabsContent key={type} value={type} className="mt-3">
-                <GroupsTable rows={rows[type]} groups={groups} onAssign={(row, id, name) => assign(type, row, id, name)} />
-              </TabsContent>
-            ))}
-          </Tabs>
-        </div>
+      <Tabs defaultValue="groups">
+        <TabsList>
+          <TabsTrigger value="groups">Grupos</TabsTrigger>
+          <TabsTrigger value="automations">Avisos</TabsTrigger>
+          <TabsTrigger value="history">Historial</TabsTrigger>
+        </TabsList>
 
-        {/* Avisos automáticos */}
-        <div className="glass-card p-4">
-          <h2 className="text-base font-semibold mb-3">Avisos automáticos</h2>
-          <WhatsAppSettingsPanel groups={groups} />
-        </div>
-      </div>
+        <TabsContent value="groups" className="mt-4">
+          <div className="glass-card p-4">
+            <Tabs defaultValue="drivers">
+              <TabsList>
+                <TabsTrigger value="drivers">Drivers ({counter(rows.drivers)})</TabsTrigger>
+                <TabsTrigger value="investors">Investors ({counter(rows.investors)})</TabsTrigger>
+                <TabsTrigger value="dispatchers">Dispatchers ({counter(rows.dispatchers)})</TabsTrigger>
+              </TabsList>
+              {(['drivers', 'investors', 'dispatchers'] as EntityType[]).map(type => (
+                <TabsContent key={type} value={type} className="mt-3">
+                  <GroupsTable rows={rows[type]} groups={groups} onAssign={(row, id, name) => assign(type, row, id, name)} />
+                </TabsContent>
+              ))}
+            </Tabs>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="automations" className="mt-4">
+          <div className="glass-card p-4 max-w-4xl">
+            <p className="text-sm text-muted-foreground mb-3">
+              Prende o apaga cada aviso y edita sus mensajes. Haz clic en un aviso para ver sus textos; las variables entre llaves se reemplazan con los datos reales.
+            </p>
+            <AutomationsPanel groups={groups} />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="history" className="mt-4">
+          <div className="glass-card p-4">
+            <MessageHistory />
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { sendWhapiText } from "../_shared/whapi.ts";
 import { loadHasPod, cityState, timeWindow, todayET, usDate, sleep } from "../_shared/loadHelpers.ts";
+import { logMessage, renderMessage, sendTextLogged, type MessageLog } from "../_shared/messaging.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -22,23 +22,17 @@ const etHour = () => Number(new Date().toLocaleString("en-US", { timeZone: "Amer
 
 type Supa = ReturnType<typeof createClient>;
 
-/** Reserva un mensaje único; false si ya se había enviado */
-async function claim(supabase: Supa, tenantId: string, key: string): Promise<boolean> {
-  const { error } = await supabase.from("whatsapp_message_log").insert({ tenant_id: tenantId, message_key: key });
-  return !error;
-}
-async function release(supabase: Supa, key: string) {
-  await supabase.from("whatsapp_message_log").delete().eq("message_key", key);
-}
-
-async function sendOnce(supabase: Supa, tenantId: string, key: string, groupId: string, text: string) {
-  if (!(await claim(supabase, tenantId, key))) return false;
+/** Envía una sola vez por clave (evita duplicados si el job corre dos veces) y registra en el historial */
+async function sendOnce(supabase: Supa, key: string, log: MessageLog & { groupId: string; message: string }) {
+  const { error: claimErr } = await supabase
+    .from("whatsapp_message_log").insert({ tenant_id: log.tenantId, message_key: key });
+  if (claimErr) return false;
   try {
-    await sendWhapiText(groupId, text);
+    await sendTextLogged(supabase, log);
     await sleep(SEND_GAP_MS);
     return true;
   } catch (e) {
-    await release(supabase, key);
+    await supabase.from("whatsapp_message_log").delete().eq("message_key", key);
     console.error(`Send failed (${key}):`, e);
     return false;
   }
@@ -54,7 +48,7 @@ async function runPodReminders(supabase: Supa, tenant: any) {
 
   const { data: loads } = await supabase
     .from("loads")
-    .select("id, reference_number, driver_id, delivered_at, pod_reminder_count, pod_reminder_sent_at")
+    .select("id, reference_number, driver_id, origin, destination, delivered_at, pod_reminder_count, pod_reminder_sent_at")
     .eq("tenant_id", tenant.id)
     .eq("status", "delivered")
     .not("delivered_at", "is", null)
@@ -80,13 +74,22 @@ async function runPodReminders(supabase: Supa, tenant: any) {
     }
 
     const { data: driver } = await supabase
-      .from("drivers").select("whatsapp_group_id").eq("id", load.driver_id).maybeSingle();
+      .from("drivers").select("name, whatsapp_group_id").eq("id", load.driver_id).maybeSingle();
     if (!driver?.whatsapp_group_id) continue;
 
     const count = Number(load.pod_reminder_count) || 0;
-    const key = `pod:${load.id}:${load.delivered_at}:${count + 1}`;
-    const text = `La carga #${load.reference_number} fue marcada como entregada, pero todavía no hemos recibido el POD. Por favor súbelo en la app móvil lo antes posible; lo necesitamos para cobrar la carga.`;
-    if (await sendOnce(supabase, tenant.id, key, driver.whatsapp_group_id, text)) {
+    const message = await renderMessage(supabase, tenant.id, "pod_reminder", {
+      carga: load.reference_number,
+      driver: driver.name,
+      ciudad_pickup: cityState(load.origin),
+      ciudad_entrega: cityState(load.destination),
+      recordatorio: count + 1,
+    });
+    const sent = await sendOnce(supabase, `pod:${load.id}:${load.delivered_at}:${count + 1}`, {
+      tenantId: tenant.id, templateKey: "pod_reminder", recipientType: "driver", recipientName: driver.name,
+      reference: `Carga #${load.reference_number}`, groupId: driver.whatsapp_group_id, message,
+    });
+    if (sent) {
       await supabase.from("loads")
         .update({ pod_reminder_count: count + 1, pod_reminder_sent_at: new Date().toISOString() })
         .eq("id", load.id);
@@ -143,31 +146,42 @@ async function getTodayStops(supabase: Supa, tenantId: string, today: string): P
   return result.filter((s) => !(s.type === "pickup" && ["picked_up", "on_site_delivery"].includes(s.loadStatus)));
 }
 
-function dailyMessage(items: TodayStop[]): string {
-  const where = (s: TodayStop) => [cityState(s.address), timeWindow(s.time)].filter(Boolean).join(" ");
+async function dailyMessage(supabase: Supa, tenantId: string, items: TodayStop[]): Promise<{ key: string; message: string }> {
   if (items.length === 1) {
     const s = items[0];
-    return s.type === "pickup"
-      ? `Buen día. Le recordamos que hoy tenemos el pickup de la carga #${s.ref} programado en ${where(s)}. ¿A qué hora estimas la llegada?`
-      : `Buen día. Le recordamos que hoy tenemos la entrega de la carga #${s.ref} programada en ${where(s)}. ¿A qué hora estimas la entrega?`;
+    const key = s.type === "pickup" ? "daily_pickup" : "daily_delivery";
+    return {
+      key,
+      message: await renderMessage(supabase, tenantId, key, {
+        carga: s.ref, ciudad: cityState(s.address), horario: timeWindow(s.time),
+      }),
+    };
   }
-  const lines = items.map((s) => `• ${s.type === "pickup" ? "Pickup" : "Entrega"} de la carga #${s.ref} en ${where(s)}`);
-  return `Buen día. Le recordamos lo programado para hoy:\n${lines.join("\n")}\n¿A qué hora estimas llegar a cada parada?`;
+  const paradas = items
+    .map((s) => `• ${s.type === "pickup" ? "Pickup" : "Entrega"} de la carga #${s.ref} en ${[cityState(s.address), timeWindow(s.time)].filter(Boolean).join(" ")}`)
+    .join("\n");
+  return { key: "daily_multiple", message: await renderMessage(supabase, tenantId, "daily_multiple", { paradas }) };
 }
 
 async function runDailyReminders(supabase: Supa, tenant: any, today: string, stops: TodayStop[]) {
   const byDriver = new Map<string, TodayStop[]>();
   for (const s of stops) {
     if (!s.driverId) continue;
-    (byDriver.get(s.driverId) ?? byDriver.set(s.driverId, []).get(s.driverId)!).push(s);
+    if (!byDriver.has(s.driverId)) byDriver.set(s.driverId, []);
+    byDriver.get(s.driverId)!.push(s);
   }
   let sent = 0;
   for (const [driverId, items] of byDriver) {
     const { data: driver } = await supabase
-      .from("drivers").select("whatsapp_group_id").eq("id", driverId).maybeSingle();
+      .from("drivers").select("name, whatsapp_group_id").eq("id", driverId).maybeSingle();
     if (!driver?.whatsapp_group_id) continue;
     items.sort((a, b) => (a.type === b.type ? a.order - b.order : a.type === "pickup" ? -1 : 1));
-    if (await sendOnce(supabase, tenant.id, `daily:${driverId}:${today}`, driver.whatsapp_group_id, dailyMessage(items))) sent++;
+    const { key, message } = await dailyMessage(supabase, tenant.id, items);
+    const ok = await sendOnce(supabase, `daily:${driverId}:${today}`, {
+      tenantId: tenant.id, templateKey: key, recipientType: "driver", recipientName: driver.name,
+      reference: items.map((s) => `#${s.ref}`).join(", "), groupId: driver.whatsapp_group_id, message,
+    });
+    if (ok) sent++;
   }
   return { daily_reminders: sent };
 }
@@ -183,21 +197,29 @@ const TRUCK_DOCS: Record<string, string> = {
   annual_inspection_expiry: "la annual inspection",
 };
 
-function expiryMessage(subject: string, expiry: string, days: number): string | null {
-  const date = usDate(expiry);
-  if (days === 30 || days === 7) {
-    return `Recordatorio: ${subject} vence el ${date} (en ${days} días). Por favor gestiona la renovación y envíanos la copia actualizada.`;
-  }
-  if (days === 0) {
-    return `${capitalize(subject)} vence hoy (${date}). Por favor gestiona la renovación y envíanos la copia actualizada.`;
-  }
-  if (days < 0 && -days % 7 === 0) {
-    return `${capitalize(subject)} venció el ${date} y sigue pendiente de renovación. Por favor envíanos la copia actualizada lo antes posible.`;
-  }
+function expiryTemplateKey(days: number): string | null {
+  if (days === 30 || days === 7) return "expiry_soon";
+  if (days === 0) return "expiry_today";
+  if (days < 0 && -days % 7 === 0) return "expiry_overdue";
   return null;
 }
 
-async function runExpiryAlerts(supabase: Supa, tenant: any, today: string) {
+async function sendExpiry(
+  supabase: Supa, tenantId: string, keyPrefix: string, subject: string, expiry: string,
+  groupId: string, recipientName: string,
+) {
+  const days = daysBetween(todayET(), expiry);
+  const templateKey = expiryTemplateKey(days);
+  if (!templateKey) return false;
+  const message = await renderMessage(supabase, tenantId, templateKey, {
+    documento: subject, Documento: capitalize(subject), fecha: usDate(expiry), dias: Math.abs(days),
+  });
+  return sendOnce(supabase, `${keyPrefix}:${expiry}:${days}`, {
+    tenantId, templateKey, recipientType: "driver", recipientName, reference: capitalize(subject), groupId, message,
+  });
+}
+
+async function runExpiryAlerts(supabase: Supa, tenant: any) {
   let sent = 0;
   const { data: drivers } = await supabase
     .from("drivers")
@@ -210,10 +232,7 @@ async function runExpiryAlerts(supabase: Supa, tenant: any, today: string) {
     if (!d.whatsapp_group_id) continue;
     for (const [field, label] of Object.entries(DRIVER_DOCS)) {
       const expiry = (d[field] || "").split("T")[0];
-      if (!expiry) continue;
-      const days = daysBetween(today, expiry);
-      const text = expiryMessage(`${label} de ${d.name}`, expiry, days);
-      if (text && await sendOnce(supabase, tenant.id, `expiry:driver:${d.id}:${field}:${expiry}:${days}`, d.whatsapp_group_id, text)) sent++;
+      if (expiry && await sendExpiry(supabase, tenant.id, `expiry:driver:${d.id}:${field}`, `${label} de ${d.name}`, expiry, d.whatsapp_group_id, d.name)) sent++;
     }
   }
 
@@ -228,10 +247,7 @@ async function runExpiryAlerts(supabase: Supa, tenant: any, today: string) {
     if (!driver) continue;
     for (const [field, label] of Object.entries(TRUCK_DOCS)) {
       const expiry = (t[field] || "").split("T")[0];
-      if (!expiry) continue;
-      const days = daysBetween(today, expiry);
-      const text = expiryMessage(`${label} del camión Unit #${t.unit_number}`, expiry, days);
-      if (text && await sendOnce(supabase, tenant.id, `expiry:truck:${t.id}:${field}:${expiry}:${days}`, driver.whatsapp_group_id, text)) sent++;
+      if (expiry && await sendExpiry(supabase, tenant.id, `expiry:truck:${t.id}:${field}`, `${label} del camión Unit #${t.unit_number}`, expiry, driver.whatsapp_group_id, driver.name)) sent++;
     }
   }
   return { expiry_alerts: sent };
@@ -266,7 +282,8 @@ async function buildAdminReport(supabase: Supa, tenant: any, today: string, stop
 
   const { data: payments } = await supabase
     .from("payments").select("amount").eq("tenant_id", tenant.id).eq("status", "pending");
-  const pendingTotal = ((payments as any[]) || []).reduce((s, p) => s + (Number(p.amount) || 0), 0);
+  const paymentList = (payments as any[]) || [];
+  const pendingTotal = paymentList.reduce((s, p) => s + (Number(p.amount) || 0), 0);
 
   const { data: trucks } = await supabase
     .from("trucks")
@@ -308,7 +325,7 @@ async function buildAdminReport(supabase: Supa, tenant: any, today: string, stop
     `Cargas sin driver: ${unassigned.length}${list(unassigned.map((l) => `#${l.reference_number}`))}`,
     `Entregadas sin POD: ${missingPod.length}${list(missingPod)}`,
     `Drivers sin carga: ${idle.length}${list(idle)}`,
-    `Pagos pendientes: ${(payments as any[] || []).length} por ${money(pendingTotal)}`,
+    `Pagos pendientes: ${paymentList.length} por ${money(pendingTotal)}`,
     `Mantenimientos vencidos: ${overdueMaint.length}${list(overdueMaint, 4)}`,
     `Documentos vencidos: ${expired.length}${list(expired, 4)}`,
   ].join("\n");
@@ -337,34 +354,46 @@ Deno.serve(async (req) => {
     const { job } = await req.json().catch(() => ({}));
     const today = todayET();
 
-    let q = supabase.from("tenants")
-      .select("id, whatsapp_admin_group_id, wa_pod_reminders, wa_daily_reminders, wa_admin_report, wa_expiry_alerts");
+    let q = supabase.from("tenants").select("*");
     if (userTenantId) q = q.eq("id", userTenantId);
     const { data: tenants } = await q;
 
     const results: Record<string, unknown> = {};
     for (const tenant of (tenants as any[]) || []) {
       const r: Record<string, unknown> = {};
+      const on = (toggle: string) => tenant[toggle] !== false;
 
-      if (job === "pod" && tenant.wa_pod_reminders) {
+      if (job === "pod" && fromCron && on("wa_pod_reminders")) {
         Object.assign(r, await runPodReminders(supabase, tenant));
       }
 
-      if (job === "daily") {
+      if (job === "daily" && fromCron) {
         const stops = await getTodayStops(supabase, tenant.id, today);
-        if (tenant.wa_daily_reminders) Object.assign(r, await runDailyReminders(supabase, tenant, today, stops));
-        if (tenant.wa_expiry_alerts) Object.assign(r, await runExpiryAlerts(supabase, tenant, today));
-        if (tenant.wa_admin_report && tenant.whatsapp_admin_group_id) {
-          const report = await buildAdminReport(supabase, tenant, today, stops);
-          r.admin_report = await sendOnce(supabase, tenant.id, `admin:${tenant.id}:${today}`, tenant.whatsapp_admin_group_id, report);
+        if (on("wa_daily_reminders")) Object.assign(r, await runDailyReminders(supabase, tenant, today, stops));
+        if (on("wa_expiry_alerts")) Object.assign(r, await runExpiryAlerts(supabase, tenant));
+        if (on("wa_admin_report") && tenant.whatsapp_admin_group_id) {
+          const message = await buildAdminReport(supabase, tenant, today, stops);
+          r.admin_report = await sendOnce(supabase, `admin:${tenant.id}:${today}`, {
+            tenantId: tenant.id, templateKey: "admin_report", recipientType: "admin",
+            recipientName: tenant.whatsapp_admin_group_name ?? "Administración", reference: usDate(today),
+            groupId: tenant.whatsapp_admin_group_id, message,
+          });
         }
       }
 
       // Botón "Probar reporte": siempre se envía, sin registro de duplicados
-      if (job === "admin_report_test" && userTenantId && tenant.whatsapp_admin_group_id) {
-        const stops = await getTodayStops(supabase, tenant.id, today);
-        await sendWhapiText(tenant.whatsapp_admin_group_id, await buildAdminReport(supabase, tenant, today, stops));
-        r.admin_report_test = true;
+      if (job === "admin_report_test" && userTenantId) {
+        if (!tenant.whatsapp_admin_group_id) {
+          await logMessage(supabase, { tenantId: tenant.id, templateKey: "admin_report", recipientType: "admin" }, "skipped", "No hay grupo de administración");
+        } else {
+          const stops = await getTodayStops(supabase, tenant.id, today);
+          await sendTextLogged(supabase, {
+            tenantId: tenant.id, templateKey: "admin_report", recipientType: "admin",
+            recipientName: tenant.whatsapp_admin_group_name ?? "Administración", reference: `Prueba ${usDate(today)}`,
+            groupId: tenant.whatsapp_admin_group_id, message: await buildAdminReport(supabase, tenant, today, stops),
+          });
+          r.admin_report_test = true;
+        }
       }
 
       results[tenant.id] = r;

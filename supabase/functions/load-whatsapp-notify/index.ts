@@ -1,29 +1,16 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { loadHasPod } from "../_shared/loadHelpers.ts";
+import { loadHasPod, cityState } from "../_shared/loadHelpers.ts";
+import { isEnabled, logMessage, renderMessage, sendTextLogged } from "../_shared/messaging.ts";
 
-// Llamada solo desde el trigger de loads (autenticada con x-cron-secret)
+// Llamada desde los triggers de loads / pod_documents y el job de POD (autenticada con x-cron-secret)
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
-
-async function sendToGroup(groupId: string, text: string) {
-  const token = Deno.env.get("WHAPI_TOKEN");
-  if (!token) throw new Error("WHAPI_TOKEN not configured");
-  const res = await fetch("https://gate.whapi.cloud/messages/text", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ to: groupId, body: text }),
-  });
-  if (!res.ok) throw new Error(`Whapi HTTP ${res.status}: ${(await res.text()).slice(0, 300)}`);
-}
 
 Deno.serve(async (req) => {
   const secret = Deno.env.get("CRON_SECRET");
   if (!secret || req.headers.get("x-cron-secret") !== secret) return json({ error: "Unauthorized" }, 401);
 
-  const supabase = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-  );
+  const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
   try {
     const { load_id, event } = await req.json();
@@ -31,11 +18,15 @@ Deno.serve(async (req) => {
 
     const { data: load, error: loadErr } = await supabase
       .from("loads")
-      .select("id, reference_number, driver_id, status, whatsapp_assigned_driver_id, whatsapp_delivered_sent_at")
+      .select("id, tenant_id, reference_number, driver_id, status, origin, destination, whatsapp_assigned_driver_id, whatsapp_delivered_sent_at")
       .eq("id", load_id)
       .maybeSingle();
     if (loadErr || !load) return json({ error: "Load not found" }, 404);
     if (!load.driver_id) return json({ skipped: "no driver" });
+
+    const templateKey = event === "assigned" ? "load_assigned" : "load_delivered";
+    const toggle = event === "assigned" ? "wa_load_assigned" : "wa_load_delivered";
+    if (!(await isEnabled(supabase, load.tenant_id, toggle))) return json({ skipped: "disabled" });
 
     // Evita duplicados si el trigger se disparó más de una vez
     if (event === "assigned" && load.whatsapp_assigned_driver_id === String(load.driver_id)) {
@@ -46,20 +37,27 @@ Deno.serve(async (req) => {
     }
 
     const { data: driver } = await supabase
-      .from("drivers")
-      .select("name, whatsapp_group_id")
-      .eq("id", load.driver_id)
-      .maybeSingle();
+      .from("drivers").select("name, whatsapp_group_id").eq("id", load.driver_id).maybeSingle();
+
+    const baseLog = {
+      tenantId: load.tenant_id,
+      templateKey,
+      recipientType: "driver",
+      recipientName: driver?.name ?? null,
+      reference: `Carga #${load.reference_number}`,
+    };
+
+    // "Completada" solo se anuncia cuando ya hay POD; si falta, el job de recordatorios lo pide
+    if (event === "delivered" && !(await loadHasPod(supabase, load.id))) {
+      return json({ skipped: "no POD yet" });
+    }
+
     if (!driver?.whatsapp_group_id) {
-      console.log(`Driver ${load.driver_id} has no WhatsApp group — skipped load ${load.reference_number}`);
+      await logMessage(supabase, baseLog, "skipped", "El driver no tiene grupo de WhatsApp");
       return json({ skipped: "driver without whatsapp group" });
     }
 
-    const ref = load.reference_number;
-
-    // "Completada" solo se anuncia cuando ya hay POD; si falta, el job de recordatorios lo pide
     if (event === "delivered") {
-      if (!(await loadHasPod(supabase, load.id))) return json({ skipped: "no POD yet" });
       // Reservar el envío para que dos disparos simultáneos no manden el mensaje dos veces
       const { data: claimed } = await supabase
         .from("loads")
@@ -70,12 +68,22 @@ Deno.serve(async (req) => {
       if (!claimed || claimed.length === 0) return json({ skipped: "already notified" });
     }
 
-    const text = event === "assigned"
-      ? `La carga #${ref} ha sido asignada a ti. Toda la información de la carga está en la app móvil.\nPor favor déjanos saber a qué hora estimas la llegada al Pick up.`
-      : `La carga #${ref} ha sido completada exitosamente. Las fotos de la carga y el POD han sido recibidos.`;
+    // Ciudades desde las paradas si existen; si no, origen/destino de la carga
+    const { data: stops } = await supabase
+      .from("load_stops").select("stop_type, address, stop_order").eq("load_id", load.id).order("stop_order");
+    const stopList = (stops as any[]) || [];
+    const pickup = stopList.find((s) => s.stop_type === "pickup")?.address ?? load.origin;
+    const delivery = [...stopList].reverse().find((s) => s.stop_type === "delivery")?.address ?? load.destination;
+
+    const message = await renderMessage(supabase, load.tenant_id, templateKey, {
+      carga: load.reference_number,
+      driver: driver.name,
+      ciudad_pickup: cityState(pickup),
+      ciudad_entrega: cityState(delivery),
+    });
 
     try {
-      await sendToGroup(driver.whatsapp_group_id, text);
+      await sendTextLogged(supabase, { ...baseLog, groupId: driver.whatsapp_group_id, message });
     } catch (sendErr) {
       if (event === "delivered") {
         await supabase.from("loads").update({ whatsapp_delivered_sent_at: null }).eq("id", load.id);
@@ -90,7 +98,6 @@ Deno.serve(async (req) => {
         .eq("id", load.id);
     }
 
-    console.log(`WhatsApp ${event} sent for load ${ref} to ${driver.name}`);
     return json({ success: true });
   } catch (e) {
     console.error("load-whatsapp-notify error:", e);

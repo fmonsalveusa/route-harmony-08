@@ -1,7 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
 
-const money = (n: number) => '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
 function blobToBase64(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -11,24 +9,19 @@ function blobToBase64(blob: Blob): Promise<string> {
   });
 }
 
-export function singlePaymentCaption(amount: number, loadReference: string) {
-  return `Pago procesado por ${money(amount)} — Carga #${loadReference}. Adjunto el recibo de pago.`;
-}
+export type ReceiptSendResult = 'sent' | 'no_group' | 'disabled' | 'error';
 
-export function batchPaymentCaption(amount: number) {
-  return `Pago procesado por ${money(amount)}. Anexo el recibo de pago con el detalle de las cargas incluidas en este pago.`;
-}
-
-export type ReceiptSendResult = 'sent' | 'no_group' | 'error';
-
-/** Envía el recibo en PDF al grupo de WhatsApp del beneficiario */
+/** Envía el recibo en PDF al grupo de WhatsApp del beneficiario. El texto sale de la plantilla editable. */
 export async function sendReceiptWhatsApp(params: {
   recipientType: string;
   recipientId: string | null;
   recipientName: string;
   blob: Blob;
   fileName: string;
-  caption: string;
+  kind: 'single' | 'batch';
+  amount: number;
+  loadReference?: string;
+  count?: number;
 }): Promise<ReceiptSendResult> {
   try {
     const { data, error } = await supabase.functions.invoke('send-payment-receipt-whatsapp', {
@@ -37,14 +30,18 @@ export async function sendReceiptWhatsApp(params: {
         recipient_id: params.recipientId,
         recipient_name: params.recipientName,
         file_name: params.fileName,
-        caption: params.caption,
         pdf_base64: await blobToBase64(params.blob),
+        kind: params.kind,
+        amount: params.amount,
+        load_reference: params.loadReference ?? null,
+        count: params.count ?? null,
       },
     });
     if (error || data?.error) {
       console.error('[sendReceiptWhatsApp]', data?.error || error);
       return 'error';
     }
+    if (data?.skipped === 'disabled') return 'disabled';
     return data?.skipped ? 'no_group' : 'sent';
   } catch (e) {
     console.error('[sendReceiptWhatsApp]', e);

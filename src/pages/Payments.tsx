@@ -14,7 +14,7 @@ import { PaymentEditDialog } from '@/components/PaymentEditDialog';
 import { Input } from '@/components/ui/input';
 import { DollarSign, CheckCircle, Clock, Download, Pencil, Trash2, FileText, CheckCheck, X, PlusCircle, Search, ChevronDown } from 'lucide-react';
 import { generatePaymentReceipt, type DispatcherLoadItem } from '@/lib/paymentReceipt';
-import { sendReceiptWhatsApp, singlePaymentCaption, batchPaymentCaption, type ReceiptSendResult } from '@/lib/sendReceiptWhatsApp';
+import { sendReceiptWhatsApp, type ReceiptSendResult } from '@/lib/sendReceiptWhatsApp';
 import { generateBatchPaymentReceipt } from '@/lib/batchPaymentReceipt';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -287,6 +287,7 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
   const selectedTotal = selectedPayments.reduce((s, p) => s + Number(p.amount) + (adjMap[p.id] || 0), 0);
 
   const notifyReceiptResult = (result: ReceiptSendResult) => {
+    if (result === 'disabled') return;
     if (result === 'sent') toast({ title: 'Recibo enviado por WhatsApp' });
     else if (result === 'no_group') toast({ title: 'Sin grupo de WhatsApp', description: 'El beneficiario no tiene grupo asignado; no se envió el recibo.' });
     else toast({ title: 'No se pudo enviar el recibo por WhatsApp', variant: 'destructive' });
@@ -305,9 +306,9 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
       recipientName: p.recipient_name,
       blob: receipt.blob,
       fileName: receipt.fileName,
-      caption: p.recipient_type === 'dispatcher'
-        ? batchPaymentCaption(amount)
-        : singlePaymentCaption(amount, p.load_reference),
+      kind: p.recipient_type === 'dispatcher' ? 'batch' : 'single',
+      amount,
+      loadReference: p.load_reference,
     }));
   };
 
@@ -338,7 +339,9 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
         recipientName: selectedPayments[0].recipient_name,
         blob: receipt.blob,
         fileName: receipt.fileName,
-        caption: batchPaymentCaption(selectedTotal),
+        kind: 'batch',
+        amount: selectedTotal,
+        count: selectedPayments.length,
       }));
       setSelectedIds(new Set());
       refetch();

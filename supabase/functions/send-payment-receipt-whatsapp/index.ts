@@ -1,6 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { decode as decodeBase64 } from "https://deno.land/std@0.168.0/encoding/base64.ts";
-import { sendWhapiDocument } from "../_shared/whapi.ts";
+import { isEnabled, logMessage, renderMessage, sendDocumentLogged } from "../_shared/messaging.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -25,8 +25,19 @@ Deno.serve(async (req) => {
   if (!tenantId) return json({ error: "No tenant" }, 403);
 
   try {
-    const { recipient_type, recipient_id, recipient_name, file_name, caption, pdf_base64 } = await req.json();
+    const { recipient_type, recipient_id, recipient_name, file_name, pdf_base64, kind, amount, load_reference, count } = await req.json();
     if (!recipient_type || !pdf_base64 || !file_name) return json({ error: "Bad request" }, 400);
+    if (!(await isEnabled(supabase, tenantId, "wa_payment_receipts"))) return json({ skipped: "disabled" });
+
+    const templateKey = kind === "batch" ? "payment_batch" : "payment_single";
+    const money = "$" + (Number(amount) || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const baseLog = {
+      tenantId,
+      templateKey,
+      recipientType: recipient_type,
+      recipientName: recipient_name ?? null,
+      reference: kind === "batch" ? `${count ?? ""} pagos · ${money}`.trim() : `Carga #${load_reference} · ${money}`,
+    };
 
     // Grupo del beneficiario. Los pagos de investor pueden traer el id del driver,
     // así que si no coincide por id se busca por nombre.
@@ -47,7 +58,10 @@ Deno.serve(async (req) => {
         .not("whatsapp_group_id", "is", null).limit(1).maybeSingle();
       groupId = data?.whatsapp_group_id ?? null;
     }
-    if (!groupId) return json({ skipped: "recipient without whatsapp group" });
+    if (!groupId) {
+      await logMessage(supabase, baseLog, "skipped", "El beneficiario no tiene grupo de WhatsApp");
+      return json({ skipped: "recipient without whatsapp group" });
+    }
 
     const bytes = decodeBase64(pdf_base64);
     if (bytes.byteLength > MAX_PDF_BYTES) return json({ error: "PDF too large" }, 400);
@@ -63,8 +77,13 @@ Deno.serve(async (req) => {
       .createSignedUrl(path, 60 * 60 * 24 * 7);
     if (signErr || !signed?.signedUrl) throw new Error(`Signed URL: ${signErr?.message}`);
 
-    await sendWhapiDocument(groupId, signed.signedUrl, file_name, caption || "Adjunto el recibo de pago.");
-    console.log(`Receipt sent to ${recipient_type} ${recipient_name}`);
+    const message = await renderMessage(supabase, tenantId, templateKey, {
+      monto: money,
+      carga: load_reference ?? "",
+      beneficiario: recipient_name ?? "",
+      cantidad: count ?? "",
+    });
+    await sendDocumentLogged(supabase, { ...baseLog, groupId, message }, signed.signedUrl, file_name);
     return json({ success: true });
   } catch (e) {
     console.error("send-payment-receipt-whatsapp error:", e);
