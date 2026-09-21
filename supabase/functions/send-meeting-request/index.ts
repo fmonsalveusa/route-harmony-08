@@ -29,6 +29,20 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Un solo cliente por fecha y hora (las canceladas liberan el horario)
+    const slotTaken = () => new Response(
+      JSON.stringify({ error: "Ese horario acaba de ser reservado. Por favor elige otro. / That time slot was just booked. Please choose another one.", slot_taken: true }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+    const { data: existing } = await adminClient
+      .from("meeting_requests")
+      .select("id")
+      .eq("meeting_date", meeting_date)
+      .eq("meeting_time", meeting_time)
+      .neq("status", "cancelled")
+      .limit(1);
+    if (existing && existing.length > 0) return slotTaken();
+
     // Insert into meeting_requests
     const { error: insertError } = await adminClient
       .from("meeting_requests")
@@ -44,6 +58,8 @@ Deno.serve(async (req) => {
         comments: comments?.trim() || null,
       });
 
+    // Dos personas enviando al mismo tiempo: el candado de la base de datos rechaza la segunda
+    if (insertError?.code === "23505") return slotTaken();
     if (insertError) {
       console.error("Insert error:", insertError);
       throw new Error("Error al guardar la solicitud");
@@ -79,7 +95,7 @@ Deno.serve(async (req) => {
 
     await client.send({
       from: gmailUser,
-      to: "agartransportation1@gmail.com",
+      to: "58logisticsllc@gmail.com",
       subject: `Nueva Solicitud de Reunión - ${driver_name}`,
       content: `Nueva solicitud de reunión:\n\nNombre: ${driver_name}\nTeléfono: ${phone}\nCiudad: ${city}, ${state}\nTipo de Vehículo: ${truck_type}\nServicio: ${service_interest || "No especificado"}\nFecha: ${formattedDate}\nHora: ${meeting_time}\nComentario: ${comments || "Ninguno"}`,
       html: `

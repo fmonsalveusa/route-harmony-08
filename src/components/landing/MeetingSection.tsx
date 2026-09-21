@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,6 +28,27 @@ export function MeetingSection() {
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ driver_name: "", phone: "", city: "", state: "", truck_type: "", meeting_time: "", service_interest: "", comments: "" });
   const [date, setDate] = useState<Date>();
+  const [bookedSlots, setBookedSlots] = useState<string[]>([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const bookedLabel = lang === "es" ? "Ocupado" : "Booked";
+
+  // Horas ya reservadas en la fecha elegida (la función solo devuelve horas, sin datos de clientes)
+  const loadBookedSlots = async (d: Date | undefined) => {
+    if (!d) { setBookedSlots([]); return; }
+    setLoadingSlots(true);
+    try {
+      const { data } = await supabase.rpc("get_booked_meeting_slots" as any, { p_date: format(d, "yyyy-MM-dd") } as any);
+      setBookedSlots(((data as any[]) || []).map((r: any) => (typeof r === "string" ? r : r.get_booked_meeting_slots)));
+    } catch {
+      setBookedSlots([]);
+    } finally {
+      setLoadingSlots(false);
+    }
+  };
+
+  useEffect(() => { void loadBookedSlots(date); }, [date]);
+
+  const allSlotsTaken = !!date && !loadingSlots && getTimeSlots().every((s) => bookedSlots.includes(s));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,6 +62,10 @@ export function MeetingSection() {
         body: { ...form, driver_name: form.driver_name.trim(), phone: form.phone.trim(), city: form.city.trim(), meeting_date: format(date, "yyyy-MM-dd") },
       });
       if (error) throw new Error(tr.meetErrorSend);
+      if (data?.slot_taken) {
+        setForm((f) => ({ ...f, meeting_time: "" }));
+        await loadBookedSlots(date);
+      }
       if (data?.error) throw new Error(data.error);
       toast.success(tr.meetSuccess);
       setForm({ driver_name: "", phone: "", city: "", state: "", truck_type: "", meeting_time: "", service_interest: "", comments: "" });
@@ -99,6 +124,11 @@ export function MeetingSection() {
                       {US_STATES.map((s) => (<SelectItem key={s} value={s}>{s}</SelectItem>))}
                     </SelectContent>
                   </Select>
+                  {allSlotsTaken && (
+                    <p className="text-xs text-destructive mt-1">
+                      {lang === "es" ? "No quedan horarios este día. Elige otra fecha." : "No time slots left on this day. Please pick another date."}
+                    </p>
+                  )}
                 </div>
               </div>
               <div>
@@ -142,7 +172,14 @@ export function MeetingSection() {
                       <SelectValue placeholder={tr.meetTimePh} />
                     </SelectTrigger>
                     <SelectContent className="max-h-[200px]">
-                      {getTimeSlots().map((tt) => (<SelectItem key={tt} value={tt}>{tt}</SelectItem>))}
+                      {getTimeSlots().map((tt) => {
+                        const taken = bookedSlots.includes(tt);
+                        return (
+                          <SelectItem key={tt} value={tt} disabled={taken}>
+                            {tt}{taken ? ` — ${bookedLabel}` : ""}
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
                 </div>
