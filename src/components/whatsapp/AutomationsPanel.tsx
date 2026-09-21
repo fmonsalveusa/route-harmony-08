@@ -171,6 +171,19 @@ export function AutomationsPanel({ groups }: { groups: WhatsAppGroup[] | null })
                     </div>
                   </>
                 )}
+                {a.id === 'meeting_reminder' && (
+                  <div>
+                    <p className="text-xs font-medium mb-1.5">Grupo de reuniones</p>
+                    <WhatsAppGroupSelect
+                      compact
+                      className=""
+                      groups={groups}
+                      groupId={tenant.whatsapp_meetings_group_id ?? null}
+                      groupName={tenant.whatsapp_meetings_group_name ?? null}
+                      onChange={(id, name) => updateTenant({ whatsapp_meetings_group_id: id, whatsapp_meetings_group_name: name })}
+                    />
+                  </div>
+                )}
                 {a.templates.map(t => (
                   <TemplateEditor
                     key={t.key}

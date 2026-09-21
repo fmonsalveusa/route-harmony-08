@@ -250,6 +250,28 @@ export const AUTOMATIONS: AutomationDefinition[] = [
     ],
   },
   {
+    id: 'meeting_reminder',
+    title: 'Recordatorio de reunión (landing)',
+    description: '15 minutos antes de cada reunión agendada desde la landing page, al grupo que elijas. Las canceladas no se avisan.',
+    toggle: 'wa_meeting_reminder',
+    templates: [{
+      key: 'meeting_reminder',
+      title: 'Mensaje',
+      description: 'Se envía al grupo de reuniones.',
+      body: 'Recordatorio: reunión en 15 minutos ({hora}).\nNombre: {nombre}\nTeléfono: {telefono}\nTipo de camión: {camion}\nCiudad: {ciudad}',
+      variables: [
+        v('nombre', 'Nombre del cliente', 'Juan Pérez'),
+        v('telefono', 'Teléfono del cliente', '(704) 555-1234'),
+        v('camion', 'Tipo de camión', 'Box Truck'),
+        v('ciudad', 'Ciudad y estado', 'Charlotte, NC'),
+        v('hora', 'Hora de la reunión', '4:30 PM'),
+        v('fecha', 'Fecha de la reunión', '09/22/2026'),
+        v('servicio', 'Servicio de interés', 'Dispatch Service'),
+        v('comentarios', 'Comentarios del cliente', 'Tengo 2 camiones'),
+      ],
+    }],
+  },
+  {
     id: 'admin_report',
     title: 'Reporte diario de administración',
     description: 'Cada mañana a las 8am al grupo de administración: cargas activas, pickups y entregas de hoy, entregadas sin POD, drivers sin carga, pagos pendientes, mantenimientos vencidos y facturado de la semana. El formato no es editable.',

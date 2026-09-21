@@ -32,7 +32,7 @@ const STATUS_STYLE: Record<string, { label: string; className: string }> = {
 };
 
 const TYPE_LABELS: Record<string, string> = {
-  driver: 'Driver', investor: 'Investor', dispatcher: 'Dispatcher', admin: 'Administración', test: 'Prueba',
+  driver: 'Driver', investor: 'Investor', dispatcher: 'Dispatcher', admin: 'Administración', test: 'Prueba', meetings: 'Reuniones',
 };
 
 const formatET = (iso: string) =>

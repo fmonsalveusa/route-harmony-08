@@ -99,6 +99,63 @@ async function runPodReminders(supabase: Supa, tenant: any) {
   return { pod_reminders: reminders, pod_completed: completed };
 }
 
+// ─── Reuniones de la landing ─────────────────────────────────────────────────
+const MEETING_REMINDER_MINUTES = 15;
+
+/** "4:30 PM" → minutos desde medianoche */
+function minutesOfDay(time: string): number | null {
+  const m = String(time || "").trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
+  if (!m) return null;
+  let h = Number(m[1]);
+  const pm = m[3]?.toUpperCase() === "PM";
+  if (m[3]) {
+    if (h === 12) h = pm ? 12 : 0;
+    else if (pm) h += 12;
+  }
+  return h * 60 + Number(m[2]);
+}
+
+async function runMeetingReminders(supabase: Supa, tenant: any, today: string) {
+  if (!tenant.whatsapp_meetings_group_id) return { meeting_reminders: 0 };
+
+  const nowParts = new Date().toLocaleString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "numeric", hourCycle: "h23" });
+  const [nh, nm] = nowParts.split(":").map(Number);
+  const nowMinutes = nh * 60 + nm;
+
+  const { data: meetings } = await supabase
+    .from("meeting_requests")
+    .select("id, driver_name, phone, city, state, truck_type, meeting_date, meeting_time, service_interest, comments, status")
+    .eq("meeting_date", today)
+    .neq("status", "cancelled");
+
+  let sent = 0;
+  for (const m of (meetings as any[]) || []) {
+    const start = minutesOfDay(m.meeting_time);
+    if (start === null) continue;
+    const minutesUntil = start - nowMinutes;
+    // Ventana: entre 15 y 1 minuto antes (el job corre cada 5 minutos)
+    if (minutesUntil > MEETING_REMINDER_MINUTES || minutesUntil <= 0) continue;
+
+    const message = await renderMessage(supabase, tenant.id, "meeting_reminder", {
+      nombre: m.driver_name,
+      telefono: m.phone,
+      camion: m.truck_type,
+      ciudad: [m.city, m.state].filter(Boolean).join(", "),
+      hora: m.meeting_time,
+      fecha: usDate(m.meeting_date),
+      servicio: m.service_interest || "—",
+      comentarios: m.comments || "—",
+    });
+    const ok = await sendOnce(supabase, `meeting:${m.id}`, {
+      tenantId: tenant.id, templateKey: "meeting_reminder", recipientType: "meetings",
+      recipientName: m.driver_name, reference: `${usDate(m.meeting_date)} ${m.meeting_time}`,
+      groupId: tenant.whatsapp_meetings_group_id, message,
+    });
+    if (ok) sent++;
+  }
+  return { meeting_reminders: sent };
+}
+
 // ─── Paradas de hoy ──────────────────────────────────────────────────────────
 interface TodayStop {
   loadId: string; ref: string; driverId: string | null; loadStatus: string;
@@ -407,6 +464,10 @@ Deno.serve(async (req) => {
     for (const tenant of (tenants as any[]) || []) {
       const r: Record<string, unknown> = {};
       const on = (toggle: string) => tenant[toggle] !== false;
+
+      if (job === "meetings" && fromCron && on("wa_meeting_reminder")) {
+        Object.assign(r, await runMeetingReminders(supabase, tenant, today));
+      }
 
       if (job === "pod" && fromCron && on("wa_pod_reminders")) {
         Object.assign(r, await runPodReminders(supabase, tenant));
