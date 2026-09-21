@@ -168,7 +168,8 @@ export function useLoadProfitData() {
       fixedCost,
       costPerMile: costs.perMile,
       driverPayPct: num(at('driver', driver?.id, 'pay_percentage', date), d?.pay_percentage),
-      investorPayPct: num(at('driver', driver?.id, 'investor_pct', date), d?.investor_pay_percentage),
+      // Igual que los pagos: el % viejo del driver solo cuenta si tiene un investor con nombre
+      investorPayPct: num(at('driver', driver?.id, 'investor_pct', date), d?.investor_name ? d?.investor_pay_percentage : 0),
       dispatcherPct: isDispatchService
         ? (num(at('dispatcher', dispatcher?.id, 'dispatch_service_percentage', date), disp?.dispatch_service_percentage)
           || num(at('dispatcher', dispatcher?.id, 'commission_percentage', date), disp?.commission_percentage))
