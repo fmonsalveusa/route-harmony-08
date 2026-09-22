@@ -54,8 +54,16 @@ async function enqueue(supabase: any, kind: "arrival" | "docs", stopId: string) 
         .update({ send_after: now ? new Date().toISOString() : minutesFromNow(DOCS_DELAY_MIN) }).eq("id", existing.id);
       if (now) return await processRow(supabase, { ...existing, send_after: new Date().toISOString() });
     }
-    // Llegaron archivos después de enviado: segundo email con el documento completo
-    if (kind === "docs" && existing.status === "sent") return await enqueueUpdate(supabase, existing);
+    // Después de enviado solo se vuelve a escribir si llegó el BOL/POD. Las fotos sueltas no generan emails.
+    if (kind === "docs" && existing.status === "sent") {
+      const since = await lastDocsSentAt(supabase, existing);
+      const nuevos = (await stopDocuments(supabase, existing))
+        .filter((d) => !since || Date.parse(d.created_at) > Date.parse(since));
+      if (nuevos.length === 0) return { skipped: "nothing new" };
+      await classifyImages(supabase, nuevos);
+      if (!nuevos.some((d) => !isImageDoc(d) || d.is_document === true)) return { skipped: "solo fotos nuevas" };
+      return await enqueueUpdate(supabase, existing);
+    }
     return { skipped: `already ${existing.status}` };
   }
 
@@ -198,7 +206,7 @@ async function looksLikeDocument(bytes: Uint8Array, fileName: string): Promise<b
             properties: {
               is_document: {
                 type: "boolean",
-                description: "true solo si la foto es de un papel tipo Bill of Lading, Proof of Delivery, packing list o rate confirmation, legible y ocupando casi toda la imagen. false si es una foto de la carga, del trailer, del sello, del muelle o cualquier otra cosa.",
+                description: "true SOLO si la foto es de un papel impreso tipo Bill of Lading, Proof of Delivery o packing list: se ven campos impresos, texto legible, firmas o sellos, y el papel ocupa casi toda la imagen. false para cualquier otra cosa: fotos de la carga, cajas, pallets, etiquetas sueltas, el trailer, el sello, el muelle, la puerta, la calle. Ante la duda, false.",
               },
             },
             required: ["is_document"],
@@ -324,6 +332,8 @@ async function stopAttachments(supabase: any, row: any, reference: string, since
   // El BOL/POD: los PDF y las fotos del papel, todo en un solo archivo
   const pdfDocs = all.filter((d) => !isImageDoc(d) || d.is_document === true);
   const pdfs = pdfDocs.some(isNew) ? pdfDocs : [];
+  // Un segundo email solo tiene sentido si llegó el BOL/POD: las fotos sueltas no se reenvían
+  if (since && pdfs.length === 0) return { files: [] as Attachment[], skippedNames: [] as string[] };
   const images = all.filter((d) => isImageDoc(d) && d.is_document !== true && isNew(d));
 
   const files: Attachment[] = [];
@@ -432,7 +442,7 @@ async function processRow(supabase: any, row: any): Promise<Record<string, unkno
       const since = isUpdate ? await lastDocsSentAt(supabase, row) : null;
       ({ files: attachments, skippedNames } = await stopAttachments(supabase, row, load.reference_number, since));
       if (attachments.length === 0) {
-        return await finish({ status: "skipped", error: isUpdate ? "No hay archivos nuevos desde el último envío" : "La parada ya no tiene archivos" });
+        return await finish({ status: "skipped", error: isUpdate ? "No llegó ningún BOL/POD nuevo desde el último envío" : "La parada ya no tiene archivos" });
       }
     }
 
