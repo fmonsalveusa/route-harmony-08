@@ -47,9 +47,12 @@ async function enqueue(supabase: any, kind: "arrival" | "docs", stopId: string) 
     .from("broker_email_queue").select("*").eq("message_key", key).maybeSingle();
 
   if (existing) {
-    // Llegan más archivos de la misma parada: esperar un poco más para mandarlos juntos
+    // Llegan más archivos de la misma parada: sale ya si es el BOL/POD, si no espera por si vienen más fotos
     if (kind === "docs" && existing.status === "pending") {
-      await supabase.from("broker_email_queue").update({ send_after: minutesFromNow(DOCS_DELAY_MIN) }).eq("id", existing.id);
+      const now = await hasDocument(supabase, stop.id);
+      await supabase.from("broker_email_queue")
+        .update({ send_after: now ? new Date().toISOString() : minutesFromNow(DOCS_DELAY_MIN) }).eq("id", existing.id);
+      if (now) return await processRow(supabase, { ...existing, send_after: new Date().toISOString() });
     }
     // Llegaron archivos después de enviado: segundo email con el documento completo
     if (kind === "docs" && existing.status === "sent") return await enqueueUpdate(supabase, existing);
@@ -64,12 +67,23 @@ async function enqueue(supabase: any, kind: "arrival" | "docs", stopId: string) 
     stop_order: stop.stop_order ?? 0,
     city: cityState(stop.address),
     message_key: key,
-    send_after: kind === "docs" ? minutesFromNow(DOCS_DELAY_MIN) : new Date().toISOString(),
+    send_after: kind === "docs" && !(await hasDocument(supabase, stop.id)) ? minutesFromNow(DOCS_DELAY_MIN) : new Date().toISOString(),
   }).select("*").single();
   if (error) return { skipped: "already queued" };
 
-  if (kind === "arrival") return await processRow(supabase, row);
+  if (kind === "arrival" || Date.parse(row.send_after) <= Date.now()) return await processRow(supabase, row);
   return { queued: row.id };
+}
+
+/** ¿La parada ya tiene el BOL/POD? (un PDF, o una foto del papel detectada por la IA) */
+async function hasDocument(supabase: any, stopId: string): Promise<boolean> {
+  const { data: docs } = await supabase
+    .from("pod_documents").select("id, file_url, file_name, file_type, is_document").eq("stop_id", stopId);
+  const list = ((docs as any[]) || []).filter((d) => d.file_url);
+  if (list.some((d) => !isImageDoc(d))) return true;
+  // Cada foto se analiza una sola vez: el resultado queda guardado en pod_documents
+  await classifyImages(supabase, list);
+  return list.some((d) => d.is_document === true);
 }
 
 /** Email de actualización de documentos (uno pendiente a la vez por parada) */
@@ -156,6 +170,84 @@ async function notifyThreadNeeded(supabase: any, load: any, thread: any) {
   });
 }
 
+// ─── Fotos que en realidad son el BOL/POD ───
+
+const base64 = (bytes: Uint8Array) => {
+  let bin = "";
+  for (let i = 0; i < bytes.length; i += 8192) bin += String.fromCharCode(...bytes.subarray(i, i + 8192));
+  return btoa(bin);
+};
+
+/** true si la foto es el papel del BOL/POD, false si es una foto normal de la carga */
+async function looksLikeDocument(bytes: Uint8Array, fileName: string): Promise<boolean | null> {
+  const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
+  if (!apiKey) return null;
+  const mime = /\.png$/i.test(fileName) ? "image/png" : /\.webp$/i.test(fileName) ? "image/webp" : "image/jpeg";
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 128,
+        tools: [{
+          name: "classify_photo",
+          description: "Clasifica la foto subida por un driver en una parada de una carga",
+          input_schema: {
+            type: "object",
+            properties: {
+              is_document: {
+                type: "boolean",
+                description: "true solo si la foto es de un papel tipo Bill of Lading, Proof of Delivery, packing list o rate confirmation, legible y ocupando casi toda la imagen. false si es una foto de la carga, del trailer, del sello, del muelle o cualquier otra cosa.",
+              },
+            },
+            required: ["is_document"],
+          },
+        }],
+        tool_choice: { type: "tool", name: "classify_photo" },
+        messages: [{
+          role: "user",
+          content: [
+            { type: "image", source: { type: "base64", media_type: mime, data: base64(bytes) } },
+            { type: "text", text: "¿Esta foto es un documento de la carga (BOL/POD) o una foto normal de la carga?" },
+          ],
+        }],
+      }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const input = (data.content ?? []).find((c: any) => c.type === "tool_use")?.input;
+    return typeof input?.is_document === "boolean" ? input.is_document : null;
+  } catch (e) {
+    console.error("looksLikeDocument failed:", errMsg(e));
+    return null;
+  }
+}
+
+/** Analiza las fotos sin clasificar y guarda el resultado (una sola vez por foto) */
+async function classifyImages(supabase: any, docs: any[]): Promise<any[]> {
+  for (const d of docs) {
+    if (!isImageDoc(d) || d.is_document !== null || !d.file_url) continue;
+    const bytes = await downloadStorageFile(supabase, d.file_url);
+    if (!bytes) continue;
+    const result = await looksLikeDocument(bytes, d.file_name || "");
+    if (result === null) continue;
+    d.is_document = result;
+    await supabase.from("pod_documents").update({ is_document: result }).eq("id", d.id);
+  }
+  return docs;
+}
+
+async function stopDocuments(supabase: any, row: { load_id: string; stop_type: string; stop_order: number }) {
+  const { data: stops } = await supabase
+    .from("load_stops").select("id").eq("load_id", row.load_id).eq("stop_type", row.stop_type).eq("stop_order", row.stop_order);
+  const stopIds = ((stops as any[]) || []).map((s) => s.id);
+  if (stopIds.length === 0) return [];
+  const { data: docs } = await supabase
+    .from("pod_documents").select("id, file_url, file_name, file_type, is_document, created_at").in("stop_id", stopIds).order("created_at");
+  return ((docs as any[]) || []).filter((d) => d.file_url);
+}
+
 // ─── Adjuntos ───
 
 async function downloadStorageFile(supabase: any, fileUrl: string): Promise<Uint8Array | null> {
@@ -184,6 +276,20 @@ type Attachment = { filename: string; content: Uint8Array; encoding: "binary"; c
 
 const isImageDoc = (d: any) => d.file_type === "image" || /\.(jpe?g|png|gif|webp|heic)$/i.test(d.file_name || "");
 
+/** Foto del papel → página PDF del tamaño de la imagen */
+async function imageToPdf(bytes: Uint8Array, fileName: string): Promise<Uint8Array | null> {
+  try {
+    const pdf = await PDFDocument.create();
+    const img = /\.png$/i.test(fileName) ? await pdf.embedPng(bytes) : await pdf.embedJpg(bytes);
+    const page = pdf.addPage([img.width, img.height]);
+    page.drawImage(img, { x: 0, y: 0, width: img.width, height: img.height });
+    return await pdf.save();
+  } catch (e) {
+    console.error("imageToPdf failed:", errMsg(e));
+    return null;
+  }
+}
+
 /** Une varios PDF en uno solo. Los que no se puedan leer se devuelven aparte. */
 async function mergePdfs(parts: { name: string; bytes: Uint8Array }[], mergedName: string): Promise<Attachment[]> {
   if (parts.length === 1) {
@@ -211,19 +317,14 @@ async function mergePdfs(parts: { name: string; bytes: Uint8Array }[], mergedNam
  * En un email de actualización (since): el PDF completo solo si llegó un PDF nuevo, y solo las fotos nuevas.
  */
 async function stopAttachments(supabase: any, row: any, reference: string, since: string | null) {
-  const { data: stops } = await supabase
-    .from("load_stops").select("id").eq("load_id", row.load_id).eq("stop_type", row.stop_type).eq("stop_order", row.stop_order);
-  const stopIds = ((stops as any[]) || []).map((s) => s.id);
-  if (stopIds.length === 0) return { files: [] as Attachment[], skippedNames: [] as string[] };
-
-  const { data: docs } = await supabase
-    .from("pod_documents").select("file_url, file_name, file_type, created_at").in("stop_id", stopIds).order("created_at");
-  const all = ((docs as any[]) || []).filter((d) => d.file_url);
+  const all = await classifyImages(supabase, await stopDocuments(supabase, row));
+  if (all.length === 0) return { files: [] as Attachment[], skippedNames: [] as string[] };
   const isNew = (d: any) => !since || Date.parse(d.created_at) > Date.parse(since);
 
-  const pdfDocs = all.filter((d) => !isImageDoc(d));
+  // El BOL/POD: los PDF y las fotos del papel, todo en un solo archivo
+  const pdfDocs = all.filter((d) => !isImageDoc(d) || d.is_document === true);
   const pdfs = pdfDocs.some(isNew) ? pdfDocs : [];
-  const images = all.filter((d) => isImageDoc(d) && isNew(d));
+  const images = all.filter((d) => isImageDoc(d) && d.is_document !== true && isNew(d));
 
   const files: Attachment[] = [];
   const skippedNames: string[] = [];
@@ -237,8 +338,15 @@ async function stopAttachments(supabase: any, row: any, reference: string, since
   const pdfParts: { name: string; bytes: Uint8Array }[] = [];
   for (const d of pdfs) {
     const bytes = await downloadStorageFile(supabase, d.file_url);
-    if (bytes) pdfParts.push({ name: d.file_name || "document.pdf", bytes });
-    else skippedNames.push(d.file_name || "document.pdf");
+    const name = d.file_name || "document.pdf";
+    if (!bytes) { skippedNames.push(name); continue; }
+    if (isImageDoc(d)) {
+      const asPdf = await imageToPdf(bytes, name);
+      if (asPdf) pdfParts.push({ name: name.replace(/\.[^.]+$/, "") + ".pdf", bytes: asPdf });
+      else skippedNames.push(name);
+    } else {
+      pdfParts.push({ name, bytes });
+    }
   }
   if (pdfParts.length > 0) {
     const label = row.stop_type === "pickup" ? "BOL" : "POD";
@@ -444,6 +552,13 @@ async function handleUserAction(req: Request, supabase: any, body: any) {
       .update({ send_after: new Date().toISOString() })
       .eq("load_id", load.id).eq("status", "waiting_thread");
     return json({ linked: true, sent: await processDue(supabase, load.id) });
+  }
+
+  if (action === "send_now") {
+    await supabase.from("broker_email_queue")
+      .update({ status: "pending", attempts: 0, send_after: new Date().toISOString() })
+      .eq("id", body.id).eq("load_id", load.id).in("status", ["pending", "waiting_thread"]);
+    return json({ sent: await processDue(supabase, load.id) });
   }
 
   if (action === "retry") {

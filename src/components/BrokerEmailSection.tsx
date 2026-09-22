@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Mail, Search, Loader2, CheckCircle2, AlertTriangle, RotateCw } from 'lucide-react';
+import { Mail, Search, Loader2, CheckCircle2, AlertTriangle, RotateCw, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
@@ -80,10 +80,13 @@ export function BrokerEmailSection({ loadId }: { loadId: string }) {
     }
   };
 
-  const retry = async (id: string) => {
+  const run = async (action: 'retry' | 'send_now', id: string) => {
     setBusy(id);
     try {
-      await callBrokerEmail({ action: 'retry', load_id: loadId, id });
+      const data = await callBrokerEmail({ action, load_id: loadId, id });
+      const result = (data.sent ?? []).find((r: any) => r.id === id);
+      if (result?.status === 'sent') toast.success('Email enviado');
+      else if (result?.error) toast.error(result.error);
       await load();
     } catch (e: any) {
       toast.error(e.message);
@@ -191,8 +194,12 @@ export function BrokerEmailSection({ loadId }: { loadId: string }) {
             <BrokerEmailRowView
               key={r.id}
               row={r}
-              action={['failed', 'skipped'].includes(r.status) ? (
-                <Button variant="ghost" size="sm" className="h-6 px-2 text-[11px] gap-1" disabled={busy !== null} onClick={() => retry(r.id)}>
+              action={['pending', 'waiting_thread'].includes(r.status) ? (
+                <Button variant="ghost" size="sm" className="h-6 px-2 text-[11px] gap-1" disabled={busy !== null} onClick={() => run('send_now', r.id)}>
+                  {busy === r.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />} Enviar ahora
+                </Button>
+              ) : ['failed', 'skipped'].includes(r.status) ? (
+                <Button variant="ghost" size="sm" className="h-6 px-2 text-[11px] gap-1" disabled={busy !== null} onClick={() => run('retry', r.id)}>
                   {busy === r.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <RotateCw className="h-3 w-3" />} Reenviar
                 </Button>
               ) : undefined}
