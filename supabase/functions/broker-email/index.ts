@@ -19,7 +19,9 @@ const corsHeaders = {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
-const DOCS_DELAY_MIN = 10;        // espera para juntar todas las fotos de la parada
+const DOCS_DELAY_MIN = 10;        // sin BOL/POD todavía: espera por si aparece
+const DOCS_SETTLE_MIN = 3;        // ya hay BOL/POD: espera corta por si faltan fotos
+const DOCS_MAX_DELAY_MIN = 15;    // tope desde el primer archivo de la parada
 const ARRIVAL_MAX_AGE_H = 3;      // "llegó y espera" ya no sirve después
 const DOCS_MAX_AGE_H = 72;
 const RESEARCH_EVERY_MIN = 30;    // volver a buscar el hilo si no estaba
@@ -27,6 +29,13 @@ const MAX_ATTACH_BYTES = 20 * 1024 * 1024;
 const TOGGLES: Record<string, string> = { arrival: "email_broker_arrival", docs: "email_broker_docs" };
 
 const minutesFromNow = (m: number) => new Date(Date.now() + m * 60_000).toISOString();
+
+/** Cuándo mandar el email de documentos: corto si ya hay BOL/POD, con tope desde el primer archivo */
+const docsDueAt = (createdAt: string, hasDoc: boolean) => {
+  const wait = Date.now() + (hasDoc ? DOCS_SETTLE_MIN : DOCS_DELAY_MIN) * 60_000;
+  const cap = Date.parse(createdAt) + DOCS_MAX_DELAY_MIN * 60_000;
+  return new Date(Math.min(wait, cap)).toISOString();
+};
 const errMsg = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 // ─── Encolar ───
@@ -47,12 +56,11 @@ async function enqueue(supabase: any, kind: "arrival" | "docs", stopId: string) 
     .from("broker_email_queue").select("*").eq("message_key", key).maybeSingle();
 
   if (existing) {
-    // Llegan más archivos de la misma parada: sale ya si es el BOL/POD, si no espera por si vienen más fotos
+    // Llegan más archivos de la misma parada: se corre la salida para mandarlos todos juntos
     if (kind === "docs" && existing.status === "pending") {
-      const now = await hasDocument(supabase, stop.id);
-      await supabase.from("broker_email_queue")
-        .update({ send_after: now ? new Date().toISOString() : minutesFromNow(DOCS_DELAY_MIN) }).eq("id", existing.id);
-      if (now) return await processRow(supabase, { ...existing, send_after: new Date().toISOString() });
+      const sendAfter = docsDueAt(existing.created_at, await hasDocument(supabase, stop.id));
+      await supabase.from("broker_email_queue").update({ send_after: sendAfter }).eq("id", existing.id);
+      if (Date.parse(sendAfter) <= Date.now()) return await processRow(supabase, { ...existing, send_after: sendAfter });
     }
     // Después de enviado solo se vuelve a escribir si llegó el BOL/POD. Las fotos sueltas no generan emails.
     if (kind === "docs" && existing.status === "sent") {
@@ -75,7 +83,9 @@ async function enqueue(supabase: any, kind: "arrival" | "docs", stopId: string) 
     stop_order: stop.stop_order ?? 0,
     city: cityState(stop.address),
     message_key: key,
-    send_after: kind === "docs" && !(await hasDocument(supabase, stop.id)) ? minutesFromNow(DOCS_DELAY_MIN) : new Date().toISOString(),
+    send_after: kind === "docs"
+      ? docsDueAt(new Date().toISOString(), await hasDocument(supabase, stop.id))
+      : new Date().toISOString(),
   }).select("*").single();
   if (error) return { skipped: "already queued" };
 
@@ -103,7 +113,7 @@ async function enqueueUpdate(supabase: any, base: any) {
   const list = (updates as any[]) || [];
   const open = list.find((u) => ["pending", "waiting_thread"].includes(u.status));
   if (open) {
-    await supabase.from("broker_email_queue").update({ send_after: minutesFromNow(DOCS_DELAY_MIN) }).eq("id", open.id);
+    await supabase.from("broker_email_queue").update({ send_after: minutesFromNow(DOCS_SETTLE_MIN) }).eq("id", open.id);
     return { skipped: "update already queued" };
   }
   const { data: row, error } = await supabase.from("broker_email_queue").insert({
@@ -114,7 +124,7 @@ async function enqueueUpdate(supabase: any, base: any) {
     stop_order: base.stop_order,
     city: base.city,
     message_key: `${base.message_key}:update:${list.length + 1}`,
-    send_after: minutesFromNow(DOCS_DELAY_MIN),
+    send_after: minutesFromNow(DOCS_SETTLE_MIN),
   }).select("id").single();
   if (error) return { skipped: "update already queued" };
   return { queued_update: row.id };
