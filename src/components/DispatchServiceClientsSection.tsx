@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useDispatchServiceClients, DispatchServiceClient } from '@/hooks/useDispatchServiceClients';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useDispatchers } from '@/hooks/useDispatchers';
@@ -14,6 +14,7 @@ import { Plus, Pencil, Trash2, ChevronDown, ChevronUp, Building2, Loader2, Eye, 
 import { useTenantId } from '@/hooks/useTenantId';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { documentThumbnail, downloadAsPdf } from '@/lib/docPreview';
 
 interface ClientFormState {
   legal_business_name: string;
@@ -236,8 +237,23 @@ function ClientDocCard({
   onChanged: () => void;
 }) {
   const [loading, setLoading] = useState(false);
+  const [preview, setPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isMissing = !path;
+
+  // Vista previa: primera página del PDF, o la foto si el documento es una imagen
+  useEffect(() => {
+    let cancelled = false;
+    setPreview(null);
+    if (!path) return;
+    (async () => {
+      const url = await resolveDocUrl(path);
+      if (!url || cancelled) return;
+      const thumb = await documentThumbnail(url, path);
+      if (!cancelled) setPreview(thumb);
+    })();
+    return () => { cancelled = true; };
+  }, [path]);
 
   const open = async () => {
     if (!path) return;
@@ -254,17 +270,10 @@ function ClientDocCard({
     const url = await resolveDocUrl(path);
     if (!url) { setLoading(false); toast({ title: 'Archivo no encontrado', variant: 'destructive' }); return; }
     try {
-      const res = await fetch(url);
-      const blob = await res.blob();
-      const blobUrl = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = blobUrl;
-      a.download = `${label.replace(/\s+/g, '_')}.${path.split('.').pop() || 'pdf'}`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(blobUrl);
-    } catch { window.open(url, '_blank'); }
+      await downloadAsPdf(url, path, label.replace(/\s+/g, '_'));
+    } catch {
+      toast({ title: 'No se pudo descargar', variant: 'destructive' });
+    }
     setLoading(false);
   };
 
@@ -321,9 +330,17 @@ function ClientDocCard({
 
   return (
     <div className={`border rounded-md p-2 flex flex-col ${isMissing ? 'opacity-70 border-dashed' : 'border-solid'}`}>
-      <div className={`flex items-center justify-center h-10 rounded ${colorClass || 'bg-rose-500/10 text-rose-600'} mb-1.5`}>
-        <FileText className="h-5 w-5" />
-      </div>
+      <button
+        type="button"
+        onClick={open}
+        disabled={isMissing || loading}
+        title={isMissing ? undefined : 'Ver documento'}
+        className={`relative flex items-center justify-center rounded overflow-hidden mb-1.5 ${preview ? 'h-24 bg-white border' : `h-10 ${colorClass || 'bg-rose-500/10 text-rose-600'}`} ${isMissing ? '' : 'hover:opacity-90 cursor-pointer'}`}
+      >
+        {preview
+          ? <img src={preview} alt={label} className="h-full w-full object-cover object-top" />
+          : <FileText className="h-5 w-5" />}
+      </button>
       <p className="text-[10px] font-semibold text-center truncate mb-1" title={label}>{label}</p>
       {isMissing ? (
         <>
