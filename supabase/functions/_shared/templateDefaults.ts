@@ -307,7 +307,7 @@ export const AUTOMATIONS: AutomationDefinition[] = [
   {
     id: 'email_broker_docs',
     title: 'Email al broker: fotos y BOL/POD',
-    description: 'Cuando se suben fotos o BOL/POD a una parada (todas, incluidas las intermedias). Espera 10 minutos desde el último archivo para mandarlos todos juntos en el hilo de Gmail de la carga.',
+    description: 'Cuando se suben fotos o BOL/POD a una parada (todas, incluidas las intermedias). Espera 10 minutos desde el último archivo y manda todo junto, con los PDF unidos en un solo BOL/POD. Si llegan más archivos después, sale un segundo email con el documento completo.',
     toggle: 'email_broker_docs',
     channel: 'email',
     templates: [
@@ -323,6 +323,20 @@ export const AUTOMATIONS: AutomationDefinition[] = [
         title: 'Entrega',
         description: 'Con las fotos de la entrega y el POD adjuntos.',
         body: 'Delivery in {ciudad} Completed. Attached are delivery pictures and POD.',
+        variables: BROKER_EMAIL_VARS,
+      },
+      {
+        key: 'email_docs_update_pickup',
+        title: 'Pickup — documentos adicionales',
+        description: 'Si el driver sube más archivos después de enviado el email. Va el BOL completo con todas las páginas y las fotos nuevas.',
+        body: 'Updated BOL attached, including all pages.',
+        variables: BROKER_EMAIL_VARS,
+      },
+      {
+        key: 'email_docs_update_delivery',
+        title: 'Entrega — documentos adicionales',
+        description: 'Si el driver sube más archivos después de enviado el email. Va el POD completo con todas las páginas y las fotos nuevas.',
+        body: 'Updated POD for delivery in {ciudad} attached, including all pages.',
         variables: BROKER_EMAIL_VARS,
       },
     ],

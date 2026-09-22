@@ -5,6 +5,7 @@
 //  • process: cron cada 5 min (docs pendientes y reintentos)
 //  • search / link / retry: acciones desde el TMS (usuario autenticado)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { PDFDocument } from "https://esm.sh/pdf-lib@1.17.1";
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 import { cityState } from "../_shared/loadHelpers.ts";
 import { isEnabled, renderMessage } from "../_shared/messaging.ts";
@@ -50,6 +51,8 @@ async function enqueue(supabase: any, kind: "arrival" | "docs", stopId: string) 
     if (kind === "docs" && existing.status === "pending") {
       await supabase.from("broker_email_queue").update({ send_after: minutesFromNow(DOCS_DELAY_MIN) }).eq("id", existing.id);
     }
+    // Llegaron archivos después de enviado: segundo email con el documento completo
+    if (kind === "docs" && existing.status === "sent") return await enqueueUpdate(supabase, existing);
     return { skipped: `already ${existing.status}` };
   }
 
@@ -67,6 +70,45 @@ async function enqueue(supabase: any, kind: "arrival" | "docs", stopId: string) 
 
   if (kind === "arrival") return await processRow(supabase, row);
   return { queued: row.id };
+}
+
+/** Email de actualización de documentos (uno pendiente a la vez por parada) */
+async function enqueueUpdate(supabase: any, base: any) {
+  const { data: updates } = await supabase
+    .from("broker_email_queue").select("id, status")
+    .like("message_key", `${base.message_key}:update:%`)
+    .order("created_at", { ascending: false });
+  const list = (updates as any[]) || [];
+  const open = list.find((u) => ["pending", "waiting_thread"].includes(u.status));
+  if (open) {
+    await supabase.from("broker_email_queue").update({ send_after: minutesFromNow(DOCS_DELAY_MIN) }).eq("id", open.id);
+    return { skipped: "update already queued" };
+  }
+  const { data: row, error } = await supabase.from("broker_email_queue").insert({
+    tenant_id: base.tenant_id,
+    load_id: base.load_id,
+    kind: "docs",
+    stop_type: base.stop_type,
+    stop_order: base.stop_order,
+    city: base.city,
+    message_key: `${base.message_key}:update:${list.length + 1}`,
+    send_after: minutesFromNow(DOCS_DELAY_MIN),
+  }).select("id").single();
+  if (error) return { skipped: "update already queued" };
+  return { queued_update: row.id };
+}
+
+const isUpdateRow = (row: any) => String(row.message_key ?? "").includes(":update:");
+
+/** Momento del último email de documentos enviado para la parada de esta fila */
+async function lastDocsSentAt(supabase: any, row: any): Promise<string | null> {
+  const base = String(row.message_key).split(":update:")[0];
+  const { data } = await supabase
+    .from("broker_email_queue").select("sent_at")
+    .or(`message_key.eq."${base}",message_key.like."${base}:update:*"`)
+    .eq("status", "sent").not("sent_at", "is", null)
+    .order("sent_at", { ascending: false }).limit(1);
+  return (data as any[])?.[0]?.sent_at ?? null;
 }
 
 // ─── Hilo de Gmail de la carga ───
@@ -138,28 +180,79 @@ function contentTypeOf(name: string, fileType: string | null): string {
   return "application/octet-stream";
 }
 
-async function stopAttachments(supabase: any, row: any) {
+type Attachment = { filename: string; content: Uint8Array; encoding: "binary"; contentType: string };
+
+const isImageDoc = (d: any) => d.file_type === "image" || /\.(jpe?g|png|gif|webp|heic)$/i.test(d.file_name || "");
+
+/** Une varios PDF en uno solo. Los que no se puedan leer se devuelven aparte. */
+async function mergePdfs(parts: { name: string; bytes: Uint8Array }[], mergedName: string): Promise<Attachment[]> {
+  if (parts.length === 1) {
+    return [{ filename: parts[0].name, content: parts[0].bytes, encoding: "binary", contentType: "application/pdf" }];
+  }
+  const out = await PDFDocument.create();
+  const loose: Attachment[] = [];
+  let merged = 0;
+  for (const p of parts) {
+    try {
+      const src = await PDFDocument.load(p.bytes, { ignoreEncryption: true });
+      const pages = await out.copyPages(src, src.getPageIndices());
+      pages.forEach((pg) => out.addPage(pg));
+      merged++;
+    } catch {
+      loose.push({ filename: p.name, content: p.bytes, encoding: "binary", contentType: "application/pdf" });
+    }
+  }
+  if (merged === 0) return loose;
+  return [{ filename: mergedName, content: await out.save(), encoding: "binary", contentType: "application/pdf" }, ...loose];
+}
+
+/**
+ * Adjuntos de la parada: todos los PDF unidos en uno (BOL o POD) + fotos.
+ * En un email de actualización (since): el PDF completo solo si llegó un PDF nuevo, y solo las fotos nuevas.
+ */
+async function stopAttachments(supabase: any, row: any, reference: string, since: string | null) {
   const { data: stops } = await supabase
     .from("load_stops").select("id").eq("load_id", row.load_id).eq("stop_type", row.stop_type).eq("stop_order", row.stop_order);
   const stopIds = ((stops as any[]) || []).map((s) => s.id);
-  if (stopIds.length === 0) return { files: [], skippedNames: [] as string[] };
+  if (stopIds.length === 0) return { files: [] as Attachment[], skippedNames: [] as string[] };
 
   const { data: docs } = await supabase
     .from("pod_documents").select("file_url, file_name, file_type, created_at").in("stop_id", stopIds).order("created_at");
+  const all = ((docs as any[]) || []).filter((d) => d.file_url);
+  const isNew = (d: any) => !since || Date.parse(d.created_at) > Date.parse(since);
 
-  // PDFs primero (BOL/POD), luego fotos
-  const sorted = ((docs as any[]) || []).sort((a, b) => Number(a.file_type === "image") - Number(b.file_type === "image"));
-  const files: { filename: string; content: Uint8Array; encoding: "binary"; contentType: string }[] = [];
+  const pdfDocs = all.filter((d) => !isImageDoc(d));
+  const pdfs = pdfDocs.some(isNew) ? pdfDocs : [];
+  const images = all.filter((d) => isImageDoc(d) && isNew(d));
+
+  const files: Attachment[] = [];
   const skippedNames: string[] = [];
   let total = 0;
-  for (const d of sorted) {
-    if (!d.file_url) continue;
+  const fits = (name: string, size: number) => {
+    if (total + size > MAX_ATTACH_BYTES) { skippedNames.push(name); return false; }
+    total += size;
+    return true;
+  };
+
+  const pdfParts: { name: string; bytes: Uint8Array }[] = [];
+  for (const d of pdfs) {
     const bytes = await downloadStorageFile(supabase, d.file_url);
-    const name = d.file_name || `file_${files.length + 1}`;
+    if (bytes) pdfParts.push({ name: d.file_name || "document.pdf", bytes });
+    else skippedNames.push(d.file_name || "document.pdf");
+  }
+  if (pdfParts.length > 0) {
+    const label = row.stop_type === "pickup" ? "BOL" : "POD";
+    const safeRef = String(reference || "load").replace(/[^A-Za-z0-9_-]/g, "");
+    for (const f of await mergePdfs(pdfParts, `${label}_${safeRef}.pdf`)) {
+      if (fits(f.filename, f.content.length)) files.push(f);
+    }
+  }
+
+  for (const d of images) {
+    const name = d.file_name || `photo_${files.length + 1}.jpg`;
+    const bytes = await downloadStorageFile(supabase, d.file_url);
     if (!bytes) { skippedNames.push(name); continue; }
-    if (total + bytes.length > MAX_ATTACH_BYTES) { skippedNames.push(name); continue; }
-    total += bytes.length;
-    files.push({ filename: name, content: bytes, encoding: "binary", contentType: contentTypeOf(name, d.file_type) });
+    if (fits(name, bytes.length)) files.push({ filename: name, content: bytes, encoding: "binary", contentType: contentTypeOf(name, d.file_type) });
   }
   return { files, skippedNames };
 }
@@ -215,7 +308,8 @@ async function processRow(supabase: any, row: any): Promise<Record<string, unkno
       load.truck_id ? supabase.from("trucks").select("unit_number").eq("id", load.truck_id).maybeSingle() : Promise.resolve({ data: null }),
     ]);
 
-    const templateKey = `email_${row.kind}_${row.stop_type === "pickup" ? "pickup" : "delivery"}`;
+    const isUpdate = isUpdateRow(row);
+    const templateKey = `email_${row.kind}${isUpdate ? "_update" : ""}_${row.stop_type === "pickup" ? "pickup" : "delivery"}`;
     const body = await renderMessage(supabase, load.tenant_id, templateKey, {
       carga: load.reference_number,
       ciudad: row.city,
@@ -224,11 +318,14 @@ async function processRow(supabase: any, row: any): Promise<Record<string, unkno
       hora: new Date().toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit" }),
     });
 
-    let attachments: Awaited<ReturnType<typeof stopAttachments>>["files"] = [];
+    let attachments: Attachment[] = [];
     let skippedNames: string[] = [];
     if (row.kind === "docs") {
-      ({ files: attachments, skippedNames } = await stopAttachments(supabase, row));
-      if (attachments.length === 0) return await finish({ status: "skipped", error: "La parada ya no tiene archivos" });
+      const since = isUpdate ? await lastDocsSentAt(supabase, row) : null;
+      ({ files: attachments, skippedNames } = await stopAttachments(supabase, row, load.reference_number, since));
+      if (attachments.length === 0) {
+        return await finish({ status: "skipped", error: isUpdate ? "No hay archivos nuevos desde el último envío" : "La parada ya no tiene archivos" });
+      }
     }
 
     const target = await replyTarget(account, thread.thread_id, accounts.map((a) => a.user));

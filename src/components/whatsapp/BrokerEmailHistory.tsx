@@ -10,6 +10,7 @@ export interface BrokerEmailRow {
   stop_type: string;
   stop_order: number;
   city: string | null;
+  message_key?: string | null;
   status: 'pending' | 'sending' | 'waiting_thread' | 'sent' | 'failed' | 'skipped';
   body: string | null;
   recipients: string | null;
@@ -29,8 +30,8 @@ export const EMAIL_STATUS: Record<string, { label: string; className: string }> 
   skipped: { label: 'No enviado', className: 'bg-gray-100 text-gray-700' },
 };
 
-export const emailTitle = (r: Pick<BrokerEmailRow, 'kind' | 'stop_type' | 'city'>) =>
-  `${r.kind === 'arrival' ? 'Llegada' : 'Fotos y documentos'} · ${r.stop_type === 'pickup' ? 'Pickup' : 'Entrega'}${r.city ? ` ${r.city}` : ''}`;
+export const emailTitle = (r: Pick<BrokerEmailRow, 'kind' | 'stop_type' | 'city' | 'message_key'>) =>
+  `${r.kind === 'arrival' ? 'Llegada' : r.message_key?.includes(':update:') ? 'Documentos actualizados' : 'Fotos y documentos'} · ${r.stop_type === 'pickup' ? 'Pickup' : 'Entrega'}${r.city ? ` ${r.city}` : ''}`;
 
 export const formatET = (iso: string) =>
   new Date(iso).toLocaleString('en-US', { timeZone: 'America/New_York', month: '2-digit', day: '2-digit', hour: 'numeric', minute: '2-digit' });
