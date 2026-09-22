@@ -320,10 +320,11 @@ async function handleUserAction(req: Request, supabase: any, body: any) {
 
   if (action === "search") {
     const text = String(body.query ?? "").trim();
+    const errors: string[] = [];
     const candidates = text
-      ? await searchThreads(accounts, /newer_than:|after:/.test(text) ? text : `${text} newer_than:120d`)
-      : await findLoadThreads(accounts, load.reference_number);
-    return json({ candidates });
+      ? await searchThreads(accounts, /newer_than:|after:/.test(text) ? text : `${text} newer_than:120d`, errors)
+      : await findLoadThreads(accounts, load.reference_number, errors);
+    return json({ candidates, accounts: accounts.map((a) => a.user), errors });
   }
 
   if (action === "link") {

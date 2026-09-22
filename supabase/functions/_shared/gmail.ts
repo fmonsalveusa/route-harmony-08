@@ -291,20 +291,21 @@ async function searchAccount(acc: GmailAccount, query: string): Promise<ThreadCa
   });
 }
 
-/** Busca en todas las cuentas. Lanza error solo si ninguna cuenta respondió. */
-export async function searchThreads(accounts: GmailAccount[], query: string): Promise<ThreadCandidate[]> {
+/** Busca en todas las cuentas. Lanza error solo si ninguna cuenta respondió; los demás errores quedan en `errors`. */
+export async function searchThreads(accounts: GmailAccount[], query: string, errors: string[] = []): Promise<ThreadCandidate[]> {
   const found: ThreadCandidate[] = [];
-  const errors: string[] = [];
+  const failed: string[] = [];
   for (const acc of accounts) {
     try {
       found.push(...(await searchAccount(acc, query)));
     } catch (e) {
-      errors.push(`${acc.user}: ${e instanceof Error ? e.message : String(e)}`);
+      failed.push(`${acc.user}: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
-  if (errors.length > 0 && errors.length === accounts.length) throw new Error(errors.join(" | "));
-  if (errors.length > 0) console.error("Gmail search errors:", errors);
-  return found.sort((a, b) => b.date.localeCompare(a.date)).slice(0, 15);
+  errors.push(...failed);
+  if (failed.length > 0 && failed.length === accounts.length) throw new Error(failed.join(" | "));
+  if (failed.length > 0) console.error("Gmail search errors:", failed);
+  return found.sort((a, b) => b.date.localeCompare(a.date)).slice(0, 25);
 }
 
 /** Referencia apta para una búsqueda de Gmail */
@@ -313,12 +314,13 @@ export function cleanReference(ref: string | null | undefined): string {
 }
 
 /** Hilos donde el broker escribió con el número de carga: primero en el asunto, luego en cualquier parte */
-export async function findLoadThreads(accounts: GmailAccount[], reference: string): Promise<ThreadCandidate[]> {
+export async function findLoadThreads(accounts: GmailAccount[], reference: string, errors: string[] = []): Promise<ThreadCandidate[]> {
   const ref = cleanReference(reference);
   if (ref.length < 3) return [];
-  const bySubject = await searchThreads(accounts, `subject:"${ref}" -from:me newer_than:60d`);
+  const bySubject = await searchThreads(accounts, `subject:"${ref}" -from:me newer_than:60d`, errors);
   if (bySubject.length > 0) return bySubject;
-  return await searchThreads(accounts, `"${ref}" -from:me newer_than:60d`);
+  errors.length = 0;
+  return await searchThreads(accounts, `"${ref}" -from:me newer_than:60d`, errors);
 }
 
 // ─── Respuesta dentro del hilo ───

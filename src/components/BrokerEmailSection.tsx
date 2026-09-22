@@ -37,6 +37,7 @@ export function BrokerEmailSection({ loadId }: { loadId: string }) {
   const [picking, setPicking] = useState(false);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Candidate[] | null>(null);
+  const [searchInfo, setSearchInfo] = useState<{ accounts: string[]; errors: string[] } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -55,6 +56,7 @@ export function BrokerEmailSection({ loadId }: { loadId: string }) {
     try {
       const data = await callBrokerEmail({ action: 'search', load_id: loadId, query: text });
       setResults(data.candidates ?? []);
+      setSearchInfo({ accounts: data.accounts ?? [], errors: data.errors ?? [] });
     } catch (e: any) {
       toast.error(`No se pudo buscar en Gmail: ${e.message}`);
     } finally {
@@ -153,6 +155,12 @@ export function BrokerEmailSection({ loadId }: { loadId: string }) {
               Cancelar
             </Button>
           </form>
+          {candidates && searchInfo && (
+            <div className="text-[11px] space-y-0.5">
+              <p className="text-muted-foreground">Buscado en: {searchInfo.accounts.join(', ') || 'ninguna cuenta'}</p>
+              {searchInfo.errors.map(err => <p key={err} className="text-red-700">⚠ {err}</p>)}
+            </div>
+          )}
           {candidates && candidates.length === 0 && <p className="text-xs text-muted-foreground">Sin resultados.</p>}
           {candidates && candidates.length > 0 && (
             <div className="rounded-md border divide-y max-h-64 overflow-y-auto">
