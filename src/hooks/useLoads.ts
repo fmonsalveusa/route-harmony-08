@@ -66,7 +66,7 @@ export interface CreateLoadInput {
   delivery_time?: string;
 }
 
-const LOADS_SELECT = [
+export const LOADS_SELECT = [
   'id', 'reference_number', 'origin', 'destination', 'pickup_date', 'delivery_date',
   'weight', 'cargo_type', 'total_rate', 'status', 'driver_id', 'truck_id',
   'dispatcher_id', 'broker_client', 'driver_pay_amount', 'investor_pay_amount',

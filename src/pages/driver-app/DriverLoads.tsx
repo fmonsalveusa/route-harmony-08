@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { LOADS_SELECT } from '@/hooks/useLoads';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -28,7 +29,7 @@ export default function DriverLoads() {
     const driverId = driver?.id || null;
     setOwnDriverId(driverId);
     if (driverId) {
-      const { data } = await supabase.from('loads').select('*').eq('driver_id', driverId).neq('status', 'planned').order('pickup_date', { ascending: false });
+      const { data } = await supabase.from('loads').select(LOADS_SELECT).eq('driver_id', driverId).neq('status', 'planned').order('pickup_date', { ascending: false });
       setLoads(data || []);
     } else {
       setLoads([]);
@@ -46,7 +47,7 @@ export default function DriverLoads() {
       if (assignedIds.length > 0) {
         const { data: invLoadsData } = await supabase
           .from('loads')
-          .select('*')
+          .select(LOADS_SELECT)
           .in('driver_id', assignedIds)
           .neq('status', 'planned')
           .order('pickup_date', { ascending: false });

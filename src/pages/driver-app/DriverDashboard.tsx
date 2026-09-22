@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { LOADS_SELECT } from '@/hooks/useLoads';
 import { Package, DollarSign, MapPin, AlertTriangle, Calendar, Navigation, Gauge, Route } from 'lucide-react';
 import { formatDate } from '@/lib/dateUtils';
 import { supabase } from '@/integrations/supabase/client';
@@ -26,12 +27,13 @@ export default function DriverDashboard() {
     if (!d) return;
     setDriver(d);
 
-    const { data: loads } = await supabase
+    const { data: loadsData } = await supabase
       .from('loads')
-      .select('*')
+      .select(LOADS_SELECT)
       .eq('driver_id', d.id)
       .not('status', 'in', '("planned","delivered","paid","tonu","cancelled")')
       .order('pickup_date', { ascending: true });
+    const loads = (loadsData as any[] | null) ?? null;
     setActiveLoads(loads || []);
 
     if (loads && loads.length > 0) {

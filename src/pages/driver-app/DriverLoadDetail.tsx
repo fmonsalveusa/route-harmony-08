@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { LOADS_SELECT } from '@/hooks/useLoads';
 import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -31,7 +32,7 @@ export default function DriverLoadDetail() {
     if (d) setDriver(d);
 
     const [loadRes, stopsRes, podsRes, paymentsRes] = await Promise.all([
-      supabase.from('loads').select('*').eq('id', loadId).maybeSingle(),
+      supabase.from('loads').select(LOADS_SELECT).eq('id', loadId).maybeSingle(),
       supabase.from('load_stops').select('*').eq('load_id', loadId).order('stop_order'),
       supabase.from('pod_documents').select('*').eq('load_id', loadId),
       d ? supabase.from('payments').select('*').eq('load_id', loadId).eq('recipient_id', d.id) : Promise.resolve({ data: [] }),
