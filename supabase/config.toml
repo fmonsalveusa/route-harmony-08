@@ -50,3 +50,6 @@ verify_jwt = false
 
 [functions.whatsapp-jobs]
 verify_jwt = false
+
+[functions.broker-email]
+verify_jwt = false

@@ -22,6 +22,8 @@ export interface AutomationDefinition {
   /** Columna booleana en tenants que prende/apaga el aviso */
   toggle: string;
   templates: TemplateDefinition[];
+  /** Por dónde sale el aviso (WhatsApp si no se indica) */
+  channel?: 'whatsapp' | 'email';
 }
 
 const v = (key: string, description: string, sample: string): TemplateVariable => ({ key, description, sample });
@@ -56,6 +58,14 @@ const MAINT_VARS = [
   v('unidad', 'Unidad del camión', 'Unit #241'),
   v('mantenimiento', 'Tipo de mantenimiento', 'Oil Change'),
   v('driver', 'Nombre del driver', 'Javier Ruiz'),
+];
+
+const BROKER_EMAIL_VARS = [
+  v('ciudad', 'Ciudad de la parada', 'Dallas, TX'),
+  v('carga', 'Número de la carga', 'T2Y-459256'),
+  v('driver', 'Nombre del driver', 'Javier Ruiz'),
+  v('unidad', 'Unidad del camión', '241'),
+  v('hora', 'Hora del envío (Eastern)', '2:35 PM'),
 ];
 
 export const AUTOMATIONS: AutomationDefinition[] = [
@@ -270,6 +280,52 @@ export const AUTOMATIONS: AutomationDefinition[] = [
         v('comentarios', 'Comentarios del cliente', 'Tengo 2 camiones'),
       ],
     }],
+  },
+  {
+    id: 'email_broker_arrival',
+    title: 'Email al broker: driver llegó a la parada',
+    description: 'Cuando el GPS detecta que el driver llegó a un pickup o entrega (o el driver marca la llegada). Se responde dentro del hilo de Gmail de la carga, a todos los del broker.',
+    toggle: 'email_broker_arrival',
+    channel: 'email',
+    templates: [
+      {
+        key: 'email_arrival_pickup',
+        title: 'Pickup',
+        description: 'Al llegar a un pickup.',
+        body: 'Driver arrived at pickup in {ciudad} and is waiting to be loaded.',
+        variables: BROKER_EMAIL_VARS,
+      },
+      {
+        key: 'email_arrival_delivery',
+        title: 'Entrega',
+        description: 'Al llegar a una entrega.',
+        body: 'Driver arrived at delivery in {ciudad} and is waiting to be unloaded.',
+        variables: BROKER_EMAIL_VARS,
+      },
+    ],
+  },
+  {
+    id: 'email_broker_docs',
+    title: 'Email al broker: fotos y BOL/POD',
+    description: 'Cuando se suben fotos o BOL/POD a una parada (todas, incluidas las intermedias). Espera 10 minutos desde el último archivo para mandarlos todos juntos en el hilo de Gmail de la carga.',
+    toggle: 'email_broker_docs',
+    channel: 'email',
+    templates: [
+      {
+        key: 'email_docs_pickup',
+        title: 'Pickup',
+        description: 'Con las fotos de la carga y el BOL adjuntos.',
+        body: 'Pickup completed. Attached are load pictures and BOL.',
+        variables: BROKER_EMAIL_VARS,
+      },
+      {
+        key: 'email_docs_delivery',
+        title: 'Entrega',
+        description: 'Con las fotos de la entrega y el POD adjuntos.',
+        body: 'Delivery in {ciudad} Completed. Attached are delivery pictures and POD.',
+        variables: BROKER_EMAIL_VARS,
+      },
+    ],
   },
   {
     id: 'admin_report',

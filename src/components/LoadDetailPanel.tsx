@@ -16,6 +16,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { PodUploadSection } from '@/components/PodUploadSection';
 import { LoadAdjustmentsSection } from '@/components/LoadAdjustmentsSection';
 import { LoadProfitSection } from '@/components/LoadProfitSection';
+import { BrokerEmailSection } from '@/components/BrokerEmailSection';
 import { PickupPicturesSection } from '@/components/PickupPicturesSection';
 import { BolFormDialog } from '@/components/BolFormDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -1556,6 +1557,8 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
               dispatcher={dispatcher}
             />
           </div>
+
+          <BrokerEmailSection loadId={load.id} />
 
           {/* Stops / Route breakdown */}
           <div className="p-3 rounded-lg bg-card border text-sm">

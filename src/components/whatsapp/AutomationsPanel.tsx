@@ -48,7 +48,7 @@ function summarize(job: string, r: Record<string, any>): string {
   return 'Reporte enviado al grupo de administración';
 }
 
-export function AutomationsPanel({ groups }: { groups: WhatsAppGroup[] | null }) {
+export function AutomationsPanel({ groups, channel = 'whatsapp' }: { groups: WhatsAppGroup[] | null; channel?: 'whatsapp' | 'email' }) {
   const [tenant, setTenant] = useState<TenantRow | null>(null);
   const [custom, setCustom] = useState<Record<string, string>>({});
   const [open, setOpen] = useState<string | null>(null);
@@ -117,7 +117,7 @@ export function AutomationsPanel({ groups }: { groups: WhatsAppGroup[] | null })
 
   return (
     <div className="space-y-3">
-      {AUTOMATIONS.map(a => {
+      {AUTOMATIONS.filter(a => (a.channel ?? 'whatsapp') === channel).map(a => {
         const enabled = tenant[a.toggle] !== false;
         const isOpen = open === a.id;
         const editedCount = a.templates.filter(t => custom[t.key] !== undefined).length;

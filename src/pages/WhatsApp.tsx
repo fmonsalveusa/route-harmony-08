@@ -11,6 +11,7 @@ import { useDispatchers } from '@/hooks/useDispatchers';
 import { WhatsAppGroupSelect, fetchWhatsAppGroups, type WhatsAppGroup } from '@/components/WhatsAppGroupSelect';
 import { AutomationsPanel } from '@/components/whatsapp/AutomationsPanel';
 import { MessageHistory } from '@/components/whatsapp/MessageHistory';
+import { BrokerEmailHistory } from '@/components/whatsapp/BrokerEmailHistory';
 import { toast } from 'sonner';
 
 type EntityType = 'drivers' | 'investors' | 'dispatchers';
@@ -247,6 +248,7 @@ export default function WhatsAppPage() {
           <TabsTrigger value="groups">Grupos</TabsTrigger>
           <TabsTrigger value="automations">Avisos</TabsTrigger>
           <TabsTrigger value="history">Historial</TabsTrigger>
+          <TabsTrigger value="broker_email">Emails al broker</TabsTrigger>
         </TabsList>
 
         <TabsContent value="groups" className="mt-4">
@@ -278,6 +280,19 @@ export default function WhatsAppPage() {
         <TabsContent value="history" className="mt-4">
           <div className="glass-card p-4">
             <MessageHistory />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="broker_email" className="mt-4 space-y-4">
+          <div className="glass-card p-4 space-y-3">
+            <p className="text-xs text-muted-foreground">
+              Respuestas automáticas dentro del hilo de Gmail de cada carga (el del Rate Confirmation), a todos los del broker.
+              El hilo se busca solo por el número de carga; si no aparece o hay más de uno, se elige en el detalle de la carga.
+            </p>
+            <AutomationsPanel groups={groups} channel="email" />
+          </div>
+          <div className="glass-card p-4">
+            <BrokerEmailHistory />
           </div>
         </TabsContent>
       </Tabs>

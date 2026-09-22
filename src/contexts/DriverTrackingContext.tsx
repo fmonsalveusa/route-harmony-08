@@ -145,13 +145,28 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
   }, [driverId, tracking, refreshStops]);
 
   // --- Geofence check ---
+  // La llegada la registra el servidor con la ubicación guardada. Si a los 30 s no quedó
+  // registrada (ej. la parada no es de hoy), se ofrece marcarla a mano.
+  const checkingStopsRef = useRef<Set<string>>(new Set());
   const checkGeofence = useCallback((lat: number, lng: number) => {
     if (activeStops.length === 0) return;
     for (const stop of activeStops) {
-      if (dismissedStopsRef.current.has(stop.id)) continue;
+      if (dismissedStopsRef.current.has(stop.id) || checkingStopsRef.current.has(stop.id)) continue;
       if (haversineDistance(lat, lng, stop.lat, stop.lng) <= GEOFENCE_RADIUS_METERS) {
-        setNearbyStop(stop);
-        hapticFeedback('alert');
+        checkingStopsRef.current.add(stop.id);
+        setTimeout(async () => {
+          const { data } = await supabase.from('load_stops').select('arrived_at').eq('id', stop.id).maybeSingle();
+          if ((data as any)?.arrived_at) {
+            dismissedStopsRef.current.add(stop.id);
+            hapticFeedback('success');
+            toast({ title: stop.stop_type === 'pickup' ? 'Llegada al pickup registrada ✓' : 'Llegada a la entrega registrada ✓' });
+            setRefreshStops(prev => prev + 1);
+          } else {
+            setNearbyStop(stop);
+            hapticFeedback('alert');
+          }
+          checkingStopsRef.current.delete(stop.id);
+        }, 30_000);
         return;
       }
     }
