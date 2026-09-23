@@ -22,6 +22,7 @@ const json = (body: unknown, status = 200) =>
 const ARRIVAL_MAX_AGE_H = 3;      // "llegó y espera" ya no sirve después
 const DOCS_MAX_AGE_H = 72;
 const RESEARCH_EVERY_MIN = 30;    // volver a buscar el hilo si no estaba
+const MAX_THREAD_TRIES = 4;       // después de esto se deja de insistir con el hilo
 const MAX_ATTACH_BYTES = 12 * 1024 * 1024;   // tope de adjuntos: más que esto agota la memoria de la función
 const TOGGLES: Record<string, string> = { arrival: "email_broker_arrival", docs: "email_broker_docs" };
 
@@ -173,6 +174,14 @@ async function notifyStopEmail(
   driverName?: string | null,
 ) {
   if (row.kind !== "docs") return;
+  if (!ok) {
+    // Los fallos se avisan una sola vez por carga cada 12 horas: el reintento no vuelve a avisar
+    const since = new Date(Date.now() - 12 * 3600_000).toISOString();
+    const { data: recent } = await supabase
+      .from("notifications").select("id")
+      .eq("load_id", load.id).eq("type", "broker_email_failed").gte("created_at", since).limit(1);
+    if (recent && recent.length > 0) return;
+  }
   const parada = `${row.stop_type === "pickup" ? "pickup" : "entrega"}${row.city ? ` de ${row.city}` : ""}`;
   await supabase.from("notifications").insert({
     tenant_id: load.tenant_id,
@@ -337,7 +346,7 @@ async function processRow(supabase: any, row: any): Promise<Record<string, unkno
   // Reservar la fila para que dos ejecuciones simultáneas no manden el email dos veces
   // Una fila en "sending" es un intento que se cortó (ej. la función se quedó sin memoria)
   const attemptsNow = row.status === "sending" ? (row.attempts ?? 0) + 1 : (row.attempts ?? 0);
-  if (attemptsNow >= 3) {
+  if (row.status === "sending" && attemptsNow >= 3) {
     return await finish({ status: "failed", attempts: attemptsNow, error: "El envío falló 3 veces (archivos demasiado pesados)" });
   }
   const { data: claimed } = await supabase
@@ -356,6 +365,15 @@ async function processRow(supabase: any, row: any): Promise<Record<string, unkno
     await step("buscando el hilo de Gmail");
     const thread = await ensureThread(supabase, load, accounts);
     if (thread.status !== "linked") {
+      if (attemptsNow + 1 >= MAX_THREAD_TRIES) {
+        return await finish({
+          status: "skipped",
+          attempts: attemptsNow + 1,
+          error: thread.status === "ambiguous"
+            ? "Varios hilos posibles: elige el hilo y usa Reenviar"
+            : "No se encontró el hilo de Gmail: enlázalo y usa Reenviar",
+        });
+      }
       await notifyThreadNeeded(supabase, load, thread);
       const motivo = thread.status === "ambiguous"
         ? "Hay varios hilos de Gmail posibles: elige el correcto en el detalle de la carga."
@@ -363,6 +381,7 @@ async function processRow(supabase: any, row: any): Promise<Record<string, unkno
       await notifyStopEmail(supabase, load, row, false, motivo);
       return await finish({
         status: "waiting_thread",
+        attempts: attemptsNow + 1,
         send_after: minutesFromNow(RESEARCH_EVERY_MIN),
         error: thread.status === "ambiguous" ? "Varios hilos posibles: elige el correcto" : "No se encontró el hilo de Gmail",
       });
