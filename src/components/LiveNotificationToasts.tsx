@@ -113,8 +113,8 @@ export function LiveNotificationToasts() {
             }, 1500);
           }
 
-          // Browser push notification para maintenance y nuevo onboarding (solo admin)
-          if (n.type === 'maintenance' || (n.type === 'new_driver_onboarded' && isAdmin)) {
+          // Notificación del navegador: mantenimiento, documento firmado y nuevo onboarding (solo admin)
+          if (n.type === 'maintenance' || n.type === 'document_signed' || (n.type === 'new_driver_onboarded' && isAdmin)) {
             showBrowserNotification(n.title, n.message);
           }
         }
