@@ -1,11 +1,38 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
+import { isEnabled, renderMessage, sendTextLogged } from "../_shared/messaging.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+
+/** Aviso al grupo de administración cuando alguien termina un onboarding */
+async function notifyAdminGroup(
+  supabase: any,
+  tenantId: string | null,
+  templateKey: string,
+  vars: Record<string, string>,
+  reference: string,
+) {
+  try {
+    if (!tenantId) return;
+    if (!(await isEnabled(supabase, tenantId, "wa_onboarding"))) return;
+    const { data: tenant } = await supabase
+      .from("tenants").select("whatsapp_admin_group_id").eq("id", tenantId).maybeSingle();
+    const groupId = tenant?.whatsapp_admin_group_id;
+    if (!groupId) return;
+    const message = await renderMessage(supabase, tenantId, templateKey, vars);
+    await sendTextLogged(supabase, {
+      tenantId, templateKey, recipientType: "admin", recipientName: reference,
+      groupId, message, reference,
+    });
+  } catch (e) {
+    console.error("notifyAdminGroup failed:", e);
+  }
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -168,6 +195,12 @@ Deno.serve(async (req) => {
           await smtp.close();
         }
       } catch (emailErr) { console.error("Failed to send email:", emailErr); }
+
+      await notifyAdminGroup(supabaseAdmin, tenantId, "onboarding_oo_driver", {
+        driver: String(dData.name ?? ""),
+        telefono: String(dData.phone ?? ""),
+        email: String(dData.email ?? ""),
+      }, String(dData.name ?? "Driver"));
 
       return new Response(JSON.stringify({
         success: true,
@@ -462,6 +495,17 @@ Deno.serve(async (req) => {
           await smtp.close();
         }
       } catch (emailErr) { console.error("Failed to send email:", emailErr); }
+
+      {
+        const { data: clientRow } = await supabaseAdmin
+          .from("dispatch_service_clients").select("legal_business_name, mc_number").eq("id", clientId).maybeSingle();
+        await notifyAdminGroup(supabaseAdmin, tenantId, "onboarding_dispatch_client", {
+          empresa: clientRow?.legal_business_name ?? "—",
+          mc: clientRow?.mc_number ?? "—",
+          drivers: createdDrivers.map((d: any) => d.name).join(", ") || "—",
+          camiones: createdTrucks.map((t: any) => t.unit_number).join(", ") || "—",
+        }, clientRow?.legal_business_name ?? "Dispatch Service");
+      }
 
       return new Response(JSON.stringify({
         success: true,
@@ -851,6 +895,15 @@ Deno.serve(async (req) => {
     } catch (emailErr) {
       console.error("Failed to send email:", emailErr);
     }
+
+    await notifyAdminGroup(supabaseAdmin, tenantId, "onboarding_driver", {
+      tipo: isOO ? (isDriverOwner ? "Owner Operator (maneja su camión)" : "Owner Operator") : "Company Driver",
+      driver: String(driverData.name ?? ""),
+      telefono: String(driverData.phone ?? ""),
+      email: String(driverData.email ?? ""),
+      camion: String(truckData.unit_number ?? "—"),
+      segundo_driver: String(secondDriverData?.name ?? "—"),
+    }, String(driverData.name ?? "Driver"));
 
     return new Response(
       JSON.stringify({ success: true, driver_id: driverId, truck_id: truckId, investor_id: investorId }),

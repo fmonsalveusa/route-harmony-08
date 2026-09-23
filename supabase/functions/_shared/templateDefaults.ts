@@ -282,6 +282,51 @@ export const AUTOMATIONS: AutomationDefinition[] = [
     }],
   },
   {
+    id: 'onboarding_completed',
+    title: 'Onboarding completado',
+    description: 'Cuando alguien termina un onboarding desde el enlace: Owner Operator, Company Driver, driver agregado a un Owner Operator existente, o cliente de Dispatch Service. Se envía al grupo de administración.',
+    toggle: 'wa_onboarding',
+    templates: [
+      {
+        key: 'onboarding_driver',
+        title: 'Driver u Owner Operator',
+        description: 'Onboarding normal, con su camión.',
+        body: 'Nuevo onboarding completado ✅\nTipo: {tipo}\nNombre: {driver}\nTeléfono: {telefono}\nEmail: {email}\nCamión: {camion}',
+        variables: [
+          v('tipo', 'Tipo de onboarding', 'Owner Operator'),
+          v('driver', 'Nombre de quien se registró', 'Javier Ruiz'),
+          v('telefono', 'Teléfono', '(704) 555-1234'),
+          v('email', 'Email', 'javier@correo.com'),
+          v('camion', 'Unidad del camión', '241'),
+          v('segundo_driver', 'Driver adicional, si el owner no maneja', 'Pedro Martinez'),
+        ],
+      },
+      {
+        key: 'onboarding_oo_driver',
+        title: 'Driver agregado a un Owner Operator',
+        description: 'Cuando se suma un driver a un Owner Operator que ya existe.',
+        body: 'Nuevo driver agregado a un Owner Operator ✅\nNombre: {driver}\nTeléfono: {telefono}\nEmail: {email}',
+        variables: [
+          v('driver', 'Nombre del driver', 'Javier Ruiz'),
+          v('telefono', 'Teléfono', '(704) 555-1234'),
+          v('email', 'Email', 'javier@correo.com'),
+        ],
+      },
+      {
+        key: 'onboarding_dispatch_client',
+        title: 'Cliente de Dispatch Service',
+        description: 'Cuando una empresa termina su onboarding de Dispatch Service.',
+        body: 'Nuevo cliente de Dispatch Service ✅\nEmpresa: {empresa}\nMC#: {mc}\nDrivers: {drivers}\nCamiones: {camiones}',
+        variables: [
+          v('empresa', 'Nombre de la empresa', 'ABC Trucking LLC'),
+          v('mc', 'Número de MC', '1234567'),
+          v('drivers', 'Drivers registrados', 'Javier Ruiz, Pedro Martinez'),
+          v('camiones', 'Camiones registrados', '241, 242'),
+        ],
+      },
+    ],
+  },
+  {
     id: 'document_signed',
     title: 'Documento de firma completado',
     description: 'Cuando alguien termina de firmar un documento de la sección Documents. Se avisa en el TMS y se manda al grupo de administración y al grupo del driver que firmó.',
