@@ -645,6 +645,13 @@ Deno.serve(async (req) => {
       const { data } = await q;
       return json({ rows: data ?? [] });
     }
+    if (body.event === "debug_loads") {
+      const { data: loads } = await supabase
+        .from("loads").select("reference_number, driver_id, truck_id, status, updated_at")
+        .order("pickup_date", { ascending: false }).limit(8);
+      const { data: drivers } = await supabase.from("drivers").select("id, name, truck_id").limit(5);
+      return json({ loads, drivers });
+    }
     if (body.event === "load_state" && body.ref) {
       const { data: load } = await supabase
         .from("loads").select("id, reference_number, status, tenant_id").eq("reference_number", body.ref).maybeSingle();
