@@ -85,21 +85,21 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
   }, [driver.id]);
 
   const handleDeleteTerminationLetter = async () => {
-    if (!confirm('Are you sure you want to delete the termination letter?')) return;
-    setDeletingTermination(true);
     try {
-      // Remove file from storage if it's a path
+      // Borra el archivo del storage si es una ruta, no una URL externa
       const url = driver.termination_letter_url;
       if (url && !url.startsWith('http')) {
         await supabase.storage.from('driver-documents').remove([url]);
       }
-      await supabase.from('drivers' as any).update({ termination_letter_url: null } as any).eq('id', driver.id);
+      const { error } = await supabase
+        .from('drivers' as any)
+        .update({ termination_letter_url: null } as any)
+        .eq('id', driver.id);
+      if (error) throw error;
       setTermLetterDeleted(true);
       toast({ title: 'Termination letter deleted' });
     } catch (err: any) {
       toast({ title: 'Error deleting', description: err.message, variant: 'destructive' });
-    } finally {
-      setDeletingTermination(false);
     }
   };
 
@@ -403,7 +403,12 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
             ...docFields.map(doc => {
               const isTermination = doc.key === 'termination_letter_url';
               const url = isTermination && termLetterDeleted ? null : (driver as any)[doc.key];
-              return { key: doc.key, label: doc.label, url };
+              return {
+                key: doc.key,
+                label: doc.label,
+                url,
+                ...(isTermination && url ? { onDelete: handleDeleteTerminationLetter } : {}),
+              };
             }),
             ...((driver as any).leasing_agreement_url ? [{ key: 'leasing_agreement_url', label: 'Leasing Agreement', url: (driver as any).leasing_agreement_url }] : []),
             ...((driver as any).leasing_agreement_venco_url ? [{ key: 'leasing_agreement_venco_url', label: 'Leasing (VENCO)', url: (driver as any).leasing_agreement_venco_url }] : []),
