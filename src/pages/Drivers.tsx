@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { ServiceTypeBadge } from '@/components/ServiceTypeBadge';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDispatcherDriverIds } from '@/hooks/useDispatcherDriverIds';
@@ -38,18 +39,6 @@ const driverStatusColor = (status: string) => {
 };
 
 const PAGE_SIZES = [25, 50, 100];
-
-const SERVICE_LABELS: Record<string, string> = {
-  company_driver: 'Company Driver',
-  owner_operator: 'Owner Operator',
-  dispatch_service: 'Dispatch Service',
-};
-
-const SERVICE_COLORS: Record<string, string> = {
-  company_driver: '#16A34A',   // verde
-  owner_operator: '#EA580C',   // naranja
-  dispatch_service: '#2563EB', // azul
-};
 
 const Drivers = () => {
   const { role, profile } = useAuth();
@@ -316,12 +305,7 @@ const Drivers = () => {
                         </div>
                       </td>
                       <td className="p-3 hidden lg:table-cell">
-                        <span
-                          className="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold text-white whitespace-nowrap"
-                          style={{ backgroundColor: SERVICE_COLORS[driver.service_type] || '#94A3B8' }}
-                        >
-                          {SERVICE_LABELS[driver.service_type] || driver.service_type || '—'}
-                        </span>
+                        <ServiceTypeBadge serviceType={driver.service_type} />
                       </td>
                       <td className="p-3 hidden lg:table-cell text-sm">
                         {dispatcher

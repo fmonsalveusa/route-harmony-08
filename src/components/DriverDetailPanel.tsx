@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, Fragment } from 'react';
+import { ServiceTypeBadge } from '@/components/ServiceTypeBadge';
 import { DbDriver } from '@/hooks/useDrivers';
 import { FileText, ExternalLink, Loader2, Download, Plus } from 'lucide-react';
 import { formatDate } from '@/lib/dateUtils';
@@ -255,7 +256,7 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
             <Info label="Phone">{formatPhone(driver.phone)}</Info>
             <Info label="Birthday">{formatDate((driver as any).birthday) || '—'}</Info>
             <Info label="Hire Date">{formatDate(driver.hire_date)}</Info>
-            <Info label="Service Type">{driver.service_type?.replace(/_/g, ' ').toUpperCase()}</Info>
+            <Info label="Service Type"><ServiceTypeBadge serviceType={driver.service_type} /></Info>
           </div>
 
           <div className="grid grid-cols-2 gap-x-4 gap-y-3 border-t pt-3">
