@@ -11,7 +11,7 @@ import type { WhatsAppGroup } from '@/components/WhatsAppGroupSelect';
 
 const MAX_FILE_MB = 15;
 
-interface AssignedGroup { id: string; name: string; type: string }
+interface AssignedGroup { id: string; name: string; type: string; person?: string }
 
 /** Mensaje escrito a mano, a los grupos que elijas */
 export function BroadcastPanel({ groups, assigned }: { groups: WhatsAppGroup[] | null; assigned: AssignedGroup[] }) {
@@ -31,6 +31,7 @@ export function BroadcastPanel({ groups, assigned }: { groups: WhatsAppGroup[] |
       id: g.id,
       name: g.name,
       type: assigned.find(a => a.id === g.id)?.type ?? '',
+      person: assigned.find(a => a.id === g.id)?.person,
     }));
   }, [showAll, assigned, groups]);
 
@@ -100,7 +101,7 @@ export function BroadcastPanel({ groups, assigned }: { groups: WhatsAppGroup[] |
       const { data, error } = await supabase.functions.invoke('whatsapp-groups', {
         body: {
           action: 'broadcast',
-          group_ids: chosen.map(g => ({ id: g.id, name: g.name })),
+          group_ids: chosen.map(g => ({ id: g.id, name: g.name, person: g.person })),
           message,
           media_url: mediaUrl,
           media_type: mediaType,
@@ -136,6 +137,11 @@ export function BroadcastPanel({ groups, assigned }: { groups: WhatsAppGroup[] |
           placeholder="Escribe aquí el mensaje que quieres enviar a los grupos..."
           className="min-h-28 text-sm"
         />
+
+        <p className="text-[11px] text-muted-foreground">
+          Puedes usar <code className="font-mono">{'{driver}'}</code> para el nombre completo del dueño del grupo,
+          y <code className="font-mono">{'{nombre}'}</code> para su primer nombre. Ej: "Buen día {'{nombre}'}, ...".
+        </p>
 
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs" onClick={() => fileRef.current?.click()} disabled={sending}>

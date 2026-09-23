@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isAccountError, logMessage } from "../_shared/messaging.ts";
+import { renderTemplate } from "../_shared/templateDefaults.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -87,7 +88,7 @@ Deno.serve(async (req) => {
     // Mensaje masivo a los grupos elegidos, con imagen o archivo opcional
     if (action === "broadcast") {
       const { group_ids, message, media_url, media_type, filename } = body;
-      const groups = (group_ids ?? []) as { id: string; name?: string }[];
+      const groups = (group_ids ?? []) as { id: string; name?: string; person?: string }[];
       if (groups.length === 0) return json({ error: "Elige al menos un grupo" }, 400);
       if (!message?.trim() && !media_url) return json({ error: "Escribe un mensaje o adjunta un archivo" }, 400);
 
@@ -97,17 +98,20 @@ Deno.serve(async (req) => {
 
       const results: { id: string; name?: string; ok: boolean; error?: string }[] = [];
       for (const g of groups) {
+        // {driver} y {nombre} se reemplazan con el dueño de cada grupo
+        const persona = (g.person ?? "").trim();
+        const body = renderTemplate(text, { driver: persona, nombre: persona.split(/\s+/)[0] ?? "" });
         const log = {
           tenantId, templateKey: "broadcast", recipientType: "broadcast",
-          recipientName: g.name ?? null, groupId: g.id, message: text, reference: media_url ? "Con archivo" : null,
+          recipientName: g.name ?? null, groupId: g.id, message: body, reference: media_url ? "Con archivo" : null,
         };
         try {
           const path = media_url ? (media_type === "image" ? "/messages/image" : "/messages/document") : "/messages/text";
           const payload = media_url
             ? media_type === "image"
-              ? { to: g.id, media: media_url, caption: text }
-              : { to: g.id, media: media_url, filename: filename ?? "archivo", caption: text }
-            : { to: g.id, body: text };
+              ? { to: g.id, media: media_url, caption: body }
+              : { to: g.id, media: media_url, filename: filename ?? "archivo", caption: body }
+            : { to: g.id, body };
           const send = await fetch(`${WHAPI}${path}`, { method: "POST", headers: auth, body: JSON.stringify(payload) });
           if (!send.ok) throw new Error(`Whapi HTTP ${send.status}: ${(await send.text()).slice(0, 200)}`);
           await logMessage(supabase, log, "sent");

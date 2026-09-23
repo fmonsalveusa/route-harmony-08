@@ -172,12 +172,12 @@ export default function WhatsAppPage() {
   // Grupos ya asignados en la pestaña Grupos, solo de drivers, investors y dispatchers activos
   const assignedGroups = useMemo(() => {
     const labels: Record<EntityType, string> = { drivers: 'Driver', investors: 'Investor', dispatchers: 'Dispatcher' };
-    const out: { id: string; name: string; type: string }[] = [];
+    const out: { id: string; name: string; type: string; person: string }[] = [];
     (Object.keys(rows) as EntityType[]).forEach(type => {
       rows[type].forEach(r => {
         if (r.inactive || !r.groupId) return;
         if (out.some(g => g.id === r.groupId)) return;
-        out.push({ id: r.groupId, name: r.groupName || r.name, type: labels[type] });
+        out.push({ id: r.groupId, name: r.groupName || r.name, type: labels[type], person: r.name });
       });
     });
     return out.sort((a, b) => a.name.localeCompare(b.name));
