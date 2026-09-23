@@ -156,6 +156,71 @@ async function runMeetingReminders(supabase: Supa, tenant: any, today: string) {
   return { meeting_reminders: sent };
 }
 
+// ─── Documento de firma completado ───────────────────────────────────────────
+async function runDocumentSigned(supabase: Supa, tenant: any, documentId: string) {
+  const { data: doc } = await supabase
+    .from("documents")
+    .select("id, file_name, status, signer_name, recipient_email, signed_at")
+    .eq("id", documentId)
+    .maybeSingle();
+  if (!doc || (doc as any).status !== "signed") return { document_signed: 0 };
+  const d = doc as any;
+
+  // El driver que firmó, para avisarle a su grupo
+  let driver: any = null;
+  if (d.recipient_email) {
+    const { data } = await supabase
+      .from("drivers").select("id, name, whatsapp_group_id").ilike("email", d.recipient_email).maybeSingle();
+    driver = data as any;
+  }
+  if (!driver && d.signer_name) {
+    const { data } = await supabase
+      .from("drivers").select("id, name, whatsapp_group_id").ilike("name", d.signer_name).maybeSingle();
+    driver = data as any;
+  }
+
+  const firmante = d.signer_name || driver?.name || d.recipient_email || "—";
+  const cuando = new Date(Number(d.signed_at) || Date.now());
+  const fecha = cuando.toLocaleDateString("en-US", { timeZone: "America/New_York" });
+  const hora = cuando.toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit" });
+
+  // Aviso en el TMS (una sola vez por documento)
+  const { error: notifErr } = await supabase.from("whatsapp_message_log")
+    .insert({ tenant_id: tenant.id, message_key: `docsigned:notif:${d.id}` } as any);
+  if (!notifErr) {
+    await supabase.from("notifications").insert({
+      tenant_id: tenant.id,
+      type: "document_signed",
+      title: "Documento completado",
+      message: `${firmante} firmó ${d.file_name}. El documento ya está completado.`,
+      driver_id: driver?.id ?? null,
+    } as any);
+  }
+
+  const message = await renderMessage(supabase, tenant.id, "document_signed", {
+    documento: d.file_name, firmante, fecha, hora,
+  });
+  const baseLog = {
+    tenantId: tenant.id, templateKey: "document_signed",
+    recipientName: firmante, reference: d.file_name,
+  };
+
+  let sent = 0;
+  if (tenant.whatsapp_admin_group_id) {
+    const ok = await sendOnce(supabase, `docsigned:admin:${d.id}`, {
+      ...baseLog, recipientType: "admin", groupId: tenant.whatsapp_admin_group_id, message,
+    });
+    if (ok) sent++;
+  }
+  if (driver?.whatsapp_group_id) {
+    const ok = await sendOnce(supabase, `docsigned:driver:${d.id}`, {
+      ...baseLog, recipientType: "driver", groupId: driver.whatsapp_group_id, message,
+    });
+    if (ok) sent++;
+  }
+  return { document_signed: sent };
+}
+
 // ─── Paradas de hoy ──────────────────────────────────────────────────────────
 interface TodayStop {
   loadId: string; ref: string; driverId: string | null; loadStatus: string;
@@ -453,7 +518,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { job } = await req.json().catch(() => ({}));
+    const { job, document_id: documentId } = await req.json().catch(() => ({}));
     const today = todayET();
 
     let q = supabase.from("tenants").select("*");
@@ -467,6 +532,10 @@ Deno.serve(async (req) => {
 
       if (job === "meetings" && fromCron && on("wa_meeting_reminder")) {
         Object.assign(r, await runMeetingReminders(supabase, tenant, today));
+      }
+
+      if (job === "document_signed" && fromCron && on("wa_document_signed")) {
+        Object.assign(r, await runDocumentSigned(supabase, tenant, documentId));
       }
 
       if (job === "pod" && fromCron && on("wa_pod_reminders")) {

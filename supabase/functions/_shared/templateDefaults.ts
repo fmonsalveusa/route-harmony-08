@@ -282,6 +282,24 @@ export const AUTOMATIONS: AutomationDefinition[] = [
     }],
   },
   {
+    id: 'document_signed',
+    title: 'Documento de firma completado',
+    description: 'Cuando alguien termina de firmar un documento de la sección Documents. Se avisa en el TMS y se manda al grupo de administración y al grupo del driver que firmó.',
+    toggle: 'wa_document_signed',
+    templates: [{
+      key: 'document_signed',
+      title: 'Mensaje',
+      description: 'Se envía al grupo de administración y al del driver.',
+      body: 'El documento {documento} fue firmado por {firmante} el {fecha} a las {hora}. Ya está completado.',
+      variables: [
+        v('documento', 'Nombre del documento', 'Leasing Agreement.pdf'),
+        v('firmante', 'Quien firmó', 'Javier Ruiz'),
+        v('fecha', 'Fecha de la firma', '09/23/2026'),
+        v('hora', 'Hora de la firma', '2:35 PM'),
+      ],
+    }],
+  },
+  {
     id: 'email_broker_arrival',
     title: 'Email al broker: driver llegó a la parada',
     description: 'Cuando el GPS detecta que el driver llegó a un pickup o entrega (o el driver marca la llegada). Se responde dentro del hilo de Gmail de la carga, a todos los del broker.',
