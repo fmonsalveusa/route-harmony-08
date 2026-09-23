@@ -169,6 +169,20 @@ export default function WhatsAppPage() {
     })),
   }), [drivers, investors, dispatchers]);
 
+  // Grupos ya asignados en la pestaña Grupos, solo de drivers, investors y dispatchers activos
+  const assignedGroups = useMemo(() => {
+    const labels: Record<EntityType, string> = { drivers: 'Driver', investors: 'Investor', dispatchers: 'Dispatcher' };
+    const out: { id: string; name: string; type: string }[] = [];
+    (Object.keys(rows) as EntityType[]).forEach(type => {
+      rows[type].forEach(r => {
+        if (r.inactive || !r.groupId) return;
+        if (out.some(g => g.id === r.groupId)) return;
+        out.push({ id: r.groupId, name: r.groupName || r.name, type: labels[type] });
+      });
+    });
+    return out.sort((a, b) => a.name.localeCompare(b.name));
+  }, [rows]);
+
   const assign = async (type: EntityType, row: Row, id: string | null, name: string | null) => {
     const { error } = await supabase
       .from(type as any)
@@ -281,7 +295,7 @@ export default function WhatsAppPage() {
 
         <TabsContent value="broadcast" className="mt-4">
           <div className="glass-card p-4">
-            <BroadcastPanel groups={groups} />
+            <BroadcastPanel groups={groups} assigned={assignedGroups} />
           </div>
         </TabsContent>
 

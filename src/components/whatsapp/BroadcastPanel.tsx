@@ -11,19 +11,32 @@ import type { WhatsAppGroup } from '@/components/WhatsAppGroupSelect';
 
 const MAX_FILE_MB = 15;
 
+interface AssignedGroup { id: string; name: string; type: string }
+
 /** Mensaje escrito a mano, a los grupos que elijas */
-export function BroadcastPanel({ groups }: { groups: WhatsAppGroup[] | null }) {
+export function BroadcastPanel({ groups, assigned }: { groups: WhatsAppGroup[] | null; assigned: AssignedGroup[] }) {
   const [message, setMessage] = useState('');
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  const [showAll, setShowAll] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // Por defecto solo los grupos asignados en la pestaña Grupos (activos)
+  const list = useMemo<AssignedGroup[]>(() => {
+    if (!showAll) return assigned;
+    return (groups ?? []).map(g => ({
+      id: g.id,
+      name: g.name,
+      type: assigned.find(a => a.id === g.id)?.type ?? '',
+    }));
+  }, [showAll, assigned, groups]);
+
   const visible = useMemo(
-    () => (groups ?? []).filter(g => !search || g.name.toLowerCase().includes(search.toLowerCase())),
-    [groups, search],
+    () => list.filter(g => !search || g.name.toLowerCase().includes(search.toLowerCase())),
+    [list, search],
   );
 
   const toggle = (id: string) => {
@@ -59,7 +72,7 @@ export function BroadcastPanel({ groups }: { groups: WhatsAppGroup[] | null }) {
   };
 
   const send = async () => {
-    const chosen = (groups ?? []).filter(g => selected.has(g.id));
+    const chosen = list.filter(g => selected.has(g.id));
     if (chosen.length === 0) { toast.error('Elige al menos un grupo'); return; }
     if (!message.trim() && !file) { toast.error('Escribe un mensaje o adjunta un archivo'); return; }
     const withFile = file ? ` con ${file.type.startsWith('image/') ? 'la imagen' : 'el archivo'} adjunto` : '';
@@ -166,16 +179,24 @@ export function BroadcastPanel({ groups }: { groups: WhatsAppGroup[] | null }) {
           <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setSelected(new Set())}>
             Quitar selección
           </Button>
+          <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
+            <Checkbox checked={showAll} onCheckedChange={v => setShowAll(!!v)} /> Mostrar todos los grupos del número
+          </label>
           <span className="text-xs text-muted-foreground ml-auto">{selected.size} grupo(s) seleccionado(s)</span>
         </div>
 
         <div className="rounded-lg border divide-y max-h-72 overflow-y-auto">
-          {groups === null && <p className="text-sm text-muted-foreground text-center py-8">Cargando grupos...</p>}
-          {groups !== null && visible.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">Sin resultados</p>}
+          {showAll && groups === null && <p className="text-sm text-muted-foreground text-center py-8">Cargando grupos...</p>}
+          {visible.length === 0 && (!showAll || groups !== null) && (
+            <p className="text-sm text-muted-foreground text-center py-8">
+              {search ? 'Sin resultados' : 'No hay grupos asignados en la pestaña Grupos'}
+            </p>
+          )}
           {visible.map(g => (
             <label key={g.id} className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-muted/40">
               <Checkbox checked={selected.has(g.id)} onCheckedChange={() => toggle(g.id)} />
-              <span className="text-sm truncate">{g.name}</span>
+              <span className="text-sm truncate flex-1">{g.name}</span>
+              {g.type && <span className="text-[10px] text-muted-foreground flex-shrink-0">{g.type}</span>}
             </label>
           ))}
         </div>
