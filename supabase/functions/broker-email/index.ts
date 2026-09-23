@@ -593,6 +593,12 @@ Deno.serve(async (req) => {
       const { data } = await q;
       return json({ rows: data ?? [] });
     }
+    if (body.event === "debug_notifications") {
+      const { data } = await supabase
+        .from("notifications").select("type, title, message, created_at")
+        .order("created_at", { ascending: false }).limit(body.limit ?? 12);
+      return json({ notifications: data ?? [] });
+    }
     if (body.event === "debug_loads") {
       const { data: loads } = await supabase
         .from("loads").select("reference_number, driver_id, truck_id, status, updated_at")
