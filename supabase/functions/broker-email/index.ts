@@ -19,24 +19,14 @@ const corsHeaders = {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
-const DOCS_DELAY_MIN = 10;        // sin BOL/POD todavía: espera por si aparece
-const DOCS_SETTLE_MIN = 3;        // ya hay BOL/POD: espera corta por si faltan fotos
-const DOCS_MAX_DELAY_MIN = 15;    // tope desde el primer archivo de la parada
 const ARRIVAL_MAX_AGE_H = 3;      // "llegó y espera" ya no sirve después
 const DOCS_MAX_AGE_H = 72;
 const RESEARCH_EVERY_MIN = 30;    // volver a buscar el hilo si no estaba
 const MAX_ATTACH_BYTES = 12 * 1024 * 1024;   // tope de adjuntos: más que esto agota la memoria de la función
-const MAX_CLASSIFY_BYTES = 3.5 * 1024 * 1024; // la API de imágenes no acepta fotos más grandes
 const TOGGLES: Record<string, string> = { arrival: "email_broker_arrival", docs: "email_broker_docs" };
 
 const minutesFromNow = (m: number) => new Date(Date.now() + m * 60_000).toISOString();
 
-/** Cuándo mandar el email de documentos: corto si ya hay BOL/POD, con tope desde el primer archivo */
-const docsDueAt = (createdAt: string, hasDoc: boolean) => {
-  const wait = Date.now() + (hasDoc ? DOCS_SETTLE_MIN : DOCS_DELAY_MIN) * 60_000;
-  const cap = Date.parse(createdAt) + DOCS_MAX_DELAY_MIN * 60_000;
-  return new Date(Math.min(wait, cap)).toISOString();
-};
 const errMsg = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 // ─── Encolar ───
@@ -57,33 +47,17 @@ async function enqueue(supabase: any, kind: "arrival" | "docs", stopId: string) 
     .from("broker_email_queue").select("*").eq("message_key", key).maybeSingle();
 
   if (existing) {
-    // Llegan más archivos de la misma parada: se corre la salida para mandarlos todos juntos
-    if (kind === "docs" && existing.status === "pending") {
-      const sendAfter = docsDueAt(existing.created_at, await hasDocument(supabase, stop.id));
-      await supabase.from("broker_email_queue").update({ send_after: sendAfter }).eq("id", existing.id);
-      if (Date.parse(sendAfter) <= Date.now()) return await processRow(supabase, { ...existing, send_after: sendAfter });
-    }
-    // Quedó sin enviar o falló y ahora llegan archivos nuevos: se vuelve a abrir
-    if (["skipped", "failed"].includes(existing.status)) {
-      const sendAfter = kind === "docs"
-        ? docsDueAt(new Date().toISOString(), await hasDocument(supabase, stop.id))
-        : new Date().toISOString();
+    // Ya se mandó y lo vuelven a pedir: segundo email con todo lo de la parada
+    if (kind === "docs" && existing.status === "sent") return await enqueueUpdate(supabase, existing);
+    if (["skipped", "failed", "pending", "waiting_thread"].includes(existing.status)) {
       const { data: reopened } = await supabase.from("broker_email_queue")
-        .update({ status: "pending", attempts: 0, error: null, sent_at: null, created_at: new Date().toISOString(), send_after: sendAfter })
+        .update({
+          status: "pending", attempts: 0, error: null, sent_at: null,
+          created_at: new Date().toISOString(), send_after: new Date().toISOString(),
+        })
         .eq("id", existing.id).select("*").single();
       if (!reopened) return { skipped: "no se pudo reabrir" };
-      if (Date.parse(sendAfter) <= Date.now()) return await processRow(supabase, reopened);
-      return { requeued: reopened.id };
-    }
-    // Después de enviado solo se vuelve a escribir si llegó el BOL/POD. Las fotos sueltas no generan emails.
-    if (kind === "docs" && existing.status === "sent") {
-      const since = await lastDocsSentAt(supabase, existing);
-      const nuevos = (await stopDocuments(supabase, existing))
-        .filter((d) => !since || Date.parse(d.created_at) > Date.parse(since));
-      if (nuevos.length === 0) return { skipped: "nothing new" };
-      await classifyImages(supabase, nuevos);
-      if (!nuevos.some((d) => !isImageDoc(d) || d.is_document === true)) return { skipped: "solo fotos nuevas" };
-      return await enqueueUpdate(supabase, existing);
+      return await processRow(supabase, reopened);
     }
     return { skipped: `already ${existing.status}` };
   }
@@ -96,25 +70,11 @@ async function enqueue(supabase: any, kind: "arrival" | "docs", stopId: string) 
     stop_order: stop.stop_order ?? 0,
     city: cityState(stop.address),
     message_key: key,
-    send_after: kind === "docs"
-      ? docsDueAt(new Date().toISOString(), await hasDocument(supabase, stop.id))
-      : new Date().toISOString(),
+    send_after: new Date().toISOString(),
   }).select("*").single();
   if (error) return { skipped: "already queued" };
 
-  if (kind === "arrival" || Date.parse(row.send_after) <= Date.now()) return await processRow(supabase, row);
-  return { queued: row.id };
-}
-
-/** ¿La parada ya tiene el BOL/POD? (un PDF, o una foto del papel detectada por la IA) */
-async function hasDocument(supabase: any, stopId: string): Promise<boolean> {
-  const { data: docs } = await supabase
-    .from("pod_documents").select("id, file_url, file_name, file_type, is_document").eq("stop_id", stopId);
-  const list = ((docs as any[]) || []).filter((d) => d.file_url);
-  if (list.some((d) => !isImageDoc(d))) return true;
-  // Cada foto se analiza una sola vez: el resultado queda guardado en pod_documents
-  await classifyImages(supabase, list);
-  return list.some((d) => d.is_document === true);
+  return await processRow(supabase, row);
 }
 
 /** Email de actualización de documentos (uno pendiente a la vez por parada) */
@@ -126,8 +86,10 @@ async function enqueueUpdate(supabase: any, base: any) {
   const list = (updates as any[]) || [];
   const open = list.find((u) => ["pending", "waiting_thread"].includes(u.status));
   if (open) {
-    await supabase.from("broker_email_queue").update({ send_after: minutesFromNow(DOCS_SETTLE_MIN) }).eq("id", open.id);
-    return { skipped: "update already queued" };
+    const { data: reopened } = await supabase.from("broker_email_queue")
+      .update({ status: "pending", attempts: 0, error: null, send_after: new Date().toISOString() })
+      .eq("id", open.id).select("*").single();
+    return reopened ? await processRow(supabase, reopened) : { skipped: "update already queued" };
   }
   const { data: row, error } = await supabase.from("broker_email_queue").insert({
     tenant_id: base.tenant_id,
@@ -137,10 +99,10 @@ async function enqueueUpdate(supabase: any, base: any) {
     stop_order: base.stop_order,
     city: base.city,
     message_key: `${base.message_key}:update:${list.length + 1}`,
-    send_after: minutesFromNow(DOCS_SETTLE_MIN),
-  }).select("id").single();
+    send_after: new Date().toISOString(),
+  }).select("*").single();
   if (error) return { skipped: "update already queued" };
-  return { queued_update: row.id };
+  return await processRow(supabase, row);
 }
 
 const isUpdateRow = (row: any) => String(row.message_key ?? "").includes(":update:");
@@ -201,77 +163,7 @@ async function notifyThreadNeeded(supabase: any, load: any, thread: any) {
   });
 }
 
-// ─── Fotos que en realidad son el BOL/POD ───
-
-const base64 = (bytes: Uint8Array) => {
-  let bin = "";
-  for (let i = 0; i < bytes.length; i += 8192) bin += String.fromCharCode(...bytes.subarray(i, i + 8192));
-  return btoa(bin);
-};
-
-/** true si la foto es el papel del BOL/POD, false si es una foto normal de la carga */
-async function looksLikeDocument(bytes: Uint8Array, fileName: string): Promise<boolean | null> {
-  const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
-  if (!apiKey) return null;
-  if (bytes.length > MAX_CLASSIFY_BYTES) {
-    console.log(`Foto muy pesada para analizar (${Math.round(bytes.length / 1024)} KB): ${fileName}`);
-    return null;
-  }
-  const mime = /\.png$/i.test(fileName) ? "image/png" : /\.webp$/i.test(fileName) ? "image/webp" : "image/jpeg";
-  try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: 128,
-        tools: [{
-          name: "classify_photo",
-          description: "Clasifica la foto subida por un driver en una parada de una carga",
-          input_schema: {
-            type: "object",
-            properties: {
-              is_document: {
-                type: "boolean",
-                description: "true SOLO si la foto es de un papel impreso tipo Bill of Lading, Proof of Delivery o packing list: se ven campos impresos, texto legible, firmas o sellos, y el papel ocupa casi toda la imagen. false para cualquier otra cosa: fotos de la carga, cajas, pallets, etiquetas sueltas, el trailer, el sello, el muelle, la puerta, la calle. Ante la duda, false.",
-              },
-            },
-            required: ["is_document"],
-          },
-        }],
-        tool_choice: { type: "tool", name: "classify_photo" },
-        messages: [{
-          role: "user",
-          content: [
-            { type: "image", source: { type: "base64", media_type: mime, data: base64(bytes) } },
-            { type: "text", text: "¿Esta foto es un documento de la carga (BOL/POD) o una foto normal de la carga?" },
-          ],
-        }],
-      }),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    const input = (data.content ?? []).find((c: any) => c.type === "tool_use")?.input;
-    return typeof input?.is_document === "boolean" ? input.is_document : null;
-  } catch (e) {
-    console.error("looksLikeDocument failed:", errMsg(e));
-    return null;
-  }
-}
-
-/** Analiza las fotos sin clasificar y guarda el resultado (una sola vez por foto) */
-async function classifyImages(supabase: any, docs: any[]): Promise<any[]> {
-  for (const d of docs) {
-    if (!isImageDoc(d) || d.is_document !== null || !d.file_url) continue;
-    const bytes = await downloadStorageFile(supabase, d.file_url);
-    if (!bytes) continue;
-    const result = await looksLikeDocument(bytes, d.file_name || "");
-    if (result === null) continue;
-    d.is_document = result;
-    await supabase.from("pod_documents").update({ is_document: result }).eq("id", d.id);
-  }
-  return docs;
-}
+// ─── Archivos de la parada ───
 
 async function stopDocuments(supabase: any, row: { load_id: string; stop_type: string; stop_order: number }) {
   const { data: stops } = await supabase
@@ -279,7 +171,7 @@ async function stopDocuments(supabase: any, row: { load_id: string; stop_type: s
   const stopIds = ((stops as any[]) || []).map((s) => s.id);
   if (stopIds.length === 0) return [];
   const { data: docs } = await supabase
-    .from("pod_documents").select("id, file_url, file_name, file_type, is_document, created_at").in("stop_id", stopIds).order("created_at");
+    .from("pod_documents").select("id, file_url, file_name, file_type, created_at").in("stop_id", stopIds).order("created_at");
   return ((docs as any[]) || []).filter((d) => d.file_url);
 }
 
@@ -320,14 +212,14 @@ const MAX_ATTACHMENTS = 12;
  * solo va si llegó un documento nuevo, y las fotos solo si son nuevas.
  */
 async function stopAttachments(supabase: any, row: any, reference: string, since: string | null) {
-  const all = await classifyImages(supabase, await stopDocuments(supabase, row));
+  const all = await stopDocuments(supabase, row);
   if (all.length === 0) return { files: [] as Attachment[], skippedNames: [] as string[] };
-  const isNew = (d: any) => !since || Date.parse(d.created_at) > Date.parse(since);
+  void since; // el reenvío lleva todo lo de la parada, no solo lo nuevo
+  const isNew = (_d: any) => true;
 
-  const docParts = all.filter((d) => !isImageDoc(d) || d.is_document === true);
-  const includeDoc = docParts.length > 0 && docParts.some(isNew);
-  if (since && !includeDoc) return { files: [] as Attachment[], skippedNames: [] as string[] };
-  const photos = all.filter((d) => isImageDoc(d) && d.is_document !== true && isNew(d)).slice(0, MAX_ATTACHMENTS);
+  const docParts = all.filter((d) => !isImageDoc(d));
+  const includeDoc = docParts.length > 0;
+  const photos = all.filter((d) => isImageDoc(d) && isNew(d)).slice(0, MAX_ATTACHMENTS);
 
   const files: Attachment[] = [];
   const skippedNames: string[] = [];
@@ -474,7 +366,7 @@ async function processRow(supabase: any, row: any): Promise<Record<string, unkno
       const since = isUpdate ? await lastDocsSentAt(supabase, row) : null;
       ({ files: attachments, skippedNames } = await stopAttachments(supabase, row, load.reference_number, since));
       if (attachments.length === 0) {
-        return await finish({ status: "skipped", error: isUpdate ? "No llegó ningún BOL/POD nuevo desde el último envío" : "La parada ya no tiene archivos" });
+        return await finish({ status: "skipped", error: "La parada no tiene fotos ni documentos" });
       }
     }
 
@@ -595,6 +487,15 @@ async function handleUserAction(req: Request, supabase: any, body: any) {
       .update({ send_after: new Date().toISOString() })
       .eq("load_id", load.id).eq("status", "waiting_thread");
     return json({ linked: true, sent: await processDue(supabase, load.id) });
+  }
+
+  // Botón "Pickup/Delivery Completed" del driver y "Enviar al broker" del TMS
+  if (action === "send_stop") {
+    if (!body.stop_id) return json({ error: "Falta stop_id" }, 400);
+    const { data: stop } = await supabase
+      .from("load_stops").select("id, load_id").eq("id", body.stop_id).maybeSingle();
+    if (!stop || stop.load_id !== load.id) return json({ error: "La parada no es de esta carga" }, 400);
+    return json({ result: await enqueue(supabase, "docs", stop.id) });
   }
 
   if (action === "send_now") {

@@ -3,7 +3,7 @@ import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
 import { useQueryClient } from '@tanstack/react-query';
 import { formatDate } from '@/lib/dateUtils';
-import { MapPin, Calendar, Weight, DollarSign, User, Truck, Route, Navigation, FileText, Download, ExternalLink, Pencil, Loader2, Copy, Check, Building2, Plus, Upload } from 'lucide-react';
+import { MapPin, Calendar, Weight, DollarSign, User, Truck, Route, Navigation, FileText, Download, ExternalLink, Pencil, Loader2, Copy, Check, Building2, Plus, Upload, Mail } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import type { DbLoad } from '@/hooks/useLoads';
@@ -261,6 +261,31 @@ function StopPhotoSection({ loadId, stopId, isFirst, stopType, loadReference }: 
   const [previewName, setPreviewName] = useState<string>('');
   const [previewType, setPreviewType] = useState<string>('');
   const [loadingPreview, setLoadingPreview] = useState(false);
+  const [sendingBroker, setSendingBroker] = useState(false);
+  const { toast: notify } = useToast();
+
+  // Manda al broker las fotos y el BOL/POD de esta parada, dentro del hilo de la carga
+  const handleSendBroker = async () => {
+    if (stopPods.length === 0) {
+      notify({ title: 'La parada no tiene fotos ni documentos', variant: 'destructive' });
+      return;
+    }
+    setSendingBroker(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('broker-email', {
+        body: { action: 'send_stop', load_id: loadId, stop_id: stopId },
+      });
+      if (error || data?.error) throw new Error(data?.error || error?.message);
+      const result = data?.result ?? {};
+      if (result.status === 'sent') notify({ title: 'Email enviado al broker' });
+      else if (result.status === 'waiting_thread') notify({ title: 'Falta enlazar el hilo de Gmail', description: 'Elígelo en "Email al broker" y se manda solo.', variant: 'destructive' });
+      else notify({ title: 'No se envió', description: result.error || 'Revisa la sección "Email al broker"', variant: 'destructive' });
+    } catch (e: any) {
+      notify({ title: 'No se pudo enviar', description: e.message, variant: 'destructive' });
+    } finally {
+      setSendingBroker(false);
+    }
+  };
 
   const handleOpen = async (doc: any) => {
     setLoadingPreview(true);
@@ -326,6 +351,19 @@ function StopPhotoSection({ loadId, stopId, isFirst, stopType, loadReference }: 
               e.target.value = '';
             }}
           />
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleSendBroker}
+            disabled={sendingBroker || stopPods.length === 0}
+            className="gap-1.5 text-xs h-7"
+            type="button"
+            title="Responde en el hilo de Gmail de la carga con las fotos y el BOL/POD de esta parada"
+          >
+            {sendingBroker ? <Loader2 className="h-3 w-3 animate-spin" /> : <Mail className="h-3 w-3" />}
+            {sendingBroker ? 'Enviando...' : `Enviar ${stopType === 'pickup' ? 'pickup' : 'entrega'} al broker`}
+          </Button>
         </div>
       </div>
 

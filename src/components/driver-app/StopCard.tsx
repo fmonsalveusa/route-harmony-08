@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { MapPin, Navigation, Camera, Check, Clock, Image, Loader2, Trash2, PackageCheck, CheckCircle2, ImagePlus, ScanLine, ChevronLeft, ChevronRight, X, FileText } from 'lucide-react';
+import { MapPin, Navigation, Camera, Check, Clock, Image, Loader2, Trash2, PackageCheck, CheckCircle2, ImagePlus, ScanLine, ChevronLeft, ChevronRight, X, FileText, Mail } from 'lucide-react';
 import { DocumentScanner } from './DocumentScanner';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -122,6 +122,37 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
   };
 
   const [changingStatus, setChangingStatus] = useState(false);
+  const [sendingBroker, setSendingBroker] = useState(false);
+  const [brokerSent, setBrokerSent] = useState(false);
+
+  // Manda al broker las fotos y el BOL/POD de esta parada, dentro del hilo de la carga
+  const handleSendBroker = async () => {
+    if (stopPods.length === 0) {
+      toast({ title: 'Add the pictures and BOL/POD first', variant: 'destructive' });
+      return;
+    }
+    setSendingBroker(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('broker-email', {
+        body: { action: 'send_stop', load_id: stop.load_id, stop_id: stop.id },
+      });
+      if (error || data?.error) throw new Error(data?.error || error?.message);
+      const result = data?.result ?? {};
+      if (result.status === 'sent') {
+        setBrokerSent(true);
+        hapticFeedback('success');
+        toast({ title: 'Broker notified' });
+      } else if (result.status === 'waiting_thread') {
+        toast({ title: 'Sent to dispatch', description: 'The email thread is not linked yet; dispatch will send it.' });
+      } else {
+        toast({ title: 'Not sent', description: result.error || 'Contact dispatch', variant: 'destructive' });
+      }
+    } catch (e: any) {
+      toast({ title: 'Error', description: e.message, variant: 'destructive' });
+    } finally {
+      setSendingBroker(false);
+    }
+  };
 
   const handlePickedUp = async () => {
     setChangingStatus(true);
@@ -521,6 +552,22 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
             <input ref={cameraFallbackRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileUpload} />
             <input ref={galleryFallbackRef} type="file" accept="image/*,application/pdf" multiple className="hidden" onChange={handleFileUpload} />
           </div>
+
+          {/* Aviso al broker con todo lo de la parada */}
+          <Button
+            size="sm"
+            variant={brokerSent ? 'outline' : 'default'}
+            className={`w-full gap-1.5 text-sm ${brokerSent ? '' : 'bg-success hover:bg-success/90 text-success-foreground border-0 shadow-md'}`}
+            onClick={handleSendBroker}
+            disabled={sendingBroker}
+          >
+            {sendingBroker ? <Loader2 className="h-4 w-4 animate-spin" /> : brokerSent ? <Check className="h-4 w-4" /> : <Mail className="h-4 w-4" />}
+            {sendingBroker
+              ? 'Sending...'
+              : brokerSent
+                ? 'Sent to broker — send again'
+                : stop.stop_type === 'pickup' ? 'Pickup Completed — notify broker' : 'Delivery Completed — notify broker'}
+          </Button>
 
           {/* Scanner button - all platforms */}
           <Button
