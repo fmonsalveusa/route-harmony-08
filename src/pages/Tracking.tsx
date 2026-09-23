@@ -868,8 +868,8 @@ const Tracking = () => {
                         <div className="pb-2 min-w-0">
                           <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{stop.stop_type}</p>
                           <p className="text-sm font-medium leading-tight">{stop.address}</p>
-                          {stop.scheduled_date && (
-                            <p className="text-xs text-muted-foreground">{format(parseISO(stop.scheduled_date), 'MMM dd, yyyy')}</p>
+                          {stop.date && (
+                            <p className="text-xs text-muted-foreground">{format(parseISO(stop.date), 'MMM dd, yyyy')}</p>
                           )}
                         </div>
                       </div>

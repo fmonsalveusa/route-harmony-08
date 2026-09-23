@@ -13,6 +13,9 @@ export interface LoadStop {
   lat: number | null;
   lng: number | null;
   distance_from_prev: number | null;
+  shipper: string | null;
+  consignee: string | null;
+  arrived_at: string | null;
   created_at: string;
 }
 
