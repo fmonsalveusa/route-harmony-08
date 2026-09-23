@@ -25,7 +25,8 @@ const DOCS_MAX_DELAY_MIN = 15;    // tope desde el primer archivo de la parada
 const ARRIVAL_MAX_AGE_H = 3;      // "llegó y espera" ya no sirve después
 const DOCS_MAX_AGE_H = 72;
 const RESEARCH_EVERY_MIN = 30;    // volver a buscar el hilo si no estaba
-const MAX_ATTACH_BYTES = 20 * 1024 * 1024;
+const MAX_ATTACH_BYTES = 12 * 1024 * 1024;   // tope de adjuntos: más que esto agota la memoria de la función
+const MAX_CLASSIFY_BYTES = 3.5 * 1024 * 1024; // la API de imágenes no acepta fotos más grandes
 const TOGGLES: Record<string, string> = { arrival: "email_broker_arrival", docs: "email_broker_docs" };
 
 const minutesFromNow = (m: number) => new Date(Date.now() + m * 60_000).toISOString();
@@ -200,6 +201,10 @@ const base64 = (bytes: Uint8Array) => {
 async function looksLikeDocument(bytes: Uint8Array, fileName: string): Promise<boolean | null> {
   const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
   if (!apiKey) return null;
+  if (bytes.length > MAX_CLASSIFY_BYTES) {
+    console.log(`Foto muy pesada para analizar (${Math.round(bytes.length / 1024)} KB): ${fileName}`);
+    return null;
+  }
   const mime = /\.png$/i.test(fileName) ? "image/png" : /\.webp$/i.test(fileName) ? "image/webp" : "image/jpeg";
   try {
     const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -411,9 +416,14 @@ async function processRow(supabase: any, row: any): Promise<Record<string, unkno
   if (accounts.length === 0) return await finish({ status: "failed", error: "Falta configurar la cuenta de Gmail (GMAIL_USER)" });
 
   // Reservar la fila para que dos ejecuciones simultáneas no manden el email dos veces
+  // Una fila en "sending" es un intento que se cortó (ej. la función se quedó sin memoria)
+  const attemptsNow = row.status === "sending" ? (row.attempts ?? 0) + 1 : (row.attempts ?? 0);
+  if (attemptsNow >= 3) {
+    return await finish({ status: "failed", attempts: attemptsNow, error: "El envío falló 3 veces (archivos demasiado pesados)" });
+  }
   const { data: claimed } = await supabase
     .from("broker_email_queue")
-    .update({ status: "sending", send_after: minutesFromNow(15) })
+    .update({ status: "sending", attempts: attemptsNow, send_after: minutesFromNow(15) })
     .eq("id", row.id).in("status", ["pending", "waiting_thread", "sending"]).lte("send_after", new Date().toISOString())
     .select("id");
   if (!claimed || claimed.length === 0) return { id: row.id, skipped: "claimed by another run" };
@@ -486,7 +496,7 @@ async function processRow(supabase: any, row: any): Promise<Record<string, unkno
       error: skippedNames.length > 0 ? `No se adjuntaron (tamaño o error): ${skippedNames.join(", ")}` : null,
     });
   } catch (e) {
-    const attempts = (row.attempts ?? 0) + 1;
+    const attempts = attemptsNow + 1;
     return await finish({
       status: attempts >= 3 ? "failed" : "pending",
       attempts,
@@ -497,15 +507,22 @@ async function processRow(supabase: any, row: any): Promise<Record<string, unkno
 }
 
 async function processDue(supabase: any, loadId?: string) {
+  // Pocas filas por corrida: cada una busca en Gmail, analiza fotos y arma adjuntos.
+  // Lo que quede sale en la siguiente pasada del cron (cada 2 minutos).
   let q = supabase
     .from("broker_email_queue").select("*")
     .in("status", ["pending", "waiting_thread", "sending"])
     .lte("send_after", new Date().toISOString())
-    .order("created_at").limit(20);
+    .order("created_at").limit(4);
   if (loadId) q = q.eq("load_id", loadId);
   const { data: rows } = await q;
+  const started = Date.now();
   const results = [];
   for (const row of (rows as any[]) || []) {
+    if (results.length > 0 && Date.now() - started > 45_000) {
+      results.push({ id: row.id, skipped: "queda para la próxima pasada" });
+      break;
+    }
     try {
       results.push(await processRow(supabase, row));
     } catch (e) {
