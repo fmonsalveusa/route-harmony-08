@@ -152,8 +152,8 @@ async function notifyThreadNeeded(supabase: any, load: any, thread: any) {
   if (recent && recent.length > 0) return;
 
   const message = thread.status === "ambiguous"
-    ? `Hay ${thread.candidates?.length ?? 2} hilos de Gmail con el número de la carga #${load.reference_number}. Elige el correcto en el detalle de la carga para enviar los avisos al broker.`
-    : `No encontré el hilo de Gmail del broker para la carga #${load.reference_number}. Enlázalo en el detalle de la carga para enviar los avisos.`;
+    ? `Hay ${thread.candidates?.length ?? 2} hilos de Gmail con el número de la carga #${load.reference_number}. Elige el correcto en "Email al broker", dentro del detalle de la carga.`
+    : `No encontré el hilo de Gmail del broker para la carga #${load.reference_number}. Enlázalo en "Email al broker", dentro del detalle de la carga.`;
   await supabase.from("notifications").insert({
     tenant_id: load.tenant_id,
     type: "broker_email_thread",
@@ -563,6 +563,21 @@ Deno.serve(async (req) => {
     if (body.event === "arrival" || body.event === "docs") {
       if (!body.stop_id) return json({ error: "Bad request" }, 400);
       return json(await enqueue(supabase, body.event, body.stop_id));
+    }
+    // Al crear la carga: buscar su hilo de Gmail y avisar si no se pudo enlazar
+    if (body.event === "link_check" && body.load_id) {
+      const { data: load } = await supabase
+        .from("loads").select("id, tenant_id, reference_number, status").eq("id", body.load_id).maybeSingle();
+      if (!load || load.status === "cancelled") return json({ skipped: "sin carga o cancelada" });
+      if (!(await isEnabled(supabase, load.tenant_id, "email_broker_docs")) &&
+          !(await isEnabled(supabase, load.tenant_id, "email_broker_arrival"))) {
+        return json({ skipped: "avisos apagados" });
+      }
+      const accounts = gmailAccounts();
+      if (accounts.length === 0) return json({ skipped: "sin cuenta de Gmail" });
+      const thread = await ensureThread(supabase, load, accounts);
+      if (thread.status !== "linked") await notifyThreadNeeded(supabase, load, thread);
+      return json({ status: thread.status, subject: thread.subject ?? null });
     }
     if (body.event === "process") return json({ results: await processDue(supabase) });
     if (body.event === "queue") {
