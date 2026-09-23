@@ -123,7 +123,24 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
 
   const [changingStatus, setChangingStatus] = useState(false);
   const [sendingBroker, setSendingBroker] = useState(false);
-  const [brokerSent, setBrokerSent] = useState(false);
+  const [brokerSent, setBrokerSent] = useState<boolean | null>(null);
+
+  // Si esta parada ya se le avisó al broker, el botón no vuelve a aparecer en la app.
+  // Para reenviar está el botón del TMS.
+  useEffect(() => {
+    let cancelled = false;
+    supabase
+      .from('broker_email_queue' as any)
+      .select('id')
+      .eq('load_id', stop.load_id)
+      .eq('kind', 'docs')
+      .eq('stop_type', stop.stop_type)
+      .eq('stop_order', stop.stop_order)
+      .eq('status', 'sent')
+      .limit(1)
+      .then(({ data }) => { if (!cancelled) setBrokerSent(((data as any[]) || []).length > 0); });
+    return () => { cancelled = true; };
+  }, [stop.load_id, stop.stop_type, stop.stop_order]);
 
   // Manda al broker las fotos y el BOL/POD de esta parada, dentro del hilo de la carga
   const handleSendBroker = async () => {
@@ -142,6 +159,7 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
         setBrokerSent(true);
         hapticFeedback('success');
         toast({ title: 'Broker notified' });
+        onUpdate();
       } else if (result.status === 'waiting_thread') {
         toast({ title: 'Sent to dispatch', description: 'The email thread is not linked yet; dispatch will send it.' });
       } else {
@@ -553,21 +571,18 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
             <input ref={galleryFallbackRef} type="file" accept="image/*,application/pdf" multiple className="hidden" onChange={handleFileUpload} />
           </div>
 
-          {/* Aviso al broker con todo lo de la parada */}
-          <Button
-            size="sm"
-            variant={brokerSent ? 'outline' : 'default'}
-            className={`w-full gap-1.5 text-sm ${brokerSent ? '' : 'bg-success hover:bg-success/90 text-success-foreground border-0 shadow-md'}`}
-            onClick={handleSendBroker}
-            disabled={sendingBroker}
-          >
-            {sendingBroker ? <Loader2 className="h-4 w-4 animate-spin" /> : brokerSent ? <Check className="h-4 w-4" /> : <Mail className="h-4 w-4" />}
-            {sendingBroker
-              ? 'Sending...'
-              : brokerSent
-                ? 'Sent to broker — send again'
-                : stop.stop_type === 'pickup' ? 'Pickup Completed — notify broker' : 'Delivery Completed — notify broker'}
-          </Button>
+          {/* Aviso al broker con todo lo de la parada. Una vez enviado, el botón desaparece. */}
+          {brokerSent === false && (
+            <Button
+              size="sm"
+              className="w-full gap-1.5 text-sm bg-success hover:bg-success/90 text-success-foreground border-0 shadow-md"
+              onClick={handleSendBroker}
+              disabled={sendingBroker}
+            >
+              {sendingBroker ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+              {sendingBroker ? 'Sending...' : stop.stop_type === 'pickup' ? 'PICK UP COMPLETED' : 'DELIVERY COMPLETED'}
+            </Button>
+          )}
 
           {/* Scanner button - all platforms */}
           <Button

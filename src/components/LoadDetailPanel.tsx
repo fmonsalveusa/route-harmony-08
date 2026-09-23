@@ -353,11 +353,10 @@ function StopPhotoSection({ loadId, stopId, isFirst, stopType, loadReference }: 
           />
 
           <Button
-            variant="outline"
             size="sm"
             onClick={handleSendBroker}
             disabled={sendingBroker || stopPods.length === 0}
-            className="gap-1.5 text-xs h-7"
+            className="gap-1.5 text-xs h-7 bg-emerald-600 hover:bg-emerald-700 text-white border-0 [&_svg]:text-white"
             type="button"
             title="Responde en el hilo de Gmail de la carga con las fotos y el BOL/POD de esta parada"
           >
