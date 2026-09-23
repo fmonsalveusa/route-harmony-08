@@ -6,7 +6,7 @@
 //  • search / link / retry: acciones desde el TMS (usuario autenticado)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { PDFDocument } from "https://esm.sh/pdf-lib@1.17.1";
-import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
+import { sendMail } from "../_shared/smtp.ts";
 import { cityState } from "../_shared/loadHelpers.ts";
 import { isEnabled, renderMessage } from "../_shared/messaging.ts";
 import { findLoadThreads, gmailAccounts, replyTarget, searchThreads, type GmailAccount } from "../_shared/gmail.ts";
@@ -299,57 +299,23 @@ type Attachment = { filename: string; content: Uint8Array; encoding: "binary"; c
 
 const isImageDoc = (d: any) => d.file_type === "image" || /\.(jpe?g|png|gif|webp|heic)$/i.test(d.file_name || "");
 
-/** Foto del papel → página PDF del tamaño de la imagen */
-async function imageToPdf(bytes: Uint8Array, fileName: string): Promise<Uint8Array | null> {
-  try {
-    const pdf = await PDFDocument.create();
-    const img = /\.png$/i.test(fileName) ? await pdf.embedPng(bytes) : await pdf.embedJpg(bytes);
-    const page = pdf.addPage([img.width, img.height]);
-    page.drawImage(img, { x: 0, y: 0, width: img.width, height: img.height });
-    return await pdf.save();
-  } catch (e) {
-    console.error("imageToPdf failed:", errMsg(e));
-    return null;
-  }
-}
 
-/** Une varios PDF en uno solo. Los que no se puedan leer se devuelven aparte. */
-async function mergePdfs(parts: { name: string; bytes: Uint8Array }[], mergedName: string): Promise<Attachment[]> {
-  if (parts.length === 1) {
-    return [{ filename: parts[0].name, content: parts[0].bytes, encoding: "binary", contentType: "application/pdf" }];
-  }
-  const out = await PDFDocument.create();
-  const loose: Attachment[] = [];
-  let merged = 0;
-  for (const p of parts) {
-    try {
-      const src = await PDFDocument.load(p.bytes, { ignoreEncryption: true });
-      const pages = await out.copyPages(src, src.getPageIndices());
-      pages.forEach((pg) => out.addPage(pg));
-      merged++;
-    } catch {
-      loose.push({ filename: p.name, content: p.bytes, encoding: "binary", contentType: "application/pdf" });
-    }
-  }
-  if (merged === 0) return loose;
-  return [{ filename: mergedName, content: await out.save(), encoding: "binary", contentType: "application/pdf" }, ...loose];
-}
+const MAX_ATTACHMENTS = 12;
 
 /**
- * Adjuntos de la parada: todos los PDF unidos en uno (BOL o POD) + fotos.
- * En un email de actualización (since): el PDF completo solo si llegó un PDF nuevo, y solo las fotos nuevas.
+ * Adjuntos de la parada: un solo BOL/POD en PDF (los PDF y las fotos del papel, en una
+ * sola pasada) más las fotos de la carga. En un email de actualización (since) el PDF
+ * solo va si llegó un documento nuevo, y las fotos solo si son nuevas.
  */
 async function stopAttachments(supabase: any, row: any, reference: string, since: string | null) {
   const all = await classifyImages(supabase, await stopDocuments(supabase, row));
   if (all.length === 0) return { files: [] as Attachment[], skippedNames: [] as string[] };
   const isNew = (d: any) => !since || Date.parse(d.created_at) > Date.parse(since);
 
-  // El BOL/POD: los PDF y las fotos del papel, todo en un solo archivo
-  const pdfDocs = all.filter((d) => !isImageDoc(d) || d.is_document === true);
-  const pdfs = pdfDocs.some(isNew) ? pdfDocs : [];
-  // Un segundo email solo tiene sentido si llegó el BOL/POD: las fotos sueltas no se reenvían
-  if (since && pdfs.length === 0) return { files: [] as Attachment[], skippedNames: [] as string[] };
-  const images = all.filter((d) => isImageDoc(d) && d.is_document !== true && isNew(d));
+  const docParts = all.filter((d) => !isImageDoc(d) || d.is_document === true);
+  const includeDoc = docParts.length > 0 && docParts.some(isNew);
+  if (since && !includeDoc) return { files: [] as Attachment[], skippedNames: [] as string[] };
+  const photos = all.filter((d) => isImageDoc(d) && d.is_document !== true && isNew(d)).slice(0, MAX_ATTACHMENTS);
 
   const files: Attachment[] = [];
   const skippedNames: string[] = [];
@@ -360,32 +326,59 @@ async function stopAttachments(supabase: any, row: any, reference: string, since
     return true;
   };
 
-  const pdfParts: { name: string; bytes: Uint8Array }[] = [];
-  for (const d of pdfs) {
-    const bytes = await downloadStorageFile(supabase, d.file_url);
-    const name = d.file_name || "document.pdf";
-    if (!bytes) { skippedNames.push(name); continue; }
-    if (isImageDoc(d)) {
-      const asPdf = await imageToPdf(bytes, name);
-      if (asPdf) pdfParts.push({ name: name.replace(/\.[^.]+$/, "") + ".pdf", bytes: asPdf });
-      else skippedNames.push(name);
-    } else {
-      pdfParts.push({ name, bytes });
+  // El BOL/POD completo, armado de una sola vez
+  if (includeDoc) {
+    const doc = await PDFDocument.create();
+    let pages = 0;
+    for (const d of docParts) {
+      const name = d.file_name || "documento";
+      const bytes = await downloadStorageFile(supabase, d.file_url);
+      if (!bytes) { skippedNames.push(name); continue; }
+      try {
+        if (isImageDoc(d)) {
+          const img = /\.png$/i.test(name) ? await doc.embedPng(bytes) : await doc.embedJpg(bytes);
+          doc.addPage([img.width, img.height]).drawImage(img, { x: 0, y: 0, width: img.width, height: img.height });
+          pages++;
+        } else {
+          const src = await PDFDocument.load(bytes, { ignoreEncryption: true });
+          (await doc.copyPages(src, src.getPageIndices())).forEach((pg) => doc.addPage(pg));
+          pages += src.getPageCount();
+        }
+      } catch {
+        // El archivo que no se pueda leer va adjunto tal cual
+        if (fits(name, bytes.length)) {
+          files.push({ filename: name, content: bytes, encoding: "binary", contentType: contentTypeOf(name, d.file_type) });
+        }
+      }
     }
-  }
-  if (pdfParts.length > 0) {
-    const label = row.stop_type === "pickup" ? "BOL" : "POD";
-    const safeRef = String(reference || "load").replace(/[^A-Za-z0-9_-]/g, "");
-    for (const f of await mergePdfs(pdfParts, `${label}_${safeRef}.pdf`)) {
-      if (fits(f.filename, f.content.length)) files.push(f);
+    if (pages > 0) {
+      const label = row.stop_type === "pickup" ? "BOL" : "POD";
+      const safeRef = String(reference || "load").replace(/[^A-Za-z0-9_-]/g, "");
+      const bytes = await doc.save();
+      if (fits(`${label}_${safeRef}.pdf`, bytes.length)) {
+        files.unshift({ filename: `${label}_${safeRef}.pdf`, content: bytes, encoding: "binary", contentType: "application/pdf" });
+      }
     }
   }
 
-  for (const d of images) {
+  for (const d of photos) {
     const name = d.file_name || `photo_${files.length + 1}.jpg`;
     const bytes = await downloadStorageFile(supabase, d.file_url);
     if (!bytes) { skippedNames.push(name); continue; }
-    if (fits(name, bytes.length)) files.push({ filename: name, content: bytes, encoding: "binary", contentType: contentTypeOf(name, d.file_type) });
+    if (files.length >= MAX_ATTACHMENTS) { skippedNames.push(name); continue; }
+    if (fits(name, bytes.length)) {
+      files.push({ filename: name, content: bytes, encoding: "binary", contentType: contentTypeOf(name, d.file_type) });
+    }
+  }
+  // Las fotos suelen llegar con el mismo nombre: se numeran para que el broker las distinga
+  const seen = new Map<string, number>();
+  for (const f of files) {
+    const n = (seen.get(f.filename) ?? 0) + 1;
+    seen.set(f.filename, n);
+    if (n > 1) {
+      const dot = f.filename.lastIndexOf(".");
+      f.filename = dot > 0 ? `${f.filename.slice(0, dot)} (${n})${f.filename.slice(dot)}` : `${f.filename} (${n})`;
+    }
   }
   return { files, skippedNames };
 }
@@ -428,7 +421,13 @@ async function processRow(supabase: any, row: any): Promise<Record<string, unkno
     .select("id");
   if (!claimed || claimed.length === 0) return { id: row.id, skipped: "claimed by another run" };
 
+  const step = async (name: string) => {
+    const mb = Math.round((Deno.memoryUsage().rss ?? 0) / 1048576);
+    await supabase.from("broker_email_queue").update({ error: `en curso: ${name} (${mb} MB)` }).eq("id", row.id);
+  };
+
   try {
+    await step("buscando el hilo de Gmail");
     const thread = await ensureThread(supabase, load, accounts);
     if (thread.status !== "linked") {
       await notifyThreadNeeded(supabase, load, thread);
@@ -459,6 +458,7 @@ async function processRow(supabase: any, row: any): Promise<Record<string, unkno
     let attachments: Attachment[] = [];
     let skippedNames: string[] = [];
     if (row.kind === "docs") {
+      await step("preparando los adjuntos");
       const since = isUpdate ? await lastDocsSentAt(supabase, row) : null;
       ({ files: attachments, skippedNames } = await stopAttachments(supabase, row, load.reference_number, since));
       if (attachments.length === 0) {
@@ -466,26 +466,20 @@ async function processRow(supabase: any, row: any): Promise<Record<string, unkno
       }
     }
 
+    await step("leyendo el hilo para responder");
     const target = await replyTarget(account, thread.thread_id, accounts.map((a) => a.user));
+    await step(`armando el email (${attachments.length} adjuntos, ${Math.round(attachments.reduce((n, a) => n + a.content.length, 0) / 1024)} KB)`);
 
-    const smtp = new SMTPClient({
-      connection: { hostname: "smtp.gmail.com", port: 465, tls: true, auth: { username: account.user, password: account.pass } },
+    await sendMail(account, {
+      to: target.to,
+      cc: target.cc,
+      subject: target.subject,
+      inReplyTo: target.inReplyTo || undefined,
+      references: target.references || undefined,
+      text: body,
+      html: `<div style="font-family:Arial,sans-serif;font-size:14px">${escapeHtml(body).replace(/\n/g, "<br>")}</div>`,
+      attachments: attachments.map((a) => ({ filename: a.filename, content: a.content, contentType: a.contentType })),
     });
-    try {
-      await smtp.send({
-        from: account.user,
-        to: target.to,
-        cc: target.cc.length > 0 ? target.cc : undefined,
-        subject: target.subject,
-        inReplyTo: target.inReplyTo || undefined,
-        references: target.references || undefined,
-        content: body,
-        html: `<div style="font-family:Arial,sans-serif;font-size:14px">${escapeHtml(body).replace(/\n/g, "<br>")}</div>`,
-        attachments,
-      });
-    } finally {
-      await smtp.close();
-    }
 
     return await finish({
       status: "sent",
@@ -626,6 +620,38 @@ Deno.serve(async (req) => {
       return json(await enqueue(supabase, body.event, body.stop_id));
     }
     if (body.event === "process") return json({ results: await processDue(supabase) });
+    if (body.event === "queue") {
+      const { data } = await supabase
+        .from("broker_email_queue")
+        .select("id, load_id, kind, stop_type, stop_order, status, attempts, send_after, error, sent_at, created_at, message_key")
+        .order("created_at", { ascending: false }).limit(15);
+      return json({ rows: data ?? [] });
+    }
+    if (body.event === "files" && body.id) {
+      const { data: row } = await supabase.from("broker_email_queue").select("*").eq("id", body.id).maybeSingle();
+      if (!row) return json({ error: "row not found" }, 404);
+      const docs = await stopDocuments(supabase, row);
+      const out = [];
+      for (const d of docs) {
+        const folder = String(d.file_url).split("/").slice(0, -1).join("/");
+        const base = String(d.file_url).split("/").pop();
+        const { data: objs } = await supabase.storage.from("driver-documents").list(folder, { limit: 1000 });
+        const match = ((objs as any[]) || []).find((o) => o.name === base);
+        out.push({
+          name: d.file_name, type: d.file_type, is_document: d.is_document,
+          kb: match?.metadata?.size ? Math.round(match.metadata.size / 1024) : null,
+          created_at: d.created_at,
+        });
+      }
+      return json({ files: out });
+    }
+    if (body.event === "run_row" && body.id) {
+      const { data: row } = await supabase.from("broker_email_queue").select("*").eq("id", body.id).maybeSingle();
+      if (!row) return json({ error: "row not found" }, 404);
+      await supabase.from("broker_email_queue")
+        .update({ status: "pending", send_after: new Date().toISOString() }).eq("id", body.id);
+      return json({ result: await processRow(supabase, { ...row, status: "pending", send_after: new Date().toISOString() }) });
+    }
     return json({ error: "Bad request" }, 400);
   } catch (e) {
     console.error("broker-email error:", e);

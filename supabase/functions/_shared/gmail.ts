@@ -335,7 +335,7 @@ export interface ReplyTarget {
 
 /** Destinatarios y encabezados para "responder a todos" el último mensaje del broker en el hilo */
 export async function replyTarget(acc: GmailAccount, threadId: string, ownEmails: string[]): Promise<ReplyTarget> {
-  const msgs = await withImap(acc, async (c) => c.headers((await c.threadUids(threadId)).slice(-40)));
+  const msgs = await withImap(acc, async (c) => c.headers((await c.threadUids(threadId)).slice(-12)));
   if (msgs.length === 0) throw new Error("No se encontró el hilo en Gmail (¿se borró?)");
   msgs.sort((a, b) => dateOf(a) - dateOf(b) || a.uid - b.uid);
 
