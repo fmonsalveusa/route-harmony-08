@@ -1,4 +1,5 @@
 ﻿import { useState, useMemo, useEffect, useRef } from 'react';
+import { ServiceTypeBadge } from '@/components/ServiceTypeBadge';
 import { useLoads, DbLoad } from '@/hooks/useLoads';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useTrucks } from '@/hooks/useTrucks';
@@ -1075,6 +1076,10 @@ const Tracking = () => {
                           >
                             {copiedField === `${driver.id}:name` ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
                           </button>
+                          <ServiceTypeBadge
+                            serviceType={(driver as any).service_type}
+                            className="ml-auto shrink-0 !text-[9px] !px-1.5 !py-0"
+                          />
                         </div>
                         {(() => {
                           const truck = trucks.find(t => t.id === driver.truck_id);
