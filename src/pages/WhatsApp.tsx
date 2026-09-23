@@ -12,6 +12,7 @@ import { WhatsAppGroupSelect, fetchWhatsAppGroups, type WhatsAppGroup } from '@/
 import { AutomationsPanel } from '@/components/whatsapp/AutomationsPanel';
 import { MessageHistory } from '@/components/whatsapp/MessageHistory';
 import { BrokerEmailHistory } from '@/components/whatsapp/BrokerEmailHistory';
+import { BroadcastPanel } from '@/components/whatsapp/BroadcastPanel';
 import { toast } from 'sonner';
 
 type EntityType = 'drivers' | 'investors' | 'dispatchers';
@@ -247,6 +248,7 @@ export default function WhatsAppPage() {
         <TabsList>
           <TabsTrigger value="groups">Grupos</TabsTrigger>
           <TabsTrigger value="automations">Avisos</TabsTrigger>
+          <TabsTrigger value="broadcast">Mensaje masivo</TabsTrigger>
           <TabsTrigger value="history">Historial</TabsTrigger>
           <TabsTrigger value="broker_email">Emails al broker</TabsTrigger>
         </TabsList>
@@ -274,6 +276,12 @@ export default function WhatsAppPage() {
               Prende o apaga cada aviso y edita sus mensajes. Haz clic en un aviso para ver sus textos; las variables entre llaves se reemplazan con los datos reales.
             </p>
             <AutomationsPanel groups={groups} />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="broadcast" className="mt-4">
+          <div className="glass-card p-4">
+            <BroadcastPanel groups={groups} />
           </div>
         </TabsContent>
 

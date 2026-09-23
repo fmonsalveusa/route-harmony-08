@@ -21,6 +21,7 @@ interface HistoryRow {
 const EXTRA_TITLES: Record<string, string> = {
   admin_report: 'Reporte diario de administración',
   test: 'Mensaje de prueba',
+  broadcast: 'Mensaje masivo',
 };
 
 const titleOf = (key: string) => TEMPLATE_TITLES[key] ?? EXTRA_TITLES[key] ?? key;
@@ -32,7 +33,7 @@ const STATUS_STYLE: Record<string, { label: string; className: string }> = {
 };
 
 const TYPE_LABELS: Record<string, string> = {
-  driver: 'Driver', investor: 'Investor', dispatcher: 'Dispatcher', admin: 'Administración', test: 'Prueba', meetings: 'Reuniones',
+  driver: 'Driver', investor: 'Investor', dispatcher: 'Dispatcher', admin: 'Administración', test: 'Prueba', meetings: 'Reuniones', broadcast: 'Mensaje masivo',
 };
 
 const formatET = (iso: string) =>

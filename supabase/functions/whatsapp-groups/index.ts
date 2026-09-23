@@ -24,7 +24,8 @@ Deno.serve(async (req) => {
   const auth = { Authorization: `Bearer ${whapiToken}`, "Content-Type": "application/json" };
 
   try {
-    const { action, group_id } = await req.json().catch(() => ({}));
+    const body = await req.json().catch(() => ({}));
+    const { action, group_id } = body;
 
     // Estado de la conexión del número en Whapi
     if (action === "status") {
@@ -81,6 +82,45 @@ Deno.serve(async (req) => {
       }
       await logMessage(supabase, log, "sent");
       return json({ success: true });
+    }
+
+    // Mensaje masivo a los grupos elegidos, con imagen o archivo opcional
+    if (action === "broadcast") {
+      const { group_ids, message, media_url, media_type, filename } = body;
+      const groups = (group_ids ?? []) as { id: string; name?: string }[];
+      if (groups.length === 0) return json({ error: "Elige al menos un grupo" }, 400);
+      if (!message?.trim() && !media_url) return json({ error: "Escribe un mensaje o adjunta un archivo" }, 400);
+
+      const { data: profile } = await supabase.from("profiles").select("tenant_id").eq("id", user.id).maybeSingle();
+      const tenantId = profile?.tenant_id ?? null;
+      const text = (message ?? "").trim();
+
+      const results: { id: string; name?: string; ok: boolean; error?: string }[] = [];
+      for (const g of groups) {
+        const log = {
+          tenantId, templateKey: "broadcast", recipientType: "broadcast",
+          recipientName: g.name ?? null, groupId: g.id, message: text, reference: media_url ? "Con archivo" : null,
+        };
+        try {
+          const path = media_url ? (media_type === "image" ? "/messages/image" : "/messages/document") : "/messages/text";
+          const payload = media_url
+            ? media_type === "image"
+              ? { to: g.id, media: media_url, caption: text }
+              : { to: g.id, media: media_url, filename: filename ?? "archivo", caption: text }
+            : { to: g.id, body: text };
+          const send = await fetch(`${WHAPI}${path}`, { method: "POST", headers: auth, body: JSON.stringify(payload) });
+          if (!send.ok) throw new Error(`Whapi HTTP ${send.status}: ${(await send.text()).slice(0, 200)}`);
+          await logMessage(supabase, log, "sent");
+          results.push({ id: g.id, name: g.name, ok: true });
+        } catch (e) {
+          const error = e instanceof Error ? e.message : String(e);
+          await logMessage(supabase, log, "failed", error);
+          results.push({ id: g.id, name: g.name, ok: false, error });
+        }
+        // Espaciar los envíos para no parecer spam
+        if (groups.indexOf(g) < groups.length - 1) await new Promise((r) => setTimeout(r, 1500));
+      }
+      return json({ sent: results.filter((r) => r.ok).length, failed: results.filter((r) => !r.ok), results });
     }
 
     // Lista de grupos donde está el número conectado
