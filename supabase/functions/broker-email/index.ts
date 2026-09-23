@@ -63,6 +63,18 @@ async function enqueue(supabase: any, kind: "arrival" | "docs", stopId: string) 
       await supabase.from("broker_email_queue").update({ send_after: sendAfter }).eq("id", existing.id);
       if (Date.parse(sendAfter) <= Date.now()) return await processRow(supabase, { ...existing, send_after: sendAfter });
     }
+    // Quedó sin enviar o falló y ahora llegan archivos nuevos: se vuelve a abrir
+    if (["skipped", "failed"].includes(existing.status)) {
+      const sendAfter = kind === "docs"
+        ? docsDueAt(new Date().toISOString(), await hasDocument(supabase, stop.id))
+        : new Date().toISOString();
+      const { data: reopened } = await supabase.from("broker_email_queue")
+        .update({ status: "pending", attempts: 0, error: null, sent_at: null, created_at: new Date().toISOString(), send_after: sendAfter })
+        .eq("id", existing.id).select("*").single();
+      if (!reopened) return { skipped: "no se pudo reabrir" };
+      if (Date.parse(sendAfter) <= Date.now()) return await processRow(supabase, reopened);
+      return { requeued: reopened.id };
+    }
     // Después de enviado solo se vuelve a escribir si llegó el BOL/POD. Las fotos sueltas no generan emails.
     if (kind === "docs" && existing.status === "sent") {
       const since = await lastDocsSentAt(supabase, existing);
@@ -621,11 +633,31 @@ Deno.serve(async (req) => {
     }
     if (body.event === "process") return json({ results: await processDue(supabase) });
     if (body.event === "queue") {
-      const { data } = await supabase
+      let q = supabase
         .from("broker_email_queue")
-        .select("id, load_id, kind, stop_type, stop_order, status, attempts, send_after, error, sent_at, created_at, message_key")
-        .order("created_at", { ascending: false }).limit(15);
+        .select("id, load_id, kind, stop_type, stop_order, status, attempts, send_after, error, sent_at, created_at, message_key, loads(reference_number)")
+        .order("created_at", { ascending: false }).limit(body.limit ?? 15);
+      if (body.ref) {
+        const { data: l } = await supabase.from("loads").select("id").eq("reference_number", body.ref).maybeSingle();
+        if (!l) return json({ rows: [], note: "carga no encontrada" });
+        q = q.eq("load_id", l.id);
+      }
+      const { data } = await q;
       return json({ rows: data ?? [] });
+    }
+    if (body.event === "load_state" && body.ref) {
+      const { data: load } = await supabase
+        .from("loads").select("id, reference_number, status, tenant_id").eq("reference_number", body.ref).maybeSingle();
+      if (!load) return json({ error: "carga no encontrada" }, 404);
+      const { data: stops } = await supabase
+        .from("load_stops").select("id, stop_type, stop_order, arrived_at").eq("load_id", load.id).order("stop_order");
+      const { data: docs } = await supabase
+        .from("pod_documents").select("id, stop_id, file_name, file_type, is_document, created_at").eq("load_id", load.id).order("created_at");
+      const { data: thread } = await supabase.from("load_email_threads").select("*").eq("load_id", load.id).maybeSingle();
+      const { data: rows } = await supabase.from("broker_email_queue").select("*").eq("load_id", load.id);
+      const { data: tenant } = await supabase
+        .from("tenants").select("email_broker_arrival, email_broker_docs").eq("id", load.tenant_id).maybeSingle();
+      return json({ load, stops, docs, thread, queue: rows, toggles: tenant });
     }
     if (body.event === "files" && body.id) {
       const { data: row } = await supabase.from("broker_email_queue").select("*").eq("id", body.id).maybeSingle();
