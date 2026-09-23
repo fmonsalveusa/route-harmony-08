@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
+import { sendMail } from "../_shared/smtp.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -145,26 +145,14 @@ Deno.serve(async (req) => {
       );
     }
 
-    const client = new SMTPClient({
-      connection: {
-        hostname: "smtp.gmail.com",
-        port: 465,
-        tls: true,
-        auth: {
-          username: gmailUser,
-          password: gmailPass,
-        },
-      },
-    });
-
     const companyName = company?.name || "Our Company";
     const subject = `Invoice ${invoice.invoice_number} - ${load?.reference_number || ""} | ${companyName}`;
 
-    await client.send({
-      from: gmailUser,
-      to: brokerEmail,
+    await sendMail({ user: gmailUser, pass: gmailPass }, {
+      fromName: companyName,
+      to: [brokerEmail],
       subject,
-      content: `Dear ${invoice.broker_name},\n\nPlease find attached the invoice and supporting documents for Load ${load?.reference_number || invoice.invoice_number}.\n\nInvoice #: ${invoice.invoice_number}\nAmount: $${Number(invoice.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}\nOrigin: ${load?.origin || "N/A"}\nDestination: ${load?.destination || "N/A"}\n\nPlease don't hesitate to contact us if you have any questions.\n\nBest regards,\n${companyName}`,
+      text: `Dear ${invoice.broker_name},\n\nPlease find attached the invoice and supporting documents for Load ${load?.reference_number || invoice.invoice_number}.\n\nInvoice #: ${invoice.invoice_number}\nAmount: $${Number(invoice.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}\nOrigin: ${load?.origin || "N/A"}\nDestination: ${load?.destination || "N/A"}\n\nPlease don't hesitate to contact us if you have any questions.\n\nBest regards,\n${companyName}`,
       html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
         <h2 style="color:#1e4078">Invoice ${invoice.invoice_number}</h2>
         <p>Dear <strong>${invoice.broker_name}</strong>,</p>
@@ -179,15 +167,8 @@ Deno.serve(async (req) => {
         <ul>${attachments.map(a => `<li>${a.filename}</li>`).join("")}</ul>
         <p style="color:#666;font-size:13px;margin-top:24px">Best regards,<br/><strong>${companyName}</strong></p>
       </div>`,
-      attachments: attachments.map(a => ({
-        filename: a.filename,
-        content: a.content,
-        encoding: "binary" as const,
-        contentType: a.contentType,
-      })),
+      attachments,
     });
-
-    await client.close();
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
