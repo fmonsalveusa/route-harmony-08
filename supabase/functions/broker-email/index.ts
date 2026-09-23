@@ -163,6 +163,28 @@ async function notifyThreadNeeded(supabase: any, load: any, thread: any) {
   });
 }
 
+/** Aviso en el TMS del email de la parada (enviado o fallido) */
+async function notifyStopEmail(
+  supabase: any,
+  load: any,
+  row: any,
+  ok: boolean,
+  detail: string,
+  driverName?: string | null,
+) {
+  if (row.kind !== "docs") return;
+  const parada = `${row.stop_type === "pickup" ? "pickup" : "entrega"}${row.city ? ` de ${row.city}` : ""}`;
+  await supabase.from("notifications").insert({
+    tenant_id: load.tenant_id,
+    type: ok ? "broker_email_sent" : "broker_email_failed",
+    title: ok ? "Email enviado al broker" : "No se pudo enviar el email al broker",
+    message: ok
+      ? `${driverName ? `${driverName}: ` : ""}se envió el ${parada} de la carga #${load.reference_number} al broker. ${detail}`
+      : `Quedó sin enviar el ${parada} de la carga #${load.reference_number}. ${detail}`,
+    load_id: load.id,
+  });
+}
+
 // ─── Archivos de la parada ───
 
 async function stopDocuments(supabase: any, row: { load_id: string; stop_type: string; stop_order: number }) {
@@ -335,6 +357,10 @@ async function processRow(supabase: any, row: any): Promise<Record<string, unkno
     const thread = await ensureThread(supabase, load, accounts);
     if (thread.status !== "linked") {
       await notifyThreadNeeded(supabase, load, thread);
+      const motivo = thread.status === "ambiguous"
+        ? "Hay varios hilos de Gmail posibles: elige el correcto en el detalle de la carga."
+        : "No se encontró el hilo de Gmail del broker: enlázalo en el detalle de la carga.";
+      await notifyStopEmail(supabase, load, row, false, motivo);
       return await finish({
         status: "waiting_thread",
         send_after: minutesFromNow(RESEARCH_EVERY_MIN),
@@ -385,6 +411,11 @@ async function processRow(supabase: any, row: any): Promise<Record<string, unkno
       attachments: attachments.map((a) => ({ filename: a.filename, content: a.content, contentType: a.contentType })),
     });
 
+    await notifyStopEmail(
+      supabase, load, row, true,
+      `${attachments.length} archivo(s) adjunto(s).`,
+      driver?.name,
+    );
     return await finish({
       status: "sent",
       sent_at: new Date().toISOString(),
@@ -395,6 +426,7 @@ async function processRow(supabase: any, row: any): Promise<Record<string, unkno
     });
   } catch (e) {
     const attempts = attemptsNow + 1;
+    if (attempts >= 3) await notifyStopEmail(supabase, load, row, false, errMsg(e).slice(0, 200));
     return await finish({
       status: attempts >= 3 ? "failed" : "pending",
       attempts,

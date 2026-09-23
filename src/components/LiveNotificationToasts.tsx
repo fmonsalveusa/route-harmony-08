@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
-import { X, MapPin, Camera, Truck, Bell, UserPlus, Wrench, Package } from 'lucide-react';
+import { X, MapPin, Camera, Truck, Bell, UserPlus, Wrench, Package, Mail, MailWarning, FileSignature } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 interface LiveToast {
@@ -24,6 +24,10 @@ const typeIcons: Record<string, typeof Bell> = {
   load_assigned: Package,
   new_driver_onboarded: UserPlus,
   maintenance: Wrench,
+  broker_email_sent: Mail,
+  broker_email_failed: MailWarning,
+  broker_email_thread: MailWarning,
+  document_signed: FileSignature,
 };
 
 const typeColors: Record<string, string> = {
@@ -34,6 +38,10 @@ const typeColors: Record<string, string> = {
   load_assigned: 'text-violet-500',
   new_driver_onboarded: 'text-green-500',
   maintenance: 'text-orange-500',
+  broker_email_sent: 'text-emerald-600',
+  broker_email_failed: 'text-red-500',
+  broker_email_thread: 'text-amber-500',
+  document_signed: 'text-[#266aad]',
 };
 
 // Request browser notification permission on mount
