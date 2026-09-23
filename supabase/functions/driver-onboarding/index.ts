@@ -153,6 +153,22 @@ Deno.serve(async (req) => {
       // Marcar token como completed
       await supabaseAdmin.from("onboarding_tokens").update({ status: "completed" }).eq("id", tokenRecord.id);
 
+      // Email notification
+      try {
+        const gmailUser = (Deno.env.get("GMAIL_USER") ?? "").trim();
+        const gmailPass = (Deno.env.get("GMAIL_APP_PASSWORD") ?? "").replace(/\s+/g, "").trim();
+        if (gmailUser && gmailPass.length === 16) {
+          const smtp = new SMTPClient({ connection: { hostname: "smtp.gmail.com", port: 465, tls: true, auth: { username: gmailUser, password: gmailPass } } });
+          await smtp.send({
+            from: gmailUser,
+            to: "58logisticsllc@gmail.com",
+            subject: `🚛 New Driver Added to Existing OO – ${dData.name}`,
+            content: `Driver: ${dData.name} (${dData.email})\nPhone: ${dData.phone}\nOwner Operator ID: ${tokenRecord.existing_investor_id}\nTruck ID: ${tokenRecord.existing_truck_id}\n\nReview from the Drivers section.`,
+          });
+          await smtp.close();
+        }
+      } catch (emailErr) { console.error("Failed to send email:", emailErr); }
+
       return new Response(JSON.stringify({
         success: true,
         driver_id: driverId,
@@ -425,6 +441,27 @@ Deno.serve(async (req) => {
         .from("onboarding_tokens")
         .update({ status: "completed" })
         .eq("id", tokenRecord.id);
+
+      // Email notification
+      try {
+        const gmailUser = (Deno.env.get("GMAIL_USER") ?? "").trim();
+        const gmailPass = (Deno.env.get("GMAIL_APP_PASSWORD") ?? "").replace(/\s+/g, "").trim();
+        if (gmailUser && gmailPass.length === 16) {
+          const { data: clientRow } = await supabaseAdmin.from("dispatch_service_clients").select("legal_business_name, mc_number").eq("id", clientId).single();
+          const clientName = clientRow?.legal_business_name ?? "Unknown";
+          const mc = clientRow?.mc_number ?? "—";
+          const driverNames = createdDrivers.map((d: any) => d.name).join(", ");
+          const truckUnits = createdTrucks.map((t: any) => t.unit_number).join(", ");
+          const smtp = new SMTPClient({ connection: { hostname: "smtp.gmail.com", port: 465, tls: true, auth: { username: gmailUser, password: gmailPass } } });
+          await smtp.send({
+            from: gmailUser,
+            to: "58logisticsllc@gmail.com",
+            subject: `🚛 New Dispatch Service Client Onboarded – ${clientName}`,
+            content: `Company: ${clientName}\nMC#: ${mc}\nDrivers: ${driverNames}\nTrucks: ${truckUnits}\n\nReview from the Dispatch Clients section.`,
+          });
+          await smtp.close();
+        }
+      } catch (emailErr) { console.error("Failed to send email:", emailErr); }
 
       return new Response(JSON.stringify({
         success: true,
@@ -791,13 +828,11 @@ Deno.serve(async (req) => {
 
     // 7. Email notification
     try {
-      const { data: tenant } = await supabaseAdmin.from("tenants").select("name, email").eq("id", tenantId).single();
-      const companyEmail = tenant?.email;
-      const companyName = tenant?.name || "Your Company";
       const gmailUser = (Deno.env.get("GMAIL_USER") ?? "").trim();
       const gmailPass = (Deno.env.get("GMAIL_APP_PASSWORD") ?? "").replace(/\s+/g, "").trim();
+      const notifEmail = "58logisticsllc@gmail.com";
 
-      if (companyEmail && gmailUser && gmailPass.length === 16) {
+      if (gmailUser && gmailPass.length === 16) {
         const smtpClient = new SMTPClient({
           connection: { hostname: "smtp.gmail.com", port: 465, tls: true, auth: { username: gmailUser, password: gmailPass } },
         });
@@ -810,7 +845,7 @@ Deno.serve(async (req) => {
           ? `Owner: ${driverData.name} (${driverData.email})\nDriver: ${secondDriverData?.name ?? "—"}\nTruck: ${truckData.unit_number}\n\nReview from the Investors and Drivers sections.`
           : `Driver: ${driverData.name} (${driverData.email})\nPhone: ${driverData.phone}\nTruck: ${truckData.unit_number}\n\nReview from the Drivers section.`;
 
-        await smtpClient.send({ from: gmailUser, to: companyEmail, subject, content: textBody });
+        await smtpClient.send({ from: gmailUser, to: notifEmail, subject, content: textBody });
         await smtpClient.close();
       }
     } catch (emailErr) {
