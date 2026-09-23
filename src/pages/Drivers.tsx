@@ -39,6 +39,13 @@ const driverStatusColor = (status: string) => {
 
 const PAGE_SIZES = [25, 50, 100];
 
+// El color viene del dispatcher asignado al driver
+const SERVICE_LABELS: Record<string, string> = {
+  company_driver: 'Company Driver',
+  owner_operator: 'Owner Operator',
+  dispatch_service: 'Dispatch Service',
+};
+
 const Drivers = () => {
   const { role, profile } = useAuth();
   const { drivers, loading, createDriver, updateDriver, deleteDriver, uploadDocument, getDocSignedUrl, refetch, addDriverInvestor, removeDriverInvestor, updateDriverInvestor } = useDrivers();
@@ -223,6 +230,7 @@ const Drivers = () => {
                 <th className="w-[60px] p-3"></th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Phone</th>
                 <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Truck</th>
+                <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Servicio</th>
                 <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Dispatcher</th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
                 <th className="text-right p-3 font-medium text-muted-foreground">Actions</th>
@@ -302,6 +310,15 @@ const Drivers = () => {
                           <span>{truckLabel || <span className="text-muted-foreground italic">Unassigned</span>}</span>
                         </div>
                       </td>
+                      <td className="p-3 hidden lg:table-cell">
+                        <span
+                          className="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold text-white whitespace-nowrap"
+                          style={{ backgroundColor: dispatcher?.color || '#94A3B8' }}
+                          title={dispatcher ? `Dispatcher: ${dispatcher.name}` : 'Sin dispatcher asignado'}
+                        >
+                          {SERVICE_LABELS[driver.service_type] || driver.service_type || '—'}
+                        </span>
+                      </td>
                       <td className="p-3 hidden lg:table-cell text-sm">
                         {dispatcher
                           ? <span className="font-medium">{dispatcher.name}</span>
@@ -349,7 +366,7 @@ const Drivers = () => {
                     </tr>
                     {isExpanded && (
                       <tr key={`${driver.id}-detail`}>
-                        <td colSpan={8} className="p-0">
+                        <td colSpan={9} className="p-0">
                           <DriverDetailPanel driver={driver} truckLabel={truckLabel} dispatcherName={dispatcher?.name || null} getDocSignedUrl={getDocSignedUrl} truck={getTruck(driver.truck_id)} onUpdateDriver={updateDriver} />
                         </td>
                       </tr>
