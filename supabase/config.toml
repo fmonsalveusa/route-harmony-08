@@ -56,3 +56,6 @@ verify_jwt = false
 
 [functions.whatsapp-inbound]
 verify_jwt = false
+
+[functions.signing-migrate]
+verify_jwt = false

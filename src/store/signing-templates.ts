@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { SignTemplate, DocumentField } from "@/types/document";
+import { isStoragePath, removePdfs, resolvePdf, templatePdfPath, uploadPdf } from "@/lib/signingStorage";
 
 function rowToTemplate(row: any): SignTemplate {
   return {
@@ -15,9 +16,10 @@ function rowToTemplate(row: any): SignTemplate {
 export async function getTemplates(): Promise<SignTemplate[]> {
   const { data, error } = await supabase
     .from("templates" as any)
-    .select("*")
+    .select("id, name, file_name, fields, created_at")
     .order("created_at", { ascending: false });
   if (error) { console.error(error); return []; }
+  // El PDF se baja al abrir la plantilla, no para listarlas
   return (data ?? []).map(rowToTemplate);
 }
 
@@ -28,17 +30,23 @@ export async function getTemplate(id: string): Promise<SignTemplate | undefined>
     .eq("id", id)
     .maybeSingle();
   if (error || !data) return undefined;
-  return rowToTemplate(data);
+  const tpl = rowToTemplate(data);
+  return { ...tpl, fileData: (await resolvePdf(tpl.fileData)) ?? "" };
 }
 
 export async function saveTemplate(t: SignTemplate): Promise<void> {
+  // El PDF va al Storage; en la base queda solo su ruta
+  const filePath = t.fileData && !isStoragePath(t.fileData)
+    ? await uploadPdf(templatePdfPath(t.id), t.fileData)
+    : t.fileData;
+
   const { error } = await supabase
     .from("templates" as any)
     .upsert({
       id: t.id,
       name: t.name,
       file_name: t.fileName,
-      file_data: t.fileData,
+      file_data: filePath,
       fields: t.fields as any,
       created_at: t.createdAt,
     } as any);
@@ -46,9 +54,14 @@ export async function saveTemplate(t: SignTemplate): Promise<void> {
 }
 
 export async function deleteTemplate(id: string): Promise<void> {
+  const { data } = await supabase
+    .from("templates" as any).select("file_data").eq("id", id).maybeSingle();
+
   const { error } = await supabase
     .from("templates" as any)
     .delete()
     .eq("id", id);
   if (error) { console.error(error); throw error; }
+
+  await removePdfs([(data as any)?.file_data]);
 }
