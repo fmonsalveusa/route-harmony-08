@@ -1,30 +1,41 @@
-import { supabase } from '@/integrations/supabase/client';
-
-const BUCKET = 'driver-documents';
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const PDF_ENDPOINT = `${SUPABASE_URL}/functions/v1/signing-pdf`;
 
 /** Los PDFs viejos están guardados como data URL dentro de la base; los nuevos, como ruta del Storage */
 export const isStoragePath = (value?: string | null): boolean =>
   !!value && !value.startsWith('data:');
 
-/** Sube el PDF al Storage y devuelve la ruta que se guarda en la base */
+/**
+ * Sube el PDF y devuelve la ruta que se guarda en la base.
+ * Va por la función porque quien firma no tiene sesión para escribir en el Storage.
+ */
 export async function uploadPdf(path: string, dataUrl: string): Promise<string> {
-  const base64 = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-
-  const { error } = await supabase.storage
-    .from(BUCKET)
-    .upload(path, new Blob([bytes], { type: 'application/pdf' }), { upsert: true, contentType: 'application/pdf' });
-  if (error) throw error;
+  const res = await fetch(PDF_ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path, data: dataUrl }),
+  });
+  if (!res.ok) {
+    const detail = await res.json().catch(() => ({}));
+    throw new Error(detail?.error || 'No se pudo guardar el PDF');
+  }
   return path;
 }
 
-/** Baja el PDF del Storage y lo devuelve como data URL, que es lo que esperan el visor y el firmador */
+/**
+ * Baja el PDF y lo devuelve como data URL, que es lo que esperan el visor y el firmador.
+ * Va por una función porque el bucket es privado y quien firma no tiene sesión.
+ */
 export async function downloadPdf(path: string): Promise<string | null> {
-  const { data, error } = await supabase.storage.from(BUCKET).download(path);
-  if (error || !data) {
-    console.error('No se pudo bajar el PDF:', path, error);
+  let data: Blob | null = null;
+  try {
+    const res = await fetch(`${PDF_ENDPOINT}?path=${encodeURIComponent(path)}`);
+    if (res.ok) data = await res.blob();
+  } catch (e) {
+    console.error('No se pudo bajar el PDF:', path, e);
+  }
+  if (!data) {
+    console.error('No se pudo bajar el PDF:', path);
     return null;
   }
   return await new Promise<string>((resolve, reject) => {
@@ -47,11 +58,11 @@ export const templatePdfPath = (id: string) => `signing/templates/${id}.pdf`;
 
 /** Borra los PDFs de un documento o plantilla; no falla si no existen */
 export async function removePdfs(paths: (string | null | undefined)[]) {
-  const real = paths.filter((p): p is string => isStoragePath(p));
-  if (real.length === 0) return;
-  try {
-    await supabase.storage.from(BUCKET).remove(real);
-  } catch (e) {
-    console.error('No se pudieron borrar los PDFs:', e);
+  for (const path of paths.filter((p): p is string => isStoragePath(p))) {
+    try {
+      await fetch(`${PDF_ENDPOINT}?path=${encodeURIComponent(path)}`, { method: 'DELETE' });
+    } catch (e) {
+      console.error('No se pudo borrar el PDF:', path, e);
+    }
   }
 }
