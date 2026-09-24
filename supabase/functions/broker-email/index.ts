@@ -572,6 +572,17 @@ async function processDue(supabase: any, loadId?: string) {
   return results;
 }
 
+/** Mensaje de gracias al grupo del driver, con las fotos y el BOL/POD ya recibidos */
+async function thankDriver(stopId: string) {
+  const secret = Deno.env.get("CRON_SECRET");
+  if (!secret) return;
+  await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/load-whatsapp-notify`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-cron-secret": secret },
+    body: JSON.stringify({ event: "stop_document", stop_id: stopId }),
+  });
+}
+
 // ─── Acciones del TMS ───
 
 async function userLoad(req: Request, supabase: any, loadId: string) {
@@ -641,6 +652,8 @@ async function handleUserAction(req: Request, supabase: any, body: any) {
     const { data: stop } = await supabase
       .from("load_stops").select("id, load_id").eq("id", body.stop_id).maybeSingle();
     if (!stop || stop.load_id !== load.id) return json({ error: "La parada no es de esta carga" }, 400);
+    // Gracias al driver por WhatsApp (su propio control de duplicados, uno por parada)
+    thankDriver(stop.id).catch((e) => console.error("thankDriver failed:", e));
     return json({ result: await enqueue(supabase, "docs", stop.id) });
   }
 

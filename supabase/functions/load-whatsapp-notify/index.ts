@@ -17,12 +17,7 @@ async function handleStopDocument(supabase: any, stopId: string) {
   if (!load || !load.driver_id || load.status === "cancelled") return json({ skipped: "no load or driver" });
   if (!(await isEnabled(supabase, load.tenant_id, "wa_stop_docs"))) return json({ skipped: "disabled" });
 
-  // La última entrega la cubre el mensaje de "carga completada"
-  const { data: deliveries } = await supabase
-    .from("load_stops").select("stop_order").eq("load_id", load.id).eq("stop_type", "delivery");
-  const lastDeliveryOrder = Math.max(...((deliveries as any[]) || []).map((d) => d.stop_order ?? 0));
   const order = stop.stop_order ?? 0;
-  if (stop.stop_type === "delivery" && order === lastDeliveryOrder) return json({ skipped: "final delivery" });
 
   const templateKey = stop.stop_type === "pickup" ? "stop_docs_pickup" : "stop_docs_delivery";
   const { data: driver } = await supabase
