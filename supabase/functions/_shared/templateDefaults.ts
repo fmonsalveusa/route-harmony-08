@@ -260,6 +260,28 @@ export const AUTOMATIONS: AutomationDefinition[] = [
     ],
   },
   {
+    id: 'meeting_booked',
+    title: 'Reunión agendada (landing)',
+    description: 'Apenas alguien agenda una reunión desde la landing page. Se envía al mismo grupo de reuniones.',
+    toggle: 'wa_meeting_booked',
+    templates: [{
+      key: 'meeting_booked',
+      title: 'Mensaje',
+      description: 'Se envía al grupo de reuniones.',
+      body: '📅 Nueva reunión agendada para el {fecha} a las {hora}.\nNombre: {nombre}\nTeléfono: {telefono}\nTipo de camión: {camion}\nCiudad: {ciudad}\nServicio: {servicio}\nComentarios: {comentarios}',
+      variables: [
+        v('nombre', 'Nombre del cliente', 'Juan Pérez'),
+        v('telefono', 'Teléfono del cliente', '(704) 555-1234'),
+        v('camion', 'Tipo de camión', 'Box Truck'),
+        v('ciudad', 'Ciudad y estado', 'Charlotte, NC'),
+        v('hora', 'Hora de la reunión', '4:30 PM'),
+        v('fecha', 'Fecha de la reunión', '09/25/2026'),
+        v('servicio', 'Servicio de interés', 'Dispatch Service'),
+        v('comentarios', 'Comentarios del cliente', 'Tengo 2 camiones'),
+      ],
+    }],
+  },
+  {
     id: 'meeting_reminder',
     title: 'Recordatorio de reunión (landing)',
     description: '15 minutos antes de cada reunión agendada desde la landing page, al grupo que elijas. Las canceladas no se avisan.',

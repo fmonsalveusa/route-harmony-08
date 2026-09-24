@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
+import { isEnabled, renderMessage, sendTextLogged } from "../_shared/messaging.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -63,6 +64,32 @@ Deno.serve(async (req) => {
     if (insertError) {
       console.error("Insert error:", insertError);
       throw new Error("Error al guardar la solicitud");
+    }
+
+    // Aviso al grupo de reuniones, apenas se agenda
+    try {
+      const { data: tenant } = await adminClient
+        .from("tenants").select("id, whatsapp_meetings_group_id").limit(1).maybeSingle();
+      if (tenant?.whatsapp_meetings_group_id && await isEnabled(adminClient, tenant.id, "wa_meeting_booked")) {
+        const [y, mo, d] = String(meeting_date).split("-");
+        const message = await renderMessage(adminClient, tenant.id, "meeting_booked", {
+          nombre: driver_name.trim(),
+          telefono: phone.trim(),
+          camion: truck_type,
+          ciudad: [city.trim(), state].filter(Boolean).join(", "),
+          hora: meeting_time,
+          fecha: `${mo}/${d}/${y}`,
+          servicio: service_interest || "—",
+          comentarios: comments?.trim() || "—",
+        });
+        await sendTextLogged(adminClient, {
+          tenantId: tenant.id, templateKey: "meeting_booked", recipientType: "meetings",
+          recipientName: driver_name.trim(), reference: `${mo}/${d}/${y} ${meeting_time}`,
+          groupId: tenant.whatsapp_meetings_group_id, message,
+        });
+      }
+    } catch (waErr) {
+      console.error("WhatsApp meeting notice failed:", waErr);
     }
 
     // Send email notification
