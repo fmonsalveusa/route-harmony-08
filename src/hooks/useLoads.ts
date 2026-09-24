@@ -28,6 +28,7 @@ export interface DbLoad {
   pdf_url: string | null;
   notes: string | null;
   created_at: string;
+  service_type?: string | null;
   has_detention?: boolean | null;
   has_detention_pickup?: boolean | null;
   has_detention_delivery?: boolean | null;

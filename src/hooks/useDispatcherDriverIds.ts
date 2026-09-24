@@ -45,7 +45,7 @@ export function useDispatcherDriverIds(): DispatcherScope {
 
       if (cancelled) return;
 
-      const dispRecord = (dispRows as { id: string }[] | null)?.[0];
+      const dispRecord = (dispRows as unknown as { id: string }[] | null)?.[0];
 
       if (dispErr || !dispRecord) {
         console.warn('[useDispatcherDriverIds] No dispatcher record for:', profile.email, dispErr);
@@ -70,7 +70,7 @@ export function useDispatcherDriverIds(): DispatcherScope {
         console.warn('[useDispatcherDriverIds] Could not fetch driver IDs:', drErr);
         setDriverIds(new Set());
       } else {
-        setDriverIds(new Set((driverRows as { id: string }[]).map(r => r.id)));
+        setDriverIds(new Set((driverRows as unknown as { id: string }[]).map(r => r.id)));
       }
 
       setLoading(false);
