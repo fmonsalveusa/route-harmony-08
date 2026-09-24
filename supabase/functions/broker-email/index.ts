@@ -126,9 +126,12 @@ const STATUS_LABELS = {
   active: "1ACTIVE",
   delivered: "2ENTREGADA",
   cancelled: "4CANCELADA",
+  detention: "5DETENTION",
   tonu: "6TONU",
 } as const;
-const ALL_STATUS_LABELS = Object.values(STATUS_LABELS);
+/** Detention convive con la etiqueta de estado, no la reemplaza */
+const EXCLUSIVE_STATUS_LABELS = Object.entries(STATUS_LABELS)
+  .filter(([k]) => k !== "detention").map(([, v]) => v);
 
 /** Etiqueta que le toca a la carga según su estado */
 function labelForStatus(status: string): string {
@@ -158,10 +161,10 @@ async function syncThreadLabels(supabase: any, load: any, accounts: GmailAccount
     }
 
     const statusLabel = labelForStatus(load.status);
-    const add = [statusLabel, driverName].filter(Boolean);
+    const add = [statusLabel, load.has_detention ? STATUS_LABELS.detention : "", driverName].filter(Boolean);
     // Solo se quitan etiquetas que puso el sistema: los otros estados y el driver anterior
     const previous = ((thread.labels as string[]) ?? []).filter((l) => !add.includes(l));
-    const remove = [...ALL_STATUS_LABELS.filter((l) => l !== statusLabel), ...previous];
+    const remove = [...EXCLUSIVE_STATUS_LABELS.filter((l) => l !== statusLabel), ...previous];
 
     if (thread.labels && (thread.labels as string[]).join("|") === add.join("|")) {
       return { skipped: "sin cambios" };
@@ -405,7 +408,7 @@ async function processRow(supabase: any, row: any): Promise<Record<string, unkno
   }
 
   const { data: load } = await supabase
-    .from("loads").select("id, tenant_id, reference_number, status, driver_id, truck_id").eq("id", row.load_id).maybeSingle();
+    .from("loads").select("id, tenant_id, reference_number, status, driver_id, truck_id, has_detention").eq("id", row.load_id).maybeSingle();
   if (!load || load.status === "cancelled") return await finish({ status: "skipped", error: "Carga cancelada o borrada" });
 
   const accounts = gmailAccounts();
@@ -603,7 +606,7 @@ async function handleUserAction(req: Request, supabase: any, body: any) {
       updated_at: new Date().toISOString(),
     }, { onConflict: "load_id" });
     const { data: full } = await supabase
-      .from("loads").select("id, tenant_id, reference_number, status, driver_id").eq("id", load.id).maybeSingle();
+      .from("loads").select("id, tenant_id, reference_number, status, driver_id, has_detention").eq("id", load.id).maybeSingle();
     if (full) await syncThreadLabels(supabase, full, accounts);
 
     // Mandar lo que estaba esperando por el hilo
@@ -660,7 +663,7 @@ Deno.serve(async (req) => {
     // Estado de la carga cambiado: poner la etiqueta que corresponde en el hilo
     if (body.event === "labels" && body.load_id) {
       const { data: load } = await supabase
-        .from("loads").select("id, tenant_id, reference_number, status, driver_id").eq("id", body.load_id).maybeSingle();
+        .from("loads").select("id, tenant_id, reference_number, status, driver_id, has_detention").eq("id", body.load_id).maybeSingle();
       if (!load) return json({ skipped: "carga no encontrada" });
       const accounts = gmailAccounts();
       if (accounts.length === 0) return json({ skipped: "sin cuenta de Gmail" });
@@ -668,7 +671,7 @@ Deno.serve(async (req) => {
     }
     if (body.event === "link_check" && body.load_id) {
       const { data: load } = await supabase
-        .from("loads").select("id, tenant_id, reference_number, status, driver_id").eq("id", body.load_id).maybeSingle();
+        .from("loads").select("id, tenant_id, reference_number, status, driver_id, has_detention").eq("id", body.load_id).maybeSingle();
       if (!load || load.status === "cancelled") return json({ skipped: "sin carga o cancelada" });
       if (!(await isEnabled(supabase, load.tenant_id, "email_broker_docs")) &&
           !(await isEnabled(supabase, load.tenant_id, "email_broker_arrival"))) {
