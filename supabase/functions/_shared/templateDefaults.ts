@@ -284,7 +284,7 @@ export const AUTOMATIONS: AutomationDefinition[] = [
   {
     id: 'inbound_assistant',
     title: 'Asistente de WhatsApp (mensajes entrantes)',
-    description: 'Responde a quien escribe al número de la empresa y no está en el TMS. Si el vehículo sirve (box truck o hotshot) o pregunta por otro servicio, manda este texto con el link de la agenda. Los demás casos los responde la IA.',
+    description: 'Responde a quien escribe al número de la empresa y no está en el TMS. La IA solo clasifica el mensaje y elige cuál de estos textos enviar; no redacta nada. A los contactos del TMS y a los grupos no les responde.',
     toggle: 'wa_inbound_assistant',
     templates: [
       {
@@ -299,6 +299,48 @@ export const AUTOMATIONS: AutomationDefinition[] = [
         title: 'Invitación a agendar (inglés)',
         description: 'Lo mismo, para quien escribe en inglés.',
         body: 'Thank you for reaching out.\n\nHere is the link to schedule a meeting so we can go over our service and answer your questions.\n\nhttps://www.dispatch-up.com/#meeting\n\nOn our website, go to the Schedule a Meeting section, fill in your information and pick the day and time that works for you.',
+        variables: [v('nombre', 'Nombre de quien escribe, si WhatsApp lo muestra', 'John')],
+      },
+      {
+        key: 'inbound_ask_vehicle',
+        title: 'Preguntar el vehículo (español)',
+        description: 'Cuando escriben por dispatch pero no dicen qué vehículo tienen.',
+        body: 'Gracias por contactarnos. ¿Qué tipo de vehículo de carga tiene?',
+        variables: [v('nombre', 'Nombre de quien escribe, si WhatsApp lo muestra', 'Juan')],
+      },
+      {
+        key: 'inbound_ask_vehicle_en',
+        title: 'Preguntar el vehículo (inglés)',
+        description: 'Lo mismo, para quien escribe en inglés.',
+        body: 'Thank you for reaching out. What type of truck do you have?',
+        variables: [v('nombre', 'Nombre de quien escribe, si WhatsApp lo muestra', 'John')],
+      },
+      {
+        key: 'inbound_not_supported',
+        title: 'Vehículo que no trabajamos (español)',
+        description: 'Cuando dicen tener cargo van, sprinter, semi, dry van 53, flatbed o power only.',
+        body: 'Gracias por contactarnos. Por ahora trabajamos únicamente con box truck y hotshot, así que no podríamos ayudarle con ese tipo de vehículo. ¡Le deseamos mucho éxito!',
+        variables: [v('nombre', 'Nombre de quien escribe, si WhatsApp lo muestra', 'Juan')],
+      },
+      {
+        key: 'inbound_not_supported_en',
+        title: 'Vehículo que no trabajamos (inglés)',
+        description: 'Lo mismo, para quien escribe en inglés.',
+        body: 'Thank you for reaching out. At this time we only work with box trucks and hotshots, so we would not be able to help with that type of vehicle. We wish you the best!',
+        variables: [v('nombre', 'Nombre de quien escribe, si WhatsApp lo muestra', 'John')],
+      },
+      {
+        key: 'inbound_human',
+        title: 'Pasa a una persona (español)',
+        description: 'Cuando preguntan precios, quieren negociar, reclaman algo o el tema se sale de lo previsto.',
+        body: 'Gracias por su mensaje. Un dispatcher de nuestro equipo le escribe en breve para atenderle personalmente.',
+        variables: [v('nombre', 'Nombre de quien escribe, si WhatsApp lo muestra', 'Juan')],
+      },
+      {
+        key: 'inbound_human_en',
+        title: 'Pasa a una persona (inglés)',
+        description: 'Lo mismo, para quien escribe en inglés.',
+        body: 'Thank you for your message. One of our dispatchers will reach out to you shortly.',
         variables: [v('nombre', 'Nombre de quien escribe, si WhatsApp lo muestra', 'John')],
       },
     ],

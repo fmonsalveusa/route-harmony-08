@@ -30,32 +30,21 @@ SERVICIOS: dispatch para quien tiene su propio MC#, leasing bajo el MC# de Dispa
 VEHÍCULOS CON LOS QUE SÍ TRABAJAMOS: ${VEHICLES_OK}.
 VEHÍCULOS CON LOS QUE NO TRABAJAMOS: ${VEHICLES_NO}.
 
-TU TRABAJO ES DECIDIR UNA DE ESTAS CUATRO ACCIONES:
+NO ESCRIBES MENSAJES. Solo lees lo que dice la persona y eliges una de estas cuatro acciones.
+El sistema se encarga de enviar el texto que corresponda.
 
-1. "qualified" — la persona tiene box truck o hotshot, o pregunta por permisos, curso, TMS, leasing o asesoría.
-   El sistema manda solo un texto fijo con el link para agendar. NO escribas tú la respuesta: deja reply vacío.
-
-2. "ask_vehicle" — pregunta por dispatch pero todavía no sabes qué vehículo tiene.
-   Escribe en reply una sola pregunta corta para saber el tipo de vehículo.
-
+1. "qualified" — dijo que tiene box truck o hotshot, o pregunta por permisos, DOT, MC#, curso de dispatcher, TMS, leasing o asesoría.
+2. "ask_vehicle" — muestra interés en el servicio pero todavía no sabes qué vehículo tiene. Es el caso más común en el primer mensaje.
 3. "not_supported" — dijo que tiene un vehículo de los que NO trabajamos.
-   Escribe en reply un mensaje amable de una o dos frases diciendo que no trabajamos con ese tipo de vehículo. Sin link.
+4. "human" — pregunta precios, quiere negociar, reclama algo, ya es cliente, o el tema se sale de todo lo anterior.
 
-4. "human" — insiste con precios, quiere negociar, reclama algo, o el tema se sale de todo lo anterior.
-   Escribe en reply una frase diciendo que un dispatcher lo contacta en breve.
-
-REGLAS:
-- Mensajes cortos, es WhatsApp. Una o dos frases.
-- Usa el mismo idioma de la persona y ponlo en language: "es" o "en".
-- NUNCA des precios, porcentajes, tarifas ni condiciones.
-- No inventes nada que no esté en esta información.
-- Cuando escribas tú el mensaje, preséntate como asistente si es el primer mensaje.`;
+Ante la duda entre "ask_vehicle" y otra, elige "ask_vehicle".
+Indica también el idioma en que escribe la persona: "es" o "en".`;
 
 type Action = "qualified" | "ask_vehicle" | "not_supported" | "human";
 
 interface Classification {
   action: Action;
-  reply: string;
   language: string;
   vehicle: string;
   service: string;
@@ -79,12 +68,11 @@ async function askAssistant(history: { role: string; content: string }[]): Promi
             type: "object",
             properties: {
               action: { type: "string", enum: ["qualified", "ask_vehicle", "not_supported", "human"], description: "Qué corresponde hacer" },
-              reply: { type: "string", description: "El mensaje a enviar. Vacío si la acción es qualified" },
               language: { type: "string", enum: ["es", "en"], description: "Idioma en que escribe la persona" },
               vehicle: { type: "string", description: "Tipo de vehículo mencionado, o vacío si no lo dijo" },
               service: { type: "string", description: "Servicio que le interesa, o vacío si no está claro" },
             },
-            required: ["action", "reply", "language", "vehicle", "service"],
+            required: ["action", "language", "vehicle", "service"],
           },
         }],
         tool_choice: { type: "tool", name: "responder" },
@@ -183,12 +171,16 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Si califica, sale el texto fijo con el link; los demás casos los redacta la IA
+      // Todas las respuestas son textos fijos, editables desde el TMS
       const qualified = answer.action === "qualified";
-      const templateKey = answer.language === "en" ? "inbound_meeting_en" : "inbound_meeting";
-      const reply = qualified
-        ? await renderMessage(supabase, tenant.id, templateKey, { nombre: name || "" })
-        : (answer.reply || "").trim();
+      const base = {
+        qualified: "inbound_meeting",
+        ask_vehicle: "inbound_ask_vehicle",
+        not_supported: "inbound_not_supported",
+        human: "inbound_human",
+      }[answer.action] ?? "inbound_ask_vehicle";
+      const templateKey = answer.language === "en" ? `${base}_en` : base;
+      const reply = (await renderMessage(supabase, tenant.id, templateKey, { nombre: name || "" })).trim();
       if (!reply) {
         results.push({ phone, skipped: "sin respuesta que enviar" });
         continue;
