@@ -14,6 +14,7 @@ export interface LoadStop {
   lng: number | null;
   distance_from_prev: number | null;
   shipper: string | null;
+  has_detention: boolean;
   consignee: string | null;
   arrived_at: string | null;
   created_at: string;

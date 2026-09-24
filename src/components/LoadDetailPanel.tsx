@@ -249,17 +249,12 @@ function BrokerScoreRow({ brokerName, hideLabel }: { brokerName: string | null |
 }
 
 /** Marca de detention de la parada: pone 5DETENTION en el hilo y resalta la carga en la lista */
-function StopDetentionToggle({ stopId }: { stopId: string }) {
-  const [on, setOn] = useState<boolean | null>(null);
+function StopDetentionToggle({ stopId, initial }: { stopId: string; initial: boolean }) {
+  const [on, setOn] = useState(initial);
   const { toast: notify } = useToast();
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    let cancelled = false;
-    supabase.from('load_stops' as any).select('has_detention').eq('id', stopId).maybeSingle()
-      .then(({ data }) => { if (!cancelled) setOn(Boolean((data as any)?.has_detention)); });
-    return () => { cancelled = true; };
-  }, [stopId]);
+  useEffect(() => { setOn(initial); }, [initial, stopId]);
 
   const toggle = async (value: boolean) => {
     setOn(value);
@@ -270,10 +265,10 @@ function StopDetentionToggle({ stopId }: { stopId: string }) {
       return;
     }
     queryClient.invalidateQueries({ queryKey: ['loads'] });
+    queryClient.invalidateQueries({ queryKey: ['load_stops'] });
     notify({ title: value ? 'Detention marcado en esta parada' : 'Detention quitado' });
   };
 
-  if (on === null) return null;
   return (
     <label className={`flex items-center gap-1.5 text-xs cursor-pointer ${on ? 'text-amber-700 font-medium' : 'text-muted-foreground'}`}>
       <Switch checked={on} onCheckedChange={toggle} className="scale-75" />
@@ -282,7 +277,7 @@ function StopDetentionToggle({ stopId }: { stopId: string }) {
   );
 }
 
-function StopPhotoSection({ loadId, stopId, isFirst, stopType, loadReference }: { loadId: string; stopId: string; isFirst?: boolean; stopType?: string; loadReference?: string }) {
+function StopPhotoSection({ loadId, stopId, isFirst, stopType, loadReference, hasDetention }: { loadId: string; stopId: string; isFirst?: boolean; stopType?: string; loadReference?: string; hasDetention?: boolean }) {
   const { pods, uploading, uploadPod, deletePod, downloadPod, resolvePodUrl } = usePodDocuments(loadId);
   const stopPods = pods.filter(p =>
     p.stop_id === stopId || (isFirst && p.stop_id === null)
@@ -399,7 +394,7 @@ function StopPhotoSection({ loadId, stopId, isFirst, stopType, loadReference }: 
             {sendingBroker ? 'Enviando...' : `Enviar ${stopType === 'pickup' ? 'pickup' : 'entrega'} al broker`}
           </Button>
 
-          <StopDetentionToggle stopId={stopId} />
+          <StopDetentionToggle stopId={stopId} initial={Boolean(hasDetention)} />
         </div>
       </div>
 
@@ -1692,7 +1687,7 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
                           </div>
                         )}
                         {dbStop?.id && (
-                          <StopPhotoSection loadId={load.id} stopId={dbStop.id} isFirst={i === 0} stopType={stop.type} loadReference={load.reference_number} />
+                          <StopPhotoSection loadId={load.id} stopId={dbStop.id} isFirst={i === 0} stopType={stop.type} loadReference={load.reference_number} hasDetention={(dbStop as any).has_detention} />
                         )}
                       </div>
                     </div>
