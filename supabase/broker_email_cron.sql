@@ -1,12 +1,12 @@
--- ═══ Emails al broker: revisar la cola cada 2 minutos ═══
--- El email de documentos espera 3 minutos sin archivos nuevos; con la revisión cada 5
--- se le sumaba demasiada espera.
+-- ═══ Emails al broker: revisar la cola cada 10 minutos ═══
+-- Los emails salen en el momento (llegada del driver y botón de la parada). Esta tarea
+-- solo reintenta los que no pudieron salir, casi siempre por falta del hilo de Gmail.
 
 SELECT cron.unschedule('broker-email-queue') WHERE EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'broker-email-queue');
 
 SELECT cron.schedule(
   'broker-email-queue',
-  '*/2 * * * *',
+  '*/10 * * * *',
   $$
   SELECT net.http_post(
     url := 'https://tejzatzzwivvaznxyqej.supabase.co/functions/v1/broker-email',
