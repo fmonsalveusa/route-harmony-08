@@ -731,6 +731,25 @@ Deno.serve(async (req) => {
       const { data } = await q;
       return json({ rows: data ?? [] });
     }
+    if (body.event === "debug_leads") {
+      const { data } = await supabase
+        .from("whatsapp_leads").select("phone, name, vehicle, service, handoff, replies_today, updated_at")
+        .order("updated_at", { ascending: false }).limit(10);
+      return json({ leads: data ?? [] });
+    }
+    if (body.event === "debug_tenants") {
+      const { data: tenants } = await supabase.from("tenants").select("id, name").limit(20);
+      const out = [];
+      for (const t of ((tenants as any[]) || [])) {
+        const row: Record<string, unknown> = { id: t.id, name: t.name };
+        for (const table of ["loads", "drivers", "trucks", "payments", "profiles", "companies"]) {
+          const { count } = await supabase.from(table).select("id", { count: "exact", head: true }).eq("tenant_id", t.id);
+          row[table] = count ?? 0;
+        }
+        out.push(row);
+      }
+      return json({ tenants: out });
+    }
     if (body.event === "debug_wa") {
       const { data: history } = await supabase
         .from("whatsapp_message_history").select("template_key, recipient_name, status, error, created_at")
