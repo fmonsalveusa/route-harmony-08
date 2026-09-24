@@ -1,4 +1,4 @@
-import { ReactNode, useState, useEffect } from 'react';
+import { ReactNode, useState, useEffect, useRef } from 'react';
 import logoImg from '@/assets/logo.png';
 import { useAuth } from '@/contexts/AuthContext';
 import { Link, useLocation } from 'react-router-dom';
@@ -87,6 +87,10 @@ const roleLabels: Record<string, string> = {
 export const AppLayout = ({ children }: { children: ReactNode }) => {
   const { profile, role, tenant, signOut, hasPermission } = useAuth();
   const location = useLocation();
+
+  // Cada página abre desde arriba: sin esto se hereda el scroll de la anterior
+  const mainRef = useRef<HTMLElement>(null);
+  useEffect(() => { mainRef.current?.scrollTo({ top: 0 }); }, [location.pathname]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loadDialogOpen, setLoadDialogOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
@@ -375,7 +379,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6 pb-[88px] lg:pb-6">
+        <main ref={mainRef} className="flex-1 overflow-y-auto p-4 lg:p-6 pb-[88px] lg:pb-6">
           {children}
         </main>
       </div>
