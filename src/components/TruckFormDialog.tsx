@@ -79,6 +79,19 @@ export function TruckFormDialog({ open, onOpenChange, truck, onSave }: Props) {
       toast.error('Required field: Unit #');
       return;
     }
+    // El VIN son 17 caracteres y nunca lleva I, O ni Q: se usan 1, 0 y 9 en su lugar
+    const vin = (form.vin || '').trim().toUpperCase();
+    if (vin) {
+      if (vin.length !== 17) {
+        toast.error(`El VIN debe tener 17 caracteres (tiene ${vin.length})`);
+        return;
+      }
+      if (/[IOQ]/.test(vin)) {
+        toast.error('El VIN no puede llevar I, O ni Q. Revisa si son 1, 0 o 9');
+        return;
+      }
+      form.vin = vin;
+    }
     setSaving(true);
     // Include deleted doc URLs as null in form
     const deletedUpdates: Record<string, null> = {};
@@ -138,7 +151,15 @@ export function TruckFormDialog({ open, onOpenChange, truck, onSave }: Props) {
           </div>
           <div className="space-y-2">
             <Label>VIN</Label>
-            <Input value={form.vin || ''} onChange={e => set('vin', e.target.value)} placeholder="Vehicle Identification Number" />
+            <Input
+              value={form.vin || ''}
+              onChange={e => set('vin', e.target.value.toUpperCase())}
+              placeholder="17 caracteres, sin I, O ni Q"
+              maxLength={17}
+            />
+            {(form.vin || '').length > 0 && (form.vin || '').length !== 17 && (
+              <p className="text-[11px] text-amber-600">{(form.vin || '').length} de 17 caracteres</p>
+            )}
           </div>
           <div className="space-y-2">
             <Label>License Plate</Label>

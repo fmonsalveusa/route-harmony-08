@@ -731,6 +731,61 @@ Deno.serve(async (req) => {
       const { data } = await q;
       return json({ rows: data ?? [] });
     }
+    if (body.event === "debug_dupes") {
+      const { data: drivers } = await supabase.from("drivers").select("id, name, email, status, truck_id, created_at");
+      const byName = new Map<string, any[]>();
+      for (const d of ((drivers as any[]) || [])) {
+        const key = (d.name ?? "").trim().toLowerCase().replace(/\s+/g, " ");
+        byName.set(key, [...(byName.get(key) ?? []), d]);
+      }
+      const dupes = [];
+      for (const [name, list] of byName) {
+        if (list.length < 2) continue;
+        const detail = [];
+        for (const d of list) {
+          const { count } = await supabase.from("loads").select("id", { count: "exact", head: true }).eq("driver_id", d.id);
+          detail.push({ id: d.id, name: d.name, email: d.email, status: d.status, cargas: count ?? 0, creado: d.created_at?.slice(0, 10) });
+        }
+        dupes.push({ nombre: name, registros: detail });
+      }
+      return json({ drivers_duplicados: dupes });
+    }
+    if (body.event === "debug_unit" && body.unit) {
+      const { data: trucks } = await supabase
+        .from("trucks").select("*").eq("unit_number", String(body.unit));
+      const out = [];
+      for (const t of ((trucks as any[]) || [])) {
+        const { count: cargas } = await supabase
+          .from("loads").select("id", { count: "exact", head: true }).eq("truck_id", t.id);
+        const { data: drivers } = await supabase.from("drivers").select("name").eq("truck_id", t.id);
+        out.push({
+          id: t.id, unit: t.unit_number, vin: t.vin, status: t.status, make: t.make, model: t.model,
+          year: t.year, odometer: t.current_odometer, created_at: t.created_at,
+          cargas, drivers: ((drivers as any[]) || []).map((d) => d.name),
+        });
+      }
+      return json({ trucks: out });
+    }
+    if (body.event === "debug_vins") {
+      const { data } = await supabase
+        .from("trucks").select("id, unit_number, vin, status").order("unit_number");
+      const list = ((data as any[]) || []);
+      const norm = (v: string) => (v ?? "").trim().toUpperCase();
+      const counts = new Map<string, string[]>();
+      for (const t of list) {
+        if (!norm(t.vin)) continue;
+        counts.set(norm(t.vin), [...(counts.get(norm(t.vin)) ?? []), t.unit_number]);
+      }
+      return json({
+        total: list.length,
+        sin_vin: list.filter((t) => !norm(t.vin)).map((t) => ({ unidad: t.unit_number, status: t.status })),
+        largo_raro: list.filter((t) => norm(t.vin) && norm(t.vin).length !== 17)
+          .map((t) => ({ unidad: t.unit_number, vin: t.vin, largo: norm(t.vin).length, status: t.status })),
+        duplicados: [...counts.entries()].filter(([, u]) => u.length > 1).map(([vin, unidades]) => ({ vin, unidades })),
+        caracteres_invalidos: list.filter((t) => norm(t.vin) && /[IOQ]/.test(norm(t.vin)))
+          .map((t) => ({ unidad: t.unit_number, vin: t.vin })),
+      });
+    }
     if (body.event === "debug_leads") {
       const { data } = await supabase
         .from("whatsapp_leads").select("phone, name, vehicle, service, handoff, replies_today, updated_at")
