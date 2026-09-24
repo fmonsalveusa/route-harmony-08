@@ -1,5 +1,6 @@
 ﻿import { useState, useMemo, useEffect, useRef } from 'react';
 import { ServiceTypeBadge } from '@/components/ServiceTypeBadge';
+import { getLoadRoutes } from '@/lib/loadRoute';
 import { useLoads, DbLoad } from '@/hooks/useLoads';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useTrucks } from '@/hooks/useTrucks';
@@ -148,6 +149,7 @@ const Tracking = () => {
   }, [userDispatcherId, drivers]);
 
   const [allStops, setAllStops] = useState<LoadStop[]>([]);
+  const [loadRoutes, setLoadRoutes] = useState<Record<string, unknown>>({});
   const [selectedLoadId, setSelectedLoadId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -269,14 +271,23 @@ const Tracking = () => {
       });
   }, [activeLoads.length]);
 
+  // Rutas guardadas de las cargas activas (viven en su propia tabla)
+  useEffect(() => {
+    if (activeLoads.length === 0) { setLoadRoutes({}); return; }
+    let cancelled = false;
+    getLoadRoutes(activeLoads.map(l => l.id)).then(r => { if (!cancelled) setLoadRoutes(r); });
+    return () => { cancelled = true; };
+  }, [activeLoads.length]);
+
   // Build enriched loads with stops and route geometry
   const enrichedLoads: LoadWithStops[] = useMemo(() => {
     return activeLoads.map(load => {
       const stops = allStops.filter(s => s.load_id === load.id);
       let routeCoords: [number, number][] = [];
-      if (load.route_geometry) {
+      const saved = loadRoutes[load.id];
+      if (saved) {
         try {
-          const geo = typeof load.route_geometry === 'string' ? JSON.parse(load.route_geometry) : load.route_geometry;
+          const geo = typeof saved === 'string' ? JSON.parse(saved) : saved;
           if (geo?.coordinates) {
             routeCoords = geo.coordinates.map((c: number[]) => [c[1], c[0]] as [number, number]);
           }
@@ -291,7 +302,7 @@ const Tracking = () => {
       }
       return { ...load, stops, routeCoords } as LoadWithStops;
     });
-  }, [activeLoads, allStops]);
+  }, [activeLoads, allStops, loadRoutes]);
 
   // Geocode stops that don't have coordinates
   useEffect(() => {

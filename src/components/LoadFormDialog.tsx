@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Progress } from '@/components/ui/progress';
 import { Upload, FileText, Loader2, CheckCircle, AlertCircle, Eye, Download, X, Plus, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { deleteLoadRoute } from '@/lib/loadRoute';
 import { useToast } from '@/hooks/use-toast';
 import { useTrucks } from '@/hooks/useTrucks';
 import { useDrivers } from '@/hooks/useDrivers';
@@ -725,7 +726,8 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
 
     // Clear cached route since stops changed
     if (editLoad?.id) {
-      await supabase.from('loads').update({ route_geometry: null, miles: 0 } as any).eq('id', editLoad.id);
+      await supabase.from('loads').update({ miles: 0 } as any).eq('id', editLoad.id);
+      await deleteLoadRoute(editLoad.id);
     }
 
     // Notify driver when a load is assigned (new or changed driver)

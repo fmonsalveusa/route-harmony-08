@@ -17,6 +17,7 @@ import { PodUploadSection } from '@/components/PodUploadSection';
 import { LoadAdjustmentsSection } from '@/components/LoadAdjustmentsSection';
 import { LoadProfitSection } from '@/components/LoadProfitSection';
 import { BrokerEmailSection } from '@/components/BrokerEmailSection';
+import { getLoadRoute } from '@/lib/loadRoute';
 import { PickupPicturesSection } from '@/components/PickupPicturesSection';
 import { BolFormDialog } from '@/components/BolFormDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -507,11 +508,14 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
     setRouteGeometryLoading(true);
 
     (async () => {
-      const { data, error } = await supabase
-        .from('loads')
-        .select('route_geometry, miles, empty_miles, empty_miles_origin')
-        .eq('id', load.id)
-        .maybeSingle();
+      const [{ data, error }, routeGeometry] = await Promise.all([
+        supabase
+          .from('loads')
+          .select('miles, empty_miles, empty_miles_origin')
+          .eq('id', load.id)
+          .maybeSingle(),
+        getLoadRoute(load.id),
+      ]);
 
       if (!active || routeFetchKeyRef.current !== requestKey) return;
 
@@ -519,7 +523,7 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
         console.error('[MAP] Error fetching route/miles data:', error);
         setCachedRouteGeometry(null);
       } else {
-        const normalizedGeometry = normalizeRouteGeometry(data?.route_geometry ?? null);
+        const normalizedGeometry = normalizeRouteGeometry(routeGeometry ?? null);
         const freshMiles = Math.round(Number(data?.miles) || 0);
         const freshEmptyMiles = Math.round(Number(data?.empty_miles) || 0);
         const derivedMiles = Math.round(estimateMilesFromGeometry(normalizedGeometry));

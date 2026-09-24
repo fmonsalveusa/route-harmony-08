@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { getLoadRoutes } from '@/lib/loadRoute';
 import { StatCard } from '@/components/StatCard';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DollarSign, TrendingUp, MapPin } from 'lucide-react';
@@ -124,7 +125,7 @@ const DriverRouteHistory = () => {
       setMapLoading(true);
       const { data: loadData } = await supabase
         .from('loads')
-        .select('id, reference_number, total_rate, miles, pickup_date, delivery_date, route_geometry')
+        .select('id, reference_number, total_rate, miles, pickup_date, delivery_date')
         .eq('driver_id', selectedDriverId)
         .neq('status', 'cancelled')
         .gte('pickup_date', from)
@@ -132,7 +133,8 @@ const DriverRouteHistory = () => {
         .order('pickup_date');
 
       if (cancelled) return;
-      const rows = (loadData || []) as unknown as LoadRow[];
+      const routes = await getLoadRoutes(((loadData || []) as any[]).map(l => l.id));
+      const rows = ((loadData || []) as any[]).map(l => ({ ...l, route_geometry: routes[l.id] ?? null })) as unknown as LoadRow[];
       setLoads(rows);
 
       if (rows.length > 0) {

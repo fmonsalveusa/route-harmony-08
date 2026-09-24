@@ -1,6 +1,7 @@
 import { useCallback, useRef, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { saveLoadRoute } from '@/lib/loadRoute';
 import { useToast } from '@/hooks/use-toast';
 import { getTenantId } from '@/hooks/useTenantId';
 
@@ -32,7 +33,6 @@ export interface DbLoad {
   has_detention?: boolean | null;
   has_detention_pickup?: boolean | null;
   has_detention_delivery?: boolean | null;
-  route_geometry?: any; // solo se usa en LoadDetailPanel, no en la lista
   empty_miles: number;
   empty_miles_origin: string | null;
   company_id: string | null;
@@ -222,16 +222,15 @@ export function useLoads() {
    * No muestra toast — el usuario no lo disparó.
    */
   const updateLoadMiles = useCallback(async (id: string, miles: number, routeGeometry?: any) => {
-    const payload: any = { miles };
-    if (routeGeometry) payload.route_geometry = routeGeometry;
-
-    const { error } = await supabase.from('loads').update(payload).eq('id', id);
+    const { error } = await supabase.from('loads').update({ miles }).eq('id', id);
     if (error) {
       console.error('Error saving miles:', error);
       return;
     }
+    // La ruta del mapa vive en su propia tabla: no engorda la lista de cargas
+    if (routeGeometry) await saveLoadRoute(id, routeGeometry);
 
-    // Actualizar cache local — no incluir route_geometry en la lista
+    // Actualizar cache local
     queryClient.setQueryData<DbLoad[]>(LOADS_QUERY_KEY, (old) =>
       (old ?? []).map(l => l.id === id ? { ...l, miles } : l)
     );
