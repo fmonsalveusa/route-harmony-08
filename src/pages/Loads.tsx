@@ -28,7 +28,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { PodUploadSection } from '@/components/PodUploadSection';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Search, Package, Pencil, Trash2, ChevronDown, ChevronUp, MapPin, Upload, ExternalLink, Filter, FileText, Download, CalendarDays } from 'lucide-react';
+import { Plus, Search, Package, Pencil, Trash2, ChevronDown, ChevronUp, MapPin, Upload, ExternalLink, Filter, FileText, Download, CalendarDays, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import type { DbLoad } from '@/hooks/useLoads';
 
@@ -500,6 +500,14 @@ const Loads = () => {
                             {(load.notes || '').toUpperCase().includes('TARP') && (
                               <span className="inline-flex items-center mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide text-white bg-[hsl(25,95%,53%)] whitespace-nowrap">
                                 NEEDS TARP
+                              </span>
+                            )}
+                            {(load as any).has_detention && (
+                              <span
+                                className="inline-flex items-center gap-1 mt-1 ml-1 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide text-white bg-amber-500 whitespace-nowrap"
+                                title="Detention por reclamar al broker"
+                              >
+                                <Clock className="h-2.5 w-2.5" /> DETENTION
                               </span>
                             )}
                           </td>
