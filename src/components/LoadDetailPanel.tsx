@@ -24,6 +24,7 @@ import { usePodDocuments } from '@/hooks/usePodDocuments';
 import { StopDocumentGroup } from '@/components/StopDocumentGroup';
 import { StopPhotoGrid } from '@/components/StopPhotoGrid';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { useToast } from '@/hooks/use-toast';
 import { useBrokerScores } from '@/hooks/useBrokerScores';
@@ -247,6 +248,40 @@ function BrokerScoreRow({ brokerName, hideLabel }: { brokerName: string | null |
   );
 }
 
+/** Marca de detention de la parada: pone 5DETENTION en el hilo y resalta la carga en la lista */
+function StopDetentionToggle({ stopId }: { stopId: string }) {
+  const [on, setOn] = useState<boolean | null>(null);
+  const { toast: notify } = useToast();
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    let cancelled = false;
+    supabase.from('load_stops' as any).select('has_detention').eq('id', stopId).maybeSingle()
+      .then(({ data }) => { if (!cancelled) setOn(Boolean((data as any)?.has_detention)); });
+    return () => { cancelled = true; };
+  }, [stopId]);
+
+  const toggle = async (value: boolean) => {
+    setOn(value);
+    const { error } = await supabase.from('load_stops' as any).update({ has_detention: value } as any).eq('id', stopId);
+    if (error) {
+      setOn(!value);
+      notify({ title: 'No se pudo guardar', description: error.message, variant: 'destructive' });
+      return;
+    }
+    queryClient.invalidateQueries({ queryKey: ['loads'] });
+    notify({ title: value ? 'Detention marcado en esta parada' : 'Detention quitado' });
+  };
+
+  if (on === null) return null;
+  return (
+    <label className={`flex items-center gap-1.5 text-xs cursor-pointer ${on ? 'text-amber-700 font-medium' : 'text-muted-foreground'}`}>
+      <Switch checked={on} onCheckedChange={toggle} className="scale-75" />
+      Detention
+    </label>
+  );
+}
+
 function StopPhotoSection({ loadId, stopId, isFirst, stopType, loadReference }: { loadId: string; stopId: string; isFirst?: boolean; stopType?: string; loadReference?: string }) {
   const { pods, uploading, uploadPod, deletePod, downloadPod, resolvePodUrl } = usePodDocuments(loadId);
   const stopPods = pods.filter(p =>
@@ -363,6 +398,8 @@ function StopPhotoSection({ loadId, stopId, isFirst, stopType, loadReference }: 
             {sendingBroker ? <Loader2 className="h-3 w-3 animate-spin" /> : <Mail className="h-3 w-3" />}
             {sendingBroker ? 'Enviando...' : `Enviar ${stopType === 'pickup' ? 'pickup' : 'entrega'} al broker`}
           </Button>
+
+          <StopDetentionToggle stopId={stopId} />
         </div>
       </div>
 

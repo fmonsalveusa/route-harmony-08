@@ -55,6 +55,15 @@ const InlinePodInput = ({ loadId, inputRefMap }: { loadId: string; inputRefMap: 
 
 const PAGE_SIZES = [25, 50, 100];
 
+const DetentionBadge = () => (
+  <span
+    className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide text-white bg-amber-500 whitespace-nowrap"
+    title="Detention por reclamar al broker"
+  >
+    <Clock className="h-2.5 w-2.5" /> DETENTION
+  </span>
+);
+
 const Loads = () => {
   // Extract city and state from a full address string
   const extractCityState = (address: string): { city: string; state: string } => {
@@ -502,14 +511,7 @@ const Loads = () => {
                                 NEEDS TARP
                               </span>
                             )}
-                            {(load as any).has_detention && (
-                              <span
-                                className="inline-flex items-center gap-1 mt-1 ml-1 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide text-white bg-amber-500 whitespace-nowrap"
-                                title="Detention por reclamar al broker"
-                              >
-                                <Clock className="h-2.5 w-2.5" /> DETENTION
-                              </span>
-                            )}
+
                           </td>
                           <td className="p-4">
                             <div className="flex items-center gap-2">
@@ -564,12 +566,14 @@ const Loads = () => {
                             {(load as any).pickup_time && (
                               <div className="text-[11px] text-muted-foreground/70">{(load as any).pickup_time}</div>
                             )}
+                            {(load as any).has_detention_pickup && <DetentionBadge />}
                           </td>
                           <td className="p-4 hidden lg:table-cell text-muted-foreground">
                             <div>{formatDate(load.delivery_date)}</div>
                             {(load as any).delivery_time && (
                               <div className="text-[11px] text-muted-foreground/70">{(load as any).delivery_time}</div>
                             )}
+                            {(load as any).has_detention_delivery && <DetentionBadge />}
                           </td>
                           <td className="p-4 text-right hidden md:table-cell text-muted-foreground">{load.empty_miles && Number(load.empty_miles) > 0 ? Number(load.empty_miles).toLocaleString() : '—'}</td>
                           <td className="p-4 text-right hidden md:table-cell text-muted-foreground">{load.miles && Number(load.miles) > 0 ? Number(load.miles).toLocaleString() : '—'}</td>

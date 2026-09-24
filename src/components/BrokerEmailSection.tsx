@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Mail, Search, Loader2, CheckCircle2, AlertTriangle, RotateCw, Send, Clock } from 'lucide-react';
+import { Mail, Search, Loader2, CheckCircle2, AlertTriangle, RotateCw, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { BrokerEmailRowView, formatET, type BrokerEmailRow } from '@/components/whatsapp/BrokerEmailHistory';
@@ -40,32 +39,15 @@ export function BrokerEmailSection({ loadId }: { loadId: string }) {
   const [results, setResults] = useState<Candidate[] | null>(null);
   const [searchInfo, setSearchInfo] = useState<{ accounts: string[]; errors: string[] } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
-  const [detention, setDetention] = useState(false);
 
   const load = useCallback(async () => {
-    const [{ data: t }, { data: e }, { data: l }] = await Promise.all([
+    const [{ data: t }, { data: e }] = await Promise.all([
       supabase.from('load_email_threads' as any).select('*').eq('load_id', loadId).maybeSingle(),
       supabase.from('broker_email_queue' as any).select('*').eq('load_id', loadId).order('created_at', { ascending: false }),
-      supabase.from('loads' as any).select('has_detention').eq('id', loadId).maybeSingle(),
     ]);
     setLink((t as any) ?? null);
     setEmails(((e as any[]) || []) as BrokerEmailRow[]);
-    setDetention(Boolean((l as any)?.has_detention));
   }, [loadId]);
-
-  // Detention convive con la etiqueta de estado del hilo (5DETENTION)
-  const toggleDetention = async (value: boolean) => {
-    setDetention(value);
-    const { error } = await supabase.from('loads' as any).update({ has_detention: value } as any).eq('id', loadId);
-    if (error) {
-      setDetention(!value);
-      toast.error(error.message);
-      return;
-    }
-    toast.success(value ? 'Carga marcada con detention' : 'Detention quitado');
-  };
-
-  useEffect(() => { void load(); }, [load]);
 
   const search = async (text: string) => {
     setBusy('search');
@@ -202,16 +184,6 @@ export function BrokerEmailSection({ loadId }: { loadId: string }) {
           )}
         </div>
       )}
-
-      {/* Detention: etiqueta adicional en el hilo */}
-      <label className="flex items-center gap-2 text-xs cursor-pointer pt-1">
-        <Switch checked={detention} onCheckedChange={toggleDetention} className="scale-75" />
-        <Clock className="h-3.5 w-3.5 text-amber-600" />
-        <span>
-          <span className="font-medium">Detention</span>
-          <span className="text-muted-foreground"> — agrega la etiqueta 5DETENTION al hilo, sin quitar la del estado</span>
-        </span>
-      </label>
 
       {/* Emails de esta carga */}
       {emails.length > 0 && (
