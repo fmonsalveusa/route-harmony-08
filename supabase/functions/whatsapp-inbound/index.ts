@@ -144,8 +144,24 @@ Deno.serve(async (req) => {
     for (const m of messages) {
       const chatId = String(m?.chat_id ?? m?.from ?? "");
       const text = String(m?.text?.body ?? m?.body ?? "").trim();
-      // Solo chats 1 a 1, mensajes de texto de la otra persona
-      if (m?.from_me || chatId.includes("@g.us") || !text) continue;
+      if (chatId.includes("@g.us") || !text) continue;
+
+      // Mensaje saliente: si lo escribió una persona desde el teléfono (no nuestra API),
+      // significa que alguien tomó la conversación y el asistente se calla.
+      if (m?.from_me) {
+        if (String(m?.source ?? "").toLowerCase() === "api") continue;
+        const chatPhone = digits(chatId);
+        const { data: existing } = await supabase
+          .from("whatsapp_leads").select("phone, history").eq("phone", chatPhone).maybeSingle();
+        if (!existing) continue;
+        await supabase.from("whatsapp_leads").update({
+          handoff: true,
+          history: [...(((existing.history as any[]) ?? [])), { role: "assistant", content: text }].slice(-12),
+          updated_at: new Date().toISOString(),
+        }).eq("phone", chatPhone);
+        results.push({ phone: chatPhone, handoff: "lo tomó una persona" });
+        continue;
+      }
 
       const phone = digits(m?.from ?? chatId);
       const name = String(m?.from_name ?? "").trim();
@@ -203,7 +219,8 @@ Deno.serve(async (req) => {
         name: name || lead?.name || null,
         vehicle: answer.vehicle || lead?.vehicle || null,
         service: answer.service || lead?.service || null,
-        handoff: answer.action === "human" || lead?.handoff || false,
+        // Con el link ya enviado, o si pide atención personal, sigue una persona
+        handoff: qualified || answer.action === "human" || lead?.handoff || false,
         history: newHistory,
         replies_today: repliesToday + 1,
         last_reply_date: today,
