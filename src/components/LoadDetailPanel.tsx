@@ -277,7 +277,7 @@ function StopDetentionToggle({ stopId, initial }: { stopId: string; initial: boo
   );
 }
 
-function StopPhotoSection({ loadId, stopId, isFirst, stopType, loadReference, hasDetention }: { loadId: string; stopId: string; isFirst?: boolean; stopType?: string; loadReference?: string; hasDetention?: boolean }) {
+function StopPhotoSection({ loadId, stopId, isFirst, stopType, loadReference, hasDetention, hideBrokerEmail }: { loadId: string; stopId: string; isFirst?: boolean; stopType?: string; loadReference?: string; hasDetention?: boolean; hideBrokerEmail?: boolean }) {
   const { pods, uploading, uploadPod, deletePod, downloadPod, resolvePodUrl } = usePodDocuments(loadId);
   const stopPods = pods.filter(p =>
     p.stop_id === stopId || (isFirst && p.stop_id === null)
@@ -382,6 +382,7 @@ function StopPhotoSection({ loadId, stopId, isFirst, stopType, loadReference, ha
             }}
           />
 
+          {!hideBrokerEmail && (
           <Button
             size="sm"
             onClick={handleSendBroker}
@@ -393,6 +394,7 @@ function StopPhotoSection({ loadId, stopId, isFirst, stopType, loadReference, ha
             {sendingBroker ? <Loader2 className="h-3 w-3 animate-spin" /> : <Mail className="h-3 w-3" />}
             {sendingBroker ? 'Enviando...' : `Enviar ${stopType === 'pickup' ? 'pickup' : 'entrega'} al broker`}
           </Button>
+          )}
 
           <StopDetentionToggle stopId={stopId} initial={Boolean(hasDetention)} />
         </div>
@@ -541,6 +543,9 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
   }, [load.id]);
 
   const driver = drivers.find(d => d.id === load.driver_id);
+  // Dispatch Service queda fuera de los avisos por email al broker
+  const isDispatchService = (driver as any)?.service_type === 'dispatch_service'
+    || (load as any).service_type === 'dispatch_service';
   const dispatcher = dispatchers.find(d => d.id === load.dispatcher_id);
   const truck = trucks.find(t => t.id === load.truck_id);
   const rpm = totalMiles > 0 ? Number(load.total_rate) / totalMiles : 0;
@@ -1627,7 +1632,7 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
             />
           </div>
 
-          <BrokerEmailSection loadId={load.id} />
+          {!isDispatchService && <BrokerEmailSection loadId={load.id} />}
 
           {/* Stops / Route breakdown */}
           <div className="p-3 rounded-lg bg-card border text-sm">
@@ -1687,7 +1692,7 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
                           </div>
                         )}
                         {dbStop?.id && (
-                          <StopPhotoSection loadId={load.id} stopId={dbStop.id} isFirst={i === 0} stopType={stop.type} loadReference={load.reference_number} hasDetention={(dbStop as any).has_detention} />
+                          <StopPhotoSection loadId={load.id} stopId={dbStop.id} isFirst={i === 0} stopType={stop.type} loadReference={load.reference_number} hasDetention={(dbStop as any).has_detention} hideBrokerEmail={isDispatchService} />
                         )}
                       </div>
                     </div>

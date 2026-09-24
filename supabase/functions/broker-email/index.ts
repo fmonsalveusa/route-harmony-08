@@ -28,6 +28,18 @@ const TOGGLES: Record<string, string> = { arrival: "email_broker_arrival", docs:
 
 const minutesFromNow = (m: number) => new Date(Date.now() + m * 60_000).toISOString();
 
+/**
+ * Las cargas de Dispatch Service quedan fuera de todo lo automático del email:
+ * ni avisos al broker, ni etiquetas en Gmail, ni popups pidiendo enlazar el hilo.
+ */
+async function isDispatchService(supabase: any, load: any): Promise<boolean> {
+  if (load?.service_type === "dispatch_service") return true;
+  if (!load?.driver_id) return false;
+  const { data: driver } = await supabase
+    .from("drivers").select("service_type").eq("id", load.driver_id).maybeSingle();
+  return driver?.service_type === "dispatch_service";
+}
+
 const errMsg = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 // ─── Encolar ───
@@ -38,8 +50,9 @@ async function enqueue(supabase: any, kind: "arrival" | "docs", stopId: string) 
   if (!stop) return { skipped: "stop not found" };
 
   const { data: load } = await supabase
-    .from("loads").select("id, tenant_id, status").eq("id", stop.load_id).maybeSingle();
+    .from("loads").select("id, tenant_id, status, driver_id, service_type").eq("id", stop.load_id).maybeSingle();
   if (!load || load.status === "cancelled") return { skipped: "no load or cancelled" };
+  if (await isDispatchService(supabase, load)) return { skipped: "carga de Dispatch Service" };
   if (!(await isEnabled(supabase, load.tenant_id, TOGGLES[kind]))) return { skipped: "disabled" };
 
   // Uno por parada. La clave va por número de parada: los ids cambian al editar la carga.
@@ -150,6 +163,7 @@ function labelForStatus(status: string): string {
  */
 async function syncThreadLabels(supabase: any, load: any, accounts: GmailAccount[]) {
   try {
+    if (await isDispatchService(supabase, load)) return { skipped: "carga de Dispatch Service" };
     const { data: thread } = await supabase
       .from("load_email_threads").select("account, thread_id, status, labels").eq("load_id", load.id).maybeSingle();
     if (!thread || thread.status !== "linked" || !thread.thread_id) return { skipped: "sin hilo enlazado" };
@@ -410,8 +424,11 @@ async function processRow(supabase: any, row: any): Promise<Record<string, unkno
   }
 
   const { data: load } = await supabase
-    .from("loads").select("id, tenant_id, reference_number, status, driver_id, truck_id, has_detention").eq("id", row.load_id).maybeSingle();
+    .from("loads").select("id, tenant_id, reference_number, status, driver_id, truck_id, has_detention, service_type").eq("id", row.load_id).maybeSingle();
   if (!load || load.status === "cancelled") return await finish({ status: "skipped", error: "Carga cancelada o borrada" });
+  if (await isDispatchService(supabase, load)) {
+    return await finish({ status: "skipped", error: "Carga de Dispatch Service: sin avisos automáticos al broker" });
+  }
 
   const accounts = gmailAccounts();
   if (accounts.length === 0) return await finish({ status: "failed", error: "Falta configurar la cuenta de Gmail (GMAIL_USER)" });
@@ -608,7 +625,7 @@ async function handleUserAction(req: Request, supabase: any, body: any) {
       updated_at: new Date().toISOString(),
     }, { onConflict: "load_id" });
     const { data: full } = await supabase
-      .from("loads").select("id, tenant_id, reference_number, status, driver_id, has_detention").eq("id", load.id).maybeSingle();
+      .from("loads").select("id, tenant_id, reference_number, status, driver_id, has_detention, service_type").eq("id", load.id).maybeSingle();
     if (full) await syncThreadLabels(supabase, full, accounts);
 
     // Mandar lo que estaba esperando por el hilo
@@ -665,7 +682,7 @@ Deno.serve(async (req) => {
     // Estado de la carga cambiado: poner la etiqueta que corresponde en el hilo
     if (body.event === "labels" && body.load_id) {
       const { data: load } = await supabase
-        .from("loads").select("id, tenant_id, reference_number, status, driver_id, has_detention").eq("id", body.load_id).maybeSingle();
+        .from("loads").select("id, tenant_id, reference_number, status, driver_id, has_detention, service_type").eq("id", body.load_id).maybeSingle();
       if (!load) return json({ skipped: "carga no encontrada" });
       const accounts = gmailAccounts();
       if (accounts.length === 0) return json({ skipped: "sin cuenta de Gmail" });
@@ -673,8 +690,9 @@ Deno.serve(async (req) => {
     }
     if (body.event === "link_check" && body.load_id) {
       const { data: load } = await supabase
-        .from("loads").select("id, tenant_id, reference_number, status, driver_id, has_detention").eq("id", body.load_id).maybeSingle();
+        .from("loads").select("id, tenant_id, reference_number, status, driver_id, has_detention, service_type").eq("id", body.load_id).maybeSingle();
       if (!load || load.status === "cancelled") return json({ skipped: "sin carga o cancelada" });
+      if (await isDispatchService(supabase, load)) return json({ skipped: "carga de Dispatch Service" });
       if (!(await isEnabled(supabase, load.tenant_id, "email_broker_docs")) &&
           !(await isEnabled(supabase, load.tenant_id, "email_broker_arrival"))) {
         return json({ skipped: "avisos apagados" });

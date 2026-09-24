@@ -39,9 +39,11 @@ interface StopCardProps {
   podDocuments: { id: string; file_name: string; file_url: string; created_at?: string; file_type?: string }[];
   loadStatus?: string;
   isLastDelivery?: boolean;
+  /** Dispatch Service no manda avisos al broker desde la app */
+  hideBrokerButton?: boolean;
 }
 
-export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, loadStatus, isLastDelivery }: StopCardProps) => {
+export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, loadStatus, isLastDelivery, hideBrokerButton }: StopCardProps) => {
   const [arriving, setArriving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
@@ -572,7 +574,7 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
           </div>
 
           {/* Aviso al broker con todo lo de la parada. Una vez enviado, el botón desaparece. */}
-          {brokerSent === false && (
+          {brokerSent === false && !hideBrokerButton && (
             <Button
               size="sm"
               className="w-full gap-1.5 text-sm bg-success hover:bg-success/90 text-success-foreground border-0 shadow-md"

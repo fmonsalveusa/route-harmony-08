@@ -248,6 +248,7 @@ export default function DriverLoadDetail() {
                 podDocuments={podDocs}
                 loadStatus={load.status}
                 isLastDelivery={stop.id === lastDeliveryId}
+                hideBrokerButton={driver?.service_type === 'dispatch_service'}
               />
             ))}
           </div>
