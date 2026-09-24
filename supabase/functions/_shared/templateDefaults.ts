@@ -282,6 +282,28 @@ export const AUTOMATIONS: AutomationDefinition[] = [
     }],
   },
   {
+    id: 'inbound_assistant',
+    title: 'Asistente de WhatsApp (mensajes entrantes)',
+    description: 'Responde a quien escribe al número de la empresa y no está en el TMS. Si el vehículo sirve (box truck o hotshot) o pregunta por otro servicio, manda este texto con el link de la agenda. Los demás casos los responde la IA.',
+    toggle: 'wa_inbound_assistant',
+    templates: [
+      {
+        key: 'inbound_meeting',
+        title: 'Invitación a agendar (español)',
+        description: 'Se envía cuando la consulta califica.',
+        body: 'Gracias por contactarnos.\n\nLe envío el siguiente link para que por favor agende una reunión y poder hablar de nuestro servicio y aclarar sus dudas.\n\nhttps://www.dispatch-up.com/#meeting\n\nEn nuestra página web vaya a la sección donde aparece Agendar una Reunión, complete la información y seleccione la hora y el día que desee y que esté disponible.',
+        variables: [v('nombre', 'Nombre de quien escribe, si WhatsApp lo muestra', 'Juan')],
+      },
+      {
+        key: 'inbound_meeting_en',
+        title: 'Invitación a agendar (inglés)',
+        description: 'Lo mismo, para quien escribe en inglés.',
+        body: 'Thank you for reaching out.\n\nHere is the link to schedule a meeting so we can go over our service and answer your questions.\n\nhttps://www.dispatch-up.com/#meeting\n\nOn our website, go to the Schedule a Meeting section, fill in your information and pick the day and time that works for you.',
+        variables: [v('nombre', 'Nombre de quien escribe, si WhatsApp lo muestra', 'John')],
+      },
+    ],
+  },
+  {
     id: 'onboarding_completed',
     title: 'Onboarding completado',
     description: 'Cuando alguien termina un onboarding desde el enlace: Owner Operator, Company Driver, driver agregado a un Owner Operator existente, o cliente de Dispatch Service. Se envía al grupo de administración.',

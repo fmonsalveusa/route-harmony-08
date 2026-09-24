@@ -4,7 +4,7 @@
 // desconocidos en chats 1 a 1: a drivers, investors y dispatchers no les responde nada.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { sendWhapiText } from "../_shared/whapi.ts";
-import { logMessage } from "../_shared/messaging.ts";
+import { logMessage, renderMessage } from "../_shared/messaging.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -30,23 +30,35 @@ SERVICIOS: dispatch para quien tiene su propio MC#, leasing bajo el MC# de Dispa
 VEHÍCULOS CON LOS QUE SÍ TRABAJAMOS: ${VEHICLES_OK}.
 VEHÍCULOS CON LOS QUE NO TRABAJAMOS: ${VEHICLES_NO}.
 
-CÓMO RESPONDER:
-- Mensajes cortos, de una a tres frases. Es WhatsApp, no un email.
-- Responde en el idioma en que te escriben (español o inglés).
-- Si no sabes qué vehículo tiene y hace falta para responder, pregúntaselo. Una sola pregunta por mensaje.
-- Si el vehículo es de los que NO trabajamos, dilo con amabilidad y cierra. No mandes el link.
-- Si el vehículo sirve, o la persona pregunta por permisos, curso, TMS o asesoría, invítala a agendar una llamada y manda este link: ${MEETING_LINK}
-- NUNCA des precios, porcentajes, tarifas ni condiciones. Eso se habla en la llamada.
-- No inventes nada que no esté en esta información.
-- Preséntate como asistente en el primer mensaje.
+TU TRABAJO ES DECIDIR UNA DE ESTAS CUATRO ACCIONES:
 
-Marca needs_human en true si la persona insiste con precios, quiere negociar, reclama algo, o el tema se sale de lo anterior.`;
+1. "qualified" — la persona tiene box truck o hotshot, o pregunta por permisos, curso, TMS, leasing o asesoría.
+   El sistema manda solo un texto fijo con el link para agendar. NO escribas tú la respuesta: deja reply vacío.
+
+2. "ask_vehicle" — pregunta por dispatch pero todavía no sabes qué vehículo tiene.
+   Escribe en reply una sola pregunta corta para saber el tipo de vehículo.
+
+3. "not_supported" — dijo que tiene un vehículo de los que NO trabajamos.
+   Escribe en reply un mensaje amable de una o dos frases diciendo que no trabajamos con ese tipo de vehículo. Sin link.
+
+4. "human" — insiste con precios, quiere negociar, reclama algo, o el tema se sale de todo lo anterior.
+   Escribe en reply una frase diciendo que un dispatcher lo contacta en breve.
+
+REGLAS:
+- Mensajes cortos, es WhatsApp. Una o dos frases.
+- Usa el mismo idioma de la persona y ponlo en language: "es" o "en".
+- NUNCA des precios, porcentajes, tarifas ni condiciones.
+- No inventes nada que no esté en esta información.
+- Cuando escribas tú el mensaje, preséntate como asistente si es el primer mensaje.`;
+
+type Action = "qualified" | "ask_vehicle" | "not_supported" | "human";
 
 interface Classification {
+  action: Action;
   reply: string;
+  language: string;
   vehicle: string;
   service: string;
-  needs_human: boolean;
 }
 
 async function askAssistant(history: { role: string; content: string }[]): Promise<Classification | null> {
@@ -66,12 +78,13 @@ async function askAssistant(history: { role: string; content: string }[]): Promi
           input_schema: {
             type: "object",
             properties: {
-              reply: { type: "string", description: "El mensaje a enviar, corto y en el idioma de la persona" },
+              action: { type: "string", enum: ["qualified", "ask_vehicle", "not_supported", "human"], description: "Qué corresponde hacer" },
+              reply: { type: "string", description: "El mensaje a enviar. Vacío si la acción es qualified" },
+              language: { type: "string", enum: ["es", "en"], description: "Idioma en que escribe la persona" },
               vehicle: { type: "string", description: "Tipo de vehículo mencionado, o vacío si no lo dijo" },
               service: { type: "string", description: "Servicio que le interesa, o vacío si no está claro" },
-              needs_human: { type: "boolean", description: "true si hace falta que lo atienda una persona" },
             },
-            required: ["reply", "vehicle", "service", "needs_human"],
+            required: ["action", "reply", "language", "vehicle", "service"],
           },
         }],
         tool_choice: { type: "tool", name: "responder" },
@@ -81,7 +94,7 @@ async function askAssistant(history: { role: string; content: string }[]): Promi
     if (!res.ok) throw new Error(`HTTP ${res.status}: ${(await res.text()).slice(0, 200)}`);
     const data = await res.json();
     const input = (data.content ?? []).find((c: any) => c.type === "tool_use")?.input;
-    return input?.reply ? (input as Classification) : null;
+    return input?.action ? (input as Classification) : null;
   } catch (e) {
     console.error("askAssistant failed:", e);
     return null;
@@ -126,9 +139,14 @@ Deno.serve(async (req) => {
     const messages = (body?.messages ?? []) as any[];
     const results: unknown[] = [];
 
-    const { data: tenant } = await supabase
+    const { data: tenant, error: tenantErr } = await supabase
       .from("tenants").select("id, whatsapp_admin_group_id, wa_inbound_assistant").limit(1).maybeSingle();
-    if (!tenant || tenant.wa_inbound_assistant === false) return json({ skipped: "asistente apagado" });
+    if (tenantErr) {
+      console.error("tenants query failed:", tenantErr);
+      return json({ error: `No se pudo leer el tenant: ${tenantErr.message}` }, 500);
+    }
+    if (!tenant) return json({ error: "No hay tenant configurado" }, 500);
+    if (tenant.wa_inbound_assistant === false) return json({ skipped: "asistente apagado" });
 
     for (const m of messages) {
       const chatId = String(m?.chat_id ?? m?.from ?? "");
@@ -165,19 +183,30 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      await sendWhapiText(chatId, answer.reply);
+      // Si califica, sale el texto fijo con el link; los demás casos los redacta la IA
+      const qualified = answer.action === "qualified";
+      const templateKey = answer.language === "en" ? "inbound_meeting_en" : "inbound_meeting";
+      const reply = qualified
+        ? await renderMessage(supabase, tenant.id, templateKey, { nombre: name || "" })
+        : (answer.reply || "").trim();
+      if (!reply) {
+        results.push({ phone, skipped: "sin respuesta que enviar" });
+        continue;
+      }
+
+      await sendWhapiText(chatId, reply);
       await logMessage(supabase, {
-        tenantId: tenant.id, templateKey: "inbound_reply", recipientType: "lead",
-        recipientName: name || phone, groupId: chatId, message: answer.reply, reference: "Respuesta automática",
+        tenantId: tenant.id, templateKey: qualified ? templateKey : "inbound_reply", recipientType: "lead",
+        recipientName: name || phone, groupId: chatId, message: reply, reference: `Entrante · ${answer.action}`,
       }, "sent");
 
-      const newHistory = [...history, { role: "assistant", content: answer.reply }].slice(-12);
+      const newHistory = [...history, { role: "assistant", content: reply }].slice(-12);
       await supabase.from("whatsapp_leads").upsert({
         phone,
         name: name || lead?.name || null,
         vehicle: answer.vehicle || lead?.vehicle || null,
         service: answer.service || lead?.service || null,
-        handoff: answer.needs_human || lead?.handoff || false,
+        handoff: answer.action === "human" || lead?.handoff || false,
         history: newHistory,
         replies_today: repliesToday + 1,
         last_reply_date: today,
@@ -185,9 +214,13 @@ Deno.serve(async (req) => {
       }, { onConflict: "phone" });
 
       // Aviso al grupo de administración: el primer contacto y cuando hace falta una persona
-      if (!lead || answer.needs_human) {
+      if (!lead || answer.action === "human" || qualified) {
         const detalle = [
-          answer.needs_human ? "⚠️ Pide atención personal" : "🆕 Nuevo contacto por WhatsApp",
+          answer.action === "human"
+            ? "⚠️ Pide atención personal"
+            : qualified
+              ? "✅ Contacto calificado, se le mandó el link para agendar"
+              : "🆕 Nuevo contacto por WhatsApp",
           `Nombre: ${name || "—"}`,
           `Teléfono: +${phone}`,
           answer.vehicle ? `Vehículo: ${answer.vehicle}` : "",
@@ -197,7 +230,7 @@ Deno.serve(async (req) => {
         await notifyAdmin(supabase, tenant, detalle, name || phone);
       }
 
-      results.push({ phone, replied: true, needs_human: answer.needs_human });
+      results.push({ phone, replied: true, action: answer.action });
     }
 
     return json({ results });
