@@ -126,13 +126,15 @@ const STATUS_LABELS = {
   active: "1ACTIVE",
   delivered: "2ENTREGADA",
   cancelled: "4CANCELADA",
+  tonu: "6TONU",
 } as const;
 const ALL_STATUS_LABELS = Object.values(STATUS_LABELS);
 
 /** Etiqueta que le toca a la carga según su estado */
 function labelForStatus(status: string): string {
   if (status === "cancelled") return STATUS_LABELS.cancelled;
-  if (["delivered", "paid", "tonu"].includes(status)) return STATUS_LABELS.delivered;
+  if (status === "tonu") return STATUS_LABELS.tonu;
+  if (["delivered", "paid"].includes(status)) return STATUS_LABELS.delivered;
   if (status === "planned") return STATUS_LABELS.pending;
   return STATUS_LABELS.active;
 }
