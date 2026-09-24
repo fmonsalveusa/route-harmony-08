@@ -11,7 +11,7 @@ import type { WhatsAppGroup } from '@/components/WhatsAppGroupSelect';
 
 const MAX_FILE_MB = 15;
 
-interface AssignedGroup { id: string; name: string; type: string; person?: string }
+interface AssignedGroup { id: string; name: string; type: string; person?: string; gpsMissing?: boolean }
 
 /** Mensaje escrito a mano, a los grupos que elijas */
 export function BroadcastPanel({ groups, assigned }: { groups: WhatsAppGroup[] | null; assigned: AssignedGroup[] }) {
@@ -32,6 +32,7 @@ export function BroadcastPanel({ groups, assigned }: { groups: WhatsAppGroup[] |
       name: g.name,
       type: assigned.find(a => a.id === g.id)?.type ?? '',
       person: assigned.find(a => a.id === g.id)?.person,
+      gpsMissing: assigned.find(a => a.id === g.id)?.gpsMissing,
     }));
   }, [showAll, assigned, groups]);
 
@@ -185,6 +186,15 @@ export function BroadcastPanel({ groups, assigned }: { groups: WhatsAppGroup[] |
           <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setSelected(new Set())}>
             Quitar selección
           </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 text-xs"
+            title="Drivers que no tienen el permiso de ubicación 'todo el tiempo'"
+            onClick={() => setSelected(new Set(list.filter(g => g.gpsMissing).map(g => g.id)))}
+          >
+            Solo sin permiso GPS ({list.filter(g => g.gpsMissing).length})
+          </Button>
           <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
             <Checkbox checked={showAll} onCheckedChange={v => setShowAll(!!v)} /> Mostrar todos los grupos del número
           </label>
@@ -202,6 +212,7 @@ export function BroadcastPanel({ groups, assigned }: { groups: WhatsAppGroup[] |
             <label key={g.id} className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-muted/40">
               <Checkbox checked={selected.has(g.id)} onCheckedChange={() => toggle(g.id)} />
               <span className="text-sm truncate flex-1">{g.name}</span>
+              {g.gpsMissing && <span className="text-[10px] text-amber-600 flex-shrink-0" title="Sin permiso de ubicación todo el tiempo">GPS</span>}
               {g.type && <span className="text-[10px] text-muted-foreground flex-shrink-0">{g.type}</span>}
             </label>
           ))}

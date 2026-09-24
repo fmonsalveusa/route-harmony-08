@@ -24,6 +24,8 @@ interface Row {
   inactive: boolean;
   groupId: string | null;
   groupName: string | null;
+  /** Driver sin el permiso de ubicación "todo el tiempo", o que nunca lo reportó */
+  gpsMissing?: boolean;
 }
 
 interface Connection {
@@ -150,6 +152,7 @@ export default function WhatsAppPage() {
       inactive: d.status === 'inactive',
       groupId: d.whatsapp_group_id ?? null,
       groupName: d.whatsapp_group_name ?? null,
+      gpsMissing: d.gps_background_granted !== true,
     })),
     investors: investors.map((i: any): Row => ({
       id: i.id,
@@ -172,12 +175,12 @@ export default function WhatsAppPage() {
   // Grupos ya asignados en la pestaña Grupos, solo de drivers, investors y dispatchers activos
   const assignedGroups = useMemo(() => {
     const labels: Record<EntityType, string> = { drivers: 'Driver', investors: 'Investor', dispatchers: 'Dispatcher' };
-    const out: { id: string; name: string; type: string; person: string }[] = [];
+    const out: { id: string; name: string; type: string; person: string; gpsMissing?: boolean }[] = [];
     (Object.keys(rows) as EntityType[]).forEach(type => {
       rows[type].forEach(r => {
         if (r.inactive || !r.groupId) return;
         if (out.some(g => g.id === r.groupId)) return;
-        out.push({ id: r.groupId, name: r.groupName || r.name, type: labels[type], person: r.name });
+        out.push({ id: r.groupId, name: r.groupName || r.name, type: labels[type], person: r.name, gpsMissing: r.gpsMissing });
       });
     });
     return out.sort((a, b) => a.name.localeCompare(b.name));
