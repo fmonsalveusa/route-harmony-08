@@ -122,13 +122,15 @@ async function lastDocsSentAt(supabase: any, row: any): Promise<string | null> {
 // ─── Etiquetas del hilo en Gmail ───
 
 const STATUS_LABELS = {
-  pending: "3PENDIENTE",
+  pending: "3PENDING",
   active: "1ACTIVE",
-  delivered: "2ENTREGADA",
-  cancelled: "4CANCELADA",
+  delivered: "2DELIVERED",
+  cancelled: "4CANCELED",
   detention: "5DETENTION",
   tonu: "6TONU",
 } as const;
+/** Nombres viejos en español: se quitan si quedaron en algún hilo */
+const LEGACY_STATUS_LABELS = ["3PENDIENTE", "2ENTREGADA", "4CANCELADA"];
 /** Detention convive con la etiqueta de estado, no la reemplaza */
 const EXCLUSIVE_STATUS_LABELS = Object.entries(STATUS_LABELS)
   .filter(([k]) => k !== "detention").map(([, v]) => v);
@@ -164,7 +166,7 @@ async function syncThreadLabels(supabase: any, load: any, accounts: GmailAccount
     const add = [statusLabel, load.has_detention ? STATUS_LABELS.detention : "", driverName].filter(Boolean);
     // Solo se quitan etiquetas que puso el sistema: los otros estados y el driver anterior
     const previous = ((thread.labels as string[]) ?? []).filter((l) => !add.includes(l));
-    const remove = [...EXCLUSIVE_STATUS_LABELS.filter((l) => l !== statusLabel), ...previous];
+    const remove = [...EXCLUSIVE_STATUS_LABELS.filter((l) => l !== statusLabel), ...LEGACY_STATUS_LABELS, ...previous];
 
     if (thread.labels && (thread.labels as string[]).join("|") === add.join("|")) {
       return { skipped: "sin cambios" };
