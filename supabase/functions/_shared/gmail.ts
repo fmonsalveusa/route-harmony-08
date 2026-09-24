@@ -38,6 +38,8 @@ class ImapClient {
   private conn!: Deno.TlsConn;
   private buf = new Uint8Array(0);
   private tag = 0;
+  /** Solo hace falta abrir el buzón en modo escritura para cambiar etiquetas */
+  writable = false;
 
   async connect() {
     this.conn = await Deno.connectTls({ hostname: "imap.gmail.com", port: 993 });
@@ -103,7 +105,15 @@ class ImapClient {
     }
   }
 
-  /** Abre "Todos los correos" (el nombre cambia según el idioma de la cuenta) en solo lectura */
+  /** Etiquetas de Gmail del hilo (se aplican a todos sus mensajes, como en la interfaz) */
+  async setLabels(uids: number[], add: string[], remove: string[]) {
+    if (uids.length === 0) return;
+    const list = (labels: string[]) => labels.map((l) => quote(l)).join(" ");
+    if (remove.length > 0) await this.cmd(`UID STORE ${uids.join(",")} -X-GM-LABELS (${list(remove)})`);
+    if (add.length > 0) await this.cmd(`UID STORE ${uids.join(",")} +X-GM-LABELS (${list(add)})`);
+  }
+
+  /** Abre "Todos los correos" (el nombre cambia según el idioma de la cuenta) */
   async examineAllMail() {
     const list = await this.cmd('LIST "" "*"');
     const all = list.find((r) => /\\All\b/.test(r.text));
@@ -112,7 +122,7 @@ class ImapClient {
       const m = all.text.match(/"((?:[^"\\]|\\.)*)"\s*$/) ?? all.text.match(/(\S+)\s*$/);
       if (m) name = m[1].replace(/\\(.)/g, "$1");
     }
-    await this.cmd(`EXAMINE ${quote(name)}`);
+    await this.cmd(`${this.writable ? "SELECT" : "EXAMINE"} ${quote(name)}`);
   }
 
   async search(gmailQuery: string): Promise<number[]> {
@@ -156,8 +166,9 @@ function searchUids(res: ImapResponse[]): number[] {
   return line.text.replace(/^\* SEARCH/i, "").trim().split(/\s+/).filter(Boolean).map(Number).filter((n) => n > 0);
 }
 
-async function withImap<T>(acc: GmailAccount, fn: (c: ImapClient) => Promise<T>): Promise<T> {
+async function withImap<T>(acc: GmailAccount, fn: (c: ImapClient) => Promise<T>, writable = false): Promise<T> {
   const c = new ImapClient();
+  c.writable = writable;
   await c.connect();
   try {
     await c.cmd(`LOGIN ${quote(acc.user)} ${quote(acc.pass)}`);
@@ -368,4 +379,18 @@ export async function replyTarget(acc: GmailAccount, threadId: string, ownEmails
     to: toList,
     cc: ccList,
   };
+}
+
+/** Cambia las etiquetas del hilo: agrega unas y quita otras. Gmail crea las que no existan. */
+export async function setThreadLabels(
+  acc: GmailAccount,
+  threadId: string,
+  add: string[],
+  remove: string[],
+): Promise<number> {
+  return await withImap(acc, async (c) => {
+    const uids = await c.threadUids(threadId);
+    await c.setLabels(uids, add.filter(Boolean), remove.filter(Boolean));
+    return uids.length;
+  }, true);
 }

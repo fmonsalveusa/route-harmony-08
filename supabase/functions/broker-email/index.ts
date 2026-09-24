@@ -9,7 +9,7 @@ import { PDFDocument } from "https://esm.sh/pdf-lib@1.17.1";
 import { sendMail } from "../_shared/smtp.ts";
 import { cityState } from "../_shared/loadHelpers.ts";
 import { isEnabled, renderMessage } from "../_shared/messaging.ts";
-import { findLoadThreads, gmailAccounts, replyTarget, searchThreads, type GmailAccount } from "../_shared/gmail.ts";
+import { findLoadThreads, gmailAccounts, replyTarget, searchThreads, setThreadLabels, type GmailAccount } from "../_shared/gmail.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -117,6 +117,61 @@ async function lastDocsSentAt(supabase: any, row: any): Promise<string | null> {
     .eq("status", "sent").not("sent_at", "is", null)
     .order("sent_at", { ascending: false }).limit(1);
   return (data as any[])?.[0]?.sent_at ?? null;
+}
+
+// ─── Etiquetas del hilo en Gmail ───
+
+const STATUS_LABELS = {
+  pending: "3PENDIENTE",
+  active: "1ACTIVE",
+  delivered: "2ENTREGADA",
+  cancelled: "4CANCELADA",
+} as const;
+const ALL_STATUS_LABELS = Object.values(STATUS_LABELS);
+
+/** Etiqueta que le toca a la carga según su estado */
+function labelForStatus(status: string): string {
+  if (status === "cancelled") return STATUS_LABELS.cancelled;
+  if (["delivered", "paid", "tonu"].includes(status)) return STATUS_LABELS.delivered;
+  if (status === "planned") return STATUS_LABELS.pending;
+  return STATUS_LABELS.active;
+}
+
+/**
+ * Deja el hilo con la etiqueta de estado que corresponde y la del driver asignado.
+ * Las demás etiquetas del hilo no se tocan.
+ */
+async function syncThreadLabels(supabase: any, load: any, accounts: GmailAccount[]) {
+  try {
+    const { data: thread } = await supabase
+      .from("load_email_threads").select("account, thread_id, status, labels").eq("load_id", load.id).maybeSingle();
+    if (!thread || thread.status !== "linked" || !thread.thread_id) return { skipped: "sin hilo enlazado" };
+    const account = accounts.find((a) => a.user === String(thread.account).toLowerCase());
+    if (!account) return { skipped: "cuenta no configurada" };
+
+    let driverName = "";
+    if (load.driver_id) {
+      const { data: driver } = await supabase.from("drivers").select("name").eq("id", load.driver_id).maybeSingle();
+      driverName = (driver?.name ?? "").trim();
+    }
+
+    const statusLabel = labelForStatus(load.status);
+    const add = [statusLabel, driverName].filter(Boolean);
+    // Solo se quitan etiquetas que puso el sistema: los otros estados y el driver anterior
+    const previous = ((thread.labels as string[]) ?? []).filter((l) => !add.includes(l));
+    const remove = [...ALL_STATUS_LABELS.filter((l) => l !== statusLabel), ...previous];
+
+    if (thread.labels && (thread.labels as string[]).join("|") === add.join("|")) {
+      return { skipped: "sin cambios" };
+    }
+
+    await setThreadLabels(account, String(thread.thread_id), add, [...new Set(remove)]);
+    await supabase.from("load_email_threads").update({ labels: add }).eq("load_id", load.id);
+    return { labels: add };
+  } catch (e) {
+    console.error("syncThreadLabels failed:", errMsg(e));
+    return { error: errMsg(e) };
+  }
 }
 
 // ─── Hilo de Gmail de la carga ───
@@ -441,6 +496,7 @@ async function processRow(supabase: any, row: any): Promise<Record<string, unkno
       attachments: attachments.map((a) => ({ filename: a.filename, content: a.content, contentType: a.contentType })),
     });
 
+    await syncThreadLabels(supabase, load, accounts);
     await notifyStopEmail(
       supabase, load, row, true,
       `${attachments.length} archivo(s) adjunto(s).`,
@@ -544,6 +600,10 @@ async function handleUserAction(req: Request, supabase: any, body: any) {
       searched_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }, { onConflict: "load_id" });
+    const { data: full } = await supabase
+      .from("loads").select("id, tenant_id, reference_number, status, driver_id").eq("id", load.id).maybeSingle();
+    if (full) await syncThreadLabels(supabase, full, accounts);
+
     // Mandar lo que estaba esperando por el hilo
     await supabase.from("broker_email_queue")
       .update({ send_after: new Date().toISOString() })
@@ -595,9 +655,18 @@ Deno.serve(async (req) => {
       return json(await enqueue(supabase, body.event, body.stop_id));
     }
     // Al crear la carga: buscar su hilo de Gmail y avisar si no se pudo enlazar
+    // Estado de la carga cambiado: poner la etiqueta que corresponde en el hilo
+    if (body.event === "labels" && body.load_id) {
+      const { data: load } = await supabase
+        .from("loads").select("id, tenant_id, reference_number, status, driver_id").eq("id", body.load_id).maybeSingle();
+      if (!load) return json({ skipped: "carga no encontrada" });
+      const accounts = gmailAccounts();
+      if (accounts.length === 0) return json({ skipped: "sin cuenta de Gmail" });
+      return json(await syncThreadLabels(supabase, load, accounts));
+    }
     if (body.event === "link_check" && body.load_id) {
       const { data: load } = await supabase
-        .from("loads").select("id, tenant_id, reference_number, status").eq("id", body.load_id).maybeSingle();
+        .from("loads").select("id, tenant_id, reference_number, status, driver_id").eq("id", body.load_id).maybeSingle();
       if (!load || load.status === "cancelled") return json({ skipped: "sin carga o cancelada" });
       if (!(await isEnabled(supabase, load.tenant_id, "email_broker_docs")) &&
           !(await isEnabled(supabase, load.tenant_id, "email_broker_arrival"))) {
@@ -607,6 +676,7 @@ Deno.serve(async (req) => {
       if (accounts.length === 0) return json({ skipped: "sin cuenta de Gmail" });
       const thread = await ensureThread(supabase, load, accounts);
       if (thread.status !== "linked") await notifyThreadNeeded(supabase, load, thread);
+      else await syncThreadLabels(supabase, load, accounts);
       return json({ status: thread.status, subject: thread.subject ?? null });
     }
     if (body.event === "process") return json({ results: await processDue(supabase) });
