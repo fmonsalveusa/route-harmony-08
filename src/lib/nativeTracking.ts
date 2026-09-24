@@ -63,14 +63,30 @@ async function readPermissions(): Promise<BackgroundPermissionStatus> {
   };
 }
 
-/** Lee el estado de permisos sin mostrar diálogos */
-export async function checkBackgroundPermissions(): Promise<BackgroundPermissionStatus> {
-  if (!isNativePlatform()) return { location: false, background: false, notification: false };
+/**
+ * Lee el estado de permisos sin mostrar diálogos.
+ * Devuelve null si no se pudo leer, que casi siempre significa que la app instalada
+ * es vieja y no trae el plugin. Eso NO es lo mismo que "el driver lo negó".
+ */
+export async function checkBackgroundPermissions(): Promise<BackgroundPermissionStatus | null> {
+  if (!isNativePlatform()) return null;
   try {
     return await readPermissions();
   } catch (e) {
     console.error('[NativeTracking] checkPermissions failed:', e);
-    return { location: false, background: false, notification: false };
+    return null;
+  }
+}
+
+/** Versión instalada de la app, para saber quién tiene una build vieja */
+export async function getAppVersion(): Promise<string | null> {
+  if (!isNativePlatform()) return null;
+  try {
+    const { App } = await import('@capacitor/app');
+    const info = await App.getInfo();
+    return `${info.version} (${info.build})`;
+  } catch {
+    return null;
   }
 }
 
