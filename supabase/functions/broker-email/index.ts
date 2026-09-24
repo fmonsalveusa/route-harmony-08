@@ -242,6 +242,15 @@ const MAX_ATTACHMENTS = 12;
  * sola pasada) más las fotos de la carga. En un email de actualización (since) el PDF
  * solo va si llegó un documento nuevo, y las fotos solo si son nuevas.
  */
+/** En cargas que repiten parada (pickup A, entrega B, pickup A otra vez) el archivo lleva el número de visita */
+async function stopOrdinal(supabase: any, row: any): Promise<number> {
+  const { data } = await supabase
+    .from("load_stops").select("stop_order").eq("load_id", row.load_id).eq("stop_type", row.stop_type).order("stop_order");
+  const orders = ((data as any[]) || []).map((s) => s.stop_order ?? 0);
+  if (orders.length < 2) return 1;
+  return Math.max(1, orders.indexOf(row.stop_order) + 1);
+}
+
 async function stopAttachments(supabase: any, row: any, reference: string, since: string | null) {
   const all = await stopDocuments(supabase, row);
   if (all.length === 0) return { files: [] as Attachment[], skippedNames: [] as string[] };
@@ -289,9 +298,11 @@ async function stopAttachments(supabase: any, row: any, reference: string, since
     if (pages > 0) {
       const label = row.stop_type === "pickup" ? "BOL" : "POD";
       const safeRef = String(reference || "load").replace(/[^A-Za-z0-9_-]/g, "");
+      const nth = await stopOrdinal(supabase, row);
+      const name = `${label}_${safeRef}${nth > 1 ? `_${nth}` : ""}.pdf`;
       const bytes = await doc.save();
-      if (fits(`${label}_${safeRef}.pdf`, bytes.length)) {
-        files.unshift({ filename: `${label}_${safeRef}.pdf`, content: bytes, encoding: "binary", contentType: "application/pdf" });
+      if (fits(name, bytes.length)) {
+        files.unshift({ filename: name, content: bytes, encoding: "binary", contentType: "application/pdf" });
       }
     }
   }
