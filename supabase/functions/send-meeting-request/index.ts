@@ -68,8 +68,10 @@ Deno.serve(async (req) => {
 
     // Aviso al grupo de reuniones, apenas se agenda
     try {
+      // Puede haber varios tenants: el bueno es el que tiene el grupo de reuniones configurado
       const { data: tenant } = await adminClient
-        .from("tenants").select("id, whatsapp_meetings_group_id").limit(1).maybeSingle();
+        .from("tenants").select("id, whatsapp_meetings_group_id")
+        .not("whatsapp_meetings_group_id", "is", null).limit(1).maybeSingle();
       if (tenant?.whatsapp_meetings_group_id && await isEnabled(adminClient, tenant.id, "wa_meeting_booked")) {
         const [y, mo, d] = String(meeting_date).split("-");
         const message = await renderMessage(adminClient, tenant.id, "meeting_booked", {

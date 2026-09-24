@@ -127,8 +127,13 @@ Deno.serve(async (req) => {
     const messages = (body?.messages ?? []) as any[];
     const results: unknown[] = [];
 
-    const { data: tenant, error: tenantErr } = await supabase
-      .from("tenants").select("id, whatsapp_admin_group_id, wa_inbound_assistant").limit(1).maybeSingle();
+    // Puede haber varios tenants: el bueno es el que tiene el grupo de administración configurado
+    const cols = "id, whatsapp_admin_group_id, wa_inbound_assistant";
+    let { data: tenant, error: tenantErr } = await supabase
+      .from("tenants").select(cols).not("whatsapp_admin_group_id", "is", null).limit(1).maybeSingle();
+    if (!tenant && !tenantErr) {
+      ({ data: tenant, error: tenantErr } = await supabase.from("tenants").select(cols).limit(1).maybeSingle());
+    }
     if (tenantErr) {
       console.error("tenants query failed:", tenantErr);
       return json({ error: `No se pudo leer el tenant: ${tenantErr.message}` }, 500);
