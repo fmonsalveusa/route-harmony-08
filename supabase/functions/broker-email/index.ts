@@ -736,7 +736,7 @@ Deno.serve(async (req) => {
         .from("whatsapp_message_history").select("template_key, recipient_name, status, error, created_at")
         .order("created_at", { ascending: false }).limit(12);
       const { data: tenant } = await supabase
-        .from("tenants").select("id, whatsapp_meetings_group_id, whatsapp_admin_group_id, wa_meeting_booked, wa_meeting_reminder").limit(1).maybeSingle();
+        .from("tenants").select("id, name, whatsapp_meetings_group_id, whatsapp_admin_group_id, wa_meeting_booked, wa_meeting_reminder").limit(10);
       const { data: meetings } = await supabase
         .from("meeting_requests").select("driver_name, meeting_date, meeting_time, status, created_at")
         .order("created_at", { ascending: false }).limit(5);
