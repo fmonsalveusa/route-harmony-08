@@ -731,6 +731,20 @@ Deno.serve(async (req) => {
       const { data } = await q;
       return json({ rows: data ?? [] });
     }
+    if (body.event === "debug_gps") {
+      const { data: locs } = await supabase
+        .from("driver_locations").select("driver_id, source, updated_at").order("updated_at", { ascending: false }).limit(60);
+      const bySource: Record<string, number> = {};
+      for (const l of ((locs as any[]) || [])) bySource[l.source ?? "sin dato"] = (bySource[l.source ?? "sin dato"] ?? 0) + 1;
+      const { data: drivers } = await supabase.from("drivers").select("*").limit(1);
+      const cols = Object.keys((drivers as any[])?.[0] ?? {}).filter((c) => /gps|track|permis|bg/i.test(c));
+      const extra = Object.keys((drivers as any[])?.[0] ?? {}).filter((c) => c === "app_version");
+      cols.push(...extra);
+      const { data: perms } = cols.length > 0
+        ? await supabase.from("drivers").select(`name, status, ${cols.join(", ")}`).eq("status", "available")
+        : { data: [] };
+      return json({ ultimas_ubicaciones_por_fuente: bySource, columnas_gps: cols, drivers: perms });
+    }
     if (body.event === "debug_dupes") {
       const { data: drivers } = await supabase.from("drivers").select("id, name, email, status, truck_id, created_at");
       const byName = new Map<string, any[]>();
