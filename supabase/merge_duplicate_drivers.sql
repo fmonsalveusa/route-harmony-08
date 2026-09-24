@@ -20,14 +20,22 @@ BEGIN
       ON x.table_schema = c.table_schema AND x.table_name = c.table_name AND x.table_type = 'BASE TABLE'
     WHERE c.table_schema = 'public' AND c.column_name = 'driver_id' AND c.table_name <> 'drivers'
   LOOP
-    EXECUTE format(
-      'UPDATE public.%I SET driver_id = $1::text::%s WHERE driver_id::text = $2::text',
-      t.table_name,
-      (SELECT data_type FROM information_schema.columns
-        WHERE table_schema = 'public' AND table_name = t.table_name AND column_name = 'driver_id')
-    ) USING p_nuevo, p_viejo;
-    GET DIAGNOSTICS movidas = ROW_COUNT;
-    IF movidas > 0 THEN detalle := detalle || t.table_name || ': ' || movidas || '; '; END IF;
+    BEGIN
+      EXECUTE format(
+        'UPDATE public.%I SET driver_id = $1::text::%s WHERE driver_id::text = $2::text',
+        t.table_name,
+        (SELECT data_type FROM information_schema.columns
+          WHERE table_schema = 'public' AND table_name = t.table_name AND column_name = 'driver_id')
+      ) USING p_nuevo, p_viejo;
+      GET DIAGNOSTICS movidas = ROW_COUNT;
+      IF movidas > 0 THEN detalle := detalle || t.table_name || ': ' || movidas || '; '; END IF;
+    EXCEPTION WHEN unique_violation THEN
+      -- Tablas de estado diario y similares: el driver que se queda ya tiene su fila,
+      -- así que la del duplicado sobra
+      EXECUTE format('DELETE FROM public.%I WHERE driver_id::text = $1::text', t.table_name) USING p_viejo;
+      GET DIAGNOSTICS movidas = ROW_COUNT;
+      IF movidas > 0 THEN detalle := detalle || t.table_name || ': ' || movidas || ' repetidas, borradas; '; END IF;
+    END;
   END LOOP;
 
   DELETE FROM drivers WHERE id = p_viejo;
