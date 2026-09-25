@@ -72,6 +72,7 @@ BEGIN
         'stop_type', q.stop_type,
         'attempts', q.attempts,
         'status', q.status,
+        'load_status', l.status,
         'error', left(q.error, 200),
         'created_at', q.created_at
       ) AS x, q.created_at
@@ -79,6 +80,12 @@ BEGIN
       LEFT JOIN loads l ON l.id = q.load_id
       WHERE q.status IN ('failed', 'skipped')
         AND q.created_at > now() - interval '7 days'
+        -- De las cargas ya cerradas no hay nada que hacer, así que solo se muestran
+        -- mientras sean recientes; después el panel las suelta.
+        AND (
+          COALESCE(l.status, '') NOT IN ('delivered', 'paid', 'cancelled', 'tonu')
+          OR q.created_at > now() - interval '24 hours'
+        )
       ORDER BY q.created_at DESC
       LIMIT 10
     ) s

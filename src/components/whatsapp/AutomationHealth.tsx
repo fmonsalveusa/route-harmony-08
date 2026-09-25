@@ -20,6 +20,7 @@ interface EmailFailure {
   stop_type: string | null;
   attempts: number;
   status: string;
+  load_status: string | null;
   error: string | null;
   created_at: string;
 }
@@ -67,6 +68,9 @@ const JOB_LABELS: Record<string, string> = {
   'whatsapp-meeting-reminders': 'Recordatorio de reuniones',
   'whatsapp-pod-reminders': 'Recordatorio de POD a los drivers',
 };
+
+/** Cargas donde ya no queda nada por enviar */
+const CLOSED_LOAD = ['delivered', 'paid', 'cancelled', 'tonu'];
 
 const formatET = (iso: string | null) =>
   iso
@@ -142,6 +146,7 @@ export function AutomationHealth() {
   const email = health.broker_email;
   const wa = health.whatsapp;
 
+  const emailFailed = (email.counts.failed ?? 0) + (email.counts.skipped ?? 0);
   const emailLevel = email.failures.length > 0 || email.stuck > 0 ? 'warn' : 'ok';
   const waLevel = wa.failures.length > 0 ? 'warn' : 'ok';
   const jobsLevel = jobsBad.length > 0 ? 'bad' : jobsOff.length > 0 ? 'warn' : 'ok';
@@ -187,13 +192,19 @@ export function AutomationHealth() {
           <span>Enviados: <b>{email.counts.sent ?? 0}</b></span>
           <span>Pendientes: <b>{(email.counts.pending ?? 0) + (email.counts.waiting_thread ?? 0)}</b></span>
           <span className={email.failures.length > 0 ? 'text-red-700' : ''}>
-            Fallaron: <b>{(email.counts.failed ?? 0) + (email.counts.skipped ?? 0)}</b>
+            No salieron: <b>{emailFailed}</b>
           </span>
           <span className="text-muted-foreground">Último enviado: {formatET(email.last_sent)}</span>
         </div>
         {email.stuck > 0 && (
           <p className="text-xs text-amber-700">
             {email.stuck} email(es) llevan más de una hora esperando. Míralos en la pestaña Emails al broker.
+          </p>
+        )}
+        {email.failures.length === 0 && emailFailed > 0 && (
+          <p className="text-xs text-muted-foreground">
+            Los {emailFailed} que no salieron son de cargas ya cerradas: no queda nada por enviar. Están en la
+            pestaña Emails al broker si quieres verlos.
           </p>
         )}
         {email.failures.length > 0 && (
@@ -208,6 +219,9 @@ export function AutomationHealth() {
                     {f.stop_type ? ` · ${f.stop_type === 'pickup' ? 'Pickup' : 'Entrega'}` : ''}
                     {f.attempts > 0 ? ` · ${f.attempts} intento(s)` : ''}
                   </span>
+                  {f.load_status && CLOSED_LOAD.includes(f.load_status) && (
+                    <span className="text-[10px] rounded-full bg-gray-100 text-gray-700 px-1.5">carga cerrada</span>
+                  )}
                 </div>
                 {f.error && <p className="text-red-700 mt-0.5">{f.error}</p>}
               </div>
