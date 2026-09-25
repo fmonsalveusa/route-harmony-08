@@ -12,7 +12,9 @@ AS $$
 DECLARE
   resultado jsonb;
 BEGIN
-  IF auth.uid() IS NULL THEN
+  -- Solo usuarios con sesión. El editor de SQL entra como postgres y no tiene sesión,
+  -- así que se le deja pasar para poder probar la función desde ahí.
+  IF auth.uid() IS NULL AND current_user <> 'postgres' THEN
     RAISE EXCEPTION 'Unauthorized';
   END IF;
 
