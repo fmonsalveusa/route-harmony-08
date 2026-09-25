@@ -59,15 +59,13 @@ interface AccountCheck { user: string; ok: boolean; error?: string }
 
 /** Qué hace cada trabajo agendado, para no tener que adivinar por el nombre */
 const JOB_LABELS: Record<string, string> = {
-  'broker-email-process': 'Emails al broker (cola)',
-  'broker-email-queue': 'Emails al broker (reintentos)',
+  'broker-email-queue': 'Emails al broker (reintentos de la cola)',
   'clean-load-routes': 'Borrar rutas de mapa viejas',
-  'whatsapp-8am': 'Avisos de WhatsApp de la mañana',
-  'whatsapp-meeting-reminder': 'Recordatorio de reuniones',
-  'diesel-price': 'Precio del diésel',
-  'vac-loads': 'Compactar tabla de cargas',
-  'vac-docs': 'Compactar tabla de documentos',
-  'vac-tpl': 'Compactar plantillas',
+  'update-diesel-price': 'Precio del diésel',
+  'whatsapp-admin-report': 'Reporte diario de administración',
+  'whatsapp-daily': 'Avisos de WhatsApp del día',
+  'whatsapp-meeting-reminders': 'Recordatorio de reuniones',
+  'whatsapp-pod-reminders': 'Recordatorio de POD a los drivers',
 };
 
 const formatET = (iso: string | null) =>
