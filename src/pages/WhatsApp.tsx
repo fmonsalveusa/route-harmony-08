@@ -13,6 +13,7 @@ import { AutomationsPanel } from '@/components/whatsapp/AutomationsPanel';
 import { MessageHistory } from '@/components/whatsapp/MessageHistory';
 import { BrokerEmailHistory } from '@/components/whatsapp/BrokerEmailHistory';
 import { BroadcastPanel } from '@/components/whatsapp/BroadcastPanel';
+import { AutomationHealth } from '@/components/whatsapp/AutomationHealth';
 import { toast } from 'sonner';
 
 type EntityType = 'drivers' | 'investors' | 'dispatchers';
@@ -268,6 +269,7 @@ export default function WhatsAppPage() {
           <TabsTrigger value="broadcast">Mensaje masivo</TabsTrigger>
           <TabsTrigger value="history">Historial</TabsTrigger>
           <TabsTrigger value="broker_email">Emails al broker</TabsTrigger>
+          <TabsTrigger value="health">Estado</TabsTrigger>
         </TabsList>
 
         <TabsContent value="groups" className="mt-4">
@@ -318,6 +320,16 @@ export default function WhatsAppPage() {
           </div>
           <div className="glass-card p-4">
             <BrokerEmailHistory />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="health" className="mt-4">
+          <div className="glass-card p-4 max-w-4xl">
+            <p className="text-sm text-muted-foreground mb-3">
+              Todo lo que corre solo, en un solo lugar. Verde es que funciona, ámbar que hay algo que mirar,
+              rojo que algo se cayó. Esta pantalla solo lee: no manda ni cambia nada.
+            </p>
+            <AutomationHealth />
           </div>
         </TabsContent>
       </Tabs>

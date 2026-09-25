@@ -381,6 +381,29 @@ export async function replyTarget(acc: GmailAccount, threadId: string, ownEmails
   };
 }
 
+export interface AccountCheck {
+  user: string;
+  ok: boolean;
+  error?: string;
+}
+
+/**
+ * Entra a cada cuenta y sale, sin leer nada. Sirve para saber si una App Password
+ * fue revocada antes de que se caiga un email al broker.
+ */
+export async function checkAccounts(accounts: GmailAccount[]): Promise<AccountCheck[]> {
+  const out: AccountCheck[] = [];
+  for (const acc of accounts) {
+    try {
+      await withImap(acc, async () => undefined);
+      out.push({ user: acc.user, ok: true });
+    } catch (e) {
+      out.push({ user: acc.user, ok: false, error: e instanceof Error ? e.message : String(e) });
+    }
+  }
+  return out;
+}
+
 /** Cambia las etiquetas del hilo: agrega unas y quita otras. Gmail crea las que no existan. */
 export async function setThreadLabels(
   acc: GmailAccount,

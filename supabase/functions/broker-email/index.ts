@@ -9,7 +9,7 @@ import { PDFDocument } from "https://esm.sh/pdf-lib@1.17.1";
 import { sendMail } from "../_shared/smtp.ts";
 import { cityState } from "../_shared/loadHelpers.ts";
 import { isEnabled, renderMessage } from "../_shared/messaging.ts";
-import { findLoadThreads, gmailAccounts, replyTarget, searchThreads, setThreadLabels, type GmailAccount } from "../_shared/gmail.ts";
+import { checkAccounts, findLoadThreads, gmailAccounts, replyTarget, searchThreads, setThreadLabels, type GmailAccount } from "../_shared/gmail.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -585,7 +585,7 @@ async function thankDriver(stopId: string) {
 
 // ─── Acciones del TMS ───
 
-async function userLoad(req: Request, supabase: any, loadId: string) {
+async function authUser(req: Request) {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader) throw new Error("Unauthorized");
   const userClient = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
@@ -593,6 +593,11 @@ async function userLoad(req: Request, supabase: any, loadId: string) {
   });
   const { data: { user } } = await userClient.auth.getUser();
   if (!user) throw new Error("Unauthorized");
+  return user;
+}
+
+async function userLoad(req: Request, supabase: any, loadId: string) {
+  const user = await authUser(req);
 
   const { data: load } = await supabase.from("loads").select("id, tenant_id, reference_number").eq("id", loadId).maybeSingle();
   if (!load) throw new Error("Carga no encontrada");
@@ -606,6 +611,15 @@ async function userLoad(req: Request, supabase: any, loadId: string) {
 
 async function handleUserAction(req: Request, supabase: any, body: any) {
   const { action, load_id } = body;
+
+  // Panel de estado: entra y sale de cada cuenta de Gmail para ver si la App Password sigue viva
+  if (action === "gmail_check") {
+    await authUser(req);
+    const accounts = gmailAccounts();
+    if (accounts.length === 0) return json({ accounts: [], error: "No hay cuentas de Gmail configuradas" });
+    return json({ accounts: await checkAccounts(accounts) });
+  }
+
   if (!load_id) return json({ error: "Falta load_id" }, 400);
   const load = await userLoad(req, supabase, load_id);
   const accounts = gmailAccounts();
