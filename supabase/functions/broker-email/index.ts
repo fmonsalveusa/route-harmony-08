@@ -637,6 +637,28 @@ async function handleUserAction(req: Request, supabase: any, body: any) {
   if (action === "link") {
     const account = accounts.find((a) => a.user === String(body.account ?? "").toLowerCase());
     if (!account || !body.thread_id) return json({ error: "Hilo inválido" }, 400);
+
+    // Cambio de hilo: quitarle al hilo anterior las etiquetas que le puso el sistema,
+    // salvo que ese hilo también sea el de otra carga
+    const { data: prev } = await supabase
+      .from("load_email_threads").select("account, thread_id, status, labels").eq("load_id", load.id).maybeSingle();
+    let previousCleanup: unknown = null;
+    if (prev?.status === "linked" && prev.thread_id && String(prev.thread_id) !== String(body.thread_id)) {
+      const { count: shared } = await supabase
+        .from("load_email_threads").select("load_id", { count: "exact", head: true })
+        .eq("thread_id", prev.thread_id).neq("load_id", load.id);
+      const prevAccount = accounts.find((a) => a.user === String(prev.account ?? "").toLowerCase());
+      const prevLabels = ((prev.labels as string[]) ?? []).filter(Boolean);
+      if (!shared && prevAccount && prevLabels.length > 0) {
+        try {
+          await setThreadLabels(prevAccount, String(prev.thread_id), [], prevLabels);
+          previousCleanup = { removed: prevLabels };
+        } catch (e) {
+          previousCleanup = { error: errMsg(e) };
+        }
+      }
+    }
+
     await supabase.from("load_email_threads").upsert({
       load_id: load.id,
       tenant_id: load.tenant_id,
@@ -646,18 +668,21 @@ async function handleUserAction(req: Request, supabase: any, body: any) {
       thread_id: String(body.thread_id),
       subject: body.subject ?? null,
       candidates: [],
+      // Las etiquetas guardadas eran del hilo anterior: sin vaciarlas, el hilo nuevo
+      // parecía "ya etiquetado" y nunca recibía las suyas
+      labels: [],
       searched_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }, { onConflict: "load_id" });
     const { data: full } = await supabase
       .from("loads").select("id, tenant_id, reference_number, status, driver_id, has_detention, service_type").eq("id", load.id).maybeSingle();
-    if (full) await syncThreadLabels(supabase, full, accounts);
+    const labels = full ? await syncThreadLabels(supabase, full, accounts) : null;
 
     // Mandar lo que estaba esperando por el hilo
     await supabase.from("broker_email_queue")
       .update({ send_after: new Date().toISOString() })
       .eq("load_id", load.id).eq("status", "waiting_thread");
-    return json({ linked: true, sent: await processDue(supabase, load.id) });
+    return json({ linked: true, labels, previous: previousCleanup, sent: await processDue(supabase, load.id) });
   }
 
   // Botón "Pickup/Delivery Completed" del driver y "Enviar al broker" del TMS
