@@ -110,6 +110,9 @@ export function useDrivers() {
     queryKey: DRIVERS_QUERY_KEY,
     queryFn: fetchDriversFromDb,
     staleTime: 5 * 60 * 1000, // cache 5 minutos — drivers no cambian frecuentemente
+    // Al volver a la pestaña se refresca si la copia ya tiene más de 5 minutos.
+    // Sin esto, un driver creado o renombrado en otra parte no aparece hasta recargar.
+    refetchOnWindowFocus: true,
   });
 
   const refetch = useCallback(async () => {

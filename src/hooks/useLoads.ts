@@ -107,6 +107,11 @@ export function useLoads() {
   const { data: loads = [], isLoading: loading } = useQuery({
     queryKey: LOADS_QUERY_KEY,
     queryFn: fetchLoadsFromDb,
+    // Si la pestaña queda dormida o sin internet, el realtime se pierde y la lista
+    // guardada queda vieja: aparecen cargas que ya no son y faltan las nuevas.
+    // Al volver a la pestaña se vuelve a pedir, como mucho una vez cada 2 minutos.
+    refetchOnWindowFocus: true,
+    staleTime: 2 * 60 * 1000,
   });
 
   // Realtime: actualiza cache local en vez de refetchear todo

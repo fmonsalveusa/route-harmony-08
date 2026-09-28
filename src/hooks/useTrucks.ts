@@ -84,6 +84,8 @@ export function useTrucks() {
     queryKey: TRUCKS_QUERY_KEY,
     queryFn: fetchTrucksFromDb,
     staleTime: 5 * 60 * 1000, // cache 5 minutos
+    // Igual que drivers: al volver a la pestaña se refresca si ya está vieja
+    refetchOnWindowFocus: true,
   });
 
   const refetch = useCallback(async () => {
