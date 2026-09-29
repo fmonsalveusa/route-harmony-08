@@ -70,6 +70,11 @@ const allNavItems: NavItem[] = [
   ...adminItems,
 ];
 
+// Menú lateral oscuro (estilo RouteOne) con el azul de la marca
+const SIDEBAR_BG = 'bg-[#15253a]';
+const SIDEBAR_LINK = 'text-slate-300 hover:bg-white/10 hover:text-white';
+const SIDEBAR_ACTIVE = 'bg-sky-100 text-[#0f2a47] font-semibold';
+
 const roleBadgeStyles: Record<string, string> = {
   admin: 'bg-destructive text-destructive-foreground',
   accounting: 'bg-warning text-warning-foreground',
@@ -176,7 +181,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
             <Link
               to={item.path}
               className={`flex justify-center items-center p-2.5 rounded-lg transition-colors ${
-                active ? 'bg-[#266aad] text-white' : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                active ? SIDEBAR_ACTIVE : SIDEBAR_LINK
               }`}
             >
               <item.icon className="h-5 w-5 flex-shrink-0" />
@@ -191,7 +196,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
         key={item.path}
         to={item.path}
         className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-          active ? 'bg-[#266aad] text-white' : 'text-foreground hover:bg-muted'
+          active ? SIDEBAR_ACTIVE : SIDEBAR_LINK
         }`}
       >
         <item.icon className="h-4 w-4 flex-shrink-0" />
@@ -211,11 +216,14 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
   };
 
   const renderSectionLabel = (label: string) => {
-    if (collapsed) return <div className="my-1 border-t border-border mx-2" />;
+    if (collapsed) return <div className="my-2 border-t border-white/10 mx-2" />;
     return (
-      <p className="px-3 pt-4 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-        {label}
-      </p>
+      <div className="pt-3">
+        <div className="mx-3 mb-2 border-t border-white/10" />
+        <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+          {label}
+        </p>
+      </div>
     );
   };
 
@@ -224,21 +232,18 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
 
       {/* ── Sidebar (desktop) ── */}
       <aside
-        className={`hidden lg:flex flex-col bg-card border-r border-border shrink-0 transition-all duration-300 ${
+        className={`hidden lg:flex flex-col ${SIDEBAR_BG} shrink-0 transition-all duration-300 ${
           collapsed ? 'w-[68px]' : 'w-60'
         }`}
       >
         {/* Logo / brand */}
-        <div className={`flex items-center gap-3 h-14 border-b border-border shrink-0 ${collapsed ? 'justify-center px-2' : 'px-4'}`}>
+        <div className={`flex items-center gap-3 h-14 border-b border-white/10 shrink-0 ${collapsed ? 'justify-center px-2' : 'px-4'}`}>
           {tenant?.logo_url
             ? <img src={tenant.logo_url} alt="" className="h-7 w-7 rounded flex-shrink-0 object-cover" />
             : <img src={logoImg} alt="Dispatch Up" className="h-7 w-7 rounded flex-shrink-0 object-cover" />
           }
           {!collapsed && (
-            <span
-              className="text-lg font-extrabold tracking-tight truncate text-foreground"
-              style={{ textShadow: '0 1px 2px hsl(var(--primary) / 0.5), 0 2px 8px hsl(var(--primary) / 0.3)' }}
-            >
+            <span className="text-lg font-extrabold tracking-tight truncate text-white">
               Dispatch Up TMS
             </span>
           )}
@@ -278,7 +283,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
         </nav>
 
         {/* User profile + collapse */}
-        <div className="border-t border-border p-3 shrink-0">
+        <div className="border-t border-white/10 p-3 shrink-0">
           {collapsed ? (
             <div className="flex flex-col items-center gap-2">
               <Tooltip>
@@ -293,7 +298,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button onClick={signOut} className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
+                  <button onClick={signOut} className="p-1.5 rounded-md hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
                     <LogOut className="h-4 w-4" />
                   </button>
                 </TooltipTrigger>
@@ -308,10 +313,10 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold truncate">{profile.full_name}</p>
-                <p className="text-[10px] text-muted-foreground truncate">{profile.email}</p>
+                <p className="text-xs font-semibold truncate text-white">{profile.full_name}</p>
+                <p className="text-[10px] text-slate-400 truncate">{profile.email}</p>
               </div>
-              <button onClick={signOut} className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors flex-shrink-0">
+              <button onClick={signOut} className="p-1.5 rounded-md hover:bg-white/10 text-slate-400 hover:text-white transition-colors flex-shrink-0">
                 <LogOut className="h-4 w-4" />
               </button>
             </div>
@@ -320,7 +325,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
           {/* Collapse toggle */}
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs text-muted-foreground hover:bg-muted transition-colors ${collapsed ? 'justify-center' : ''}`}
+            className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs text-slate-400 hover:bg-white/10 hover:text-white transition-colors ${collapsed ? 'justify-center' : ''}`}
           >
             {collapsed
               ? <ChevronRight className="h-4 w-4" />
@@ -388,13 +393,13 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
       {mobileMenuOpen && (
         <>
           <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setMobileMenuOpen(false)} />
-          <div className="fixed inset-y-0 left-0 z-50 w-72 bg-card shadow-xl lg:hidden flex flex-col animate-in slide-in-from-left duration-200">
-            <div className="flex items-center justify-between h-14 px-4 border-b">
+          <div className={`fixed inset-y-0 left-0 z-50 w-72 ${SIDEBAR_BG} shadow-xl lg:hidden flex flex-col animate-in slide-in-from-left duration-200`}>
+            <div className="flex items-center justify-between h-14 px-4 border-b border-white/10">
               <div className="flex items-center gap-2">
                 <img src={logoImg} alt="" className="h-6 w-6 rounded" />
-                <span className="text-sm font-semibold">{tenant?.name || 'Dispatch Up TMS'}</span>
+                <span className="text-sm font-semibold text-white">{tenant?.name || 'Dispatch Up TMS'}</span>
               </div>
-              <button onClick={() => setMobileMenuOpen(false)} className="p-1.5 rounded-md hover:bg-muted">
+              <button onClick={() => setMobileMenuOpen(false)} className="p-1.5 rounded-md hover:bg-white/10 text-slate-300">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -407,7 +412,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
                     to={item.path}
                     onClick={() => setMobileMenuOpen(false)}
                     className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                      active ? 'bg-[#266aad] text-white' : 'text-foreground hover:bg-muted'
+                      active ? SIDEBAR_ACTIVE : SIDEBAR_LINK
                     }`}
                   >
                     <item.icon className="h-4 w-4 flex-shrink-0" />
@@ -426,7 +431,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
                 );
               })}
             </nav>
-            <div className="border-t p-3">
+            <div className="border-t border-white/10 p-3">
               <div className="flex items-center gap-2">
                 <Avatar className="h-8 w-8">
                   <AvatarFallback className="text-xs font-semibold bg-[#266aad] text-white">
@@ -434,10 +439,10 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold truncate">{profile.full_name}</p>
-                  <p className="text-[10px] text-muted-foreground truncate">{profile.email}</p>
+                  <p className="text-xs font-semibold truncate text-white">{profile.full_name}</p>
+                  <p className="text-[10px] text-slate-400 truncate">{profile.email}</p>
                 </div>
-                <button onClick={signOut} className="p-1.5 rounded-md hover:bg-muted text-muted-foreground">
+                <button onClick={signOut} className="p-1.5 rounded-md hover:bg-white/10 text-slate-400 hover:text-white">
                   <LogOut className="h-4 w-4" />
                 </button>
               </div>
