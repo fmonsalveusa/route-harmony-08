@@ -111,7 +111,9 @@ export function LoadProfitSection({ load, loadedMiles, emptyMiles, truck, driver
               <span className="text-xs">{line.label}</span>
               <span className="text-[10px] text-muted-foreground ml-1.5">{line.detail}</span>
             </div>
-            <span className="text-xs text-destructive whitespace-nowrap">−{fmt(line.amount)}</span>
+            {line.amount === 0
+              ? <span className="text-xs text-muted-foreground whitespace-nowrap">{fmt(0)}</span>
+              : <span className="text-xs text-destructive whitespace-nowrap">−{fmt(line.amount)}</span>}
           </div>
         ))}
 

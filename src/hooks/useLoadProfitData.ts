@@ -100,7 +100,8 @@ export function useLoadProfitData() {
       const { data } = await (supabase
         .from('loads' as any)
         .select('id, reference_number, truck_id, pickup_date, delivery_date') as any)
-        .neq('status', 'cancelled')
+        // TONU tampoco ocupa el camión: no se le reparten días de costo fijo
+        .not('status', 'in', '(cancelled,tonu)')
         .not('truck_id', 'is', null)
         .gte('pickup_date', '2026-08-01');
       const map: Record<string, LoadSpan[]> = {};
@@ -153,7 +154,8 @@ export function useLoadProfitData() {
 
     // La carga actual con sus fechas vigentes (pueden haber cambiado desde que se cargó la lista)
     const self: LoadSpan = { id: load.id, ref: load.reference_number, pickupDate: load.pickup_date, deliveryDate: load.delivery_date };
-    const fixedCost = truck && load.status !== 'cancelled'
+    const isTonu = load.status === 'tonu';
+    const fixedCost = truck && load.status !== 'cancelled' && !isTonu
       ? allocateFixedCost(self, loadsByTruck[String(truck.id)] ?? [], day => getDailyCostAt(truck.id, day))
       : { amount: 0, days: 0, sharedWith: [] };
 
@@ -179,6 +181,7 @@ export function useLoadProfitData() {
       actualExpenses: expensesByLoad[load.id] || 0,
       dieselPrice: snapshot ?? settings.diesel_price_per_gallon,
       dieselFrozen: snapshot != null,
+      isTonu,
     });
   }, [at, startDate, loadsByTruck, getCostsAt, getDailyCostAt, settings, expensesByLoad, dieselSnapshotByLoad]);
 

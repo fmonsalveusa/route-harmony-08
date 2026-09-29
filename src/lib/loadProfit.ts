@@ -2,6 +2,8 @@ export interface ProfitLine {
   label: string;
   detail: string;
   amount: number;
+  /** Se muestra aunque sea $0, para dejar claro que no aplica */
+  showWhenZero?: boolean;
 }
 
 export interface LoadProfit {
@@ -39,6 +41,8 @@ export interface LoadProfitInput {
   dieselPrice: number;
   /** true si el precio del diésel quedó congelado al entregar */
   dieselFrozen?: boolean;
+  /** TONU: el camión no hizo el viaje, así que no hay diésel ni costos fijos */
+  isTonu?: boolean;
 }
 
 export interface FixedCostAllocation {
@@ -145,30 +149,39 @@ export function calculateLoadProfit(input: LoadProfitInput): LoadProfit {
   } else {
     // Company Driver — el camión es nuestro, van todos sus costos
     if (serviceType === 'company_driver') {
-      const gallons = input.mpg && input.mpg > 0 ? totalMiles / input.mpg : 0;
-      lines.push({
-        label: 'Diésel',
-        detail: input.mpg && input.mpg > 0
-          ? `${totalMiles.toLocaleString()} mi ÷ ${input.mpg} mpg × $${input.dieselPrice.toFixed(2)}${input.dieselFrozen ? ' (al entregar)' : ''}`
-          : 'MPG no configurado',
-        amount: gallons * (Number(input.dieselPrice) || 0),
-      });
+      // TONU: el camión no hizo el viaje, así que diésel y costos fijos quedan en $0
+      if (input.isTonu) {
+        lines.push({ label: 'Diésel', detail: 'No aplica (TONU)', amount: 0, showWhenZero: true });
+      } else {
+        const gallons = input.mpg && input.mpg > 0 ? totalMiles / input.mpg : 0;
+        lines.push({
+          label: 'Diésel',
+          detail: input.mpg && input.mpg > 0
+            ? `${totalMiles.toLocaleString()} mi ÷ ${input.mpg} mpg × $${input.dieselPrice.toFixed(2)}${input.dieselFrozen ? ' (al entregar)' : ''}`
+            : 'MPG no configurado',
+          amount: gallons * (Number(input.dieselPrice) || 0),
+        });
+      }
       lines.push({
         label: 'Costos por milla',
         detail: `${totalMiles.toLocaleString()} mi × $${(Number(input.costPerMile) || 0).toFixed(3)}`,
         amount: totalMiles * (Number(input.costPerMile) || 0),
       });
-      const fixed = input.fixedCost;
-      const fixedDays = Math.round(fixed.days * 100) / 100;
-      const perDay = fixed.days > 0 ? fixed.amount / fixed.days : 0;
-      const shared = fixed.sharedWith.length > 0
-        ? ` (compartido con ${fixed.sharedWith.map(r => `#${r}`).join(', ')})`
-        : '';
-      lines.push({
-        label: 'Costos fijos',
-        detail: `${fixedDays} día${fixedDays === 1 ? '' : 's'} × ${money(perDay)}/día${shared}`,
-        amount: fixed.amount,
-      });
+      if (input.isTonu) {
+        lines.push({ label: 'Costos fijos', detail: 'No aplica (TONU)', amount: 0, showWhenZero: true });
+      } else {
+        const fixed = input.fixedCost;
+        const fixedDays = Math.round(fixed.days * 100) / 100;
+        const perDay = fixed.days > 0 ? fixed.amount / fixed.days : 0;
+        const shared = fixed.sharedWith.length > 0
+          ? ` (compartido con ${fixed.sharedWith.map(r => `#${r}`).join(', ')})`
+          : '';
+        lines.push({
+          label: 'Costos fijos',
+          detail: `${fixedDays} día${fixedDays === 1 ? '' : 's'} × ${money(perDay)}/día${shared}`,
+          amount: fixed.amount,
+        });
+      }
     }
 
     // Company Driver y Owner Operator comparten estos
@@ -187,7 +200,7 @@ export function calculateLoadProfit(input: LoadProfitInput): LoadProfit {
     amount: Number(input.actualExpenses) || 0,
   });
 
-  const visible = lines.filter(l => l.amount > 0);
+  const visible = lines.filter(l => l.amount > 0 || l.showWhenZero);
   const totalCosts = visible.reduce((sum, l) => sum + l.amount, 0);
   const netProfit = revenue - totalCosts;
 
