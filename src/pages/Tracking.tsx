@@ -1119,7 +1119,7 @@ const Tracking = () => {
                     }`}
                     onClick={() => setSelectedDriverLoad({ driver, load: activeLoad || null, lastDelivered: lastDel ? { address: lastDel.address, date: lastDel.date } : undefined })}
                   >
-                    {/* Línea 1: nombre, carga y tipo de servicio */}
+                    {/* Línea 1: nombre, teléfono, carga y tipo de servicio */}
                     <div className="flex items-center gap-1.5 px-3 pt-2.5">
                       <p className="text-sm font-semibold truncate">{driver.name}</p>
                       <button
@@ -1129,6 +1129,18 @@ const Tracking = () => {
                       >
                         {copiedField === `${driver.id}:name` ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
                       </button>
+                      {driver.phone && (
+                        <span className="flex shrink-0 items-center gap-0.5 text-xs text-muted-foreground">
+                          {driver.phone}
+                          <button
+                            onClick={(e) => copyField(driver.id, 'phone', driver.phone!, e)}
+                            className="shrink-0 p-0.5 rounded hover:text-foreground hover:bg-muted transition-colors"
+                            title="Copiar Teléfono"
+                          >
+                            {copiedField === `${driver.id}:phone` ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                          </button>
+                        </span>
+                      )}
                       <span
                         className={`shrink-0 rounded-md px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-white ${
                           activeLoad ? 'bg-emerald-600' : 'bg-orange-500'
@@ -1136,23 +1148,13 @@ const Tracking = () => {
                       >
                         {activeLoad ? 'LOADED' : 'EMPTY'}
                       </span>
-                      {(() => {
-                        const delivery = activeLoad ? (activeLoad.delivery_date || '').slice(0, 10) : '';
-                        if (delivery === todayET) {
-                          return <span className="shrink-0 rounded-md bg-red-600 px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-white" title="Entrega hoy">TODAY</span>;
-                        }
-                        if (delivery === tomorrowET) {
-                          return <span className="shrink-0 rounded-md bg-blue-600 px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-white" title="Entrega mañana">TOMORROW</span>;
-                        }
-                        return null;
-                      })()}
                       <ServiceTypeBadge
                         serviceType={(driver as any).service_type}
                         className="ml-auto shrink-0 !text-[9px] !px-1.5 !py-0"
                       />
                     </div>
 
-                    {/* Línea 2: unidad, VIN y teléfono */}
+                    {/* Línea 2: unidad y VIN */}
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 px-3 pt-1 text-[11px] text-muted-foreground">
                       {truck?.unit_number && (
                         <span className="flex items-center gap-1">
@@ -1168,18 +1170,6 @@ const Tracking = () => {
                             title="Copiar VIN"
                           >
                             {copiedField === `${driver.id}:vin` ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                          </button>
-                        </span>
-                      )}
-                      {driver.phone && (
-                        <span className="flex items-center gap-0.5 ml-auto">
-                          {driver.phone}
-                          <button
-                            onClick={(e) => copyField(driver.id, 'phone', driver.phone!, e)}
-                            className="shrink-0 p-0.5 rounded hover:text-foreground hover:bg-muted transition-colors"
-                            title="Copiar Teléfono"
-                          >
-                            {copiedField === `${driver.id}:phone` ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
                           </button>
                         </span>
                       )}
@@ -1240,6 +1230,16 @@ const Tracking = () => {
                             >
                               {copiedDriverId === driver.id ? <Check className="h-3 w-3 text-green-600" /> : <Copy className="h-3 w-3" />}
                             </button>
+                            {displayInfo.isActive && (() => {
+                              const delivery = (activeLoad?.delivery_date || '').slice(0, 10);
+                              if (delivery === todayET) {
+                                return <span className="shrink-0 rounded-md bg-red-600 px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-white" title="Entrega hoy">TODAY</span>;
+                              }
+                              if (delivery === tomorrowET) {
+                                return <span className="shrink-0 rounded-md bg-blue-600 px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-white" title="Entrega mañana">TOMORROW</span>;
+                              }
+                              return null;
+                            })()}
                           </div>
                           {displayInfo.date && (
                             <p className="text-[11px] mt-0.5">{format(parseISO(displayInfo.date), 'MMM dd, yyyy')}</p>
