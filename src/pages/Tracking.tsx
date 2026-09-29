@@ -1105,11 +1105,11 @@ const Tracking = () => {
                         {copiedField === `${driver.id}:name` ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
                       </button>
                       <span
-                        className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${
-                          activeLoad ? 'bg-emerald-100 text-emerald-700' : 'bg-orange-100 text-orange-700'
+                        className={`shrink-0 rounded-md px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-white ${
+                          activeLoad ? 'bg-emerald-600' : 'bg-orange-500'
                         }`}
                       >
-                        {activeLoad ? 'Loaded' : 'Empty'}
+                        {activeLoad ? 'LOADED' : 'EMPTY'}
                       </span>
                       <ServiceTypeBadge
                         serviceType={(driver as any).service_type}
