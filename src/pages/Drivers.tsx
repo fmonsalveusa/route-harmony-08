@@ -329,7 +329,7 @@ const Drivers = () => {
                         </div>
                       </td>
                       <td className="p-3 hidden lg:table-cell">
-                        <ServiceTypeBadge serviceType={driver.service_type} />
+                        <ServiceTypeBadge serviceType={driver.service_type} className="!text-[13px] !px-3 !py-1" />
                       </td>
                       <td className="p-3 hidden lg:table-cell text-sm">
                         {dispatcher
