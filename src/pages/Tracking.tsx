@@ -341,15 +341,13 @@ const Tracking = () => {
       .filter(d => effectiveDispatcherFilter === 'all' || d.dispatcher_id === effectiveDispatcherFilter);
   }, [drivers, dispatcherFilter, userDispatcherId]);
 
-  // Orden visual: Buscando (0) -> Listo (1) -> Standby (2) -> Pausado (3, al final)
-  const sortedDrivers = useMemo(() => {
-    const rank = (d: any) => {
-      if (d.is_paused) return 3;
-      const s = searchStatus[d.id];
-      return s === 'searching' ? 0 : s === 'ready' ? 1 : 2;
-    };
-    return [...availableDrivers].sort((a, b) => rank(a) - rank(b));
-  }, [availableDrivers, searchStatus]);
+  // Hoy y mañana en hora del Este, en el mismo formato que delivery_date (YYYY-MM-DD)
+  const todayET = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+  const tomorrowET = (() => {
+    const d = new Date(`${todayET}T12:00:00Z`);
+    d.setUTCDate(d.getUTCDate() + 1);
+    return d.toISOString().slice(0, 10);
+  })();
 
   // IDs de drivers visibles seg├║n el filtro de dispatcher del dropdown (Next Plan),
   // combinado con el scope del rol. Se usa para sincronizar mapa, timeline y stats
@@ -386,6 +384,33 @@ const Tracking = () => {
     });
     return map;
   }, [enrichedLoads]);
+
+  // Orden del Next Plan:
+  //  1. Vacíos
+  //  2. Cargados que entregan hoy
+  //  3. El resto de los cargados, por fecha de entrega (los que se liberan antes, arriba)
+  //  Pausados siempre al final. Dentro de cada grupo desempata Buscando → Listo → Standby.
+  const sortedDrivers = useMemo(() => {
+    const deliveryOf = (d: any) => {
+      const load = activeLoadByDriver[d.id];
+      return load ? (load.delivery_date || load.pickup_date || '').slice(0, 10) : null;
+    };
+    const group = (d: any) => {
+      if (d.is_paused) return 3;
+      const delivery = deliveryOf(d);
+      if (delivery === null) return 0;
+      return delivery === todayET ? 1 : 2;
+    };
+    const statusRank = (d: any) => {
+      const s = searchStatus[d.id];
+      return s === 'searching' ? 0 : s === 'ready' ? 1 : 2;
+    };
+    return [...availableDrivers].sort((a, b) =>
+      group(a) - group(b) ||
+      (group(a) === 2 ? (deliveryOf(a) || '').localeCompare(deliveryOf(b) || '') : 0) ||
+      statusRank(a) - statusRank(b),
+    );
+  }, [availableDrivers, searchStatus, activeLoadByDriver, todayET]);
 
   // Driver tiene carga FUTURA (delivery > hoy). Solo se usa para el pre-mark inicial:
   // los que no tienen futura (empty o entrega hoy) arrancan en Buscando.
@@ -1111,6 +1136,16 @@ const Tracking = () => {
                       >
                         {activeLoad ? 'LOADED' : 'EMPTY'}
                       </span>
+                      {(() => {
+                        const delivery = activeLoad ? (activeLoad.delivery_date || '').slice(0, 10) : '';
+                        if (delivery === todayET) {
+                          return <span className="shrink-0 rounded-md bg-red-600 px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-white" title="Entrega hoy">TODAY</span>;
+                        }
+                        if (delivery === tomorrowET) {
+                          return <span className="shrink-0 rounded-md bg-blue-600 px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-white" title="Entrega mañana">TOMORROW</span>;
+                        }
+                        return null;
+                      })()}
                       <ServiceTypeBadge
                         serviceType={(driver as any).service_type}
                         className="ml-auto shrink-0 !text-[9px] !px-1.5 !py-0"
