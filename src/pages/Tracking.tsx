@@ -1041,11 +1041,12 @@ const Tracking = () => {
       {/* Main layout: Map + Side Panel */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         {/* Side Panel - Next Plan */}
-        <Card className="flex flex-col overflow-hidden h-[1040px] lg:row-span-2 lg:col-start-1 rounded-xl shadow-sm bg-muted/30">
-          <CardHeader className="pb-2 px-3 pt-3">
+        {/* Mismo formato que la tarjeta Drivers Load Timeline: fondo blanco, borde y título text-base */}
+        <Card className="flex flex-col overflow-hidden h-[1040px] lg:row-span-2 lg:col-start-1">
+          <CardHeader className="pb-2 px-3 pt-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <CardTitle className="text-base flex items-center gap-2">
                   <Users className="h-4 w-4" />
                   NEXT PLAN ({availableDrivers.length})
                 </CardTitle>
