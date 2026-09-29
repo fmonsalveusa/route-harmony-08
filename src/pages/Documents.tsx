@@ -3,9 +3,10 @@ import { Capacitor } from '@capacitor/core';
 import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableHeader, TableHead, TableRow, TableBody, TableCell } from '@/components/ui/table';
 import { StatusBadge } from '@/components/StatusBadge';
-import { FileText, Copy, Pencil, Eye, Download, Trash2, Plus, LayoutTemplate } from 'lucide-react';
+import { FileText, Copy, Pencil, Eye, Download, Trash2, Plus, LayoutTemplate, Loader2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { getDocuments, getDocument, deleteDocument } from '@/store/signing-documents';
@@ -57,6 +58,10 @@ const Documents = () => {
   const [templates, setTemplates] = useState<SignTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'doc' | 'tpl'; id: string; name: string } | null>(null);
+  // Selección múltiple de documentos para borrarlos juntos
+  const [selectedDocs, setSelectedDocs] = useState<Set<string>>(new Set());
+  const [bulkConfirm, setBulkConfirm] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
   const [previewDoc, setPreviewDoc] = useState<SignDocument | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [editingRecipient, setEditingRecipient] = useState<{ id: string; email: string } | null>(null);
@@ -118,6 +123,55 @@ const Documents = () => {
     } finally {
       setDeleteTarget(null);
     }
+  };
+
+  // Si un documento desaparece de la lista (borrado, realtime), también sale de la selección
+  useEffect(() => {
+    setSelectedDocs(prev => {
+      const ids = new Set(documents.map(d => d.id));
+      const next = new Set([...prev].filter(id => ids.has(id)));
+      return next.size === prev.size ? prev : next;
+    });
+  }, [documents]);
+
+  const toggleDoc = (id: string) => {
+    setSelectedDocs(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const allDocsSelected = documents.length > 0 && selectedDocs.size === documents.length;
+  const toggleAllDocs = () => {
+    setSelectedDocs(allDocsSelected ? new Set() : new Set(documents.map(d => d.id)));
+  };
+
+  const handleBulkDelete = async () => {
+    const ids = [...selectedDocs];
+    setBulkDeleting(true);
+    let ok = 0;
+    const failedIds: string[] = [];
+    // De a uno: cada documento también borra sus PDFs del Storage
+    for (const id of ids) {
+      try {
+        await deleteDocument(id);
+        ok++;
+      } catch {
+        failedIds.push(id);
+      }
+    }
+    setBulkDeleting(false);
+    setBulkConfirm(false);
+    // Los que fallaron quedan seleccionados para reintentar
+    setSelectedDocs(new Set(failedIds));
+    if (failedIds.length === 0) {
+      toast.success(`${ok} documento(s) eliminado(s)`);
+    } else {
+      const names = failedIds.map(id => documents.find(d => d.id === id)?.fileName || id);
+      toast.error(`Se eliminaron ${ok}, fallaron ${failedIds.length}`, { description: names.slice(0, 3).join(', ') });
+    }
+    fetchAll();
   };
 
   const getStatusLabel = (status: string) => {
@@ -238,7 +292,18 @@ const Documents = () => {
         </TabsList>
 
         <TabsContent value="dashboard">
-          <div className="flex justify-end mb-4">
+          <div className="flex items-center justify-end gap-2 mb-4">
+            {selectedDocs.size > 0 && (
+              <>
+                <span className="text-sm text-muted-foreground">{selectedDocs.size} seleccionado(s)</span>
+                <Button variant="ghost" size="sm" className="gap-1" onClick={() => setSelectedDocs(new Set())}>
+                  <X className="h-4 w-4" /> Quitar selección
+                </Button>
+                <Button variant="destructive" className="gap-2" onClick={() => setBulkConfirm(true)}>
+                  <Trash2 className="h-4 w-4" /> Eliminar seleccionados
+                </Button>
+              </>
+            )}
             <Button onClick={() => navigate('/documents/upload')} className="gap-2">
               <Plus className="h-4 w-4" /> Nuevo Documento
             </Button>
@@ -259,17 +324,23 @@ const Documents = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-10">
+                      <Checkbox checked={allDocsSelected} onCheckedChange={toggleAllDocs} aria-label="Seleccionar todos" />
+                    </TableHead>
                     <TableHead>Archivo</TableHead>
                     <TableHead>Estado</TableHead>
                     <TableHead>Destinatario</TableHead>
-                    <TableHead>Firmado por</TableHead>
                     <TableHead>Creado</TableHead>
+                    <TableHead>Firmado por</TableHead>
                     <TableHead className="text-right">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {documents.map((doc) => (
-                    <TableRow key={doc.id}>
+                    <TableRow key={doc.id} data-state={selectedDocs.has(doc.id) ? 'selected' : undefined}>
+                      <TableCell className="w-10">
+                        <Checkbox checked={selectedDocs.has(doc.id)} onCheckedChange={() => toggleDoc(doc.id)} aria-label={`Seleccionar ${doc.fileName}`} />
+                      </TableCell>
                       <TableCell className="font-medium">{doc.fileName}</TableCell>
                       <TableCell>
                         <StatusBadge status={getStatusLabel(doc.status)} />
@@ -439,6 +510,28 @@ const Documents = () => {
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={bulkConfirm} onOpenChange={(open) => !open && !bulkDeleting && setBulkConfirm(false)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminar {selectedDocs.size} documento(s)</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se eliminarán los documentos seleccionados con sus PDFs, firmados o no. Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={bulkDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); void handleBulkDelete(); }}
+              disabled={bulkDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {bulkDeleting && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
+              {bulkDeleting ? 'Eliminando...' : 'Eliminar'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
