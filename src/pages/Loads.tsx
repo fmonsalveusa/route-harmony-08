@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useDispatcherDriverIds } from '@/hooks/useDispatcherDriverIds';
 import { mockDrivers, mockDispatchers } from '@/data/mockData';
 import { StatusBadge } from '@/components/StatusBadge';
+import { StatTiles, TABLE_CARD, TABLE_ROW } from '@/components/StatTiles';
 import { useLoads } from '@/hooks/useLoads';
 import { usePodDocuments } from '@/hooks/usePodDocuments';
 import { useDrivers } from '@/hooks/useDrivers';
@@ -28,7 +29,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { PodUploadSection } from '@/components/PodUploadSection';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Search, Package, Pencil, Trash2, ChevronDown, ChevronUp, MapPin, Upload, ExternalLink, Filter, FileText, Download, CalendarDays, Clock } from 'lucide-react';
+import { Plus, Search, Package, Pencil, Trash2, ChevronDown, ChevronUp, MapPin, Upload, ExternalLink, Filter, FileText, Download, CalendarDays, Clock, Navigation, DollarSign, Landmark } from 'lucide-react';
 import { toast } from 'sonner';
 import type { DbLoad } from '@/hooks/useLoads';
 
@@ -261,15 +262,33 @@ const Loads = () => {
         </div>
       </div>
 
+      {/* Resumen: sigue los mismos filtros que la tabla */}
+      {(() => {
+        const today = todayET();
+        const moving = ['in_transit', 'on_site_pickup', 'picked_up', 'on_site_delivery'];
+        const deliveringToday = activeLoads.filter(l => (l.delivery_date || '').slice(0, 10) === today);
+        const revenue = baseLoads.filter(l => l.status !== 'cancelled').reduce((s, l) => s + Number(l.total_rate || 0), 0);
+        const factoringOpen = deliveredLoads.filter(l => l.factoring && l.factoring !== 'ready');
+        return (
+          <StatTiles tiles={[
+            { label: 'Active Loads', value: activeLoads.length, icon: Package, tint: 'bg-sky-100 text-sky-700' },
+            { label: 'En ruta', value: activeLoads.filter(l => moving.includes(l.status)).length, hint: 'in transit / on site / picked up', icon: Navigation, tint: 'bg-blue-100 text-blue-700' },
+            { label: 'Entregan hoy', value: deliveringToday.length, icon: Clock, tint: 'bg-red-100 text-red-700' },
+            { label: 'Revenue', value: `$${revenue.toLocaleString('en-US', { maximumFractionDigits: 0 })}`, hint: `${baseLoads.filter(l => l.status !== 'cancelled').length} loads con los filtros`, icon: DollarSign, tint: 'bg-emerald-100 text-emerald-700' },
+            { label: 'Factoring abierto', value: factoringOpen.length, hint: 'entregadas sin Ready', icon: Landmark, tint: 'bg-amber-100 text-amber-700' },
+          ]} />
+        );
+      })()}
+
       {/* Search + Filters */}
       <div className="flex flex-wrap gap-2 items-center">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-8 w-[180px] text-xs" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-9 w-[200px] text-xs rounded-full bg-card shadow-sm" />
         </div>
         <Filter className="h-4 w-4 text-muted-foreground" />
           <Select value={filterDriver} onValueChange={setFilterDriver}>
-            <SelectTrigger className="w-[160px] h-8 text-xs">
+            <SelectTrigger className="w-[160px] h-9 text-xs rounded-full bg-card shadow-sm">
               <SelectValue placeholder="Driver" />
             </SelectTrigger>
             <SelectContent>
@@ -283,7 +302,7 @@ const Loads = () => {
             </SelectContent>
           </Select>
           <Select value={filterTruck} onValueChange={setFilterTruck}>
-            <SelectTrigger className="w-[160px] h-8 text-xs">
+            <SelectTrigger className="w-[160px] h-9 text-xs rounded-full bg-card shadow-sm">
               <SelectValue placeholder="Truck" />
             </SelectTrigger>
             <SelectContent>
@@ -295,7 +314,7 @@ const Loads = () => {
           </Select>
           {!isDispatcher && (
           <Select value={filterDispatcher} onValueChange={setFilterDispatcher}>
-            <SelectTrigger className="w-[160px] h-8 text-xs">
+            <SelectTrigger className="w-[160px] h-9 text-xs rounded-full bg-card shadow-sm">
               <SelectValue placeholder="Dispatcher" />
             </SelectTrigger>
             <SelectContent>
@@ -307,7 +326,7 @@ const Loads = () => {
           </Select>
           )}
           <Select value={filterYear} onValueChange={setFilterYear}>
-            <SelectTrigger className="w-[110px] h-8 text-xs">
+            <SelectTrigger className="w-[110px] h-9 text-xs rounded-full bg-card shadow-sm">
               <SelectValue placeholder="Year" />
             </SelectTrigger>
             <SelectContent>
@@ -318,7 +337,7 @@ const Loads = () => {
             </SelectContent>
           </Select>
           <Select value={filterMonth} onValueChange={setFilterMonth}>
-            <SelectTrigger className="w-[150px] h-8 text-xs">
+            <SelectTrigger className="w-[150px] h-9 text-xs rounded-full bg-card shadow-sm">
               <SelectValue placeholder="Month" />
             </SelectTrigger>
             <SelectContent>
@@ -330,7 +349,7 @@ const Loads = () => {
           </Select>
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5 min-w-[180px] justify-start">
+              <Button variant="outline" size="sm" className="h-9 text-xs gap-1.5 min-w-[180px] justify-start rounded-full bg-card shadow-sm">
                 <CalendarDays className="h-3.5 w-3.5" />
                 {filterWeeks.size === 0 ? 'All Weeks' : filterWeeks.size === 1 ? `Week ${[...filterWeeks][0]}` : `${filterWeeks.size} Weeks`}
               </Button>
@@ -371,7 +390,7 @@ const Loads = () => {
             </PopoverContent>
           </Popover>
           <Select value={filterBroker} onValueChange={setFilterBroker}>
-            <SelectTrigger className="w-[160px] h-8 text-xs">
+            <SelectTrigger className="w-[160px] h-9 text-xs rounded-full bg-card shadow-sm">
               <SelectValue placeholder="Broker" />
             </SelectTrigger>
             <SelectContent>
@@ -382,7 +401,7 @@ const Loads = () => {
             </SelectContent>
           </Select>
           <Select value={filterFactoring} onValueChange={setFilterFactoring}>
-            <SelectTrigger className="w-[160px] h-8 text-xs">
+            <SelectTrigger className="w-[160px] h-9 text-xs rounded-full bg-card shadow-sm">
               <SelectValue placeholder="Factoring" />
             </SelectTrigger>
             <SelectContent>
@@ -398,7 +417,7 @@ const Loads = () => {
             </Button>
           )}
           <Select value={sortBy} onValueChange={(v) => setSortBy(v as 'delivery_date' | 'pickup_date')}>
-            <SelectTrigger className="w-[170px] h-8 text-xs">
+            <SelectTrigger className="w-[170px] h-9 text-xs rounded-full bg-card shadow-sm">
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
             <SelectContent>
@@ -440,11 +459,11 @@ const Loads = () => {
       </div>
 
       {/* Table */}
-      <div className="glass-card">
+      <div className={TABLE_CARD}>
         <div className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-[15px]">
-              <thead><tr className="border-b bg-muted/40">
+              <thead><tr className="border-b bg-muted/50">
                 <th className="w-8 p-3"></th>
                 <th className="text-left p-3 text-xs font-bold text-muted-foreground uppercase tracking-wider">Load #</th>
                 <th className="text-left p-3 text-xs font-bold text-muted-foreground uppercase tracking-wider">Driver/Truck</th>
@@ -471,16 +490,16 @@ const Loads = () => {
 
                   const statusBorderColor = (() => {
                     switch (load.status) {
-                      case 'planned':          return 'border-l-[3px] border-l-[#94A3B8]';
-                      case 'dispatched':       return 'border-l-[3px] border-l-[#2563EB]';
-                      case 'in_transit':       return 'border-l-[3px] border-l-[#65A30D]';
-                      case 'on_site_pickup':   return 'border-l-[3px] border-l-[#06B6D4]';
-                      case 'picked_up':        return 'border-l-[3px] border-l-[#D946EF]';
-                      case 'on_site_delivery': return 'border-l-[3px] border-l-[#F97316]';
-                      case 'delivered':        return 'border-l-[3px] border-l-[#178504]';
-                      case 'tonu':             return 'border-l-[3px] border-l-[#B45309]';
-                      case 'cancelled':        return 'border-l-[3px] border-l-[#DC2626]';
-                      default:                 return 'border-l-[3px] border-l-transparent';
+                      case 'planned':          return 'border-l-4 border-l-[#94A3B8]';
+                      case 'dispatched':       return 'border-l-4 border-l-[#2563EB]';
+                      case 'in_transit':       return 'border-l-4 border-l-[#65A30D]';
+                      case 'on_site_pickup':   return 'border-l-4 border-l-[#06B6D4]';
+                      case 'picked_up':        return 'border-l-4 border-l-[#D946EF]';
+                      case 'on_site_delivery': return 'border-l-4 border-l-[#F97316]';
+                      case 'delivered':        return 'border-l-4 border-l-[#178504]';
+                      case 'tonu':             return 'border-l-4 border-l-[#B45309]';
+                      case 'cancelled':        return 'border-l-4 border-l-[#DC2626]';
+                      default:                 return 'border-l-4 border-l-transparent';
                     }
                   })();
 
@@ -490,7 +509,7 @@ const Loads = () => {
                       <Fragment key={load.id}>
                         <tr
                           id={`load-row-${load.id}`}
-                          className={`border-b last:border-b-0 glass-row cursor-pointer ${statusBorderColor} ${isOdd ? 'bg-muted/80' : ''} ${isExpanded ? 'glass-row-expanded' : ''}`}
+                          className={`${TABLE_ROW} last:border-b-0 cursor-pointer ${statusBorderColor} ${isOdd ? 'bg-muted/30' : ''} ${isExpanded ? 'bg-muted/50' : ''}`}
                           onClick={() => {
                             const newId = isExpanded ? null : load.id;
                             setExpandedId(newId);

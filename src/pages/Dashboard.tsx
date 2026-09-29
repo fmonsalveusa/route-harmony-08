@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDispatcherDriverIds } from '@/hooks/useDispatcherDriverIds';
-import { StatCard } from '@/components/StatCard';
+import { StatTiles } from '@/components/StatTiles';
 import { StatusBadge } from '@/components/StatusBadge';
 import { useLoads } from '@/hooks/useLoads';
 import { useDrivers } from '@/hooks/useDrivers';
@@ -101,6 +101,9 @@ const AdminDashboard = () => {
   const recentExpenses = expenses.slice(0, 5);
   const highExpenses = thisMonthExpenses.filter(e => e.total_amount > 400).slice(0, 3);
 
+  // Período que cubre la tarjeta de Revenue, según los filtros
+  const periodLabel = week !== 'all' ? `Week ${week}` : month !== 'all' ? `Month ${month}/${year}` : year !== 'all' ? `Year ${year}` : 'All time';
+
   const dispatcherOptions = dispatchers.map(d => ({ id: d.id, name: d.name }));
   const driverOptions = drivers.map(d => ({ id: d.id, name: d.name }));
 
@@ -123,13 +126,14 @@ const AdminDashboard = () => {
         dispatchers={dispatcherOptions} drivers={driverOptions}
       />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <StatCard title="Active Loads" value={activeLoads} icon={Package} trend={{ value: '+12%', positive: true }} />
-        <StatCard title="Available Trucks" value={`${availableTrucks}/${trucks.length}`} icon={Truck} iconClassName="bg-success/10 text-success" />
-        <StatCard title="Week Revenue" value={`$${totalRevenue.toLocaleString()}`} icon={DollarSign} trend={{ value: '+8%', positive: true }} iconClassName="bg-warning/10 text-warning" />
-        <StatCard title="Month-to-date" value={`$${monthToDateRevenue.toLocaleString()}`} icon={TrendingUp} iconClassName="bg-info/10 text-info" />
-        <StatCard title="Pending Payments" value={`$${pendingPayments.toLocaleString()}`} icon={AlertTriangle} iconClassName="bg-destructive/10 text-destructive" subtitle={`${payments.filter(p => p.status === 'pending').length} payments`} />
-      </div>
+      {/* Los "+12%" y "+8%" que había aquí eran fijos, no salían de ningún cálculo: se quitaron */}
+      <StatTiles tiles={[
+        { label: 'Active Loads', value: activeLoads, icon: Package, tint: 'bg-sky-100 text-sky-700' },
+        { label: 'Available Trucks', value: `${availableTrucks}/${trucks.length}`, icon: Truck, tint: 'bg-emerald-100 text-emerald-700' },
+        { label: 'Revenue', value: `$${totalRevenue.toLocaleString()}`, hint: periodLabel, icon: DollarSign, tint: 'bg-amber-100 text-amber-700' },
+        { label: 'Month-to-date', value: `$${monthToDateRevenue.toLocaleString()}`, icon: TrendingUp, tint: 'bg-blue-100 text-blue-700' },
+        { label: 'Pending Payments', value: `$${pendingPayments.toLocaleString()}`, hint: `${payments.filter(p => p.status === 'pending').length} payments`, icon: AlertTriangle, tint: 'bg-red-100 text-red-700' },
+      ]} />
 
       <div className="space-y-2">
         <div className="flex items-center gap-2 flex-wrap">
@@ -143,10 +147,10 @@ const AdminDashboard = () => {
             <button
               key={opt.value}
               onClick={() => setServiceTypeFilter(opt.value)}
-              className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
                 serviceTypeFilter === opt.value
                   ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted border'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted border bg-card shadow-sm'
               }`}
             >
               {opt.label}
@@ -284,12 +288,12 @@ const DispatcherDashboard = () => {
         hideDispatcherFilter
       />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Active Loads" value={activeLoads} icon={Package} />
-        <StatCard title="My Drivers" value={drivers.length} icon={Users} iconClassName="bg-info/10 text-info" />
-        <StatCard title="Revenue" value={`$${totalRevenue.toLocaleString()}`} icon={DollarSign} iconClassName="bg-success/10 text-success" />
-        <StatCard title="Delivered" value={deliveredLoads} icon={TrendingUp} iconClassName="bg-warning/10 text-warning" />
-      </div>
+      <StatTiles tiles={[
+        { label: 'Active Loads', value: activeLoads, icon: Package, tint: 'bg-sky-100 text-sky-700' },
+        { label: 'My Drivers', value: drivers.length, icon: Users, tint: 'bg-blue-100 text-blue-700' },
+        { label: 'Revenue', value: `$${totalRevenue.toLocaleString()}`, icon: DollarSign, tint: 'bg-emerald-100 text-emerald-700' },
+        { label: 'Delivered', value: deliveredLoads, icon: TrendingUp, tint: 'bg-amber-100 text-amber-700' },
+      ]} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <RatesByDriverChart loads={filteredLoads} drivers={drivers} year={year} month={month} week={week} />
@@ -301,7 +305,7 @@ const DispatcherDashboard = () => {
         <MarketAnalysisCard loads={filteredLoads} trucks={trucks} />
       </div>
 
-      <Card>
+      <Card className="rounded-xl shadow-sm overflow-hidden">
         <CardHeader><CardTitle className="text-base">My Loads</CardTitle></CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
