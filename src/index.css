@@ -15,7 +15,7 @@ html, body {
 
 @layer base {
   :root {
-    --background: 210 40% 98%;
+    --background: 210 40% 95%;
     --foreground: 220 35% 12%;
 
     --card: 0 0% 100%;
@@ -30,7 +30,8 @@ html, body {
     --secondary: 210 40% 96%;
     --secondary-foreground: 220 30% 20%;
 
-    --muted: 210 33% 97%;
+    /* Un poco más oscuro que el fondo, para que encabezados de tabla y pestañas se sigan notando */
+    --muted: 210 33% 93%;
     --muted-foreground: 218 15% 48%;
 
     --accent: 28 92% 52%;
