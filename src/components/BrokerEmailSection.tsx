@@ -39,15 +39,27 @@ export function BrokerEmailSection({ loadId }: { loadId: string }) {
   const [results, setResults] = useState<Candidate[] | null>(null);
   const [searchInfo, setSearchInfo] = useState<{ accounts: string[]; errors: string[] } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [linkError, setLinkError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const [{ data: t }, { data: e }] = await Promise.all([
+    const [{ data: t, error: tErr }, { data: e }] = await Promise.all([
       supabase.from('load_email_threads' as any).select('*').eq('load_id', loadId).maybeSingle(),
       supabase.from('broker_email_queue' as any).select('*').eq('load_id', loadId).order('created_at', { ascending: false }),
     ]);
+    if (tErr) {
+      // Sin esto, un error de lectura (permisos, red) se veía igual que "sin hilo asignado"
+      console.error('load_email_threads read failed:', tErr);
+      setLinkError(tErr.message);
+    } else {
+      setLinkError(null);
+    }
     setLink((t as any) ?? null);
     setEmails(((e as any[]) || []) as BrokerEmailRow[]);
   }, [loadId]);
+
+  // Faltaba esto: sin cargarlo al abrir, la sección se veía siempre como "sin hilo"
+  // hasta que se hacía alguna acción (enlazar, reenviar) que sí llama a load().
+  useEffect(() => { void load(); }, [load]);
 
   const search = async (text: string) => {
     setBusy('search');
@@ -113,7 +125,11 @@ export function BrokerEmailSection({ loadId }: { loadId: string }) {
 
       {/* Estado del hilo */}
       {!picking && (
-        link?.status === 'linked' ? (
+        linkError ? (
+          <p className="flex items-center gap-1.5 text-xs text-red-700">
+            <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" /> No se pudo leer el hilo: {linkError}
+          </p>
+        ) : link?.status === 'linked' ? (
           <div className="flex items-start gap-1.5 text-xs bg-green-50 border border-green-200 rounded-md px-2 py-1.5">
             <CheckCircle2 className="h-3.5 w-3.5 text-green-600 mt-0.5 flex-shrink-0" />
             <div className="min-w-0">
