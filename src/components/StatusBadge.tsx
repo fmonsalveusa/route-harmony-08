@@ -35,5 +35,8 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 
 export const StatusBadge = ({ status, className: extraClass }: { status: string; className?: string }) => {
   const config = statusConfig[status] || { label: status, className: 'bg-muted text-muted-foreground' };
-  return <span className={`inline-flex items-center justify-center rounded-md px-3 py-1 text-xs font-bold uppercase tracking-wide shadow-sm w-[140px] ${config.className} ${extraClass || ''}`}>{config.label}</span>;
+  // "On Site - Pickup" / "On Site - Delivery" no caben en 140px con la letra normal: van más chicas y en una línea
+  const long = config.label.length >= 16 && config.label.length <= 18;
+  const fit = long ? '!text-[10px] !tracking-normal !px-1.5 whitespace-nowrap' : '';
+  return <span className={`inline-flex items-center justify-center rounded-md px-3 py-1 text-xs font-bold uppercase tracking-wide shadow-sm w-[140px] ${config.className} ${extraClass || ''} ${fit}`}>{config.label}</span>;
 };
