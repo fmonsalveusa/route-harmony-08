@@ -149,7 +149,7 @@ export function calculateLoadProfit(input: LoadProfitInput): LoadProfit {
   } else {
     // Company Driver — el camión es nuestro, van todos sus costos
     if (serviceType === 'company_driver') {
-      // TONU: el camión no hizo el viaje, así que diésel y costos fijos quedan en $0
+      // TONU: el camión no hizo el viaje, así que diésel, costos por milla y fijos quedan en $0
       if (input.isTonu) {
         lines.push({ label: 'Diésel', detail: 'No aplica (TONU)', amount: 0, showWhenZero: true });
       } else {
@@ -162,11 +162,15 @@ export function calculateLoadProfit(input: LoadProfitInput): LoadProfit {
           amount: gallons * (Number(input.dieselPrice) || 0),
         });
       }
-      lines.push({
-        label: 'Costos por milla',
-        detail: `${totalMiles.toLocaleString()} mi × $${(Number(input.costPerMile) || 0).toFixed(3)}`,
-        amount: totalMiles * (Number(input.costPerMile) || 0),
-      });
+      if (input.isTonu) {
+        lines.push({ label: 'Costos por milla', detail: 'No aplica (TONU)', amount: 0, showWhenZero: true });
+      } else {
+        lines.push({
+          label: 'Costos por milla',
+          detail: `${totalMiles.toLocaleString()} mi × $${(Number(input.costPerMile) || 0).toFixed(3)}`,
+          amount: totalMiles * (Number(input.costPerMile) || 0),
+        });
+      }
       if (input.isTonu) {
         lines.push({ label: 'Costos fijos', detail: 'No aplica (TONU)', amount: 0, showWhenZero: true });
       } else {
