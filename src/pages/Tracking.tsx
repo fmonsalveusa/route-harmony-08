@@ -1114,9 +1114,10 @@ const Tracking = () => {
                 return (
                   <div
                     key={driver.id}
-                    className={`rounded-xl border border-l-4 ${accent} bg-card shadow-sm transition-all cursor-pointer hover:shadow-md ${
-                      isPaused ? 'opacity-60' : ''
-                    }`}
+                    className={`rounded-xl border border-l-4 ${accent} shadow-sm transition-all cursor-pointer hover:shadow-md ${
+                      // Fondo según la carga: verde si está cargado, naranja si está vacío
+                      activeLoad ? 'bg-emerald-100 border-emerald-300' : 'bg-orange-100 border-orange-300'
+                    } ${isPaused ? 'opacity-60' : ''}`}
                     onClick={() => setSelectedDriverLoad({ driver, load: activeLoad || null, lastDelivered: lastDel ? { address: lastDel.address, date: lastDel.date } : undefined })}
                   >
                     {/* Línea 1: nombre, teléfono, carga y tipo de servicio */}
