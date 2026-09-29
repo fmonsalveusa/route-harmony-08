@@ -3,13 +3,12 @@ import { ServiceTypeBadge } from '@/components/ServiceTypeBadge';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDispatcherDriverIds } from '@/hooks/useDispatcherDriverIds';
-import { StatusBadge } from '@/components/StatusBadge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Plus, Search, Phone, Truck as TruckIcon, Pencil, Trash2, Eye, Copy, Link2, ChevronDown, ChevronUp, Navigation, FileText, Check } from 'lucide-react';
+import { Plus, Search, Phone, Truck as TruckIcon, Pencil, Trash2, Eye, Copy, Link2, ChevronDown, ChevronUp, Navigation, FileText, Check, Users, UserCheck, UserX, Clock, MapPinOff } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useDrivers, DbDriver, DriverInput } from '@/hooks/useDrivers';
 import { useTrucks } from '@/hooks/useTrucks';
@@ -37,6 +36,21 @@ const driverStatusColor = (status: string) => {
     default: return 'bg-gray-500';
   }
 };
+
+const DRIVER_STATUS_LABEL: Record<string, string> = {
+  available: 'Available',
+  assigned: 'Assigned',
+  resting: 'Resting',
+  inactive: 'Inactive',
+  pending: 'Pending',
+};
+
+/** Estado del driver en etiqueta de color sólido, como en Tracking */
+const DriverStatusPill = ({ status }: { status: string }) => (
+  <span className={`inline-flex items-center rounded-md px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white ${driverStatusColor(status)}`}>
+    {DRIVER_STATUS_LABEL[status] ?? status}
+  </span>
+);
 
 const PAGE_SIZES = [25, 50, 100];
 
@@ -174,6 +188,9 @@ const Drivers = () => {
     filtered = filtered.filter(d => d.dispatcher_id === dispatcherFilter);
   }
 
+  // El resumen de arriba no cambia al escribir en el buscador
+  const scopedDrivers = filtered;
+
   if (search) filtered = filtered.filter(d =>
     d.name.toLowerCase().includes(search.toLowerCase()) ||
     d.email.toLowerCase().includes(search.toLowerCase())
@@ -213,12 +230,12 @@ const Drivers = () => {
     const totalPages = Math.max(1, Math.ceil(driversList.length / pageSize));
     const paged = driversList.slice((page - 1) * pageSize, page * pageSize);
     return (
-    <div className="glass-card">
+    <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
       <div className="p-0">
         <div className="overflow-x-auto">
           <table className="w-full text-[15px]">
             <thead>
-              <tr className="border-b glass-table-header">
+              <tr className="border-b bg-muted/50">
                 <th className="w-8 p-3"></th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Driver</th>
                 <th className="w-[60px] p-3"></th>
@@ -238,10 +255,10 @@ const Drivers = () => {
                 const dispatcher = dispatchers.find(d => d.id === driver.dispatcher_id);
 
                 const statusBorder = driver.status === 'available'
-                  ? 'border-l-[3px] border-l-[#639922]'
+                  ? 'border-l-4 border-l-green-600'
                   : driver.status === 'inactive'
-                  ? 'border-l-[3px] border-l-[#DC2626]'
-                  : 'border-l-[3px] border-l-[#EF9F27]'; // pending
+                  ? 'border-l-4 border-l-red-600'
+                  : 'border-l-4 border-l-yellow-500'; // pending
 
                 const avatarBg = driver.status === 'available'
                   ? 'bg-[#639922]'
@@ -251,7 +268,7 @@ const Drivers = () => {
 
                 return (
                   <>{/* Fragment needed for expand row */}
-                    <tr key={driver.id} className={cn("border-b glass-row cursor-pointer", statusBorder, isExpanded && "glass-row-expanded")} onClick={() => setExpandedId(isExpanded ? null : driver.id)}>
+                    <tr key={driver.id} className={cn("border-b cursor-pointer transition-colors hover:bg-muted/40", statusBorder, isExpanded && "bg-muted/40")} onClick={() => setExpandedId(isExpanded ? null : driver.id)}>
                       <td className="p-3 text-muted-foreground">
                         {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                       </td>
@@ -264,7 +281,14 @@ const Drivers = () => {
                             <span className="font-semibold flex items-center gap-1.5">
                               {driver.name}
                               {activeDriverIds.has(driver.id) && (
-                                <Navigation className="h-3.5 w-3.5 text-[hsl(152,60%,40%)] animate-pulse" />
+                                <span className="inline-flex items-center gap-1 rounded-md bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700" title="GPS reportando en los últimos 5 minutos">
+                                  <span className="h-1.5 w-1.5 rounded-full bg-blue-600 animate-pulse" /> GPS
+                                </span>
+                              )}
+                              {(driver as any).gps_background_granted === false && driver.status !== 'inactive' && (
+                                <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800" title="Sin permiso de ubicación en background — el GPS se apaga al cerrar la app">
+                                  <MapPinOff className="h-3 w-3" /> NO BG
+                                </span>
                               )}
                               <button
                                 onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(driver.name); }}
@@ -317,16 +341,16 @@ const Drivers = () => {
                         <Select value={driver.status} onValueChange={v => updateDriver(driver.id, { status: v })}>
                           <SelectTrigger className="h-8 w-[155px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:hidden bg-transparent">
                             <span className="flex items-center justify-between w-full gap-1">
-                              <StatusBadge status={driver.status} className="text-[11px] px-3 py-1.5" />
+                              <DriverStatusPill status={driver.status} />
                               <span className="inline-flex h-5 w-5 items-center justify-center rounded border border-border bg-muted/40 text-muted-foreground ml-auto">
                                 <ChevronDown className="h-3 w-3 shrink-0" />
                               </span>
                             </span>
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="pending"><StatusBadge status="pending" /></SelectItem>
-                            <SelectItem value="available"><StatusBadge status="available" /></SelectItem>
-                            <SelectItem value="inactive"><StatusBadge status="inactive" /></SelectItem>
+                            <SelectItem value="pending"><DriverStatusPill status="pending" /></SelectItem>
+                            <SelectItem value="available"><DriverStatusPill status="available" /></SelectItem>
+                            <SelectItem value="inactive"><DriverStatusPill status="inactive" /></SelectItem>
                           </SelectContent>
                         </Select>
                       </td>
@@ -423,14 +447,42 @@ const Drivers = () => {
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-2 items-center">
-        <div className="relative w-[260px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search by name or email..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-8 text-xs" />
+      {/* Resumen */}
+      {(() => {
+        const current = scopedDrivers.filter(d => d.status !== 'inactive');
+        const tiles = [
+          { label: 'Total Drivers', value: current.length, icon: Users, tint: 'bg-sky-100 text-sky-700' },
+          { label: 'Available', value: current.filter(d => d.status === 'available').length, icon: UserCheck, tint: 'bg-emerald-100 text-emerald-700' },
+          { label: 'Pending', value: current.filter(d => d.status === 'pending').length, icon: Clock, tint: 'bg-yellow-100 text-yellow-700' },
+          { label: 'Inactive', value: scopedDrivers.filter(d => d.status === 'inactive').length, icon: UserX, tint: 'bg-red-100 text-red-700' },
+          { label: 'GPS en vivo', value: current.filter(d => activeDriverIds.has(d.id)).length, icon: Navigation, tint: 'bg-blue-100 text-blue-700' },
+          { label: 'Sin permiso GPS', value: current.filter(d => (d as any).gps_background_granted === false).length, icon: MapPinOff, tint: 'bg-amber-100 text-amber-700' },
+        ];
+        return (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            {tiles.map(t => (
+              <div key={t.label} className="flex items-center gap-3 rounded-xl border bg-card px-4 py-3 shadow-sm">
+                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${t.tint}`}>
+                  <t.icon className="h-5 w-5" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs text-muted-foreground truncate">{t.label}</p>
+                  <p className="text-xl font-semibold leading-tight">{t.value}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
+
+      <div className="flex flex-wrap gap-3 items-center">
+        <div className="relative flex-1 min-w-[200px] max-w-sm">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input placeholder="Search by name or email..." value={search} onChange={e => setSearch(e.target.value)} className="pl-10 h-10 rounded-full bg-card shadow-sm" />
         </div>
         {!isDispatcher && (
           <Select value={dispatcherFilter} onValueChange={v => { setDispatcherFilter(v); setPage(1); }}>
-            <SelectTrigger className="w-[180px] h-8 text-xs">
+            <SelectTrigger className="w-[200px] h-10 rounded-full bg-card shadow-sm">
               <SelectValue placeholder="All Dispatchers" />
             </SelectTrigger>
             <SelectContent>
