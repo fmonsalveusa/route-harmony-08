@@ -363,6 +363,13 @@ const Tracking = () => {
     return new Set(drivers.filter(d => d.dispatcher_id === effective).map(d => d.id));
   }, [userDispatcherId, dispatcherFilter, drivers]);
 
+  // Última ubicación de cada driver, para la línea de GPS de su tarjeta
+  const locByDriver = useMemo(() => {
+    const map: Record<string, (typeof driverLocations)[number]> = {};
+    driverLocations.forEach(l => { map[l.driver_id] = l; });
+    return map;
+  }, [driverLocations]);
+
   // Para cada driver, la carga activa cuya delivery_date (o pickup_date si no hay) es la mas reciente/lejana
   const activeLoadByDriver = useMemo(() => {
     const map: Record<string, LoadWithStops> = {};
@@ -940,6 +947,24 @@ const Tracking = () => {
     );
   };
 
+  // Resumen de arriba: sale de los mismos drivers que muestra Next Plan
+  const activeDrivers = availableDrivers.filter(d => !(d as any).is_paused);
+  const summaryTiles = [
+    { label: 'Drivers', value: availableDrivers.length, icon: Users, tint: 'bg-sky-100 text-sky-700' },
+    { label: 'Loaded', value: activeDrivers.filter(d => activeLoadByDriver[d.id]).length, icon: Package, tint: 'bg-emerald-100 text-emerald-700' },
+    { label: 'Empty', value: activeDrivers.filter(d => !activeLoadByDriver[d.id]).length, icon: User, tint: 'bg-orange-100 text-orange-700' },
+    { label: 'Buscando', value: activeDrivers.filter(d => searchStatus[d.id] === 'searching').length, icon: Search, tint: 'bg-amber-100 text-amber-700' },
+    {
+      label: 'GPS en vivo',
+      value: availableDrivers.filter(d => {
+        const l = locByDriver[d.id];
+        return l && nowTick - new Date(l.updated_at).getTime() <= LIVE_LOCATION_MS;
+      }).length,
+      icon: Navigation,
+      tint: 'bg-blue-100 text-blue-700',
+    },
+  ];
+
   return (
     <div className="space-y-4">
       <div>
@@ -947,19 +972,34 @@ const Tracking = () => {
         <p className="page-description">Real-time fleet monitoring and load tracking</p>
       </div>
 
+      {/* Resumen */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        {summaryTiles.map(t => (
+          <div key={t.label} className="flex items-center gap-3 rounded-xl border bg-card px-4 py-3 shadow-sm">
+            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${t.tint}`}>
+              <t.icon className="h-5 w-5" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs text-muted-foreground truncate">{t.label}</p>
+              <p className="text-xl font-semibold leading-tight">{t.value}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[200px] max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search loads..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="pl-9 h-9"
+            className="pl-10 h-10 rounded-full bg-card shadow-sm"
           />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[180px] h-9">
+          <SelectTrigger className="w-[180px] h-10 rounded-full bg-card shadow-sm">
             <SelectValue placeholder="All Statuses" />
           </SelectTrigger>
           <SelectContent>
@@ -976,7 +1016,7 @@ const Tracking = () => {
       {/* Main layout: Map + Side Panel */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         {/* Side Panel - Next Plan */}
-        <Card className="flex flex-col overflow-hidden h-[1040px] lg:row-span-2 lg:col-start-1">
+        <Card className="flex flex-col overflow-hidden h-[1040px] lg:row-span-2 lg:col-start-1 rounded-xl shadow-sm bg-muted/30">
           <CardHeader className="pb-2 px-3 pt-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -1015,7 +1055,7 @@ const Tracking = () => {
               </Select>
             )}
           </CardHeader>
-          <CardContent className="flex-1 overflow-y-auto px-3 pb-3 space-y-2">
+          <CardContent className="flex-1 overflow-y-auto px-3 pb-3 space-y-2.5">
             {availableDrivers.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
                 <User className="h-8 w-8 mb-2 opacity-40" />
@@ -1033,199 +1073,124 @@ const Tracking = () => {
                   : null;
                 const sStatus = searchStatus[driver.id]; // undefined|'standby' = standby | 'searching' | 'ready'
                 const isPaused = !!(driver as any).is_paused;
-                // Solo 'ready' y 'searching' tienen fondo coloreado con texto blanco.
-                // 'standby' (explicit o auto) o pausado -> look neutro para que se lea bien.
-                const hasColoredBg = !isPaused && (sStatus === 'ready' || sStatus === 'searching');
+                const truck = trucks.find(t => t.id === driver.truck_id);
+                const isCompanyDriver = (driver as any).service_type === 'company_driver';
+                const loc = locByDriver[driver.id];
+                const locAge = loc ? nowTick - new Date(loc.updated_at).getTime() : null;
+                const locLive = locAge != null && locAge <= LIVE_LOCATION_MS;
+                // Franja izquierda de color según el estado del día, como en RouteOne
+                const accent = isPaused
+                  ? 'border-l-slate-400'
+                  : sStatus === 'ready'
+                  ? 'border-l-emerald-500'
+                  : sStatus === 'searching'
+                  ? 'border-l-orange-500'
+                  : 'border-l-transparent';
                 return (
                   <div
                     key={driver.id}
-                    className={`rounded-lg border transition-all flex overflow-hidden cursor-pointer ${
-                      isPaused
-                        ? 'border-slate-400/50 opacity-60'
-                        : sStatus === 'ready'
-                        ? 'border-[hsl(152,60%,40%)]/40'
-                        : sStatus === 'searching'
-                        ? 'border-[hsl(22,90%,48%)]/50'
-                        : 'border-border hover:border-primary/30'
-                    } ${
-                      isPaused ? 'bg-slate-50' : activeLoad ? 'bg-[hsl(152,60%,40%)]/[0.03]' : 'bg-[hsl(25,95%,53%)]/[0.03]'
+                    className={`rounded-xl border border-l-4 ${accent} bg-card shadow-sm transition-all cursor-pointer hover:shadow-md ${
+                      isPaused ? 'opacity-60' : ''
                     }`}
                     onClick={() => setSelectedDriverLoad({ driver, load: activeLoad || null, lastDelivered: lastDel ? { address: lastDel.address, date: lastDel.date } : undefined })}
                   >
-                    {/* Badge vertical izquierdo */}
-                    <div
-                      className={`flex items-center justify-center w-7 shrink-0 ${
-                        activeLoad ? 'bg-[hsl(152,60%,40%)]' : 'bg-[hsl(25,95%,53%)]'
-                      }`}
-                    >
-                      <span className="text-white text-[9px] font-bold flex flex-col items-center gap-0">
-                        {(activeLoad ? 'LOADED' : 'EMPTY').split('').map((letter, i) => (
-                          <span key={i}>{letter}</span>
-                        ))}
+                    {/* Línea 1: nombre, carga y tipo de servicio */}
+                    <div className="flex items-center gap-1.5 px-3 pt-2.5">
+                      <p className="text-sm font-semibold truncate">{driver.name}</p>
+                      <button
+                        onClick={(e) => copyField(driver.id, 'name', driver.name, e)}
+                        className="shrink-0 p-0.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                        title="Copiar Nombre"
+                      >
+                        {copiedField === `${driver.id}:name` ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                      </button>
+                      <span
+                        className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${
+                          activeLoad ? 'bg-emerald-100 text-emerald-700' : 'bg-orange-100 text-orange-700'
+                        }`}
+                      >
+                        {activeLoad ? 'Loaded' : 'Empty'}
                       </span>
+                      <ServiceTypeBadge
+                        serviceType={(driver as any).service_type}
+                        className="ml-auto shrink-0 !text-[9px] !px-1.5 !py-0"
+                      />
                     </div>
-                    <div className="flex-1 min-w-0">
-                    {/* Franja de estado s├│lida en la l├¡nea del nombre/tel├⌐fono/acciones */}
-                    <div className={`flex items-center gap-2 px-3 py-2 ${
-                      sStatus === 'ready'
-                        ? 'bg-[hsl(152,60%,40%)]'
-                        : sStatus === 'searching'
-                        ? 'bg-[hsl(22,90%,48%)]'
-                        : ''
-                    }`}>
-                      <div className={`p-1.5 rounded-full ${hasColoredBg ? 'bg-white/25' : 'bg-[hsl(152,60%,40%)]/10'}`}>
-                        <User className={`h-3.5 w-3.5 ${hasColoredBg ? 'text-white' : 'text-[hsl(152,60%,40%)]'}`} />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5">
-                          <p className={`text-sm font-semibold truncate ${hasColoredBg ? 'text-white' : ''}`}>{driver.name}</p>
-                          {/* Copiar nombre */}
+
+                    {/* Línea 2: unidad, VIN y teléfono */}
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 px-3 pt-1 text-[11px] text-muted-foreground">
+                      {truck?.unit_number && (
+                        <span className="flex items-center gap-1">
+                          <Package className="h-3 w-3" /> {truck.unit_number}
+                        </span>
+                      )}
+                      {isCompanyDriver && truck?.vin && (
+                        <span className="flex items-center gap-0.5">
+                          VIN {truck.vin}
                           <button
-                            onClick={(e) => copyField(driver.id, 'name', driver.name, e)}
-                            className={`shrink-0 p-0.5 rounded transition-colors ${hasColoredBg ? 'text-white/70 hover:text-white hover:bg-white/20' : 'text-muted-foreground hover:text-foreground hover:bg-gray-100'}`}
-                            title="Copiar Nombre"
+                            onClick={(e) => copyField(driver.id, 'vin', truck.vin!, e)}
+                            className="shrink-0 p-0.5 rounded hover:text-foreground hover:bg-muted transition-colors"
+                            title="Copiar VIN"
                           >
-                            {copiedField === `${driver.id}:name` ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                            {copiedField === `${driver.id}:vin` ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
                           </button>
-                          <ServiceTypeBadge
-                            serviceType={(driver as any).service_type}
-                            className="ml-auto shrink-0 !text-[9px] !px-1.5 !py-0"
-                          />
-                        </div>
-                        {(() => {
-                          const truck = trucks.find(t => t.id === driver.truck_id);
-                          const isCompanyDriver = (driver as any).service_type === 'company_driver';
-                          return truck?.unit_number ? (
-                            <div className="flex items-center justify-between gap-2">
-                              <p className={`text-[11px] leading-tight ${hasColoredBg ? 'text-white/80' : 'text-muted-foreground'}`}>
-                                Unit #{truck.unit_number}
-                              </p>
-                              {isCompanyDriver && truck.vin && (
-                                <div className="flex items-center gap-0.5 ml-auto">
-                                  <p className={`text-[10px] leading-tight ${hasColoredBg ? 'text-white/70' : 'text-muted-foreground/70'}`}>
-                                    VIN: {truck.vin}
-                                  </p>
-                                  <button
-                                    onClick={(e) => copyField(driver.id, 'vin', truck.vin!, e)}
-                                    className={`shrink-0 p-0.5 rounded transition-colors ${hasColoredBg ? 'text-white/70 hover:text-white hover:bg-white/20' : 'text-muted-foreground hover:text-foreground hover:bg-gray-100'}`}
-                                    title="Copiar VIN"
-                                  >
-                                    {copiedField === `${driver.id}:vin` ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          ) : null;
-                        })()}
-                      </div>
-                      {(() => {
-                        const loc = driverLocations.find(dl => dl.driver_id === driver.id);
-                        const isGpsActive = loc && (Date.now() - new Date(loc.updated_at).getTime()) < 5 * 60 * 1000;
-                        return isGpsActive ? (
-                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold animate-pulse ${
-                            hasColoredBg ? 'bg-white/25 text-white' : 'bg-[hsl(152,60%,40%)]/15 text-[hsl(152,60%,40%)]'
-                          }`}>
-                            <Navigation className="h-3 w-3" />
-                            GPS
-                          </span>
-                        ) : null;
-                      })()}
-                      {(driver as any).gps_background_granted === false && (
-                        <span
-                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-                            hasColoredBg ? 'bg-white/25 text-white' : 'bg-amber-100 text-amber-800'
-                          }`}
-                          title="Sin permiso de ubicación en background — el GPS se apaga al cerrar la app"
-                        >
-                          <MapPinOff className="h-3 w-3" />
-                          NO BG
                         </span>
                       )}
                       {driver.phone && (
-                        <div className="flex items-center gap-1">
-                          <span className={`text-xs whitespace-nowrap ${hasColoredBg ? 'text-white/90' : 'text-muted-foreground'}`}>{driver.phone}</span>
-                          {/* Copiar tel├⌐fono */}
+                        <span className="flex items-center gap-0.5 ml-auto">
+                          {driver.phone}
                           <button
                             onClick={(e) => copyField(driver.id, 'phone', driver.phone!, e)}
-                            className={`shrink-0 p-0.5 rounded transition-colors ${hasColoredBg ? 'text-white/70 hover:text-white hover:bg-white/20' : 'text-muted-foreground hover:text-foreground hover:bg-gray-100'}`}
-                            title="Copiar Tel├⌐fono"
+                            className="shrink-0 p-0.5 rounded hover:text-foreground hover:bg-muted transition-colors"
+                            title="Copiar Teléfono"
                           >
                             {copiedField === `${driver.id}:phone` ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
                           </button>
-                        </div>
-                      )}
-                    </div>
-                    {/* L├¡nea 2: acciones ΓÇö Copy Info + Pausa a la izquierda, estado a la derecha */}
-                    <div className="flex items-center justify-between px-3 py-1.5 gap-2">
-                      <div className="flex items-center gap-1 shrink-0">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            copyDriverInfo(driver);
-                            setCopiedInfoId(driver.id);
-                            setTimeout(() => setCopiedInfoId(null), 1500);
-                          }}
-                          className="shrink-0 px-2 py-1 rounded-md text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-green-600 transition-colors whitespace-nowrap flex items-center gap-1"
-                          title="Copy Driver Info"
-                        >
-                          {copiedInfoId === driver.id ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                          Copy Info
-                        </button>
-                        <button
-                          onClick={(e) => togglePauseDriver(driver.id, e)}
-                          className={`shrink-0 p-1 rounded-md transition-colors ${
-                            isPaused
-                              ? 'bg-emerald-500 text-white hover:bg-emerald-600'
-                              : 'bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700'
-                          }`}
-                          title={isPaused ? 'Reanudar driver' : 'Pausar driver (vacaciones/inactivo temporal)'}
-                        >
-                          {isPaused ? <Play className="h-3 w-3" /> : <Pause className="h-3 w-3" />}
-                        </button>
-                      </div>
-                      {isPaused ? (
-                        <span className="shrink-0 px-2 py-1 rounded-md text-[10px] font-bold bg-slate-600 text-white whitespace-nowrap flex items-center gap-1">
-                          <Pause className="h-3 w-3" /> PAUSADO
                         </span>
-                      ) : (
-                      <button
-                        onClick={(e) => cycleSearchStatus(driver.id, e)}
-                        className={`shrink-0 px-2 py-1 rounded-md text-[10px] font-bold transition-colors whitespace-nowrap flex items-center gap-1 ${
-                          sStatus === 'ready'
-                            ? 'bg-[hsl(152,60%,40%)] text-white hover:bg-[hsl(152,60%,35%)]'
-                            : sStatus === 'searching'
-                            ? 'bg-[hsl(22,90%,48%)] text-white hover:bg-[hsl(22,90%,42%)]'
-                            : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                        }`}
-                        title={sStatus === 'ready' ? 'Listo ΓÇö click para quitar' : sStatus === 'searching' ? 'Buscando ΓÇö click para marcar Listo' : 'Standby ΓÇö click para marcar Buscando'}
-                      >
-                        {sStatus === 'ready' ? <><Check className="h-3 w-3" /> Listo</>
-                          : sStatus === 'searching' ? <><Search className="h-3 w-3" /> Buscando</>
-                          : 'Standby'}
-                      </button>
                       )}
                     </div>
-                    <div className="p-3 pt-2 space-y-1 text-xs text-muted-foreground">
-                      {/* Manual location override */}
-                      {(driver as any).manual_location_address && (
-                        <div className="mt-1.5 pt-1.5 border-t">
-                          <p className="text-[10px] font-medium text-foreground flex items-center gap-1">
-                            <MapPin className="h-3 w-3 text-[hsl(38,92%,50%)]" />
-                            Manual Location
-                          </p>
-                          <p className="text-base font-semibold leading-tight mt-0.5 pl-4">
-                            {(driver as any).manual_location_address}
-                          </p>
-                        </div>
-                      )}
+
+                    {/* Línea 3: GPS — hace cuánto reportó y a qué velocidad */}
+                    {(loc && locAge != null && locAge <= MAX_LOCATION_AGE_MS) || (driver as any).gps_background_granted === false ? (
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 px-3 pt-1 text-[11px]">
+                        {loc && locAge != null && locAge <= MAX_LOCATION_AGE_MS && (
+                          <span className={`flex items-center gap-1 ${locLive ? 'text-blue-700' : 'text-muted-foreground'}`}>
+                            <span className={`h-2 w-2 rounded-full ${locLive ? 'bg-blue-600 animate-pulse' : 'bg-gray-400'}`} />
+                            GPS {formatAge(locAge)}
+                            {locLive && loc.speed != null && ` · ${(loc.speed * 2.237).toFixed(0)} mph`}
+                          </span>
+                        )}
+                        {(driver as any).gps_background_granted === false && (
+                          <span
+                            className="inline-flex items-center gap-1 rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800"
+                            title="Sin permiso de ubicación en background — el GPS se apaga al cerrar la app"
+                          >
+                            <MapPinOff className="h-3 w-3" /> NO BG
+                          </span>
+                        )}
+                      </div>
+                    ) : null}
+
+                    {/* Ubicación manual */}
+                    {(driver as any).manual_location_address && (
+                      <div className="mx-3 mt-2 rounded-lg bg-amber-50 px-2.5 py-1.5">
+                        <p className="text-[10px] font-medium text-amber-800 flex items-center gap-1">
+                          <MapPin className="h-3 w-3" /> Manual Location
+                        </p>
+                        <p className="text-sm font-semibold leading-tight">{(driver as any).manual_location_address}</p>
+                      </div>
+                    )}
+
+                    {/* Próxima parada o última entrega */}
+                    <div className="px-3 pt-2 text-xs text-muted-foreground">
                       {displayInfo ? (
-                        <div className="mt-1.5 pt-1.5 border-t">
-                          <p className="text-[10px] font-medium text-foreground">
-                            {displayInfo.isActive ? 'Next Stop (Active Load)' : 'Last Delivery'}
+                        <>
+                          <p className="text-[10px] font-medium uppercase tracking-wide">
+                            {displayInfo.isActive ? 'Next Stop' : 'Last Delivery'}
                           </p>
                           <div className="flex items-center gap-1 mt-0.5">
-                            <MapPin className={`h-3 w-3 shrink-0 ${displayInfo.isActive ? 'text-primary' : 'text-destructive'}`} />
-                            <span className="text-base font-semibold leading-tight">
+                            <MapPin className={`h-3.5 w-3.5 shrink-0 ${displayInfo.isActive ? 'text-primary' : 'text-destructive'}`} />
+                            <span className="text-base font-semibold leading-tight text-foreground">
                               {extractCityState(displayInfo.address)}
                             </span>
                             <button
@@ -1240,30 +1205,78 @@ const Tracking = () => {
                             >
                               {copiedDriverId === driver.id ? <Check className="h-3 w-3 text-green-600" /> : <Copy className="h-3 w-3" />}
                             </button>
-                            <div className="flex-1" />
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setEditLocationDriver(driver.id);
-                                setLocationInput((driver as any).manual_location_address || '');
-                              }}
-                              className="px-2 py-0.5 rounded-md text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-blue-600 transition-colors whitespace-nowrap flex items-center gap-1"
-                              title="New Location"
-                            >
-                              <Pencil className="h-3 w-3" />
-                              New Location
-                            </button>
                           </div>
                           {displayInfo.date && (
-                            <p className="text-xs mt-0.5 opacity-70">{format(parseISO(displayInfo.date), 'MMM dd, yyyy')}</p>
+                            <p className="text-[11px] mt-0.5">{format(parseISO(displayInfo.date), 'MMM dd, yyyy')}</p>
                           )}
-                        </div>
+                        </>
                       ) : (
                         !((driver as any).manual_location_address) && (
-                          <p className="text-[10px] italic mt-1">No delivery history</p>
+                          <p className="text-[10px] italic">No delivery history</p>
                         )
                       )}
                     </div>
+
+                    {/* Acciones */}
+                    <div className="flex items-center gap-1 border-t mt-2.5 px-3 py-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          copyDriverInfo(driver);
+                          setCopiedInfoId(driver.id);
+                          setTimeout(() => setCopiedInfoId(null), 1500);
+                        }}
+                        className="shrink-0 px-2 py-1 rounded-md text-xs font-semibold bg-muted hover:bg-muted/70 text-green-600 transition-colors whitespace-nowrap flex items-center gap-1"
+                        title="Copy Driver Info"
+                      >
+                        {copiedInfoId === driver.id ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                        Copy Info
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditLocationDriver(driver.id);
+                          setLocationInput((driver as any).manual_location_address || '');
+                        }}
+                        className="shrink-0 px-2 py-1 rounded-md text-xs font-semibold bg-muted hover:bg-muted/70 text-blue-600 transition-colors whitespace-nowrap flex items-center gap-1"
+                        title="New Location"
+                      >
+                        <Pencil className="h-3 w-3" />
+                        Location
+                      </button>
+                      <button
+                        onClick={(e) => togglePauseDriver(driver.id, e)}
+                        className={`shrink-0 p-1.5 rounded-md transition-colors ${
+                          isPaused
+                            ? 'bg-emerald-500 text-white hover:bg-emerald-600'
+                            : 'bg-muted text-muted-foreground hover:bg-muted/70 hover:text-foreground'
+                        }`}
+                        title={isPaused ? 'Reanudar driver' : 'Pausar driver (vacaciones/inactivo temporal)'}
+                      >
+                        {isPaused ? <Play className="h-3 w-3" /> : <Pause className="h-3 w-3" />}
+                      </button>
+                      <div className="flex-1" />
+                      {isPaused ? (
+                        <span className="shrink-0 px-2 py-1 rounded-md text-[10px] font-bold bg-slate-600 text-white whitespace-nowrap flex items-center gap-1">
+                          <Pause className="h-3 w-3" /> PAUSADO
+                        </span>
+                      ) : (
+                        <button
+                          onClick={(e) => cycleSearchStatus(driver.id, e)}
+                          className={`shrink-0 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase transition-colors whitespace-nowrap flex items-center gap-1 ${
+                            sStatus === 'ready'
+                              ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                              : sStatus === 'searching'
+                              ? 'bg-orange-500 text-white hover:bg-orange-600'
+                              : 'bg-muted text-muted-foreground hover:bg-muted/70'
+                          }`}
+                          title={sStatus === 'ready' ? 'Listo — click para quitar' : sStatus === 'searching' ? 'Buscando — click para marcar Listo' : 'Standby — click para marcar Buscando'}
+                        >
+                          {sStatus === 'ready' ? <><Check className="h-3 w-3" /> Listo</>
+                            : sStatus === 'searching' ? <><Search className="h-3 w-3" /> Buscando</>
+                            : 'Standby'}
+                        </button>
+                      )}
                     </div>
                   </div>
                 );
@@ -1273,8 +1286,16 @@ const Tracking = () => {
         </Card>
 
         {/* Map */}
-        <Card className="lg:col-span-3 lg:col-start-2 overflow-hidden self-start">
-          <div className="h-[520px]">
+        <Card className="lg:col-span-3 lg:col-start-2 overflow-hidden self-start rounded-xl shadow-sm">
+          <div className="relative h-[600px]">
+            {/* Leyenda del mapa */}
+            <div className="absolute bottom-3 left-3 z-[1000] flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg bg-white/95 px-3 py-1.5 text-[11px] text-gray-700 shadow-md">
+              <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-[#266aad]" /> GPS en vivo</span>
+              <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-gray-400" /> Sin actualizar</span>
+              <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-[hsl(38,92%,50%)]" /> Manual</span>
+              <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-[#5ee14c]" /> Pickup</span>
+              <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-[#ef4444]" /> Delivery</span>
+            </div>
             <MapContainer
               center={mapCenter}
               zoom={mapZoom}
