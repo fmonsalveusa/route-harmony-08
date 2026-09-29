@@ -2,8 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, isWithinInterval, parseISO } from 'date-fns';
 import { formatDate } from '@/lib/dateUtils';
 import { usePayments, type DbPayment } from '@/hooks/usePayments';
-import { StatusBadge } from '@/components/StatusBadge';
-import { StatCard } from '@/components/StatCard';
+import { StatTiles, SolidStatusPill, PILL_INPUT, TABLE_CARD, TABLE_HEAD_ROW, TABLE_ROW } from '@/components/StatTiles';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -13,6 +12,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { PaymentEditDialog } from '@/components/PaymentEditDialog';
 import { Input } from '@/components/ui/input';
 import { DollarSign, CheckCircle, Clock, Download, Pencil, Trash2, FileText, CheckCheck, X, PlusCircle, Search, ChevronDown } from 'lucide-react';
+
+const PAYMENT_STATUS: Record<string, { label: string; color: string; border: string }> = {
+  pending: { label: 'Pending', color: 'bg-amber-500', border: 'border-l-amber-500' },
+  in_process: { label: 'In Process', color: 'bg-blue-600', border: 'border-l-blue-600' },
+  paid: { label: 'Paid', color: 'bg-green-600', border: 'border-l-green-600' },
+};
+const paymentPill = (status: string) => (
+  <SolidStatusPill label={PAYMENT_STATUS[status]?.label ?? status} color={PAYMENT_STATUS[status]?.color ?? 'bg-gray-500'} />
+);
 import { generatePaymentReceipt, type DispatcherLoadItem } from '@/lib/paymentReceipt';
 import { sendReceiptWhatsApp, type ReceiptSendResult } from '@/lib/sendReceiptWhatsApp';
 import { generateBatchPaymentReceipt } from '@/lib/batchPaymentReceipt';
@@ -422,13 +430,13 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
             placeholder="Search..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="pl-9 h-8 w-[180px] text-xs"
+            className="pl-9 h-9 w-[200px] text-xs rounded-full bg-card shadow-sm"
           />
         </div>
         <div className="space-y-1">
           <label className="text-xs font-medium text-muted-foreground">Beneficiary</label>
           <Select value={beneficiaryFilter} onValueChange={setBeneficiaryFilter}>
-            <SelectTrigger className="h-8 w-[180px] text-xs">
+            <SelectTrigger className="rounded-full bg-card shadow-sm h-9 w-[180px] text-xs">
               <SelectValue placeholder="All" />
             </SelectTrigger>
             <SelectContent className="bg-popover z-50">
@@ -443,7 +451,7 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
         <div className="space-y-1">
           <label className="text-xs font-medium text-muted-foreground">Week</label>
           <Select value={weekFilter} onValueChange={setWeekFilter}>
-            <SelectTrigger className="h-8 w-[140px] text-xs">
+            <SelectTrigger className="rounded-full bg-card shadow-sm h-9 w-[140px] text-xs">
               <SelectValue placeholder="All" />
             </SelectTrigger>
             <SelectContent className="bg-popover z-50">
@@ -458,7 +466,7 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
         <div className="space-y-1">
           <label className="text-xs font-medium text-muted-foreground">Month</label>
           <Select value={monthFilter} onValueChange={setMonthFilter}>
-            <SelectTrigger className="h-8 w-[140px] text-xs">
+            <SelectTrigger className="rounded-full bg-card shadow-sm h-9 w-[140px] text-xs">
               <SelectValue placeholder="All" />
             </SelectTrigger>
             <SelectContent className="bg-popover z-50">
@@ -474,7 +482,7 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
         <div className="space-y-1">
           <label className="text-xs font-medium text-muted-foreground">Year</label>
           <Select value={yearFilter} onValueChange={setYearFilter}>
-            <SelectTrigger className="h-8 w-[100px] text-xs">
+            <SelectTrigger className="rounded-full bg-card shadow-sm h-9 w-[100px] text-xs">
               <SelectValue placeholder="All" />
             </SelectTrigger>
             <SelectContent className="bg-popover z-50">
@@ -488,12 +496,12 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
 
         <div className="space-y-1">
           <label className="text-xs font-medium text-muted-foreground">From</label>
-          <Input type="date" className="h-8 w-[150px] text-xs" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
+          <Input type="date" className="rounded-full bg-card shadow-sm h-9 w-[150px] text-xs" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
         </div>
 
         <div className="space-y-1">
           <label className="text-xs font-medium text-muted-foreground">To</label>
-          <Input type="date" className="h-8 w-[150px] text-xs" value={dateTo} onChange={e => setDateTo(e.target.value)} />
+          <Input type="date" className="rounded-full bg-card shadow-sm h-9 w-[150px] text-xs" value={dateTo} onChange={e => setDateTo(e.target.value)} />
         </div>
 
         {hasActiveFilters && (
@@ -567,11 +575,11 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
         </div>
       )}
 
-      <div className="glass-card overflow-hidden">
+      <div className={TABLE_CARD}>
         <div className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-[15px]">
-              <thead><tr className="border-b glass-table-header">
+              <thead><tr className={TABLE_HEAD_ROW}>
                 <th className="p-3 w-10">
                   <Checkbox
                     checked={payments.length > 0 && selectedIds.size === payments.length}
@@ -595,7 +603,7 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
                   <tr><td colSpan={12} className="p-6 text-center text-muted-foreground">No payments recorded</td></tr>
                 )}
                 {payments.map(p => (
-                  <tr key={p.id} className={`border-b last:border-0 glass-row ${selectedIds.has(p.id) ? 'bg-primary/5' : ''}`}>
+                  <tr key={p.id} className={`${TABLE_ROW} last:border-0 border-l-4 ${PAYMENT_STATUS[p.status]?.border ?? 'border-l-transparent'} ${selectedIds.has(p.id) ? 'bg-primary/5' : ''}`}>
                     <td className="p-3">
                       <Checkbox checked={selectedIds.has(p.id)} onCheckedChange={() => toggleSelect(p.id)} />
                     </td>
@@ -617,16 +625,16 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
                       <Select value={p.status} onValueChange={(val) => handleStatusChange(p, val)}>
                         <SelectTrigger className="h-8 w-[155px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:hidden bg-transparent">
                           <span className="flex items-center justify-between w-full gap-1">
-                            <StatusBadge status={p.status} className="text-[11px] px-3 py-1.5" />
+                            {paymentPill(p.status)}
                             <span className="inline-flex h-5 w-5 items-center justify-center rounded border border-border bg-muted/40 text-muted-foreground ml-auto">
                               <ChevronDown className="h-3 w-3 shrink-0" />
                             </span>
                           </span>
                         </SelectTrigger>
                         <SelectContent className="bg-popover z-50">
-                          <SelectItem value="pending"><StatusBadge status="pending" /></SelectItem>
-                          <SelectItem value="in_process"><StatusBadge status="in_process" /></SelectItem>
-                          <SelectItem value="paid"><StatusBadge status="paid" /></SelectItem>
+                          <SelectItem value="pending">{paymentPill('pending')}</SelectItem>
+                          <SelectItem value="in_process">{paymentPill('in_process')}</SelectItem>
+                          <SelectItem value="paid">{paymentPill('paid')}</SelectItem>
                         </SelectContent>
                       </Select>
                     </td>
@@ -707,12 +715,16 @@ const Payments = () => {
         const inProcess = allP.filter(p => p.status === 'in_process');
         const totalPending = pending.reduce((s, p) => s + Number(p.amount), 0);
         const totalInProcess = inProcess.reduce((s, p) => s + Number(p.amount), 0);
+        // Pagado este mes (hora del Este), por la fecha de pago
+        const thisMonth = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' }).slice(0, 7);
+        const paidThisMonth = allP.filter(p => p.status === 'paid' && (p.payment_date || '').slice(0, 7) === thisMonth);
         return (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <StatCard title="Total Pending" value={money(totalPending)} subtitle={`${pending.length} payments`} icon={Clock} iconClassName="bg-warning/10 text-warning" />
-            <StatCard title="Total In Process" value={money(totalInProcess)} subtitle={`${inProcess.length} payments`} icon={RefreshCw} iconClassName="bg-info/10 text-info" />
-            <StatCard title="Total Pending + In Process" value={money(totalPending + totalInProcess)} subtitle={`${pending.length + inProcess.length} payments`} icon={DollarSign} />
-          </div>
+          <StatTiles tiles={[
+            { label: 'Total Pending', value: money(totalPending), hint: `${pending.length} payments`, icon: Clock, tint: 'bg-amber-100 text-amber-700' },
+            { label: 'Total In Process', value: money(totalInProcess), hint: `${inProcess.length} payments`, icon: RefreshCw, tint: 'bg-blue-100 text-blue-700' },
+            { label: 'Pending + In Process', value: money(totalPending + totalInProcess), hint: `${pending.length + inProcess.length} payments`, icon: DollarSign, tint: 'bg-sky-100 text-sky-700' },
+            { label: 'Paid this month', value: money(paidThisMonth.reduce((s, p) => s + Number(p.amount), 0)), hint: `${paidThisMonth.length} payments`, icon: CheckCircle, tint: 'bg-emerald-100 text-emerald-700' },
+          ]} />
         );
       })()}
 

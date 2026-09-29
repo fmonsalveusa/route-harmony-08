@@ -4,8 +4,7 @@ import { useCompanies } from '@/hooks/useCompanies';
 import { formatDate } from '@/lib/dateUtils';
 import { generateInvoicePdf } from '@/lib/invoicePdf';
 import { supabase } from '@/integrations/supabase/client';
-import { StatusBadge } from '@/components/StatusBadge';
-import { StatCard } from '@/components/StatCard';
+import { StatTiles, SolidStatusPill, PILL_INPUT, TABLE_CARD, TABLE_HEAD_ROW, TABLE_ROW } from '@/components/StatTiles';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -18,6 +17,15 @@ import { toast } from 'sonner';
 
 import { FileText, DollarSign, AlertTriangle, CheckCircle, Search, Trash2, Pencil, Download, Send, Image, ExternalLink, Mail, Loader2, ChevronDown } from 'lucide-react';
 import type { PodDocument } from '@/hooks/usePodDocuments';
+
+const INVOICE_STATUS: Record<string, { label: string; color: string; border: string }> = {
+  pending: { label: 'Pending', color: 'bg-amber-500', border: 'border-l-amber-500' },
+  sent: { label: 'Sent', color: 'bg-blue-600', border: 'border-l-blue-600' },
+  paid: { label: 'Paid', color: 'bg-green-600', border: 'border-l-green-600' },
+};
+const invoicePill = (status: string) => (
+  <SolidStatusPill label={INVOICE_STATUS[status]?.label ?? status} color={INVOICE_STATUS[status]?.color ?? 'bg-gray-500'} />
+);
 
 const Invoices = () => {
   const { invoices, loading, updateInvoice, deleteInvoice } = useInvoices();
@@ -151,18 +159,18 @@ const Invoices = () => {
         <TabsContent value="broker">
         <div className="space-y-6">
 
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <StatCard title="Pendientes" value={`$${totalPending.toLocaleString()}`} icon={AlertTriangle} iconClassName="bg-warning/10 text-warning" />
-        <StatCard title="Enviadas" value={sent.length} icon={Send} iconClassName="bg-info/10 text-info" />
-        <StatCard title="Cobradas" value={`$${totalPaid.toLocaleString()}`} icon={CheckCircle} iconClassName="bg-success/10 text-success" />
-        <StatCard title="Total Facturas" value={invoices.length} icon={FileText} />
-      </div>
+      <StatTiles tiles={[
+        { label: 'Pendientes', value: `$${totalPending.toLocaleString()}`, hint: `${pending.length} facturas`, icon: AlertTriangle, tint: 'bg-amber-100 text-amber-700' },
+        { label: 'Enviadas', value: sent.length, icon: Send, tint: 'bg-blue-100 text-blue-700' },
+        { label: 'Cobradas', value: `$${totalPaid.toLocaleString()}`, hint: `${paid.length} facturas`, icon: CheckCircle, tint: 'bg-emerald-100 text-emerald-700' },
+        { label: 'Total Facturas', value: invoices.length, icon: FileText, tint: 'bg-sky-100 text-sky-700' },
+      ]} />
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3 items-center">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search by number, broker or company..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+        <div className="relative flex-1 min-w-[200px] max-w-md">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input placeholder="Search by number, broker or company..." value={search} onChange={e => setSearch(e.target.value)} className={`pl-10 ${PILL_INPUT}`} />
         </div>
       </div>
 
@@ -184,11 +192,11 @@ const Invoices = () => {
       </Tabs>
 
       {/* Table */}
-      <div className="glass-card overflow-hidden">
+      <div className={TABLE_CARD}>
         <div className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-[15px]">
-              <thead><tr className="border-b glass-table-header">
+              <thead><tr className={TABLE_HEAD_ROW}>
                 <th className="text-left p-3 font-medium text-muted-foreground">Invoice #</th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Broker</th>
                 <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Company</th>
@@ -204,7 +212,7 @@ const Invoices = () => {
                   </td></tr>
                 )}
                 {filtered.map(inv => (
-                  <tr key={inv.id} className="border-b last:border-0 glass-row">
+                  <tr key={inv.id} className={`${TABLE_ROW} last:border-0 border-l-4 ${INVOICE_STATUS[inv.status]?.border ?? 'border-l-transparent'}`}>
                     <td className="p-3 font-medium text-primary">{inv.invoice_number}</td>
                     <td className="p-3">{inv.broker_name}</td>
                     <td className="p-3 hidden md:table-cell text-muted-foreground">{inv.company_name || '—'}</td>
@@ -213,16 +221,16 @@ const Invoices = () => {
                       <Select value={inv.status} onValueChange={val => updateInvoice(inv.id, { status: val })}>
                         <SelectTrigger className="h-8 w-[155px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:hidden bg-transparent">
                           <span className="flex items-center justify-between w-full gap-1">
-                            <StatusBadge status={`invoice_${inv.status}`} className="text-[11px] px-3 py-1.5" />
+                            {invoicePill(inv.status)}
                             <span className="inline-flex h-5 w-5 items-center justify-center rounded border border-border bg-muted/40 text-muted-foreground ml-auto">
                               <ChevronDown className="h-3 w-3 shrink-0" />
                             </span>
                           </span>
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="pending"><StatusBadge status="invoice_pending" /></SelectItem>
-                          <SelectItem value="sent"><StatusBadge status="invoice_sent" /></SelectItem>
-                          <SelectItem value="paid"><StatusBadge status="invoice_paid" /></SelectItem>
+                          <SelectItem value="pending">{invoicePill('pending')}</SelectItem>
+                          <SelectItem value="sent">{invoicePill('sent')}</SelectItem>
+                          <SelectItem value="paid">{invoicePill('paid')}</SelectItem>
                         </SelectContent>
                       </Select>
                     </td>

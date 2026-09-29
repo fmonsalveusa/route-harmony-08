@@ -7,6 +7,8 @@ export interface StatTile {
   icon: LucideIcon;
   /** Fondo y color del ícono, p. ej. 'bg-sky-100 text-sky-700' */
   tint: string;
+  /** Línea chica debajo del número, p. ej. "12 payments" */
+  hint?: string;
 }
 
 // Clases completas escritas a mano para que Tailwind las genere
@@ -30,6 +32,7 @@ export function StatTiles({ tiles, className }: { tiles: StatTile[]; className?:
           <div className="min-w-0">
             <p className="text-xs text-muted-foreground truncate">{t.label}</p>
             <p className="text-xl font-semibold leading-tight truncate">{t.value}</p>
+            {t.hint && <p className="text-[11px] text-muted-foreground truncate">{t.hint}</p>}
           </div>
         </div>
       ))}

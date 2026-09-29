@@ -21,6 +21,7 @@ import {
   Receipt, Download, FileText, DollarSign, Fuel,
 } from 'lucide-react';
 import type { DbExpense } from '@/hooks/useExpenses';
+import { PILL_INPUT, TABLE_CARD, TABLE_HEAD_ROW, TABLE_ROW } from '@/components/StatTiles';
 
 const PAGE_SIZES = [25, 50, 100];
 
@@ -205,14 +206,14 @@ const Expenses = () => {
 
       {/* Search + Filters */}
       <div className="flex flex-wrap gap-2 items-center">
-        <div className="relative w-[220px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <div className="relative w-[240px]">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Search..." value={search}
-            onChange={e => { setSearch(e.target.value); setPage(1); }} className="pl-9 h-8 text-xs" />
+            onChange={e => { setSearch(e.target.value); setPage(1); }} className={`pl-10 ${PILL_INPUT}`} />
         </div>
         <Filter className="h-4 w-4 text-muted-foreground" />
           <Select value={filterDateQuick} onValueChange={v => { setFilterDateQuick(v); setPage(1); }}>
-            <SelectTrigger className="w-[130px] h-8 text-xs"><SelectValue placeholder="Date" /></SelectTrigger>
+            <SelectTrigger className="w-[130px] h-10 text-xs rounded-full bg-card shadow-sm"><SelectValue placeholder="Date" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Dates</SelectItem>
               <SelectItem value="this_week">This Week</SelectItem>
@@ -222,7 +223,7 @@ const Expenses = () => {
             </SelectContent>
           </Select>
           <Select value={filterType} onValueChange={v => { setFilterType(v); setPage(1); }}>
-            <SelectTrigger className="w-[140px] h-8 text-xs"><SelectValue placeholder="Type" /></SelectTrigger>
+            <SelectTrigger className="w-[140px] h-10 text-xs rounded-full bg-card shadow-sm"><SelectValue placeholder="Type" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Types</SelectItem>
               {Object.entries(EXPENSE_TYPE_LABELS).map(([k, v]) => (
@@ -231,7 +232,7 @@ const Expenses = () => {
             </SelectContent>
           </Select>
           <Select value={filterTruck} onValueChange={v => { setFilterTruck(v); setPage(1); }}>
-            <SelectTrigger className="w-[180px] h-8 text-xs"><SelectValue placeholder="Truck" /></SelectTrigger>
+            <SelectTrigger className="w-[180px] h-10 text-xs rounded-full bg-card shadow-sm"><SelectValue placeholder="Truck" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Trucks</SelectItem>
               {trucks
@@ -248,7 +249,7 @@ const Expenses = () => {
             </SelectContent>
           </Select>
           <Select value={filterPayment} onValueChange={v => { setFilterPayment(v); setPage(1); }}>
-            <SelectTrigger className="w-[140px] h-8 text-xs"><SelectValue placeholder="Payment" /></SelectTrigger>
+            <SelectTrigger className="w-[140px] h-10 text-xs rounded-full bg-card shadow-sm"><SelectValue placeholder="Payment" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Methods</SelectItem>
               {Object.entries(PAYMENT_METHOD_LABELS).map(([k, v]) => (
@@ -257,7 +258,7 @@ const Expenses = () => {
             </SelectContent>
           </Select>
           <Select value={filterSource} onValueChange={v => { setFilterSource(v); setPage(1); }}>
-            <SelectTrigger className="w-[120px] h-8 text-xs"><SelectValue placeholder="Source" /></SelectTrigger>
+            <SelectTrigger className="w-[120px] h-10 text-xs rounded-full bg-card shadow-sm"><SelectValue placeholder="Source" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Sources</SelectItem>
               <SelectItem value="manual">Manual</SelectItem>
@@ -290,12 +291,12 @@ const Expenses = () => {
       )}
 
       {/* Table */}
-      <div className="glass-card overflow-hidden">
+      <div className={TABLE_CARD}>
         <div className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b glass-table-header">
+                <tr className={TABLE_HEAD_ROW}>
                   <th className="p-3 w-10">
                     <Checkbox checked={paged.length > 0 && selectedIds.size === paged.length}
                       onCheckedChange={toggleAll} />
@@ -328,7 +329,7 @@ const Expenses = () => {
                 ) : paged.map(expense => {
                   const truck = trucks.find(t => t.id === expense.truck_id);
                   return (
-                    <tr key={expense.id} className="border-b glass-row">
+                    <tr key={expense.id} className={`${TABLE_ROW} ${selectedIds.has(expense.id) ? 'bg-primary/5' : ''}`}>
                       <td className="p-3">
                         <Checkbox checked={selectedIds.has(expense.id)}
                           onCheckedChange={() => toggleSelect(expense.id)} />

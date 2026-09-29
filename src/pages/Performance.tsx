@@ -317,7 +317,7 @@ export default function Performance() {
 
       {/* Period Tabs */}
       <Select value={period} onValueChange={v => setPeriod(v as PeriodKey)}>
-        <SelectTrigger className="w-[180px] h-9 text-sm">
+        <SelectTrigger className="w-[200px] h-10 text-sm rounded-full bg-card shadow-sm">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -330,7 +330,7 @@ export default function Performance() {
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* Revenue */}
-        <Card className="border-l-4 border-l-[hsl(152,60%,40%)]">
+        <Card className="rounded-xl shadow-sm border-l-4 border-l-[hsl(152,60%,40%)]">
           <CardContent className="p-5">
             <div className="flex items-start justify-between">
               <div className="space-y-1">
@@ -350,7 +350,7 @@ export default function Performance() {
         </Card>
 
         {/* Expenses */}
-        <Card className="border-l-4 border-l-destructive">
+        <Card className="rounded-xl shadow-sm border-l-4 border-l-destructive">
           <CardContent className="p-5">
             <div className="flex items-start justify-between">
               <div className="space-y-1">
@@ -373,7 +373,7 @@ export default function Performance() {
         </Card>
 
         {/* Net Profit */}
-        <Card className="border-l-4 border-l-[hsl(38,92%,50%)]">
+        <Card className="rounded-xl shadow-sm border-l-4 border-l-[hsl(38,92%,50%)]">
           <CardContent className="p-5">
             <div className="flex items-start justify-between">
               <div className="space-y-1">
@@ -397,7 +397,7 @@ export default function Performance() {
       </div>
 
       {/* Performance Table */}
-      <Card>
+      <Card className="rounded-xl shadow-sm overflow-hidden">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div>
@@ -410,7 +410,7 @@ export default function Performance() {
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow className="bg-muted/30">
+                <TableRow className="bg-muted/50">
                   <TableHead className="w-14 text-center">Rank</TableHead>
                   <TableHead>Truck</TableHead>
                   <TableHead>Driver</TableHead>
@@ -492,7 +492,7 @@ export default function Performance() {
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Profit/Loss by Truck */}
-        <Card>
+        <Card className="rounded-xl shadow-sm">
           <CardHeader className="pb-2">
             <CardTitle className="text-base">Profit/Loss by Truck</CardTitle>
           </CardHeader>
@@ -519,7 +519,7 @@ export default function Performance() {
         </Card>
 
         {/* Revenue vs Expenses */}
-        <Card>
+        <Card className="rounded-xl shadow-sm">
           <CardHeader className="pb-2">
             <CardTitle className="text-base">Revenue vs Expenses by Truck</CardTitle>
           </CardHeader>
@@ -619,7 +619,7 @@ export default function Performance() {
         </Card>
 
         {/* Margin Distribution Donut */}
-        <Card>
+        <Card className="rounded-xl shadow-sm">
           <CardHeader className="pb-2">
             <CardTitle className="text-base">Trucks by Profit Margin</CardTitle>
           </CardHeader>
@@ -661,7 +661,7 @@ export default function Performance() {
 
       {/* Insights Panel */}
       {insights.length > 0 && (
-        <Card>
+        <Card className="rounded-xl shadow-sm">
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-[hsl(38,92%,50%)]" />
