@@ -18,6 +18,7 @@ import { LiveNotificationToasts } from '@/components/LiveNotificationToasts';
 import { MaintenanceReminder } from '@/components/MaintenanceReminder';
 import { MeetingAlertModal } from '@/components/MeetingAlertModal';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { GlobalSearch } from '@/components/GlobalSearch';
 import { supabase } from '@/integrations/supabase/client';
 import { useMaintenanceAutoCheck } from '@/hooks/useMaintenanceAutoCheck';
 
@@ -73,7 +74,8 @@ const allNavItems: NavItem[] = [
 // Menú lateral oscuro (estilo RouteOne) con el azul de la marca
 const SIDEBAR_BG = 'bg-[#15253a]';
 const SIDEBAR_LINK = 'text-slate-300 hover:bg-white/10 hover:text-white';
-const SIDEBAR_ACTIVE = 'bg-sky-100 text-[#0f2a47] font-semibold';
+// Color fijo (no bg-sky-100): el menú es oscuro en los dos modos y el resaltado debe verse igual
+const SIDEBAR_ACTIVE = 'bg-[#e0f2fe] text-[#0f2a47] font-semibold';
 
 const roleBadgeStyles: Record<string, string> = {
   admin: 'bg-destructive text-destructive-foreground',
@@ -367,6 +369,11 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
                 <span className="hidden sm:inline">New Load</span>
               </Button>
             )}
+          </div>
+
+          {/* Buscador global (Ctrl+K) */}
+          <div className="flex-1 flex justify-center px-3 min-w-0">
+            <GlobalSearch />
           </div>
 
           <div className="flex items-center gap-2">

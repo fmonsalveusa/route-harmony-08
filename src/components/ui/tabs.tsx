@@ -11,8 +11,9 @@ const TabsList = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <TabsPrimitive.List
     ref={ref}
+    // Selector en píldora (estilo RouteOne): la pestaña activa queda blanca sobre el fondo gris
     className={cn(
-      "flex gap-1 border-b border-border",
+      "inline-flex max-w-full flex-wrap items-center gap-1 rounded-xl sm:rounded-full bg-muted p-1 border border-border/60",
       className,
     )}
     {...props}
@@ -27,7 +28,7 @@ const TabsTrigger = React.forwardRef<
   <TabsPrimitive.Trigger
     ref={ref}
     className={cn(
-      "px-4 py-2.5 text-sm font-medium uppercase tracking-wide border-b-2 border-transparent -mb-px flex items-center gap-2 transition-colors text-muted-foreground hover:text-foreground data-[state=active]:border-primary data-[state=active]:text-primary focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50",
+      "px-4 py-1.5 rounded-full text-sm font-medium flex items-center justify-center gap-2 whitespace-nowrap transition-all text-muted-foreground hover:text-foreground data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
       className,
     )}
     {...props}

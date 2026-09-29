@@ -31,6 +31,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Checkbox } from '@/components/ui/checkbox';
 import { Plus, Search, Package, Pencil, Trash2, ChevronDown, ChevronUp, MapPin, Upload, ExternalLink, Filter, FileText, Download, CalendarDays, Clock, Navigation, DollarSign, Landmark } from 'lucide-react';
 import { toast } from 'sonner';
+import { useSearchParams } from 'react-router-dom';
 import type { DbLoad } from '@/hooks/useLoads';
 
 // Hidden file input for POD uploads from action buttons
@@ -110,6 +111,35 @@ const Loads = () => {
   const [pageSize, setPageSize] = useState(25);
   // Tracks which load IDs are currently generating payments (prevents double-click)
   const [generatingPaymentIds, setGeneratingPaymentIds] = useState<Set<string>>(new Set());
+
+  // Enlaces desde el buscador global y las notificaciones:
+  //   ?openLoad=<id>  abre esa carga   ·   ?q=<texto>  busca (p. ej. todas las de un broker)
+  // Se quitan los filtros para que nada la esconda (el año por defecto escondía cargas viejas).
+  const [searchParams, setSearchParams] = useSearchParams();
+  useEffect(() => {
+    const openId = searchParams.get('openLoad');
+    const q = searchParams.get('q');
+    if (!openId && !q) return;
+    if (openId) {
+      const load = dbLoads.find(l => l.id === openId);
+      if (!load) {
+        // Esperar a que llegue la lista; si ya llegó y no está, olvidar el enlace
+        if (!loadsLoading) setSearchParams({}, { replace: true });
+        return;
+      }
+      setActiveTab(['delivered', 'tonu'].includes(load.status) ? 'delivered' : load.status === 'cancelled' ? 'cancelled' : 'active');
+      setSearch(load.reference_number);
+      setExpandedId(load.id);
+      setTimeout(() => document.getElementById(`load-row-${load.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
+    } else if (q) {
+      setActiveTab('all');
+      setSearch(q);
+    }
+    setFilterDriver('all'); setFilterTruck('all'); setFilterDispatcher('all'); setFilterWeeks(new Set());
+    setFilterYear('all'); setFilterMonth('all'); setFilterBroker('all'); setFilterFactoring('all');
+    setPage(1);
+    setSearchParams({}, { replace: true });
+  }, [searchParams, dbLoads, loadsLoading, setSearchParams]);
 
   const handleGenerateInvoice = async (load: DbLoad) => {
     if (!load.broker_client) { toast.error('Esta carga no tiene broker asignado'); return; }
@@ -430,7 +460,7 @@ const Loads = () => {
           </div>
       </div>
 
-      <div className="flex gap-2 border-b">
+      <div className="inline-flex max-w-full flex-wrap items-center gap-1 rounded-xl sm:rounded-full bg-muted p-1 border border-border/60">
         {([
           { key: 'active' as const, label: 'Active Loads', count: activeLoads.length },
           { key: 'delivered' as const, label: 'Delivered', count: deliveredLoads.length },
@@ -440,10 +470,10 @@ const Loads = () => {
           <button
             key={tab.key}
             onClick={() => { setActiveTab(tab.key); setExpandedId(null); setPage(1); }}
-            className={`px-4 py-2.5 text-sm font-medium uppercase border-b-2 transition-colors flex items-center gap-2 ${
+            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all flex items-center gap-2 whitespace-nowrap ${
               activeTab === tab.key
-                ? 'border-primary text-primary'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
+                ? 'bg-card text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             {tab.label}

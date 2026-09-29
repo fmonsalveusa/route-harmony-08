@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { ServiceTypeBadge } from '@/components/ServiceTypeBadge';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -25,6 +25,7 @@ import { toast } from '@/hooks/use-toast';
 import { ExpiryIndicators } from '@/components/ExpiryIndicators';
 import { supabase } from '@/integrations/supabase/client';
 import { formatPhone } from '@/lib/phoneUtils';
+import { useSearchParams } from 'react-router-dom';
 
 const driverStatusColor = (status: string) => {
   switch (status) {
@@ -72,8 +73,29 @@ const Drivers = () => {
   const [pageSize, setPageSize] = useState(25);
   const [dispatcherFilter, setDispatcherFilter] = useState<string>('all');
 
+  // Enlace desde el buscador global: ?openDriver=<id> abre ese driver
+  const [searchParams, setSearchParams] = useSearchParams();
+  // Si se entra por el enlace, no se aplica el filtro de dispatcher por defecto (podría esconder al driver)
+  const openedFromLink = useRef(!!searchParams.get('openDriver'));
+  useEffect(() => {
+    const openId = searchParams.get('openDriver');
+    if (!openId) return;
+    const driver = drivers.find(d => d.id === openId);
+    if (!driver) {
+      if (!loading) setSearchParams({}, { replace: true });
+      return;
+    }
+    setDispatcherFilter('all');
+    setActiveTab(driver.status === 'inactive' ? 'inactive' : 'active');
+    setSearch(driver.name);
+    setExpandedId(driver.id);
+    setPage(1);
+    setSearchParams({}, { replace: true });
+  }, [searchParams, drivers, loading, setSearchParams]);
+
   // Default dispatcher filter para fmonsalve.usa@gmail.com → Francisco Monsalve
   useEffect(() => {
+    if (openedFromLink.current) return;
     if (profile?.email?.toLowerCase() === 'fmonsalve.usa@gmail.com' && dispatchers.length > 0) {
       const francisco = dispatchers.find(d => d.name?.toLowerCase().includes('francisco monsalve'));
       if (francisco) setDispatcherFilter(francisco.id);

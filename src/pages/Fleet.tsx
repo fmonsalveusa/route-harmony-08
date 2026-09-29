@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useTrucks, DbTruck, TruckInput } from '@/hooks/useTrucks';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useDispatchers } from '@/hooks/useDispatchers';
@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Plus, Truck as TruckIcon, Pencil, Trash2, Eye, User, ChevronDown, ChevronUp, Search, CheckCircle2, Wrench, XCircle, UserX, AlertTriangle } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ExpiryIndicators } from '@/components/ExpiryIndicators';
+import { useSearchParams } from 'react-router-dom';
 
 const STATUS_OPTIONS = [
   { value: 'active', label: 'Active', bg: 'bg-green-600 text-white' },
@@ -52,8 +53,30 @@ const Fleet = () => {
   const { dispatchers } = useDispatchers();
   const { profile } = useAuth();
 
+  // Enlace desde el buscador global: ?openTruck=<id> abre esa unidad
+  const [searchParams, setSearchParams] = useSearchParams();
+  const openedFromLink = useRef(!!searchParams.get('openTruck'));
+  useEffect(() => {
+    const openId = searchParams.get('openTruck');
+    if (!openId) return;
+    const truck = trucks.find(t => t.id === openId);
+    if (!truck) {
+      if (!loading) setSearchParams({}, { replace: true });
+      return;
+    }
+    setDispatcherFilter('all');
+    setVinFilter('all');
+    setPlateFilter('all');
+    setActiveTab(truck.status === 'inactive' ? 'inactive' : 'active');
+    setSearchQuery(truck.unit_number);
+    setExpandedId(truck.id);
+    setPage(1);
+    setSearchParams({}, { replace: true });
+  }, [searchParams, trucks, loading, setSearchParams]);
+
   // Default dispatcher filter para fmonsalve.usa@gmail.com → Francisco Monsalve
   useEffect(() => {
+    if (openedFromLink.current) return;
     if (profile?.email?.toLowerCase() === 'fmonsalve.usa@gmail.com' && dispatchers.length > 0) {
       const francisco = dispatchers.find(d => d.name?.toLowerCase().includes('francisco monsalve'));
       if (francisco) setDispatcherFilter(francisco.id);
