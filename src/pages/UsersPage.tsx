@@ -1,14 +1,18 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { StatusBadge } from '@/components/StatusBadge';
+import { StatTiles, SolidStatusPill, TABLE_CARD, TABLE_HEAD_ROW, TABLE_ROW } from '@/components/StatTiles';
 import { UserFormDialog } from '@/components/UserFormDialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Plus, Shield, Calculator, Headphones, Truck as TruckIcon, Loader2, Pencil, Trash2, ChevronDown, Landmark, Copy, Check } from 'lucide-react';
+import { Plus, Shield, Calculator, Headphones, Truck as TruckIcon, Loader2, Pencil, Trash2, ChevronDown, Landmark, Copy, Check, Users, UserX } from 'lucide-react';
+
+const activePill = (active: boolean) => active
+  ? <SolidStatusPill label="Active" color="bg-green-600" />
+  : <SolidStatusPill label="Inactive" color="bg-red-600" />;
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { toast } from 'sonner';
@@ -157,6 +161,14 @@ const UsersPage = () => {
         )}
       </div>
 
+      <StatTiles tiles={[
+        { label: 'Active Users', value: activeUsers.length, icon: Users, tint: 'bg-sky-100 text-sky-700' },
+        { label: 'Admins', value: activeUsers.filter(u => u.role === 'admin' || u.role === 'accounting').length, icon: Shield, tint: 'bg-red-100 text-red-700' },
+        { label: 'Dispatchers', value: activeUsers.filter(u => u.role === 'dispatcher').length, icon: Headphones, tint: 'bg-blue-100 text-blue-700' },
+        { label: 'Drivers', value: activeUsers.filter(u => u.role === 'driver').length, icon: TruckIcon, tint: 'bg-emerald-100 text-emerald-700' },
+        { label: 'Inactive', value: inactiveUsers.length, icon: UserX, tint: 'bg-slate-100 text-slate-700' },
+      ]} />
+
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="active">
@@ -170,7 +182,7 @@ const UsersPage = () => {
           </TabsTrigger>
         </TabsList>
 
-      <div className="glass-card overflow-hidden mt-4">
+      <div className={`${TABLE_CARD} mt-4`}>
         <div className="p-0">
           {loading ? (
             <div className="flex items-center justify-center py-12">
@@ -180,7 +192,7 @@ const UsersPage = () => {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b glass-table-header">
+                  <tr className={TABLE_HEAD_ROW}>
                     <th className="text-left p-3 font-medium text-muted-foreground">User</th>
                     <th className="text-left p-3 font-medium text-muted-foreground">Email</th>
                     <th className="text-left p-3 font-medium text-muted-foreground">Phone</th>
@@ -196,7 +208,7 @@ const UsersPage = () => {
                     const initials = u.full_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
                     const RoleIcon = roleIcons[u.role] || Shield;
                     return (
-                      <tr key={u.id} className="border-b last:border-0 glass-row">
+                      <tr key={u.id} className={`${TABLE_ROW} last:border-0 border-l-4 ${u.is_active ? 'border-l-green-600' : 'border-l-red-600'}`}>
                         <td className="p-3">
                           <div className="flex items-center gap-3">
                             <Avatar className="h-8 w-8">
@@ -214,7 +226,7 @@ const UsersPage = () => {
                         </td>
                         <td className="p-3" onClick={e => e.stopPropagation()}>
                           {isDispatcherView ? (
-                            <StatusBadge status={u.is_active ? 'active' : 'inactive'} className="text-[11px] px-3 py-1.5" />
+                            activePill(u.is_active)
                           ) : (
                           <Select value={u.is_active ? 'active' : 'inactive'} onValueChange={async (val) => {
                             const newActive = val === 'active';
@@ -223,15 +235,15 @@ const UsersPage = () => {
                           }}>
                             <SelectTrigger className="h-8 w-[140px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:hidden bg-transparent">
                               <span className="flex items-center justify-between w-full gap-1">
-                                <StatusBadge status={u.is_active ? 'active' : 'inactive'} className="text-[11px] px-3 py-1.5" />
+                                {activePill(u.is_active)}
                                 <span className="inline-flex h-5 w-5 items-center justify-center rounded border border-border bg-muted/40 text-muted-foreground ml-auto">
                                   <ChevronDown className="h-3 w-3 shrink-0" />
                                 </span>
                               </span>
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="active"><StatusBadge status="active" /></SelectItem>
-                              <SelectItem value="inactive"><StatusBadge status="inactive" /></SelectItem>
+                              <SelectItem value="active">{activePill(true)}</SelectItem>
+                              <SelectItem value="inactive">{activePill(false)}</SelectItem>
                             </SelectContent>
                           </Select>
                           )}

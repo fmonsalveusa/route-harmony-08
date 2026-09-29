@@ -3,7 +3,7 @@ import { useDrivers } from '@/hooks/useDrivers';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { getLoadRoutes } from '@/lib/loadRoute';
-import { StatCard } from '@/components/StatCard';
+import { StatTiles, PILL_INPUT } from '@/components/StatTiles';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DollarSign, TrendingUp, MapPin } from 'lucide-react';
 import {
@@ -300,10 +300,13 @@ const DriverRouteHistory = () => {
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold">Driver Route History</h1>
+        <div>
+          <h1 className="page-header">Driver Route History</h1>
+          <p className="page-description">Loads, miles and revenue per driver on the map</p>
+        </div>
         <div className="flex gap-2">
           <Select value={selectedDriverId} onValueChange={setSelectedDriverId}>
-            <SelectTrigger className="w-[200px]">
+            <SelectTrigger className={`w-[220px] ${PILL_INPUT}`}>
               <SelectValue placeholder="Select Driver" />
             </SelectTrigger>
             <SelectContent>
@@ -313,7 +316,7 @@ const DriverRouteHistory = () => {
             </SelectContent>
           </Select>
           <Select value={period} onValueChange={setPeriod}>
-            <SelectTrigger className="w-[160px]">
+            <SelectTrigger className={`w-[170px] ${PILL_INPUT}`}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -326,26 +329,11 @@ const DriverRouteHistory = () => {
       </div>
 
       {selectedDriverId && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <StatCard
-            title="Total Revenue"
-            value={`$${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-            icon={DollarSign}
-            subtitle={`${loads.length} loads`}
-          />
-          <StatCard
-            title="Total Loaded Miles"
-            value={totalMiles.toLocaleString()}
-            icon={MapPin}
-            subtitle="miles"
-          />
-          <StatCard
-            title="RPM"
-            value={`$${rpm.toFixed(2)}`}
-            icon={TrendingUp}
-            subtitle="Revenue Per Mile"
-          />
-        </div>
+        <StatTiles tiles={[
+          { label: 'Total Revenue', value: `$${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, hint: `${loads.length} loads`, icon: DollarSign, tint: 'bg-emerald-100 text-emerald-700' },
+          { label: 'Total Loaded Miles', value: totalMiles.toLocaleString(), hint: 'miles', icon: MapPin, tint: 'bg-sky-100 text-sky-700' },
+          { label: 'RPM', value: `$${rpm.toFixed(2)}`, hint: 'Revenue Per Mile', icon: TrendingUp, tint: 'bg-violet-100 text-violet-700' },
+        ]} />
       )}
 
       <div

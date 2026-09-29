@@ -14,6 +14,8 @@ import { MessageHistory } from '@/components/whatsapp/MessageHistory';
 import { BrokerEmailHistory } from '@/components/whatsapp/BrokerEmailHistory';
 import { BroadcastPanel } from '@/components/whatsapp/BroadcastPanel';
 import { AutomationHealth } from '@/components/whatsapp/AutomationHealth';
+import { StatTiles } from '@/components/StatTiles';
+import { Users as UsersIcon, Landmark, Headset, LayoutGrid } from 'lucide-react';
 import { toast } from 'sonner';
 
 type EntityType = 'drivers' | 'investors' | 'dispatchers';
@@ -66,7 +68,7 @@ function GroupsTable({ rows, groups, onAssign }: {
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar..." className="h-8 w-48 pl-8 text-xs" />
+          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar..." className="h-9 w-56 pl-8 text-xs rounded-full bg-card shadow-sm" />
         </div>
         <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
           <Switch checked={onlyMissing} onCheckedChange={setOnlyMissing} className="scale-75" /> Solo sin grupo
@@ -76,7 +78,7 @@ function GroupsTable({ rows, groups, onAssign }: {
         </label>
       </div>
 
-      <div className="rounded-lg border divide-y">
+      <div className="rounded-xl border bg-card shadow-sm divide-y overflow-hidden">
         {visible.length === 0 && (
           <p className="text-sm text-muted-foreground text-center py-8">Sin resultados</p>
         )}
@@ -222,7 +224,7 @@ export default function WhatsAppPage() {
       </div>
 
       {/* Conexión */}
-      <div className={`glass-card p-4 flex flex-col sm:flex-row sm:items-center gap-3 border-l-4 ${
+      <div className={`rounded-xl border bg-card shadow-sm p-4 flex flex-col sm:flex-row sm:items-center gap-3 border-l-4 ${
         !connection ? 'border-l-muted' : connection.connected ? 'border-l-green-600' : 'border-l-destructive'
       }`}>
         <Smartphone className="h-8 w-8 text-muted-foreground flex-shrink-0" />
@@ -262,6 +264,25 @@ export default function WhatsAppPage() {
         </Button>
       </div>
 
+      {/* Resumen: cuántos activos ya tienen su grupo asignado */}
+      {(() => {
+        const withGroup = (list: Row[]) => {
+          const active = list.filter(r => !r.inactive);
+          return { done: active.filter(r => r.groupId).length, total: active.length };
+        };
+        const d = withGroup(rows.drivers);
+        const i = withGroup(rows.investors);
+        const p = withGroup(rows.dispatchers);
+        return (
+          <StatTiles tiles={[
+            { label: 'Drivers con grupo', value: `${d.done}/${d.total}`, hint: d.total - d.done > 0 ? `${d.total - d.done} sin grupo` : 'todos asignados', icon: UsersIcon, tint: 'bg-emerald-100 text-emerald-700' },
+            { label: 'Investors con grupo', value: `${i.done}/${i.total}`, hint: i.total - i.done > 0 ? `${i.total - i.done} sin grupo` : 'todos asignados', icon: Landmark, tint: 'bg-violet-100 text-violet-700' },
+            { label: 'Dispatchers con grupo', value: `${p.done}/${p.total}`, hint: p.total - p.done > 0 ? `${p.total - p.done} sin grupo` : 'todos asignados', icon: Headset, tint: 'bg-blue-100 text-blue-700' },
+            { label: 'Grupos del número', value: groups ? groups.length : '…', icon: LayoutGrid, tint: 'bg-sky-100 text-sky-700' },
+          ]} />
+        );
+      })()}
+
       <Tabs defaultValue="groups">
         <TabsList>
           <TabsTrigger value="groups">Grupos</TabsTrigger>
@@ -273,7 +294,7 @@ export default function WhatsAppPage() {
         </TabsList>
 
         <TabsContent value="groups" className="mt-4">
-          <div className="glass-card p-4">
+          <div className="rounded-xl border bg-card shadow-sm p-4">
             <Tabs defaultValue="drivers">
               <TabsList>
                 <TabsTrigger value="drivers">Drivers ({counter(rows.drivers)})</TabsTrigger>
@@ -290,7 +311,7 @@ export default function WhatsAppPage() {
         </TabsContent>
 
         <TabsContent value="automations" className="mt-4">
-          <div className="glass-card p-4 max-w-4xl">
+          <div className="rounded-xl border bg-card shadow-sm p-4 max-w-4xl">
             <p className="text-sm text-muted-foreground mb-3">
               Prende o apaga cada aviso y edita sus mensajes. Haz clic en un aviso para ver sus textos; las variables entre llaves se reemplazan con los datos reales.
             </p>
@@ -299,32 +320,32 @@ export default function WhatsAppPage() {
         </TabsContent>
 
         <TabsContent value="broadcast" className="mt-4">
-          <div className="glass-card p-4">
+          <div className="rounded-xl border bg-card shadow-sm p-4">
             <BroadcastPanel groups={groups} assigned={assignedGroups} />
           </div>
         </TabsContent>
 
         <TabsContent value="history" className="mt-4">
-          <div className="glass-card p-4">
+          <div className="rounded-xl border bg-card shadow-sm p-4">
             <MessageHistory />
           </div>
         </TabsContent>
 
         <TabsContent value="broker_email" className="mt-4 space-y-4">
-          <div className="glass-card p-4 space-y-3">
+          <div className="rounded-xl border bg-card shadow-sm p-4 space-y-3">
             <p className="text-xs text-muted-foreground">
               Respuestas automáticas dentro del hilo de Gmail de cada carga (el del Rate Confirmation), a todos los del broker.
               El hilo se busca solo por el número de carga; si no aparece o hay más de uno, se elige en el detalle de la carga.
             </p>
             <AutomationsPanel groups={groups} channel="email" />
           </div>
-          <div className="glass-card p-4">
+          <div className="rounded-xl border bg-card shadow-sm p-4">
             <BrokerEmailHistory />
           </div>
         </TabsContent>
 
         <TabsContent value="health" className="mt-4">
-          <div className="glass-card p-4 max-w-4xl">
+          <div className="rounded-xl border bg-card shadow-sm p-4 max-w-4xl">
             <p className="text-sm text-muted-foreground mb-3">
               Todo lo que corre solo, en un solo lugar. Verde es que funciona, ámbar que hay algo que mirar,
               rojo que algo se cayó. Esta pantalla solo lee: no manda ni cambia nada.

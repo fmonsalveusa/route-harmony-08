@@ -5,8 +5,14 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableHeader, TableHead, TableRow, TableBody, TableCell } from '@/components/ui/table';
-import { StatusBadge } from '@/components/StatusBadge';
-import { FileText, Copy, Pencil, Eye, Download, Trash2, Plus, LayoutTemplate, Loader2, X } from 'lucide-react';
+import { StatTiles, SolidStatusPill, TABLE_CARD } from '@/components/StatTiles';
+import { FileText, Copy, Pencil, Eye, Download, Trash2, Plus, LayoutTemplate, Loader2, X, Clock, CheckCircle2 } from 'lucide-react';
+
+const DOC_STATUS: Record<string, { label: string; color: string; border: string }> = {
+  pending: { label: 'Pendiente', color: 'bg-amber-500', border: 'border-l-amber-500' },
+  signed: { label: 'Firmado', color: 'bg-green-600', border: 'border-l-green-600' },
+  expired: { label: 'Vencido', color: 'bg-red-600', border: 'border-l-red-600' },
+};
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { getDocuments, getDocument, deleteDocument } from '@/store/signing-documents';
@@ -174,11 +180,6 @@ const Documents = () => {
     fetchAll();
   };
 
-  const getStatusLabel = (status: string) => {
-    if (status === 'signed') return 'completed';
-    if (status === 'expired') return 'cancelled';
-    return 'pending';
-  };
 
   // getDocuments() no carga file_data ni signed_file_data para mantener
   // la lista liviana. Los cargamos bajo demanda al abrir preview o descargar.
@@ -274,10 +275,17 @@ const Documents = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Documentos</h1>
-          <p className="text-sm text-muted-foreground">Gestiona documentos de firma electrónica y plantillas</p>
+          <h1 className="page-header">Documentos</h1>
+          <p className="page-description">Gestiona documentos de firma electrónica y plantillas</p>
         </div>
       </div>
+
+      <StatTiles tiles={[
+        { label: 'Documentos', value: documents.length, icon: FileText, tint: 'bg-sky-100 text-sky-700' },
+        { label: 'Pendientes de firma', value: documents.filter(d => d.status === 'pending').length, icon: Clock, tint: 'bg-amber-100 text-amber-700' },
+        { label: 'Firmados', value: documents.filter(d => d.status === 'signed').length, icon: CheckCircle2, tint: 'bg-emerald-100 text-emerald-700' },
+        { label: 'Plantillas', value: templates.length, icon: LayoutTemplate, tint: 'bg-violet-100 text-violet-700' },
+      ]} />
 
       <Tabs defaultValue="dashboard">
         <TabsList>
@@ -320,10 +328,10 @@ const Documents = () => {
               <p className="text-sm">Crea tu primer documento para comenzar</p>
             </div>
           ) : (
-            <div className="border rounded-lg overflow-hidden">
+            <div className={TABLE_CARD}>
               <Table>
                 <TableHeader>
-                  <TableRow>
+                  <TableRow className="bg-muted/50">
                     <TableHead className="w-10">
                       <Checkbox checked={allDocsSelected} onCheckedChange={toggleAllDocs} aria-label="Seleccionar todos" />
                     </TableHead>
@@ -337,13 +345,13 @@ const Documents = () => {
                 </TableHeader>
                 <TableBody>
                   {documents.map((doc) => (
-                    <TableRow key={doc.id} data-state={selectedDocs.has(doc.id) ? 'selected' : undefined}>
+                    <TableRow key={doc.id} data-state={selectedDocs.has(doc.id) ? 'selected' : undefined} className={`border-l-4 ${DOC_STATUS[doc.status]?.border ?? 'border-l-transparent'}`}>
                       <TableCell className="w-10">
                         <Checkbox checked={selectedDocs.has(doc.id)} onCheckedChange={() => toggleDoc(doc.id)} aria-label={`Seleccionar ${doc.fileName}`} />
                       </TableCell>
                       <TableCell className="font-medium">{doc.fileName}</TableCell>
                       <TableCell>
-                        <StatusBadge status={getStatusLabel(doc.status)} />
+                        <SolidStatusPill label={DOC_STATUS[doc.status]?.label ?? doc.status} color={DOC_STATUS[doc.status]?.color ?? 'bg-gray-500'} />
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {editingRecipient?.id === doc.id ? (
@@ -456,10 +464,10 @@ const Documents = () => {
               <p className="text-sm">Crea plantillas reutilizables de documentos</p>
             </div>
           ) : (
-            <div className="border rounded-lg overflow-hidden">
+            <div className={TABLE_CARD}>
               <Table>
                 <TableHeader>
-                  <TableRow>
+                  <TableRow className="bg-muted/50">
                     <TableHead>Nombre</TableHead>
                     <TableHead>Archivo</TableHead>
                     <TableHead>Campos</TableHead>

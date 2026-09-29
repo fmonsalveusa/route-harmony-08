@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Pencil, Building2, Star, FileSignature, Plus, Trash2, Power, PowerOff } from 'lucide-react';
 import { toast } from 'sonner';
-import { StatCard } from '@/components/StatCard';
+import { StatTiles, TABLE_CARD, TABLE_HEAD_ROW, TABLE_ROW } from '@/components/StatTiles';
 
 type CompanyForm = {
   name: string; legal_name: string; mc_number: string; dot_number: string;
@@ -106,11 +106,11 @@ const Companies = () => {
   }
 
   const renderTable = (list: Company[]) => (
-    <div className="glass-card overflow-hidden">
+    <div className={TABLE_CARD}>
       <div className="p-0">
         <div className="overflow-x-auto">
           <table className="w-full text-[15px]">
-            <thead><tr className="border-b glass-table-header">
+            <thead><tr className={TABLE_HEAD_ROW}>
               <th className="text-left p-3 font-medium text-muted-foreground">Empresa</th>
               <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">MC#</th>
               <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">DOT#</th>
@@ -129,7 +129,7 @@ const Companies = () => {
                 <tr><td colSpan={8} className="p-8 text-center text-muted-foreground">No hay empresas en esta categoría</td></tr>
               )}
               {list.map(c => (
-                <tr key={c.id} className="border-b last:border-0 glass-row">
+                <tr key={c.id} className={`${TABLE_ROW} last:border-0 border-l-4 ${c.status === 'inactive' ? 'border-l-red-600' : 'border-l-green-600'}`}>
                   <td className="p-3">
                     <div className="flex items-center gap-2">
                       <div className="font-medium">{c.name}</div>
@@ -191,11 +191,12 @@ const Companies = () => {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard title="Total Companies" value={companies.length} icon={Building2} />
-        <StatCard title="Active" value={activeCompanies.length} icon={Power} />
-        <StatCard title="Inactive" value={inactiveCompanies.length} icon={PowerOff} />
-      </div>
+      <StatTiles tiles={[
+        { label: 'Total Companies', value: companies.length, icon: Building2, tint: 'bg-sky-100 text-sky-700' },
+        { label: 'Active', value: activeCompanies.length, icon: Power, tint: 'bg-emerald-100 text-emerald-700' },
+        { label: 'Inactive', value: inactiveCompanies.length, icon: PowerOff, tint: 'bg-red-100 text-red-700' },
+        { label: 'En Leasing Agreement', value: activeCompanies.filter(c => c.leasing_agreement_active).length, icon: FileSignature, tint: 'bg-violet-100 text-violet-700' },
+      ]} />
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>

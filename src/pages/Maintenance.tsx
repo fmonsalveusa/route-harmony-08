@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Wrench, Plus, RefreshCw, List, Truck, Gauge, Check, X, User } from 'lucide-react';
+import { Wrench, Plus, RefreshCw, List, Truck, Gauge, Check, X, User, AlertTriangle, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { StatTiles, PILL_INPUT } from '@/components/StatTiles';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -113,13 +114,10 @@ const Maintenance = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Wrench className="h-5 w-5 text-muted-foreground" />
-          <div>
-            <h1 className="text-lg font-semibold">Truck Maintenance</h1>
-            <p className="text-xs text-muted-foreground">Fleet maintenance tracker</p>
-          </div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="page-header">Truck Maintenance</h1>
+          <p className="page-description">Fleet maintenance tracker</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => { setOdoDrafts({}); setOdoModalOpen(true); }}>
@@ -136,6 +134,26 @@ const Maintenance = () => {
         </div>
       </div>
 
+      {/* Resumen: sobre todos los mantenimientos recurrentes, sin filtros */}
+      {(() => {
+        const recurring = maintenanceItems.filter(i => i.interval_miles || i.interval_days);
+        const truckIds = [...new Set(maintenanceItems.map(m => m.truck_id))];
+        const staleOdo = truckIds.filter(id => {
+          const t = trucks.find(t => t.id === id);
+          const age = odoAgeDays(t?.odometer_updated_at ?? null);
+          return !t?.current_odometer || age == null || age > 2;
+        }).length;
+        return (
+          <StatTiles tiles={[
+            { label: 'Trucks', value: truckIds.length, icon: Truck, tint: 'bg-sky-100 text-sky-700' },
+            { label: 'Due', value: recurring.filter(i => i.status === 'due').length, icon: AlertCircle, tint: 'bg-red-100 text-red-700' },
+            { label: 'Warning', value: recurring.filter(i => i.status === 'warning').length, icon: AlertTriangle, tint: 'bg-amber-100 text-amber-700' },
+            { label: 'OK', value: recurring.filter(i => i.status === 'ok').length, icon: CheckCircle2, tint: 'bg-emerald-100 text-emerald-700' },
+            { label: 'Odómetro viejo', value: staleOdo, hint: 'más de 2 días o sin dato', icon: Gauge, tint: 'bg-orange-100 text-orange-700' },
+          ]} />
+        );
+      })()}
+
       {/* Tabs */}
       <Tabs defaultValue="by-truck">
         <TabsList>
@@ -146,7 +164,7 @@ const Maintenance = () => {
         {/* Filters (shared) */}
         <div className="flex gap-3 mt-4">
           <Select value={filterTruck} onValueChange={setFilterTruck}>
-            <SelectTrigger className="w-48"><SelectValue placeholder="All Trucks" /></SelectTrigger>
+            <SelectTrigger className={`w-48 ${PILL_INPUT}`}><SelectValue placeholder="All Trucks" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Trucks</SelectItem>
               {trucks.map(t => (
@@ -155,7 +173,7 @@ const Maintenance = () => {
             </SelectContent>
           </Select>
           <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="w-36"><SelectValue placeholder="All Status" /></SelectTrigger>
+            <SelectTrigger className={`w-36 ${PILL_INPUT}`}><SelectValue placeholder="All Status" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
               <SelectItem value="ok">OK</SelectItem>
@@ -197,7 +215,9 @@ const Maintenance = () => {
                       animate={{ opacity: 1, y: 0 }}
                     >
                       {/* Truck header */}
-                      <div className="flex items-center gap-2 px-3 py-2 bg-muted/40 rounded-lg mb-2">
+                      <div className={`flex flex-wrap items-center gap-2 px-3 py-2.5 mb-2 rounded-xl border bg-card shadow-sm border-l-4 ${
+                        dueItems > 0 ? 'border-l-red-600' : warnItems > 0 ? 'border-l-amber-500' : 'border-l-green-600'
+                      }`}>
                         <Truck className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm font-medium">{truck?.unit_number}</span>
                         <span className="text-sm text-muted-foreground">— {truck?.make || ''} {truck?.model || ''}</span>
@@ -256,17 +276,17 @@ const Maintenance = () => {
                         )}
                         <div className="ml-auto flex gap-1.5">
                           {dueItems > 0 && (
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-sm bg-[#FCEBEB] text-[#A32D2D]">
+                            <span className="text-[11px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-md bg-red-600 text-white">
                               {dueItems} due
                             </span>
                           )}
                           {warnItems > 0 && (
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-sm bg-[#FAEEDA] text-[#854F0B]">
+                            <span className="text-[11px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-md bg-amber-500 text-white">
                               {warnItems} warning
                             </span>
                           )}
                           {dueItems === 0 && warnItems === 0 && (
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-sm bg-[#EAF3DE] text-[#3B6D11]">OK</span>
+                            <span className="text-[11px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-md bg-green-600 text-white">OK</span>
                           )}
                         </div>
                       </div>
