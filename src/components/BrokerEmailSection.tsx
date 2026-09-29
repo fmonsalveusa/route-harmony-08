@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Mail, Search, Loader2, CheckCircle2, AlertTriangle, RotateCw, Send } from 'lucide-react';
+import { Mail, Search, Loader2, CheckCircle2, AlertTriangle, RotateCw, Send, CircleDashed } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
@@ -114,11 +114,11 @@ export function BrokerEmailSection({ loadId }: { loadId: string }) {
       {/* Estado del hilo */}
       {!picking && (
         link?.status === 'linked' ? (
-          <div className="flex items-start gap-1.5 text-xs">
+          <div className="flex items-start gap-1.5 text-xs bg-green-50 border border-green-200 rounded-md px-2 py-1.5">
             <CheckCircle2 className="h-3.5 w-3.5 text-green-600 mt-0.5 flex-shrink-0" />
             <div className="min-w-0">
-              <p className="font-medium truncate">{link.subject || '(sin asunto)'}</p>
-              <p className="text-muted-foreground">
+              <p className="font-medium text-green-900 truncate">Hilo asignado: {link.subject || '(sin asunto)'}</p>
+              <p className="text-green-700">
                 {link.link_mode === 'auto' ? 'Enlazado automáticamente' : 'Enlazado a mano'} · {link.account}
               </p>
             </div>
@@ -132,7 +132,9 @@ export function BrokerEmailSection({ loadId }: { loadId: string }) {
             <AlertTriangle className="h-3.5 w-3.5" /> No se encontró el hilo en Gmail. Búscalo y enlázalo.
           </p>
         ) : (
-          <p className="text-xs text-muted-foreground">El hilo se busca solo por el número de carga cuando sale el primer aviso.</p>
+          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <CircleDashed className="h-3.5 w-3.5 flex-shrink-0" /> Sin hilo asignado todavía. Se busca solo por el número de carga cuando sale el primer aviso.
+          </p>
         )
       )}
 
