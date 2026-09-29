@@ -6,7 +6,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useInvestors, DbInvestor, InvestorInput } from '@/hooks/useInvestors';
 import { useDrivers } from '@/hooks/useDrivers';
 import { usePayments } from '@/hooks/usePayments';
-import { StatCard } from '@/components/StatCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,9 +13,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { StatusBadge } from '@/components/StatusBadge';
+import { StatTiles, SolidStatusPill, PILL_INPUT, TABLE_CARD, TABLE_HEAD_ROW, TABLE_ROW } from '@/components/StatTiles';
 import { CreateAccessButton } from '@/components/CreateAccessButton';
-import { ChevronDown, Landmark, Pencil, Trash2, PlusCircle, Search, Phone, Mail, Users, DollarSign, X, Percent } from 'lucide-react';
+import { ChevronDown, Landmark, Pencil, Trash2, PlusCircle, Search, Phone, Mail, Users, DollarSign, X, Percent, UserX } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatPhone } from '@/lib/phoneUtils';
 
@@ -363,41 +362,27 @@ const Investors = () => {
         </Button>
       </div>
 
-      {/* Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard
-          title="Total Investors"
-          value={String(investors.length)}
-          icon={Landmark}
-          iconClassName="bg-primary/10 text-primary"
-        />
-        <StatCard
-          title="Drivers Assigned"
-          value={String(Object.values(driversPerInvestor).reduce((a, b) => a + b, 0))}
-          icon={Users}
-          iconClassName="bg-sky-500/10 text-sky-500"
-        />
-        <StatCard
-          title="Pending Payments"
-          value={`$${totalPending.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
-          icon={DollarSign}
-          iconClassName="bg-amber-500/10 text-amber-500"
-        />
-      </div>
+      {/* Resumen */}
+      <StatTiles tiles={[
+        { label: 'Active Investors', value: investors.filter(i => (i.status || 'active') !== 'inactive').length, icon: Landmark, tint: 'bg-sky-100 text-sky-700' },
+        { label: 'Drivers Assigned', value: Object.values(driversPerInvestor).reduce((a, b) => a + b, 0), icon: Users, tint: 'bg-emerald-100 text-emerald-700' },
+        { label: 'Pending Payments', value: `$${totalPending.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, icon: DollarSign, tint: 'bg-amber-100 text-amber-700' },
+        { label: 'Inactive', value: investors.filter(i => i.status === 'inactive').length, icon: UserX, tint: 'bg-red-100 text-red-700' },
+      ]} />
 
       {/* Search */}
-      <div className="relative w-full max-w-xs">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <div className="relative w-full max-w-sm">
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Search investors..."
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="pl-9 h-9"
+          className={`pl-10 ${PILL_INPUT}`}
         />
         {search && (
           <button
             onClick={() => setSearch('')}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
           >
             <X className="h-3.5 w-3.5" />
           </button>
@@ -419,10 +404,10 @@ const Investors = () => {
         </TabsList>
 
       {/* Table */}
-      <div className="glass-card overflow-hidden mt-4">
+      <div className={`${TABLE_CARD} mt-4`}>
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b glass-table-header">
+            <tr className={TABLE_HEAD_ROW}>
               <th className="text-left p-4 font-medium text-muted-foreground">Name</th>
               <th className="text-left p-4 font-medium text-muted-foreground">Email</th>
               <th className="text-left p-4 font-medium text-muted-foreground">Phone</th>
@@ -436,17 +421,17 @@ const Investors = () => {
           </thead>
           <tbody>
             {loading && (
-              <tr><td colSpan={7} className="text-center p-8 text-muted-foreground">Loading...</td></tr>
+              <tr><td colSpan={9} className="text-center p-8 text-muted-foreground">Loading...</td></tr>
             )}
             {!loading && filtered.length === 0 && (
               <tr>
-                <td colSpan={7} className="text-center p-8 text-muted-foreground">
+                <td colSpan={9} className="text-center p-8 text-muted-foreground">
                   {search ? 'No investors match your search.' : 'No investors yet — click "New Investor" to add one.'}
                 </td>
               </tr>
             )}
             {filtered.map(inv => (
-              <tr key={inv.id} className="border-b last:border-b-0 glass-row border-l-[3px] border-l-[#185FA5]">
+              <tr key={inv.id} className={`${TABLE_ROW} last:border-b-0 border-l-4 ${inv.status === 'inactive' ? 'border-l-red-600' : 'border-l-green-600'}`}>
                 <td className="p-4 font-semibold">
                   <div className="flex items-center gap-2">
                     <div className="h-8 w-8 rounded-full bg-[#185FA5]/10 flex items-center justify-center shrink-0">
@@ -505,15 +490,17 @@ const Investors = () => {
                   <Select value={inv.status || 'active'} onValueChange={v => updateInvestor(inv.id, { status: v })}>
                     <SelectTrigger className="h-8 w-[140px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:hidden bg-transparent">
                       <span className="flex items-center justify-between w-full gap-1">
-                        <StatusBadge status={inv.status || 'active'} className="text-[11px] px-3 py-1.5" />
+                        {inv.status === 'inactive'
+                          ? <SolidStatusPill label="Inactive" color="bg-red-600" />
+                          : <SolidStatusPill label="Active" color="bg-green-600" />}
                         <span className="inline-flex h-5 w-5 items-center justify-center rounded border border-border bg-muted/40 text-muted-foreground ml-auto">
                           <ChevronDown className="h-3 w-3 shrink-0" />
                         </span>
                       </span>
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="active"><StatusBadge status="active" /></SelectItem>
-                      <SelectItem value="inactive"><StatusBadge status="inactive" /></SelectItem>
+                      <SelectItem value="active"><SolidStatusPill label="Active" color="bg-green-600" /></SelectItem>
+                      <SelectItem value="inactive"><SolidStatusPill label="Inactive" color="bg-red-600" /></SelectItem>
                     </SelectContent>
                   </Select>
                 </td>

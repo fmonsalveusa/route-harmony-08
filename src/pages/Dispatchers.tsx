@@ -1,11 +1,13 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useDispatchers, DbDispatcher, DispatcherInput } from '@/hooks/useDispatchers';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { DispatcherFormDialog } from '@/components/DispatcherFormDialog';
-import { StatusBadge } from '@/components/StatusBadge';
+import { StatTiles, SolidStatusPill, PILL_INPUT, TABLE_CARD, TABLE_HEAD_ROW, TABLE_ROW } from '@/components/StatTiles';
+import { useDrivers } from '@/hooks/useDrivers';
+import { Input } from '@/components/ui/input';
 import { CreateAccessButton } from '@/components/CreateAccessButton';
 import { Button } from '@/components/ui/button';
-import { Plus, Phone, Mail, Percent, Pencil, Trash2, ChevronDown } from 'lucide-react';
+import { Plus, Phone, Mail, Percent, Pencil, Trash2, ChevronDown, Headset, UserX, Users, UserMinus, Search } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatPhone } from '@/lib/phoneUtils';
 
@@ -14,6 +16,17 @@ const Dispatchers = () => {
   const [formOpen, setFormOpen] = useState(false);
   const [editingDispatcher, setEditingDispatcher] = useState<DbDispatcher | null>(null);
   const [activeTab, setActiveTab] = useState('active');
+  const [search, setSearch] = useState('');
+  const { drivers } = useDrivers();
+
+  // Drivers activos por dispatcher, para la columna y el resumen
+  const driversPerDispatcher = useMemo(() => {
+    const map: Record<string, number> = {};
+    drivers.filter(d => d.status !== 'inactive').forEach(d => {
+      if (d.dispatcher_id) map[d.dispatcher_id] = (map[d.dispatcher_id] || 0) + 1;
+    });
+    return map;
+  }, [drivers]);
 
   const handleSubmit = async (data: DispatcherInput) => {
     if (editingDispatcher) {
@@ -25,19 +38,23 @@ const Dispatchers = () => {
   };
 
   const getFilteredByTab = (tab: string) => {
-    if (tab === 'active') return dispatchers.filter(d => d.status !== 'inactive');
-    if (tab === 'inactive') return dispatchers.filter(d => d.status === 'inactive');
-    return dispatchers;
+    let list = dispatchers;
+    if (tab === 'active') list = list.filter(d => d.status !== 'inactive');
+    if (tab === 'inactive') list = list.filter(d => d.status === 'inactive');
+    const q = search.trim().toLowerCase();
+    if (q) list = list.filter(d => d.name.toLowerCase().includes(q) || (d.email || '').toLowerCase().includes(q));
+    return list;
   };
 
   const renderTable = (list: DbDispatcher[]) => (
-    <div className="rounded-lg border overflow-hidden">
+    <div className={TABLE_CARD}>
       <table className="w-full">
         <thead>
-          <tr className="border-b glass-table-header">
+          <tr className={TABLE_HEAD_ROW}>
             <th className="text-left p-3 text-xs font-bold text-muted-foreground uppercase tracking-wider">Dispatcher</th>
             <th className="text-left p-3 text-xs font-bold text-muted-foreground uppercase tracking-wider hidden md:table-cell">Email</th>
             <th className="text-left p-3 text-xs font-bold text-muted-foreground uppercase tracking-wider hidden md:table-cell">Phone</th>
+            <th className="text-center p-3 text-xs font-bold text-muted-foreground uppercase tracking-wider">Drivers</th>
             <th className="text-center p-3 text-xs font-bold text-muted-foreground uppercase tracking-wider">Commission 1</th>
             <th className="text-center p-3 text-xs font-bold text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Commission 2</th>
             <th className="text-center p-3 text-xs font-bold text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Dispatch Svc</th>
@@ -47,16 +64,16 @@ const Dispatchers = () => {
         </thead>
         <tbody>
           {list.length === 0 ? (
-            <tr><td colSpan={8} className="text-center p-8 text-muted-foreground">No dispatchers found.</td></tr>
+            <tr><td colSpan={9} className="text-center p-8 text-muted-foreground">No dispatchers found.</td></tr>
           ) : list.map(d => {
             const initials = d.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
             const statusBorder = d.status === 'active'
-              ? 'border-l-[3px] border-l-[#639922]'
-              : 'border-l-[3px] border-l-[#DC2626]';
+              ? 'border-l-4 border-l-green-600'
+              : 'border-l-4 border-l-red-600';
             const avatarColor = d.color || '#94A3B8';
 
             return (
-              <tr key={d.id} className={`border-b last:border-b-0 glass-row ${statusBorder}`}>
+              <tr key={d.id} className={`${TABLE_ROW} last:border-b-0 ${statusBorder}`}>
                 <td className="p-4">
                   <div className="flex items-center gap-3">
                     <div className="h-9 w-9 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0" style={{ backgroundColor: avatarColor }}>
@@ -74,6 +91,11 @@ const Dispatchers = () => {
                   {d.phone
                     ? <span className="flex items-center gap-1 text-sm"><Phone className="h-3.5 w-3.5" />{formatPhone(d.phone)}</span>
                     : '—'}
+                </td>
+                <td className="p-4 text-center">
+                  {driversPerDispatcher[d.id]
+                    ? <span className="inline-flex items-center justify-center rounded-full bg-sky-100 text-sky-700 text-xs font-semibold min-w-[28px] h-6 px-2">{driversPerDispatcher[d.id]}</span>
+                    : <span className="text-muted-foreground text-xs">—</span>}
                 </td>
                 <td className="p-4 text-center">
                   <span className="inline-flex items-center justify-center rounded-full bg-violet-500/10 text-violet-600 text-xs font-semibold min-w-[40px] h-6 px-2">
@@ -94,15 +116,17 @@ const Dispatchers = () => {
                   <Select value={d.status} onValueChange={v => updateDispatcher(d.id, { status: v })}>
                     <SelectTrigger className="h-8 w-[140px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:hidden bg-transparent">
                       <span className="flex items-center justify-between w-full gap-1">
-                        <StatusBadge status={d.status} className="text-[11px] px-3 py-1.5" />
+                        {d.status === 'inactive'
+                          ? <SolidStatusPill label="Inactive" color="bg-red-600" />
+                          : <SolidStatusPill label="Active" color="bg-green-600" />}
                         <span className="inline-flex h-5 w-5 items-center justify-center rounded border border-border bg-muted/40 text-muted-foreground ml-auto">
                           <ChevronDown className="h-3 w-3 shrink-0" />
                         </span>
                       </span>
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="active"><StatusBadge status="active" /></SelectItem>
-                      <SelectItem value="inactive"><StatusBadge status="inactive" /></SelectItem>
+                      <SelectItem value="active"><SolidStatusPill label="Active" color="bg-green-600" /></SelectItem>
+                      <SelectItem value="inactive"><SolidStatusPill label="Inactive" color="bg-red-600" /></SelectItem>
                     </SelectContent>
                   </Select>
                 </td>
@@ -137,6 +161,24 @@ const Dispatchers = () => {
         <Button size="sm" className="gap-2" onClick={() => { setEditingDispatcher(null); setFormOpen(true); }}>
           <Plus className="h-4 w-4" /> New Dispatcher
         </Button>
+      </div>
+
+      {/* Resumen */}
+      {(() => {
+        const activeDrivers = drivers.filter(d => d.status !== 'inactive');
+        return (
+          <StatTiles tiles={[
+            { label: 'Active Dispatchers', value: dispatchers.filter(d => d.status !== 'inactive').length, icon: Headset, tint: 'bg-sky-100 text-sky-700' },
+            { label: 'Inactive', value: dispatchers.filter(d => d.status === 'inactive').length, icon: UserX, tint: 'bg-red-100 text-red-700' },
+            { label: 'Drivers asignados', value: activeDrivers.filter(d => d.dispatcher_id).length, icon: Users, tint: 'bg-emerald-100 text-emerald-700' },
+            { label: 'Drivers sin dispatcher', value: activeDrivers.filter(d => !d.dispatcher_id).length, icon: UserMinus, tint: 'bg-amber-100 text-amber-700' },
+          ]} />
+        );
+      })()}
+
+      <div className="relative w-full max-w-sm">
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input placeholder="Search by name or email..." value={search} onChange={e => setSearch(e.target.value)} className={`pl-10 ${PILL_INPUT}`} />
       </div>
 
       {loading ? (

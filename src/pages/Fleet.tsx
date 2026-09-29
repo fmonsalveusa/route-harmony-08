@@ -3,14 +3,14 @@ import { useTrucks, DbTruck, TruckInput } from '@/hooks/useTrucks';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useDispatchers } from '@/hooks/useDispatchers';
 import { useAuth } from '@/contexts/AuthContext';
-import { StatusBadge } from '@/components/StatusBadge';
+import { StatTiles, SolidStatusPill, PILL_INPUT, TABLE_CARD, TABLE_HEAD_ROW, TABLE_ROW } from '@/components/StatTiles';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { TruckFormDialog } from '@/components/TruckFormDialog';
 import { TruckDetailDialog } from '@/components/TruckDetailDialog';
 import { TruckDetailPanel } from '@/components/TruckDetailPanel';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Truck as TruckIcon, Pencil, Trash2, Eye, User, ChevronDown, ChevronUp, Search } from 'lucide-react';
+import { Plus, Truck as TruckIcon, Pencil, Trash2, Eye, User, ChevronDown, ChevronUp, Search, CheckCircle2, Wrench, XCircle, UserX, AlertTriangle } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ExpiryIndicators } from '@/components/ExpiryIndicators';
 
@@ -19,6 +19,14 @@ const STATUS_OPTIONS = [
   { value: 'inactive', label: 'Inactive', bg: 'bg-red-600 text-white' },
   { value: 'maintenance', label: 'Maintenance', bg: 'bg-orange-500 text-white' },
 ];
+
+const statusPill = (status: string) => {
+  const opt = STATUS_OPTIONS.find(s => s.value === status);
+  return <SolidStatusPill label={opt?.label ?? status} color={opt ? opt.bg.replace(' text-white', '') : 'bg-gray-500'} />;
+};
+
+// VIN válido: 17 caracteres, sin I, O ni Q
+const isValidVin = (vin: string | null | undefined) => !!vin && /^[A-HJ-NPR-Z0-9]{17}$/.test(vin.toUpperCase());
 
 const PAGE_SIZES = [25, 50, 100];
 
@@ -127,12 +135,12 @@ const Fleet = () => {
     const paged = filtered.slice((page - 1) * pageSize, page * pageSize);
     const colSpan = 9;
     return (
-    <div className="glass-card overflow-hidden">
+    <div className={TABLE_CARD}>
       <div className="p-0">
         <div className="overflow-x-auto">
           <table className="w-full text-[15px]">
             <thead>
-              <tr className="border-b glass-table-header">
+              <tr className={TABLE_HEAD_ROW}>
                 <th className="w-8 p-3"></th>
                 <th className="text-left p-3 font-medium text-muted-foreground">Unit #</th>
                 <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Driver</th>
@@ -152,10 +160,10 @@ const Fleet = () => {
                 const driverName = getDriverName(truck.id);
 
                 const statusBorder = truck.status === 'active'
-                  ? 'border-l-[3px] border-l-[#639922]'
+                  ? 'border-l-4 border-l-green-600'
                   : truck.status === 'inactive'
-                  ? 'border-l-[3px] border-l-[#DC2626]'
-                  : 'border-l-[3px] border-l-[#EF9F27]'; // maintenance
+                  ? 'border-l-4 border-l-red-600'
+                  : 'border-l-4 border-l-orange-500'; // maintenance
 
                 const iconBg = truck.status === 'active'
                   ? 'border-2 border-[#639922] text-[#639922] bg-white'
@@ -165,7 +173,7 @@ const Fleet = () => {
 
                 return (
                   <>
-                    <tr key={truck.id} className={`border-b glass-row cursor-pointer ${statusBorder} ${isExpanded ? 'glass-row-expanded' : ''}`} onClick={() => setExpandedId(isExpanded ? null : truck.id)}>
+                    <tr key={truck.id} className={`${TABLE_ROW} cursor-pointer ${statusBorder} ${isExpanded ? 'bg-muted/40' : ''}`} onClick={() => setExpandedId(isExpanded ? null : truck.id)}>
                       <td className="p-3 text-muted-foreground">
                         {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                       </td>
@@ -208,7 +216,7 @@ const Fleet = () => {
                         <Select value={truck.status} onValueChange={v => updateTruck(truck.id, { status: v })}>
                           <SelectTrigger className="h-8 w-[155px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:hidden bg-transparent">
                             <span className="flex items-center justify-between w-full gap-1">
-                              <StatusBadge status={truck.status} className="text-[11px] px-3 py-1.5" />
+                              {statusPill(truck.status)}
                               <span className="inline-flex h-5 w-5 items-center justify-center rounded border border-border bg-muted/40 text-muted-foreground ml-auto">
                                 <ChevronDown className="h-3 w-3 shrink-0" />
                               </span>
@@ -216,7 +224,7 @@ const Fleet = () => {
                           </SelectTrigger>
                           <SelectContent className="bg-popover z-50">
                             {STATUS_OPTIONS.map(s => (
-                              <SelectItem key={s.value} value={s.value}><StatusBadge status={s.value} /></SelectItem>
+                              <SelectItem key={s.value} value={s.value}>{statusPill(s.value)}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -285,19 +293,35 @@ const Fleet = () => {
         </Button>
       </div>
 
+      {/* Resumen: respeta el filtro de dispatcher, no la búsqueda */}
+      {(() => {
+        const scoped = dispatcherTruckIds ? trucks.filter(t => dispatcherTruckIds.has(t.id)) : trucks;
+        const current = scoped.filter(t => t.status !== 'inactive');
+        return (
+          <StatTiles tiles={[
+            { label: 'Total Trucks', value: current.length, icon: TruckIcon, tint: 'bg-sky-100 text-sky-700' },
+            { label: 'Active', value: current.filter(t => t.status === 'active').length, icon: CheckCircle2, tint: 'bg-emerald-100 text-emerald-700' },
+            { label: 'Maintenance', value: current.filter(t => t.status === 'maintenance').length, icon: Wrench, tint: 'bg-orange-100 text-orange-700' },
+            { label: 'Inactive', value: scoped.filter(t => t.status === 'inactive').length, icon: XCircle, tint: 'bg-red-100 text-red-700' },
+            { label: 'Sin driver', value: current.filter(t => !getDriverName(t.id)).length, icon: UserX, tint: 'bg-slate-100 text-slate-700' },
+            { label: 'VIN pendiente', value: current.filter(t => !isValidVin(t.vin)).length, icon: AlertTriangle, tint: 'bg-amber-100 text-amber-700' },
+          ]} />
+        );
+      })()}
+
       {/* Search & Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search unit, make, model, VIN..."
             value={searchQuery}
             onChange={e => { setSearchQuery(e.target.value); setPage(1); }}
-            className="pl-9 h-9"
+            className={`pl-10 ${PILL_INPUT}`}
           />
         </div>
         <Select value={dispatcherFilter} onValueChange={v => { setDispatcherFilter(v); setPage(1); }}>
-          <SelectTrigger className="h-9 w-full sm:w-52">
+          <SelectTrigger className={`w-full sm:w-52 ${PILL_INPUT}`}>
             <SelectValue placeholder="Filter by Dispatcher" />
           </SelectTrigger>
           <SelectContent className="max-h-60">
@@ -308,7 +332,7 @@ const Fleet = () => {
           </SelectContent>
         </Select>
         <Select value={vinFilter} onValueChange={v => { setVinFilter(v); setPage(1); }}>
-          <SelectTrigger className="h-9 w-full sm:w-52">
+          <SelectTrigger className={`w-full sm:w-52 ${PILL_INPUT}`}>
             <SelectValue placeholder="Filter by VIN" />
           </SelectTrigger>
           <SelectContent className="max-h-60">
@@ -321,7 +345,7 @@ const Fleet = () => {
           </SelectContent>
         </Select>
         <Select value={plateFilter} onValueChange={v => { setPlateFilter(v); setPage(1); }}>
-          <SelectTrigger className="h-9 w-full sm:w-44">
+          <SelectTrigger className={`w-full sm:w-44 ${PILL_INPUT}`}>
             <SelectValue placeholder="Filter by Plate" />
           </SelectTrigger>
           <SelectContent className="max-h-60">
