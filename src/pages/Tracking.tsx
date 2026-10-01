@@ -1114,8 +1114,8 @@ const Tracking = () => {
                     onClick={() => setSelectedDriverLoad({ driver, load: activeLoad || null, lastDelivered: lastDel ? { address: lastDel.address, date: lastDel.date } : undefined })}
                   >
                     {/* Franja vertical izquierda: LOADED / EMPTY, letra por letra */}
-                    <div className={`flex w-7 shrink-0 items-center justify-center ${activeLoad ? 'bg-emerald-600' : 'bg-orange-500'}`}>
-                      <span className="flex flex-col items-center text-[10px] font-bold leading-[1.15] text-white">
+                    <div className={`flex w-8 shrink-0 items-center justify-center ${activeLoad ? 'bg-emerald-600' : 'bg-orange-500'}`}>
+                      <span className="flex flex-col items-center text-[13px] font-bold leading-[1.15] text-white">
                         {(activeLoad ? 'LOADED' : 'EMPTY').split('').map((letter, i) => (
                           <span key={i}>{letter}</span>
                         ))}
