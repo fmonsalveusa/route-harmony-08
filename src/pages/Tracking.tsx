@@ -1319,7 +1319,8 @@ const Tracking = () => {
 
         {/* Map */}
         <Card className="lg:col-span-3 lg:col-start-2 overflow-hidden self-start rounded-xl shadow-sm">
-          <div className="relative h-[600px]">
+          {/* isolate: la leyenda y las capas del mapa (z-index altos) quedan dentro del mapa y no por encima de las ventanas */}
+          <div className="relative isolate h-[600px]">
             {/* Leyenda del mapa */}
             <div className="absolute bottom-3 left-3 z-[1000] flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg bg-white/95 px-3 py-1.5 text-[11px] text-gray-700 shadow-md">
               <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-[#266aad]" /> GPS en vivo</span>
