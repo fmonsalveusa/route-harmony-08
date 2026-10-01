@@ -1104,23 +1104,24 @@ const Tracking = () => {
                 const loc = locByDriver[driver.id];
                 const locAge = loc ? nowTick - new Date(loc.updated_at).getTime() : null;
                 const locLive = locAge != null && locAge <= LIVE_LOCATION_MS;
-                // Franja izquierda de color según el estado del día, como en RouteOne
-                const accent = isPaused
-                  ? 'border-l-slate-400'
-                  : sStatus === 'ready'
-                  ? 'border-l-emerald-500'
-                  : sStatus === 'searching'
-                  ? 'border-l-orange-500'
-                  : 'border-l-transparent';
                 return (
                   <div
                     key={driver.id}
-                    className={`rounded-xl border border-l-4 ${accent} shadow-sm transition-all cursor-pointer hover:shadow-md ${
+                    className={`flex overflow-hidden rounded-xl border shadow-sm transition-all cursor-pointer hover:shadow-md ${
                       // Fondo según la carga: verde si está cargado, naranja si está vacío
                       activeLoad ? 'bg-emerald-50 border-emerald-200' : 'bg-orange-50 border-orange-200'
                     } ${isPaused ? 'opacity-60' : ''}`}
                     onClick={() => setSelectedDriverLoad({ driver, load: activeLoad || null, lastDelivered: lastDel ? { address: lastDel.address, date: lastDel.date } : undefined })}
                   >
+                    {/* Franja vertical izquierda: LOADED / EMPTY, letra por letra */}
+                    <div className={`flex w-7 shrink-0 items-center justify-center ${activeLoad ? 'bg-emerald-600' : 'bg-orange-500'}`}>
+                      <span className="flex flex-col items-center text-[10px] font-bold leading-[1.15] text-white">
+                        {(activeLoad ? 'LOADED' : 'EMPTY').split('').map((letter, i) => (
+                          <span key={i}>{letter}</span>
+                        ))}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
                     {/* Línea 1: nombre, teléfono, carga y tipo de servicio */}
                     <div className="flex items-center gap-1.5 px-3 pt-2.5">
                       <p className="text-sm font-semibold truncate">{driver.name}</p>
@@ -1143,13 +1144,6 @@ const Tracking = () => {
                           </button>
                         </span>
                       )}
-                      <span
-                        className={`shrink-0 rounded-md px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-white ${
-                          activeLoad ? 'bg-emerald-600' : 'bg-orange-500'
-                        }`}
-                      >
-                        {activeLoad ? 'LOADED' : 'EMPTY'}
-                      </span>
                       <ServiceTypeBadge
                         serviceType={(driver as any).service_type}
                         className="ml-auto shrink-0 !text-xs !px-2 !py-0.5 rounded-md"
@@ -1314,6 +1308,7 @@ const Tracking = () => {
                             : 'Standby'}
                         </button>
                       )}
+                    </div>
                     </div>
                   </div>
                 );
