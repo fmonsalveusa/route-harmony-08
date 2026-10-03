@@ -12,6 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatTiles } from '@/components/StatTiles';
+import { WhatsAppGroupSelect } from '@/components/WhatsAppGroupSelect';
 import { supabase } from '@/integrations/supabase/client';
 import { getTenantId } from '@/hooks/useTenantId';
 import { cn } from '@/lib/utils';
@@ -127,6 +128,22 @@ function MeetingSection({ contact, name, vehicle }: { contact: CrmContact; name:
     else qc.invalidateQueries({ queryKey: ['crm_contacts'] });
   };
 
+  /** Vincular un grupo que ya existe (o quitarlo) */
+  const linkGroup = async (id: string | null, gName: string | null) => {
+    const { error } = await supabase.from('crm_contacts' as any)
+      .update({ whatsapp_group_id: id, whatsapp_group_name: gName } as any).eq('id', contact.id);
+    if (error) { toast.error(error.message); return; }
+    const tenantId = await getTenantId();
+    const { data: { user } } = await supabase.auth.getUser();
+    await supabase.from('crm_notes' as any).insert({
+      tenant_id: tenantId, contact_id: contact.id, kind: 'system', created_by: user?.id ?? null,
+      body: id ? `Grupo de WhatsApp vinculado: ${gName ?? id}` : 'Se quitó el grupo de WhatsApp',
+    } as any);
+    setGroup({ id, name: gName });
+    toast.success(id ? 'Grupo vinculado' : 'Grupo quitado');
+    refresh();
+  };
+
   const createGroup = async () => {
     if (!subject.trim()) return;
     if (!window.confirm(`¿Crear el grupo de WhatsApp "${subject}" con ${contact.phone}?`)) return;
@@ -169,10 +186,14 @@ function MeetingSection({ contact, name, vehicle }: { contact: CrmContact; name:
       </div>
 
       {group.id ? (
-        <p className="text-xs flex items-center gap-1.5 text-green-700 dark:text-green-400">
-          <MessageCircle className="h-3.5 w-3.5" /> Grupo: {group.name}
-        </p>
+        <div className="space-y-1">
+          <p className="text-xs flex items-center gap-1.5 text-green-700 dark:text-green-400">
+            <MessageCircle className="h-3.5 w-3.5" /> Grupo de WhatsApp
+          </p>
+          <WhatsAppGroupSelect compact className="" groupId={group.id} groupName={group.name} onChange={linkGroup} />
+        </div>
       ) : (
+        <div className="space-y-2">
         <div className="flex gap-2">
           <Input
             value={subject}
@@ -184,6 +205,11 @@ function MeetingSection({ contact, name, vehicle }: { contact: CrmContact; name:
             {busy === 'group' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <MessageCircle className="h-3.5 w-3.5" />}
             Crear grupo de WhatsApp
           </Button>
+        </div>
+        <div className="space-y-1">
+          <p className="text-[11px] text-muted-foreground">¿Ya tiene grupo? Vincúlalo:</p>
+          <WhatsAppGroupSelect compact className="" groupId={null} groupName={null} onChange={linkGroup} />
+        </div>
         </div>
       )}
 
