@@ -85,7 +85,7 @@ const MEETING_STEPS: { id: string; label: string; send?: boolean }[] = [
   { id: 'own_mc', label: 'MC# Propio' },
   { id: 'our_mc', label: 'MC# Nuestro' },
   { id: 'medical_card', label: 'Medical Card', send: true },
-  { id: 'eld', label: 'Libro Electrónico', send: true },
+  { id: 'eld', label: 'Libro Electrónico MC# Nuestro', send: true },
   { id: 'eld_own_mc', label: 'Libro Electrónico MC# Propio', send: true },
 ];
 

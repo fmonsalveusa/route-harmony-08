@@ -158,7 +158,7 @@ Deno.serve(async (req) => {
       const STEPS: Record<string, { key: string; label: string }> = {
         service_info: { key: "crm_step_service_info", label: "Información del Servicio" },
         medical_card: { key: "crm_step_medical_card", label: "Medical Card" },
-        eld: { key: "crm_step_eld", label: "Libro Electrónico" },
+        eld: { key: "crm_step_eld", label: "Libro Electrónico MC# Nuestro" },
         eld_own_mc: { key: "crm_step_eld_own_mc", label: "Libro Electrónico MC# Propio" },
       };
       const step = STEPS[String(body.step)];
