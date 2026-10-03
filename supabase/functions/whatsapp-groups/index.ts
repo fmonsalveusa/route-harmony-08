@@ -159,6 +159,7 @@ Deno.serve(async (req) => {
         service_info: { key: "crm_step_service_info", label: "Información del Servicio" },
         medical_card: { key: "crm_step_medical_card", label: "Medical Card" },
         eld: { key: "crm_step_eld", label: "Libro Electrónico" },
+        eld_own_mc: { key: "crm_step_eld_own_mc", label: "Libro Electrónico MC# Propio" },
       };
       const step = STEPS[String(body.step)];
       if (!step) return json({ error: "Paso desconocido" }, 400);
