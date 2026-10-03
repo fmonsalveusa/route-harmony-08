@@ -191,7 +191,21 @@ Deno.serve(async (req) => {
     const res = await fetch(`${WHAPI}/groups?count=500`, { headers: auth });
     if (!res.ok) throw new Error(`Whapi HTTP ${res.status}: ${(await res.text()).slice(0, 300)}`);
     const payload = await res.json();
+    // Los grupos archivados en el teléfono (clientes que ya no trabajan) no se muestran
+    const archived = new Set<string>();
+    try {
+      for (let offset = 0; offset < 3000; offset += 500) {
+        const chatsRes = await fetch(`${WHAPI}/chats?count=500&offset=${offset}`, { headers: auth });
+        if (!chatsRes.ok) break;
+        const chats = ((await chatsRes.json())?.chats ?? []) as any[];
+        for (const c of chats) if (c?.archive === true || c?.archived === true) archived.add(String(c.id));
+        if (chats.length < 500) break;
+      }
+    } catch (e) {
+      console.error("archived chats lookup failed:", e);
+    }
     const groups = ((payload?.groups ?? []) as any[])
+      .filter((g) => body.include_archived || !archived.has(String(g.id)))
       .map((g) => ({ id: g.id as string, name: (g.name || g.subject || g.id) as string }))
       .sort((a, b) => a.name.localeCompare(b.name));
     return json({ groups });
