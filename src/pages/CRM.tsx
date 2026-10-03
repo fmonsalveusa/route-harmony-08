@@ -268,7 +268,7 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
   };
 
   const link = waLink(form.phone);
-  const field = (key: 'name' | 'phone' | 'email' | 'city' | 'vehicle', label: string, type = 'text') => (
+  const field = (key: 'name' | 'phone' | 'email' | 'city', label: string, type = 'text') => (
     <div className="space-y-1">
       <Label className="text-xs">{label}</Label>
       <Input type={type} value={form[key]} onChange={e => edit({ [key]: e.target.value })} className="h-8 text-sm" />
@@ -298,7 +298,16 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
         {field('phone', 'Teléfono')}
         {field('email', 'Email')}
         {field('city', 'Ciudad')}
-        {field('vehicle', 'Vehículo')}
+        <div className="space-y-1">
+          <Label className="text-xs">Vehículo</Label>
+          <Select value={form.vehicle || undefined} onValueChange={v => edit({ vehicle: v })}>
+            <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+            <SelectContent>
+              {VEHICLES.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+              {form.vehicle && !VEHICLES.includes(form.vehicle) && <SelectItem value={form.vehicle}>{form.vehicle}</SelectItem>}
+            </SelectContent>
+          </Select>
+        </div>
         <div className="space-y-1">
           <Label className="text-xs">Servicio de interés</Label>
           <Select value={form.service || undefined} onValueChange={v => edit({ service: v })}>
