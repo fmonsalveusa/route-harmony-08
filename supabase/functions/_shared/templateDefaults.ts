@@ -368,6 +368,25 @@ export const AUTOMATIONS: AutomationDefinition[] = [
     ],
   },
   {
+    id: 'crm_reminders',
+    title: 'Recordatorios del CRM',
+    description: 'Cuando llega la fecha y hora de la próxima acción de un contacto del CRM. Se envía al grupo de administración (revisa cada 15 minutos).',
+    toggle: 'wa_crm_reminders',
+    templates: [{
+      key: 'crm_reminder',
+      title: 'Mensaje',
+      description: 'Se envía al grupo de administración.',
+      body: '⏰ Seguimiento CRM\n{nombre} · {telefono}\nEtapa: {etapa}\nPendiente: {accion}',
+      variables: [
+        v('nombre', 'Nombre del contacto', 'Juan Pérez'),
+        v('telefono', 'Teléfono del contacto', '(704) 555-1234'),
+        v('etapa', 'Etapa actual', 'Reunión hecha'),
+        v('accion', 'Próxima acción', 'Llamar para enviar el link de onboarding'),
+        v('vehiculo', 'Vehículo', 'Box truck 26 pies'),
+      ],
+    }],
+  },
+  {
     id: 'group_welcome',
     title: 'Bienvenida a grupo nuevo',
     description: 'Cuando se crea un grupo de WhatsApp desde el número de la empresa (o lo agregan a uno nuevo). Se envía una sola vez por grupo. El nombre sale del driver que está en el grupo, buscado por su teléfono.',

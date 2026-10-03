@@ -34,6 +34,25 @@ async function notifyAdminGroup(
   }
 }
 
+/** CRM: quien termina el onboarding queda como "Cliente registrado" (se busca por teléfono) */
+async function markCrmClient(
+  supabase: any,
+  tenantId: string | null,
+  person: { name?: string | null; phone?: string | null; email?: string | null; driverId?: string | null },
+  note: string,
+) {
+  try {
+    if (!tenantId || !person.phone) return;
+    const { error } = await supabase.rpc("crm_upsert_contact", {
+      p_tenant: tenantId, p_name: person.name ?? "", p_phone: person.phone, p_source: "onboarding",
+      p_stage: "client", p_email: person.email ?? null, p_driver_id: person.driverId ?? null, p_note: note,
+    });
+    if (error) console.error("markCrmClient failed:", error);
+  } catch (e) {
+    console.error("markCrmClient failed:", e);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -195,6 +214,9 @@ Deno.serve(async (req) => {
           await smtp.close();
         }
       } catch (emailErr) { console.error("Failed to send email:", emailErr); }
+
+      await markCrmClient(supabaseAdmin, tenantId, { name: dData.name, phone: dData.phone, email: dData.email, driverId },
+        "Completó el onboarding (driver de un Owner Operator)");
 
       await notifyAdminGroup(supabaseAdmin, tenantId, "onboarding_oo_driver", {
         driver: String(dData.name ?? ""),
@@ -498,7 +520,11 @@ Deno.serve(async (req) => {
 
       {
         const { data: clientRow } = await supabaseAdmin
-          .from("dispatch_service_clients").select("legal_business_name, mc_number").eq("id", clientId).maybeSingle();
+          .from("dispatch_service_clients").select("legal_business_name, mc_number, owner_full_name, phone, email").eq("id", clientId).maybeSingle();
+        await markCrmClient(supabaseAdmin, tenantId, {
+          name: clientRow?.owner_full_name || driversArr[0]?.name || clientRow?.legal_business_name,
+          phone: clientRow?.phone || driversArr[0]?.phone, email: clientRow?.email || driversArr[0]?.email,
+        }, `Completó el onboarding de Dispatch Service (${clientRow?.legal_business_name ?? "empresa"})`);
         await notifyAdminGroup(supabaseAdmin, tenantId, "onboarding_dispatch_client", {
           empresa: clientRow?.legal_business_name ?? "—",
           mc: clientRow?.mc_number ?? "—",
@@ -895,6 +921,9 @@ Deno.serve(async (req) => {
     } catch (emailErr) {
       console.error("Failed to send email:", emailErr);
     }
+
+    await markCrmClient(supabaseAdmin, tenantId, { name: driverData.name, phone: driverData.phone, email: driverData.email, driverId },
+      `Completó el onboarding (${isOO ? "Owner Operator" : "Company Driver"})`);
 
     await notifyAdminGroup(supabaseAdmin, tenantId, "onboarding_driver", {
       tipo: isOO ? (isDriverOwner ? "Owner Operator (maneja su camión)" : "Owner Operator") : "Company Driver",

@@ -157,6 +157,45 @@ async function runMeetingReminders(supabase: Supa, tenant: any, today: string) {
 }
 
 // ─── Documento de firma completado ───────────────────────────────────────────
+const CRM_STAGES: Record<string, string> = {
+  new: "Nuevo", contacted: "Contactado", meeting_scheduled: "Reunión agendada", meeting_done: "Reunión hecha",
+  onboarding: "En onboarding", client: "Cliente registrado", lost: "Perdido",
+};
+
+/** Próximas acciones del CRM que ya vencieron: un aviso por cada fecha programada */
+async function runCrmReminders(supabase: Supa, tenant: any) {
+  if (!tenant.whatsapp_admin_group_id) return { crm: "sin grupo de administración" };
+  const { data: due } = await supabase
+    .from("crm_contacts").select("id, name, phone, stage, vehicle, next_action")
+    .eq("tenant_id", tenant.id).is("reminder_sent_at", null).lte("next_action_at", new Date().toISOString())
+    .not("stage", "in", "(client,lost)").limit(20);
+
+  let sent = 0;
+  for (const c of (due as any[]) || []) {
+    // Se marca antes de enviar para que dos corridas no lo repitan
+    const { data: claimed } = await supabase
+      .from("crm_contacts").update({ reminder_sent_at: new Date().toISOString() })
+      .eq("id", c.id).is("reminder_sent_at", null).select("id");
+    if (!claimed?.length) continue;
+    try {
+      const message = await renderMessage(supabase, tenant.id, "crm_reminder", {
+        nombre: c.name, telefono: c.phone ?? "—", etapa: CRM_STAGES[c.stage] ?? c.stage,
+        accion: c.next_action || "Dar seguimiento", vehiculo: c.vehicle ?? "—",
+      });
+      await sendTextLogged(supabase, {
+        tenantId: tenant.id, templateKey: "crm_reminder", recipientType: "admin",
+        recipientName: c.name, reference: "CRM", groupId: tenant.whatsapp_admin_group_id, message,
+      });
+      sent++;
+      await sleep(SEND_GAP_MS);
+    } catch (e) {
+      await supabase.from("crm_contacts").update({ reminder_sent_at: null }).eq("id", c.id);
+      console.error(`CRM reminder failed (${c.id}):`, e);
+    }
+  }
+  return { crm_reminders: sent };
+}
+
 async function runDocumentSigned(supabase: Supa, tenant: any, documentId: string) {
   const { data: doc } = await supabase
     .from("documents")
@@ -536,6 +575,10 @@ Deno.serve(async (req) => {
 
       if (job === "document_signed" && fromCron && on("wa_document_signed")) {
         Object.assign(r, await runDocumentSigned(supabase, tenant, documentId));
+      }
+
+      if (job === "crm_reminders" && fromCron && on("wa_crm_reminders")) {
+        Object.assign(r, await runCrmReminders(supabase, tenant));
       }
 
       if (job === "pod" && fromCron && on("wa_pod_reminders")) {
