@@ -68,6 +68,7 @@ const SOURCE: Record<string, { label: string; icon: typeof Globe }> = {
 };
 
 const SERVICES = ['OWNER OPERATOR', 'DISPATCH SERVICE', 'COMPANY DRIVER'];
+const VEHICLES = ['BOXTRUCK', 'HOTSHOT'];
 
 const CHECKS = [
   { key: 'has_medical_card', label: 'Medical Card' },
@@ -445,10 +446,19 @@ function NewContactDialog({ open, onOpenChange }: { open: boolean; onOpenChange:
       <DialogContent className="sm:max-w-md">
         <DialogHeader><DialogTitle>Nuevo contacto</DialogTitle></DialogHeader>
         <div className="grid gap-3">
-          {(['name', 'phone', 'vehicle', 'service'] as const).map(k => (
+          {(['name', 'phone'] as const).map(k => (
             <div key={k} className="space-y-1">
-              <Label className="text-xs">{{ name: 'Nombre', phone: 'Teléfono', vehicle: 'Vehículo', service: 'Servicio de interés' }[k]}</Label>
+              <Label className="text-xs">{{ name: 'Nombre', phone: 'Teléfono' }[k]}</Label>
               <Input value={form[k]} onChange={e => setForm(f => ({ ...f, [k]: e.target.value }))} />
+            </div>
+          ))}
+          {([['vehicle', 'Vehículo', VEHICLES], ['service', 'Servicio de interés', SERVICES]] as const).map(([k, label, options]) => (
+            <div key={k} className="space-y-1">
+              <Label className="text-xs">{label}</Label>
+              <Select value={form[k] || undefined} onValueChange={v => setForm(f => ({ ...f, [k]: v }))}>
+                <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+                <SelectContent>{options.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
+              </Select>
             </div>
           ))}
         </div>
