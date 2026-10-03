@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Contact, Plus, Search, Phone, MessageCircle, Globe, UserCheck, PenLine, CalendarClock, AlertCircle,
@@ -193,19 +193,50 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
     qc.invalidateQueries({ queryKey: ['crm_notes', contact.id] });
   };
 
+  // Guardado automático: cada cambio se guarda solo, y lo pendiente se guarda al cerrar la ficha
+  const [status, setStatus] = useState<'idle' | 'pending' | 'saved' | 'error'>('idle');
+  const formRef = useRef(form);
+  const dirty = useRef(false);
+  const timer = useRef<ReturnType<typeof setTimeout>>();
+
   const save = async () => {
+    clearTimeout(timer.current);
+    if (!dirty.current) return;
+    dirty.current = false;
+    const form = formRef.current;
+    if (!form.name.trim()) { setStatus('error'); toast.error('El nombre no puede quedar vacío'); return; }
     setSaving(true);
-    const { error } = await supabase.from('crm_contacts' as any).update({
+    const { data, error } = await supabase.from('crm_contacts' as any).update({
       name: form.name.trim(), phone: form.phone.trim() || null, email: form.email.trim() || null,
       city: form.city.trim() || null, vehicle: form.vehicle.trim() || null, service: form.service.trim() || null,
       stage: form.stage, has_medical_card: form.has_medical_card, has_active_mc: form.has_active_mc, has_eld: form.has_eld,
       next_action: form.next_action.trim() || null,
       next_action_at: form.next_action_at ? new Date(form.next_action_at).toISOString() : null,
-    } as any).eq('id', contact.id);
+    } as any).eq('id', contact.id).select('id');
     setSaving(false);
-    if (error) { toast.error(error.message); return; }
-    toast.success('Contacto guardado');
+    if (error || !data?.length) {
+      setStatus('error');
+      toast.error(`No se pudo guardar: ${error?.message ?? 'sin permiso para editar este contacto'}`);
+      return;
+    }
+    setStatus('saved');
     refresh();
+  };
+
+  useEffect(() => {
+    formRef.current = form;
+    if (!dirty.current) return;
+    setStatus('pending');
+    clearTimeout(timer.current);
+    timer.current = setTimeout(save, 800);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form]);
+
+  useEffect(() => () => { save(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const edit = (changes: Partial<typeof form>) => {
+    dirty.current = true;
+    setForm(f => ({ ...f, ...changes }));
   };
 
   const addNote = async () => {
@@ -227,6 +258,8 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
 
   const remove = async () => {
     if (!window.confirm(`¿Eliminar a ${contact.name || contact.phone} del CRM? Se borran también sus notas.`)) return;
+    dirty.current = false;
+    clearTimeout(timer.current);
     const { error } = await supabase.from('crm_contacts' as any).delete().eq('id', contact.id);
     if (error) { toast.error(error.message); return; }
     qc.invalidateQueries({ queryKey: ['crm_contacts'] });
@@ -237,7 +270,7 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
   const field = (key: 'name' | 'phone' | 'email' | 'city' | 'vehicle', label: string, type = 'text') => (
     <div className="space-y-1">
       <Label className="text-xs">{label}</Label>
-      <Input type={type} value={form[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} className="h-8 text-sm" />
+      <Input type={type} value={form[key]} onChange={e => edit({ [key]: e.target.value })} className="h-8 text-sm" />
     </div>
   );
 
@@ -267,7 +300,7 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
         {field('vehicle', 'Vehículo')}
         <div className="space-y-1">
           <Label className="text-xs">Servicio de interés</Label>
-          <Select value={form.service || undefined} onValueChange={v => setForm(f => ({ ...f, service: v }))}>
+          <Select value={form.service || undefined} onValueChange={v => edit({ service: v })}>
             <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
             <SelectContent>
               {SERVICES.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
@@ -278,14 +311,14 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
         <div className="col-span-2 flex flex-wrap gap-x-5 gap-y-2 rounded-lg border p-3">
           {CHECKS.map(ch => (
             <label key={ch.key} className="flex items-center gap-2 text-sm cursor-pointer">
-              <Checkbox checked={form[ch.key]} onCheckedChange={v => setForm(f => ({ ...f, [ch.key]: v === true }))} />
+              <Checkbox checked={form[ch.key]} onCheckedChange={v => edit({ [ch.key]: v === true })} />
               {ch.label}
             </label>
           ))}
         </div>
         <div className="space-y-1 col-span-2">
           <Label className="text-xs">Etapa</Label>
-          <Select value={form.stage} onValueChange={v => setForm(f => ({ ...f, stage: v as Stage }))}>
+          <Select value={form.stage} onValueChange={v => edit({ stage: v as Stage })}>
             <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
             <SelectContent>{STAGES.map(s => <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>)}</SelectContent>
           </Select>
@@ -297,18 +330,18 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
         <Input
           placeholder="Ej: Llamar para enviar el link de onboarding"
           value={form.next_action}
-          onChange={e => setForm(f => ({ ...f, next_action: e.target.value }))}
+          onChange={e => edit({ next_action: e.target.value })}
           className="h-8 text-sm"
         />
         <div className="flex gap-2 items-center">
           <Input
             type="datetime-local"
             value={form.next_action_at}
-            onChange={e => setForm(f => ({ ...f, next_action_at: e.target.value }))}
+            onChange={e => edit({ next_action_at: e.target.value })}
             className="h-8 text-sm"
           />
           {form.next_action_at && (
-            <Button size="sm" variant="ghost" className="h-8" onClick={() => setForm(f => ({ ...f, next_action_at: '', next_action: '' }))}>Quitar</Button>
+            <Button size="sm" variant="ghost" className="h-8" onClick={() => edit({ next_action_at: '', next_action: '' })}>Quitar</Button>
           )}
         </div>
         <p className="text-[11px] text-muted-foreground">
@@ -318,9 +351,9 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
         </p>
       </div>
 
-      <Button onClick={save} disabled={saving} className="w-full">
-        {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Guardar cambios
-      </Button>
+      <p className={cn('text-xs text-right', status === 'error' ? 'text-destructive' : 'text-muted-foreground')}>
+        {saving || status === 'pending' ? 'Guardando…' : status === 'saved' ? '✓ Cambios guardados' : status === 'error' ? 'No se guardó' : 'Los cambios se guardan solos'}
+      </p>
 
       <div className="space-y-2">
         <p className="text-sm font-medium">Notas y seguimiento</p>
