@@ -17,7 +17,7 @@ import { getTenantId } from '@/hooks/useTenantId';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
-type Stage = 'new' | 'meeting_scheduled' | 'meeting_done' | 'client' | 'lost';
+type Stage = 'new' | 'meeting_scheduled' | 'meeting_done' | 'client';
 
 interface CrmContact {
   id: string;
@@ -56,7 +56,6 @@ const STAGES: { id: Stage; label: string; tint: string }[] = [
   { id: 'meeting_scheduled', label: 'Reunión agendada', tint: 'border-t-violet-500' },
   { id: 'meeting_done', label: 'Reunión hecha', tint: 'border-t-amber-500' },
   { id: 'client', label: 'Cliente registrado', tint: 'border-t-green-600' },
-  { id: 'lost', label: 'Perdido', tint: 'border-t-red-500' },
 ];
 const STAGE_LABEL = Object.fromEntries(STAGES.map(s => [s.id, s.label])) as Record<Stage, string>;
 
@@ -231,7 +230,7 @@ const toLocalInput = (iso: string | null) => {
 };
 
 const isOverdue = (c: CrmContact) =>
-  !!c.next_action_at && new Date(c.next_action_at) <= new Date() && c.stage !== 'client' && c.stage !== 'lost';
+  !!c.next_action_at && new Date(c.next_action_at) <= new Date() && c.stage !== 'client';
 
 const waLink = (phone: string | null) => {
   const d = (phone ?? '').replace(/\D/g, '');
@@ -272,7 +271,7 @@ function ContactCard({ c, onOpen }: { c: CrmContact; onOpen: () => void }) {
       {(c.vehicle || c.service) && (
         <p className="text-xs text-muted-foreground truncate">{[c.vehicle, c.service].filter(Boolean).join(' · ')}</p>
       )}
-      {c.next_action_at && c.stage !== 'client' && c.stage !== 'lost' && (
+      {c.next_action_at && c.stage !== 'client' && (
         <p className={cn('text-[11px] flex items-center gap-1', overdue ? 'text-red-600 font-medium' : 'text-blue-600')}>
           {overdue ? <AlertCircle className="h-3 w-3" /> : <CalendarClock className="h-3 w-3" />}
           {fmt(c.next_action_at)}{c.next_action ? ` · ${c.next_action}` : ''}
@@ -628,6 +627,15 @@ function NewContactDialog({ open, onOpenChange }: { open: boolean; onOpenChange:
 export default function CRM() {
   const qc = useQueryClient();
   const { data: contacts = [], isLoading } = useContacts();
+  // Clientes que ya tienen cargas: dejan el tablero (siguen apareciendo al buscarlos)
+  const { data: working = new Set<string>() } = useQuery({
+    queryKey: ['crm_working'],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('crm_working_contact_ids' as any);
+      if (error) throw error;
+      return new Set(((data as any[]) ?? []).map(r => (typeof r === 'string' ? r : r.crm_working_contact_ids)));
+    },
+  });
   const [search, setSearch] = useState('');
   const [openId, setOpenId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
@@ -636,13 +644,13 @@ export default function CRM() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     const qd = q.replace(/\D/g, '');
-    if (!q) return contacts;
+    if (!q) return contacts.filter(c => !working.has(c.id));
     return contacts.filter(c =>
       c.name.toLowerCase().includes(q) ||
       (qd.length >= 3 && (c.phone ?? '').replace(/\D/g, '').includes(qd)) ||
       (c.vehicle ?? '').toLowerCase().includes(q) ||
       (c.service ?? '').toLowerCase().includes(q));
-  }, [contacts, search]);
+  }, [contacts, search, working]);
 
   const byStage = useMemo(() => {
     const map = Object.fromEntries(STAGES.map(s => [s.id, [] as CrmContact[]])) as Record<Stage, CrmContact[]>;
@@ -670,7 +678,7 @@ export default function CRM() {
   };
 
   const openContact = contacts.find(c => c.id === openId) ?? null;
-  const active = contacts.filter(c => c.stage !== 'client' && c.stage !== 'lost');
+  const active = contacts.filter(c => c.stage !== 'client');
   const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
 
   return (
@@ -706,7 +714,7 @@ export default function CRM() {
               onDragOver={e => { e.preventDefault(); setDragOver(s.id); }}
               onDragLeave={() => setDragOver(d => (d === s.id ? null : d))}
               onDrop={e => { e.preventDefault(); setDragOver(null); moveTo(e.dataTransfer.getData('text/plain'), s.id); }}
-              className={cn('w-64 shrink-0 rounded-xl border border-t-4 bg-muted/30 flex flex-col max-h-[70vh]', s.tint, dragOver === s.id && 'ring-2 ring-primary/40')}
+              className={cn('flex-1 min-w-[220px] rounded-xl border border-t-4 bg-muted/30 flex flex-col max-h-[70vh]', s.tint, dragOver === s.id && 'ring-2 ring-primary/40')}
             >
               <div className="px-3 py-2 flex items-center justify-between">
                 <p className="text-sm font-semibold">{s.label}</p>

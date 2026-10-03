@@ -232,3 +232,19 @@ UPDATE crm_contacts SET stage = 'new' WHERE stage = 'contacted';
 UPDATE crm_contacts SET stage = 'meeting_done' WHERE stage = 'onboarding';
 ALTER TABLE crm_contacts DROP CONSTRAINT crm_contacts_stage_check;
 ALTER TABLE crm_contacts ADD CONSTRAINT crm_contacts_stage_check CHECK (stage IN ('new','meeting_scheduled','meeting_done','client','lost'));
+
+-- ─── Se quita "Perdido"; los clientes que ya trabajan se ocultan ───────────
+UPDATE crm_contacts SET stage = 'new' WHERE stage = 'lost';
+ALTER TABLE crm_contacts DROP CONSTRAINT crm_contacts_stage_check;
+ALTER TABLE crm_contacts ADD CONSTRAINT crm_contacts_stage_check CHECK (stage IN ('new','meeting_scheduled','meeting_done','client'));
+
+-- Clientes que ya están trabajando (su driver tiene al menos una carga): se ocultan del tablero
+CREATE OR REPLACE FUNCTION crm_working_contact_ids() RETURNS SETOF uuid LANGUAGE sql STABLE SET search_path = public AS $$
+  SELECT DISTINCT c.id
+  FROM crm_contacts c
+  JOIN drivers d ON d.id = c.driver_id
+    OR (length(c.phone_key) = 10 AND right(regexp_replace(coalesce(d.phone, ''), '\D', '', 'g'), 10) = c.phone_key)
+  WHERE c.stage = 'client'
+    AND EXISTS (SELECT 1 FROM loads l WHERE l.driver_id = d.id::text)
+$$;
+GRANT EXECUTE ON FUNCTION crm_working_contact_ids() TO authenticated;
