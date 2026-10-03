@@ -248,3 +248,7 @@ CREATE OR REPLACE FUNCTION crm_working_contact_ids() RETURNS SETOF uuid LANGUAGE
     AND EXISTS (SELECT 1 FROM loads l WHERE l.driver_id = d.id::text)
 $$;
 GRANT EXECUTE ON FUNCTION crm_working_contact_ids() TO authenticated;
+
+-- ─── Próxima acción automática: mensaje de seguimiento al cliente ───────────
+-- Tipo de próxima acción: reminder = aviso al grupo de administración; client_message = mensaje de seguimiento al cliente
+ALTER TABLE crm_contacts ADD COLUMN IF NOT EXISTS next_action_type text NOT NULL DEFAULT 'reminder';

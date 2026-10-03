@@ -163,37 +163,54 @@ const CRM_STAGES: Record<string, string> = {
 };
 
 /** Próximas acciones del CRM que ya vencieron: un aviso por cada fecha programada */
+/** Próximas acciones del CRM que ya vencieron: aviso al grupo de administración o mensaje de seguimiento al cliente */
 async function runCrmReminders(supabase: Supa, tenant: any) {
-  if (!tenant.whatsapp_admin_group_id) return { crm: "sin grupo de administración" };
   const { data: due } = await supabase
-    .from("crm_contacts").select("id, name, phone, stage, vehicle, next_action")
+    .from("crm_contacts").select("id, name, phone, stage, vehicle, next_action, next_action_type, whatsapp_group_id")
     .eq("tenant_id", tenant.id).is("reminder_sent_at", null).lte("next_action_at", new Date().toISOString())
-    .not("stage", "in", "(client,lost)").limit(20);
+    .limit(20);
 
-  let sent = 0;
+  let sent = 0, followups = 0;
   for (const c of (due as any[]) || []) {
+    const toClient = c.next_action_type === "client_message";
+    const digits = String(c.phone ?? "").replace(/\D/g, "");
+    // Al cliente: a su grupo si lo tiene, si no a su chat directo
+    const to = toClient
+      ? c.whatsapp_group_id || (digits.length >= 10 ? (digits.length === 10 ? `1${digits}` : digits) : null)
+      : tenant.whatsapp_admin_group_id;
+    if (!to) continue;
+
     // Se marca antes de enviar para que dos corridas no lo repitan
     const { data: claimed } = await supabase
       .from("crm_contacts").update({ reminder_sent_at: new Date().toISOString() })
       .eq("id", c.id).is("reminder_sent_at", null).select("id");
     if (!claimed?.length) continue;
     try {
-      const message = await renderMessage(supabase, tenant.id, "crm_reminder", {
-        nombre: c.name, telefono: c.phone ?? "—", etapa: CRM_STAGES[c.stage] ?? c.stage,
-        accion: c.next_action || "Dar seguimiento", vehiculo: c.vehicle ?? "—",
-      });
+      const name = String(c.name ?? "").trim();
+      const message = toClient
+        ? await renderMessage(supabase, tenant.id, "crm_followup", { nombre: name.split(/\s+/)[0] ?? "", cliente: name })
+        : await renderMessage(supabase, tenant.id, "crm_reminder", {
+          nombre: c.name, telefono: c.phone ?? "—", etapa: CRM_STAGES[c.stage] ?? c.stage,
+          accion: c.next_action || "Dar seguimiento", vehiculo: c.vehicle ?? "—",
+        });
       await sendTextLogged(supabase, {
-        tenantId: tenant.id, templateKey: "crm_reminder", recipientType: "admin",
-        recipientName: c.name, reference: "CRM", groupId: tenant.whatsapp_admin_group_id, message,
+        tenantId: tenant.id, templateKey: toClient ? "crm_followup" : "crm_reminder",
+        recipientType: toClient ? "lead" : "admin", recipientName: c.name, reference: "CRM", groupId: to, message,
       });
-      sent++;
+      if (toClient) {
+        followups++;
+        await supabase.from("crm_notes").insert({
+          tenant_id: tenant.id, contact_id: c.id, kind: "system", body: `Mensaje de seguimiento enviado por WhatsApp:
+${message}`,
+        });
+      } else sent++;
       await sleep(SEND_GAP_MS);
     } catch (e) {
       await supabase.from("crm_contacts").update({ reminder_sent_at: null }).eq("id", c.id);
       console.error(`CRM reminder failed (${c.id}):`, e);
     }
   }
-  return { crm_reminders: sent };
+  return { crm_reminders: sent, crm_followups: followups };
 }
 
 async function runDocumentSigned(supabase: Supa, tenant: any, documentId: string) {

@@ -32,6 +32,7 @@ interface CrmContact {
   source: string;
   stage: Stage;
   next_action: string | null;
+  next_action_type: 'reminder' | 'client_message';
   next_action_at: string | null;
   reminder_sent_at: string | null;
   has_medical_card: boolean;
@@ -313,6 +314,7 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
     name: contact.name, phone: contact.phone ?? '', email: contact.email ?? '', city: contact.city ?? '',
     vehicle: contact.vehicle ?? '', service: contact.service ?? '', stage: contact.stage,
     next_action: contact.next_action ?? '', next_action_at: toLocalInput(contact.next_action_at),
+    next_action_type: contact.next_action_type ?? 'reminder',
     has_medical_card: contact.has_medical_card, has_active_mc: contact.has_active_mc, has_eld: contact.has_eld,
   });
   const [noteKind, setNoteKind] = useState('note');
@@ -376,7 +378,7 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
       name: form.name.trim(), phone: form.phone.trim() || null, email: form.email.trim() || null,
       city: form.city.trim() || null, vehicle: form.vehicle.trim() || null, service: form.service.trim() || null,
       stage: form.stage, has_medical_card: form.has_medical_card, has_active_mc: form.has_active_mc, has_eld: form.has_eld,
-      next_action: form.next_action.trim() || null,
+      next_action: form.next_action.trim() || null, next_action_type: form.next_action_type,
       next_action_at: form.next_action_at ? new Date(form.next_action_at).toISOString() : null,
     } as any).eq('id', contact.id).select('id');
     setSaving(false);
@@ -504,8 +506,15 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
 
       <div className="rounded-lg border p-3 space-y-2 bg-muted/30">
         <p className="text-sm font-medium flex items-center gap-1.5"><Bell className="h-4 w-4" /> Próxima acción</p>
+        <Select value={form.next_action_type} onValueChange={v => edit({ next_action_type: v as 'reminder' | 'client_message' })}>
+          <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="reminder">Recordarme a mí (grupo de administración)</SelectItem>
+            <SelectItem value="client_message">Enviar mensaje de seguimiento al cliente</SelectItem>
+          </SelectContent>
+        </Select>
         <Input
-          placeholder="Ej: Llamar para enviar el link de onboarding"
+          placeholder={form.next_action_type === 'client_message' ? 'Nota interna (opcional)' : 'Ej: Llamar para enviar el link de onboarding'}
           value={form.next_action}
           onChange={e => edit({ next_action: e.target.value })}
           className="h-8 text-sm"
@@ -522,9 +531,11 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
           )}
         </div>
         <p className="text-[11px] text-muted-foreground">
-          A esa hora llega un recordatorio al grupo de administración por WhatsApp.
+          {form.next_action_type === 'client_message'
+            ? `A esa hora se le envía al cliente el mensaje de seguimiento ${contact.whatsapp_group_id ? 'a su grupo de WhatsApp' : 'a su chat de WhatsApp'}. El texto se edita en WhatsApp → Automatizaciones → Recordatorios del CRM.`
+            : 'A esa hora llega un recordatorio al grupo de administración por WhatsApp.'}
           {contact.reminder_sent_at && contact.next_action_at === (form.next_action_at ? new Date(form.next_action_at).toISOString() : null)
-            ? ` Recordatorio enviado ${fmt(contact.reminder_sent_at)}.` : ''}
+            ? ` Enviado ${fmt(contact.reminder_sent_at)}.` : ''}
         </p>
       </div>
 
