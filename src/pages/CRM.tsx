@@ -73,9 +73,9 @@ const SERVICES = ['OWNER OPERATOR', 'DISPATCH SERVICE', 'COMPANY DRIVER'];
 const VEHICLES = ['BOXTRUCK', 'HOTSHOT'];
 
 const CHECKS = [
-  { key: 'has_medical_card', label: 'Medical Card' },
   { key: 'has_active_mc', label: 'MC# Activo' },
-  { key: 'has_eld', label: 'Libro electrónico' },
+  { key: 'has_medical_card', label: 'Medical Card' },
+  { key: 'has_eld', label: 'Libro Electrónico' },
 ] as const;
 
 /** Pasos de la reunión; los que tienen `send` mandan su texto al grupo del cliente */
@@ -461,9 +461,10 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
             </SelectContent>
           </Select>
         </div>
-        <div className="col-span-2 flex flex-wrap gap-x-5 gap-y-2 rounded-lg border p-3">
+        <div className="col-span-2 space-y-2 rounded-lg border p-3">
+          <p className="text-sm font-medium">Al momento de la reunión el cliente tiene:</p>
           {CHECKS.map(ch => (
-            <label key={ch.key} className="flex items-center gap-2 text-sm cursor-pointer">
+            <label key={ch.key} className="flex w-fit items-center gap-2 text-sm cursor-pointer">
               <Checkbox checked={form[ch.key]} onCheckedChange={v => edit({ [ch.key]: v === true })} />
               {ch.label}
             </label>
