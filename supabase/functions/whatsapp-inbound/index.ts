@@ -2,9 +2,10 @@
 // Respuesta automática a quien escribe al WhatsApp de la empresa.
 // Whapi manda cada mensaje entrante a esta función (webhook). Solo contesta a números
 // desconocidos en chats 1 a 1: a drivers, investors y dispatchers no les responde nada.
+// También recibe el evento "groups": cuando se crea un grupo nuevo, manda la bienvenida.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { sendWhapiText } from "../_shared/whapi.ts";
-import { logMessage, renderMessage } from "../_shared/messaging.ts";
+import { isEnabled, logMessage, renderMessage, sendTextLogged } from "../_shared/messaging.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -113,6 +114,44 @@ async function notifyAdmin(supabase: any, tenant: any, text: string, name: strin
   }
 }
 
+/** Bienvenida al grupo recién creado: una sola vez por grupo, con el nombre del driver que está adentro */
+async function welcomeGroup(supabase: any, tenant: any, group: any) {
+  const groupId = String(group?.id ?? "");
+  if (!groupId.includes("@g.us")) return { group: groupId, skipped: "no es un grupo" };
+  if (groupId === tenant.whatsapp_admin_group_id) return { group: groupId, skipped: "grupo de administración" };
+  if (!(await isEnabled(supabase, tenant.id, "wa_group_welcome"))) return { group: groupId, skipped: "bienvenida apagada" };
+
+  const { data: already } = await supabase
+    .from("whatsapp_message_history").select("id")
+    .eq("template_key", "group_welcome").eq("group_id", groupId).eq("status", "sent").limit(1);
+  if (already && already.length > 0) return { group: groupId, skipped: "ya se envió" };
+
+  const phones = ((group?.participants ?? []) as any[]).map((p) => last10(String(p?.id ?? p ?? ""))).filter((p) => p.length === 10);
+  let driverName = "";
+  if (phones.length > 0) {
+    const { data: drivers } = await supabase.from("drivers").select("name, phone").not("phone", "is", null);
+    driverName = ((drivers as any[]) || []).find((d) => phones.includes(last10(d.phone)))?.name ?? "";
+  }
+
+  const groupName = String(group?.name ?? group?.subject ?? "");
+  const message = (await renderMessage(supabase, tenant.id, "group_welcome", {
+    nombre: driverName.trim().split(/\s+/)[0] || "Hola",
+    driver: driverName,
+    grupo: groupName,
+  })).trim();
+  if (!message) return { group: groupId, skipped: "mensaje vacío" };
+
+  try {
+    await sendTextLogged(supabase, {
+      tenantId: tenant.id, templateKey: "group_welcome", recipientType: "driver",
+      recipientName: driverName || groupName || groupId, groupId, message, reference: "Grupo nuevo",
+    });
+    return { group: groupId, welcomed: true };
+  } catch (e) {
+    return { group: groupId, error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -139,7 +178,16 @@ Deno.serve(async (req) => {
       return json({ error: `No se pudo leer el tenant: ${tenantErr.message}` }, 500);
     }
     if (!tenant) return json({ error: "No hay tenant configurado" }, 500);
-    if (tenant.wa_inbound_assistant === false) return json({ skipped: "asistente apagado" });
+
+    // Evento de grupo nuevo (webhook "groups" de Whapi): mensaje de bienvenida
+    const groups = (body?.groups ?? []) as any[];
+    const groupEvent = String(body?.event?.event ?? "post").toLowerCase();
+    if (groups.length > 0 && groupEvent === "post") {
+      for (const g of groups) results.push(await welcomeGroup(supabase, tenant, g));
+    }
+
+    if (messages.length === 0) return json({ results });
+    if (tenant.wa_inbound_assistant === false) return json({ results, skipped: "asistente apagado" });
 
     for (const m of messages) {
       const chatId = String(m?.chat_id ?? m?.from ?? "");

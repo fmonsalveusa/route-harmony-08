@@ -368,6 +368,23 @@ export const AUTOMATIONS: AutomationDefinition[] = [
     ],
   },
   {
+    id: 'group_welcome',
+    title: 'Bienvenida a grupo nuevo',
+    description: 'Cuando se crea un grupo de WhatsApp desde el número de la empresa (o lo agregan a uno nuevo). Se envía una sola vez por grupo. El nombre sale del driver que está en el grupo, buscado por su teléfono.',
+    toggle: 'wa_group_welcome',
+    templates: [{
+      key: 'group_welcome',
+      title: 'Mensaje',
+      description: 'Se envía al grupo recién creado.',
+      body: '{nombre}, Hemos creado este grupo para mantener comunicacion entre tu y todo nuestro equipo de  trabajo. Por aqui mantendremos comunicacion con todo lo referente a las Cargas, Pagos, Dudas y cualquier situacion que se presente en al que necesites nuestra asistencia.',
+      variables: [
+        v('nombre', 'Primer nombre del driver (si no está en el TMS: "Hola")', 'Melvin'),
+        v('driver', 'Nombre completo del driver', 'Melvin Torres'),
+        v('grupo', 'Nombre del grupo', 'Melvin - Unit 241'),
+      ],
+    }],
+  },
+  {
     id: 'onboarding_completed',
     title: 'Onboarding completado',
     description: 'Cuando alguien termina un onboarding desde el enlace: Owner Operator, Company Driver, driver agregado a un Owner Operator existente, o cliente de Dispatch Service. Se envía al grupo de administración.',
