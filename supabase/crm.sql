@@ -214,3 +214,8 @@ END $$;
 SELECT cron.unschedule('whatsapp-crm-reminders') WHERE EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'whatsapp-crm-reminders');
 SELECT cron.schedule('whatsapp-crm-reminders', '*/15 * * * *',
   (SELECT replace(command, '"job":"daily"', '"job":"crm_reminders"') FROM cron.job WHERE jobname = 'whatsapp-daily'));
+
+-- ─── Requisitos del contacto ────────────────────────────────────────────────
+ALTER TABLE crm_contacts ADD COLUMN IF NOT EXISTS has_medical_card boolean NOT NULL DEFAULT false;
+ALTER TABLE crm_contacts ADD COLUMN IF NOT EXISTS has_active_mc boolean NOT NULL DEFAULT false;
+ALTER TABLE crm_contacts ADD COLUMN IF NOT EXISTS has_eld boolean NOT NULL DEFAULT false;

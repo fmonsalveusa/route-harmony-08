@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -33,6 +34,9 @@ interface CrmContact {
   next_action: string | null;
   next_action_at: string | null;
   reminder_sent_at: string | null;
+  has_medical_card: boolean;
+  has_active_mc: boolean;
+  has_eld: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -62,6 +66,14 @@ const SOURCE: Record<string, { label: string; icon: typeof Globe }> = {
   onboarding: { label: 'Onboarding', icon: UserCheck },
   manual: { label: 'Manual', icon: PenLine },
 };
+
+const SERVICES = ['OWNER OPERATOR', 'DISPATCH SERVICE', 'COMPANY DRIVER'];
+
+const CHECKS = [
+  { key: 'has_medical_card', label: 'Medical Card' },
+  { key: 'has_active_mc', label: 'MC# Activo' },
+  { key: 'has_eld', label: 'Libro electrónico' },
+] as const;
 
 const NOTE_KINDS: Record<string, string> = {
   note: 'Nota', meeting: 'Reunión', call: 'Llamada', stage: 'Etapa', system: 'Sistema',
@@ -135,6 +147,7 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
     name: contact.name, phone: contact.phone ?? '', email: contact.email ?? '', city: contact.city ?? '',
     vehicle: contact.vehicle ?? '', service: contact.service ?? '', stage: contact.stage,
     next_action: contact.next_action ?? '', next_action_at: toLocalInput(contact.next_action_at),
+    has_medical_card: contact.has_medical_card, has_active_mc: contact.has_active_mc, has_eld: contact.has_eld,
   });
   const [noteKind, setNoteKind] = useState('note');
   const [noteBody, setNoteBody] = useState('');
@@ -185,7 +198,8 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
     const { error } = await supabase.from('crm_contacts' as any).update({
       name: form.name.trim(), phone: form.phone.trim() || null, email: form.email.trim() || null,
       city: form.city.trim() || null, vehicle: form.vehicle.trim() || null, service: form.service.trim() || null,
-      stage: form.stage, next_action: form.next_action.trim() || null,
+      stage: form.stage, has_medical_card: form.has_medical_card, has_active_mc: form.has_active_mc, has_eld: form.has_eld,
+      next_action: form.next_action.trim() || null,
       next_action_at: form.next_action_at ? new Date(form.next_action_at).toISOString() : null,
     } as any).eq('id', contact.id);
     setSaving(false);
@@ -220,7 +234,7 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
   };
 
   const link = waLink(form.phone);
-  const field = (key: keyof typeof form, label: string, type = 'text') => (
+  const field = (key: 'name' | 'phone' | 'email' | 'city' | 'vehicle', label: string, type = 'text') => (
     <div className="space-y-1">
       <Label className="text-xs">{label}</Label>
       <Input type={type} value={form[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} className="h-8 text-sm" />
@@ -251,7 +265,24 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
         {field('email', 'Email')}
         {field('city', 'Ciudad')}
         {field('vehicle', 'Vehículo')}
-        {field('service', 'Servicio de interés')}
+        <div className="space-y-1">
+          <Label className="text-xs">Servicio de interés</Label>
+          <Select value={form.service || undefined} onValueChange={v => setForm(f => ({ ...f, service: v }))}>
+            <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+            <SelectContent>
+              {SERVICES.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+              {form.service && !SERVICES.includes(form.service) && <SelectItem value={form.service}>{form.service}</SelectItem>}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="col-span-2 flex flex-wrap gap-x-5 gap-y-2 rounded-lg border p-3">
+          {CHECKS.map(ch => (
+            <label key={ch.key} className="flex items-center gap-2 text-sm cursor-pointer">
+              <Checkbox checked={form[ch.key]} onCheckedChange={v => setForm(f => ({ ...f, [ch.key]: v === true }))} />
+              {ch.label}
+            </label>
+          ))}
+        </div>
         <div className="space-y-1 col-span-2">
           <Label className="text-xs">Etapa</Label>
           <Select value={form.stage} onValueChange={v => setForm(f => ({ ...f, stage: v as Stage }))}>
