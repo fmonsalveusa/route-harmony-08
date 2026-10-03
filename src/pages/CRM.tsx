@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Contact, Plus, Search, Phone, MessageCircle, Globe, UserCheck, PenLine, CalendarClock, AlertCircle,
-  Users as UsersIcon, CalendarCheck, Trophy, Bell, Trash2, Loader2,
+  Users as UsersIcon, CalendarCheck, Trophy, Bell, Trash2, Loader2, Send,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -36,6 +36,9 @@ interface CrmContact {
   has_medical_card: boolean;
   has_active_mc: boolean;
   has_eld: boolean;
+  meeting: { checks?: Record<string, boolean>; sent?: Record<string, string> } | null;
+  whatsapp_group_id: string | null;
+  whatsapp_group_name: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -74,6 +77,145 @@ const CHECKS = [
   { key: 'has_active_mc', label: 'MC# Activo' },
   { key: 'has_eld', label: 'Libro electrónico' },
 ] as const;
+
+/** Pasos de la reunión; los que tienen `send` mandan su texto al grupo del cliente */
+const MEETING_STEPS: { id: string; label: string; send?: boolean }[] = [
+  { id: 'referido', label: 'Referido' },
+  { id: 'service_info', label: 'Información del Servicio', send: true },
+  { id: 'own_mc', label: 'MC# Propio' },
+  { id: 'our_mc', label: 'MC# Nuestro' },
+  { id: 'medical_card', label: 'Medical Card', send: true },
+  { id: 'eld', label: 'Libro Electrónico', send: true },
+];
+
+/** "Juan Perez HS LB": HS = hotshot, 26BT = box truck, LB = referido */
+const suggestedGroupName = (name: string, vehicle: string, referred: boolean) =>
+  [name.trim(), vehicle === 'HOTSHOT' ? 'HS' : vehicle === 'BOXTRUCK' ? '26BT' : '', referred ? 'LB' : '']
+    .filter(Boolean).join(' ');
+
+const invokeGroups = async (body: Record<string, unknown>) => {
+  const { data, error } = await supabase.functions.invoke('whatsapp-groups', { body });
+  if (data?.error) throw new Error(data.error);
+  if (error) {
+    const detail = await (error as any).context?.json?.().catch(() => null);
+    throw new Error(detail?.error ?? error.message);
+  }
+  return data;
+};
+
+function MeetingSection({ contact, name, vehicle }: { contact: CrmContact; name: string; vehicle: string }) {
+  const qc = useQueryClient();
+  const [checks, setChecks] = useState<Record<string, boolean>>(contact.meeting?.checks ?? {});
+  const [sent, setSent] = useState<Record<string, string>>(contact.meeting?.sent ?? {});
+  const [group, setGroup] = useState({ id: contact.whatsapp_group_id, name: contact.whatsapp_group_name });
+  const [groupName, setGroupName] = useState('');
+  const [nameEdited, setNameEdited] = useState(false);
+  const [busy, setBusy] = useState<string | null>(null);
+
+  const suggested = suggestedGroupName(name, vehicle, !!checks.referido);
+  const subject = nameEdited ? groupName : suggested;
+
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: ['crm_contacts'] });
+    qc.invalidateQueries({ queryKey: ['crm_notes', contact.id] });
+  };
+
+  const toggle = async (id: string, value: boolean) => {
+    const next = { ...checks, [id]: value };
+    setChecks(next);
+    const { error } = await supabase.from('crm_contacts' as any)
+      .update({ meeting: { checks: next, sent } } as any).eq('id', contact.id);
+    if (error) toast.error(error.message);
+    else qc.invalidateQueries({ queryKey: ['crm_contacts'] });
+  };
+
+  const createGroup = async () => {
+    if (!subject.trim()) return;
+    if (!window.confirm(`¿Crear el grupo de WhatsApp "${subject}" con ${contact.phone}?`)) return;
+    setBusy('group');
+    try {
+      const r = await invokeGroups({ action: 'crm_create_group', contact_id: contact.id, subject });
+      setGroup({ id: r.group_id, name: r.name });
+      toast.success('Grupo creado');
+      refresh();
+    } catch (e: any) {
+      toast.error(`No se pudo crear el grupo: ${e.message}`);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const sendStep = async (id: string, label: string) => {
+    if (sent[id] && !window.confirm(`"${label}" ya se envió. ¿Enviarlo de nuevo?`)) return;
+    setBusy(id);
+    try {
+      const r = await invokeGroups({ action: 'crm_send_step', contact_id: contact.id, step: id });
+      setSent(s => ({ ...s, [id]: r.sent_at }));
+      setChecks(c => ({ ...c, [id]: true }));
+      toast.success(`${label} enviado al grupo`);
+      refresh();
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const done = MEETING_STEPS.filter(s => checks[s.id]).length;
+
+  return (
+    <div className="rounded-lg border p-3 space-y-3">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-semibold tracking-wide">REUNIÓN</p>
+        <span className="text-xs text-muted-foreground">{done}/{MEETING_STEPS.length}</span>
+      </div>
+
+      {group.id ? (
+        <p className="text-xs flex items-center gap-1.5 text-green-700 dark:text-green-400">
+          <MessageCircle className="h-3.5 w-3.5" /> Grupo: {group.name}
+        </p>
+      ) : (
+        <div className="flex gap-2">
+          <Input
+            value={subject}
+            onChange={e => { setNameEdited(true); setGroupName(e.target.value); }}
+            className="h-8 text-sm"
+            placeholder="Nombre del grupo"
+          />
+          <Button size="sm" className="h-8 gap-1.5 shrink-0" onClick={createGroup} disabled={busy !== null || !subject.trim() || !contact.phone}>
+            {busy === 'group' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <MessageCircle className="h-3.5 w-3.5" />}
+            Crear grupo de WhatsApp
+          </Button>
+        </div>
+      )}
+
+      <div className="space-y-1.5">
+        {MEETING_STEPS.map(step => (
+          <div key={step.id} className="flex items-center gap-2 min-h-8">
+            <label className="flex items-center gap-2 text-sm cursor-pointer flex-1">
+              <Checkbox checked={!!checks[step.id]} onCheckedChange={v => toggle(step.id, v === true)} />
+              <span className={cn(checks[step.id] && 'text-muted-foreground line-through')}>{step.label}</span>
+            </label>
+            {step.send && (
+              <>
+                {sent[step.id] && <span className="text-[11px] text-muted-foreground">Enviado {fmt(sent[step.id])}</span>}
+                <Button
+                  size="sm" variant="outline" className="h-7 px-2 gap-1 text-xs"
+                  onClick={() => sendStep(step.id, step.label)}
+                  disabled={busy !== null || !group.id}
+                  title={group.id ? 'Enviar al grupo de WhatsApp' : 'Primero crea el grupo de WhatsApp'}
+                >
+                  {busy === step.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+                  Enviar
+                </Button>
+              </>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 const NOTE_KINDS: Record<string, string> = {
   note: 'Nota', meeting: 'Reunión', call: 'Llamada', stage: 'Etapa', system: 'Sistema',
@@ -367,6 +509,7 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
       </div>
 
       <div className="space-y-5 md:pl-6 md:border-l md:max-h-[72vh] md:overflow-y-auto">
+      <MeetingSection contact={contact} name={form.name} vehicle={form.vehicle} />
       <div className="space-y-2">
         <p className="text-sm font-medium">Notas y seguimiento</p>
         <div className="flex gap-2">

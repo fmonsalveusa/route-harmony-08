@@ -131,6 +131,12 @@ async function welcomeGroup(supabase: any, tenant: any, group: any) {
   if (phones.length > 0) {
     const { data: drivers } = await supabase.from("drivers").select("name, phone").not("phone", "is", null);
     driverName = ((drivers as any[]) || []).find((d) => phones.includes(last10(d.phone)))?.name ?? "";
+    // Grupos creados desde el CRM: el cliente todavía no es driver
+    if (!driverName) {
+      const { data: contacts } = await supabase.from("crm_contacts").select("name, phone_key")
+        .eq("tenant_id", tenant.id).in("phone_key", phones);
+      driverName = ((contacts as any[]) || [])[0]?.name ?? "";
+    }
   }
 
   const groupName = String(group?.name ?? group?.subject ?? "");

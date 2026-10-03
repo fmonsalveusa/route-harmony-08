@@ -387,6 +387,35 @@ export const AUTOMATIONS: AutomationDefinition[] = [
     }],
   },
   {
+    id: 'crm_meeting',
+    title: 'Reunión del CRM (botones de envío)',
+    description: 'Mensajes que se envían al grupo del cliente desde la sección REUNIÓN de su tarjeta en el CRM. Mientras no edites un texto, su botón no envía nada.',
+    toggle: 'wa_crm_meeting',
+    templates: [
+      {
+        key: 'crm_step_service_info',
+        title: 'Información del Servicio',
+        description: 'Paso "Información del Servicio".',
+        body: '{nombre}, te comparto la información de nuestro servicio:\n\n(Escribe aquí la información del servicio)',
+        variables: [v('nombre', 'Primer nombre del cliente', 'Juan'), v('cliente', 'Nombre completo del cliente', 'Juan Perez')],
+      },
+      {
+        key: 'crm_step_medical_card',
+        title: 'Medical Card',
+        description: 'Paso "Medical Card".',
+        body: '{nombre}, esta es la información para sacar la Medical Card:\n\n(Escribe aquí la información de la Medical Card)',
+        variables: [v('nombre', 'Primer nombre del cliente', 'Juan'), v('cliente', 'Nombre completo del cliente', 'Juan Perez')],
+      },
+      {
+        key: 'crm_step_eld',
+        title: 'Libro Electrónico',
+        description: 'Paso "Libro Electrónico".',
+        body: '{nombre}, esta es la información del Libro Electrónico (ELD):\n\n(Escribe aquí la información del libro electrónico)',
+        variables: [v('nombre', 'Primer nombre del cliente', 'Juan'), v('cliente', 'Nombre completo del cliente', 'Juan Perez')],
+      },
+    ],
+  },
+  {
     id: 'group_welcome',
     title: 'Bienvenida a grupo nuevo',
     description: 'Cuando se crea un grupo de WhatsApp desde el número de la empresa (o lo agregan a uno nuevo). Se envía una sola vez por grupo. El nombre sale del driver que está en el grupo, buscado por su teléfono.',

@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { isAccountError, logMessage } from "../_shared/messaging.ts";
+import { isAccountError, isEnabled, logMessage, renderMessage, sendTextLogged } from "../_shared/messaging.ts";
 import { renderTemplate } from "../_shared/templateDefaults.ts";
 
 const corsHeaders = {
@@ -125,6 +125,65 @@ Deno.serve(async (req) => {
         if (groups.indexOf(g) < groups.length - 1) await new Promise((r) => setTimeout(r, 1500));
       }
       return json({ sent: results.filter((r) => r.ok).length, failed: results.filter((r) => !r.ok), results });
+    }
+
+    // CRM: crear el grupo del cliente / enviar un paso de la reunión
+    if (action === "crm_create_group" || action === "crm_send_step") {
+      const { data: profile } = await supabase.from("profiles").select("tenant_id").eq("id", user.id).maybeSingle();
+      const { data: contact } = await supabase.from("crm_contacts").select("*").eq("id", body.contact_id).maybeSingle();
+      if (!contact || contact.tenant_id !== profile?.tenant_id) return json({ error: "Contacto no encontrado" }, 404);
+      const note = (text: string) => supabase.from("crm_notes").insert({
+        tenant_id: contact.tenant_id, contact_id: contact.id, kind: "system", body: text, created_by: user.id,
+      });
+
+      if (action === "crm_create_group") {
+        if (contact.whatsapp_group_id) return json({ error: "Este cliente ya tiene grupo" }, 400);
+        const subject = String(body.subject ?? "").trim().slice(0, 100);
+        if (!subject) return json({ error: "Escribe el nombre del grupo" }, 400);
+        const digits = String(contact.phone ?? "").replace(/\D/g, "");
+        if (digits.length < 10) return json({ error: "El cliente no tiene un teléfono válido" }, 400);
+        const participant = digits.length === 10 ? `1${digits}` : digits;
+
+        const res = await fetch(`${WHAPI}/groups`, { method: "POST", headers: auth, body: JSON.stringify({ subject, participants: [participant] }) });
+        const created = await res.json().catch(() => ({}));
+        if (!res.ok) return json({ error: `Whapi HTTP ${res.status}: ${JSON.stringify(created).slice(0, 300)}` }, 502);
+        const groupId = created?.group_id ?? created?.id ?? created?.group?.id;
+        if (!groupId) return json({ error: `Whapi no devolvió el grupo: ${JSON.stringify(created).slice(0, 300)}` }, 502);
+
+        await supabase.from("crm_contacts").update({ whatsapp_group_id: groupId, whatsapp_group_name: subject }).eq("id", contact.id);
+        await note(`Grupo de WhatsApp creado: ${subject}`);
+        return json({ group_id: groupId, name: subject });
+      }
+
+      const STEPS: Record<string, { key: string; label: string }> = {
+        service_info: { key: "crm_step_service_info", label: "Información del Servicio" },
+        medical_card: { key: "crm_step_medical_card", label: "Medical Card" },
+        eld: { key: "crm_step_eld", label: "Libro Electrónico" },
+      };
+      const step = STEPS[String(body.step)];
+      if (!step) return json({ error: "Paso desconocido" }, 400);
+      if (!contact.whatsapp_group_id) return json({ error: "Primero crea el grupo de WhatsApp" }, 400);
+      if (!(await isEnabled(supabase, contact.tenant_id, "wa_crm_meeting"))) return json({ error: "El envío está apagado en Automatizaciones" }, 400);
+      // El texto original es solo un ejemplo: no se envía hasta que lo escriban
+      const { data: custom } = await supabase.from("whatsapp_templates").select("body")
+        .eq("tenant_id", contact.tenant_id).eq("template_key", step.key).maybeSingle();
+      if (!custom?.body?.trim()) {
+        return json({ error: `Primero escribe el texto de "${step.label}" en WhatsApp → Automatizaciones → Reunión del CRM` }, 400);
+      }
+      const name = String(contact.name ?? "").trim();
+      const message = await renderMessage(supabase, contact.tenant_id, step.key, { nombre: name.split(/\s+/)[0] ?? "", cliente: name });
+      await sendTextLogged(supabase, {
+        tenantId: contact.tenant_id, templateKey: step.key, recipientType: "lead",
+        recipientName: name, groupId: contact.whatsapp_group_id, message, reference: `CRM · ${step.label}`,
+      });
+
+      const meeting = (contact.meeting ?? {}) as { checks?: Record<string, boolean>; sent?: Record<string, string> };
+      const sentAt = new Date().toISOString();
+      await supabase.from("crm_contacts").update({
+        meeting: { ...meeting, checks: { ...(meeting.checks ?? {}), [body.step]: true }, sent: { ...(meeting.sent ?? {}), [body.step]: sentAt } },
+      }).eq("id", contact.id);
+      await note(`Enviado por WhatsApp: ${step.label}`);
+      return json({ success: true, sent_at: sentAt });
     }
 
     // Lista de grupos donde está el número conectado

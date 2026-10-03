@@ -219,3 +219,10 @@ SELECT cron.schedule('whatsapp-crm-reminders', '*/15 * * * *',
 ALTER TABLE crm_contacts ADD COLUMN IF NOT EXISTS has_medical_card boolean NOT NULL DEFAULT false;
 ALTER TABLE crm_contacts ADD COLUMN IF NOT EXISTS has_active_mc boolean NOT NULL DEFAULT false;
 ALTER TABLE crm_contacts ADD COLUMN IF NOT EXISTS has_eld boolean NOT NULL DEFAULT false;
+
+-- ─── Reunión: checklist de pasos y grupo de WhatsApp del contacto ───────────
+-- meeting = { "checks": { "referido": true, ... }, "sent": { "service_info": "2026-10-03T..." } }
+ALTER TABLE crm_contacts ADD COLUMN IF NOT EXISTS meeting jsonb NOT NULL DEFAULT '{}'::jsonb;
+ALTER TABLE crm_contacts ADD COLUMN IF NOT EXISTS whatsapp_group_id text;
+ALTER TABLE crm_contacts ADD COLUMN IF NOT EXISTS whatsapp_group_name text;
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS wa_crm_meeting boolean NOT NULL DEFAULT true;
