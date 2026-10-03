@@ -158,8 +158,8 @@ async function runMeetingReminders(supabase: Supa, tenant: any, today: string) {
 
 // ─── Documento de firma completado ───────────────────────────────────────────
 const CRM_STAGES: Record<string, string> = {
-  new: "Nuevo", contacted: "Contactado", meeting_scheduled: "Reunión agendada", meeting_done: "Reunión hecha",
-  onboarding: "En onboarding", client: "Cliente registrado", lost: "Perdido",
+  new: "Nuevo", meeting_scheduled: "Reunión agendada", meeting_done: "Reunión hecha",
+  client: "Cliente registrado", lost: "Perdido",
 };
 
 /** Próximas acciones del CRM que ya vencieron: un aviso por cada fecha programada */

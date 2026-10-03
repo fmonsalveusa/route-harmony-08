@@ -17,7 +17,7 @@ import { getTenantId } from '@/hooks/useTenantId';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
-type Stage = 'new' | 'contacted' | 'meeting_scheduled' | 'meeting_done' | 'onboarding' | 'client' | 'lost';
+type Stage = 'new' | 'meeting_scheduled' | 'meeting_done' | 'client' | 'lost';
 
 interface CrmContact {
   id: string;
@@ -53,10 +53,8 @@ interface CrmNote {
 
 const STAGES: { id: Stage; label: string; tint: string }[] = [
   { id: 'new', label: 'Nuevo', tint: 'border-t-slate-400' },
-  { id: 'contacted', label: 'Contactado', tint: 'border-t-sky-500' },
   { id: 'meeting_scheduled', label: 'Reunión agendada', tint: 'border-t-violet-500' },
   { id: 'meeting_done', label: 'Reunión hecha', tint: 'border-t-amber-500' },
-  { id: 'onboarding', label: 'En onboarding', tint: 'border-t-orange-500' },
   { id: 'client', label: 'Cliente registrado', tint: 'border-t-green-600' },
   { id: 'lost', label: 'Perdido', tint: 'border-t-red-500' },
 ];
@@ -391,7 +389,7 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
     } as any);
     if (error) { toast.error(error.message); return; }
     // Las notas de la reunión pasan el contacto a "Reunión hecha"
-    if (noteKind === 'meeting' && ['new', 'contacted', 'meeting_scheduled'].includes(form.stage)) {
+    if (noteKind === 'meeting' && ['new', 'meeting_scheduled'].includes(form.stage)) {
       await supabase.from('crm_contacts' as any).update({ stage: 'meeting_done' } as any).eq('id', contact.id);
       setForm(f => ({ ...f, stage: 'meeting_done' }));
     }

@@ -226,3 +226,9 @@ ALTER TABLE crm_contacts ADD COLUMN IF NOT EXISTS meeting jsonb NOT NULL DEFAULT
 ALTER TABLE crm_contacts ADD COLUMN IF NOT EXISTS whatsapp_group_id text;
 ALTER TABLE crm_contacts ADD COLUMN IF NOT EXISTS whatsapp_group_name text;
 ALTER TABLE tenants ADD COLUMN IF NOT EXISTS wa_crm_meeting boolean NOT NULL DEFAULT true;
+
+-- ─── Se quitan las etapas manuales "Contactado" y "En onboarding" ───────────
+UPDATE crm_contacts SET stage = 'new' WHERE stage = 'contacted';
+UPDATE crm_contacts SET stage = 'meeting_done' WHERE stage = 'onboarding';
+ALTER TABLE crm_contacts DROP CONSTRAINT crm_contacts_stage_check;
+ALTER TABLE crm_contacts ADD CONSTRAINT crm_contacts_stage_check CHECK (stage IN ('new','meeting_scheduled','meeting_done','client','lost'));
