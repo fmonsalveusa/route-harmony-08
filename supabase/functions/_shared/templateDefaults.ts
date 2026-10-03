@@ -413,6 +413,13 @@ export const AUTOMATIONS: AutomationDefinition[] = [
         body: '{nombre}, esta es la información del Libro Electrónico (ELD):\n\n(Escribe aquí la información del libro electrónico)',
         variables: [v('nombre', 'Primer nombre del cliente', 'Juan'), v('cliente', 'Nombre completo del cliente', 'Juan Perez')],
       },
+      {
+        key: 'crm_step_eld_own_mc',
+        title: 'Libro Electrónico MC# Propio',
+        description: 'Paso "Libro Electrónico MC# Propio".',
+        body: '{nombre}, esta es la información del Libro Electrónico (ELD) para tu MC# propio:\n\n(Escribe aquí la información del libro electrónico para MC# propio)',
+        variables: [v('nombre', 'Primer nombre del cliente', 'Juan'), v('cliente', 'Nombre completo del cliente', 'Juan Perez')],
+      },
     ],
   },
   {
