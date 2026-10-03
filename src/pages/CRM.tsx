@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatTiles } from '@/components/StatTiles';
@@ -276,7 +275,8 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
   );
 
   return (
-    <div className="space-y-5">
+    <div className="grid gap-6 md:grid-cols-2 md:gap-0">
+      <div className="space-y-5 md:pr-6 md:max-h-[72vh] md:overflow-y-auto">
       <div className="flex flex-wrap gap-2">
         {link && (
           <Button size="sm" variant="outline" className="gap-1.5" onClick={() => window.open(link, '_blank')}>
@@ -364,7 +364,9 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
       <p className={cn('text-xs text-right', status === 'error' ? 'text-destructive' : 'text-muted-foreground')}>
         {saving || status === 'pending' ? 'Guardando…' : status === 'saved' ? '✓ Cambios guardados' : status === 'error' ? 'No se guardó' : 'Los cambios se guardan solos'}
       </p>
+      </div>
 
+      <div className="space-y-5 md:pl-6 md:border-l md:max-h-[72vh] md:overflow-y-auto">
       <div className="space-y-2">
         <p className="text-sm font-medium">Notas y seguimiento</p>
         <div className="flex gap-2">
@@ -423,6 +425,7 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }
@@ -574,21 +577,21 @@ export default function CRM() {
         </div>
       )}
 
-      <Sheet open={!!openContact} onOpenChange={v => !v && setOpenId(null)}>
-        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+      <Dialog open={!!openContact} onOpenChange={v => !v && setOpenId(null)}>
+        <DialogContent className="max-w-5xl w-[95vw] max-h-[92vh] overflow-y-auto">
           {openContact && (
             <>
-              <SheetHeader className="mb-4">
-                <SheetTitle>{openContact.name || openContact.phone}</SheetTitle>
+              <DialogHeader>
+                <DialogTitle>{openContact.name || openContact.phone}</DialogTitle>
                 <p className="text-xs text-muted-foreground">
                   {STAGE_LABEL[openContact.stage]} · Llegó por {(SOURCE[openContact.source] ?? SOURCE.manual).label} el {fmt(openContact.created_at)}
                 </p>
-              </SheetHeader>
+              </DialogHeader>
               <ContactDetail key={openContact.id} contact={openContact} onClose={() => setOpenId(null)} />
             </>
           )}
-        </SheetContent>
-      </Sheet>
+        </DialogContent>
+      </Dialog>
 
       <NewContactDialog open={creating} onOpenChange={setCreating} />
     </div>
