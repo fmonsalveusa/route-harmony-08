@@ -173,6 +173,8 @@ async function runCrmReminders(supabase: Supa, tenant: any) {
   let sent = 0, followups = 0;
   for (const c of (due as any[]) || []) {
     const toClient = c.next_action_type === "client_message";
+    // Los seguimientos al cliente tienen su propio interruptor (apagado = quedan en espera)
+    if (toClient && tenant.wa_crm_followups === false) continue;
     const digits = String(c.phone ?? "").replace(/\D/g, "");
     // Al cliente: a su grupo si lo tiene, si no a su chat directo
     const to = toClient

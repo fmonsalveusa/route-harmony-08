@@ -370,7 +370,7 @@ export const AUTOMATIONS: AutomationDefinition[] = [
   {
     id: 'crm_reminders',
     title: 'Recordatorios del CRM',
-    description: 'Cuando llega la fecha y hora de la próxima acción de un contacto del CRM: un recordatorio al grupo de administración o un mensaje de seguimiento al cliente, según lo elegido en su tarjeta (revisa cada 15 minutos).',
+    description: 'Cuando llega la fecha y hora de una próxima acción "Recordarme a mí" de un contacto del CRM. Se envía al grupo de administración (revisa cada 15 minutos).',
     toggle: 'wa_crm_reminders',
     templates: [{
       key: 'crm_reminder',
@@ -384,7 +384,14 @@ export const AUTOMATIONS: AutomationDefinition[] = [
         v('accion', 'Próxima acción', 'Llamar para enviar el link de onboarding'),
         v('vehiculo', 'Vehículo', 'Box truck 26 pies'),
       ],
-    }, {
+    }],
+  },
+  {
+    id: 'crm_followups',
+    title: 'Seguimientos del CRM al cliente',
+    description: 'Mensaje automático al cliente cuando su próxima acción es "Enviar mensaje de seguimiento al cliente". Va a su grupo de WhatsApp, o a su chat si no tiene grupo. Apagado, los seguimientos quedan en espera y no se envían.',
+    toggle: 'wa_crm_followups',
+    templates: [{
       key: 'crm_followup',
       title: 'Mensaje de seguimiento al cliente',
       description: 'Cuando la próxima acción es "Enviar mensaje de seguimiento al cliente". Va a su grupo de WhatsApp, o a su chat si no tiene grupo.',

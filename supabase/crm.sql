@@ -252,3 +252,6 @@ GRANT EXECUTE ON FUNCTION crm_working_contact_ids() TO authenticated;
 -- ─── Próxima acción automática: mensaje de seguimiento al cliente ───────────
 -- Tipo de próxima acción: reminder = aviso al grupo de administración; client_message = mensaje de seguimiento al cliente
 ALTER TABLE crm_contacts ADD COLUMN IF NOT EXISTS next_action_type text NOT NULL DEFAULT 'reminder';
+
+-- ─── Interruptor propio para los seguimientos automáticos al cliente ─────────
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS wa_crm_followups boolean NOT NULL DEFAULT true;
