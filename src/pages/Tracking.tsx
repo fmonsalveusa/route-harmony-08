@@ -1,6 +1,6 @@
 ﻿import { useState, useMemo, useEffect, useRef } from 'react';
 import { ServiceTypeBadge } from '@/components/ServiceTypeBadge';
-import { getLoadRoutes } from '@/lib/loadRoute';
+import { getLoadRoutes, saveLoadRoute } from '@/lib/loadRoute';
 import { useLoads, DbLoad } from '@/hooks/useLoads';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useTrucks } from '@/hooks/useTrucks';
@@ -21,7 +21,7 @@ import { DriversTimelineCard } from '@/components/dashboard/DriversTimelineCard'
 import { MapContainer, TileLayer, Marker, Popup, Polyline, Tooltip as LeafletTooltip, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { MAPBOX_TILE_URL, MAPBOX_TILE_OPTIONS, mapboxGeocode } from '@/lib/mapConfig';
+import { MAPBOX_TILE_URL, MAPBOX_TILE_OPTIONS, mapboxGeocode, mapboxRoute } from '@/lib/mapConfig';
 import { LoadStop } from '@/hooks/useLoadStops';
 import { format, parseISO, isToday } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
@@ -112,6 +112,27 @@ const createTruckIcon = (heading?: number | null, live = true) => {
     iconAnchor: [16, 16],
   });
 };
+
+const emptyOriginIcon = new L.DivIcon({
+  html: '<div style="background:hsl(38,92%,50%);color:white;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:10px;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,.3)">E</div>',
+  className: '', iconSize: [24, 24], iconAnchor: [12, 12],
+});
+
+/** Ruta guardada: lista de [lat, lng] (como la guarda el detalle de la carga) o GeoJSON con [lng, lat] */
+function parseRouteGeometry(saved: unknown): [number, number][] {
+  try {
+    const geo = typeof saved === 'string' ? JSON.parse(saved) : saved;
+    if (Array.isArray(geo)) {
+      return geo
+        .filter((p: any) => Array.isArray(p) && Number.isFinite(Number(p[0])) && Number.isFinite(Number(p[1])))
+        .map((p: any) => [Number(p[0]), Number(p[1])] as [number, number]);
+    }
+    if (Array.isArray((geo as any)?.coordinates)) {
+      return (geo as any).coordinates.map((c: number[]) => [c[1], c[0]] as [number, number]);
+    }
+  } catch { /* ignore */ }
+  return [];
+}
 
 const manualLocationIcon = new L.DivIcon({
   html: `<div style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;">
@@ -285,14 +306,7 @@ const Tracking = () => {
       const stops = allStops.filter(s => s.load_id === load.id);
       let routeCoords: [number, number][] = [];
       const saved = loadRoutes[load.id];
-      if (saved) {
-        try {
-          const geo = typeof saved === 'string' ? JSON.parse(saved) : saved;
-          if (geo?.coordinates) {
-            routeCoords = geo.coordinates.map((c: number[]) => [c[1], c[0]] as [number, number]);
-          }
-        } catch { /* ignore */ }
-      }
+      if (saved) routeCoords = parseRouteGeometry(saved);
       // Fallback: draw straight line between stops with coordinates
       if (routeCoords.length === 0) {
         const geoStops = stops.filter(s => s.lat && s.lng).sort((a, b) => a.stop_order - b.stop_order);
@@ -303,6 +317,57 @@ const Tracking = () => {
       return { ...load, stops, routeCoords } as LoadWithStops;
     });
   }, [activeLoads, allStops, loadRoutes]);
+
+  // Cargas sin ruta guardada: se calcula la ruta real por carretera (igual que el detalle de la carga) y se guarda
+  const routingRef = useRef(new Set<string>());
+  useEffect(() => {
+    const pending = activeLoads.filter(l => !loadRoutes[l.id] && !routingRef.current.has(l.id));
+    if (pending.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      for (const load of pending) {
+        const coords = allStops
+          .filter(s => s.load_id === load.id && s.lat && s.lng)
+          .sort((a, b) => a.stop_order - b.stop_order)
+          .map(s => [s.lat!, s.lng!] as [number, number]);
+        if (coords.length < 2) continue;
+        routingRef.current.add(load.id);
+        const route = await mapboxRoute(coords).catch(() => null);
+        if (cancelled) { routingRef.current.delete(load.id); return; }
+        if (!route || route.length < 2) continue;
+        setLoadRoutes(prev => ({ ...prev, [load.id]: route }));
+        saveLoadRoute(load.id, route);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [activeLoads, allStops, loadRoutes]);
+
+  // Empty miles: desde donde sale vacío el driver hasta el primer pickup (línea punteada naranja)
+  const [deadheads, setDeadheads] = useState<Record<string, { origin: string; coords: [number, number]; route: [number, number][] }>>({});
+  const deadheadRef = useRef(new Map<string, string>());
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      for (const load of activeLoads) {
+        const origin = (load as any).empty_miles_origin as string | null;
+        const firstPickup = allStops
+          .filter(s => s.load_id === load.id && s.stop_type === 'pickup' && s.lat && s.lng)
+          .sort((a, b) => a.stop_order - b.stop_order)[0];
+        if (!origin || !firstPickup) continue;
+        const key = `${origin}|${firstPickup.lat},${firstPickup.lng}`;
+        if (deadheadRef.current.get(load.id) === key) continue;
+        deadheadRef.current.set(load.id, key);
+        const coords = await mapboxGeocode(origin).catch(() => null);
+        if (cancelled) { deadheadRef.current.delete(load.id); return; }
+        if (!coords) continue;
+        const pickup: [number, number] = [firstPickup.lat!, firstPickup.lng!];
+        const route = (await mapboxRoute([coords, pickup]).catch(() => null)) ?? [coords, pickup];
+        if (cancelled) { deadheadRef.current.delete(load.id); return; }
+        setDeadheads(prev => ({ ...prev, [load.id]: { origin, coords, route } }));
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [activeLoads, allStops]);
 
   // Geocode stops that don't have coordinates
   useEffect(() => {
@@ -1410,6 +1475,24 @@ const Tracking = () => {
                           </div>
                         </Popup>
                       </Polyline>
+                    )}
+                    {/* Empty miles */}
+                    {deadheads[load.id] && (
+                      <>
+                        <Polyline
+                          positions={deadheads[load.id].route}
+                          pathOptions={{ color: 'hsl(38,92%,50%)', weight: 3, dashArray: '8 6', opacity: isSelected ? 0.9 : 0.6 }}
+                        />
+                        <Marker position={deadheads[load.id].coords} icon={emptyOriginIcon}>
+                          <Popup>
+                            <div className="text-xs">
+                              <strong>Empty Miles Origin</strong><br />
+                              {deadheads[load.id].origin}
+                              {load.empty_miles ? <><br />{Number(load.empty_miles).toLocaleString()} mi</> : null}
+                            </div>
+                          </Popup>
+                        </Marker>
+                      </>
                     )}
                     {/* Stop markers */}
                     {load.stops.filter(s => s.lat && s.lng).map(stop => (
