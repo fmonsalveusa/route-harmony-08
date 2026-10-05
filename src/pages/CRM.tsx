@@ -259,8 +259,12 @@ const toLocalInput = (iso: string | null) => {
 /** El mensaje automático al cliente ya salió: no queda nada pendiente */
 const followupSent = (c: CrmContact) => c.next_action_type === 'client_message' && !!c.reminder_sent_at;
 
+/** El mensaje automático ya está en hora pero todavía no sale (el sistema revisa cada 15 minutos) */
+const followupQueued = (c: CrmContact) =>
+  c.next_action_type === 'client_message' && !c.reminder_sent_at && !!c.next_action_at && new Date(c.next_action_at) <= new Date();
+
 const isOverdue = (c: CrmContact) =>
-  !!c.next_action_at && new Date(c.next_action_at) <= new Date() && c.stage !== 'client' && !followupSent(c);
+  !!c.next_action_at && new Date(c.next_action_at) <= new Date() && c.stage !== 'client' && !followupSent(c) && !followupQueued(c);
 
 const waLink = (phone: string | null) => {
   const d = (phone ?? '').replace(/\D/g, '');
@@ -305,6 +309,10 @@ function ContactCard({ c, onOpen }: { c: CrmContact; onOpen: () => void }) {
         followupSent(c) ? (
           <p className="text-[11px] flex items-center gap-1 text-green-600">
             <Check className="h-3 w-3" /> Seguimiento enviado {fmt(c.reminder_sent_at!)}
+          </p>
+        ) : followupQueued(c) ? (
+          <p className="text-[11px] flex items-center gap-1 text-amber-600">
+            <Send className="h-3 w-3" /> Seguimiento: se envía en los próximos minutos
           </p>
         ) : (
           <p className={cn('text-[11px] flex items-center gap-1', overdue ? 'text-red-600 font-medium' : 'text-blue-600')}>
