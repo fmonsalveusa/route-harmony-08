@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Contact, Plus, Search, Phone, MessageCircle, Globe, UserCheck, PenLine, CalendarClock, AlertCircle,
-  Users as UsersIcon, CalendarCheck, Trophy, Bell, Trash2, Loader2, Send,
+  Users as UsersIcon, CalendarCheck, Trophy, Bell, Trash2, Loader2, Send, Check,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -256,8 +256,11 @@ const toLocalInput = (iso: string | null) => {
   return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 };
 
+/** El mensaje automático al cliente ya salió: no queda nada pendiente */
+const followupSent = (c: CrmContact) => c.next_action_type === 'client_message' && !!c.reminder_sent_at;
+
 const isOverdue = (c: CrmContact) =>
-  !!c.next_action_at && new Date(c.next_action_at) <= new Date() && c.stage !== 'client';
+  !!c.next_action_at && new Date(c.next_action_at) <= new Date() && c.stage !== 'client' && !followupSent(c);
 
 const waLink = (phone: string | null) => {
   const d = (phone ?? '').replace(/\D/g, '');
@@ -299,10 +302,16 @@ function ContactCard({ c, onOpen }: { c: CrmContact; onOpen: () => void }) {
         <p className="text-xs text-muted-foreground truncate">{[c.vehicle, c.service].filter(Boolean).join(' · ')}</p>
       )}
       {c.next_action_at && c.stage !== 'client' && (
-        <p className={cn('text-[11px] flex items-center gap-1', overdue ? 'text-red-600 font-medium' : 'text-blue-600')}>
-          {overdue ? <AlertCircle className="h-3 w-3" /> : <CalendarClock className="h-3 w-3" />}
-          {fmt(c.next_action_at)}{c.next_action ? ` · ${c.next_action}` : ''}
-        </p>
+        followupSent(c) ? (
+          <p className="text-[11px] flex items-center gap-1 text-green-600">
+            <Check className="h-3 w-3" /> Seguimiento enviado {fmt(c.reminder_sent_at!)}
+          </p>
+        ) : (
+          <p className={cn('text-[11px] flex items-center gap-1', overdue ? 'text-red-600 font-medium' : 'text-blue-600')}>
+            {overdue ? <AlertCircle className="h-3 w-3" /> : <CalendarClock className="h-3 w-3" />}
+            {fmt(c.next_action_at)}{c.next_action ? ` · ${c.next_action}` : ''}
+          </p>
+        )
       )}
     </div>
   );
