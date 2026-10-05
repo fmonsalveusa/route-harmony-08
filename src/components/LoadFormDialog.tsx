@@ -107,6 +107,9 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
   const [selectedServiceType, setSelectedServiceType] = useState('');
   const [selectedCommissionType, setSelectedCommissionType] = useState<'commission_1' | 'commission_2'>('commission_1');
   const [selectedCompany, setSelectedCompany] = useState('');
+  // Empresa por defecto: la principal si está activa, si no la primera activa
+  const activeCompanies = companies.filter(c => c.status !== 'inactive');
+  const defaultCompanyId = (activeCompanies.find(c => c.is_primary) ?? activeCompanies[0])?.id ?? '';
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractionStatus, setExtractionStatus] = useState<'idle' | 'uploading' | 'processing' | 'done' | 'error'>('idle');
   const [extractionProgress, setExtractionProgress] = useState(0);
@@ -177,8 +180,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       setSelectedStatus(editLoad.status);
       setSelectedServiceType((editLoad as any).service_type || '');
       const editCompanyId = (editLoad as any).company_id || '';
-      const primaryCompanyId = companies.find(c => c.is_primary)?.id ?? '';
-      setSelectedCompany(editCompanyId || primaryCompanyId);
+      setSelectedCompany(editCompanyId || defaultCompanyId);
       // Set initial URLs and then refresh them in the background
       setPdfPreviewUrl(editLoad.pdf_url || null);
       setUploadedPdfPath(null);
@@ -236,7 +238,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       setSelectedDispatcher('');
       setSelectedStatus('dispatched');
       setSelectedServiceType('');
-      setSelectedCompany(companies.find(c => c.is_primary)?.id ?? '');
+      setSelectedCompany(defaultCompanyId);
       setExtractionStatus('idle');
       setPdfFileName('');
       setPdfFile(null);
@@ -435,7 +437,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
         // Auto-match carrier name to a company
         if (extracted.carrierName && companies.length > 0) {
           const carrierLower = extracted.carrierName.toLowerCase().trim();
-          const match = companies.filter(c => c.status !== 'inactive').find(c => {
+          const match = activeCompanies.find(c => {
             const nameLower = c.name.toLowerCase().trim();
             const legalLower = (c.legal_name || '').toLowerCase().trim();
             return carrierLower.includes(nameLower) || nameLower.includes(carrierLower)
@@ -1168,7 +1170,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
               <SelectTrigger><SelectValue placeholder="Seleccionar empresa" /></SelectTrigger>
               <SelectContent>
                 {/* Solo empresas activas (y la que ya tenga la carga al editarla) */}
-                {companies.filter(c => c.status !== 'inactive' || c.id === selectedCompany).map(c => (
+                {companies.filter(c => c.status !== 'inactive' || c.id === (editLoad as any)?.company_id).map(c => (
                   <SelectItem key={c.id} value={c.id}>{c.name}{c.mc_number ? ` (MC# ${c.mc_number})` : ''}</SelectItem>
                 ))}
               </SelectContent>
