@@ -127,8 +127,9 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
   if (!user || !profile) return <Navigate to="/auth" replace />;
 
-  // Drivers and investors should use the mobile app
-  if (role === 'driver' || role === 'investor') return <Navigate to="/driver" replace />;
+  // Solo el personal entra al TMS; drivers, investors (o un rol desconocido) van a la app del driver
+  const STAFF_ROLES = ['admin', 'accounting', 'dispatcher', 'master_admin'];
+  if (!profile.is_master_admin && (!role || !STAFF_ROLES.includes(role))) return <Navigate to="/driver" replace />;
 
   // If tenant has no company and user is not on /companies, redirect to setup
   if (!companyCheck.hasCompany && !profile.is_master_admin && currentPath !== '/companies') {

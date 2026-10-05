@@ -122,6 +122,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           .maybeSingle();
 
         if (roleError) throw roleError;
+        // Sin rol no hay acceso: nunca se asume admin (un driver terminaría viendo el TMS)
+        if (!roleData?.role && !profileData.is_master_admin) throw new Error('User role not found');
 
         let tenantData: TenantInfo | null = null;
 
@@ -139,7 +141,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         profileLoadedRef.current = true;
         loadedUserIdRef.current = userId;
         setProfile(profileData as Profile);
-        setRole((roleData?.role as AppRole) || (profileData.is_master_admin ? 'master_admin' : 'admin'));
+        setRole((roleData?.role as AppRole) || 'master_admin');
         setTenant(tenantData);
 
         return true;
