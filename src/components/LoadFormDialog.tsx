@@ -435,7 +435,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
         // Auto-match carrier name to a company
         if (extracted.carrierName && companies.length > 0) {
           const carrierLower = extracted.carrierName.toLowerCase().trim();
-          const match = companies.find(c => {
+          const match = companies.filter(c => c.status !== 'inactive').find(c => {
             const nameLower = c.name.toLowerCase().trim();
             const legalLower = (c.legal_name || '').toLowerCase().trim();
             return carrierLower.includes(nameLower) || nameLower.includes(carrierLower)
@@ -1167,7 +1167,8 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
             <Select value={selectedCompany} onValueChange={setSelectedCompany}>
               <SelectTrigger><SelectValue placeholder="Seleccionar empresa" /></SelectTrigger>
               <SelectContent>
-                {companies.map(c => (
+                {/* Solo empresas activas (y la que ya tenga la carga al editarla) */}
+                {companies.filter(c => c.status !== 'inactive' || c.id === selectedCompany).map(c => (
                   <SelectItem key={c.id} value={c.id}>{c.name}{c.mc_number ? ` (MC# ${c.mc_number})` : ''}</SelectItem>
                 ))}
               </SelectContent>
