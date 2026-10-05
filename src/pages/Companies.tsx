@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Pencil, Building2, Star, FileSignature, Plus, Trash2, Power, PowerOff } from 'lucide-react';
+import { Pencil, Building2, FileSignature, Plus, Trash2, Power, PowerOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { StatTiles, TABLE_CARD, TABLE_HEAD_ROW, TABLE_ROW } from '@/components/StatTiles';
 
@@ -25,7 +25,7 @@ const emptyForm: CompanyForm = {
 };
 
 const Companies = () => {
-  const { companies, loading, createCompany, updateCompany, deleteCompany, setPrimaryCompany } = useCompanies();
+  const { companies, loading, createCompany, updateCompany, deleteCompany } = useCompanies();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState<CompanyForm>(emptyForm);
@@ -77,7 +77,6 @@ const Companies = () => {
     const payload: any = { ...form };
     Object.keys(payload).forEach(k => { if (payload[k] === '') payload[k] = null; });
     payload.name = form.name;
-    payload.is_primary = true;
     if (editId) await updateCompany(editId, payload);
     else await createCompany(payload);
     setShowForm(false);
@@ -133,11 +132,6 @@ const Companies = () => {
                   <td className="p-3">
                     <div className="flex items-center gap-2">
                       <div className="font-medium">{c.name}</div>
-                      {c.is_primary && (
-                        <span className="inline-flex items-center gap-1 text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 px-2 py-0.5 rounded-full">
-                          <Star className="h-3 w-3 fill-current" /> Principal
-                        </span>
-                      )}
                     </div>
                     {c.legal_name && <div className="text-xs text-muted-foreground">{c.legal_name}</div>}
                   </td>

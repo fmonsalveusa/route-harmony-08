@@ -107,9 +107,9 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
   const [selectedServiceType, setSelectedServiceType] = useState('');
   const [selectedCommissionType, setSelectedCommissionType] = useState<'commission_1' | 'commission_2'>('commission_1');
   const [selectedCompany, setSelectedCompany] = useState('');
-  // Empresa por defecto: la principal si está activa, si no la primera activa
+  // Solo empresas activas; si hay una sola, queda seleccionada por defecto
   const activeCompanies = companies.filter(c => c.status !== 'inactive');
-  const defaultCompanyId = (activeCompanies.find(c => c.is_primary) ?? activeCompanies[0])?.id ?? '';
+  const defaultCompanyId = activeCompanies.length === 1 ? activeCompanies[0].id : '';
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractionStatus, setExtractionStatus] = useState<'idle' | 'uploading' | 'processing' | 'done' | 'error'>('idle');
   const [extractionProgress, setExtractionProgress] = useState(0);
