@@ -139,6 +139,8 @@ Deno.serve(async (req) => {
       });
 
       if (action === "crm_create_group") {
+        // Desactivado: crear grupos por API agregando números nuevos arriesga el bloqueo del número
+        return json({ error: "Crear grupos desde el TMS está desactivado. Créalo desde el teléfono y vincúlalo." }, 400);
         if (contact.whatsapp_group_id) return json({ error: "Este cliente ya tiene grupo" }, 400);
         const subject = String(body.subject ?? "").trim().slice(0, 100);
         if (!subject) return json({ error: "Escribe el nombre del grupo" }, 400);

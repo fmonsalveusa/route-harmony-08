@@ -108,12 +108,9 @@ function MeetingSection({ contact, name, vehicle }: { contact: CrmContact; name:
   const [checks, setChecks] = useState<Record<string, boolean>>(contact.meeting?.checks ?? {});
   const [sent, setSent] = useState<Record<string, string>>(contact.meeting?.sent ?? {});
   const [group, setGroup] = useState({ id: contact.whatsapp_group_id, name: contact.whatsapp_group_name });
-  const [groupName, setGroupName] = useState('');
-  const [nameEdited, setNameEdited] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
 
   const suggested = suggestedGroupName(name, vehicle, !!checks.referido);
-  const subject = nameEdited ? groupName : suggested;
 
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ['crm_contacts'] });
@@ -143,22 +140,6 @@ function MeetingSection({ contact, name, vehicle }: { contact: CrmContact; name:
     setGroup({ id, name: gName });
     toast.success(id ? 'Grupo vinculado' : 'Grupo quitado');
     refresh();
-  };
-
-  const createGroup = async () => {
-    if (!subject.trim()) return;
-    if (!window.confirm(`¿Crear el grupo de WhatsApp "${subject}" con ${contact.phone}?`)) return;
-    setBusy('group');
-    try {
-      const r = await invokeGroups({ action: 'crm_create_group', contact_id: contact.id, subject });
-      setGroup({ id: r.group_id, name: r.name });
-      toast.success('Grupo creado');
-      refresh();
-    } catch (e: any) {
-      toast.error(`No se pudo crear el grupo: ${e.message}`);
-    } finally {
-      setBusy(null);
-    }
   };
 
   const sendStep = async (id: string, label: string) => {
@@ -195,20 +176,21 @@ function MeetingSection({ contact, name, vehicle }: { contact: CrmContact; name:
         </div>
       ) : (
         <div className="space-y-2">
-        <div className="flex gap-2">
-          <Input
-            value={subject}
-            onChange={e => { setNameEdited(true); setGroupName(e.target.value); }}
-            className="h-8 text-sm"
-            placeholder="Nombre del grupo"
-          />
-          <Button size="sm" className="h-8 gap-1.5 shrink-0" onClick={createGroup} disabled={busy !== null || !subject.trim() || !contact.phone}>
-            {busy === 'group' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <MessageCircle className="h-3.5 w-3.5" />}
-            Crear grupo de WhatsApp
-          </Button>
-        </div>
+        {suggested && (
+          <div className="flex items-center gap-2 text-xs">
+            <span className="text-muted-foreground">Crea el grupo desde el teléfono con el nombre:</span>
+            <button
+              type="button"
+              className="font-medium underline decoration-dotted"
+              title="Copiar"
+              onClick={() => { navigator.clipboard?.writeText(suggested); toast.success('Nombre copiado'); }}
+            >
+              {suggested}
+            </button>
+          </div>
+        )}
         <div className="space-y-1">
-          <p className="text-[11px] text-muted-foreground">¿Ya tiene grupo? Vincúlalo:</p>
+          <p className="text-[11px] text-muted-foreground">Después vincúlalo aquí:</p>
           <WhatsAppGroupSelect compact className="" groupId={null} groupName={null} onChange={linkGroup} />
         </div>
         </div>
