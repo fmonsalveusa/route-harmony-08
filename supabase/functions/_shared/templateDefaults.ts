@@ -389,12 +389,12 @@ export const AUTOMATIONS: AutomationDefinition[] = [
   {
     id: 'crm_followups',
     title: 'Seguimientos del CRM al cliente',
-    description: 'Mensaje automático al cliente cuando su próxima acción es "Enviar mensaje de seguimiento al cliente". Va a su grupo de WhatsApp, o a su chat si no tiene grupo. Apagado, los seguimientos quedan en espera y no se envían.',
+    description: 'Mensaje automático al cliente cuando su próxima acción es "Enviar mensaje de seguimiento al cliente". Solo se envía a su grupo de WhatsApp (nunca a su chat directo). Apagado, los seguimientos quedan en espera y no se envían.',
     toggle: 'wa_crm_followups',
     templates: [{
       key: 'crm_followup',
       title: 'Mensaje de seguimiento al cliente',
-      description: 'Cuando la próxima acción es "Enviar mensaje de seguimiento al cliente". Va a su grupo de WhatsApp, o a su chat si no tiene grupo.',
+      description: 'Cuando la próxima acción es "Enviar mensaje de seguimiento al cliente". Va a su grupo de WhatsApp.',
       body: 'Hola {nombre}, ¿cómo vas en tu proceso? ¿Hay algo en lo que podamos ayudarte?',
       variables: [
         v('nombre', 'Primer nombre del cliente', 'Juan'),

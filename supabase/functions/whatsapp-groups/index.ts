@@ -68,6 +68,7 @@ Deno.serve(async (req) => {
     // Mensaje de prueba a un grupo
     if (action === "test") {
       if (!group_id) return json({ error: "group_id required" }, 400);
+      if (!String(group_id).endsWith("@g.us")) return json({ error: "Solo se envían mensajes a grupos" }, 400);
       const message = "Mensaje de prueba de Dispatch Up. Las notificaciones llegarán a este grupo.";
       const { data: profile } = await supabase.from("profiles").select("tenant_id").eq("id", user.id).maybeSingle();
       const log = { tenantId: profile?.tenant_id ?? null, templateKey: "test", recipientType: "test", groupId: group_id, message, reference: "Botón Probar" };
@@ -88,7 +89,8 @@ Deno.serve(async (req) => {
     // Mensaje masivo a los grupos elegidos, con imagen o archivo opcional
     if (action === "broadcast") {
       const { group_ids, message, media_url, media_type, filename } = body;
-      const groups = (group_ids ?? []) as { id: string; name?: string; person?: string }[];
+      const groups = ((group_ids ?? []) as { id: string; name?: string; person?: string }[])
+        .filter((g) => String(g.id).endsWith("@g.us")); // solo grupos
       if (groups.length === 0) return json({ error: "Elige al menos un grupo" }, 400);
       if (!message?.trim() && !media_url) return json({ error: "Escribe un mensaje o adjunta un archivo" }, 400);
 

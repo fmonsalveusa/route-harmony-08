@@ -6,7 +6,11 @@ function headers() {
   return { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
 }
 
-async function post(path: string, body: unknown) {
+/** Solo se escribe a grupos: nunca a chats individuales (números desconocidos = riesgo de bloqueo) */
+export const isGroupChat = (to: string) => String(to ?? "").endsWith("@g.us");
+
+async function post(path: string, body: { to: string } & Record<string, unknown>) {
+  if (!isGroupChat(body.to)) throw new Error(`Envío bloqueado: solo se envían mensajes a grupos (${body.to})`);
   const res = await fetch(`${WHAPI}${path}`, { method: "POST", headers: headers(), body: JSON.stringify(body) });
   if (!res.ok) throw new Error(`Whapi HTTP ${res.status}: ${(await res.text()).slice(0, 300)}`);
   return res.json().catch(() => ({}));

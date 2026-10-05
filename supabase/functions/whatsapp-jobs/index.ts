@@ -175,11 +175,8 @@ async function runCrmReminders(supabase: Supa, tenant: any) {
     const toClient = c.next_action_type === "client_message";
     // Los seguimientos al cliente tienen su propio interruptor (apagado = quedan en espera)
     if (toClient && tenant.wa_crm_followups === false) continue;
-    const digits = String(c.phone ?? "").replace(/\D/g, "");
-    // Al cliente: a su grupo si lo tiene, si no a su chat directo
-    const to = toClient
-      ? c.whatsapp_group_id || (digits.length >= 10 ? (digits.length === 10 ? `1${digits}` : digits) : null)
-      : tenant.whatsapp_admin_group_id;
+    // Al cliente solo por su grupo de WhatsApp (nunca a su chat directo)
+    const to = toClient ? c.whatsapp_group_id : tenant.whatsapp_admin_group_id;
     if (!to) continue;
 
     // Se marca antes de enviar para que dos corridas no lo repitan

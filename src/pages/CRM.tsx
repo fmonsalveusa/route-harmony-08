@@ -549,7 +549,9 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
         </div>
         <p className="text-[11px] text-muted-foreground">
           {form.next_action_type === 'client_message'
-            ? `A esa hora se le envía al cliente el mensaje de seguimiento ${contact.whatsapp_group_id ? 'a su grupo de WhatsApp' : 'a su chat de WhatsApp'}. El texto se edita en WhatsApp → Automatizaciones → Recordatorios del CRM.`
+            ? (contact.whatsapp_group_id
+              ? 'A esa hora se le envía al cliente el mensaje de seguimiento a su grupo de WhatsApp. El texto se edita en WhatsApp → Automatizaciones → Seguimientos del CRM al cliente.'
+              : '⚠️ Este cliente no tiene grupo de WhatsApp: el seguimiento no se envía (solo se escribe a grupos). Crea o vincula su grupo en REUNIÓN.')
             : 'A esa hora llega un recordatorio al grupo de administración por WhatsApp.'}
           {contact.reminder_sent_at && contact.next_action_at === (form.next_action_at ? new Date(form.next_action_at).toISOString() : null)
             ? ` Enviado ${fmt(contact.reminder_sent_at)}.` : ''}
