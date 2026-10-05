@@ -8,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useInvestors } from '@/hooks/useInvestors';
 import { useDispatchers } from '@/hooks/useDispatchers';
-import { WhatsAppGroupSelect, fetchWhatsAppGroups, type WhatsAppGroup } from '@/components/WhatsAppGroupSelect';
+import { WhatsAppGroupSelect, fetchWhatsAppGroupsWithMembers, type WhatsAppGroup } from '@/components/WhatsAppGroupSelect';
 import { AutomationsPanel } from '@/components/whatsapp/AutomationsPanel';
 import { MessageHistory } from '@/components/whatsapp/MessageHistory';
 import { BrokerEmailHistory } from '@/components/whatsapp/BrokerEmailHistory';
@@ -48,18 +48,21 @@ const SERVICE_LABELS: Record<string, string> = {
   dispatch_service: 'Dispatch Service',
 };
 
-function GroupsTable({ rows, groups, onAssign }: {
+function GroupsTable({ rows, groups, memberIds, onAssign }: {
   rows: Row[];
   groups: WhatsAppGroup[] | null;
+  memberIds: Set<string> | null;
   onAssign: (row: Row, id: string | null, name: string | null) => void;
 }) {
   const [search, setSearch] = useState('');
   const [onlyMissing, setOnlyMissing] = useState(false);
+  // Grupo asignado donde el número conectado no está: los avisos a ese grupo fallan
+  const notMember = (r: Row) => !!r.groupId && !!memberIds && !memberIds.has(r.groupId);
   const [showInactive, setShowInactive] = useState(false);
 
   const visible = rows
     .filter(r => showInactive || !r.inactive)
-    .filter(r => !onlyMissing || !r.groupId)
+    .filter(r => !onlyMissing || !r.groupId || notMember(r))
     .filter(r => !search || r.name.toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => Number(Boolean(a.groupId)) - Number(Boolean(b.groupId)) || a.name.localeCompare(b.name));
 
@@ -71,7 +74,7 @@ function GroupsTable({ rows, groups, onAssign }: {
           <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar..." className="h-9 w-56 pl-8 text-xs rounded-full bg-card shadow-sm" />
         </div>
         <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
-          <Switch checked={onlyMissing} onCheckedChange={setOnlyMissing} className="scale-75" /> Solo sin grupo
+          <Switch checked={onlyMissing} onCheckedChange={setOnlyMissing} className="scale-75" /> Solo con problemas
         </label>
         <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
           <Switch checked={showInactive} onCheckedChange={setShowInactive} className="scale-75" /> Mostrar inactivos
@@ -85,12 +88,13 @@ function GroupsTable({ rows, groups, onAssign }: {
         {visible.map(row => (
           <div key={row.id} className={`flex flex-col sm:flex-row sm:items-center gap-2 px-3 py-2 ${row.inactive ? 'opacity-60' : ''}`}>
             <div className="flex items-center gap-2 sm:w-64 min-w-0">
-              {row.groupId
+              {row.groupId && !notMember(row)
                 ? <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
-                : <XCircle className="h-4 w-4 text-amber-500 flex-shrink-0" />}
+                : <XCircle className={`h-4 w-4 flex-shrink-0 ${notMember(row) ? 'text-red-600' : 'text-amber-500'}`} />}
               <div className="min-w-0">
                 <p className="text-sm font-medium truncate">{row.name}</p>
                 <p className="text-[11px] text-muted-foreground truncate">{row.detail}</p>
+                {notMember(row) && <p className="text-[11px] text-red-600 font-medium">El número no está en este grupo</p>}
               </div>
             </div>
             <WhatsAppGroupSelect
@@ -118,10 +122,13 @@ export default function WhatsAppPage() {
   const [connection, setConnection] = useState<Connection | null>(null);
   const [checking, setChecking] = useState(false);
 
+  const [memberIds, setMemberIds] = useState<Set<string> | null>(null);
   const loadGroups = useCallback(async () => {
     setLoadingGroups(true);
     try {
-      setGroups(await fetchWhatsAppGroups());
+      const { groups: list, memberIds: members } = await fetchWhatsAppGroupsWithMembers();
+      setGroups(list);
+      setMemberIds(members);
     } catch (e: any) {
       toast.error(`No se pudieron cargar los grupos: ${e.message}`);
     } finally {
@@ -303,7 +310,7 @@ export default function WhatsAppPage() {
               </TabsList>
               {(['drivers', 'investors', 'dispatchers'] as EntityType[]).map(type => (
                 <TabsContent key={type} value={type} className="mt-3">
-                  <GroupsTable rows={rows[type]} groups={groups} onAssign={(row, id, name) => assign(type, row, id, name)} />
+                  <GroupsTable rows={rows[type]} groups={groups} memberIds={memberIds} onAssign={(row, id, name) => assign(type, row, id, name)} />
                 </TabsContent>
               ))}
             </Tabs>

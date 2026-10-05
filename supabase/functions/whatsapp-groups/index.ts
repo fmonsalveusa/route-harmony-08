@@ -212,7 +212,9 @@ Deno.serve(async (req) => {
       .filter((g) => body.include_archived || !archived.has(String(g.id)))
       .map((g) => ({ id: g.id as string, name: (g.name || g.subject || g.id) as string }))
       .sort((a, b) => a.name.localeCompare(b.name));
-    return json({ groups });
+    // Todos los grupos donde está el número (incluidos archivados), para avisar de grupos asignados donde ya no está
+    const memberIds = ((payload?.groups ?? []) as any[]).map((g) => String(g.id));
+    return json({ groups, member_ids: memberIds });
   } catch (e) {
     console.error("whatsapp-groups error:", e);
     return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);

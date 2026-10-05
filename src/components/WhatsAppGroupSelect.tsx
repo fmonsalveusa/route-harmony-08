@@ -8,6 +8,14 @@ import { toast } from 'sonner';
 
 export interface WhatsAppGroup { id: string; name: string }
 
+/** Grupos para elegir + ids de todos los grupos donde está el número (incluidos los archivados) */
+export async function fetchWhatsAppGroupsWithMembers(): Promise<{ groups: WhatsAppGroup[]; memberIds: Set<string> }> {
+  const { data, error } = await supabase.functions.invoke('whatsapp-groups', { body: { action: 'list' } });
+  if (error || data?.error) throw new Error(data?.error || error?.message);
+  const groups: WhatsAppGroup[] = data.groups || [];
+  return { groups, memberIds: new Set<string>(data.member_ids ?? groups.map(g => g.id)) };
+}
+
 export async function fetchWhatsAppGroups(): Promise<WhatsAppGroup[]> {
   const { data, error } = await supabase.functions.invoke('whatsapp-groups', { body: { action: 'list' } });
   if (error || data?.error) throw new Error(data?.error || error?.message);
