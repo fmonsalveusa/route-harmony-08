@@ -51,6 +51,8 @@ interface CrmNote {
   body: string;
   created_by: string | null;
   created_at: string;
+  call_at: string | null;
+  call_result: string | null;
 }
 
 const STAGES: { id: Stage; label: string; tint: string }[] = [
@@ -115,6 +117,7 @@ function MeetingSection({ contact, name, vehicle }: { contact: CrmContact; name:
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ['crm_contacts'] });
     qc.invalidateQueries({ queryKey: ['crm_notes', contact.id] });
+    qc.invalidateQueries({ queryKey: ['crm_calls'] });
   };
 
   const toggle = async (id: string, value: boolean) => {
@@ -224,6 +227,152 @@ function MeetingSection({ contact, name, vehicle }: { contact: CrmContact; name:
   );
 }
 
+const CALL_RESULTS: Record<string, { label: string; icon: string }> = {
+  answered: { label: 'Contestó', icon: '✅' },
+  no_answer: { label: 'No contestó', icon: '❌' },
+  voicemail: { label: 'Buzón de voz', icon: '📩' },
+  call_back: { label: 'Pidió que lo llamen después', icon: '⏰' },
+  not_interested: { label: 'No le interesa', icon: '🚫' },
+};
+
+/** "hoy", "ayer", "hace 2 días" */
+const ago = (iso: string) => {
+  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
+  if (days <= 0) return 'hoy';
+  if (days === 1) return 'ayer';
+  return `hace ${days} días`;
+};
+
+interface CallSummary { count: number; last: string }
+
+/** Formulario para registrar o editar una llamada */
+function CallDialog({ open, initial, onClose, onSave }: {
+  open: boolean;
+  initial?: { call_at: string; call_result: string; body: string };
+  onClose: () => void;
+  onSave: (v: { call_at: string; call_result: string; body: string; next_call: string }) => Promise<void>;
+}) {
+  const [v, setV] = useState({ call_at: '', call_result: 'answered', body: '', next_call: '' });
+  const [saving, setSaving] = useState(false);
+  useEffect(() => {
+    if (open) setV({
+      call_at: initial?.call_at ?? toLocalInput(new Date().toISOString()),
+      call_result: initial?.call_result ?? 'answered',
+      body: initial?.body ?? '',
+      next_call: '',
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  const save = async () => {
+    if (!v.call_at) { toast.error('Indica la fecha y hora de la llamada'); return; }
+    setSaving(true);
+    try { await onSave(v); onClose(); } catch { /* el error ya se mostró */ } finally { setSaving(false); }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={o => !o && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader><DialogTitle>{initial ? 'Editar llamada' : '📞 Registrar llamada'}</DialogTitle></DialogHeader>
+        <div className="grid gap-3">
+          <div className="space-y-1">
+            <Label className="text-xs">Fecha y hora de la llamada</Label>
+            <Input type="datetime-local" value={v.call_at} onChange={e => setV(x => ({ ...x, call_at: e.target.value }))} />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Resultado</Label>
+            <Select value={v.call_result} onValueChange={r => setV(x => ({ ...x, call_result: r }))}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {Object.entries(CALL_RESULTS).map(([k, r]) => <SelectItem key={k} value={k}>{r.icon} {r.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Anotaciones</Label>
+            <Textarea rows={4} placeholder="Qué se habló, qué necesita, qué quedó pendiente..." value={v.body} onChange={e => setV(x => ({ ...x, body: e.target.value }))} />
+          </div>
+          {!initial && (
+            <div className="space-y-1">
+              <Label className="text-xs">Próxima llamada (opcional)</Label>
+              <Input type="datetime-local" value={v.next_call} onChange={e => setV(x => ({ ...x, next_call: e.target.value }))} />
+              <p className="text-[11px] text-muted-foreground">Queda como próxima acción y te llega el recordatorio al grupo de administración.</p>
+            </div>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancelar</Button>
+          <Button onClick={save} disabled={saving}>{saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}Guardar</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/** Nota o llamada del historial, con editar y borrar (las del sistema no se tocan) */
+function NoteItem({ n, userName, onChanged }: { n: CrmNote; userName?: string; onChanged: () => void }) {
+  const [editing, setEditing] = useState(false);
+  const [body, setBody] = useState(n.body);
+  const [callEdit, setCallEdit] = useState(false);
+  const editable = ['note', 'meeting', 'call'].includes(n.kind);
+  const isCall = n.kind === 'call';
+  const result = n.call_result ? CALL_RESULTS[n.call_result] : null;
+
+  const update = async (changes: Record<string, unknown>) => {
+    const { error } = await supabase.from('crm_notes' as any)
+      .update({ ...changes, updated_at: new Date().toISOString() } as any).eq('id', n.id);
+    if (error) { toast.error(error.message); throw error; }
+    onChanged();
+  };
+  const remove = async () => {
+    if (!window.confirm(isCall ? '¿Borrar esta llamada?' : '¿Borrar esta nota?')) return;
+    const { error } = await supabase.from('crm_notes' as any).delete().eq('id', n.id);
+    if (error) { toast.error(error.message); return; }
+    onChanged();
+  };
+
+  return (
+    <div className={cn('group rounded-md border p-2 text-sm', !editable && 'bg-muted/40 text-muted-foreground text-xs')}>
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-[11px] text-muted-foreground mb-0.5">
+          {isCall
+            ? <><span className="text-foreground font-medium">{result ? `${result.icon} ${result.label}` : 'Llamada'}</span> · {fmt(n.call_at ?? n.created_at)}</>
+            : <>{NOTE_KINDS[n.kind] ?? n.kind} · {fmt(n.created_at)}</>}
+          {userName ? ` · ${userName}` : ''}
+        </p>
+        {editable && !editing && (
+          <div className="flex gap-1.5 shrink-0 opacity-60 group-hover:opacity-100">
+            <button type="button" title="Editar" onClick={() => (isCall ? setCallEdit(true) : setEditing(true))}><PenLine className="h-3.5 w-3.5" /></button>
+            <button type="button" title="Borrar" onClick={remove}><Trash2 className="h-3.5 w-3.5 text-destructive" /></button>
+          </div>
+        )}
+      </div>
+      {editing ? (
+        <div className="space-y-1.5">
+          <Textarea rows={3} value={body} onChange={e => setBody(e.target.value)} />
+          <div className="flex gap-2">
+            <Button size="sm" className="h-7 text-xs" onClick={async () => {
+              if (!body.trim()) return;
+              try { await update({ body: body.trim() }); setEditing(false); } catch { /* ya avisado */ }
+            }}>Guardar</Button>
+            <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => { setBody(n.body); setEditing(false); }}>Cancelar</Button>
+          </div>
+        </div>
+      ) : (
+        n.body && <p className="whitespace-pre-wrap">{n.body}</p>
+      )}
+      {isCall && (
+        <CallDialog
+          open={callEdit}
+          initial={{ call_at: toLocalInput(n.call_at ?? n.created_at), call_result: n.call_result ?? 'answered', body: n.body }}
+          onClose={() => setCallEdit(false)}
+          onSave={v => update({ body: v.body.trim(), call_result: v.call_result, call_at: new Date(v.call_at).toISOString() })}
+        />
+      )}
+    </div>
+  );
+}
+
 const NOTE_KINDS: Record<string, string> = {
   note: 'Nota', meeting: 'Reunión', call: 'Llamada', stage: 'Etapa', system: 'Sistema',
 };
@@ -266,7 +415,7 @@ function useContacts() {
   });
 }
 
-function ContactCard({ c, onOpen }: { c: CrmContact; onOpen: () => void }) {
+function ContactCard({ c, calls, onOpen }: { c: CrmContact; calls?: CallSummary; onOpen: () => void }) {
   const src = SOURCE[c.source] ?? SOURCE.manual;
   const overdue = isOverdue(c);
   return (
@@ -286,6 +435,11 @@ function ContactCard({ c, onOpen }: { c: CrmContact; onOpen: () => void }) {
       {c.phone && <p className="text-xs text-muted-foreground">{c.phone}</p>}
       {(c.vehicle || c.service) && (
         <p className="text-xs text-muted-foreground truncate">{[c.vehicle, c.service].filter(Boolean).join(' · ')}</p>
+      )}
+      {calls && (
+        <p className="text-[11px] flex items-center gap-1 text-muted-foreground">
+          <Phone className="h-3 w-3" /> Última llamada: {ago(calls.last)} · {calls.count} {calls.count === 1 ? 'intento' : 'intentos'}
+        </p>
       )}
       {c.next_action_at && c.stage !== 'client' && (
         followupSent(c) ? (
@@ -317,6 +471,7 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
     has_medical_card: contact.has_medical_card, has_active_mc: contact.has_active_mc, has_eld: contact.has_eld,
   });
   const [noteKind, setNoteKind] = useState('note');
+  const [callOpen, setCallOpen] = useState(false);
   const [noteBody, setNoteBody] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -358,6 +513,7 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ['crm_contacts'] });
     qc.invalidateQueries({ queryKey: ['crm_notes', contact.id] });
+    qc.invalidateQueries({ queryKey: ['crm_calls'] });
   };
 
   // Guardado automático: cada cambio se guarda solo, y lo pendiente se guarda al cerrar la ficha
@@ -420,6 +576,20 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
       setForm(f => ({ ...f, stage: 'meeting_done' }));
     }
     setNoteBody('');
+    refresh();
+  };
+
+  const saveCall = async (v: { call_at: string; call_result: string; body: string; next_call: string }) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    const tenantId = await getTenantId();
+    const { error } = await supabase.from('crm_notes' as any).insert({
+      tenant_id: tenantId, contact_id: contact.id, kind: 'call', body: v.body.trim(),
+      call_at: new Date(v.call_at).toISOString(), call_result: v.call_result, created_by: user?.id ?? null,
+    } as any);
+    if (error) { toast.error(error.message); throw error; }
+    // La próxima llamada queda como próxima acción (recordatorio al grupo de administración)
+    if (v.next_call) edit({ next_action_type: 'reminder', next_action: 'Llamar de nuevo', next_action_at: v.next_call });
+    toast.success('Llamada registrada');
     refresh();
   };
 
@@ -548,6 +718,23 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
       <div className="space-y-5 md:pl-6 md:border-l md:max-h-[72vh] md:overflow-y-auto">
       <MeetingSection contact={contact} name={form.name} vehicle={form.vehicle} />
       <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-medium">Llamadas ({notes.filter(n => n.kind === 'call').length})</p>
+          <Button size="sm" className="h-7 gap-1 text-xs" onClick={() => setCallOpen(true)}>
+            <Phone className="h-3.5 w-3.5" /> Registrar llamada
+          </Button>
+        </div>
+        <div className="space-y-2">
+          {notes
+            .filter(n => n.kind === 'call')
+            .sort((a, b) => (b.call_at ?? b.created_at).localeCompare(a.call_at ?? a.created_at))
+            .map(n => <NoteItem key={n.id} n={n} userName={n.created_by ? users[n.created_by] : undefined} onChanged={refresh} />)}
+          {!notes.some(n => n.kind === 'call') && <p className="text-xs text-muted-foreground">Sin llamadas registradas.</p>}
+        </div>
+        <CallDialog open={callOpen} onClose={() => setCallOpen(false)} onSave={saveCall} />
+      </div>
+
+      <div className="space-y-2">
         <p className="text-sm font-medium">Notas y seguimiento</p>
         <div className="flex gap-2">
           <Select value={noteKind} onValueChange={setNoteKind}>
@@ -555,7 +742,6 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
             <SelectContent>
               <SelectItem value="note">Nota</SelectItem>
               <SelectItem value="meeting">Reunión</SelectItem>
-              <SelectItem value="call">Llamada</SelectItem>
             </SelectContent>
           </Select>
           {noteKind === 'meeting' && <p className="text-[11px] text-muted-foreground self-center">Pasa el contacto a "Reunión hecha"</p>}
@@ -569,15 +755,10 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
         <Button size="sm" variant="secondary" onClick={addNote} disabled={!noteBody.trim()}>Agregar nota</Button>
 
         <div className="space-y-2 pt-2">
-          {notes.map(n => (
-            <div key={n.id} className={cn('rounded-md border p-2 text-sm', (n.kind === 'stage' || n.kind === 'system') && 'bg-muted/40 text-muted-foreground text-xs')}>
-              <p className="text-[11px] text-muted-foreground mb-0.5">
-                {NOTE_KINDS[n.kind] ?? n.kind} · {fmt(n.created_at)}{n.created_by && users[n.created_by] ? ` · ${users[n.created_by]}` : ''}
-              </p>
-              <p className="whitespace-pre-wrap">{n.body}</p>
-            </div>
+          {notes.filter(n => n.kind !== 'call').map(n => (
+            <NoteItem key={n.id} n={n} userName={n.created_by ? users[n.created_by] : undefined} onChanged={refresh} />
           ))}
-          {notes.length === 0 && <p className="text-xs text-muted-foreground">Sin notas todavía.</p>}
+          {!notes.some(n => n.kind !== 'call') && <p className="text-xs text-muted-foreground">Sin notas todavía.</p>}
         </div>
       </div>
 
@@ -666,6 +847,20 @@ export default function CRM() {
   const qc = useQueryClient();
   const { data: contacts = [], isLoading } = useContacts();
   // Clientes que ya tienen cargas: dejan el tablero (siguen apareciendo al buscarlos)
+  // Resumen de llamadas por contacto para las tarjetas del tablero
+  const { data: calls = {} } = useQuery({
+    queryKey: ['crm_calls'],
+    queryFn: async () => {
+      const { data } = await supabase.from('crm_notes' as any).select('contact_id, call_at, created_at').eq('kind', 'call');
+      const out: Record<string, CallSummary> = {};
+      for (const r of ((data as any[]) ?? [])) {
+        const at = r.call_at ?? r.created_at;
+        const cur = out[r.contact_id];
+        out[r.contact_id] = { count: (cur?.count ?? 0) + 1, last: !cur || at > cur.last ? at : cur.last };
+      }
+      return out;
+    },
+  });
   const { data: working = new Set<string>() } = useQuery({
     queryKey: ['crm_working'],
     queryFn: async () => {
@@ -759,7 +954,7 @@ export default function CRM() {
                 <span className="text-xs text-muted-foreground">{byStage[s.id].length}</span>
               </div>
               <div className="px-2 pb-2 space-y-2 overflow-y-auto flex-1">
-                {byStage[s.id].map(c => <ContactCard key={c.id} c={c} onOpen={() => setOpenId(c.id)} />)}
+                {byStage[s.id].map(c => <ContactCard key={c.id} c={c} calls={calls[c.id]} onOpen={() => setOpenId(c.id)} />)}
               </div>
             </div>
           ))}

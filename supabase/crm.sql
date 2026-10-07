@@ -255,3 +255,9 @@ ALTER TABLE crm_contacts ADD COLUMN IF NOT EXISTS next_action_type text NOT NULL
 
 -- ─── Interruptor propio para los seguimientos automáticos al cliente ─────────
 ALTER TABLE tenants ADD COLUMN IF NOT EXISTS wa_crm_followups boolean NOT NULL DEFAULT true;
+
+-- ─── Llamadas: fecha/hora real de la llamada y resultado ─────────────────────
+ALTER TABLE crm_notes ADD COLUMN IF NOT EXISTS call_at timestamptz;
+ALTER TABLE crm_notes ADD COLUMN IF NOT EXISTS call_result text;   -- answered | no_answer | voicemail | call_back | not_interested
+ALTER TABLE crm_notes ADD COLUMN IF NOT EXISTS updated_at timestamptz;
+UPDATE crm_notes SET call_at = created_at WHERE kind = 'call' AND call_at IS NULL;
