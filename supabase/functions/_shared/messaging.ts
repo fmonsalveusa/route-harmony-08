@@ -53,6 +53,8 @@ export async function logMessage(supabase: any, log: MessageLog, status: "sent" 
 
 /** Errores de la cuenta de Whapi (pago, límite, token, desconexión): afectan a todos los avisos */
 export function isAccountError(message: string): boolean {
+  // "forbidden" con HTTP 500 es de un grupo puntual (el número no está o no puede escribir ahí), no de la cuenta
+  if (/HTTP 500\b/.test(message) && /forbidden/i.test(message)) return false;
   return /HTTP (401|402|403)\b|limit exceeded|trial|payment|subscription|unauthori[sz]ed|not authorized|forbidden/i.test(message);
 }
 
