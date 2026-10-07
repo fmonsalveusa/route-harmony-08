@@ -14,6 +14,7 @@ import { useTrucks } from '@/hooks/useTrucks';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useDispatchers } from '@/hooks/useDispatchers';
 import { useCompanies } from '@/hooks/useCompanies';
+import { RcReviewDialog } from '@/components/RcSignedSection';
 import { useLoadStops } from '@/hooks/useLoadStops';
 import type { DbLoad, CreateLoadInput } from '@/hooks/useLoads';
 import { createNotification } from '@/hooks/useNotifications';
@@ -107,6 +108,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
   const [selectedServiceType, setSelectedServiceType] = useState('');
   const [selectedCommissionType, setSelectedCommissionType] = useState<'commission_1' | 'commission_2'>('commission_1');
   const [selectedCompany, setSelectedCompany] = useState('');
+  const [rcReview, setRcReview] = useState<{ loadId: string; reference?: string; preparing: Promise<any> } | null>(null);
   // Solo empresas activas; si hay una sola, queda seleccionada por defecto
   const activeCompanies = companies.filter(c => c.status !== 'inactive');
   const defaultCompanyId = activeCompanies.length === 1 ? activeCompanies[0].id : '';
@@ -757,10 +759,12 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       });
     }
 
-    // RC firmado: queda listo para revisar en el detalle de la carga (no se envía solo)
-    if (loadId && assignedDriverId && (assignedDriverId !== previousDriverId || rcOriginalFile)) {
-      supabase.functions.invoke('broker-email', { body: { action: 'rc_prepare', load_id: loadId } })
-        .catch(e => console.warn('rc_prepare failed:', e));
+    // RC firmado: se prepara y se muestra para revisarlo y enviarlo (no se envía solo)
+    if (loadId && assignedDriverId && (assignedDriverId !== previousDriverId || rcOriginalFile) && (pdfUrl || rcOriginalUrl)
+      && drivers.find(d => d.id === assignedDriverId)?.service_type !== 'dispatch_service') {
+      const preparing = supabase.functions.invoke('broker-email', { body: { action: 'rc_prepare', load_id: loadId } })
+        .catch(e => ({ data: null, error: e }));
+      setRcReview({ loadId, reference: payload.reference_number, preparing });
     }
   };
 
@@ -773,6 +777,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
   const deliveryStops = stopEntries.map((s, i) => ({ ...s, originalIndex: i })).filter(s => s.stop_type === 'delivery');
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[1750px] w-[98vw] max-h-[95vh] overflow-hidden p-0 flex flex-col gap-0">
         <DialogHeader className="p-4 border-b shrink-0">
@@ -1312,5 +1317,14 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
         </div>
       </DialogContent>
     </Dialog>
+    {rcReview && (
+      <RcReviewDialog
+        loadId={rcReview.loadId}
+        reference={rcReview.reference}
+        preparing={rcReview.preparing}
+        onClose={() => setRcReview(null)}
+      />
+    )}
+    </>
   );
 };

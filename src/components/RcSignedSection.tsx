@@ -3,6 +3,7 @@ import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
 import { FileSignature, Loader2, Eye, Send, RotateCw, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -138,5 +139,101 @@ export function RcSignedSection({ loadId, hasDriver }: { loadId: string; hasDriv
         )}
       </div>
     </div>
+  );
+}
+
+/**
+ * Segundo paso al guardar una carga: muestra el RC firmado apenas está listo para revisarlo y enviarlo.
+ * `preparing` es la llamada a rc_prepare que lanzó el formulario.
+ */
+export function RcReviewDialog({ loadId, reference, preparing, onClose }: {
+  loadId: string;
+  reference?: string;
+  preparing: Promise<{ data: any; error: any }>;
+  onClose: () => void;
+}) {
+  const [state, setState] = useState<'preparing' | 'ready' | 'error' | 'sent'>('preparing');
+  const [error, setError] = useState<string | null>(null);
+  const [url, setUrl] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data, error: err } = await preparing;
+      if (cancelled) return;
+      let message: string | null = data?.error ?? null;
+      if (!message && err) {
+        const detail = await (err as any).context?.json?.().catch(() => null);
+        message = detail?.error ?? err.message;
+      }
+      if (message) { setError(message); setState('error'); return; }
+      const { data: row } = await supabase.from('load_rc_signed' as any).select('file_path').eq('load_id', loadId).maybeSingle();
+      const path = (row as any)?.file_path;
+      const signed = path ? await supabase.storage.from('driver-documents').createSignedUrl(path, 3600) : null;
+      if (cancelled) return;
+      if (!signed?.data?.signedUrl) { setError('No se pudo abrir el RC firmado'); setState('error'); return; }
+      setUrl(signed.data.signedUrl);
+      setState('ready');
+    })();
+    return () => { cancelled = true; };
+  }, [loadId, preparing]);
+
+  const send = async () => {
+    setSending(true);
+    try {
+      const r = await callRc({ action: 'rc_send', load_id: loadId });
+      toast.success('RC firmado enviado al broker', { description: r.to });
+      setState('sent');
+      onClose();
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <Dialog open onOpenChange={v => !v && onClose()}>
+      <DialogContent className="max-w-4xl w-[95vw] h-[92vh] flex flex-col gap-3">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <FileSignature className="h-5 w-5 text-primary" /> Rate confirmation firmado{reference ? ` · #${reference}` : ''}
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="flex-1 min-h-0 rounded-lg border bg-muted/30 overflow-hidden">
+          {state === 'preparing' && (
+            <div className="h-full flex flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-6 w-6 animate-spin" /> Firmando y llenando los datos del driver… (20-30 segundos)
+            </div>
+          )}
+          {state === 'error' && (
+            <div className="h-full flex flex-col items-center justify-center gap-2 p-6 text-sm text-center">
+              <AlertTriangle className="h-6 w-6 text-destructive" />
+              <p className="text-destructive">{error}</p>
+              <p className="text-xs text-muted-foreground">La carga quedó guardada. Puedes prepararlo de nuevo desde su detalle.</p>
+            </div>
+          )}
+          {state !== 'preparing' && state !== 'error' && url && (
+            <iframe src={url} title="RC firmado" className="w-full h-full" />
+          )}
+        </div>
+
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-xs text-muted-foreground">
+            {state === 'ready' ? 'Revisa que la firma y los datos del driver estén en su lugar.' : 'Si lo cierras, lo encuentras en el detalle de la carga.'}
+          </p>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={onClose}>{state === 'ready' ? 'Enviar después' : 'Cerrar'}</Button>
+            {state === 'ready' && (
+              <Button onClick={send} disabled={sending} className="gap-1.5">
+                {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} Enviar al broker
+              </Button>
+            )}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
