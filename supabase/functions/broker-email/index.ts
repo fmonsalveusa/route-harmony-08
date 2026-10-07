@@ -9,6 +9,7 @@ import { PDFDocument } from "https://esm.sh/pdf-lib@1.17.1";
 import { sendMail } from "../_shared/smtp.ts";
 import { cityState } from "../_shared/loadHelpers.ts";
 import { isEnabled, renderMessage } from "../_shared/messaging.ts";
+import { buildSignedRc, storagePath } from "./rcSign.ts";
 import { checkAccounts, findLoadThreads, gmailAccounts, replyTarget, searchThreads, setThreadLabels, type GmailAccount } from "../_shared/gmail.ts";
 
 const corsHeaders = {
@@ -609,6 +610,116 @@ async function userLoad(req: Request, supabase: any, loadId: string) {
   return load;
 }
 
+const fmtPhone = (p: string | null | undefined) => {
+  const d = String(p ?? "").replace(/\D/g, "").slice(-10);
+  return d.length === 10 ? `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}` : String(p ?? "");
+};
+
+/** Arma el RC firmado y lo deja como borrador para revisar. No reemplaza uno ya enviado salvo force. */
+async function rcPrepare(supabase: any, loadId: string, force = false) {
+  const { data: existing } = await supabase.from("load_rc_signed").select("status").eq("load_id", loadId).maybeSingle();
+  if (existing?.status === "sent" && !force) return json({ error: "El RC firmado ya se envió al broker" }, 400);
+
+  const { data: load } = await supabase
+    .from("loads").select("id, tenant_id, reference_number, driver_id, truck_id, pdf_url").eq("id", loadId).maybeSingle();
+  if (!load) return json({ error: "Carga no encontrada" }, 404);
+  if (!load.driver_id) return json({ error: "Asigna un driver a la carga primero" }, 400);
+  // Los clientes de Dispatch Service firman con su propio MC: nunca se firma por ellos
+  if (await isDispatchService(supabase, load)) return json({ error: "Carga de Dispatch Service: el RC lo firma el cliente" }, 400);
+
+  // RC original del broker (el que se sube con la tarifa real); si no hay, el PDF de la carga
+  let source: string | null = null;
+  const { data: metaBlob } = await supabase.storage.from("driver-documents").download(`rc_metadata/${load.id}.json`);
+  if (metaBlob) {
+    try { source = storagePath(JSON.parse(await metaBlob.text())?.rc_original_url); } catch { /* sin metadata */ }
+  }
+  source = source || storagePath(load.pdf_url);
+  if (!source) return json({ error: "La carga no tiene rate confirmation en PDF" }, 400);
+
+  const [{ data: pdfBlob }, { data: sigBlob }, { data: driver }, { data: tenant }] = await Promise.all([
+    supabase.storage.from("driver-documents").download(source),
+    supabase.storage.from("company-private").download("rc_signature.png"),
+    supabase.from("drivers").select("name, phone, truck_id").eq("id", load.driver_id).maybeSingle(),
+    supabase.from("tenants").select("rc_signer_name, rc_signer_title").eq("id", load.tenant_id).maybeSingle(),
+  ]);
+  if (!pdfBlob) return json({ error: "No se pudo descargar el rate confirmation" }, 400);
+  if (!sigBlob) return json({ error: "Falta la firma de la empresa" }, 400);
+  const truckId = load.truck_id || driver?.truck_id;
+  const { data: truck } = truckId
+    ? await supabase.from("trucks").select("unit_number").eq("id", truckId).maybeSingle()
+    : { data: null };
+
+  const rcData = {
+    signerName: tenant?.rc_signer_name || "Francisco Monsalve",
+    signerTitle: tenant?.rc_signer_title || "Owner",
+    driverName: driver?.name ?? "",
+    driverPhone: fmtPhone(driver?.phone),
+    truckNumber: truck?.unit_number ? String(truck.unit_number) : "",
+    date: new Date().toLocaleDateString("en-US", { timeZone: "America/New_York", month: "2-digit", day: "2-digit", year: "numeric" }),
+    reference: load.reference_number,
+  };
+
+  try {
+    const { bytes, placements, skipped, alreadySigned } = await buildSignedRc(new Uint8Array(await pdfBlob.arrayBuffer()), new Uint8Array(await sigBlob.arrayBuffer()), rcData);
+    const path = `loads/rc_signed/${load.id}.pdf`;
+    const { error: upErr } = await supabase.storage.from("driver-documents")
+      .upload(path, bytes, { contentType: "application/pdf", upsert: true });
+    if (upErr) throw upErr;
+    await supabase.from("load_rc_signed").upsert({
+      load_id: load.id, tenant_id: load.tenant_id, status: "draft", file_path: path, source_path: source,
+      placement: { placed: placements, skipped, already_signed: alreadySigned }, driver_name: rcData.driverName, driver_phone: rcData.driverPhone, truck_number: rcData.truckNumber,
+      error: null, sent_to: null, sent_at: null, prepared_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+    }, { onConflict: "load_id" });
+    return json({ prepared: true, placements, skipped, already_signed: alreadySigned });
+  } catch (e) {
+    await supabase.from("load_rc_signed").upsert({
+      load_id: load.id, tenant_id: load.tenant_id, status: "failed", error: errMsg(e).slice(0, 500), updated_at: new Date().toISOString(),
+    }, { onConflict: "load_id" });
+    return json({ error: `No se pudo preparar el RC firmado: ${errMsg(e)}` }, 500);
+  }
+}
+
+/** Responde en el hilo de Gmail de la carga con el RC firmado */
+async function rcSend(supabase: any, loadId: string, accounts: GmailAccount[]) {
+  const { data: rc } = await supabase.from("load_rc_signed").select("*").eq("load_id", loadId).maybeSingle();
+  if (!rc?.file_path || rc.status === "failed") return json({ error: "Primero prepara el RC firmado" }, 400);
+  if (rc.status === "sent") return json({ error: "Ya se envió al broker" }, 400);
+
+  const { data: load } = await supabase.from("loads").select("id, tenant_id, reference_number").eq("id", loadId).maybeSingle();
+  if (!(await isEnabled(supabase, load.tenant_id, "email_rc_signed"))) return json({ error: "El envío del RC firmado está apagado" }, 400);
+  const thread = await ensureThread(supabase, load, accounts);
+  if (thread?.status !== "linked" || !thread.thread_id) {
+    return json({ error: "No encontré el hilo de Gmail del broker. Enlázalo en \"Email al broker\" y vuelve a enviar." }, 400);
+  }
+  const account = accounts.find((a) => a.user === String(thread.account).toLowerCase());
+  if (!account) return json({ error: `La cuenta ${thread.account} ya no está configurada` }, 400);
+
+  const { data: pdf } = await supabase.storage.from("driver-documents").download(rc.file_path);
+  if (!pdf) return json({ error: "No se encontró el PDF firmado" }, 400);
+
+  const body = await renderMessage(supabase, load.tenant_id, "email_rc_signed", {
+    carga: load.reference_number, driver: rc.driver_name ?? "", telefono: rc.driver_phone ?? "", unidad: rc.truck_number ?? "",
+  });
+  try {
+    const target = await replyTarget(account, thread.thread_id, accounts.map((a) => a.user));
+    await sendMail(account, {
+      to: target.to, cc: target.cc, subject: target.subject,
+      inReplyTo: target.inReplyTo || undefined, references: target.references || undefined,
+      text: body,
+      html: `<div style="font-family:Arial,sans-serif;font-size:14px">${escapeHtml(body).replace(/\n/g, "<br>")}</div>`,
+      attachments: [{ filename: `Signed RC - ${load.reference_number}.pdf`, content: new Uint8Array(await pdf.arrayBuffer()), contentType: "application/pdf" }],
+    });
+    const sentTo = [...target.to, ...target.cc.map((c: string) => `cc: ${c}`)].join(", ");
+    await supabase.from("load_rc_signed").update({
+      status: "sent", sent_at: new Date().toISOString(), sent_to: sentTo, error: null, updated_at: new Date().toISOString(),
+    }).eq("load_id", loadId);
+    return json({ sent: true, to: sentTo });
+  } catch (e) {
+    await supabase.from("load_rc_signed").update({ error: errMsg(e).slice(0, 500), updated_at: new Date().toISOString() }).eq("load_id", loadId);
+    return json({ error: `No se pudo enviar: ${errMsg(e)}` }, 500);
+  }
+}
+
 async function handleUserAction(req: Request, supabase: any, body: any) {
   const { action, load_id } = body;
 
@@ -696,6 +807,15 @@ async function handleUserAction(req: Request, supabase: any, body: any) {
     return json({ result: await enqueue(supabase, "docs", stop.id) });
   }
 
+  // Rate confirmation firmado: preparar (borrador para revisar) y enviar en el hilo del broker
+  if (action === "rc_prepare" || action === "rc_send") {
+    const user = await authUser(req);
+    const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
+    const staff = ((roles as any[]) || []).some((r) => ["admin", "accounting", "dispatcher", "master_admin"].includes(r.role));
+    if (!staff) return json({ error: "Unauthorized" }, 403);
+    return action === "rc_prepare" ? await rcPrepare(supabase, load.id, !!body.force) : await rcSend(supabase, load.id, accounts);
+  }
+
   if (action === "send_now") {
     await supabase.from("broker_email_queue")
       .update({ status: "pending", attempts: 0, send_after: new Date().toISOString() })
@@ -757,6 +877,8 @@ Deno.serve(async (req) => {
       return json({ status: thread.status, subject: thread.subject ?? null });
     }
     if (body.event === "process") return json({ results: await processDue(supabase) });
+    // Al guardar una carga con driver y RC (desde el TMS): deja listo el borrador del RC firmado
+    if (body.event === "rc_prepare" && body.load_id) return await rcPrepare(supabase, body.load_id, false);
     if (body.event === "queue") {
       let q = supabase
         .from("broker_email_queue")

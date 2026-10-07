@@ -756,6 +756,12 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
         driver_id: assignedDriverId,
       });
     }
+
+    // RC firmado: queda listo para revisar en el detalle de la carga (no se envía solo)
+    if (loadId && assignedDriverId && (assignedDriverId !== previousDriverId || rcOriginalFile)) {
+      supabase.functions.invoke('broker-email', { body: { action: 'rc_prepare', load_id: loadId } })
+        .catch(e => console.warn('rc_prepare failed:', e));
+    }
   };
 
   const dispatcherDriverIds = dispatcherId

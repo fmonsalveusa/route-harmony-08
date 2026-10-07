@@ -542,6 +542,25 @@ export const AUTOMATIONS: AutomationDefinition[] = [
     ],
   },
   {
+    id: 'email_rc_signed',
+    title: 'Email al broker: rate confirmation firmado',
+    description: 'Cuando tocas "Enviar al broker" en el RC firmado, dentro del detalle de la carga. Se responde en el hilo de Gmail de la carga con el PDF firmado adjunto.',
+    toggle: 'email_rc_signed',
+    channel: 'email',
+    templates: [{
+      key: 'email_rc_signed',
+      title: 'Mensaje',
+      description: 'Va con el rate confirmation firmado adjunto.',
+      body: 'Please find attached the signed rate confirmation for load #{carga}.\n\nDriver: {driver}\nPhone: {telefono}\nTruck #: {unidad}',
+      variables: [
+        v('carga', 'Número de la carga', 'T2Y-459256'),
+        v('driver', 'Nombre del driver', 'Javier Ruiz'),
+        v('telefono', 'Teléfono del driver', '(704) 555-1234'),
+        v('unidad', 'Unidad del camión', '241'),
+      ],
+    }],
+  },
+  {
     id: 'email_broker_docs',
     title: 'Email al broker: fotos y BOL/POD',
     description: 'Cuando el driver toca "Pickup/Delivery Completed" en la app, o tú tocas "Enviar al broker" en la parada desde el TMS. Van todas las fotos de la parada y el BOL/POD, con los PDF unidos en un solo archivo.',

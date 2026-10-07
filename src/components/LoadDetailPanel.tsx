@@ -17,6 +17,7 @@ import { PodUploadSection } from '@/components/PodUploadSection';
 import { LoadAdjustmentsSection } from '@/components/LoadAdjustmentsSection';
 import { LoadProfitSection } from '@/components/LoadProfitSection';
 import { BrokerEmailSection } from '@/components/BrokerEmailSection';
+import { RcSignedSection } from '@/components/RcSignedSection';
 import { getLoadRoute } from '@/lib/loadRoute';
 import { PickupPicturesSection } from '@/components/PickupPicturesSection';
 import { BolFormDialog } from '@/components/BolFormDialog';
@@ -1637,6 +1638,7 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
           </div>
 
           {!isDispatchService && <BrokerEmailSection loadId={load.id} />}
+          {!isDispatchService && <RcSignedSection loadId={load.id} hasDriver={!!load.driver_id} />}
 
           {/* Stops / Route breakdown */}
           <div className="p-3 rounded-lg bg-card border text-sm">
