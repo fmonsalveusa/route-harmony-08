@@ -436,6 +436,20 @@ export const AUTOMATIONS: AutomationDefinition[] = [
         body: '{nombre}, esta es la información del Libro Electrónico (ELD) para tu MC# propio:\n\n(Escribe aquí la información del libro electrónico para MC# propio)',
         variables: [v('nombre', 'Primer nombre del cliente', 'Juan'), v('cliente', 'Nombre completo del cliente', 'Juan Perez')],
       },
+      {
+        key: 'crm_step_equip_hotshot',
+        title: 'Equipos para HOTSHOT',
+        description: 'Paso "Equipos para HOTSHOT".',
+        body: '{nombre}, estos son los equipos que necesitas para trabajar con hotshot:\n\n(Escribe aquí la lista de equipos para hotshot)',
+        variables: [v('nombre', 'Primer nombre del cliente', 'Juan'), v('cliente', 'Nombre completo del cliente', 'Juan Perez')],
+      },
+      {
+        key: 'crm_step_equip_boxtruck',
+        title: 'Equipos para BOXTRUCK',
+        description: 'Paso "Equipos para BOXTRUCK".',
+        body: '{nombre}, estos son los equipos que necesitas para trabajar con box truck:\n\n(Escribe aquí la lista de equipos para box truck)',
+        variables: [v('nombre', 'Primer nombre del cliente', 'Juan'), v('cliente', 'Nombre completo del cliente', 'Juan Perez')],
+      },
     ],
   },
   {

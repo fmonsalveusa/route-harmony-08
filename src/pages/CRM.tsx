@@ -89,6 +89,8 @@ const MEETING_STEPS: { id: string; label: string; send?: boolean }[] = [
   { id: 'medical_card', label: 'Medical Card', send: true },
   { id: 'eld', label: 'Libro Electrónico MC# Nuestro', send: true },
   { id: 'eld_own_mc', label: 'Libro Electrónico MC# Propio', send: true },
+  { id: 'equip_hotshot', label: 'Equipos para HOTSHOT', send: true },
+  { id: 'equip_boxtruck', label: 'Equipos para BOXTRUCK', send: true },
 ];
 
 /** "Juan Perez HS LB": HS = hotshot, 26BT = box truck, LB = referido */
