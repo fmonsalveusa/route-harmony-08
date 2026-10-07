@@ -636,6 +636,8 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
 
     // Save stops to load_stops table
     const loadId = editLoad?.id || result?.id;
+    // No se creó (p. ej. referencia duplicada; el aviso ya salió): no seguir con paradas ni notificaciones
+    if (!loadId) return;
 
     // Save RC metadata to Storage JSON (completely bypasses PostgREST schema cache)
     if (canSeeGrossRate && loadId) {
