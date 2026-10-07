@@ -3,6 +3,7 @@ import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
 import { FileSignature, Loader2, Eye, Send, RotateCw, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { PdfViewerDialog } from '@/components/PdfViewerDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -40,6 +41,7 @@ async function callRc(body: Record<string, unknown>) {
 export function RcSignedSection({ loadId, hasDriver }: { loadId: string; hasDriver: boolean }) {
   const [rc, setRc] = useState<RcSigned | null>(null);
   const [busy, setBusy] = useState<'prepare' | 'send' | 'view' | null>(null);
+  const [viewUrl, setViewUrl] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const { data } = await supabase.from('load_rc_signed' as any).select('*').eq('load_id', loadId).maybeSingle();
@@ -70,7 +72,7 @@ export function RcSignedSection({ loadId, hasDriver }: { loadId: string; hasDriv
     setBusy(null);
     if (error || !data?.signedUrl) { toast.error('No se pudo abrir el PDF'); return; }
     if (Capacitor.isNativePlatform()) await Browser.open({ url: data.signedUrl });
-    else window.open(data.signedUrl, '_blank');
+    else setViewUrl(data.signedUrl); // visor dentro del TMS: otra pestaña caería en otro perfil de Chrome
   };
 
   const send = async () => {
@@ -138,6 +140,7 @@ export function RcSignedSection({ loadId, hasDriver }: { loadId: string; hasDriv
           </Button>
         )}
       </div>
+      <PdfViewerDialog url={viewUrl} title="Rate confirmation firmado" onClose={() => setViewUrl(null)} />
     </div>
   );
 }

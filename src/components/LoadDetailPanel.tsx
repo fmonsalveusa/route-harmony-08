@@ -18,6 +18,7 @@ import { LoadAdjustmentsSection } from '@/components/LoadAdjustmentsSection';
 import { LoadProfitSection } from '@/components/LoadProfitSection';
 import { BrokerEmailSection } from '@/components/BrokerEmailSection';
 import { RcSignedSection } from '@/components/RcSignedSection';
+import { PdfViewerDialog } from '@/components/PdfViewerDialog';
 import { getLoadRoute } from '@/lib/loadRoute';
 import { PickupPicturesSection } from '@/components/PickupPicturesSection';
 import { BolFormDialog } from '@/components/BolFormDialog';
@@ -686,23 +687,25 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
     return url;
   };
 
-  // Helper: abrir URL en Capacitor (Browser.open) o en web (window.open)
-  const openUrl = async (url: string) => {
+  // Helper: abrir el PDF en Capacitor (Browser.open) o en el visor dentro del TMS (web).
+  // Una pestaña nueva caería en el perfil de Chrome por defecto, no en la sesión del TMS.
+  const [pdfViewer, setPdfViewer] = useState<{ url: string; title: string } | null>(null);
+  const openUrl = async (url: string, title = 'Rate Confirmation') => {
     if (Capacitor.isNativePlatform()) {
       await Browser.open({ url });
     } else {
-      window.open(url, '_blank', 'noopener,noreferrer');
+      setPdfViewer({ url, title });
     }
   };
 
   const openOriginalPdf = async () => {
     const url = await resolveDriverDocsUrl(load.pdf_url || '');
-    if (url) await openUrl(url);
+    if (url) await openUrl(url, `Rate Confirmation · #${load.reference_number}`);
   };
 
   const openRcOriginalPdf = async () => {
     const url = await resolveDriverDocsUrl(rcOriginalUrl || '');
-    if (url) await openUrl(url);
+    if (url) await openUrl(url, `RC Original · #${load.reference_number}`);
   };
 
   const downloadRcOriginalPdf = async () => {
@@ -1639,6 +1642,7 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
 
           {!isDispatchService && <BrokerEmailSection loadId={load.id} />}
           {!isDispatchService && <RcSignedSection loadId={load.id} hasDriver={!!load.driver_id} />}
+          <PdfViewerDialog url={pdfViewer?.url ?? null} title={pdfViewer?.title ?? ''} onClose={() => setPdfViewer(null)} />
 
           {/* Stops / Route breakdown */}
           <div className="p-3 rounded-lg bg-card border text-sm">
