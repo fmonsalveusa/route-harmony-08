@@ -14,6 +14,7 @@ import { useTrucks } from '@/hooks/useTrucks';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useDispatchers } from '@/hooks/useDispatchers';
 import { useCompanies } from '@/hooks/useCompanies';
+import { Checkbox } from '@/components/ui/checkbox';
 import { RcReviewDialog } from '@/components/RcSignedSection';
 import { useLoadStops } from '@/hooks/useLoadStops';
 import type { DbLoad, CreateLoadInput } from '@/hooks/useLoads';
@@ -108,6 +109,8 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
   const [selectedServiceType, setSelectedServiceType] = useState('');
   const [selectedCommissionType, setSelectedCommissionType] = useState<'commission_1' | 'commission_2'>('commission_1');
   const [selectedCompany, setSelectedCompany] = useState('');
+  // Firmar el RC con la empresa y devolverlo al broker (no se marca si el RC ya viene firmado)
+  const [signRc, setSignRc] = useState(true);
   const [rcReview, setRcReview] = useState<{ loadId: string; reference?: string; preparing: Promise<any> } | null>(null);
   // Solo empresas activas; si hay una sola, queda seleccionada por defecto
   const activeCompanies = companies.filter(c => c.status !== 'inactive');
@@ -177,6 +180,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
         notes: editLoad.notes || '',
       });
       setSelectedDriver(editLoad.driver_id || '');
+      setSignRc(false);
       setSelectedTruck(editLoad.truck_id || '');
       setSelectedDispatcher(editLoad.dispatcher_id || '');
       setSelectedStatus(editLoad.status);
@@ -236,6 +240,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
     } else {
       setFormData(emptyForm);
       setSelectedDriver('');
+      setSignRc(true);
       setSelectedTruck('');
       setSelectedDispatcher('');
       setSelectedStatus('dispatched');
@@ -760,7 +765,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
     }
 
     // RC firmado: se prepara y se muestra para revisarlo y enviarlo (no se envía solo)
-    if (loadId && assignedDriverId && (assignedDriverId !== previousDriverId || rcOriginalFile) && (pdfUrl || rcOriginalUrl)
+    if (signRc && loadId && assignedDriverId && (pdfUrl || rcOriginalUrl)
       && drivers.find(d => d.id === assignedDriverId)?.service_type !== 'dispatch_service') {
       const preparing = supabase.functions.invoke('broker-email', { body: { action: 'rc_prepare', load_id: loadId } })
         .catch(e => ({ data: null, error: e }));
@@ -1311,7 +1316,15 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
           {/* ═══ FIN COLUMNA DERECHA ═══ */}
         </div>
 
-        <div className="flex justify-end gap-2 p-4 border-t shrink-0">
+        <div className="flex flex-wrap items-center justify-end gap-2 p-4 border-t shrink-0">
+          {(pdfFile || uploadedPdfPath || editLoad?.pdf_url || rcOriginalFile || rcOriginalUploadedUrl)
+            && drivers.find(d => d.id === selectedDriver)?.service_type !== 'dispatch_service' && (
+            <label className="mr-auto flex items-center gap-2 text-sm cursor-pointer">
+              <Checkbox checked={signRc} onCheckedChange={v => setSignRc(v === true)} />
+              Firmar el RC y enviarlo al broker
+              <span className="text-xs text-muted-foreground">(desmárcalo si el RC ya viene firmado)</span>
+            </label>
+          )}
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
           <Button onClick={handleSubmit}>{editLoad ? 'Guardar Cambios' : 'Crear Carga'}</Button>
         </div>
