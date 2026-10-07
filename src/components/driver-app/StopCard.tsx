@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { MapPin, Navigation, Camera, Check, Clock, Image, Loader2, Trash2, PackageCheck, CheckCircle2, ImagePlus, ScanLine, ChevronLeft, ChevronRight, X, FileText, Mail } from 'lucide-react';
+import { MapPin, Navigation, Camera, Check, Clock, Image, Loader2, Trash2, PackageCheck, CheckCircle2, ImagePlus, ScanLine, ChevronLeft, ChevronRight, X, FileText } from 'lucide-react';
 import { DocumentScanner } from './DocumentScanner';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -146,10 +146,6 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
 
   // Manda al broker las fotos y el BOL/POD de esta parada, dentro del hilo de la carga
   const handleSendBroker = async () => {
-    if (stopPods.length === 0) {
-      toast({ title: 'Add the pictures and BOL/POD first', variant: 'destructive' });
-      return;
-    }
     setSendingBroker(true);
     try {
       const { data, error } = await supabase.functions.invoke('broker-email', {
@@ -159,9 +155,6 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
       const result = data?.result ?? {};
       if (result.status === 'sent') {
         setBrokerSent(true);
-        hapticFeedback('success');
-        toast({ title: 'Broker notified' });
-        onUpdate();
       } else if (result.status === 'waiting_thread') {
         toast({ title: 'Sent to dispatch', description: 'The email thread is not linked yet; dispatch will send it.' });
       } else {
@@ -174,34 +167,45 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
     }
   };
 
-  const handlePickedUp = async () => {
-    setChangingStatus(true);
-    await supabase.from('loads').update({ status: 'picked_up' }).eq('id', stop.load_id);
-    await createNotification({
-      type: 'status_changed',
-      title: `Picked Up - ${driverName}`,
-      message: `${driverName} picked up at ${stop.address} (Load #${loadRef})`,
-      load_id: stop.load_id,
-    });
-    toast({ title: 'Status: Picked Up' });
-    hapticFeedback('success');
-    onUpdate();
-    setChangingStatus(false);
-  };
+  // Un solo botón por parada: cambia el estado de la carga (Picked Up / Delivered) y manda los documentos al broker
+  const nextStatus: 'picked_up' | 'delivered' | null =
+    stop.stop_type === 'pickup'
+      ? (['picked_up', 'on_site_delivery', 'delivered', 'paid'].includes(loadStatus ?? '') ? null : 'picked_up')
+      : (isLastDelivery && !['delivered', 'paid'].includes(loadStatus ?? '') ? 'delivered' : null);
+  const brokerPending = brokerSent === false && !hideBrokerButton;
+  const showComplete = isArrived && (nextStatus !== null || brokerPending);
 
-  const handleDelivered = async () => {
+  const handleComplete = async () => {
+    if (stopPods.length === 0) {
+      toast({
+        title: stop.stop_type === 'pickup' ? 'Upload the pictures and BOL first' : 'Upload the pictures and POD first',
+        variant: 'destructive',
+      });
+      return;
+    }
     setChangingStatus(true);
-    await supabase.from('loads').update({ status: 'delivered', factoring: 'pending' }).eq('id', stop.load_id);
-    await createNotification({
-      type: 'status_changed',
-      title: `Delivered - ${driverName}`,
-      message: `${driverName} delivered at ${stop.address} (Load #${loadRef})`,
-      load_id: stop.load_id,
-    });
-    toast({ title: 'Marked as Delivered!' });
-    hapticFeedback('success');
-    onUpdate();
-    setChangingStatus(false);
+    try {
+      if (nextStatus) {
+        const changes = nextStatus === 'delivered' ? { status: 'delivered', factoring: 'pending' } : { status: 'picked_up' };
+        const { error } = await supabase.from('loads').update(changes as any).eq('id', stop.load_id);
+        if (error) throw error;
+        await createNotification({
+          type: 'status_changed',
+          title: `${nextStatus === 'delivered' ? 'Delivered' : 'Picked Up'} - ${driverName}`,
+          message: `${driverName} ${nextStatus === 'delivered' ? 'delivered' : 'picked up'} at ${stop.address} (Load #${loadRef})`,
+          load_id: stop.load_id,
+        });
+      }
+      // Si el email falla, el estado ya quedó cambiado: dispatch lo reenvía desde el TMS
+      if (brokerPending) await handleSendBroker();
+      toast({ title: stop.stop_type === 'pickup' ? 'Pick up completed' : 'Delivery completed' });
+      hapticFeedback('success');
+      onUpdate();
+    } catch (e: any) {
+      toast({ title: 'Error', description: e.message, variant: 'destructive' });
+    } finally {
+      setChangingStatus(false);
+    }
   };
 
   const uploadDataUrl = async (dataUrl: string, fileName: string) => {
@@ -573,19 +577,6 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
             <input ref={galleryFallbackRef} type="file" accept="image/*,application/pdf" multiple className="hidden" onChange={handleFileUpload} />
           </div>
 
-          {/* Aviso al broker con todo lo de la parada. Una vez enviado, el botón desaparece. */}
-          {brokerSent === false && !hideBrokerButton && (
-            <Button
-              size="sm"
-              className="w-full gap-1.5 text-sm bg-success hover:bg-success/90 text-success-foreground border-0 shadow-md"
-              onClick={handleSendBroker}
-              disabled={sendingBroker}
-            >
-              {sendingBroker ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
-              {sendingBroker ? 'Sending...' : stop.stop_type === 'pickup' ? 'PICK UP COMPLETED' : 'DELIVERY COMPLETED'}
-            </Button>
-          )}
-
           {/* Scanner button - all platforms */}
           <Button
             variant="default"
@@ -599,21 +590,17 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
         </div>
       )}
 
-      {/* Status change buttons */}
-      {isArrived && stop.stop_type === 'pickup' && loadStatus !== 'picked_up' && loadStatus !== 'on_site_delivery' && loadStatus !== 'delivered' && loadStatus !== 'paid' && (
+      {/* Parada completada: estado de la carga + documentos al broker */}
+      {showComplete && (
         <div className="flex justify-end">
-          <Button size="sm" className="gap-1.5 text-sm bg-primary hover:bg-primary/90" onClick={handlePickedUp} disabled={changingStatus}>
-            <PackageCheck className="h-4 w-4" />
-            {changingStatus ? 'Updating...' : 'Picked Up'}
-          </Button>
-        </div>
-      )}
-
-      {isArrived && stop.stop_type === 'delivery' && isLastDelivery && loadStatus !== 'delivered' && loadStatus !== 'paid' && (
-        <div className="flex justify-end">
-          <Button size="sm" className="gap-1.5 text-sm bg-success hover:bg-success/90 text-success-foreground" onClick={handleDelivered} disabled={changingStatus}>
-            <CheckCircle2 className="h-4 w-4" />
-            {changingStatus ? 'Updating...' : 'Delivered'}
+          <Button
+            size="sm"
+            className="gap-1.5 text-sm bg-success hover:bg-success/90 text-success-foreground"
+            onClick={handleComplete}
+            disabled={changingStatus || sendingBroker}
+          >
+            {changingStatus ? <Loader2 className="h-4 w-4 animate-spin" /> : stop.stop_type === 'pickup' ? <PackageCheck className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
+            {changingStatus ? 'Updating...' : stop.stop_type === 'pickup' ? 'PICK UP COMPLETED' : 'DELIVERY COMPLETED'}
           </Button>
         </div>
       )}
