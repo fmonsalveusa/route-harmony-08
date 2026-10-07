@@ -13,7 +13,7 @@ interface TextItem { id: number; page: number; x: number; y: number; w: number; 
 export interface Placement { field: Field; page: number; x: number; y: number; label?: string; appended?: boolean }
 
 const INK = rgb(0.04, 0.1, 0.32);
-const SIG_HEIGHT = 30;
+const SIG_HEIGHT = 26;
 
 /** Ruta dentro del bucket a partir de una ruta guardada o de una signed URL vieja */
 export function storagePath(url: string | null | undefined): string | null {
@@ -57,6 +57,7 @@ async function locateFields(items: TextItem[]): Promise<Partial<Record<Field, { 
       type: ["object", "null"],
       properties: {
         item: { type: "integer", description: "id del texto-etiqueta junto al que se escribe el dato" },
+        label: { type: "string", description: "las palabras exactas de la etiqueta dentro de ese texto (p. ej. \"Driver Phone #\"). Importante cuando un mismo texto trae varias etiquetas en la misma línea" },
         side: { type: "string", enum: ["right", "above", "below"], description: "right = a continuación de la etiqueta; above = encima (la etiqueta está debajo de una línea en blanco); below = debajo" },
       },
       required: ["item", "side"],
@@ -78,6 +79,7 @@ Para cada campo devuelve el id de la ETIQUETA junto a la que se escribe y el lad
 - signer_title: cargo ("Title").
 - sign_date: fecha de la firma del carrier ("Date").
 - driver_name, driver_phone, truck_number: datos del driver/camión ("Driver Name", "Driver Cell", "Truck #", "Tractor #", "Unit").
+Si una sola línea trae varias etiquetas (p. ej. "Driver name: ____ Driver Phone # ____ Tractor #: ____"), usa el mismo id para cada campo y en "label" pon las palabras exactas de la etiqueta de ese campo.
 Reglas: usa solo campos en blanco del carrier; nunca la firma o los datos del broker. Si un campo no existe en el documento, devuélvelo null. Si el texto ya trae el dato lleno, null.`,
       tools: [{ name: "ubicar", description: "Ubicación de cada campo", input_schema: { type: "object", properties, required: [...RC_FIELDS] } }],
       // Este modelo no admite forzar la herramienta: se pide en el mensaje
@@ -109,15 +111,37 @@ function occupied(items: TextItem[], label: TextItem, side: Side, at: { x: numbe
   return hit ? hit.str : null;
 }
 
-/** Dónde empieza el espacio en blanco de una etiqueta tipo "Driver Name: ________" */
-function anchor(item: TextItem, side: Side): { x: number; y: number } {
-  const blank = item.str.search(/_{2,}/);
-  if (side === "right") {
-    const x = blank > 0 ? item.x + item.w * (blank / item.str.length) + 2 : item.x + item.w + 6;
-    return { x, y: item.y };
+type Measure = (t: string) => number;
+
+/**
+ * Dónde se escribe el dato y cuánto espacio hay. Si el texto trae varias etiquetas en la misma línea
+ * ("Driver name: ____ Driver Phone # ____"), se ubica la de este campo y su raya en blanco.
+ * La posición dentro del texto se estima con el ancho proporcional de los caracteres.
+ */
+function anchor(item: TextItem, side: Side, measure: Measure, label?: string): { x: number; y: number; room: number | null } {
+  if (side === "above") return { x: item.x, y: item.y + item.h + 3, room: null };
+  if (side === "below") return { x: item.x, y: item.y - item.h - 3, room: null };
+
+  const str = item.str;
+  const total = measure(str) || 1;
+  const at = (i: number) => item.x + item.w * (measure(str.slice(0, i)) / total);
+  let from = 0;
+  if (label) {
+    const idx = str.toLowerCase().indexOf(label.toLowerCase().trim());
+    if (idx >= 0) from = idx + label.trim().length;
   }
-  if (side === "above") return { x: item.x, y: item.y + item.h + 3 };
-  return { x: item.x, y: item.y - item.h - 3 };
+  const rest = str.slice(from);
+  const run = rest.match(/_{2,}/);
+  if (run && run.index !== undefined) {
+    const start = from + run.index;
+    return { x: at(start) + 2, y: item.y + 1, room: at(start + run[0].length) - at(start) - 4 };
+  }
+  // Sin raya: justo después de la etiqueta (o del texto completo)
+  if (from > 0) {
+    const next = rest.search(/\S/);
+    return { x: at(from + Math.max(next, 0)) + 4, y: item.y, room: null };
+  }
+  return { x: item.x + item.w + 6, y: item.y, room: null };
 }
 
 export interface RcData {
@@ -158,17 +182,19 @@ export async function buildSignedRc(pdfBytes: Uint8Array, signaturePng: Uint8Arr
     if (!item || !pages[item.page]) continue;
     const page = pages[item.page];
     const { width: pw } = page.getSize();
-    const { x, y } = anchor(item, spot.side);
+    const { x, y, room } = anchor(item, spot.side, (t) => font.widthOfTextAtSize(t, 10), spot.label);
     const already = occupied(items, item, spot.side, { x, y }, field === "carrier_signature" ? 200 : 120);
     if (already) { skipped.push({ field, found: already }); continue; }
     if (field === "carrier_signature") {
       const sx = Math.min(x, pw - sigW - 10);
-      page.drawImage(sig, { x: sx, y: spot.side === "right" ? y - 6 : y, width: sigW, height: SIG_HEIGHT });
+      page.drawImage(sig, { x: sx, y: spot.side === "right" ? y - 8 : y, width: sigW, height: SIG_HEIGHT });
       placements.push({ field, page: item.page, x: sx, y, label: item.str });
     } else {
       const text = values[field];
       if (!text) continue;
-      const size = Math.min(Math.max(item.h, 8), 11);
+      let size = Math.min(Math.max(item.h, 8), 11);
+      // Que no se pase de la raya hacia la etiqueta siguiente
+      if (room && room > 20) while (size > 6 && font.widthOfTextAtSize(text, size) > room) size -= 0.5;
       page.drawText(text, { x: Math.min(x, pw - font.widthOfTextAtSize(text, size) - 8), y, size, font, color: INK });
       placements.push({ field, page: item.page, x, y, label: item.str });
     }
