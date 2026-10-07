@@ -538,6 +538,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
 
   // Botón "Firmar RC": solo con RC cargado y fuera de Dispatch Service (esos clientes firman con su MC)
   const canSignRc = !!(pdfFile || uploadedPdfPath || editLoad?.pdf_url || rcOriginalFile || rcOriginalUploadedUrl)
+    && selectedServiceType !== 'dispatch_service'
     && drivers.find(d => d.id === selectedDriver)?.service_type !== 'dispatch_service';
 
   /** sign = además firmar el RC con la empresa y abrirlo para enviarlo al broker */
