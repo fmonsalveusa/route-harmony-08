@@ -261,3 +261,6 @@ ALTER TABLE crm_notes ADD COLUMN IF NOT EXISTS call_at timestamptz;
 ALTER TABLE crm_notes ADD COLUMN IF NOT EXISTS call_result text;   -- answered | no_answer | voicemail | call_back | not_interested
 ALTER TABLE crm_notes ADD COLUMN IF NOT EXISTS updated_at timestamptz;
 UPDATE crm_notes SET call_at = created_at WHERE kind = 'call' AND call_at IS NULL;
+
+-- Quién refirió al contacto (sección REUNIÓN)
+ALTER TABLE crm_contacts ADD COLUMN IF NOT EXISTS referred_by text;

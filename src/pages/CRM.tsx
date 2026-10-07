@@ -41,6 +41,7 @@ interface CrmContact {
   meeting: { checks?: Record<string, boolean>; sent?: Record<string, string> } | null;
   whatsapp_group_id: string | null;
   whatsapp_group_name: string | null;
+  referred_by: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -111,6 +112,19 @@ function MeetingSection({ contact, name, vehicle }: { contact: CrmContact; name:
   const [sent, setSent] = useState<Record<string, string>>(contact.meeting?.sent ?? {});
   const [group, setGroup] = useState({ id: contact.whatsapp_group_id, name: contact.whatsapp_group_name });
   const [busy, setBusy] = useState<string | null>(null);
+  const [referredBy, setReferredBy] = useState(contact.referred_by ?? '');
+
+  /** Quién lo refirió: se guarda al salir del campo; escribir un nombre marca "Referido" */
+  const saveReferredBy = async () => {
+    const value = referredBy.trim();
+    if (value === (contact.referred_by ?? '')) return;
+    const nextChecks = value && !checks.referido ? { ...checks, referido: true } : checks;
+    if (nextChecks !== checks) setChecks(nextChecks);
+    const { error } = await supabase.from('crm_contacts' as any)
+      .update({ referred_by: value || null, meeting: { checks: nextChecks, sent } } as any).eq('id', contact.id);
+    if (error) { toast.error(error.message); return; }
+    qc.invalidateQueries({ queryKey: ['crm_contacts'] });
+  };
 
   const suggested = suggestedGroupName(name, vehicle, !!checks.referido);
 
@@ -202,10 +216,20 @@ function MeetingSection({ contact, name, vehicle }: { contact: CrmContact; name:
       <div className="space-y-1.5">
         {MEETING_STEPS.map(step => (
           <div key={step.id} className="flex items-center gap-2 min-h-8">
-            <label className="flex items-center gap-2 text-sm cursor-pointer flex-1">
+            <label className={cn('flex items-center gap-2 text-sm cursor-pointer', step.id !== 'referido' && 'flex-1')}>
               <Checkbox checked={!!checks[step.id]} onCheckedChange={v => toggle(step.id, v === true)} />
               <span className={cn(checks[step.id] && 'text-muted-foreground line-through')}>{step.label}</span>
             </label>
+            {step.id === 'referido' && (
+              <Input
+                value={referredBy}
+                onChange={e => setReferredBy(e.target.value)}
+                onBlur={saveReferredBy}
+                onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                placeholder="¿Quién lo refirió?"
+                className="h-7 text-sm flex-1"
+              />
+            )}
             {step.send && (
               <>
                 {sent[step.id] && <span className="text-[11px] text-muted-foreground">Enviado {fmt(sent[step.id])}</span>}
