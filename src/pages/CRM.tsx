@@ -232,15 +232,18 @@ function MeetingSection({ contact, name, vehicle }: { contact: CrmContact; name:
             )}
             {step.send && (
               <>
-                {sent[step.id] && <span className="text-[11px] text-muted-foreground">Enviado {fmt(sent[step.id])}</span>}
+                {sent[step.id] && <span className="text-[11px] text-green-700 dark:text-green-400">{fmt(sent[step.id])}</span>}
+                {/* Verde = ya se envió (queda guardado); se puede volver a enviar */}
                 <Button
-                  size="sm" variant="outline" className="h-7 px-2 gap-1 text-xs"
+                  size="sm" variant="outline"
+                  className={cn('h-7 px-2 gap-1 text-xs',
+                    sent[step.id] && 'bg-green-600 text-white border-green-600 hover:bg-green-700 hover:text-white')}
                   onClick={() => sendStep(step.id, step.label)}
                   disabled={busy !== null || !group.id}
-                  title={group.id ? 'Enviar al grupo de WhatsApp' : 'Primero crea el grupo de WhatsApp'}
+                  title={!group.id ? 'Primero vincula el grupo de WhatsApp' : sent[step.id] ? `Enviado ${fmt(sent[step.id])} — clic para reenviar` : 'Enviar al grupo de WhatsApp'}
                 >
-                  {busy === step.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
-                  Enviar
+                  {busy === step.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : sent[step.id] ? <Check className="h-3.5 w-3.5" /> : <Send className="h-3.5 w-3.5" />}
+                  {sent[step.id] ? 'Enviado' : 'Enviar'}
                 </Button>
               </>
             )}
