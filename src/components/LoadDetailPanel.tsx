@@ -1640,8 +1640,13 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
             />
           </div>
 
-          {!isDispatchService && <BrokerEmailSection loadId={load.id} />}
-          {!isDispatchService && <RcSignedSection loadId={load.id} hasDriver={!!load.driver_id} />}
+          {/* Email al broker + RC firmado — lado a lado, mismo ancho que Load Adjustments */}
+          {!isDispatchService && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 items-start">
+              <BrokerEmailSection loadId={load.id} />
+              <RcSignedSection loadId={load.id} hasDriver={!!load.driver_id} />
+            </div>
+          )}
           <PdfViewerDialog url={pdfViewer?.url ?? null} title={pdfViewer?.title ?? ''} onClose={() => setPdfViewer(null)} />
 
           {/* Stops / Route breakdown */}
