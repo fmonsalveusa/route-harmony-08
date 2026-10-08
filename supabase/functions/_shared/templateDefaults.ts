@@ -585,14 +585,14 @@ export const AUTOMATIONS: AutomationDefinition[] = [
         key: 'email_docs_pickup',
         title: 'Pickup',
         description: 'Con las fotos de la carga y el BOL adjuntos.',
-        body: 'Pickup completed. Attached are load pictures and BOL.',
+        body: 'Pickup at {ciudad} completed. Attached are load pictures and BOL.',
         variables: BROKER_EMAIL_VARS,
       },
       {
         key: 'email_docs_delivery',
         title: 'Entrega',
         description: 'Con las fotos de la entrega y el POD adjuntos.',
-        body: 'Delivery in {ciudad} Completed. Attached are delivery pictures and POD.',
+        body: 'Delivery at {ciudad} completed. Attached are load pictures and POD.',
         variables: BROKER_EMAIL_VARS,
       },
       {
