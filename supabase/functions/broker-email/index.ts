@@ -63,6 +63,9 @@ async function enqueue(supabase: any, kind: "arrival" | "docs", stopId: string) 
 
   if (existing) {
     // Ya se mandó y lo vuelven a pedir: segundo email con todo lo de la parada
+    // Recién enviado (p. ej. por el respaldo al cambiar el estado): no mandar un segundo email
+    if (kind === "docs" && existing.status === "sent" && existing.sent_at &&
+        Date.parse(existing.sent_at) > Date.now() - 10 * 60_000) return { skipped: "ya se envió hace un momento" };
     if (kind === "docs" && existing.status === "sent") return await enqueueUpdate(supabase, existing);
     if (["skipped", "failed", "pending", "waiting_thread"].includes(existing.status)) {
       const { data: reopened } = await supabase.from("broker_email_queue")
@@ -93,6 +96,30 @@ async function enqueue(supabase: any, kind: "arrival" | "docs", stopId: string) 
 }
 
 /** Email de actualización de documentos (uno pendiente a la vez por parada) */
+/**
+ * Respaldo del botón del driver: al pasar la carga a Picked Up / Delivered, si la parada ya tiene
+ * fotos o BOL/POD y nunca se le mandaron al broker, se mandan ahora. Cubre apps con versión vieja
+ * en caché, donde el botón solo cambiaba el estado.
+ */
+async function docsOnStatusChange(supabase: any, load: any) {
+  const type = load.status === "picked_up" ? "pickup" : load.status === "delivered" ? "delivery" : null;
+  if (!type) return null;
+  const { data: stops } = await supabase
+    .from("load_stops").select("id, stop_type, stop_order").eq("load_id", load.id).eq("stop_type", type).order("stop_order");
+  // En la entrega solo la última parada (las intermedias no cambian el estado de la carga)
+  const targets = type === "delivery" ? ((stops as any[]) || []).slice(-1) : ((stops as any[]) || []);
+  const out = [];
+  for (const s of targets) {
+    const key = `docs:${load.id}:${s.stop_type}:${s.stop_order ?? 0}`;
+    const { data: existing } = await supabase.from("broker_email_queue").select("id").eq("message_key", key).maybeSingle();
+    if (existing) continue; // ya se pidió (enviado, en cola o fallido): no duplicar
+    const { count } = await supabase.from("pod_documents").select("id", { count: "exact", head: true }).eq("stop_id", s.id);
+    if (!count) continue;
+    out.push(await enqueue(supabase, "docs", s.id));
+  }
+  return out;
+}
+
 async function enqueueUpdate(supabase: any, base: any) {
   const { data: updates } = await supabase
     .from("broker_email_queue").select("id, status")
@@ -860,7 +887,8 @@ Deno.serve(async (req) => {
       if (!load) return json({ skipped: "carga no encontrada" });
       const accounts = gmailAccounts();
       if (accounts.length === 0) return json({ skipped: "sin cuenta de Gmail" });
-      return json(await syncThreadLabels(supabase, load, accounts));
+      const labels = await syncThreadLabels(supabase, load, accounts);
+      return json({ labels, docs: await docsOnStatusChange(supabase, load) });
     }
     if (body.event === "link_check" && body.load_id) {
       const { data: load } = await supabase
