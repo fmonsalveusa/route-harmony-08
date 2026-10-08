@@ -1321,14 +1321,14 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
 
         <div className="flex flex-wrap items-center justify-end gap-2 p-4 border-t shrink-0">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button variant={canSignRc ? 'outline' : 'default'} onClick={() => handleSubmit(false)}>
-            {editLoad ? 'Guardar Cambios' : 'Crear Carga'}
-          </Button>
           {canSignRc && (
             <Button onClick={() => handleSubmit(true)} className="gap-1.5" title="Guarda la carga, firma el RC con los datos del driver y lo abre para enviarlo al broker">
               <FileSignature className="h-4 w-4" /> {editLoad ? 'Guardar y firmar RC' : 'Crear y firmar RC'}
             </Button>
           )}
+          <Button variant={canSignRc ? 'outline' : 'default'} onClick={() => handleSubmit(false)}>
+            {editLoad ? 'Guardar Cambios' : 'Crear Carga'}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
