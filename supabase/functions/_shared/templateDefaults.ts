@@ -233,7 +233,7 @@ export const AUTOMATIONS: AutomationDefinition[] = [
   {
     id: 'gps_reminders',
     title: 'GPS en segundo plano',
-    description: 'Cada mañana a las 7:00 am, al grupo de los drivers a los que les falta el GPS con la app cerrada. Se deja de enviar solo cuando la app detecta que ya lo arreglaron.',
+    description: 'Cada mañana a las 9:00 am, al grupo de los drivers a los que les falta el GPS con la app cerrada. Se deja de enviar solo cuando la app detecta que ya lo arreglaron.',
     toggle: 'wa_gps_reminders',
     templates: [
       {
