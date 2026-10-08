@@ -154,9 +154,68 @@ export interface RcData {
   reference: string;
 }
 
+function toBase64(bytes: Uint8Array): string {
+  let bin = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(bin);
+}
+
+type VisionSpot = { page: number; x: number; y: number };
+
+/**
+ * RC escaneado (la página es una imagen, sin texto): la IA mira el PDF y estima dónde empieza
+ * la raya en blanco de cada campo. Coordenadas en fracción de la página, y medida desde ARRIBA.
+ */
+async function locateFieldsVision(pdfBytes: Uint8Array): Promise<Partial<Record<Field, VisionSpot>>> {
+  const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
+  if (!apiKey) throw new Error("Falta ANTHROPIC_API_KEY");
+  const properties: Record<string, unknown> = {};
+  for (const f of RC_FIELDS) {
+    properties[f] = {
+      type: ["object", "null"],
+      properties: {
+        page: { type: "integer", description: "página, empezando en 1" },
+        x: { type: "number", description: "borde IZQUIERDO de la raya en blanco, fracción del ancho de la página (0 a 1)" },
+        y: { type: "number", description: "altura de la raya en blanco (la línea donde se escribe), fracción del alto de la página medida desde ARRIBA (0 a 1)" },
+      },
+      required: ["page", "x", "y"],
+    };
+  }
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "claude-sonnet-5-5",
+      max_tokens: 4000,
+      system: `Recibes un rate confirmation de un broker de carga (USA), escaneado como imagen.
+Ubica los espacios en blanco que debe llenar el CARRIER (no el broker):
+- carrier_signature: la raya de firma del carrier ("Signature", "Carrier Signature", "Accepted by").
+- signer_name: nombre impreso ("Print Name", "Name"). signer_title: cargo ("Title"). sign_date: fecha de la firma ("Date").
+- driver_name, driver_phone, truck_number: datos del driver/camión si hay espacio para ellos.
+Para cada uno da la página y la posición donde EMPIEZA la raya en blanco (a la derecha de la etiqueta) y la altura de esa raya.
+Sé preciso con las coordenadas: mide sobre la imagen de la página. Si un campo no existe o ya está lleno, null.`,
+      tools: [{ name: "ubicar", description: "Ubicación de cada campo", input_schema: { type: "object", properties, required: [...RC_FIELDS] } }],
+      tool_choice: { type: "auto" },
+      messages: [{
+        role: "user",
+        content: [
+          { type: "document", source: { type: "base64", media_type: "application/pdf", data: toBase64(pdfBytes) } },
+          { type: "text", text: 'Responde llamando a la herramienta "ubicar".' },
+        ],
+      }],
+    }),
+  });
+  if (!res.ok) throw new Error(`IA HTTP ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  const data = await res.json();
+  return ((data.content ?? []).find((c: any) => c.type === "tool_use")?.input ?? {}) as any;
+}
+
 export async function buildSignedRc(pdfBytes: Uint8Array, signaturePng: Uint8Array, data: RcData) {
   const { items } = await textItems(pdfBytes);
-  const found = items.length > 0 ? await locateFields(items) : {};
+  // Casi sin texto = PDF escaneado: se ubican los campos mirando la imagen
+  const scanned = items.length < 5;
+  const found = !scanned ? await locateFields(items) : {};
+  const seen = scanned ? await locateFieldsVision(pdfBytes) : {};
 
   const doc = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
   try { doc.getForm().flatten(); } catch { /* sin formulario */ }
@@ -197,6 +256,26 @@ export async function buildSignedRc(pdfBytes: Uint8Array, signaturePng: Uint8Arr
       if (room && room > 20) while (size > 6 && font.widthOfTextAtSize(text, size) > room) size -= 0.5;
       page.drawText(text, { x: Math.min(x, pw - font.widthOfTextAtSize(text, size) - 8), y, size, font, color: INK });
       placements.push({ field, page: item.page, x, y, label: item.str });
+    }
+  }
+
+  // PDF escaneado: se escribe en las rayas que la IA ubicó sobre la imagen
+  for (const field of RC_FIELDS) {
+    const spot = (seen as any)[field] as VisionSpot | null | undefined;
+    const page = spot ? pages[spot.page - 1] : undefined;
+    if (!spot || !page || !(spot.x >= 0 && spot.x < 1 && spot.y > 0 && spot.y < 1)) continue;
+    const { width: pw, height: ph } = page.getSize();
+    const x = spot.x * pw + 3;
+    const lineY = ph * (1 - spot.y);
+    if (field === "carrier_signature") {
+      const sx = Math.min(x, pw - sigW - 10);
+      page.drawImage(sig, { x: sx, y: lineY - 4, width: sigW, height: SIG_HEIGHT });
+      placements.push({ field, page: spot.page - 1, x: sx, y: lineY, label: "(escaneado)" });
+    } else {
+      const text = values[field];
+      if (!text) continue;
+      page.drawText(text, { x: Math.min(x, pw - font.widthOfTextAtSize(text, 10) - 8), y: lineY + 2, size: 10, font, color: INK });
+      placements.push({ field, page: spot.page - 1, x, y: lineY, label: "(escaneado)" });
     }
   }
 

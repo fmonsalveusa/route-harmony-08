@@ -616,9 +616,10 @@ const fmtPhone = (p: string | null | undefined) => {
 };
 
 /** Arma el RC firmado y lo deja como borrador para revisar. No reemplaza uno ya enviado salvo force. */
-async function rcPrepare(supabase: any, loadId: string, force = false) {
+/** preview: solo arma el PDF en una ruta aparte, sin tocar el registro (para probar con un RC ya enviado) */
+async function rcPrepare(supabase: any, loadId: string, force = false, preview = false) {
   const { data: existing } = await supabase.from("load_rc_signed").select("status").eq("load_id", loadId).maybeSingle();
-  if (existing?.status === "sent" && !force) return json({ error: "El RC firmado ya se envió al broker" }, 400);
+  if (existing?.status === "sent" && !force && !preview) return json({ error: "El RC firmado ya se envió al broker" }, 400);
 
   const { data: load } = await supabase
     .from("loads").select("id, tenant_id, reference_number, driver_id, truck_id, pdf_url").eq("id", loadId).maybeSingle();
@@ -661,10 +662,11 @@ async function rcPrepare(supabase: any, loadId: string, force = false) {
 
   try {
     const { bytes, placements, skipped, alreadySigned } = await buildSignedRc(new Uint8Array(await pdfBlob.arrayBuffer()), new Uint8Array(await sigBlob.arrayBuffer()), rcData);
-    const path = `loads/rc_signed/${load.id}.pdf`;
+    const path = preview ? `loads/rc_signed/preview_${load.id}.pdf` : `loads/rc_signed/${load.id}.pdf`;
     const { error: upErr } = await supabase.storage.from("driver-documents")
       .upload(path, bytes, { contentType: "application/pdf", upsert: true });
     if (upErr) throw upErr;
+    if (preview) return json({ preview: path, placements, skipped, already_signed: alreadySigned });
     await supabase.from("load_rc_signed").upsert({
       load_id: load.id, tenant_id: load.tenant_id, status: "draft", file_path: path, source_path: source,
       placement: { placed: placements, skipped, already_signed: alreadySigned }, driver_name: rcData.driverName, driver_phone: rcData.driverPhone, truck_number: rcData.truckNumber,
@@ -878,7 +880,7 @@ Deno.serve(async (req) => {
     }
     if (body.event === "process") return json({ results: await processDue(supabase) });
     // Al guardar una carga con driver y RC (desde el TMS): deja listo el borrador del RC firmado
-    if (body.event === "rc_prepare" && body.load_id) return await rcPrepare(supabase, body.load_id, false);
+    if (body.event === "rc_prepare" && body.load_id) return await rcPrepare(supabase, body.load_id, false, !!body.preview);
     if (body.event === "queue") {
       let q = supabase
         .from("broker_email_queue")
