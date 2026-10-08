@@ -50,6 +50,15 @@ interface LoadFormDialogProps {
   onSubmit: (input: CreateLoadInput & { status?: string }) => Promise<any>;
   editLoad?: DbLoad | null;
   dispatcherId?: string;
+  /** RC recibido por email (bandeja rc_inbox): el formulario se abre ya lleno con su PDF */
+  draft?: RcDraft | null;
+}
+
+export interface RcDraft {
+  id: string;
+  pdf_path: string;
+  pdf_name: string | null;
+  extracted: any;
 }
 
 const emptyForm: LoadFormData = {
@@ -89,7 +98,7 @@ async function refreshSignedUrl(url: string): Promise<string> {
   return url;
 }
 
-export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatcherId }: LoadFormDialogProps) => {
+export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatcherId, draft }: LoadFormDialogProps) => {
   const { toast } = useToast();
   const { role, isMasterAdmin } = useAuth();
   const canSeeGrossRate = role === 'admin' || role === 'accounting' || isMasterAdmin;
@@ -256,8 +265,19 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
         { stop_type: 'pickup', address: '', date: '', time: '' },
         { stop_type: 'delivery', address: '', date: '', time: '' },
       ]);
+      // RC recibido por email: PDF ya guardado y datos ya leídos por la IA
+      if (draft) {
+        setUploadedPdfPath(draft.pdf_path);
+        setPdfFileName(draft.pdf_name || 'Rate Confirmation.pdf');
+        setExtractionStatus('done');
+        if (draft.extracted) applyExtracted(draft.extracted);
+        supabase.storage.from('driver-documents').createSignedUrl(draft.pdf_path, 3600).then(({ data }) => {
+          if (data?.signedUrl) { setPdfPreviewUrl(data.signedUrl); setUploadedPdfSignedUrl(data.signedUrl); }
+        });
+      }
     }
-  }, [editLoad?.id, open, companies]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editLoad?.id, open, companies, draft?.id]);
 
   // Sync stop entries separately when existingStops load
   useEffect(() => {
@@ -327,6 +347,69 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       setFormData(prev => ({ ...prev, destination: lastDelivery.address, deliveryDate: lastDelivery.date || prev.deliveryDate }));
     }
   }, [stopEntries]);
+
+  /** Llena el formulario con lo que leyó la IA del rate confirmation */
+  const applyExtracted = (extracted: any) => {
+
+    // Sanitizar — si el valor no es un numero valido, usar el valor anterior
+    const safeNum = (val: any, fallback: any) => {
+      const n = Number(val);
+      return (!val || val === '<UNKNOWN>' || isNaN(n)) ? fallback : n;
+    };
+    const safeStr = (val: any, fallback: any) =>
+      (!val || val === '<UNKNOWN>') ? fallback : val;
+
+    setFormData(prev => ({
+      ...prev,
+      origin: safeStr(extracted.origin, prev.origin),
+      destination: safeStr(extracted.destination, prev.destination),
+      pickupDate: safeStr(extracted.pickupDate, prev.pickupDate),
+      deliveryDate: safeStr(extracted.deliveryDate, prev.deliveryDate),
+      weight: safeNum(extracted.weight, prev.weight),
+      totalRate: safeNum(extracted.totalRate, prev.totalRate),
+      referenceNumber: safeStr(extracted.referenceNumber, prev.referenceNumber),
+      brokerClient: safeStr(extracted.brokerClient, prev.brokerClient),
+      miles: safeNum(extracted.miles, prev.miles),
+      notes: (() => {
+        let n = safeStr(extracted.notes, prev.notes) || '';
+        if (extracted.needsTarp && !n.toUpperCase().includes('TARP')) {
+          n = n ? `${n} | TARP REQUIRED` : 'TARP REQUIRED';
+        }
+        return n;
+      })(),
+    }));
+
+    // Auto-match carrier name to a company
+    if (extracted.carrierName && companies.length > 0) {
+      const carrierLower = extracted.carrierName.toLowerCase().trim();
+      const match = activeCompanies.find(c => {
+        const nameLower = c.name.toLowerCase().trim();
+        const legalLower = (c.legal_name || '').toLowerCase().trim();
+        return carrierLower.includes(nameLower) || nameLower.includes(carrierLower)
+          || (legalLower && (carrierLower.includes(legalLower) || legalLower.includes(carrierLower)));
+      });
+      if (match) {
+        setSelectedCompany(match.id);
+      }
+    }
+
+    // Update stop entries from extracted multi-stop data
+    if (extracted.stops && Array.isArray(extracted.stops) && extracted.stops.length > 0) {
+      setStopEntries(extracted.stops.map((s: any) => ({
+        stop_type: s.stop_type || 'delivery',
+        address: s.address || '',
+        date: s.date || '',
+        time: s.time || '',
+        shipper: s.shipper || '',
+        consignee: s.consignee || '',
+      })));
+    } else if (extracted.origin || extracted.destination) {
+      setStopEntries([
+        { stop_type: 'pickup', address: extracted.origin || '', date: extracted.pickupDate || '', time: '' },
+        { stop_type: 'delivery', address: extracted.destination || '', date: extracted.deliveryDate || '', time: '' },
+      ]);
+    }
+  };
 
   const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -406,67 +489,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       }
 
       if (data?.success && data?.data) {
-        const extracted = data.data;
-
-        // Sanitizar — si el valor no es un numero valido, usar el valor anterior
-        const safeNum = (val: any, fallback: any) => {
-          const n = Number(val);
-          return (!val || val === '<UNKNOWN>' || isNaN(n)) ? fallback : n;
-        };
-        const safeStr = (val: any, fallback: any) =>
-          (!val || val === '<UNKNOWN>') ? fallback : val;
-
-        setFormData(prev => ({
-          ...prev,
-          origin: safeStr(extracted.origin, prev.origin),
-          destination: safeStr(extracted.destination, prev.destination),
-          pickupDate: safeStr(extracted.pickupDate, prev.pickupDate),
-          deliveryDate: safeStr(extracted.deliveryDate, prev.deliveryDate),
-          weight: safeNum(extracted.weight, prev.weight),
-          totalRate: safeNum(extracted.totalRate, prev.totalRate),
-          referenceNumber: safeStr(extracted.referenceNumber, prev.referenceNumber),
-          brokerClient: safeStr(extracted.brokerClient, prev.brokerClient),
-          miles: safeNum(extracted.miles, prev.miles),
-          notes: (() => {
-            let n = safeStr(extracted.notes, prev.notes) || '';
-            if (extracted.needsTarp && !n.toUpperCase().includes('TARP')) {
-              n = n ? `${n} | TARP REQUIRED` : 'TARP REQUIRED';
-            }
-            return n;
-          })(),
-        }));
-
-        // Auto-match carrier name to a company
-        if (extracted.carrierName && companies.length > 0) {
-          const carrierLower = extracted.carrierName.toLowerCase().trim();
-          const match = activeCompanies.find(c => {
-            const nameLower = c.name.toLowerCase().trim();
-            const legalLower = (c.legal_name || '').toLowerCase().trim();
-            return carrierLower.includes(nameLower) || nameLower.includes(carrierLower)
-              || (legalLower && (carrierLower.includes(legalLower) || legalLower.includes(carrierLower)));
-          });
-          if (match) {
-            setSelectedCompany(match.id);
-          }
-        }
-
-        // Update stop entries from extracted multi-stop data
-        if (extracted.stops && Array.isArray(extracted.stops) && extracted.stops.length > 0) {
-          setStopEntries(extracted.stops.map((s: any) => ({
-            stop_type: s.stop_type || 'delivery',
-            address: s.address || '',
-            date: s.date || '',
-            time: s.time || '',
-            shipper: s.shipper || '',
-            consignee: s.consignee || '',
-          })));
-        } else if (extracted.origin || extracted.destination) {
-          setStopEntries([
-            { stop_type: 'pickup', address: extracted.origin || '', date: extracted.pickupDate || '', time: '' },
-            { stop_type: 'delivery', address: extracted.destination || '', date: extracted.deliveryDate || '', time: '' },
-          ]);
-        }
-
+        applyExtracted(data.data);
         setExtractionStatus('done');
         toast({ title: 'Extraction successful', description: 'Fields auto-filled.' });
       } else {
@@ -638,6 +661,12 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
     const loadId = editLoad?.id || result?.id;
     // No se creó (p. ej. referencia duplicada; el aviso ya salió): no seguir con paradas ni notificaciones
     if (!loadId) return;
+
+    // Venía de un RC recibido por email: queda convertido y su hilo de Gmail enlazado a la carga
+    if (draft && !editLoad) {
+      supabase.functions.invoke('rc-inbox', { body: { action: 'convert', id: draft.id, load_id: loadId } })
+        .catch(e => console.warn('rc-inbox convert failed:', e));
+    }
 
     // Save RC metadata to Storage JSON (completely bypasses PostgREST schema cache)
     if (canSeeGrossRate && loadId) {

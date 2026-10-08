@@ -160,6 +160,39 @@ class ImapClient {
   }
 }
 
+/** Mensaje completo (con adjuntos) como texto RFC822 + su tamaño; null si pesa más de maxBytes */
+async function fetchRaw(c: ImapClient, uid: number, maxBytes: number): Promise<string | null> {
+  const size = await c.cmd(`UID FETCH ${uid} (RFC822.SIZE)`);
+  const bytes = Number(size.map((r) => r.text.match(/RFC822\.SIZE (\d+)/)?.[1]).find(Boolean) ?? 0);
+  if (bytes > maxBytes) return null;
+  const res = await c.cmd(`UID FETCH ${uid} (BODY.PEEK[])`);
+  return res.find((r) => /FETCH/i.test(r.text) && r.literals.length > 0)?.literals[0] ?? null;
+}
+
+export interface RawMessage extends MailHeader {
+  raw: string | null;
+}
+
+/**
+ * Mensajes que coinciden con la búsqueda de Gmail, con su contenido completo.
+ * `skip` devuelve true para los Message-ID ya procesados (no se descargan de nuevo).
+ */
+export async function fetchMessages(
+  acc: GmailAccount,
+  query: string,
+  skip: (messageId: string) => boolean,
+  limit = 5,
+  maxBytes = 15 * 1024 * 1024,
+): Promise<RawMessage[]> {
+  return await withImap(acc, async (c) => {
+    const uids = (await c.search(query)).slice(-40);
+    const pending = (await c.headers(uids)).filter((h) => h.messageId && !skip(h.messageId)).slice(0, limit);
+    const out: RawMessage[] = [];
+    for (const h of pending) out.push({ ...h, raw: await fetchRaw(c, h.uid, maxBytes) });
+    return out;
+  });
+}
+
 function searchUids(res: ImapResponse[]): number[] {
   const line = res.find((r) => /^\* SEARCH/i.test(r.text));
   if (!line) return [];

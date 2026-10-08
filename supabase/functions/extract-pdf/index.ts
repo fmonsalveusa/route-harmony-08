@@ -43,8 +43,11 @@ serve(async (req) => {
 
   try {
     // ── Autenticación ──────────────────────────────────────────────────────
+    // La bandeja de RC (rc-inbox) llama con el secreto del cron en vez de un usuario
+    const cronSecret = Deno.env.get("CRON_SECRET");
+    const fromCron = !!cronSecret && req.headers.get("x-cron-secret") === cronSecret;
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
+    if (!fromCron && !authHeader) {
       return new Response(JSON.stringify({ error: "Authentication required" }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -55,20 +58,22 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
-    if (authError || !user) {
-      return new Response(JSON.stringify({ error: "Invalid authentication" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    if (!fromCron) {
+      const token = authHeader!.replace("Bearer ", "");
+      const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+      if (authError || !user) {
+        return new Response(JSON.stringify({ error: "Invalid authentication" }), {
+          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
 
-    const { data: profile } = await supabaseAdmin
-      .from("profiles").select("tenant_id").eq("id", user.id).single();
-    if (!profile?.tenant_id) {
-      return new Response(JSON.stringify({ error: "No active tenant" }), {
-        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      const { data: profile } = await supabaseAdmin
+        .from("profiles").select("tenant_id").eq("id", user.id).single();
+      if (!profile?.tenant_id) {
+        return new Response(JSON.stringify({ error: "No active tenant" }), {
+          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     // ── Obtener PDF ────────────────────────────────────────────────────────

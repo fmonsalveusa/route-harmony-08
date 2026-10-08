@@ -33,6 +33,9 @@ import { Plus, Search, Package, Pencil, Trash2, ChevronDown, ChevronUp, MapPin, 
 import { toast } from 'sonner';
 import { useSearchParams } from 'react-router-dom';
 import type { DbLoad } from '@/hooks/useLoads';
+import { RcInboxBanner } from '@/components/RcInboxBanner';
+import type { RcDraft } from '@/components/LoadFormDialog';
+import { useQueryClient } from '@tanstack/react-query';
 
 // Hidden file input for POD uploads from action buttons
 const InlinePodInput = ({ loadId, inputRefMap }: { loadId: string; inputRefMap: React.MutableRefObject<Record<string, HTMLInputElement | null>> }) => {
@@ -101,6 +104,9 @@ const Loads = () => {
   const [filterBroker, setFilterBroker] = useState<string>('all');
   const [filterFactoring, setFilterFactoring] = useState<string>('all');
   const [showForm, setShowForm] = useState(false);
+  // RC recibido por email que se está convirtiendo en carga
+  const [rcDraft, setRcDraft] = useState<RcDraft | null>(null);
+  const queryClient = useQueryClient();
   const [editLoad, setEditLoad] = useState<DbLoad | null>(null);
   const [rcRefreshKey, setRcRefreshKey] = useState(0);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -286,11 +292,13 @@ const Loads = () => {
           }}>
             <Download className="h-4 w-4" /> Export CSV
           </Button>
-          <Button size="sm" className="gap-2" onClick={() => { setEditLoad(null); setShowForm(true); }}>
+          <Button size="sm" className="gap-2" onClick={() => { setEditLoad(null); setRcDraft(null); setShowForm(true); }}>
             <Plus className="h-4 w-4" /> New Load
           </Button>
         </div>
       </div>
+
+      <RcInboxBanner onCreate={d => { setEditLoad(null); setRcDraft(d); setShowForm(true); }} />
 
       {/* Resumen: sigue los mismos filtros que la tabla */}
       {(() => {
@@ -800,8 +808,16 @@ const Loads = () => {
       {/* Form Dialog */}
       <LoadFormDialog
         open={showForm}
-        onOpenChange={(open) => { setShowForm(open); if (!open) { setEditLoad(null); fetchLoads(); setRcRefreshKey(k => k + 1); } }}
+        onOpenChange={(open) => {
+          setShowForm(open);
+          if (!open) {
+            setEditLoad(null); setRcDraft(null); fetchLoads(); setRcRefreshKey(k => k + 1);
+            // El RC convertido sale de la bandeja (la conversión termina unos segundos después)
+            setTimeout(() => queryClient.invalidateQueries({ queryKey: ['rc_inbox'] }), 4000);
+          }
+        }}
         editLoad={editLoad}
+        draft={editLoad ? null : rcDraft}
         dispatcherId={(user as any)?.dispatcher_id || undefined}
         onSubmit={async (input) => {
           if (editLoad) {

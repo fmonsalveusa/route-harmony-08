@@ -56,3 +56,6 @@ verify_jwt = false
 
 [functions.signing-pdf]
 verify_jwt = false
+
+[functions.rc-inbox]
+verify_jwt = false
