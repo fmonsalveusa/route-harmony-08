@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { App as CapacitorApp } from '@capacitor/app';
-import { MapPinOff, Settings, X, Loader2 } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
+import { MapPinOff, Settings, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -24,6 +25,7 @@ export function GpsPermissionBanner({ driverId }: { driverId: string | null }) {
   const [dismissed, setDismissed] = useState(false);
   const [requesting, setRequesting] = useState(false);
   const [pluginMissing, setPluginMissing] = useState(false);
+  const [waitLeft, setWaitLeft] = useState(20);
   const lastReported = useRef<string>('');
 
   const report = useCallback(async (s: BackgroundPermissionStatus | null) => {
@@ -61,11 +63,20 @@ export function GpsPermissionBanner({ driverId }: { driverId: string | null }) {
 
   useEffect(() => { void refresh(); }, [refresh]);
 
+  // Cuenta regresiva para poder seguir sin GPS
+  const blocking = isNativePlatform() && !dismissed && (pluginMissing || (!!status && !status.background));
+  useEffect(() => {
+    if (!blocking || waitLeft <= 0) return;
+    const t = setTimeout(() => setWaitLeft(w => w - 1), 1000);
+    return () => clearTimeout(t);
+  }, [blocking, waitLeft]);
+
   // Re-chequear al volver de Ajustes — ahí es donde el driver concede el permiso
   useEffect(() => {
     if (!isNativePlatform()) return;
     const listener = CapacitorApp.addListener('appStateChange', ({ isActive }) => {
-      if (isActive) void refresh();
+      // Al volver a la app el aviso aparece de nuevo si sigue faltando
+      if (isActive) { setDismissed(false); setWaitLeft(20); void refresh(); }
     });
     return () => { listener.then(l => l.remove()); };
   }, [refresh]);
@@ -84,58 +95,59 @@ export function GpsPermissionBanner({ driverId }: { driverId: string | null }) {
   };
 
   if (!isNativePlatform() || dismissed) return null;
+  if (!pluginMissing && (!status || status.background)) return null;
 
-  // La app instalada es vieja y no puede manejar el permiso: hay que actualizarla
-  if (pluginMissing) {
-    return (
-      <div className="mx-3 mt-2 p-3 rounded-lg border border-amber-400/50 bg-amber-50 shadow-md">
-        <div className="flex items-start gap-2">
-          <MapPinOff className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-amber-900">Actualiza la app</p>
-            <p className="text-xs text-amber-800 mt-0.5">
-              Tu versión es vieja y el GPS se apaga al cerrar la app. Búscala como Dispatch Up
-              en la tienda y actualízala.
-            </p>
-            <Button size="sm" variant="ghost" className="h-7 text-xs text-amber-900 mt-2" onClick={() => setDismissed(true)}>
-              <X className="h-3.5 w-3.5 mr-1" /> Ahora no
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const ios = Capacitor.getPlatform() === 'ios';
+  const steps = pluginMissing
+    ? [
+        `Abre ${ios ? 'App Store' : 'Play Store'} y busca "Dispatch Up".`,
+        'Toca "Actualizar".',
+        'Vuelve a abrir la app.',
+      ]
+    : ios
+      ? ['Toca "Abrir ajustes".', 'Entra a "Ubicación".', 'Elige "Siempre".', 'Vuelve a la app.']
+      : ['Toca "Abrir ajustes".', 'Entra a "Permisos" → "Ubicación".', 'Elige "Permitir todo el tiempo".', 'Vuelve a la app.'];
 
-  if (!status || status.background) return null;
-
-  const noLocationAtAll = !status.location;
-
+  // Pantalla completa: no se cierra hasta activarlo. Solo después de 20 s se puede seguir por ahora,
+  // y vuelve a aparecer cada vez que se abre la app.
   return (
-    <div className="mx-3 mt-2 p-3 rounded-lg border border-amber-400/50 bg-amber-50 shadow-md animate-in slide-in-from-top-2">
-      <div className="flex items-start gap-2">
-        <MapPinOff className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-amber-900">
-            El GPS se apaga al cerrar la app
-          </p>
-          <p className="text-xs text-amber-800 mt-0.5">
-            {noLocationAtAll
-              ? 'Activa el permiso de ubicación para poder registrar tus cargas.'
-              : 'Falta elegir "Permitir todo el tiempo" para que el tracking siga con la app cerrada.'}
-          </p>
-          <div className="flex gap-2 mt-2">
-            <Button size="sm" className="h-7 text-xs" onClick={handleGrant} disabled={requesting}>
-              {requesting
-                ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
-                : <Settings className="h-3.5 w-3.5 mr-1" />}
-              {requesting ? 'Abriendo...' : 'Activar'}
-            </Button>
-            <Button size="sm" variant="ghost" className="h-7 text-xs text-amber-900" onClick={() => setDismissed(true)}>
-              <X className="h-3.5 w-3.5 mr-1" />
-              Ahora no
-            </Button>
+    <div className="fixed inset-0 z-[2000] bg-black/60 flex items-center justify-center p-4">
+      <div className="w-full max-w-sm rounded-2xl bg-background p-5 shadow-2xl space-y-4">
+        <div className="flex flex-col items-center text-center gap-2">
+          <div className="h-14 w-14 rounded-full bg-amber-100 flex items-center justify-center">
+            <MapPinOff className="h-7 w-7 text-amber-600" />
           </div>
+          <p className="text-lg font-bold">{pluginMissing ? 'Actualiza la app' : 'Activa la ubicación "Siempre"'}</p>
+          <p className="text-sm text-muted-foreground">
+            {pluginMissing
+              ? 'Tu versión es vieja y el GPS se apaga cuando cierras la app. Dispatch y el broker necesitan ver tu ubicación durante la carga.'
+              : 'Sin este permiso el GPS se apaga cuando cierras la app, y dispatch y el broker dejan de ver tu ubicación.'}
+          </p>
         </div>
+        <ol className="space-y-1.5 text-sm">
+          {steps.map((t, i) => (
+            <li key={i} className="flex gap-2">
+              <span className="h-5 w-5 shrink-0 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center">{i + 1}</span>
+              <span>{t}</span>
+            </li>
+          ))}
+        </ol>
+        {pluginMissing ? (
+          <Button className="w-full" onClick={() => void refresh()}>Ya la actualicé</Button>
+        ) : (
+          <Button className="w-full gap-2" onClick={handleGrant} disabled={requesting}>
+            {requesting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Settings className="h-4 w-4" />}
+            {requesting ? 'Abriendo...' : 'Abrir ajustes'}
+          </Button>
+        )}
+        <button
+          type="button"
+          className="w-full text-xs text-muted-foreground disabled:opacity-50"
+          disabled={waitLeft > 0}
+          onClick={() => setDismissed(true)}
+        >
+          {waitLeft > 0 ? `Continuar sin GPS (${waitLeft}s)` : 'Continuar sin GPS por ahora'}
+        </button>
       </div>
     </div>
   );

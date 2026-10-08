@@ -443,6 +443,31 @@ async function sendExpiry(
   });
 }
 
+/**
+ * Drivers sin GPS en segundo plano: un aviso por día a su grupo hasta que lo arreglen.
+ *  • app vieja (no trae el GPS en segundo plano) → actualizar desde la tienda
+ *  • app nueva sin permiso "Siempre" → cambiar el permiso
+ * Los que nunca abrieron la app (sin dato) no reciben nada: no se sabe qué les falta.
+ */
+async function runGpsReminders(supabase: Supa, tenant: any, today: string) {
+  const { data: drivers } = await supabase
+    .from("drivers").select("id, name, service_type, whatsapp_group_id, gps_plugin_ok, gps_background_granted")
+    .eq("tenant_id", tenant.id).neq("status", "inactive").not("whatsapp_group_id", "is", null);
+  let sent = 0;
+  for (const d of (drivers as any[]) || []) {
+    if (d.service_type === "dispatch_service") continue;
+    const key = d.gps_plugin_ok === false ? "gps_update_app" : d.gps_plugin_ok === true && d.gps_background_granted === false ? "gps_enable_always" : null;
+    if (!key) continue;
+    const name = String(d.name ?? "").trim();
+    const message = await renderMessage(supabase, tenant.id, key, { nombre: name.split(/\s+/)[0] ?? "", driver: name });
+    if (await sendOnce(supabase, `gps:${d.id}:${today}`, {
+      tenantId: tenant.id, templateKey: key, recipientType: "driver", recipientName: name,
+      groupId: d.whatsapp_group_id, message, reference: "GPS",
+    })) sent++;
+  }
+  return { gps_reminders: sent };
+}
+
 async function runExpiryAlerts(supabase: Supa, tenant: any) {
   let sent = 0;
   const { data: drivers } = await supabase
@@ -617,6 +642,7 @@ Deno.serve(async (req) => {
         const stops = await getTodayStops(supabase, tenant.id, today);
         if (on("wa_daily_reminders")) Object.assign(r, await runDailyReminders(supabase, tenant, today, stops));
         if (on("wa_expiry_alerts")) Object.assign(r, await runExpiryAlerts(supabase, tenant));
+        if (on("wa_gps_reminders")) Object.assign(r, await runGpsReminders(supabase, tenant, today));
       }
 
       if (job === "admin_report" && fromCron && etHour() === 8) {

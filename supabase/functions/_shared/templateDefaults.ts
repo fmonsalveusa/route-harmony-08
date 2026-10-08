@@ -231,6 +231,28 @@ export const AUTOMATIONS: AutomationDefinition[] = [
     ],
   },
   {
+    id: 'gps_reminders',
+    title: 'GPS en segundo plano',
+    description: 'Cada mañana a las 7:00 am, al grupo de los drivers a los que les falta el GPS con la app cerrada. Se deja de enviar solo cuando la app detecta que ya lo arreglaron.',
+    toggle: 'wa_gps_reminders',
+    templates: [
+      {
+        key: 'gps_update_app',
+        title: 'App vieja: actualizar',
+        description: 'Su versión de la app no trae el GPS en segundo plano.',
+        body: 'Hola {nombre} 👋 Tu app *Dispatch Up* está desactualizada y el GPS se apaga cuando la cierras.\n\nPor favor actualízala:\n📱 iPhone: App Store → busca *Dispatch Up* → *Actualizar*\n🤖 Android: Play Store → busca *Dispatch Up* → *Actualizar*\n\nLuego abre la app y sigue las instrucciones. ¡Gracias!',
+        variables: DRIVER_NAME_VARS,
+      },
+      {
+        key: 'gps_enable_always',
+        title: 'Falta el permiso "Siempre"',
+        description: 'Tiene la app nueva pero no dio el permiso de ubicación todo el tiempo.',
+        body: 'Hola {nombre} 👋 Para que el GPS funcione con la app cerrada, cambia el permiso de ubicación de *Dispatch Up* a *Siempre*:\n\n📱 iPhone: Ajustes → Dispatch Up → Ubicación → *Siempre*\n🤖 Android: Ajustes → Apps → Dispatch Up → Permisos → Ubicación → *Permitir todo el tiempo*\n\nTambién puedes abrir la app y tocar *Abrir ajustes*. ¡Gracias!',
+        variables: DRIVER_NAME_VARS,
+      },
+    ],
+  },
+  {
     id: 'expiry_alerts',
     title: 'Vencimiento de documentos',
     description: 'Licencia y medical card del driver; seguro, registration y annual inspection del camión.',
