@@ -598,7 +598,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { job, document_id: documentId } = await req.json().catch(() => ({}));
+    const { job, document_id: documentId, force } = await req.json().catch(() => ({}));
     const today = todayET();
 
     let q = supabase.from("tenants").select("*");
@@ -635,6 +635,7 @@ Deno.serve(async (req) => {
         }
         if (job === "manual_expiry") Object.assign(r, await runExpiryAlerts(supabase, tenant));
         if (job === "manual_pod") Object.assign(r, await runPodReminders(supabase, tenant));
+        if (job === "manual_gps") Object.assign(r, await runGpsReminders(supabase, tenant, today));
       }
 
       // El cron corre en dos horas UTC; solo se envía cuando en Eastern es la hora correcta (cubre horario de verano e invierno)
@@ -645,7 +646,7 @@ Deno.serve(async (req) => {
       }
 
       // GPS en segundo plano: 9:00 am Eastern, aparte del recordatorio de las 7
-      if (job === "gps" && fromCron && etHour() === 9 && on("wa_gps_reminders")) {
+      if (job === "gps" && fromCron && (etHour() === 9 || force === true) && on("wa_gps_reminders")) {
         Object.assign(r, await runGpsReminders(supabase, tenant, today));
       }
 

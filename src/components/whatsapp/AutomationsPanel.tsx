@@ -21,6 +21,10 @@ const MANUAL_JOBS: Record<string, { job: string; confirm: string }> = {
     job: 'manual_pod',
     confirm: 'Se enviará el recordatorio de POD a las cargas entregadas hace más de 2 horas sin POD (máximo 3 por carga, uno cada 24 horas, entre 7am y 9pm). ¿Continuar?',
   },
+  gps_reminders: {
+    job: 'manual_gps',
+    confirm: 'Se enviará el aviso de GPS a los drivers que tienen la app vieja o no dieron el permiso "Siempre". Los que ya lo recibieron hoy no lo reciben de nuevo. ¿Continuar?',
+  },
   expiry_alerts: {
     job: 'manual_expiry',
     confirm: 'Se enviarán los avisos de documentos que vencen en 30 o 7 días, hoy, o que siguen vencidos (cada 7 días). Los que ya se enviaron hoy no se repiten. ¿Continuar?',
