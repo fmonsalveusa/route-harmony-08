@@ -75,10 +75,14 @@ Las coordenadas son de PDF: x crece a la derecha, y crece hacia ARRIBA.
 Tu trabajo: ubicar dónde debe firmar y llenar sus datos el CARRIER (no el broker).
 Para cada campo devuelve el id de la ETIQUETA junto a la que se escribe y el lado:
 - carrier_signature: la línea de firma del carrier ("Carrier Signature", "Signature", "Signed", "Accepted by" en la sección del carrier).
-- signer_name: nombre impreso de quien firma por el carrier ("Print Name", "Name").
+- signer_name: nombre impreso de quien firma por el carrier ("Print Name", "Name", o "BY" en la sección del carrier).
 - signer_title: cargo ("Title").
 - sign_date: fecha de la firma del carrier ("Date").
 - driver_name, driver_phone, truck_number: datos del driver/camión ("Driver Name", "Driver Cell", "Truck #", "Tractor #", "Unit").
+Sobre el lado:
+- "right" (lo normal): la etiqueta está a la IZQUIERDA del espacio en blanco, p. ej. "Authorized Signature ________" o "Date: ____". Si la etiqueta ocupa dos renglones ("Authorized" / "Signature"), usa el renglón de ABAJO y "right".
+- "above": SOLO si la etiqueta está impresa DEBAJO de la raya en blanco (la raya arriba, el texto abajo).
+- "below": casi nunca.
 Si una sola línea trae varias etiquetas (p. ej. "Driver name: ____ Driver Phone # ____ Tractor #: ____"), usa el mismo id para cada campo y en "label" pon las palabras exactas de la etiqueta de ese campo.
 Reglas: usa solo campos en blanco del carrier; nunca la firma o los datos del broker. Si un campo no existe en el documento, devuélvelo null. Si el texto ya trae el dato lleno, null.`,
       tools: [{ name: "ubicar", description: "Ubicación de cada campo", input_schema: { type: "object", properties, required: [...RC_FIELDS] } }],
@@ -100,13 +104,14 @@ function occupied(items: TextItem[], label: TextItem, side: Side, at: { x: numbe
   // Otras etiquetas o párrafos no cuentan como "ya escrito": solo un valor corto (un nombre, un número)
   const isValue = (t: string) =>
     t.length <= 40 && !/[:#]\s*$/.test(t) &&
-    !/\b(name|phone|cell|date|signature|signed|title|truck|tractor|trailer|unit|driver|carrier|broker)\b/i.test(t);
+    !/\b(name|phone|cell|date|signature|signed|title|truck|tractor|trailer|unit|driver|carrier|broker|authorized|authorised|accepted|print|by|x)\b/i.test(t);
   const hit = items.find((i) => {
     if (i.page !== label.page || i.id === label.id || blank(i.str) || !isValue(i.str)) return false;
     const overlapsX = i.x + i.w > at.x - 2 && i.x < at.x + span;
-    if (side === "right") return Math.abs(i.y - label.y) < Math.max(label.h, 8) * 1.3 && overlapsX;
-    if (side === "above") return i.y > label.y + label.h * 0.5 && i.y < label.y + label.h + 30 && overlapsX;
-    return i.y < label.y - label.h * 0.5 && i.y > label.y - label.h - 30 && overlapsX;
+    // Solo cuenta lo escrito en la misma línea, a la derecha de la etiqueta. Arriba o abajo suele haber
+    // otros datos del formulario (teléfono, compañía) y se confundía con "ya firmado".
+    if (side !== "right") return false;
+    return Math.abs(i.y - label.y) < Math.max(label.h, 8) * 1.3 && overlapsX;
   });
   return hit ? hit.str : null;
 }

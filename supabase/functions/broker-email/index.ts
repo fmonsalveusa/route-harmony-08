@@ -701,6 +701,7 @@ async function rcPrepare(supabase: any, loadId: string, force = false, preview =
     }, { onConflict: "load_id" });
     return json({ prepared: true, placements, skipped, already_signed: alreadySigned });
   } catch (e) {
+    if (preview) return json({ error: `No se pudo preparar el RC firmado: ${errMsg(e)}` }, 500);
     await supabase.from("load_rc_signed").upsert({
       load_id: load.id, tenant_id: load.tenant_id, status: "failed", error: errMsg(e).slice(0, 500), updated_at: new Date().toISOString(),
     }, { onConflict: "load_id" });
