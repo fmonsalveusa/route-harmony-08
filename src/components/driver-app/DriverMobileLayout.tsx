@@ -10,6 +10,7 @@ import logoImg from '@/assets/logo.png';
 import { isNativePlatform } from '@/lib/nativeTracking';
 import { initPushNotifications } from '@/lib/nativePushNotifications';
 import { GpsPermissionBanner } from '@/components/driver-app/GpsPermissionBanner';
+import { LocationDisclosureDialog } from '@/components/driver-app/LocationDisclosureDialog';
 import { useTheme } from 'next-themes';
 
 const allTabs = [
@@ -236,6 +237,7 @@ export const DriverMobileLayout = ({ children }: { children: ReactNode }) => {
 
       {/* GPS background permission — sin esto el tracking muere al cerrar la app */}
       {!isInvestorOnly && <GpsPermissionBanner driverId={driverId} />}
+      {!isInvestorOnly && <LocationDisclosureDialog />}
 
       {/* Geofence Arrival Banner */}
       {nearbyStop && (

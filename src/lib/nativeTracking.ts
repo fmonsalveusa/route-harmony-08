@@ -1,3 +1,4 @@
+import { ensureLocationDisclosure } from '@/lib/locationDisclosure';
 import { Capacitor } from '@capacitor/core';
 
 export function isNativePlatform(): boolean {
@@ -108,6 +109,9 @@ export async function requestBackgroundPermissions(): Promise<BackgroundPermissi
     const { BackgroundGeolocation } = await import('@capgo/background-geolocation');
 
     let status = await readPermissions();
+
+    // Aviso destacado antes de cualquier diálogo de permiso de ubicación (Google Play)
+    if ((!status.location || !status.background) && !(await ensureLocationDisclosure())) return status;
 
     // 1) Foreground + notificación (un solo diálogo cada uno)
     if (!status.location || !status.notification) {
