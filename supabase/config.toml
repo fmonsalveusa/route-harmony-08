@@ -62,3 +62,6 @@ verify_jwt = false
 
 [functions.eld-hos]
 verify_jwt = false
+
+[functions.eld-location]
+verify_jwt = false

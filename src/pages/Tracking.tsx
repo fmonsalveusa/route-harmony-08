@@ -1253,7 +1253,7 @@ const Tracking = () => {
                         {loc && locAge != null && locAge <= MAX_LOCATION_AGE_MS && (
                           <span className={`flex items-center gap-1 ${locLive ? 'text-blue-700' : 'text-muted-foreground'}`}>
                             <span className={`h-2 w-2 rounded-full ${locLive ? 'bg-blue-600 animate-pulse' : 'bg-gray-400'}`} />
-                            GPS {formatAge(locAge)}
+                            {(loc as any).source === 'eld' ? 'ELD' : 'GPS'} {formatAge(locAge)}
                             {locLive && loc.speed != null && ` · ${(loc.speed * 2.237).toFixed(0)} mph`}
                           </span>
                         )}

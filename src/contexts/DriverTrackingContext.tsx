@@ -238,7 +238,7 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
       driver_id: driverId, tenant_id,
       lat: pos.coords.latitude, lng: pos.coords.longitude,
       speed: pos.coords.speed, heading: pos.coords.heading,
-      accuracy: pos.coords.accuracy, updated_at: new Date().toISOString(),
+      accuracy: pos.coords.accuracy, source: 'gps', updated_at: new Date().toISOString(),
     };
     const { error } = await supabase.from('driver_locations').upsert(payload as any, { onConflict: 'driver_id' });
     if (error) console.error('Location update error:', error);
@@ -261,7 +261,7 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
       driver_id: driverId, tenant_id,
       lat: pos.lat, lng: pos.lng,
       speed: pos.speed, heading: pos.heading,
-      accuracy: pos.accuracy, updated_at: new Date().toISOString(),
+      accuracy: pos.accuracy, source: 'gps', updated_at: new Date().toISOString(),
     };
     const { error } = await supabase.from('driver_locations').upsert(payload as any, { onConflict: 'driver_id' });
     if (error) console.error('Location update error:', error);
