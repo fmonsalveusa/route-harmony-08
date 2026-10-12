@@ -6,6 +6,7 @@
 //  • cron (x-cron-secret) una vez al día, 6 am Eastern
 //  • botón "Actualizar desde ELD" en Maintenance (usuario del equipo)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { hos247, routeOne } from "../_shared/eld.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -24,22 +25,7 @@ const norm = (s: unknown) => String(s ?? "").trim().toUpperCase();
 
 /** HOS247 (backend Feathers de apexhos): /authentication → /vehicles + /latest_vehicle_statuses */
 async function readHos247(): Promise<Reading[]> {
-  const email = Deno.env.get("HOS247_EMAIL"), password = Deno.env.get("HOS247_PASSWORD");
-  if (!email || !password) throw new Error("Faltan los secretos HOS247_EMAIL / HOS247_PASSWORD");
-  const base = Deno.env.get("HOS247_BASE_URL") || "https://kindzadza.apexhos.com";
-  const auth = await fetch(`${base}/authentication`, {
-    method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ strategy: "local", email, password }),
-  });
-  const a = await auth.json().catch(() => ({}));
-  const token = a.accessToken ?? a.token;
-  if (!auth.ok || !token) throw new Error(`HOS247 login HTTP ${auth.status}: ${String(a.message ?? "").slice(0, 120)}`);
-  const get = async (path: string) => {
-    const r = await fetch(`${base}${path}`, { headers: { Authorization: token } });
-    if (!r.ok) throw new Error(`HOS247 ${path} HTTP ${r.status}`);
-    const j = await r.json();
-    return (Array.isArray(j) ? j : j.data ?? []) as any[];
-  };
+  const { get } = await hos247();
   const [vehicles, statuses] = await Promise.all([get("/vehicles?$limit=500"), get("/latest_vehicle_statuses?$limit=500")]);
   return vehicles.flatMap((v) => {
     const s = statuses.find((x) => norm(x.vin) === norm(v.vin));
@@ -50,34 +36,15 @@ async function readHos247(): Promise<Reading[]> {
 
 /** RouteOne GO (GraphQL): Login → odómetro en vivo de los camiones activos + último registrado */
 async function readRouteOne(): Promise<Reading[]> {
-  const login = Deno.env.get("ROUTEONE_LOGIN"), password = Deno.env.get("ROUTEONE_PASSWORD");
-  if (!login || !password) throw new Error("Faltan los secretos ROUTEONE_LOGIN / ROUTEONE_PASSWORD");
-  const url = "https://client.routeonego.com/api/gql";
-  const gql = async (query: string, variables: Record<string, unknown>, token?: string) => {
-    const r = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-      body: JSON.stringify({ query, variables }),
-    });
-    const j = await r.json().catch(() => ({}));
-    if (!r.ok || j.errors?.length) throw new Error(`RouteOne HTTP ${r.status}: ${String(j.errors?.[0]?.message ?? "").slice(0, 120)}`);
-    return j.data;
-  };
-  const auth = await gql(
-    "mutation Login($login: String!, $password: String!) { login(data: { login: $login, password: $password }) { tokens { token } } }",
-    { login, password },
-  );
-  const token = auth?.login?.tokens?.token;
-  if (!token) throw new Error("RouteOne: el login no devolvió token");
-
+  const { gql } = await routeOne();
   const [live, assets] = await Promise.all([
     gql(
       "query ActiveDriversList($sort: ActiveDriversSortInput!, $filter: ActiveDriversFilterInput!) { activeDriversList(sort: $sort, filter: $filter) { vehicleId odometer lastReportedTime eventDatetime } }",
-      { sort: { field: "LAST_ACTIVITY", order: "DESC" }, filter: { dutyStatus: [], search: "", vehicleStatus: [] } }, token,
+      { sort: { field: "LAST_ACTIVITY", order: "DESC" }, filter: { dutyStatus: [], search: "", vehicleStatus: [] } },
     ),
     gql(
       "query MaintenanceAssignableAssets($input: AssignableAssetsInput!) { maintenanceAssignableAssets(input: $input) { assetLabel lastOdometer } }",
-      { input: { assetType: "vehicle" } }, token,
+      { input: { assetType: "vehicle" } },
     ),
   ]);
   const out = new Map<string, Reading>();

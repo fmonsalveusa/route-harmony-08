@@ -59,3 +59,6 @@ verify_jwt = false
 
 [functions.eld-odometer]
 verify_jwt = false
+
+[functions.eld-hos]
+verify_jwt = false

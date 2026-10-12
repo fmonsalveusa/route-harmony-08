@@ -1,6 +1,7 @@
 ﻿import { useState, useMemo, useEffect, useRef } from 'react';
 import { ServiceTypeBadge } from '@/components/ServiceTypeBadge';
 import { getLoadRoutes, saveLoadRoute } from '@/lib/loadRoute';
+import { HosClocks, type HosClockRow } from '@/components/HosClocks';
 import { useLoads, DbLoad } from '@/hooks/useLoads';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useTrucks } from '@/hooks/useTrucks';
@@ -170,6 +171,16 @@ const Tracking = () => {
   }, [userDispatcherId, drivers]);
 
   const [allStops, setAllStops] = useState<LoadStop[]>([]);
+  // Relojes HOS de los company drivers (se actualizan cada hora desde HOS247 / RouteOne)
+  const [hosClocks, setHosClocks] = useState<Record<string, HosClockRow>>({});
+  useEffect(() => {
+    const load = () => supabase.from('driver_hos_clocks' as any).select('*').then(({ data }) => {
+      setHosClocks(Object.fromEntries(((data as any[]) ?? []).map(r => [r.driver_id, r])));
+    });
+    load();
+    const t = setInterval(load, 5 * 60_000);
+    return () => clearInterval(t);
+  }, []);
   const [loadRoutes, setLoadRoutes] = useState<Record<string, unknown>>({});
   const [selectedLoadId, setSelectedLoadId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
@@ -1256,6 +1267,9 @@ const Tracking = () => {
                         )}
                       </div>
                     ) : null}
+
+                    {/* Relojes HOS del ELD (company drivers) */}
+                    {hosClocks[driver.id] && <HosClocks row={hosClocks[driver.id]} className="mx-3 mt-2" />}
 
                     {/* Ubicación manual */}
                     {(driver as any).manual_location_address && (
