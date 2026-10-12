@@ -30,20 +30,20 @@ function Ring({ label, minutes, limit }: { label: string; minutes: number | null
   const left = Math.max(0, minutes ?? 0);
   const pct = minutes == null ? 0 : Math.min(1, left / limit);
   const color = minutes == null ? 'stroke-muted' : pct > 0.25 ? 'stroke-emerald-500' : pct > 0.1 ? 'stroke-amber-500' : 'stroke-red-500';
-  const r = 17, c = 2 * Math.PI * r;
+  const r = 26, c = 2 * Math.PI * r;
   return (
-    <div className="flex flex-col items-center gap-0.5">
-      <div className="relative h-11 w-11">
-        <svg viewBox="0 0 44 44" className="h-11 w-11 -rotate-90">
-          <circle cx="22" cy="22" r={r} fill="none" strokeWidth="4" className="stroke-muted" />
-          <circle cx="22" cy="22" r={r} fill="none" strokeWidth="4" strokeLinecap="round" className={color}
+    <div className="flex flex-col items-center gap-1">
+      <div className="relative h-14 w-14">
+        <svg viewBox="0 0 56 56" className="h-14 w-14 -rotate-90">
+          <circle cx="28" cy="28" r={r} fill="none" strokeWidth="2" className="stroke-muted" />
+          <circle cx="28" cy="28" r={r} fill="none" strokeWidth="2.5" strokeLinecap="round" className={color}
             strokeDasharray={c} strokeDashoffset={c * (1 - pct)} />
         </svg>
-        <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold tabular-nums">
+        <span className="absolute inset-0 flex items-center justify-center text-[13px] font-medium tabular-nums">
           {minutes == null ? '—' : hhmm(left)}
         </span>
       </div>
-      <span className="text-[9px] font-medium text-muted-foreground leading-none">{label}</span>
+      <span className="text-[10px] font-semibold leading-none">{label}</span>
     </div>
   );
 }
@@ -57,9 +57,9 @@ const ago = (iso: string) => {
 export function HosClocks({ row, className }: { row: HosClockRow; className?: string }) {
   const duty = row.duty_status ? DUTY[row.duty_status] : null;
   return (
-    <div className={cn('rounded-lg border bg-muted/30 px-2.5 py-2', className)}>
+    <div className={cn('rounded-lg border bg-white dark:bg-card px-2.5 py-2', className)}>
       <div className="flex items-center justify-between gap-2 mb-1.5">
-        <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">HOS Clocks</span>
+        <span className="text-xs font-semibold">Hours of service</span>
         <div className="flex items-center gap-1.5">
           {duty && <span className={cn('rounded px-1.5 py-0.5 text-[10px] font-semibold', duty.cls)}>{duty.label}</span>}
           <span className="text-[9px] text-muted-foreground" title={`${row.source}${row.computed ? ' · calculado con los eventos del ELD' : ''}`}>
@@ -67,7 +67,7 @@ export function HosClocks({ row, className }: { row: HosClockRow; className?: st
           </span>
         </div>
       </div>
-      <div className="flex justify-between">
+      <div className="flex justify-around">
         <Ring label="Until Break" minutes={row.until_break_min} limit={480} />
         <Ring label="Driving" minutes={row.driving_min} limit={660} />
         <Ring label="Shift" minutes={row.shift_min} limit={840} />
