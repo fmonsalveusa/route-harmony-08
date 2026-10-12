@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { WhatsAppGroupSelect } from '@/components/WhatsAppGroupSelect';
+import { EldConnectionSection } from '@/components/EldConnectionSection';
+import { useAuth } from '@/contexts/AuthContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -57,6 +59,8 @@ const docFields: { key: DocKey; label: string; urlKey: string }[] = [
 ];
 
 export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks, dispatchers, investors = [], onAddInvestor, onRemoveInvestor, onUpdateInvestor }: DriverFormDialogProps) {
+  const { role, profile } = useAuth();
+  const canManageEld = role === 'admin' || role === 'master_admin' || profile?.is_master_admin === true;
   const [form, setForm] = useState<DriverInput>(emptyForm);
   const [files, setFiles] = useState<Record<string, File | null>>({});
   const [deletedDocs, setDeletedDocs] = useState<Set<string>>(new Set());
@@ -275,6 +279,9 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
             groupName={form.whatsapp_group_name ?? null}
             onChange={(id, name) => setForm(prev => ({ ...prev, whatsapp_group_id: id, whatsapp_group_name: name }))}
           />
+
+          {/* Conexión ELD propia (solo admin, al editar un driver existente) */}
+          {driver?.id && canManageEld && <EldConnectionSection driverId={driver.id} />}
 
           <div className="space-y-3 p-3 rounded-lg border-2 border-violet-400/50 bg-violet-50 dark:bg-violet-950/20 md:col-span-2">
             <div className="flex items-center justify-between">

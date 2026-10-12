@@ -5,7 +5,7 @@
 //    el mismo cálculo (reglas FMCSA de carga: 11 h manejo, 14 h turno, 30 min de descanso tras 8 h
 //    manejando, 70 h en 8 días con reinicio de 34 h). No contempla split sleeper ni excepciones.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { hos247, routeOne } from "../_shared/eld.ts";
+import { driverConnections, hos247, markConnection, routeOne, type EldCreds } from "../_shared/eld.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -32,8 +32,8 @@ const working = (d: Duty) => d === "driving" || d === "on_duty" || d === "yard_m
 // ─── HOS247 ───
 const HOS_DUTY: Record<string, Duty> = { DS_D: "driving", DS_ON: "on_duty", DS_OFF: "off_duty", DS_SB: "sleeper", DR_IND_PC: "personal_conveyance", DR_IND_YM: "yard_move" };
 
-async function readHos247(now: number): Promise<Clocks[]> {
-  const { get } = await hos247();
+async function readHos247(now: number, creds?: EldCreds): Promise<Clocks[]> {
+  const { get } = await hos247(creds);
   const [statuses, users, vehicles] = await Promise.all([
     get("/latest_driver_statuses?$limit=500"), get("/users?$limit=500"), get("/vehicles?$limit=500"),
   ]);
@@ -143,8 +143,8 @@ function computeClocks(spans: Span[], now: number, cycleHours: number) {
   };
 }
 
-async function readRouteOne(now: number): Promise<Clocks[]> {
-  const { gql } = await routeOne();
+async function readRouteOne(now: number, creds?: EldCreds): Promise<Clocks[]> {
+  const { gql } = await routeOne(creds);
   const list = await gql(
     "query ActiveDriversList($sort: ActiveDriversSortInput!, $filter: ActiveDriversFilterInput!) { activeDriversList(sort: $sort, filter: $filter) { id firstName lastName vehicleId lastReportedTime eventDatetime homeTerminalTimeZone } }",
     { sort: { field: "LAST_ACTIVITY", order: "DESC" }, filter: { dutyStatus: [], search: "", vehicleStatus: [] } },
@@ -188,20 +188,12 @@ async function sync(supabase: any) {
     try { clocks.push(...await read(now)); } catch (e) { errors.push(`${name}: ${errMsg(e)}`); }
   }
 
-  const { data: drivers } = await supabase
-    .from("drivers").select("id, name, tenant_id, truck_id, status, service_type")
-    .eq("service_type", "company_driver").neq("status", "inactive");
+  const { data: allDrivers } = await supabase
+    .from("drivers").select("id, name, tenant_id, truck_id, status, service_type").neq("status", "inactive");
   const { data: trucks } = await supabase.from("trucks").select("id, unit_number, vin");
   const saved: unknown[] = [], unmatched: string[] = [];
-
-  for (const d of (drivers as any[]) || []) {
-    const truck = ((trucks as any[]) || []).find((t) => String(t.id) === String(d.truck_id));
-    // Por nombre; si no, por el camión asignado. Si hay varias cuentas, la lectura más reciente.
-    const candidates = clocks.filter((c) => normName(c.name) === normName(d.name));
-    const byTruck = clocks.filter((c) => truck && ((c.unit && String(c.unit) === String(truck.unit_number)) || (c.vin && truck.vin && c.vin === truck.vin)));
-    const pool = candidates.length ? candidates : byTruck;
-    if (pool.length === 0) { unmatched.push(d.name); continue; }
-    const best = pool.reduce((a, b) => (Date.parse(b.reportedAt ?? "0") > Date.parse(a.reportedAt ?? "0") ? b : a));
+  const truckOf = (d: any) => ((trucks as any[]) || []).find((t) => String(t.id) === String(d.truck_id));
+  const save = async (d: any, best: Clocks) => {
     await supabase.from("driver_hos_clocks").upsert({
       driver_id: d.id, tenant_id: d.tenant_id, source: best.source, duty_status: best.duty, status_since: best.since,
       until_break_min: best.untilBreak, driving_min: best.drive, shift_min: best.shift, cycle_min: best.cycle,
@@ -209,6 +201,40 @@ async function sync(supabase: any) {
       updated_at: new Date().toISOString(),
     }, { onConflict: "driver_id" });
     saved.push({ driver: d.name, source: best.source, duty: best.duty, break: best.untilBreak, drive: best.drive, shift: best.shift, cycle: best.cycle });
+  };
+
+  // Conexiones propias (usuario del driver en su ELD): su cuenta manda
+  const own = await driverConnections(supabase);
+  const withOwn = new Set(own.map((c) => c.driver_id));
+  for (const c of own) {
+    const d = ((allDrivers as any[]) || []).find((x) => x.id === c.driver_id);
+    if (!d) continue;
+    try {
+      const list = c.provider === "hos247" ? await readHos247(now, c.creds) : await readRouteOne(now, c.creds);
+      const truck = truckOf(d);
+      const pick = list.filter((x) => normName(x.name) === normName(d.name))
+        .concat(list.filter((x) => truck && ((x.unit && String(x.unit) === String(truck.unit_number)) || (x.vin && truck.vin && x.vin === truck.vin))));
+      const best = (pick.length ? pick : list.length === 1 ? list : [])
+        .reduce<Clocks | null>((a, b) => (!a || Date.parse(b.reportedAt ?? "0") > Date.parse(a.reportedAt ?? "0") ? b : a), null);
+      await markConnection(supabase, d.id, true);
+      if (best) await save(d, best); else unmatched.push(`${d.name} (cuenta propia sin datos)`);
+    } catch (e) {
+      await markConnection(supabase, d.id, false, errMsg(e));
+      errors.push(`${d.name}: ${errMsg(e)}`);
+    }
+  }
+
+  // Cuentas de flota de la empresa: los company drivers
+  const drivers = ((allDrivers as any[]) || []).filter((d) => d.service_type === "company_driver" && !withOwn.has(d.id));
+  for (const d of drivers) {
+    const truck = truckOf(d);
+    // Por nombre; si no, por el camión asignado. Si hay varias cuentas, la lectura más reciente.
+    const candidates = clocks.filter((c) => normName(c.name) === normName(d.name));
+    const byTruck = clocks.filter((c) => truck && ((c.unit && String(c.unit) === String(truck.unit_number)) || (c.vin && truck.vin && c.vin === truck.vin)));
+    const pool = candidates.length ? candidates : byTruck;
+    if (pool.length === 0) { unmatched.push(d.name); continue; }
+    const best = pool.reduce((a, b) => (Date.parse(b.reportedAt ?? "0") > Date.parse(a.reportedAt ?? "0") ? b : a));
+    await save(d, best);
   }
   return { saved, unmatched, errors };
 }

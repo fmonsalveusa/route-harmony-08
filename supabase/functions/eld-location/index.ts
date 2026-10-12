@@ -4,7 +4,7 @@
 // posición del ELD en driver_locations (source 'eld'). Como entra por la misma tabla, la llegada
 // automática a las paradas (trigger) y los emails al broker funcionan igual.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { hos247, routeOne } from "../_shared/eld.ts";
+import { driverConnections, hos247, markConnection, routeOne, type EldCreds } from "../_shared/eld.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -29,8 +29,8 @@ function miles(a: [number, number], b: [number, number]) {
   return 2 * R * Math.asin(Math.sqrt(h));
 }
 
-async function readHos247(): Promise<Pos[]> {
-  const { get } = await hos247();
+async function readHos247(creds?: EldCreds): Promise<Pos[]> {
+  const { get } = await hos247(creds);
   const [vehicles, statuses] = await Promise.all([get("/vehicles?$limit=500"), get("/latest_vehicle_statuses?$limit=500")]);
   return statuses.flatMap((s) => {
     const lat = Number(s.lat), lng = Number(s.lon);
@@ -41,8 +41,8 @@ async function readHos247(): Promise<Pos[]> {
   });
 }
 
-async function readRouteOne(): Promise<Pos[]> {
-  const { gql } = await routeOne();
+async function readRouteOne(creds?: EldCreds): Promise<Pos[]> {
+  const { gql } = await routeOne(creds);
   const r = await gql(
     "query ActiveDriversList($sort: ActiveDriversSortInput!, $filter: ActiveDriversFilterInput!) { activeDriversList(sort: $sort, filter: $filter) { vehicleId speed latitude longitude lastReportedTime } }",
     { sort: { field: "LAST_ACTIVITY", order: "DESC" }, filter: { dutyStatus: [], search: "", vehicleStatus: [] } },
@@ -55,6 +55,30 @@ async function readRouteOne(): Promise<Pos[]> {
   });
 }
 
+/** Guarda la posición del ELD si la app del driver no está mandando GPS. true si se guardó. */
+async function writeLocation(supabase: any, d: any, pos: Pos, prev: any, now: number) {
+  const prevAt = prev ? Date.parse(prev.updated_at) : 0;
+  if (now - pos.at > ELD_MAX_AGE_MS) return false;
+  // La app del driver tiene prioridad mientras siga mandando
+  if (prev && prev.source !== "eld" && now - prevAt < APP_GPS_FRESH_MS) return false;
+  // Nada nuevo desde la última lectura
+  if (prev && pos.at <= prevAt) return false;
+  let speed = pos.speedMs;
+  if (speed == null && prev?.source === "eld" && pos.at > prevAt) {
+    const hours = (pos.at - prevAt) / 3600_000;
+    const mph = hours > 0 ? miles([prev.lat, prev.lng], [pos.lat, pos.lng]) / hours : 0;
+    speed = mph > 0 && mph < 100 ? mph * MPH_TO_MS : 0;
+  }
+  await supabase.from("driver_locations").upsert({
+    driver_id: d.id, tenant_id: d.tenant_id, lat: pos.lat, lng: pos.lng, speed, heading: null, accuracy: null,
+    source: "eld", updated_at: new Date(pos.at).toISOString(),
+  }, { onConflict: "driver_id" });
+  return true;
+}
+
+const matchesTruck = (p: Pos, truck: any) =>
+  !!truck && ((p.unit && norm(p.unit) === norm(truck.unit_number)) || (p.vin && truck.vin && norm(p.vin) === norm(truck.vin)));
+
 async function sync(supabase: any) {
   const now = Date.now();
   const errors: string[] = [];
@@ -62,41 +86,44 @@ async function sync(supabase: any) {
   for (const [name, read] of [["HOS247", readHos247], ["RouteOne", readRouteOne]] as const) {
     try { positions.push(...await read()); } catch (e) { errors.push(`${name}: ${errMsg(e)}`); }
   }
-  if (positions.length === 0) return { saved: 0, errors };
 
   const [{ data: trucks }, { data: drivers }, { data: locs }] = await Promise.all([
     supabase.from("trucks").select("id, unit_number, vin"),
     supabase.from("drivers").select("id, name, tenant_id, truck_id, status, service_type").neq("status", "inactive"),
     supabase.from("driver_locations").select("driver_id, lat, lng, source, updated_at"),
   ]);
+  const truckOf = (d: any) => ((trucks as any[]) || []).find((t) => String(t.id) === String(d.truck_id));
+  const prevOf = (d: any) => ((locs as any[]) || []).find((l) => l.driver_id === d.id);
   const saved: unknown[] = [];
-  for (const d of (drivers as any[]) || []) {
-    if (d.service_type === "dispatch_service" || !d.truck_id) continue; // usan su propio ELD
-    const truck = ((trucks as any[]) || []).find((t) => String(t.id) === String(d.truck_id));
-    if (!truck) continue;
-    const pos = positions
-      .filter((p) => (p.unit && norm(p.unit) === norm(truck.unit_number)) || (p.vin && truck.vin && norm(p.vin) === norm(truck.vin)))
-      .sort((a, b) => b.at - a.at)[0];
-    if (!pos || now - pos.at > ELD_MAX_AGE_MS) continue;
 
-    const prev = ((locs as any[]) || []).find((l) => l.driver_id === d.id);
-    const prevAt = prev ? Date.parse(prev.updated_at) : 0;
-    // La app del driver tiene prioridad mientras siga mandando
-    if (prev && prev.source !== "eld" && now - prevAt < APP_GPS_FRESH_MS) continue;
-    // Nada nuevo desde la última lectura
-    if (prev && pos.at <= prevAt) continue;
-
-    let speed = pos.speedMs;
-    if (speed == null && prev?.source === "eld" && pos.at > prevAt) {
-      const hours = (pos.at - prevAt) / 3600_000;
-      const mph = hours > 0 ? miles([prev.lat, prev.lng], [pos.lat, pos.lng]) / hours : 0;
-      speed = mph > 0 && mph < 100 ? mph * MPH_TO_MS : 0;
+  // 1) Conexiones propias de cada driver (su usuario de HOS247 / RouteOne)
+  const own = await driverConnections(supabase);
+  const withOwn = new Set(own.map((c) => c.driver_id));
+  for (const c of own) {
+    const d = ((drivers as any[]) || []).find((x) => x.id === c.driver_id);
+    if (!d) continue;
+    try {
+      const list = c.provider === "hos247" ? await readHos247(c.creds) : await readRouteOne(c.creds);
+      const truck = truckOf(d);
+      // Su camión; si la cuenta tiene un solo camión, ese
+      const pos = list.filter((p) => matchesTruck(p, truck)).sort((a, b) => b.at - a.at)[0] ?? (list.length === 1 ? list[0] : undefined);
+      await markConnection(supabase, d.id, true, undefined, pos?.unit ?? null);
+      if (pos && await writeLocation(supabase, d, pos, prevOf(d), now)) saved.push({ driver: d.name, unit: pos.unit, from: `${pos.source} (propia)` });
+    } catch (e) {
+      await markConnection(supabase, d.id, false, errMsg(e));
+      errors.push(`${d.name}: ${errMsg(e)}`);
     }
-    await supabase.from("driver_locations").upsert({
-      driver_id: d.id, tenant_id: d.tenant_id, lat: pos.lat, lng: pos.lng, speed, heading: null, accuracy: null,
-      source: "eld", updated_at: new Date(pos.at).toISOString(),
-    }, { onConflict: "driver_id" });
-    saved.push({ driver: d.name, unit: truck.unit_number, from: pos.source, mph: speed != null ? Math.round(speed / MPH_TO_MS) : null });
+  }
+
+  // 2) Cuentas de flota de la empresa
+  for (const d of (drivers as any[]) || []) {
+    if (withOwn.has(d.id) || d.service_type === "dispatch_service" || !d.truck_id) continue; // Dispatch Service usa su propio ELD
+    const truck = truckOf(d);
+    if (!truck) continue;
+    const pos = positions.filter((p) => matchesTruck(p, truck)).sort((a, b) => b.at - a.at)[0];
+    if (pos && await writeLocation(supabase, d, pos, prevOf(d), now)) {
+      saved.push({ driver: d.name, unit: truck.unit_number, from: pos.source, mph: pos.speedMs != null ? Math.round(pos.speedMs / MPH_TO_MS) : null });
+    }
   }
   return { saved, errors };
 }

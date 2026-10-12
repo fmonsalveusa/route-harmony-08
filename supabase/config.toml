@@ -65,3 +65,6 @@ verify_jwt = false
 
 [functions.eld-location]
 verify_jwt = false
+
+[functions.eld-connections]
+verify_jwt = false
