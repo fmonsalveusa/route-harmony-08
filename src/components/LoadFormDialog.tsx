@@ -89,6 +89,35 @@ async function refreshSignedUrl(url: string): Promise<string> {
   return url;
 }
 
+/**
+ * La IA a veces lee mal el año del RC (p. ej. 2022 o 2023 en vez de 2026) y la carga queda
+ * oculta por los filtros de fecha. Un RC siempre es de fechas cercanas: si el año está lejos,
+ * se usa el año (anterior, actual o siguiente) que deja la fecha más cerca de hoy.
+ */
+function fixYear(value: unknown): unknown {
+  if (typeof value !== 'string') return value;
+  const m = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return value;
+  const now = new Date();
+  const original = new Date(`${value.slice(0, 10)}T12:00:00`);
+  if (Math.abs(original.getTime() - now.getTime()) < 90 * 86_400_000) return value;
+  const y = now.getFullYear();
+  const best = [y - 1, y, y + 1]
+    .map(year => `${year}-${m[2]}-${m[3]}`)
+    .sort((a, b) => Math.abs(new Date(`${a}T12:00:00`).getTime() - now.getTime()) - Math.abs(new Date(`${b}T12:00:00`).getTime() - now.getTime()))[0];
+  return best + value.slice(10);
+}
+
+function fixExtractedYears(x: any) {
+  if (!x) return x;
+  return {
+    ...x,
+    pickupDate: fixYear(x.pickupDate),
+    deliveryDate: fixYear(x.deliveryDate),
+    stops: Array.isArray(x.stops) ? x.stops.map((s: any) => ({ ...s, date: fixYear(s.date) })) : x.stops,
+  };
+}
+
 export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatcherId }: LoadFormDialogProps) => {
   const { toast } = useToast();
   const { role, isMasterAdmin } = useAuth();
@@ -406,7 +435,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       }
 
       if (data?.success && data?.data) {
-        const extracted = data.data;
+        const extracted = fixExtractedYears(data.data);
 
         // Sanitizar — si el valor no es un numero valido, usar el valor anterior
         const safeNum = (val: any, fallback: any) => {
