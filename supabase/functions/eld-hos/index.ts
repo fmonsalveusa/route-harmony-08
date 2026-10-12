@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-// Relojes HOS de los company drivers (Until Break, Driving, Shift, Cycle), cada hora.
+// Relojes HOS de los drivers en nuestras cuentas de ELD (Until Break, Driving, Shift, Cycle), cada hora.
 //  • HOS247: el portal los entrega calculados; se ajustan por el tiempo transcurrido desde la lectura.
 //  • RouteOne: el portal los calcula en el navegador a partir de los eventos del día; aquí se hace
 //    el mismo cálculo (reglas FMCSA de carga: 11 h manejo, 14 h turno, 30 min de descanso tras 8 h
@@ -224,8 +224,9 @@ async function sync(supabase: any) {
     }
   }
 
-  // Cuentas de flota de la empresa: los company drivers
-  const drivers = ((allDrivers as any[]) || []).filter((d) => d.service_type === "company_driver" && !withOwn.has(d.id));
+  // Cuentas de flota de la empresa: company drivers y owner operators bajo nuestro MC
+  // (Dispatch Service usa su propio ELD)
+  const drivers = ((allDrivers as any[]) || []).filter((d) => d.service_type !== "dispatch_service" && !withOwn.has(d.id));
   for (const d of drivers) {
     const truck = truckOf(d);
     // Por nombre; si no, por el camión asignado. Si hay varias cuentas, la lectura más reciente.
