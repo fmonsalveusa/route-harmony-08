@@ -3,7 +3,7 @@
 // Entra con el usuario de flota de cada portal (secretos de Supabase), lee el último odómetro
 // de cada camión y actualiza los camiones con mantenimientos recurrentes; luego recalcula
 // millas acumuladas y estado de cada mantenimiento (el trigger avisa por WhatsApp si empeora).
-//  • cron (x-cron-secret) dos veces al día
+//  • cron (x-cron-secret) una vez al día, 6 am Eastern
 //  • botón "Actualizar desde ELD" en Maintenance (usuario del equipo)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
