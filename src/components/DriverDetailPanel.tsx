@@ -1,3 +1,4 @@
+import { useEldStatus, EldInfo } from '@/components/EldStatus';
 import { useState, useEffect, useRef, Fragment } from 'react';
 import { ServiceTypeBadge } from '@/components/ServiceTypeBadge';
 import { DbDriver } from '@/hooks/useDrivers';
@@ -42,6 +43,7 @@ interface Props {
 }
 
 export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSignedUrl, truck, onUpdateDriver }: Props) {
+  const { data: eldStatus = {} } = useEldStatus();
   const [loadingDoc, setLoadingDoc] = useState<string | null>(null);
   const [termLetterDeleted, setTermLetterDeleted] = useState(false);
   const [leasingDocs, setLeasingDocs] = useState<Array<{ id: string; company_name: string; file_url: string }>>([]);
@@ -275,6 +277,8 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
             <Info label="Dispatcher">{dispatcherName || 'Unassigned'}</Info>
             <Info label="Truck">{truckLabel || 'Unassigned'}</Info>
           </div>
+
+          <EldInfo status={eldStatus[driver.id]} />
         </div>
 
         {/* ═══ COLUMNA 2 — Pagos ═══ */}

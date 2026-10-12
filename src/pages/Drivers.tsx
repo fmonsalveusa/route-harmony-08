@@ -17,6 +17,7 @@ import { useInvestors } from '@/hooks/useInvestors';
 import { DriverFormDialog } from '@/components/DriverFormDialog';
 import { DriverDetailDialog } from '@/components/DriverDetailDialog';
 import { DriverDetailPanel } from '@/components/DriverDetailPanel';
+import { useEldStatus, EldBadge } from '@/components/EldStatus';
 import { GenerateOnboardingLinkDialog } from '@/components/GenerateOnboardingLinkDialog';
 import { DispatchServiceClientsSection } from '@/components/DispatchServiceClientsSection';
 import { TerminationLetterDialog } from '@/components/TerminationLetterDialog';
@@ -57,6 +58,7 @@ const PAGE_SIZES = [25, 50, 100];
 
 const Drivers = () => {
   const { role, profile } = useAuth();
+  const { data: eldStatus = {} } = useEldStatus();
   const { drivers, loading, createDriver, updateDriver, deleteDriver, uploadDocument, getDocSignedUrl, refetch, addDriverInvestor, removeDriverInvestor, updateDriverInvestor } = useDrivers();
   const { trucks } = useTrucks();
   const { dispatchers } = useDispatchers();
@@ -307,6 +309,7 @@ const Drivers = () => {
                                   <span className="h-1.5 w-1.5 rounded-full bg-blue-600 animate-pulse" /> GPS
                                 </span>
                               )}
+                              <EldBadge status={eldStatus[driver.id]} />
                               {(driver as any).gps_background_granted === false && driver.status !== 'inactive' && (
                                 <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800" title="Sin permiso de ubicación en background — el GPS se apaga al cerrar la app">
                                   <MapPinOff className="h-3 w-3" /> NO BG
