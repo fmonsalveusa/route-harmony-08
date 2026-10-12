@@ -15,6 +15,9 @@ import { MaintenanceCard } from '@/components/maintenance/MaintenanceCard';
 import { AllServicesTable } from '@/components/maintenance/AllServicesTable';
 import { LogServiceDialog } from '@/components/maintenance/LogServiceDialog';
 import { ServiceHistoryDialog } from '@/components/maintenance/ServiceHistoryDialog';
+import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 // Formatea cuánto hace que se leyó el odómetro: "5 min", "2 h", "3 d"
 const formatOdometerAge = (iso: string): string => {
@@ -28,7 +31,9 @@ const formatOdometerAge = (iso: string): string => {
 
 const Maintenance = () => {
   const { maintenanceItems, loading, createMaintenance, updateMaintenance, deleteMaintenance, recalculateMiles, updateTruckOdometer, logNewService } = useTruckMaintenance();
-  const { trucks } = useTrucks();
+  const { trucks, refetch: refetchTrucks } = useTrucks();
+  const queryClient = useQueryClient();
+  const [syncingEld, setSyncingEld] = useState(false);
   const { drivers } = useDrivers();
   const [formOpen, setFormOpen] = useState(false);
   const [editItem, setEditItem] = useState<DbTruckMaintenance | null>(null);
@@ -87,6 +92,26 @@ const Maintenance = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading]);
 
+  // Odómetro desde HOS247 y RouteOne (también corre solo dos veces al día)
+  const syncFromEld = async () => {
+    setSyncingEld(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('eld-odometer', { body: {} });
+      if (error || data?.error) throw new Error(data?.error || error?.message);
+      const updated = (data?.updated ?? []) as { unit: string; to: number }[];
+      const errors = (data?.errors ?? []) as string[];
+      if (updated.length) toast.success(`Odómetro actualizado: ${updated.map(u => `#${u.unit} ${u.to.toLocaleString()}`).join(', ')}`);
+      else toast.info('Los odómetros ya estaban al día');
+      if (errors.length) toast.error(errors.join(' · '));
+      await refetchTrucks();
+      queryClient.invalidateQueries();
+    } catch (e: any) {
+      toast.error(`No se pudo leer el ELD: ${e.message}`);
+    } finally {
+      setSyncingEld(false);
+    }
+  };
+
   const handleRecalcAll = async () => {
     setRecalculating(true);
     const truckIds = [...new Set(maintenanceItems.map(m => m.truck_id))];
@@ -120,6 +145,10 @@ const Maintenance = () => {
           <p className="page-description">Fleet maintenance tracker</p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={syncFromEld} disabled={syncingEld} title="Lee el odómetro de HOS247 y RouteOne (también se actualiza solo 2 veces al día)">
+            <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${syncingEld ? 'animate-spin' : ''}`} />
+            Sync from ELD
+          </Button>
           <Button variant="outline" size="sm" onClick={() => { setOdoDrafts({}); setOdoModalOpen(true); }}>
             <Gauge className="h-3.5 w-3.5 mr-1.5" />
             Update Odometers
