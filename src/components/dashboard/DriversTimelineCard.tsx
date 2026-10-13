@@ -79,18 +79,19 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [] }: Props) => {
   const [containerWidth, setContainerWidth] = useState(0);
   const cardRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const scrollWrapperRef = useRef<HTMLDivElement>(null);
+  // Callback ref: el wrapper no existe en el primer render si aún no hay cargas
+  const [scrollWrapper, setScrollWrapper] = useState<HTMLDivElement | null>(null);
 
   // Measure available width from the scroll wrapper (direct child of CardContent)
   useEffect(() => {
-    const el = scrollWrapperRef.current;
+    const el = scrollWrapper;
     if (!el) return;
     const ro = new ResizeObserver(([entry]) => {
       setContainerWidth(entry.contentRect.width);
     });
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
+  }, [scrollWrapper]);
 
   const dayWidth = containerWidth > 0
     ? Math.max(MIN_DAY_WIDTH, (containerWidth - DRIVER_COL_WIDTH) / VISIBLE_DAYS)
@@ -284,7 +285,7 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [] }: Props) => {
           </Button>
         </div>
 
-        <div ref={scrollWrapperRef} className="overflow-x-auto">
+        <div ref={setScrollWrapper} className="overflow-x-auto">
           <div ref={containerRef} style={{ width: containerWidth > 0 ? `${DRIVER_COL_WIDTH + VISIBLE_DAYS * dayWidth}px` : '100%', minWidth: `${DRIVER_COL_WIDTH + VISIBLE_DAYS * MIN_DAY_WIDTH}px` }}>
             {/* Day + hour headers */}
             <div className="flex border-b border-border">
