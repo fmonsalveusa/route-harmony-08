@@ -95,6 +95,24 @@ async function enqueue(supabase: any, kind: "arrival" | "docs", stopId: string) 
   return await processRow(supabase, row);
 }
 
+/**
+ * Respaldo del trigger de llegada: si la llamada desde la base falló (timeout de red), la parada
+ * queda marcada pero sin email. La cola (cada 10 min) encola las llegadas recientes que no tienen fila.
+ */
+async function arrivalsWithoutEmail(supabase: any) {
+  const since = new Date(Date.now() - ARRIVAL_MAX_AGE_H * 3600_000).toISOString();
+  const { data: stops } = await supabase
+    .from("load_stops").select("id, load_id, stop_type, stop_order").gte("arrived_at", since);
+  const out = [];
+  for (const s of (stops as any[]) || []) {
+    const key = `arrival:${s.load_id}:${s.stop_type}:${s.stop_order ?? 0}`;
+    const { data: existing } = await supabase.from("broker_email_queue").select("id").eq("message_key", key).maybeSingle();
+    if (existing) continue;
+    out.push({ stop: s.id, result: await enqueue(supabase, "arrival", s.id) });
+  }
+  return out;
+}
+
 /** Email de actualización de documentos (uno pendiente a la vez por parada) */
 /**
  * Respaldo del botón del driver: al pasar la carga a Picked Up / Delivered, si la parada ya tiene
@@ -907,7 +925,10 @@ Deno.serve(async (req) => {
       else await syncThreadLabels(supabase, load, accounts);
       return json({ status: thread.status, subject: thread.subject ?? null });
     }
-    if (body.event === "process") return json({ results: await processDue(supabase) });
+    if (body.event === "process") {
+      const missed = await arrivalsWithoutEmail(supabase);
+      return json({ missed, results: await processDue(supabase) });
+    }
     // Al guardar una carga con driver y RC (desde el TMS): deja listo el borrador del RC firmado
     if (body.event === "rc_prepare" && body.load_id) return await rcPrepare(supabase, body.load_id, false, !!body.preview);
     if (body.event === "queue") {
