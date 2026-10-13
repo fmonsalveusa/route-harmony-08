@@ -468,6 +468,12 @@ async function processRow(supabase: any, row: any): Promise<Record<string, unkno
   if (!(await isEnabled(supabase, row.tenant_id, TOGGLES[row.kind]))) {
     return await finish({ status: "skipped", error: "Aviso apagado" });
   }
+  // Si las fotos/BOL de la parada ya salieron, "llegó y espera" quedaría fuera de orden
+  if (row.kind === "arrival") {
+    const { data: docsSent } = await supabase.from("broker_email_queue").select("id")
+      .eq("message_key", `docs:${row.load_id}:${row.stop_type}:${row.stop_order ?? 0}`).eq("status", "sent").maybeSingle();
+    if (docsSent) return await finish({ status: "skipped", error: "La parada ya se completó (se enviaron las fotos/BOL)" });
+  }
 
   const { data: load } = await supabase
     .from("loads").select("id, tenant_id, reference_number, status, driver_id, truck_id, has_detention, service_type").eq("id", row.load_id).maybeSingle();
