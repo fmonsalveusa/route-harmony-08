@@ -1123,7 +1123,7 @@ const Tracking = () => {
       </div>
 
       {/* Main layout: Map + Side Panel */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Side Panel - Next Plan */}
         {/* Mismo formato que la tarjeta Drivers Load Timeline: fondo blanco, borde y título text-base */}
         <Card className="flex flex-col overflow-hidden h-[1040px] lg:row-span-2 lg:col-start-1">
@@ -1405,7 +1405,7 @@ const Tracking = () => {
         </Card>
 
         {/* Map */}
-        <Card className="lg:col-span-3 lg:col-start-2 overflow-hidden self-start rounded-xl shadow-sm">
+        <Card className="lg:col-span-2 lg:col-start-2 overflow-hidden self-start rounded-xl shadow-sm">
           {/* isolate: la leyenda y las capas del mapa (z-index altos) quedan dentro del mapa y no por encima de las ventanas */}
           <div className="relative isolate h-[600px]">
             {/* Leyenda del mapa */}
@@ -1599,7 +1599,7 @@ const Tracking = () => {
         </Card>
 
         {/* Drivers Load Timeline ΓÇö debajo del mapa, misma columna */}
-        <div className="lg:col-span-3 lg:col-start-2">
+        <div className="lg:col-span-2 lg:col-start-2">
           <DriversTimelineCard
             loads={scopedAllLoads}
             drivers={scopedDriverIds ? drivers.filter(d => scopedDriverIds.has(d.id)) : drivers}
