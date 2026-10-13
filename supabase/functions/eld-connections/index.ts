@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 // Conexión ELD propia de un driver: guardar (contraseña a Vault), probar y borrar. Solo admin.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { hos247, routeOne, type EldCreds } from "../_shared/eld.ts";
+import { hos247, levelEldUnits, routeOne, type EldCreds } from "../_shared/eld.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,6 +17,9 @@ async function listUnits(provider: string, creds: EldCreds): Promise<{ unit: str
   if (provider === "hos247") {
     const { get } = await hos247(creds);
     return (await get("/vehicles?$limit=500")).map((v) => ({ unit: String(v.name ?? ""), vin: v.vin ?? null }));
+  }
+  if (provider === "leveleld") {
+    return (await levelEldUnits(creds.password)).map((u) => ({ unit: String(u.unit_number ?? u.truck?.unit_number ?? ""), vin: u.truck?.vin ?? null }));
   }
   const { gql } = await routeOne(creds);
   const r = await gql(
@@ -48,10 +51,11 @@ Deno.serve(async (req) => {
 
     if (body.action === "save") {
       const provider = String(body.provider ?? "");
-      const username = String(body.username ?? "").trim();
-      if (!["hos247", "routeone"].includes(provider) || !username) return json({ error: "Falta el proveedor o el usuario" }, 400);
+      // Level ELD no usa usuario: se conecta con el token de empresa
+      const username = String(body.username ?? "").trim() || (provider === "leveleld" ? "Level ELD" : "");
+      if (!["hos247", "routeone", "leveleld"].includes(provider) || !username) return json({ error: "Falta el proveedor o el usuario" }, 400);
       const { data: existing } = await supabase.from("driver_eld_connections").select("secret_id").eq("driver_id", driver.id).maybeSingle();
-      if (!existing?.secret_id && !body.password) return json({ error: "Escribe la contraseña" }, 400);
+      if (!existing?.secret_id && !body.password) return json({ error: provider === "leveleld" ? "Pega el token de Level ELD" : "Escribe la contraseña" }, 400);
       await supabase.from("driver_eld_connections").upsert({
         driver_id: driver.id, tenant_id: driver.tenant_id, provider, username, status: "pending", last_error: null,
         updated_at: new Date().toISOString(),

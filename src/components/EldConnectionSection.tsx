@@ -102,10 +102,20 @@ export function EldConnectionSection({ driverId }: { driverId: string }) {
               <SelectItem value="none">Ninguno (cuentas de la empresa)</SelectItem>
               <SelectItem value="hos247">HOS247</SelectItem>
               <SelectItem value="routeone">RouteOne</SelectItem>
+              <SelectItem value="leveleld">Level ELD</SelectItem>
             </SelectContent>
           </Select>
         </div>
-        {provider !== 'none' && (
+        {provider === 'leveleld' && (
+          <div className="space-y-1 sm:col-span-2">
+            <Label className="text-xs">Token de empresa</Label>
+            <Input
+              className="h-9" type="password" value={password} onChange={e => setPassword(e.target.value)} autoComplete="off"
+              placeholder={conn?.secret_id ? '•••••• (guardado — pega uno nuevo para cambiarlo)' : 'Pega aquí el token'}
+            />
+          </div>
+        )}
+        {provider !== 'none' && provider !== 'leveleld' && (
           <>
             <div className="space-y-1">
               <Label className="text-xs">Usuario</Label>
@@ -124,7 +134,7 @@ export function EldConnectionSection({ driverId }: { driverId: string }) {
 
       <div className="flex flex-wrap gap-2">
         {provider !== 'none' && (
-          <Button type="button" size="sm" onClick={() => run('save')} disabled={busy !== null || !username.trim() || (!password && !conn?.secret_id) || !changed}>
+          <Button type="button" size="sm" onClick={() => run('save')} disabled={busy !== null || (provider !== 'leveleld' && !username.trim()) || (!password && !conn?.secret_id) || !changed}>
             {busy === 'save' && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />} Guardar y probar
           </Button>
         )}
@@ -139,8 +149,14 @@ export function EldConnectionSection({ driverId }: { driverId: string }) {
           </Button>
         )}
       </div>
+      {provider === 'leveleld' && (
+        <p className="text-[11px] text-muted-foreground">
+          Cómo sacar el token: entra a app.leveleld.com, abre la empresa del driver, presiona F12 → pestaña Console, escribe{' '}
+          <code className="rounded bg-muted px-1">copy(sessionStorage['company:token'])</code> y Enter. Pégalo aquí. Dura 1 año.
+        </p>
+      )}
       <p className="text-[11px] text-muted-foreground">
-        Solo si el driver usa su propia cuenta de HOS247 o RouteOne. La contraseña se guarda cifrada y no se vuelve a mostrar.
+        Solo si el driver usa su propia cuenta de HOS247, RouteOne o Level ELD. La contraseña se guarda cifrada y no se vuelve a mostrar.
         Con la conexión, su ubicación se lee cada 2 minutos y sus relojes HOS cada hora.
       </p>
     </div>

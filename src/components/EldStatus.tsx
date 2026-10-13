@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 export interface EldStatus {
   /** own = cuenta propia del driver; company = cuentas de flota de la empresa */
   account: 'own' | 'company';
-  provider: string;                 // HOS247 | RouteOne
+  provider: string;                 // HOS247 | RouteOne | Level ELD
   username: string | null;
   unit: string | null;
   ok: boolean;
@@ -13,7 +13,7 @@ export interface EldStatus {
   lastRead: string | null;          // última lectura del ELD (relojes o conexión)
 }
 
-const PROVIDER: Record<string, string> = { hos247: 'HOS247', routeone: 'RouteOne' };
+const PROVIDER: Record<string, string> = { hos247: 'HOS247', routeone: 'RouteOne', leveleld: 'Level ELD' };
 
 /** Qué drivers están conectados a un ELD y por qué cuenta (propia o de la empresa) */
 export function useEldStatus() {

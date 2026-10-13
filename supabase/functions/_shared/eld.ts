@@ -2,6 +2,8 @@
 // Acceso a los portales de ELD con el usuario de flota (secretos de Supabase).
 //  • HOS247: backend Feathers de apexhos (POST /authentication → JWT)
 //  • RouteOne GO: GraphQL (mutation Login → token)
+//  • Level ELD: REST /gateway con el token de empresa (su login tiene reCAPTCHA, así que el
+//    admin pega el token de la sesión; dura 1 año)
 
 export interface EldCreds { user: string; password: string }
 
@@ -50,7 +52,28 @@ export async function routeOne(creds?: EldCreds): Promise<{ gql: (query: string,
   return { gql: (query, variables) => call(query, variables, token) };
 }
 
-export interface DriverEldConnection { driver_id: string; tenant_id: string; provider: "hos247" | "routeone"; username: string }
+/** Level ELD: el "password" de la conexión es el token de empresa (company:token de la sesión web) */
+export function levelEld(token: string): { get: (path: string) => Promise<any> } {
+  const t = token.trim().replace(/^"|"$/g, "").replace(/^Bearer\s+/i, "");
+  return {
+    get: async (path: string) => {
+      const r = await fetch(`https://app.leveleld.com/gateway${path}`, { headers: { Authorization: `Bearer ${t}`, Accept: "application/json" } });
+      if (r.status === 401 || r.status === 403) throw new Error("Level ELD: token vencido o inválido — vuelve a pegarlo");
+      if (!r.ok) throw new Error(`Level ELD ${path.split("?")[0]} HTTP ${r.status}`);
+      const j = await r.json();
+      if (j?.result?.code && j.result.code !== "ok") throw new Error(`Level ELD: ${j.result.description ?? j.result.code}`);
+      return j?.content ?? j;
+    },
+  };
+}
+
+/** Unidades de la cuenta de Level ELD con su posición, driver y estado */
+export async function levelEldUnits(token: string): Promise<any[]> {
+  const list = await levelEld(token).get("/logger/support/dashboard/units/list");
+  return Array.isArray(list) ? list : [];
+}
+
+export interface DriverEldConnection { driver_id: string; tenant_id: string; provider: "hos247" | "routeone" | "leveleld"; username: string }
 
 /** Conexiones ELD propias de los drivers, con su contraseña (Vault). Marca el resultado de cada lectura. */
 export async function driverConnections(supabase: any): Promise<(DriverEldConnection & { creds: EldCreds })[]> {

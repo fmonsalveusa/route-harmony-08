@@ -62,3 +62,7 @@ REVOKE ALL ON FUNCTION eld_connection_delete(uuid) FROM PUBLIC, anon, authentica
 GRANT EXECUTE ON FUNCTION eld_connection_set_password(uuid, text) TO service_role;
 GRANT EXECUTE ON FUNCTION eld_connection_password(uuid) TO service_role;
 GRANT EXECUTE ON FUNCTION eld_connection_delete(uuid) TO service_role;
+
+-- Level ELD (se conecta con el token de empresa en vez de usuario/contraseña)
+ALTER TABLE driver_eld_connections DROP CONSTRAINT IF EXISTS driver_eld_connections_provider_check;
+ALTER TABLE driver_eld_connections ADD CONSTRAINT driver_eld_connections_provider_check CHECK (provider IN ('hos247', 'routeone', 'leveleld'));

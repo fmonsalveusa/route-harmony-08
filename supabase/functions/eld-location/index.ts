@@ -1,10 +1,10 @@
 // deno-lint-ignore-file no-explicit-any
-// Ubicación del camión desde el ELD (HOS247 y RouteOne) como respaldo del GPS de la app.
+// Ubicación del camión desde el ELD (HOS247, RouteOne y Level ELD) como respaldo del GPS de la app.
 // Cada 2 minutos: si la app del driver no mandó GPS en los últimos 10 minutos, se guarda la
 // posición del ELD en driver_locations (source 'eld'). Como entra por la misma tabla, la llegada
 // automática a las paradas (trigger) y los emails al broker funcionan igual.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { driverConnections, hos247, markConnection, routeOne, type EldCreds } from "../_shared/eld.ts";
+import { driverConnections, hos247, levelEldUnits, markConnection, routeOne, type EldCreds } from "../_shared/eld.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -55,6 +55,21 @@ async function readRouteOne(creds?: EldCreds): Promise<Pos[]> {
   });
 }
 
+async function readLevelEld(token: string): Promise<Pos[]> {
+  return (await levelEldUnits(token)).flatMap((u) => {
+    const c = u.last_location?.coordinates;
+    const lat = Number(c?.latitude), lng = Number(c?.longitude);
+    if (!lat || !lng) return [];
+    const t = String(u.last_location?.time ?? "");
+    const at = Date.parse(/[zZ]|[+-]\d\d:?\d\d$/.test(t) ? t : `${t}Z`); // la hora viene en UTC sin zona
+    const mph = Number(u.current_speed);
+    return [{
+      source: "Level ELD", unit: u.unit_number ?? u.truck?.unit_number ?? null, vin: u.truck?.vin ?? null, lat, lng,
+      speedMs: Number.isFinite(mph) ? mph * MPH_TO_MS : null, at: Number.isFinite(at) ? at : Date.now(),
+    }];
+  });
+}
+
 /** Guarda la posición del ELD si la app del driver no está mandando GPS. true si se guardó. */
 async function writeLocation(supabase: any, d: any, pos: Pos, prev: any, now: number) {
   const prevAt = prev ? Date.parse(prev.updated_at) : 0;
@@ -96,14 +111,15 @@ async function sync(supabase: any) {
   const prevOf = (d: any) => ((locs as any[]) || []).find((l) => l.driver_id === d.id);
   const saved: unknown[] = [];
 
-  // 1) Conexiones propias de cada driver (su usuario de HOS247 / RouteOne)
+  // 1) Conexiones propias de cada driver (su usuario de HOS247 / RouteOne / token de Level ELD)
   const own = await driverConnections(supabase);
   const withOwn = new Set(own.map((c) => c.driver_id));
   for (const c of own) {
     const d = ((drivers as any[]) || []).find((x) => x.id === c.driver_id);
     if (!d) continue;
     try {
-      const list = c.provider === "hos247" ? await readHos247(c.creds) : await readRouteOne(c.creds);
+      const list = c.provider === "hos247" ? await readHos247(c.creds)
+        : c.provider === "leveleld" ? await readLevelEld(c.creds.password) : await readRouteOne(c.creds);
       const truck = truckOf(d);
       // Su camión; si la cuenta tiene un solo camión, ese
       const pos = list.filter((p) => matchesTruck(p, truck)).sort((a, b) => b.at - a.at)[0] ?? (list.length === 1 ? list[0] : undefined);

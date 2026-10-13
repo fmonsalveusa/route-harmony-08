@@ -5,7 +5,7 @@
 //    el mismo cálculo (reglas FMCSA de carga: 11 h manejo, 14 h turno, 30 min de descanso tras 8 h
 //    manejando, 70 h en 8 días con reinicio de 34 h). No contempla split sleeper ni excepciones.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { driverConnections, hos247, markConnection, routeOne, type EldCreds } from "../_shared/eld.ts";
+import { driverConnections, hos247, levelEld, levelEldUnits, markConnection, routeOne, type EldCreds } from "../_shared/eld.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -16,11 +16,13 @@ const json = (body: unknown, status = 200) =>
 const errMsg = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 const MIN = 60_000, HOUR = 60 * MIN;
+// En las cuentas de la empresa, una lectura más vieja que esto es de alguien que ya no usa esa cuenta
+const STALE_MS = 48 * HOUR;
 const LIMIT = { break: 8 * HOUR, drive: 11 * HOUR, shift: 14 * HOUR, reset: 10 * HOUR, restart: 34 * HOUR, breakRest: 30 * MIN };
 
 type Duty = "driving" | "on_duty" | "off_duty" | "sleeper" | "personal_conveyance" | "yard_move";
 interface Clocks {
-  name: string; unit: string | null; vin: string | null; source: "HOS247" | "RouteOne";
+  name: string; unit: string | null; vin: string | null; source: "HOS247" | "RouteOne" | "Level ELD";
   duty: Duty | null; since: string | null; untilBreak: number; drive: number; shift: number; cycle: number;
   cycleLimit: number; computed: boolean; reportedAt: string | null;
 }
@@ -63,6 +65,30 @@ async function readHos247(now: number, creds?: EldCreds): Promise<Clocks[]> {
       cycleLimit: mins(Number(s.cycleTime?.limitTime) || 70 * HOUR), computed: false, reportedAt: new Date(Number(s.stime)).toISOString(),
     }];
   });
+}
+
+// ─── Level ELD: el logbook del día ya trae lo que le queda en cada reloj ───
+const LEVEL_DUTY: Record<string, Duty> = { dr: "driving", on: "on_duty", off: "off_duty", sb: "sleeper", pc: "personal_conveyance", ym: "yard_move" };
+const levelMin = (c: any) => (c && typeof c.total_seconds === "number" ? (c.negative ? 0 : Math.round(c.total_seconds / 60)) : 0);
+
+async function readLevelEld(now: number, token: string): Promise<Clocks[]> {
+  const api = levelEld(token);
+  const units = await levelEldUnits(token);
+  const from = new Date(now - 2 * 24 * HOUR).toISOString(), to = new Date(now + 24 * HOUR).toISOString();
+  const out: Clocks[] = [];
+  for (const u of units) {
+    if (!u.driver_id) continue;
+    const logs = await api.get(`/logger/support/logs-by-driver/list?page=0&size=20&total=0&driver_id=${u.driver_id}&date_from=${from}&date_to=${to}`);
+    const day = (Array.isArray(logs) ? logs : []).filter((l: any) => l.date).sort((a: any, b: any) => String(b.date).localeCompare(String(a.date)))[0];
+    if (!day) continue;
+    out.push({
+      name: u.driver_name ?? day.driver?.name ?? "", unit: u.unit_number ?? null, vin: u.truck?.vin ?? null, source: "Level ELD",
+      duty: LEVEL_DUTY[String(day.status ?? u.status ?? "").toLowerCase()] ?? null, since: null,
+      untilBreak: levelMin(day.break), drive: levelMin(day.drive), shift: levelMin(day.shift), cycle: levelMin(day.cycle),
+      cycleLimit: 70 * 60, computed: false, reportedAt: new Date(now).toISOString(),
+    });
+  }
+  return out;
 }
 
 // ─── RouteOne: cálculo a partir de los eventos ───
@@ -200,7 +226,7 @@ async function sync(supabase: any) {
       cycle_limit_min: best.cycleLimit, computed: best.computed, eld_name: best.name, reported_at: best.reportedAt,
       updated_at: new Date().toISOString(),
     }, { onConflict: "driver_id" });
-    saved.push({ driver: d.name, source: best.source, duty: best.duty, break: best.untilBreak, drive: best.drive, shift: best.shift, cycle: best.cycle });
+    saved.push({ id: d.id, driver: d.name, source: best.source, duty: best.duty, break: best.untilBreak, drive: best.drive, shift: best.shift, cycle: best.cycle });
   };
 
   // Conexiones propias (usuario del driver en su ELD): su cuenta manda
@@ -210,7 +236,8 @@ async function sync(supabase: any) {
     const d = ((allDrivers as any[]) || []).find((x) => x.id === c.driver_id);
     if (!d) continue;
     try {
-      const list = c.provider === "hos247" ? await readHos247(now, c.creds) : await readRouteOne(now, c.creds);
+      const list = c.provider === "hos247" ? await readHos247(now, c.creds)
+        : c.provider === "leveleld" ? await readLevelEld(now, c.creds.password) : await readRouteOne(now, c.creds);
       const truck = truckOf(d);
       const pick = list.filter((x) => normName(x.name) === normName(d.name))
         .concat(list.filter((x) => truck && ((x.unit && String(x.unit) === String(truck.unit_number)) || (x.vin && truck.vin && x.vin === truck.vin))));
@@ -230,14 +257,20 @@ async function sync(supabase: any) {
   for (const d of drivers) {
     const truck = truckOf(d);
     // Por nombre; si no, por el camión asignado. Si hay varias cuentas, la lectura más reciente.
-    const candidates = clocks.filter((c) => normName(c.name) === normName(d.name));
-    const byTruck = clocks.filter((c) => truck && ((c.unit && String(c.unit) === String(truck.unit_number)) || (c.vin && truck.vin && c.vin === truck.vin)));
+    const fresh = clocks.filter((c) => c.reportedAt && now - Date.parse(c.reportedAt) < STALE_MS);
+    const candidates = fresh.filter((c) => normName(c.name) === normName(d.name));
+    const byTruck = fresh.filter((c) => truck && ((c.unit && String(c.unit) === String(truck.unit_number)) || (c.vin && truck.vin && c.vin === truck.vin)));
     const pool = candidates.length ? candidates : byTruck;
     if (pool.length === 0) { unmatched.push(d.name); continue; }
     const best = pool.reduce((a, b) => (Date.parse(b.reportedAt ?? "0") > Date.parse(a.reportedAt ?? "0") ? b : a));
     await save(d, best);
   }
-  return { saved, unmatched, errors };
+  // Quien no tuvo lectura válida en esta corrida deja de mostrar relojes (no quedan datos viejos)
+  const keep = new Set((saved as any[]).map((x) => x.id));
+  const { data: rows } = await supabase.from("driver_hos_clocks").select("driver_id");
+  const stale = ((rows as any[]) || []).map((r) => r.driver_id).filter((id) => !keep.has(id));
+  if (stale.length && errors.length === 0) await supabase.from("driver_hos_clocks").delete().in("driver_id", stale);
+  return { saved, unmatched, removed: stale.length, errors };
 }
 
 Deno.serve(async (req) => {
