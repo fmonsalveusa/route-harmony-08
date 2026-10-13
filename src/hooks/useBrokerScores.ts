@@ -47,15 +47,12 @@ export function useBrokerScores() {
   const upsertScore = useMutation({
     mutationFn: async (input: { broker_name: string; score?: number; days_to_pay?: number; rating?: string; notes?: string }) => {
       const { broker_name, ...rest } = input;
-      // Upsert into brokers table by name
-      const { data, error } = await supabase
-        .from('brokers' as any)
-        .upsert(
-          { name: broker_name.trim(), ...rest, updated_at: new Date().toISOString() } as any,
-          { onConflict: 'name' }
-        )
-        .select()
-        .single();
+      const row = { ...rest, updated_at: new Date().toISOString() };
+      // brokers no tiene UNIQUE en name: se actualiza por id si ya existe, si no se crea
+      const existing = getScoreForBroker(broker_name);
+      const { data, error } = existing
+        ? await supabase.from('brokers' as any).update(row as any).eq('id', existing.id).select().single()
+        : await supabase.from('brokers' as any).insert({ name: broker_name.trim(), ...row } as any).select().single();
       if (error) throw error;
       return data;
     },
@@ -63,8 +60,8 @@ export function useBrokerScores() {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY });
       toast({ title: 'RTS Score guardado' });
     },
-    onError: () => {
-      toast({ title: 'Error', description: 'No se pudo guardar el score', variant: 'destructive' });
+    onError: (e: any) => {
+      toast({ title: 'Error', description: `No se pudo guardar el score: ${e?.message ?? ''}`, variant: 'destructive' });
     },
   });
 

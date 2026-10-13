@@ -184,7 +184,7 @@ function BrokerScoreRow({ brokerName, hideLabel }: { brokerName: string | null |
   const handleSave = () => {
     if (!brokerName || !letterInput.trim()) return;
     const letter = letterInput.trim().toUpperCase();
-    if (!/^[A-F]$/.test(letter)) return;
+    if (!/^[A-FN]$/.test(letter)) return;
     const scoreNum = { A: 95, B: 85, C: 75, D: 55, E: 30, F: 10 }[letter] ?? 50;
     upsertScore.mutate({
       broker_name: brokerName.trim(),
