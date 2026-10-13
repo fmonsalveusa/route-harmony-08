@@ -576,11 +576,15 @@ const Tracking = () => {
     URL.revokeObjectURL(url);
   };
 
-  // Fetch last delivery location solo para drivers sin carga activa
+  // Fetch last delivery location solo para drivers sin carga activa.
+  // Depende solo de QUÉ drivers son (no de cada re-render del mapa), si no se cancela antes de responder.
+  const emptyDriverKey = useMemo(
+    () => availableDrivers.filter(d => !activeLoadByDriver[d.id]).map(d => d.id).sort().join(','),
+    [availableDrivers, activeLoadByDriver],
+  );
   useEffect(() => {
-    const driversWithoutActive = availableDrivers.filter(d => !activeLoadByDriver[d.id]);
-    if (driversWithoutActive.length === 0) { setLastDeliveryStops({}); return; }
-    const driverIds = driversWithoutActive.map(d => d.id);
+    if (!emptyDriverKey) { setLastDeliveryStops({}); return; }
+    const driverIds = emptyDriverKey.split(',');
     // Si los filtros cambian antes de que responda, esta respuesta ya no vale (evita que una
     // consulta vieja y lenta pise a la nueva y deje las cards en "No delivery history")
     let cancelled = false;
@@ -635,7 +639,7 @@ const Tracking = () => {
         if (!cancelled) setLastDeliveryStops(result);
       });
     return () => { cancelled = true; };
-  }, [availableDrivers, activeLoadByDriver]);
+  }, [emptyDriverKey]);
 
   // Cargar el estado de b├║squeda de HOY (compartido entre dispatchers del tenant).
   // Adem├ís pre-marca en 'searching' a los drivers que entregan hoy y a├║n no tienen estado.
