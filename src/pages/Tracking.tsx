@@ -581,6 +581,9 @@ const Tracking = () => {
     const driversWithoutActive = availableDrivers.filter(d => !activeLoadByDriver[d.id]);
     if (driversWithoutActive.length === 0) { setLastDeliveryStops({}); return; }
     const driverIds = driversWithoutActive.map(d => d.id);
+    // Si los filtros cambian antes de que responda, esta respuesta ya no vale (evita que una
+    // consulta vieja y lenta pise a la nueva y deje las cards en "No delivery history")
+    let cancelled = false;
 
     // Get last delivered load per driver.
     // Desempate: cuando dos cargas comparten delivery_date (ej. dos entregas el mismo d├¡a),
@@ -593,7 +596,7 @@ const Tracking = () => {
       .order('delivery_date', { ascending: false, nullsFirst: false })
       .order('created_at', { ascending: false })
       .then(async ({ data: deliveredLoads }) => {
-        if (!deliveredLoads || deliveredLoads.length === 0) return;
+        if (cancelled || !deliveredLoads || deliveredLoads.length === 0) return;
 
         // Get unique last load per driver
         const lastLoadByDriver: Record<string, typeof deliveredLoads[0]> = {};
@@ -629,8 +632,9 @@ const Tracking = () => {
             }
           }
         }
-        setLastDeliveryStops(result);
+        if (!cancelled) setLastDeliveryStops(result);
       });
+    return () => { cancelled = true; };
   }, [availableDrivers, activeLoadByDriver]);
 
   // Cargar el estado de b├║squeda de HOY (compartido entre dispatchers del tenant).
