@@ -1000,14 +1000,18 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
           }
         }
 
-        // 4) Fallback: last delivery stop from previous DELIVERED/TONU load
+        // 4) Fallback: last delivery stop from previous DELIVERED/TONU load.
+        // Una carga ya entregada pudo entregarse antes de su fecha programada (delivery_date
+        // posterior al pickup de esta), así que se acepta hasta 2 días después del pickup.
+        const pickupPlus2 = new Date(`${load.pickup_date.slice(0, 10)}T12:00:00Z`);
+        pickupPlus2.setUTCDate(pickupPlus2.getUTCDate() + 2);
         const { data: prevLoads } = await supabase
           .from('loads')
           .select('id, delivery_date, created_at')
           .eq('driver_id', load.driver_id)
           .neq('id', load.id)
           .in('status', ['delivered', 'tonu', 'paid'])
-          .lte('delivery_date', load.pickup_date)
+          .lte('delivery_date', pickupPlus2.toISOString().slice(0, 10))
           .order('delivery_date', { ascending: false })
           .order('created_at', { ascending: false })
           .limit(10);
