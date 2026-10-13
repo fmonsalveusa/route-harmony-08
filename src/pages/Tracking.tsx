@@ -1123,10 +1123,10 @@ const Tracking = () => {
       </div>
 
       {/* Main layout: Map + Side Panel */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
         {/* Side Panel - Next Plan */}
         {/* Mismo formato que la tarjeta Drivers Load Timeline: fondo blanco, borde y título text-base */}
-        <Card className="flex flex-col overflow-hidden h-[1040px] lg:row-span-2 lg:col-start-1">
+        <Card className="flex flex-col overflow-hidden h-[1040px] lg:col-span-2 lg:row-span-2 lg:col-start-1">
           <CardHeader className="pb-2 px-3 pt-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -1276,9 +1276,6 @@ const Tracking = () => {
                       </div>
                     ) : null}
 
-                    {/* Relojes HOS del ELD (company drivers) */}
-                    {hosClocks[driver.id] && <HosClocks row={hosClocks[driver.id]} className="mx-3 mt-2" />}
-
                     {/* Ubicación manual */}
                     {(driver as any).manual_location_address && (
                       <div className="mx-3 mt-2 rounded-lg bg-amber-50 px-2.5 py-1.5">
@@ -1289,8 +1286,9 @@ const Tracking = () => {
                       </div>
                     )}
 
-                    {/* Próxima parada o última entrega */}
-                    <div className="px-3 pt-2 text-xs text-muted-foreground">
+                    {/* Próxima parada o última entrega + relojes HOS a la derecha */}
+                    <div className="flex items-start gap-2 px-3 pt-2">
+                    <div className="min-w-0 flex-1 text-xs text-muted-foreground">
                       {displayInfo ? (
                         <>
                           <p className="text-[10px] font-medium uppercase tracking-wide">
@@ -1333,6 +1331,8 @@ const Tracking = () => {
                           <p className="text-[10px] italic">No delivery history</p>
                         )
                       )}
+                    </div>
+                    {hosClocks[driver.id] && <HosClocks row={hosClocks[driver.id]} className="shrink-0" />}
                     </div>
 
                     {/* Acciones */}
@@ -1405,7 +1405,7 @@ const Tracking = () => {
         </Card>
 
         {/* Map */}
-        <Card className="lg:col-span-2 lg:col-start-2 overflow-hidden self-start rounded-xl shadow-sm">
+        <Card className="lg:col-span-3 lg:col-start-3 overflow-hidden self-start rounded-xl shadow-sm">
           {/* isolate: la leyenda y las capas del mapa (z-index altos) quedan dentro del mapa y no por encima de las ventanas */}
           <div className="relative isolate h-[600px]">
             {/* Leyenda del mapa */}
@@ -1599,7 +1599,7 @@ const Tracking = () => {
         </Card>
 
         {/* Drivers Load Timeline ΓÇö debajo del mapa, misma columna */}
-        <div className="lg:col-span-2 lg:col-start-2">
+        <div className="lg:col-span-3 lg:col-start-3">
           <DriversTimelineCard
             loads={scopedAllLoads}
             drivers={scopedDriverIds ? drivers.filter(d => scopedDriverIds.has(d.id)) : drivers}
