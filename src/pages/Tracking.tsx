@@ -1332,7 +1332,7 @@ const Tracking = () => {
                         )
                       )}
                     </div>
-                    {hosClocks[driver.id] && <HosClocks row={hosClocks[driver.id]} className="shrink-0" />}
+                    {hosClocks[driver.id] && <HosClocks row={hosClocks[driver.id]} className="shrink-0 w-[330px] max-w-[60%]" />}
                     </div>
 
                     {/* Acciones */}
