@@ -1,6 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-import { isEnabled, logMessage, renderMessage, sendTextLogged } from "../_shared/messaging.ts";
+import { isEnabled, logMessage, renderMessage, sendDocumentLogged, sendTextLogged } from "../_shared/messaging.ts";
 import { sendWhapiLinkPreview } from "../_shared/whapi.ts";
 
 const ANDROID_URL = "https://play.google.com/apps/internaltest/4700846304603948197";
@@ -29,6 +29,15 @@ async function sendAccessWhatsApp(supabase: any, tenantId: string, email: string
     } catch (e) {
       console.error("link preview failed, sending plain text:", e);
       await sendTextLogged(supabase, { ...log, groupId: driver.whatsapp_group_id, message });
+    }
+    // PDF adjunto opcional (configurado en WhatsApp → Automatizaciones), después del mensaje
+    const { data: t } = await supabase.from("tenants").select("wa_driver_access_pdf_path, wa_driver_access_pdf_name").eq("id", tenantId).maybeSingle();
+    if (t?.wa_driver_access_pdf_path) {
+      const { data: signed } = await supabase.storage.from("company-private").createSignedUrl(t.wa_driver_access_pdf_path, 3600);
+      if (signed?.signedUrl) {
+        await sendDocumentLogged(supabase, { ...log, templateKey: "driver_access_created_pdf", groupId: driver.whatsapp_group_id, message: "" },
+          signed.signedUrl, t.wa_driver_access_pdf_name || "Dispatch Up.pdf").catch((e) => console.error("access pdf:", e));
+      }
     }
     return "sent";
   } catch (e) {

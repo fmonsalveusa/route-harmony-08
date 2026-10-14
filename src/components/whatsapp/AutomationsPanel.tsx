@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Loader2, Send, ChevronDown } from 'lucide-react';
+import { Loader2, Send, ChevronDown, Paperclip, Trash2 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
@@ -99,6 +99,35 @@ export function AutomationsPanel({ groups, channel = 'whatsapp' }: { groups: Wha
     toast.success('Se restauró el texto original');
   };
 
+  // PDF que se adjunta al mensaje de acceso del driver (company-private/whatsapp/<tenant>/...)
+  const [uploading, setUploading] = useState(false);
+  const uploadAccessPdf = async (file: File | undefined) => {
+    if (!file) return;
+    if (file.type !== 'application/pdf') { toast.error('Solo archivos PDF'); return; }
+    if (file.size > 15 * 1024 * 1024) { toast.error('El PDF pesa más de 15 MB'); return; }
+    setUploading(true);
+    try {
+      const tenantId = await getTenantId();
+      const path = `whatsapp/${tenantId}/driver-access-${Date.now()}.pdf`;
+      const { error } = await supabase.storage.from('company-private').upload(path, file, { contentType: 'application/pdf' });
+      if (error) throw error;
+      const old = tenant?.wa_driver_access_pdf_path;
+      await updateTenant({ wa_driver_access_pdf_path: path, wa_driver_access_pdf_name: file.name });
+      if (old) await supabase.storage.from('company-private').remove([old]);
+      toast.success('PDF guardado. Se adjunta en los próximos mensajes de acceso.');
+    } catch (e: any) {
+      toast.error(`No se pudo subir el PDF: ${e.message}`);
+    } finally {
+      setUploading(false);
+    }
+  };
+  const removeAccessPdf = async () => {
+    const old = tenant?.wa_driver_access_pdf_path;
+    await updateTenant({ wa_driver_access_pdf_path: null, wa_driver_access_pdf_name: null });
+    if (old) await supabase.storage.from('company-private').remove([old]);
+    toast.success('Se quitó el PDF');
+  };
+
   const runNow = async (automationId: string) => {
     const manual = MANUAL_JOBS[automationId];
     if (!manual || !window.confirm(manual.confirm)) return;
@@ -174,6 +203,28 @@ export function AutomationsPanel({ groups, channel = 'whatsapp' }: { groups: Wha
                       />
                     </div>
                   </>
+                )}
+                {a.id === 'driver_access' && (
+                  <div>
+                    <p className="text-xs font-medium mb-1.5">PDF adjunto (se envía después del mensaje)</p>
+                    {tenant.wa_driver_access_pdf_path ? (
+                      <div className="flex items-center gap-2 text-sm">
+                        <Paperclip className="h-4 w-4 text-muted-foreground" />
+                        <span className="truncate">{tenant.wa_driver_access_pdf_name ?? 'documento.pdf'}</span>
+                        <label className="text-xs text-blue-600 hover:underline cursor-pointer">
+                          Cambiar
+                          <input type="file" accept="application/pdf" className="hidden" disabled={uploading} onChange={e => uploadAccessPdf(e.target.files?.[0])} />
+                        </label>
+                        <button type="button" className="text-destructive" onClick={removeAccessPdf} title="Quitar PDF"><Trash2 className="h-3.5 w-3.5" /></button>
+                      </div>
+                    ) : (
+                      <label className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs cursor-pointer hover:bg-muted">
+                        {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Paperclip className="h-3.5 w-3.5" />}
+                        {uploading ? 'Subiendo...' : 'Subir PDF'}
+                        <input type="file" accept="application/pdf" className="hidden" disabled={uploading} onChange={e => uploadAccessPdf(e.target.files?.[0])} />
+                      </label>
+                    )}
+                  </div>
                 )}
                 {a.id === 'meeting_reminder' && (
                   <div>
