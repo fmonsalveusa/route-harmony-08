@@ -118,7 +118,7 @@ export function EldConnectionSection({ driverId }: { driverId: string }) {
         {provider !== 'none' && provider !== 'leveleld' && (
           <>
             <div className="space-y-1">
-              <Label className="text-xs">Usuario</Label>
+              <Label className="text-xs">{provider === 'routeone' ? 'Email del portal RouteOne' : 'Usuario'}</Label>
               <Input className="h-9" value={username} onChange={e => setUsername(e.target.value)} autoComplete="off" />
             </div>
             <div className="space-y-1">

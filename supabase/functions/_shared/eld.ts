@@ -43,6 +43,8 @@ export async function routeOne(creds?: EldCreds): Promise<{ gql: (query: string,
     if (!r.ok || j.errors?.length) throw new Error(`RouteOne HTTP ${r.status}: ${String(j.errors?.[0]?.message ?? "").slice(0, 120)}`);
     return j.data;
   };
+  // El portal solo acepta el email de la cuenta; el usuario de la app del driver da "Validation failed"
+  if (creds && !login.includes("@")) throw new Error("RouteOne: usa el email de la cuenta del portal (client.routeonego.com), no el usuario del driver");
   const auth = await call(
     "mutation Login($login: String!, $password: String!) { login(data: { login: $login, password: $password }) { tokens { token } } }",
     { login, password },
