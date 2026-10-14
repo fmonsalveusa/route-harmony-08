@@ -45,7 +45,8 @@ const errMsg = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 // ─── Encolar ───
 
-async function enqueue(supabase: any, kind: "arrival" | "docs", stopId: string) {
+/** manual: lo pidió alguien del TMS con el botón (no aplica el freno de "recién enviado") */
+async function enqueue(supabase: any, kind: "arrival" | "docs", stopId: string, manual = false) {
   const { data: stop } = await supabase
     .from("load_stops").select("id, load_id, stop_type, stop_order, address").eq("id", stopId).maybeSingle();
   if (!stop) return { skipped: "stop not found" };
@@ -64,7 +65,7 @@ async function enqueue(supabase: any, kind: "arrival" | "docs", stopId: string) 
   if (existing) {
     // Ya se mandó y lo vuelven a pedir: segundo email con todo lo de la parada
     // Recién enviado (p. ej. por el respaldo al cambiar el estado): no mandar un segundo email
-    if (kind === "docs" && existing.status === "sent" && existing.sent_at &&
+    if (!manual && kind === "docs" && existing.status === "sent" && existing.sent_at &&
         Date.parse(existing.sent_at) > Date.now() - 10 * 60_000) return { skipped: "ya se envió hace un momento" };
     if (kind === "docs" && existing.status === "sent") return await enqueueUpdate(supabase, existing);
     if (["skipped", "failed", "pending", "waiting_thread"].includes(existing.status)) {
@@ -553,7 +554,7 @@ async function processRow(supabase: any, row: any): Promise<Record<string, unkno
       const since = isUpdate ? await lastDocsSentAt(supabase, row) : null;
       ({ files: attachments, skippedNames } = await stopAttachments(supabase, row, load.reference_number, since));
       if (attachments.length === 0) {
-        return await finish({ status: "skipped", error: "La parada no tiene fotos ni documentos" });
+        return await finish({ status: "skipped", error: isUpdate ? "No hay fotos ni documentos nuevos desde el último envío" : "La parada no tiene fotos ni documentos" });
       }
     }
 
@@ -858,7 +859,7 @@ async function handleUserAction(req: Request, supabase: any, body: any) {
     if (!stop || stop.load_id !== load.id) return json({ error: "La parada no es de esta carga" }, 400);
     // Gracias al driver por WhatsApp (su propio control de duplicados, uno por parada)
     thankDriver(stop.id).catch((e) => console.error("thankDriver failed:", e));
-    return json({ result: await enqueue(supabase, "docs", stop.id) });
+    return json({ result: await enqueue(supabase, "docs", stop.id, true) });
   }
 
   // Rate confirmation firmado: preparar (borrador para revisar) y enviar en el hilo del broker

@@ -312,7 +312,7 @@ function StopPhotoSection({ loadId, stopId, isFirst, stopType, loadReference, ha
       const result = data?.result ?? {};
       if (result.status === 'sent') notify({ title: 'Email enviado al broker' });
       else if (result.status === 'waiting_thread') notify({ title: 'Falta enlazar el hilo de Gmail', description: 'Elígelo en "Email al broker" y se manda solo.', variant: 'destructive' });
-      else notify({ title: 'No se envió', description: result.error || 'Revisa la sección "Email al broker"', variant: 'destructive' });
+      else notify({ title: 'No se envió', description: result.error || result.skipped || 'Revisa la sección "Email al broker"', variant: 'destructive' });
     } catch (e: any) {
       notify({ title: 'No se pudo enviar', description: e.message, variant: 'destructive' });
     } finally {
