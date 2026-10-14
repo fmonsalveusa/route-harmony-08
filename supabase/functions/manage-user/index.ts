@@ -2,8 +2,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 import { isEnabled, logMessage, renderMessage, sendTextLogged } from "../_shared/messaging.ts";
 
-const ANDROID_URL = "https://play.google.com/store/apps/details?id=com.dispatchup.driver2";
-const IOS_URL = "https://apps.apple.com/app/id6761345616";
+const ANDROID_URL = "https://play.google.com/apps/internaltest/4700846304603948197";
+const IOS_URL = "https://apps.apple.com/us/app/dispatch-up-driver/id6761345616";
 
 /** Manda al grupo de WhatsApp del driver su usuario, contraseña y los enlaces de la app */
 async function sendAccessWhatsApp(supabase: any, tenantId: string, email: string, password: string): Promise<string> {
