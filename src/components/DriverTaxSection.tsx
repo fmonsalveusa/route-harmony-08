@@ -120,3 +120,46 @@ export function DriverTaxSection({ driverId, hasW9 }: { driverId: string; hasW9:
     </div>
   );
 }
+
+/** Solo lectura, para el perfil del driver: a nombre de quién van los 1099 y el SSN/EIN (enmascarado) */
+export function DriverTaxInfo({ driverId }: { driverId: string }) {
+  const [tax, setTax] = useState<Tax | null | undefined>(undefined);
+  useEffect(() => {
+    let cancelled = false;
+    supabase.from('payee_tax_info' as any)
+      .select('entity_type, legal_name, tax_id, business_name, source, notes')
+      .eq('recipient_type', 'driver').eq('recipient_id', driverId).maybeSingle()
+      .then(({ data }) => { if (!cancelled) setTax((data as unknown as Tax) ?? null); });
+    return () => { cancelled = true; };
+  }, [driverId]);
+
+  const d = digits(tax?.tax_id);
+  const masked = !d ? '—' : tax?.entity_type === 'business' ? `**-***${d.slice(-4)}` : `***-**-${d.slice(-4)}`;
+  const SOURCE: Record<string, string> = { onboarding: 'Onboarding (W-9)', w9: 'Leído del W-9', manual: 'Manual' };
+  return (
+    <div className="border-t pt-3">
+      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Tax Information</p>
+      {tax === undefined ? (
+        <p className="text-sm text-muted-foreground">Loading...</p>
+      ) : !tax ? (
+        <p className="text-sm text-muted-foreground italic">Sin datos fiscales — agrégalos al editar el driver</p>
+      ) : (
+        <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+          <div>
+            <p className="text-xs text-muted-foreground">1099 a nombre de</p>
+            <p className="font-medium">{tax.entity_type === 'business' ? 'Empresa' : 'Personal'}</p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">{tax.entity_type === 'business' ? 'EIN' : 'SSN'}</p>
+            <p className="font-mono font-medium">{masked}</p>
+          </div>
+          <div className="col-span-2">
+            <p className="text-xs text-muted-foreground">{tax.entity_type === 'business' ? 'Empresa' : 'Nombre legal'}</p>
+            <p className="font-medium">{tax.legal_name || '—'}</p>
+          </div>
+          {tax.source && <p className="col-span-2 text-[11px] text-muted-foreground">Fuente: {SOURCE[tax.source] ?? tax.source}</p>}
+        </div>
+      )}
+    </div>
+  );
+}

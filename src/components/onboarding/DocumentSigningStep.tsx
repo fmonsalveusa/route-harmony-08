@@ -3,13 +3,14 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, FileText, PenLine } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import W9FormDialog from './W9FormDialog';
+import W9FormDialog, { type W9Data } from './W9FormDialog';
 import LeasingAgreementDialog, { LeasingBlobsArray } from './LeasingAgreementDialog';
 import ServiceAgreementDialog from './ServiceAgreementDialog';
 import EmploymentContractDialog from './EmploymentContractDialog';
 
 export interface SignedDocs {
   w9: Blob | null;
+  w9Data?: W9Data | null;
   leasing: LeasingBlobsArray | null;
   service: Blob | null;
   employment: Blob | null;
@@ -98,7 +99,7 @@ export default function DocumentSigningStep({ serviceType, driverData, truckData
           open={openDialog === 'w9'}
           onOpenChange={o => !o && setOpenDialog(null)}
           driverName={driverData.name}
-          onSigned={blob => handleSigned('w9', blob)}
+          onSigned={(blob, data) => { onSignedDocsChange({ ...signedDocs, w9: blob, w9Data: data }); setOpenDialog(null); }}
         />
         <LeasingAgreementDialog
           open={openDialog === 'leasing'}

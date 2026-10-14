@@ -190,6 +190,8 @@ export default function DriverOnboarding() {
       // Append signed document PDFs
       if (isOO) {
         if (signedDocs.w9) formData.append('driver_form_w9', signedDocs.w9, 'w9_signed.pdf');
+        // Datos del W-9 (nombre, compañía, SSN/EIN) para los 1099
+        if (signedDocs.w9Data) formData.append('driver_w9_data', JSON.stringify(signedDocs.w9Data));
         if (signedDocs.leasing) {
           // Send one file per active carrier company (dynamic)
           for (const { companyId, companyName, blob } of signedDocs.leasing) {

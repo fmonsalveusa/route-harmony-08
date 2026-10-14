@@ -19,11 +19,14 @@ const TAX_CLASSIFICATIONS = [
   'Other',
 ];
 
+export interface W9Data { name: string; businessName: string; taxClassification: string; ssn: string; ein: string }
+
 interface W9FormDialogProps {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   driverName: string;
-  onSigned: (blob: Blob) => void;
+  /** Además del PDF firmado, los datos del W-9 para guardarlos como datos fiscales del 1099 */
+  onSigned: (blob: Blob, data: W9Data) => void;
 }
 
 export default function W9FormDialog({ open, onOpenChange, driverName, onSigned }: W9FormDialogProps) {
@@ -47,7 +50,7 @@ export default function W9FormDialog({ open, onOpenChange, driverName, onSigned 
     if (!signature) { toast.error('Signature is required'); return; }
 
     const blob = generateW9Pdf({ ...form, date: format(new Date(), 'MM/dd/yyyy'), signature });
-    onSigned(blob);
+    onSigned(blob, { name: form.name, businessName: form.businessName, taxClassification: form.taxClassification, ssn: form.ssn, ein: form.ein });
     toast.success('W-9 Form signed');
   };
 

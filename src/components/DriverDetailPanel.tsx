@@ -1,4 +1,6 @@
 import { useEldStatus, EldInfo } from '@/components/EldStatus';
+import { DriverTaxInfo } from '@/components/DriverTaxSection';
+import { useAuth } from '@/contexts/AuthContext';
 import { useState, useEffect, useRef, Fragment } from 'react';
 import { ServiceTypeBadge } from '@/components/ServiceTypeBadge';
 import { DbDriver } from '@/hooks/useDrivers';
@@ -44,6 +46,8 @@ interface Props {
 
 export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSignedUrl, truck, onUpdateDriver }: Props) {
   const { data: eldStatus = {} } = useEldStatus();
+  const { role, profile } = useAuth();
+  const canSeeTax = role === 'admin' || role === 'master_admin' || role === 'accounting' || profile?.is_master_admin === true;
   const [loadingDoc, setLoadingDoc] = useState<string | null>(null);
   const [termLetterDeleted, setTermLetterDeleted] = useState(false);
   const [leasingDocs, setLeasingDocs] = useState<Array<{ id: string; company_name: string; file_url: string }>>([]);
@@ -343,6 +347,9 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
               </div>
             </div>
           )}
+
+          {/* Datos fiscales del 1099 (solo admin y accounting) */}
+          {canSeeTax && <DriverTaxInfo driverId={driver.id} />}
         </div>
 
         {/* ═══ COLUMNA 3 — Documentos ═══ */}

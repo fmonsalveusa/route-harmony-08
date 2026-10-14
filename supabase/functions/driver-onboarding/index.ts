@@ -654,6 +654,28 @@ Deno.serve(async (req) => {
     let driverId: string | null = null;
     let investorId: string | null = null;
 
+    // Datos fiscales del W-9 llenado en el onboarding → payee_tax_info (lo usa el reporte de 1099)
+    const saveW9Tax = async (recipientType: "driver" | "investor", recipientId: string) => {
+      try {
+        const raw = formData.get("driver_w9_data");
+        if (typeof raw !== "string" || !raw) return;
+        const w9 = JSON.parse(raw);
+        const ein = String(w9.ein ?? "").replace(/\D/g, ""), ssn = String(w9.ssn ?? "").replace(/\D/g, "");
+        const business = ein.length === 9;
+        const taxId = business ? ein : ssn.length === 9 ? ssn : null;
+        const name = String(w9.name ?? "").trim(), businessName = String(w9.businessName ?? "").trim();
+        await supabaseAdmin.from("payee_tax_info").upsert({
+          recipient_type: recipientType, recipient_id: recipientId, tenant_id: tenantId,
+          entity_type: business ? "business" : "individual",
+          legal_name: (business ? businessName || name : name) || null, tax_id: taxId,
+          business_name: businessName || null, tax_classification: String(w9.taxClassification ?? "") || null,
+          source: "onboarding", updated_at: new Date().toISOString(),
+        }, { onConflict: "recipient_type,recipient_id" });
+      } catch (e) {
+        console.error("saveW9Tax:", e);
+      }
+    };
+
     // ─── FLUJO A: OO es el driver (flujo normal) ─────────────────────────────
     if (!isOO || isDriverOwner) {
       const { data: newDriver, error: driverError } = await supabaseAdmin
@@ -732,6 +754,7 @@ Deno.serve(async (req) => {
       }
       if (leasingInserts.length > 0) await supabaseAdmin.from("driver_leasing_agreements").insert(leasingInserts);
       if (Object.keys(driverDocUrls).length > 0) await supabaseAdmin.from("drivers").update(driverDocUrls).eq("id", driverId);
+      await saveW9Tax("driver", driverId);
 
     // ─── FLUJO B: OO NO es el driver ─────────────────────────────────────────
     } else if (isOO && !isDriverOwner) {
@@ -795,6 +818,8 @@ Deno.serve(async (req) => {
       if (Object.keys(investorDocUrls).length > 0) {
         await supabaseAdmin.from("investors").update(investorDocUrls).eq("id", investorId);
       }
+      // El W-9 es del dueño (investor): a él van los 1099
+      await saveW9Tax("investor", investorId);
 
       // 3B. Crear el driver (la persona que maneja)
       if (secondDriverData) {
