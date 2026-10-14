@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { WhatsAppGroupSelect } from '@/components/WhatsAppGroupSelect';
 import { EldConnectionSection } from '@/components/EldConnectionSection';
+import { DriverTaxSection } from '@/components/DriverTaxSection';
 import { useAuth } from '@/contexts/AuthContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -61,6 +62,7 @@ const docFields: { key: DocKey; label: string; urlKey: string }[] = [
 export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks, dispatchers, investors = [], onAddInvestor, onRemoveInvestor, onUpdateInvestor }: DriverFormDialogProps) {
   const { role, profile } = useAuth();
   const canManageEld = role === 'admin' || role === 'master_admin' || profile?.is_master_admin === true;
+  const canSeeTax = canManageEld || role === 'accounting';
   const [form, setForm] = useState<DriverInput>(emptyForm);
   const [files, setFiles] = useState<Record<string, File | null>>({});
   const [deletedDocs, setDeletedDocs] = useState<Set<string>>(new Set());
@@ -282,6 +284,9 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
 
           {/* Conexión ELD propia (solo admin, al editar un driver existente) */}
           {driver?.id && canManageEld && <EldConnectionSection driverId={driver.id} />}
+
+          {/* Datos fiscales para el 1099 (solo admin y accounting) */}
+          {driver?.id && canSeeTax && <DriverTaxSection driverId={driver.id} hasW9={!!(driver as any).form_w9_url} />}
 
           <div className="space-y-3 p-3 rounded-lg border-2 border-violet-400/50 bg-violet-50 dark:bg-violet-950/20 md:col-span-2">
             <div className="flex items-center justify-between">

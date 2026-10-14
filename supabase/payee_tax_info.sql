@@ -20,3 +20,9 @@ CREATE POLICY "tax_admin_accounting" ON payee_tax_info FOR ALL TO authenticated
     AND (has_role(auth.uid(), 'admin'::app_role) OR has_role(auth.uid(), 'accounting'::app_role))));
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE payee_tax_info TO authenticated;
 GRANT ALL ON TABLE payee_tax_info TO service_role;
+
+-- Lo que se lee del W-9
+ALTER TABLE payee_tax_info ADD COLUMN IF NOT EXISTS business_name text;       -- línea 2 del W-9
+ALTER TABLE payee_tax_info ADD COLUMN IF NOT EXISTS tax_classification text;  -- casilla 3a
+ALTER TABLE payee_tax_info ADD COLUMN IF NOT EXISTS source text;              -- manual | w9
+ALTER TABLE payee_tax_info ADD COLUMN IF NOT EXISTS notes text;

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Download, FileText, Loader2, Pencil } from 'lucide-react';
+import { Download, FileText, Loader2, Pencil, Sparkles } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { getTenantId } from '@/hooks/useTenantId';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -84,6 +84,8 @@ export function AnnualPaymentsReportDialog({ open, onOpenChange }: { open: boole
   const [data, setData] = useState<{ payments: any[]; adj: Record<string, number>; loads: Record<string, any>; people: Record<string, any> } | null>(null);
   const [taxMap, setTaxMap] = useState<Record<string, TaxInfo>>({});
   const [editing, setEditing] = useState<Row | null>(null);
+  const [readingW9, setReadingW9] = useState(false);
+  const [reload, setReload] = useState(0);
 
   useEffect(() => {
     if (!open) return;
@@ -133,7 +135,28 @@ export function AnnualPaymentsReportDialog({ open, onOpenChange }: { open: boole
       }
     })();
     return () => { cancelled = true; };
-  }, [open, year, type]);
+  }, [open, year, type, reload]);
+
+  // Lee con IA los W-9 subidos de los drivers que aún no tienen SSN/EIN
+  const readPendingW9 = async () => {
+    setReadingW9(true);
+    try {
+      const { data: res, error } = await supabase.functions.invoke('w9-extract', { body: { all: true } });
+      if (error || res?.error) throw new Error(res?.error ?? error?.message);
+      const results = (res?.results ?? []) as any[];
+      const ok = results.filter(r => !r.error && !r.warning).length;
+      const bad = results.filter(r => r.error || r.warning);
+      if (results.length === 0) toast.info('No hay W-9 pendientes de leer');
+      else toast.success(`${ok} W-9 leído(s)${bad.length ? ` · ${bad.length} con problema` : ''}`, {
+        description: bad.map(r => `${r.driver}: ${r.error ?? r.warning}`).join(' · ') || 'Revisa los datos en la tabla.',
+      });
+      setReload(n => n + 1);
+    } catch (e: any) {
+      toast.error(`No se pudieron leer los W-9: ${e.message}`);
+    } finally {
+      setReadingW9(false);
+    }
+  };
 
   const rows = useMemo<Row[]>(() => {
     if (!data) return [];
@@ -253,7 +276,13 @@ export function AnnualPaymentsReportDialog({ open, onOpenChange }: { open: boole
               {companies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
             </SelectContent>
           </Select>
-          <Button variant="outline" size="sm" className="ml-auto gap-1.5" onClick={exportCsv} disabled={loading || rows.length === 0}>
+          {type === 'driver' && (
+            <Button variant="outline" size="sm" className="ml-auto gap-1.5" onClick={readPendingW9} disabled={readingW9 || loading}>
+              {readingW9 ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+              {readingW9 ? 'Leyendo W-9…' : 'Leer W-9 pendientes'}
+            </Button>
+          )}
+          <Button variant="outline" size="sm" className={`${type === 'driver' ? '' : 'ml-auto '}gap-1.5`} onClick={exportCsv} disabled={loading || rows.length === 0}>
             <Download className="h-4 w-4" /> Exportar CSV
           </Button>
         </div>
