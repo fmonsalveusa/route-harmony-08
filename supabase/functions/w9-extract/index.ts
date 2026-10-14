@@ -14,6 +14,8 @@ const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 const errMsg = (e: unknown) => (e instanceof Error ? e.message : String(e));
 const digits = (s: unknown) => String(s ?? "").replace(/\D/g, "");
+/** Las notas de la IA no deben repetir SSN/EIN completos: se dejan los últimos 4 */
+const maskIds = (s: string) => s.replace(/\d{3}-?\d{2}-?(\d{4})|\d{2}-(\d{3})(\d{4})/g, (_m, a, _b, c) => `***${a ?? c}`);
 
 /** Ruta dentro del bucket driver-documents a partir de lo guardado en drivers.form_w9_url */
 function storagePath(stored: string): string | null {
@@ -56,12 +58,12 @@ async function readW9(bytes: Uint8Array, mediaType: string): Promise<any> {
       model: "claude-sonnet-5-5",
       max_tokens: 1024,
       tools: [TOOL],
-      tool_choice: { type: "tool", name: "save_w9" },
+      tool_choice: { type: "auto" }, // este modelo no acepta forzar la herramienta
       messages: [{
         role: "user",
         content: [
           isPdf ? { type: "document", source } : { type: "image", source },
-          { type: "text", text: "Read this IRS Form W-9 (it may be handwritten or scanned) and save its data with the save_w9 tool. Copy the SSN or EIN digits exactly; leave a field empty when it is blank or not legible." },
+          { type: "text", text: "Read this IRS Form W-9 (it may be handwritten or scanned) and call the save_w9 tool with its data (always call it, even if the document is not a W-9). Copy the SSN or EIN digits exactly; leave a field empty when it is blank or not legible." },
         ],
       }],
     }),
@@ -77,7 +79,7 @@ async function processDriver(supabase: any, d: any) {
   const path = storagePath(String(d.form_w9_url));
   if (!path) return { driver: d.name, error: "El W-9 no está en el almacenamiento" };
   const { data: file, error } = await supabase.storage.from("driver-documents").download(path);
-  if (error || !file) return { driver: d.name, error: `No se pudo bajar el W-9: ${error?.message ?? ""}` };
+  if (error || !file) return { driver: d.name, error: "El archivo del W-9 no está en el almacenamiento: vuelve a subirlo" };
   const lower = path.toLowerCase();
   const mediaType = lower.endsWith(".pdf") ? "application/pdf"
     : lower.endsWith(".png") ? "image/png" : lower.endsWith(".webp") ? "image/webp" : "image/jpeg";
@@ -93,7 +95,7 @@ async function processDriver(supabase: any, d: any) {
     recipient_type: "driver", recipient_id: d.id, tenant_id: d.tenant_id,
     entity_type: business ? "business" : "individual", legal_name: legal || null, tax_id: taxId || null,
     business_name: String(w9.business_name ?? "").trim() || null, tax_classification: w9.tax_classification ?? null,
-    source: "w9", notes: String(w9.notes ?? "").trim() || null, updated_at: new Date().toISOString(),
+    source: "w9", notes: maskIds(String(w9.notes ?? "").trim()) || null, updated_at: new Date().toISOString(),
   }, { onConflict: "recipient_type,recipient_id" });
   return {
     driver: d.name, entity: business ? "business" : "individual", legal_name: legal,
