@@ -963,20 +963,26 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
           return;
         }
 
-        // 3) Check active loads whose delivery_date is BEFORE this load's pickup_date (logical sequence)
+        // 3) Cargas activas que van ANTES de esta: recogen antes (o el mismo día y se crearon antes).
+        // No se exige que entreguen antes del pickup: muchas veces la nueva se pone con pickup del
+        // mismo día aunque la anterior entregue después (ej. entrega mañana y luego recoge).
         if (!load.driver_id || !load.pickup_date) return;
 
         const activeStatuses = ['dispatched', 'planned', 'in_transit', 'on_site_pickup', 'picked_up', 'on_site_delivery'];
-        const { data: activeLoads } = await supabase
+        const pickupDay = String(load.pickup_date).slice(0, 10);
+        const { data: activeRaw } = await supabase
           .from('loads')
-          .select('id, delivery_date, created_at')
+          .select('id, pickup_date, delivery_date, created_at')
           .eq('driver_id', load.driver_id)
           .neq('id', load.id)
           .in('status', activeStatuses)
           .not('delivery_date', 'is', null)
-          .lte('delivery_date', load.pickup_date)
+          .lte('pickup_date', pickupDay)
           .order('delivery_date', { ascending: false })
-          .limit(5);
+          .limit(10);
+        const activeLoads = (activeRaw || []).filter(l =>
+          String(l.pickup_date).slice(0, 10) < pickupDay || String(l.created_at) < String((load as any).created_at ?? '9999'),
+        ).slice(0, 5);
 
         if (activeLoads && activeLoads.length > 0) {
           const activeIds = activeLoads.map(l => l.id);
