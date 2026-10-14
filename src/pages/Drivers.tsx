@@ -74,6 +74,7 @@ const Drivers = () => {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [dispatcherFilter, setDispatcherFilter] = useState<string>('all');
+  const [serviceFilter, setServiceFilter] = useState<string>('all');
 
   // Enlace desde el buscador global: ?openDriver=<id> abre ese driver
   const [searchParams, setSearchParams] = useSearchParams();
@@ -211,6 +212,8 @@ const Drivers = () => {
   if (!isDispatcher && dispatcherFilter && dispatcherFilter !== 'all') {
     filtered = filtered.filter(d => d.dispatcher_id === dispatcherFilter);
   }
+
+  if (serviceFilter !== 'all') filtered = filtered.filter(d => d.service_type === serviceFilter);
 
   // El resumen de arriba no cambia al escribir en el buscador
   const scopedDrivers = filtered;
@@ -518,6 +521,17 @@ const Drivers = () => {
             </SelectContent>
           </Select>
         )}
+        <Select value={serviceFilter} onValueChange={v => { setServiceFilter(v); setPage(1); }}>
+          <SelectTrigger className="w-[200px] h-10 rounded-full bg-card shadow-sm">
+            <SelectValue placeholder="All Service Types" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Service Types</SelectItem>
+            <SelectItem value="owner_operator">Owner Operator</SelectItem>
+            <SelectItem value="company_driver">Company Driver</SelectItem>
+            <SelectItem value="dispatch_service">Dispatch Service</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {loading ? (
