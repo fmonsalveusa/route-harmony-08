@@ -755,7 +755,8 @@ const Loads = () => {
                                 companies={companies}
                                 rcRefreshKey={rcRefreshKey}
                                 onMilesCalculated={(loadId, miles, routeGeometry) => {
-                                  updateLoadMiles(loadId, miles, routeGeometry);
+                                  // TONU: la carga no se movió, las millas cargadas quedan en 0 (solo se guarda la ruta)
+                                  updateLoadMiles(loadId, load.status === 'tonu' ? 0 : miles, routeGeometry);
                                 }}
                                 onLoadDataUpdated={async () => { await fetchLoads(); }}
                               />
