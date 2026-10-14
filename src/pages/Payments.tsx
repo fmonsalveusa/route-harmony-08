@@ -30,6 +30,7 @@ import { toast } from '@/hooks/use-toast';
 import { ManualDispatcherPaymentDialog } from '@/components/ManualDispatcherPaymentDialog';
 import { ManualPaymentDialog } from '@/components/ManualPaymentDialog';
 import { RecurringDeductionDialog } from '@/components/RecurringDeductionDialog';
+import { AnnualPaymentsReportDialog } from '@/components/AnnualPaymentsReportDialog';
 import { RefreshCw } from 'lucide-react';
 
 const handleGenerateReceipt = async (p: DbPayment, options?: { save?: boolean }) => {
@@ -693,6 +694,7 @@ const Payments = () => {
   const [manualInvestorDialogOpen, setManualInvestorDialogOpen] = useState(false);
   const [recurringOpen, setRecurringOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [annualOpen, setAnnualOpen] = useState(false);
 
   const handleManualComplete = () => { refetch(); setRefreshKey(k => k + 1); };
 
@@ -703,9 +705,14 @@ const Payments = () => {
           <h1 className="page-header">Payments</h1>
           <p className="page-description">Manage payments to drivers, investors, and dispatchers</p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => setRecurringOpen(true)}>
-          <RefreshCw className="h-4 w-4 mr-1.5" /> Recurring Deductions
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => setAnnualOpen(true)}>
+            <FileText className="h-4 w-4 mr-1.5" /> Reporte anual (1099)
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setRecurringOpen(true)}>
+            <RefreshCw className="h-4 w-4 mr-1.5" /> Recurring Deductions
+          </Button>
+        </div>
       </div>
 
 
@@ -763,6 +770,7 @@ const Payments = () => {
         onComplete={handleManualComplete}
       />
       <RecurringDeductionDialog open={recurringOpen} onOpenChange={setRecurringOpen} />
+      <AnnualPaymentsReportDialog open={annualOpen} onOpenChange={setAnnualOpen} />
     </div>
   );
 };
