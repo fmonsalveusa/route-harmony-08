@@ -29,6 +29,12 @@ interface Clocks {
 
 const mins = (ms: number) => Math.max(0, Math.round(ms / MIN));
 const normName = (s: unknown) => String(s ?? "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z ]/g, " ").replace(/\s+/g, " ").trim();
+/** Mismo nombre de pila y al menos un apellido en común (los ELD suelen guardar nombres incompletos) */
+function sameDriver(a: unknown, b: unknown) {
+  const ta = normName(a).split(" ").filter((w) => w.length > 1), tb = normName(b).split(" ").filter((w) => w.length > 1);
+  if (ta.length < 2 || tb.length < 2 || ta[0] !== tb[0]) return false;
+  return ta.slice(1).some((w) => tb.slice(1).includes(w));
+}
 const working = (d: Duty) => d === "driving" || d === "on_duty" || d === "yard_move";
 
 // ─── HOS247 ───
@@ -218,6 +224,7 @@ async function sync(supabase: any) {
     .from("drivers").select("id, name, tenant_id, truck_id, status, service_type").neq("status", "inactive");
   const { data: trucks } = await supabase.from("trucks").select("id, unit_number, vin");
   const saved: unknown[] = [], unmatched: string[] = [];
+  const used = new Set<Clocks>();
   const truckOf = (d: any) => ((trucks as any[]) || []).find((t) => String(t.id) === String(d.truck_id));
   const save = async (d: any, best: Clocks) => {
     await supabase.from("driver_hos_clocks").upsert({
@@ -258,10 +265,13 @@ async function sync(supabase: any) {
     const truck = truckOf(d);
     // Por nombre; si no, por el camión asignado. Si hay varias cuentas, la lectura más reciente.
     const fresh = clocks.filter((c) => c.reportedAt && now - Date.parse(c.reportedAt) < STALE_MS);
-    const candidates = fresh.filter((c) => normName(c.name) === normName(d.name));
-    const byTruck = fresh.filter((c) => truck && ((c.unit && String(c.unit) === String(truck.unit_number)) || (c.vin && truck.vin && c.vin === truck.vin)));
+    const exact = fresh.filter((c) => normName(c.name) === normName(d.name));
+    // Nombre parcial: "Willian Pineda" en el ELD ↔ "Willian Ariel Pineda García" aquí (nombre y algún apellido)
+    const candidates = exact.length ? exact : fresh.filter((c) => sameDriver(c.name, d.name));
+    const byTruck = fresh.filter((c) => truck && ((c.unit && String(c.unit).trim() === String(truck.unit_number).trim()) || (c.vin && truck.vin && c.vin.toUpperCase() === truck.vin.toUpperCase())));
     const pool = candidates.length ? candidates : byTruck;
     if (pool.length === 0) { unmatched.push(d.name); continue; }
+    for (const c of pool) used.add(c);
     const best = pool.reduce((a, b) => (Date.parse(b.reportedAt ?? "0") > Date.parse(a.reportedAt ?? "0") ? b : a));
     await save(d, best);
   }
@@ -270,7 +280,9 @@ async function sync(supabase: any) {
   const { data: rows } = await supabase.from("driver_hos_clocks").select("driver_id");
   const stale = ((rows as any[]) || []).map((r) => r.driver_id).filter((id) => !keep.has(id));
   if (stale.length && errors.length === 0) await supabase.from("driver_hos_clocks").delete().in("driver_id", stale);
-  return { saved, unmatched, removed: stale.length, errors };
+  // Lecturas del ELD que no se asignaron a nadie (para revisar nombres o unidades que no cuadran)
+  const unused = clocks.filter((c) => !used.has(c)).map((c) => `${c.source}: ${c.name} · unidad ${c.unit ?? "?"}`);
+  return { saved, unmatched, unused, removed: stale.length, errors };
 }
 
 Deno.serve(async (req) => {
