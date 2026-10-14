@@ -24,3 +24,11 @@ export function sendWhapiText(to: string, text: string) {
 export function sendWhapiDocument(to: string, media: string, filename: string, caption: string) {
   return post("/messages/document", { to, media, filename, caption });
 }
+
+/**
+ * Texto con vista previa propia del enlace (título e imagen nuestros) en vez de la que WhatsApp
+ * arma sola con la primera URL. `media` es la URL pública de la imagen.
+ */
+export function sendWhapiLinkPreview(to: string, text: string, title: string, media: string, description?: string) {
+  return post("/messages/link_preview", { to, body: text, title, media, ...(description ? { description } : {}) });
+}

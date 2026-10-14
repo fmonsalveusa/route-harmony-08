@@ -1,8 +1,10 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 import { isEnabled, logMessage, renderMessage, sendTextLogged } from "../_shared/messaging.ts";
+import { sendWhapiLinkPreview } from "../_shared/whapi.ts";
 
 const ANDROID_URL = "https://play.google.com/apps/internaltest/4700846304603948197";
+const APP_LOGO_URL = "https://www.dispatch-up.com/icon-512.png";
 const IOS_URL = "https://apps.apple.com/us/app/dispatch-up-driver/id6761345616";
 
 /** Manda al grupo de WhatsApp del driver su usuario, contraseña y los enlaces de la app */
@@ -20,7 +22,14 @@ async function sendAccessWhatsApp(supabase: any, tenantId: string, email: string
       nombre: String(driver.name ?? "").trim().split(/\s+/)[0], driver: driver.name,
       usuario: email, contrasena: password, android: ANDROID_URL, ios: IOS_URL,
     });
-    await sendTextLogged(supabase, { ...log, groupId: driver.whatsapp_group_id, message });
+    // Vista previa con el logo de Dispatch Up: la que arma WhatsApp con el enlace de Google Play dice "Sign in - Google Accounts"
+    try {
+      await sendWhapiLinkPreview(driver.whatsapp_group_id, message, "Dispatch Up Mobile App", APP_LOGO_URL, "App para drivers de Dispatch Up");
+      await logMessage(supabase, { ...log, groupId: driver.whatsapp_group_id, message }, "sent");
+    } catch (e) {
+      console.error("link preview failed, sending plain text:", e);
+      await sendTextLogged(supabase, { ...log, groupId: driver.whatsapp_group_id, message });
+    }
     return "sent";
   } catch (e) {
     console.error("driver access whatsapp:", e);
