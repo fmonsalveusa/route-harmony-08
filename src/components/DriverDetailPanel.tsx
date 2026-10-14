@@ -299,8 +299,8 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
           </div>
 
           {/* Investors */}
-          <div className="border-t pt-3">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Investors</p>
+          <div className="pt-2">
+            <h3 className="text-lg font-bold uppercase tracking-wide text-foreground border-b pb-2 mb-3">Investors</h3>
             {investorsLoading ? (
               <p className="text-sm text-muted-foreground">Loading...</p>
             ) : investors.length === 0 ? (
@@ -328,8 +328,8 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
 
           {/* Banking */}
           {((driver as any).bank_name || (driver as any).routing_number || (driver as any).account_number) && (
-            <div className="border-t pt-3">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Banking (ACH)</p>
+            <div className="pt-2">
+              <h3 className="text-lg font-bold uppercase tracking-wide text-foreground border-b pb-2 mb-3">Banking (ACH)</h3>
               <div className="grid grid-cols-2 gap-x-4 gap-y-3">
                 <Info label="Account Holder">{(driver as any).account_holder_name || '—'}</Info>
                 <Info label="Bank Name">{(driver as any).bank_name || '—'}</Info>
@@ -339,10 +339,10 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
                     : '—'}
                 </Info>
                 <Info label="Routing Number">
-                  {(driver as any).routing_number ? `****${String((driver as any).routing_number).slice(-4)}` : '—'}
+                  {(driver as any).routing_number ? (canSeeTax ? String((driver as any).routing_number) : `****${String((driver as any).routing_number).slice(-4)}`) : "—"}
                 </Info>
                 <Info label="Account Number">
-                  {(driver as any).account_number ? `****${String((driver as any).account_number).slice(-4)}` : '—'}
+                  {(driver as any).account_number ? (canSeeTax ? String((driver as any).account_number) : `****${String((driver as any).account_number).slice(-4)}`) : "—"}
                 </Info>
               </div>
             </div>

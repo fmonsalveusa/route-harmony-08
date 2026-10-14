@@ -134,11 +134,12 @@ export function DriverTaxInfo({ driverId }: { driverId: string }) {
   }, [driverId]);
 
   const d = digits(tax?.tax_id);
-  const masked = !d ? '—' : tax?.entity_type === 'business' ? `**-***${d.slice(-4)}` : `***-**-${d.slice(-4)}`;
+  // Completo: esta sección solo la ven admin y accounting
+  const masked = !d ? '—' : d.length !== 9 ? d : tax?.entity_type === 'business' ? `${d.slice(0, 2)}-${d.slice(2)}` : `${d.slice(0, 3)}-${d.slice(3, 5)}-${d.slice(5)}`;
   const SOURCE: Record<string, string> = { onboarding: 'Onboarding (W-9)', w9: 'Leído del W-9', manual: 'Manual' };
   return (
-    <div className="border-t pt-3">
-      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Tax Information</p>
+    <div className="pt-2">
+      <h3 className="text-lg font-bold uppercase tracking-wide text-foreground border-b pb-2 mb-3">Tax Information</h3>
       {tax === undefined ? (
         <p className="text-sm text-muted-foreground">Loading...</p>
       ) : !tax ? (
