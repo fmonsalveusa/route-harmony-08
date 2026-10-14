@@ -209,25 +209,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Reenviar el acceso de un driver que ya tiene usuario: vuelve a la contraseña inicial y manda el WhatsApp
-    if (action === "resend_access") {
-      const { email, password } = payload;
-      if (typeof email !== "string" || !EMAIL_REGEX.test(email)) throw new Error("Invalid email format");
-      if (typeof password !== "string" || password.length < 6) throw new Error("Password must be at least 6 characters");
-      const tenantId = callerProfile!.tenant_id;
-      const { data: profile } = await supabaseAdmin
-        .from("profiles").select("id").ilike("email", email).eq("tenant_id", tenantId).maybeSingle();
-      if (!profile) throw new Error("No existe un usuario con ese email");
-      const { data: roleRow } = await supabaseAdmin.from("user_roles").select("role").eq("user_id", profile.id).maybeSingle();
-      if (roleRow?.role !== "driver") throw new Error("Solo se reenvía el acceso de drivers");
-      const { error: pwError } = await supabaseAdmin.auth.admin.updateUserById(profile.id, { password });
-      if (pwError) throw pwError;
-      const whatsapp = await sendAccessWhatsApp(supabaseAdmin, tenantId, email, password);
-      return new Response(JSON.stringify({ success: true, whatsapp }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     if (action === "update") {
       validateUpdateInput(payload);
       const { user_id, full_name, phone, role, is_active, password } = payload;

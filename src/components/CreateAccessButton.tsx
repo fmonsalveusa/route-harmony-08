@@ -97,45 +97,11 @@ export function CreateAccessButton({ name, email, phone, role, variant = 'row' }
 
   if (checking) return null;
 
-  // Driver con acceso: reenviarle el acceso por WhatsApp (vuelve a la contraseña inicial)
-  const handleResend = async () => {
-    if (!email) return;
-    if (!window.confirm(`¿Reenviar el acceso a ${name}? Su contraseña vuelve a ser "${password}" y se manda el mensaje a su grupo de WhatsApp.`)) return;
-    setCreating(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('manage-user', { body: { action: 'resend_access', email, password } });
-      if (error) {
-        const b = await (error as any).context?.json?.().catch(() => null);
-        throw new Error(b?.error ?? error.message);
-      }
-      if (data?.error) throw new Error(data.error);
-      if (data?.whatsapp === 'sent') toast.success('Acceso reenviado al grupo de WhatsApp');
-      else if (data?.whatsapp === 'no_group') toast.info('Contraseña restablecida, pero el driver no tiene grupo de WhatsApp');
-      else if (data?.whatsapp === 'disabled') toast.info('Contraseña restablecida. El aviso de WhatsApp está apagado');
-      else toast.error('Contraseña restablecida, pero no se pudo enviar el WhatsApp');
-    } catch (err: any) {
-      toast.error(err.message || 'No se pudo reenviar el acceso');
-    } finally {
-      setCreating(false);
-    }
-  };
-
   // Ya tiene acceso → mostrar indicador, no botón
   if (hasAccess && !showResult) {
     return (
-      <span className="inline-flex items-center gap-2">
-        <span className="inline-flex items-center gap-1 text-xs text-green-600 font-medium" title="Ya tiene acceso a la app">
-          <ShieldCheck className="h-3.5 w-3.5" /> Con acceso
-        </span>
-        {role === 'driver' && (
-          <button
-            type="button" onClick={handleResend} disabled={creating}
-            className="text-[11px] text-violet-600 hover:underline disabled:opacity-50"
-            title="Reenviar usuario y contraseña al grupo de WhatsApp del driver"
-          >
-            {creating ? 'Enviando...' : 'Reenviar'}
-          </button>
-        )}
+      <span className="inline-flex items-center gap-1 text-xs text-green-600 font-medium" title="Ya tiene acceso a la app">
+        <ShieldCheck className="h-3.5 w-3.5" /> Con acceso
       </span>
     );
   }
