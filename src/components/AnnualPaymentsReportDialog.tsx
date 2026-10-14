@@ -26,7 +26,7 @@ interface Row {
 const SERVICE: Record<string, string> = {
   owner_operator: 'Owner Operator', company_driver: 'Company Driver', dispatch_service: 'Dispatch Service',
 };
-const money = (n: number) => `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const money = (n: number) => `${n < 0 ? "-" : ""}$${Math.abs(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const int = (n: number) => Math.round(n).toLocaleString('en-US');
 
 /** Trae todas las filas (PostgREST corta en 1000) */
