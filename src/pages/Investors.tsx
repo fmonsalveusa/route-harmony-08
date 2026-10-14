@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { StatTiles, SolidStatusPill, PILL_INPUT, TABLE_CARD, TABLE_HEAD_ROW, TABLE_ROW } from '@/components/StatTiles';
 import { CreateAccessButton } from '@/components/CreateAccessButton';
+import { DriverTaxSection } from '@/components/DriverTaxSection';
 import { ChevronDown, Landmark, Pencil, Trash2, PlusCircle, Search, Phone, Mail, Users, DollarSign, X, Percent, UserX } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatPhone } from '@/lib/phoneUtils';
@@ -28,6 +29,8 @@ const InvestorFormDialog = ({
   investor?: DbInvestor | null;
   onSubmit: (data: InvestorInput) => Promise<void>;
 }) => {
+  const { role, isMasterAdmin } = useAuth();
+  const canSeeTax = role === 'admin' || role === 'accounting' || !!isMasterAdmin;
   const getInitialForm = (): InvestorInput => investor ? {
     name: investor.name,
     email: investor.email || '',
@@ -175,6 +178,14 @@ const InvestorFormDialog = ({
               </div>
             </div>
           </div>
+
+          {/* Tax Information para el 1099 (solo admin y accounting, al editar) */}
+          {investor?.id && canSeeTax && (
+            <div className="border-t pt-4">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Tax Information</h3>
+              <DriverTaxSection driverId={investor.id} recipientType="investor" hasW9={!!investor.w9_url} />
+            </div>
+          )}
 
           {/* Pay % */}
           <div className="space-y-2 border-t pt-4 p-3 rounded-lg border-2 border-violet-400/50 bg-violet-50 dark:bg-violet-950/20">

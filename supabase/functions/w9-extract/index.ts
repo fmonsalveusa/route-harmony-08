@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 // Lee el W-9 subido de un driver con IA y guarda sus datos fiscales (payee_tax_info) para los 1099.
-//  • { driver_id }            → un driver (sobrescribe lo que haya)
+//  • { driver_id } / { investor_id } → uno (sobrescribe lo que haya)
 //  • { all: true }            → todos los drivers con W-9 que aún no tienen SSN/EIN
 // Solo admin y accounting.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
@@ -75,7 +75,7 @@ async function readW9(bytes: Uint8Array, mediaType: string): Promise<any> {
   return use.input;
 }
 
-async function processDriver(supabase: any, d: any) {
+async function processDriver(supabase: any, d: any, recipientType: "driver" | "investor" = "driver") {
   const path = storagePath(String(d.form_w9_url));
   if (!path) return { driver: d.name, error: "El W-9 no está en el almacenamiento" };
   const { data: file, error } = await supabase.storage.from("driver-documents").download(path);
@@ -92,7 +92,7 @@ async function processDriver(supabase: any, d: any) {
   const business = ein.length === 9;
   const legal = business ? (String(w9.business_name ?? "").trim() || String(w9.name ?? "").trim()) : String(w9.name ?? "").trim();
   await supabase.from("payee_tax_info").upsert({
-    recipient_type: "driver", recipient_id: d.id, tenant_id: d.tenant_id,
+    recipient_type: recipientType, recipient_id: d.id, tenant_id: d.tenant_id,
     entity_type: business ? "business" : "individual", legal_name: legal || null, tax_id: taxId || null,
     business_name: String(w9.business_name ?? "").trim() || null, tax_classification: w9.tax_classification ?? null,
     source: "w9", notes: maskIds(String(w9.notes ?? "").trim()) || null, updated_at: new Date().toISOString(),
@@ -118,6 +118,13 @@ Deno.serve(async (req) => {
     if (!allowed) return json({ error: "Solo admin o accounting" }, 403);
 
     const body = await req.json().catch(() => ({}));
+    // Investor (dueño del camión): su W-9 está en investors.w9_url
+    if (body.investor_id) {
+      const { data: inv } = await supabase.from("investors").select("id, name, tenant_id, w9_url").eq("id", body.investor_id).eq("tenant_id", profile?.tenant_id).maybeSingle();
+      if (!inv?.w9_url) return json({ error: "Este investor no tiene W-9 subido" }, 404);
+      try { return json({ results: [await processDriver(supabase, { ...inv, form_w9_url: inv.w9_url }, "investor")] }); }
+      catch (e) { return json({ results: [{ driver: inv.name, error: errMsg(e) }] }); }
+    }
     let q = supabase.from("drivers").select("id, name, tenant_id, form_w9_url").eq("tenant_id", profile?.tenant_id).not("form_w9_url", "is", null);
     if (body.driver_id) q = q.eq("id", body.driver_id);
     const { data: drivers } = await q;

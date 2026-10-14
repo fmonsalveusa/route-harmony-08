@@ -22,7 +22,7 @@ const fmt = (entity: Entity, id: string | null) => {
  * Datos fiscales del driver para el 1099 (SSN o EIN, a nombre personal o de compañía).
  * Solo admin y accounting (la tabla lo exige). Se pueden leer del W-9 subido con IA.
  */
-export function DriverTaxSection({ driverId, hasW9 }: { driverId: string; hasW9: boolean }) {
+export function DriverTaxSection({ driverId, hasW9, recipientType = 'driver' }: { driverId: string; hasW9: boolean; recipientType?: 'driver' | 'investor' }) {
   const [tax, setTax] = useState<Tax | null>(null);
   const [entity, setEntity] = useState<Entity>('individual');
   const [legalName, setLegalName] = useState('');
@@ -32,13 +32,13 @@ export function DriverTaxSection({ driverId, hasW9 }: { driverId: string; hasW9:
   const load = useCallback(async () => {
     const { data } = await supabase.from('payee_tax_info' as any)
       .select('entity_type, legal_name, tax_id, business_name, source, notes')
-      .eq('recipient_type', 'driver').eq('recipient_id', driverId).maybeSingle();
+      .eq('recipient_type', recipientType).eq('recipient_id', driverId).maybeSingle();
     const t = (data as unknown as Tax) ?? null;
     setTax(t);
     setEntity(t?.entity_type ?? 'individual');
     setLegalName(t?.legal_name ?? '');
     setTaxId(fmt(t?.entity_type ?? 'individual', t?.tax_id ?? null));
-  }, [driverId]);
+  }, [driverId, recipientType]);
 
   useEffect(() => { void load(); }, [load]);
 
@@ -47,7 +47,7 @@ export function DriverTaxSection({ driverId, hasW9 }: { driverId: string; hasW9:
     if (id && id.length !== 9) { toast.error('El SSN o EIN debe tener 9 dígitos'); return; }
     setBusy('save');
     const { error } = await supabase.from('payee_tax_info' as any).upsert({
-      recipient_type: 'driver', recipient_id: driverId, tenant_id: await getTenantId(),
+      recipient_type: recipientType, recipient_id: driverId, tenant_id: await getTenantId(),
       entity_type: entity, legal_name: legalName.trim() || null, tax_id: id || null, source: 'manual',
       updated_at: new Date().toISOString(),
     } as any, { onConflict: 'recipient_type,recipient_id' });
@@ -60,7 +60,7 @@ export function DriverTaxSection({ driverId, hasW9 }: { driverId: string; hasW9:
   const readW9 = async () => {
     setBusy('w9');
     try {
-      const { data, error } = await supabase.functions.invoke('w9-extract', { body: { driver_id: driverId } });
+      const { data, error } = await supabase.functions.invoke('w9-extract', { body: recipientType === 'investor' ? { investor_id: driverId } : { driver_id: driverId } });
       if (error) {
         const b = await (error as any).context?.json?.().catch(() => null);
         throw new Error(b?.error ?? error.message);
