@@ -1,5 +1,33 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+import { isEnabled, logMessage, renderMessage, sendTextLogged } from "../_shared/messaging.ts";
+
+const ANDROID_URL = "https://play.google.com/store/apps/details?id=com.dispatchup.driver2";
+const IOS_URL = "https://apps.apple.com/app/id6761345616";
+
+/** Manda al grupo de WhatsApp del driver su usuario, contraseña y los enlaces de la app */
+async function sendAccessWhatsApp(supabase: any, tenantId: string, email: string, password: string): Promise<string> {
+  try {
+    if (!(await isEnabled(supabase, tenantId, "wa_driver_access"))) return "disabled";
+    const { data: driver } = await supabase
+      .from("drivers").select("name, whatsapp_group_id").eq("tenant_id", tenantId).ilike("email", email).limit(1).maybeSingle();
+    const log = { tenantId, templateKey: "driver_access_created", recipientType: "driver", recipientName: driver?.name ?? email, reference: email };
+    if (!driver?.whatsapp_group_id) {
+      await logMessage(supabase, log, "skipped", "El driver no tiene grupo de WhatsApp");
+      return "no_group";
+    }
+    const message = await renderMessage(supabase, tenantId, "driver_access_created", {
+      nombre: String(driver.name ?? "").trim().split(/\s+/)[0], driver: driver.name,
+      usuario: email, contrasena: password, android: ANDROID_URL, ios: IOS_URL,
+    });
+    await sendTextLogged(supabase, { ...log, groupId: driver.whatsapp_group_id, message });
+    return "sent";
+  } catch (e) {
+    console.error("driver access whatsapp:", e);
+    return "failed";
+  }
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
@@ -155,7 +183,10 @@ Deno.serve(async (req) => {
         .from("user_roles")
         .insert({ user_id: userId, role, tenant_id: tenantId });
 
-      return new Response(JSON.stringify({ success: true, user_id: userId }), {
+      // Driver: aviso al grupo de WhatsApp con su acceso (si falla, el acceso igual queda creado)
+      const whatsapp = role === "driver" ? await sendAccessWhatsApp(supabaseAdmin, tenantId, email, password) : null;
+
+      return new Response(JSON.stringify({ success: true, user_id: userId, whatsapp }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

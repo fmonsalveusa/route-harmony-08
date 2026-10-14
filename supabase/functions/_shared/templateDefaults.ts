@@ -209,6 +209,25 @@ export const AUTOMATIONS: AutomationDefinition[] = [
     ],
   },
   {
+    id: 'driver_access',
+    title: 'Acceso a la app creado',
+    description: 'Al pulsar "Crear acceso" en un driver. Le manda su usuario, contraseña y los enlaces para descargar la app.',
+    toggle: 'wa_driver_access',
+    templates: [{
+      key: 'driver_access_created',
+      title: 'Mensaje',
+      description: 'Se envía al grupo del driver.',
+      body: '¡Hola {nombre}! Ya tienes acceso a la app de Dispatch Up 🚚\n\nUsuario: {usuario}\nContraseña: {contrasena}\n\nDescárgala aquí:\nAndroid: {android}\niPhone: {ios}\n\nAl entrar, acepta el permiso de ubicación "Permitir siempre" para que podamos ver tu ubicación durante las cargas.',
+      variables: [
+        ...DRIVER_NAME_VARS,
+        v('usuario', 'Email con que entra a la app', 'pedro@gmail.com'),
+        v('contrasena', 'Contraseña inicial', 'Pedro2026!'),
+        v('android', 'Enlace de Google Play', 'https://play.google.com/store/apps/details?id=com.dispatchup.driver2'),
+        v('ios', 'Enlace de App Store', 'https://apps.apple.com/app/id6761345616'),
+      ],
+    }],
+  },
+  {
     id: 'payment_receipts',
     title: 'Recibo de pago',
     description: 'Al marcar un pago como Paid. Se adjunta el recibo en PDF.',

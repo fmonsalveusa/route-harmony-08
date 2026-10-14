@@ -46,3 +46,4 @@ CREATE POLICY "tenant_read" ON whatsapp_message_history FOR SELECT
   USING (tenant_id = get_user_tenant_id(auth.uid()) OR is_master_admin(auth.uid()));
 GRANT SELECT ON TABLE whatsapp_message_history TO authenticated;
 GRANT ALL ON TABLE whatsapp_message_history TO service_role;
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS wa_driver_access boolean NOT NULL DEFAULT true;

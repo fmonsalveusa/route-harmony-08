@@ -70,6 +70,9 @@ export function CreateAccessButton({ name, email, phone, role, variant = 'row' }
       }
       if (data?.error) throw new Error(data.error);
 
+      if (data?.whatsapp === 'sent') toast.success('Acceso enviado al grupo de WhatsApp del driver');
+      else if (data?.whatsapp === 'no_group') toast.info('El driver no tiene grupo de WhatsApp: comparte el acceso manualmente');
+      else if (data?.whatsapp === 'failed') toast.error('No se pudo enviar el WhatsApp: comparte el acceso manualmente');
       setHasAccess(true);
       setShowResult(true);
     } catch (err: any) {
