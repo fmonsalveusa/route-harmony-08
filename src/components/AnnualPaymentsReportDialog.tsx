@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Download, FileText, Loader2 } from 'lucide-react';
+import { Download, FileText, Loader2, Pencil } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { getTenantId } from '@/hooks/useTenantId';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -8,8 +10,13 @@ import { toast } from 'sonner';
 
 type RecipientType = 'driver' | 'investor' | 'dispatcher';
 
+interface TaxInfo { entity_type: 'individual' | 'business'; legal_name: string | null; tax_id: string | null }
+
 interface Row {
   key: string;
+  recipientId: string | null;
+  w9: string | null;
+  tax: TaxInfo | null;
   name: string;
   serviceType: string;
   email: string;
@@ -28,6 +35,18 @@ const SERVICE: Record<string, string> = {
 };
 const money = (n: number) => `${n < 0 ? "-" : ""}$${Math.abs(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const int = (n: number) => Math.round(n).toLocaleString('en-US');
+const digits = (s: string | null | undefined) => String(s ?? '').replace(/\D/g, '');
+/** SSN 123-45-6789, EIN 12-3456789 */
+const fmtTaxId = (t: TaxInfo | null) => {
+  const d = digits(t?.tax_id);
+  if (d.length !== 9) return d;
+  return t?.entity_type === 'business' ? `${d.slice(0, 2)}-${d.slice(2)}` : `${d.slice(0, 3)}-${d.slice(3, 5)}-${d.slice(5)}`;
+};
+const maskTaxId = (t: TaxInfo | null) => {
+  const d = digits(t?.tax_id);
+  if (!d) return '';
+  return t?.entity_type === 'business' ? `**-***${d.slice(-4)}` : `***-**-${d.slice(-4)}`;
+};
 
 /** Trae todas las filas (PostgREST corta en 1000) */
 async function fetchAll<T>(build: (from: number, to: number) => PromiseLike<{ data: any; error: any }>): Promise<T[]> {
@@ -63,6 +82,8 @@ export function AnnualPaymentsReportDialog({ open, onOpenChange }: { open: boole
   const [companies, setCompanies] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<{ payments: any[]; adj: Record<string, number>; loads: Record<string, any>; people: Record<string, any> } | null>(null);
+  const [taxMap, setTaxMap] = useState<Record<string, TaxInfo>>({});
+  const [editing, setEditing] = useState<Row | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -84,11 +105,20 @@ export function AnnualPaymentsReportDialog({ open, onOpenChange }: { open: boole
         const loadIds = [...new Set(payments.map(p => p.load_id).filter(Boolean))] as string[];
         const recipientIds = [...new Set(payments.map(p => p.recipient_id).filter(Boolean))] as string[];
         const table = type === 'driver' ? 'drivers' : type === 'investor' ? 'investors' : 'dispatchers';
-        const [adjRows, loadRows, peopleRows] = await Promise.all([
+        const [adjRows, loadRows, peopleRows, taxRows] = await Promise.all([
           fetchByIds<any>(ids, c => supabase.from('payment_adjustments' as any).select('payment_id, adjustment_type, amount').in('payment_id', c)),
           fetchByIds<any>(loadIds, c => supabase.from('loads').select('id, miles, empty_miles, company_id').in('id', c)),
           fetchByIds<any>(recipientIds, c => supabase.from(table as any).select('*').in('id', c)),
+          // Solo admin y accounting la pueden leer; para el resto llega vacía
+          fetchByIds<any>(recipientIds, c => supabase.from('payee_tax_info' as any).select('recipient_id, entity_type, legal_name, tax_id').eq('recipient_type', type).in('recipient_id', c)),
         ]);
+        const tax: Record<string, TaxInfo> = {};
+        // Investors: lo que ya tienen en su ficha (compañía + EIN) sirve de punto de partida
+        if (type === 'investor') for (const p of peopleRows) {
+          if (p.ein || p.business_name) tax[p.id] = { entity_type: p.ein ? 'business' : 'individual', legal_name: p.business_name ?? null, tax_id: p.ein ?? null };
+        }
+        for (const t of taxRows) tax[t.recipient_id] = { entity_type: t.entity_type, legal_name: t.legal_name, tax_id: t.tax_id };
+        if (!cancelled) setTaxMap(tax);
         const adj: Record<string, number> = {};
         for (const a of adjRows) adj[a.payment_id] = (adj[a.payment_id] ?? 0) + (a.adjustment_type === 'addition' ? Number(a.amount) : -Number(a.amount));
         if (!cancelled) setData({
@@ -117,7 +147,8 @@ export function AnnualPaymentsReportDialog({ open, onOpenChange }: { open: boole
       let r = map.get(key);
       if (!r) {
         r = {
-          key, name: (person?.name ?? p.recipient_name ?? '—').trim(),
+          key, recipientId: p.recipient_id ?? null, w9: person?.form_w9_url ?? person?.w9_url ?? null, tax: null,
+          name: (person?.name ?? p.recipient_name ?? '—').trim(),
           serviceType: SERVICE[person?.service_type] ?? person?.service_type ?? '',
           email: person?.email ?? '', address: person?.address ?? '',
           payments: 0, loads: 0, loadedMiles: 0, emptyMiles: 0, gross: 0, adjustments: 0, net: 0, loadSet: new Set(),
@@ -137,8 +168,32 @@ export function AnnualPaymentsReportDialog({ open, onOpenChange }: { open: boole
         r.emptyMiles += Number(load.empty_miles) || 0;
       }
     }
-    return [...map.values()].map(({ loadSet: _s, ...r }) => r).sort((a, b) => b.gross - a.gross);
-  }, [data, company]);
+    return [...map.values()].map(({ loadSet: _s, ...r }) => ({ ...r, tax: (r.recipientId && taxMap[r.recipientId]) || null }))
+      .sort((a, b) => b.gross - a.gross);
+  }, [data, company, taxMap]);
+
+  const openW9 = async (stored: string) => {
+    const win = window.open('about:blank', '_blank');
+    const path = stored.match(/\/driver-documents\/([^?]+)/)?.[1] ?? (stored.startsWith('http') ? null : stored);
+    const { data: signed } = path
+      ? await supabase.storage.from('driver-documents').createSignedUrl(decodeURIComponent(path), 3600)
+      : { data: null };
+    if (win) win.location.href = signed?.signedUrl ?? stored;
+  };
+
+  const saveTax = async (row: Row, t: TaxInfo) => {
+    if (!row.recipientId) return;
+    const id = digits(t.tax_id);
+    if (id && id.length !== 9) { toast.error('El SSN o EIN debe tener 9 dígitos'); return; }
+    const { error } = await supabase.from('payee_tax_info' as any).upsert({
+      recipient_type: type, recipient_id: row.recipientId, tenant_id: await getTenantId(),
+      entity_type: t.entity_type, legal_name: t.legal_name?.trim() || null, tax_id: id || null, updated_at: new Date().toISOString(),
+    } as any, { onConflict: 'recipient_type,recipient_id' });
+    if (error) { toast.error(`No se pudo guardar: ${error.message}`); return; }
+    setTaxMap(prev => ({ ...prev, [row.recipientId!]: { entity_type: t.entity_type, legal_name: t.legal_name?.trim() || null, tax_id: id || null } }));
+    setEditing(null);
+    toast.success('Datos fiscales guardados');
+  };
 
   const totals = useMemo(() => rows.reduce((t, r) => ({
     loads: t.loads + r.loads, loaded: t.loaded + r.loadedMiles, empty: t.empty + r.emptyMiles,
@@ -150,9 +205,11 @@ export function AnnualPaymentsReportDialog({ open, onOpenChange }: { open: boole
 
   const exportCsv = () => {
     const q = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-    const head = ['Nombre', ...(type === 'driver' ? ['Tipo'] : []), 'Email', 'Dirección', 'Pagos', 'Cargas',
+    const head = ['Nombre', ...(type === 'driver' ? ['Tipo'] : []), 'Persona / Compañía', 'Nombre legal', 'SSN / EIN', 'Email', 'Dirección', 'Pagos', 'Cargas',
       ...(showMiles ? ['Millas cargadas', 'Millas vacías', 'Millas totales'] : []), 'Total bruto', 'Ajustes', 'Total neto'];
-    const lines = rows.map(r => [r.name, ...(type === 'driver' ? [r.serviceType] : []), r.email, r.address, r.payments, r.loads,
+    const lines = rows.map(r => [r.name, ...(type === 'driver' ? [r.serviceType] : []),
+      r.tax ? (r.tax.entity_type === 'business' ? 'Compañía' : 'Persona') : '', r.tax?.legal_name ?? '', fmtTaxId(r.tax),
+      r.email, r.address, r.payments, r.loads,
       ...(showMiles ? [Math.round(r.loadedMiles), Math.round(r.emptyMiles), Math.round(r.loadedMiles + r.emptyMiles)] : []),
       r.gross.toFixed(2), r.adjustments.toFixed(2), r.net.toFixed(2)].map(q).join(','));
     const csv = '﻿' + [head.map(q).join(','), ...lines].join('\n');
@@ -211,6 +268,7 @@ export function AnnualPaymentsReportDialog({ open, onOpenChange }: { open: boole
               <thead className="sticky top-0 bg-muted text-xs text-muted-foreground">
                 <tr>
                   <th className="p-2 text-left">Nombre</th>
+                  <th className="p-2 text-left">SSN / EIN</th>
                   <th className="p-2 text-right">Cargas</th>
                   {showMiles && <><th className="p-2 text-right">Millas cargadas</th><th className="p-2 text-right">Millas vacías</th><th className="p-2 text-right">Millas totales</th></>}
                   <th className="p-2 text-right">Total bruto</th>
@@ -224,6 +282,24 @@ export function AnnualPaymentsReportDialog({ open, onOpenChange }: { open: boole
                     <td className="p-2">
                       <p className="font-medium">{r.name}</p>
                       {(r.serviceType || r.email) && <p className="text-xs text-muted-foreground">{[r.serviceType, r.email].filter(Boolean).join(' · ')}</p>}
+                    </td>
+                    <td className="p-2">
+                      <div className="flex items-center gap-1.5">
+                        {r.tax?.tax_id ? (
+                          <div>
+                            <p className="font-mono text-xs">{maskTaxId(r.tax)}</p>
+                            <p className="text-[11px] text-muted-foreground">
+                              {r.tax.entity_type === 'business' ? 'Compañía' : 'Persona'}{r.tax.legal_name ? ` · ${r.tax.legal_name}` : ''}
+                            </p>
+                          </div>
+                        ) : <span className="text-xs text-amber-600">Falta</span>}
+                        {r.recipientId && (
+                          <button type="button" className="p-1 rounded hover:bg-muted text-muted-foreground" title="Editar datos fiscales" onClick={() => setEditing(r)}>
+                            <Pencil className="h-3 w-3" />
+                          </button>
+                        )}
+                        {r.w9 && <button type="button" className="text-[11px] text-blue-600 hover:underline" onClick={() => openW9(r.w9!)}>W-9</button>}
+                      </div>
                     </td>
                     <td className="p-2 text-right tabular-nums">{r.loads}</td>
                     {showMiles && <>
@@ -240,6 +316,7 @@ export function AnnualPaymentsReportDialog({ open, onOpenChange }: { open: boole
               <tfoot className="sticky bottom-0 bg-muted font-semibold">
                 <tr className="border-t">
                   <td className="p-2">Total ({rows.length})</td>
+                  <td className="p-2 text-xs font-normal text-muted-foreground">{rows.filter(r => !r.tax?.tax_id).length} sin SSN/EIN</td>
                   <td className="p-2 text-right tabular-nums">{totals.loads}</td>
                   {showMiles && <>
                     <td className="p-2 text-right tabular-nums">{int(totals.loaded)}</td>
@@ -253,6 +330,44 @@ export function AnnualPaymentsReportDialog({ open, onOpenChange }: { open: boole
               </tfoot>
             </table>
           )}
+        </div>
+      </DialogContent>
+      {editing && <TaxInfoDialog row={editing} onClose={() => setEditing(null)} onSave={t => saveTax(editing, t)} />}
+    </Dialog>
+  );
+}
+
+function TaxInfoDialog({ row, onClose, onSave }: { row: Row; onClose: () => void; onSave: (t: TaxInfo) => void }) {
+  const [entity, setEntity] = useState<TaxInfo['entity_type']>(row.tax?.entity_type ?? 'individual');
+  const [legalName, setLegalName] = useState(row.tax?.legal_name ?? '');
+  const [taxId, setTaxId] = useState(fmtTaxId(row.tax));
+  return (
+    <Dialog open onOpenChange={o => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Datos fiscales · {row.name}</DialogTitle>
+          <DialogDescription>Como aparecen en su W-9. Solo admin y accounting pueden verlos.</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <Select value={entity} onValueChange={v => setEntity(v as TaxInfo['entity_type'])}>
+            <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="individual">A nombre personal (SSN)</SelectItem>
+              <SelectItem value="business">A nombre de compañía (EIN)</SelectItem>
+            </SelectContent>
+          </Select>
+          <Input
+            placeholder={entity === 'business' ? 'Nombre de la compañía (LLC, Inc…)' : 'Nombre legal de la persona'}
+            value={legalName} onChange={e => setLegalName(e.target.value)}
+          />
+          <Input
+            placeholder={entity === 'business' ? 'EIN (12-3456789)' : 'SSN (123-45-6789)'}
+            value={taxId} onChange={e => setTaxId(e.target.value)} autoComplete="off" inputMode="numeric"
+          />
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" size="sm" onClick={onClose}>Cancelar</Button>
+            <Button size="sm" onClick={() => onSave({ entity_type: entity, legal_name: legalName, tax_id: taxId })}>Guardar</Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
