@@ -592,15 +592,18 @@ const Tracking = () => {
     // Get last delivered load per driver.
     // Desempate: cuando dos cargas comparten delivery_date (ej. dos entregas el mismo d├¡a),
     // gana la de created_at m├ís reciente ΓÇö la registrada despu├⌐s es la ├║ltima real.
+    // TONU cuenta como "última carga": el camión se quedó en el pickup
     supabase
       .from('loads')
-      .select('id, driver_id, delivery_date, destination, created_at')
+      .select('id, driver_id, status, pickup_date, delivery_date, destination, created_at')
       .in('driver_id', driverIds)
-      .eq('status', 'delivered')
-      .order('delivery_date', { ascending: false, nullsFirst: false })
-      .order('created_at', { ascending: false })
-      .then(async ({ data: deliveredLoads }) => {
-        if (cancelled || !deliveredLoads || deliveredLoads.length === 0) return;
+      .in('status', ['delivered', 'tonu'])
+      .then(async ({ data: rows }) => {
+        if (cancelled || !rows || rows.length === 0) return;
+        // Fecha de cierre: la entrega; en TONU, el pickup
+        const endDate = (l: any) => String((l.status === 'tonu' ? l.pickup_date : l.delivery_date) || '').slice(0, 10);
+        const deliveredLoads = [...rows].sort((a, b) =>
+          endDate(b).localeCompare(endDate(a)) || String(b.created_at).localeCompare(String(a.created_at)));
 
         // Get unique last load per driver
         const lastLoadByDriver: Record<string, typeof deliveredLoads[0]> = {};
@@ -615,25 +618,21 @@ const Tracking = () => {
           .from('load_stops')
           .select('*')
           .in('load_id', loadIds)
-          .eq('stop_type', 'delivery')
           .order('stop_order', { ascending: false });
 
         const result: Record<string, { address: string; lat: number; lng: number; date: string }> = {};
         for (const [driverId, load] of Object.entries(lastLoadByDriver)) {
-          const deliveryStop = (stops || []).find(s => s.load_id === load.id && s.lat && s.lng);
+          const isTonu = load.status === 'tonu';
+          // TONU: primer pickup; si no, la última entrega
+          const candidates = (stops || []).filter(s => s.load_id === load.id && s.stop_type === (isTonu ? 'pickup' : 'delivery'));
+          if (isTonu) candidates.reverse();
+          const date = endDate(load);
+          const deliveryStop = candidates.find(s => s.lat && s.lng);
           if (deliveryStop) {
-            result[driverId] = {
-              address: deliveryStop.address,
-              lat: deliveryStop.lat!,
-              lng: deliveryStop.lng!,
-              date: load.delivery_date || '',
-            };
-          } else {
+            result[driverId] = { address: deliveryStop.address, lat: deliveryStop.lat!, lng: deliveryStop.lng!, date };
+          } else if (candidates[0]) {
             // No geocoded stop, still show address
-            const anyStop = (stops || []).find(s => s.load_id === load.id);
-            if (anyStop) {
-              result[driverId] = { address: anyStop.address, lat: 0, lng: 0, date: load.delivery_date || '' };
-            }
+            result[driverId] = { address: candidates[0].address, lat: 0, lng: 0, date };
           }
         }
         if (!cancelled) setLastDeliveryStops(result);

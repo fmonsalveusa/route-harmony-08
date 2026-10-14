@@ -447,7 +447,9 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
   const mapInstanceRef = useRef<any>(null);
   const persistedRef = useRef(false);
   const [resolvedStops, setResolvedStops] = useState<ResolvedStop[]>([]);
-  const [totalMiles, setTotalMiles] = useState<number>(Number(load.miles) || 0);
+  const [routeMiles, setTotalMiles] = useState<number>(Number(load.miles) || 0);
+  // TONU: la carga no se movió → millas cargadas en 0 (la ruta igual se dibuja)
+  const totalMiles = load.status === 'tonu' ? 0 : routeMiles;
   const [emptyMiles, setEmptyMiles] = useState<number>(Number((load as any).empty_miles) || 0);
   const [emptyMilesOrigin, setEmptyMilesOrigin] = useState<string | null>((load as any).empty_miles_origin || null);
   const [editingEmptyOrigin, setEditingEmptyOrigin] = useState(false);
@@ -1007,7 +1009,7 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
         pickupPlus2.setUTCDate(pickupPlus2.getUTCDate() + 2);
         const { data: prevLoads } = await supabase
           .from('loads')
-          .select('id, delivery_date, created_at')
+          .select('id, status, delivery_date, created_at')
           .eq('driver_id', load.driver_id)
           .neq('id', load.id)
           .in('status', ['delivered', 'tonu', 'paid'])
@@ -1022,16 +1024,18 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
 
         const { data: prevStops } = await supabase
           .from('load_stops')
-          .select('load_id, address, lat, lng, stop_order')
+          .select('load_id, address, lat, lng, stop_order, stop_type')
           .in('load_id', prevLoadIds)
-          .eq('stop_type', 'delivery')
           .order('stop_order', { ascending: false })
-          .limit(50);
+          .limit(100);
 
         if (!prevStops || prevStops.length === 0) return;
 
         for (const prevLoad of prevLoads) {
-          const prevStop = prevStops.find((stop) => stop.load_id === prevLoad.id);
+          // TONU: el camión se quedó en el pickup (primera parada); si no, la última entrega
+          const prevStop = (prevLoad as any).status === 'tonu'
+            ? [...prevStops].reverse().find((stop) => stop.load_id === prevLoad.id && stop.stop_type === 'pickup')
+            : prevStops.find((stop) => stop.load_id === prevLoad.id && stop.stop_type === 'delivery');
           if (!prevStop) continue;
 
           const prevCoords = (prevStop.lat != null && prevStop.lng != null)
@@ -1571,7 +1575,7 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
               </div>
               <div className="px-4 py-2.5 border-r">
                 <div className="text-[11px] text-muted-foreground font-medium mb-0.5">Miles</div>
-                <span className="text-base font-semibold text-primary">{totalMiles > 0 ? totalMiles.toLocaleString() : '—'}</span>
+                <span className="text-base font-semibold text-primary">{totalMiles > 0 ? totalMiles.toLocaleString() : load.status === 'tonu' ? '0' : '—'}</span>
               </div>
               <div className="px-4 py-2.5 border-r">
                 <div className="text-[11px] text-muted-foreground font-medium mb-0.5">Total Miles</div>
