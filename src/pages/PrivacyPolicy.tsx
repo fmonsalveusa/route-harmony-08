@@ -1,9 +1,11 @@
+import { SUPPORT_EMAIL } from './DeleteData';
+
 const PrivacyPolicy = () => {
   return (
     <div className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto prose prose-sm dark:prose-invert">
         <h1>Privacy Policy</h1>
-        <p className="text-muted-foreground">Last updated: February 21, 2026</p>
+        <p className="text-muted-foreground">Last updated: October 15, 2026</p>
 
         <h2>1. Information We Collect</h2>
         <p>Dispatch Up collects the following information to provide our transportation management services:</p>
@@ -31,18 +33,19 @@ const PrivacyPolicy = () => {
         <p>We do not sell your personal information. We may share information with:</p>
         <ul>
           <li>Your employer or dispatching company (as part of the service)</li>
+          <li>The broker or customer of each load you haul: your name, phone number, truck location during the load, and the load pictures and documents (BOL/POD)</li>
           <li>Service providers who assist in operating our platform</li>
           <li>Law enforcement when required by law</li>
         </ul>
 
         <h2>4. Location Data</h2>
-        <p>Location tracking is used solely for load delivery tracking purposes. Drivers can control location sharing through the app. Location data is shared only with the driver's assigned dispatching company and is not sold to third parties.</p>
+        <p>Location tracking is used solely for load delivery tracking purposes. Drivers can control location sharing through the app. Location data is shared only with the driver's assigned dispatching company and with the broker or customer of the active load, is not used for advertising and is not sold to third parties.</p>
 
         <h2>5. Data Security</h2>
         <p>We implement industry-standard security measures including encryption, secure data storage, and access controls to protect your information. All data is transmitted over encrypted connections (HTTPS/TLS).</p>
 
         <h2>6. Data Retention</h2>
-        <p>We retain your data for as long as your account is active or as needed to provide our services. You may request deletion of your account and associated data by contacting us.</p>
+        <p>We retain your data for as long as your account is active or as needed to provide our services. You may request deletion of your account and associated data by following the steps at <a href="/delete-data">dispatch-up.com/delete-data</a>.</p>
 
         <h2>7. Your Rights</h2>
         <p>You have the right to:</p>
@@ -64,7 +67,8 @@ const PrivacyPolicy = () => {
         <p>If you have questions about this privacy policy or our data practices, please contact us at:</p>
         <p>
           <strong>Dispatch Up</strong><br />
-          Email: support@dispatchup.com
+          58 Logistics LLC<br />
+          Email: <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>
         </p>
       </div>
     </div>

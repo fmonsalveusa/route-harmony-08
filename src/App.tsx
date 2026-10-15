@@ -33,6 +33,7 @@ import DriverOnboarding from "./pages/DriverOnboarding";
 import Install from "./pages/Install";
 import Landing from "./pages/Landing";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import DeleteData from "./pages/DeleteData";
 import Documents from "./pages/Documents";
 import SigningUpload from "./pages/signing/Upload";
 import SigningSign from "./pages/signing/Sign";
@@ -188,6 +189,7 @@ const AppRoutes = () => {
       <Route path="/install" element={<Install />} />
       <Route path="/" element={user ? <Navigate to={getRedirectPath()} replace /> : isNativePlatform() ? <Navigate to="/auth" replace /> : <Landing />} />
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+      <Route path="/delete-data" element={<DeleteData />} />
 
       {/* Driver mobile routes */}
       <Route path="/driver" element={<DriverWrapper />}>
