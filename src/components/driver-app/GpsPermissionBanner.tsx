@@ -12,6 +12,7 @@ import {
   getAppVersion,
   type BackgroundPermissionStatus,
 } from '@/lib/nativeTracking';
+import { locationDisclosureAccepted } from '@/lib/locationDisclosure';
 
 /**
  * Avisa al driver cuando falta el permiso de ubicación en background y lo lleva
@@ -63,6 +64,20 @@ export function GpsPermissionBanner({ driverId }: { driverId: string | null }) {
 
   useEffect(() => { void refresh(); }, [refresh]);
 
+  // Primera vez (o tras borrar los datos): lo primero que ve el driver es el aviso destacado
+  // "Uso de tu ubicación" y luego el permiso del sistema; esta pantalla solo sale después si
+  // sigue faltando "Permitir todo el tiempo" (Google Play exige el aviso antes de cualquier permiso).
+  const [askingFirst, setAskingFirst] = useState(false);
+  const askedFirst = useRef(false);
+  useEffect(() => {
+    if (!status || status.background || askedFirst.current || locationDisclosureAccepted()) return;
+    askedFirst.current = true;
+    setAskingFirst(true);
+    requestBackgroundPermissions()
+      .then((s) => { setStatus(s); void report(s); })
+      .finally(() => { setAskingFirst(false); setWaitLeft(20); });
+  }, [status, report]);
+
   // Cuenta regresiva para poder seguir sin GPS
   const blocking = isNativePlatform() && !dismissed && (pluginMissing || (!!status && !status.background));
   useEffect(() => {
@@ -94,7 +109,7 @@ export function GpsPermissionBanner({ driverId }: { driverId: string | null }) {
     }
   };
 
-  if (!isNativePlatform() || dismissed) return null;
+  if (!isNativePlatform() || dismissed || askingFirst) return null;
   if (!pluginMissing && (!status || status.background)) return null;
 
   const ios = Capacitor.getPlatform() === 'ios';

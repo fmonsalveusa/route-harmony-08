@@ -16,6 +16,11 @@ export function onLocationDisclosureRequest(l: Listener | null) {
   listener = l;
 }
 
+/** true si el driver ya aceptó el aviso destacado alguna vez */
+export function locationDisclosureAccepted(): boolean {
+  return accepted();
+}
+
 function accepted(): boolean {
   try { return localStorage.getItem(KEY) === '1'; } catch { return false; }
 }
