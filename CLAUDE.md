@@ -32,7 +32,7 @@
 - **Tenant ID:** `7b4e906b-3d75-44ba-a8b0-64bc923a3c36`
 - **Mobile:** Capacitor 8 (core 8.1.0, android 8.3.0, ios 8.3.0)
 - **iOS:** bundle `com.dispatchup.driver`, App Store ID `6761345616`, Team ID `AY3TN9N54Z`
-- **Android:** package `com.dispatchup.driver2`, keystore `C:\Users\fmons\my-keystore.keystore`, alias `dispatchup`
+- **Android:** package `com.dispatchup.app` (cuenta de organización 58 Logistics; antes `com.dispatchup.driver2`), keystore `C:\Users\fmons\my-keystore.keystore`, alias `dispatchup`
 
 ### Deploy
 - **TMS Web:** Vercel auto-deploy al push a `main` → `www.dispatch-up.com`
