@@ -731,13 +731,8 @@ async function rcPrepare(supabase: any, loadId: string, force = false, preview =
       placement: { placed: placements, skipped, already_signed: alreadySigned }, driver_name: rcData.driverName, driver_phone: rcData.driverPhone, truck_number: rcData.truckNumber,
       error: null, sent_to: null, sent_at: null, prepared_at: new Date().toISOString(), updated_at: new Date().toISOString(),
     }, { onConflict: "load_id" });
-    // El RC firmado reemplaza al sin firmar en la carga: "Rate Confirmation - PDF" y RC original
+    // El RC firmado reemplaza al sin firmar como "Rate Confirmation - PDF" (el RC original no se toca)
     await supabase.from("loads").update({ pdf_url: path }).eq("id", load.id);
-    if (meta) {
-      await supabase.storage.from("driver-documents").upload(`rc_metadata/${load.id}.json`,
-        new Blob([JSON.stringify({ ...meta, rc_original_url: path })], { type: "application/json" }),
-        { contentType: "application/json", upsert: true });
-    }
     return json({ prepared: true, placements, skipped, already_signed: alreadySigned });
   } catch (e) {
     if (preview) return json({ error: `No se pudo preparar el RC firmado: ${errMsg(e)}` }, 500);
