@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Wrench, Plus, RefreshCw, List, Truck, Gauge, Check, X, User, AlertTriangle, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Wrench, Plus, RefreshCw, List, Truck, Gauge, Check, X, User, AlertTriangle, AlertCircle, CheckCircle2, Send } from 'lucide-react';
 import { StatTiles, PILL_INPUT } from '@/components/StatTiles';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -136,6 +136,32 @@ const Maintenance = () => {
     return t ? `${t.unit_number} — ${t.make || ''} ${t.model || ''}` : id;
   };
 
+  // Recordatorio por WhatsApp de todo lo que está por vencer o vencido (solo Company Drivers)
+  const [sendingReminders, setSendingReminders] = useState(false);
+  const sendReminders = async () => {
+    if (!window.confirm('Se enviará por WhatsApp el recordatorio de mantenimiento a los Company Drivers cuyos camiones tienen mantenimiento por vencer o vencido. ¿Continuar?')) return;
+    setSendingReminders(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('maintenance-whatsapp-notify', { body: { all: true } });
+      if (error || data?.error) throw new Error(data?.error || error?.message);
+      const results = (data?.results ?? []) as any[];
+      const sent = results.filter(r => r.sent);
+      const skipped = results.filter(r => !r.sent);
+      if (results.length === 0) toast.info('No hay mantenimientos pendientes');
+      else toast.success(`${sent.length} recordatorio(s) enviado(s)`, {
+        description: [
+          sent.map(r => `${r.unit} (${r.driver})`).join(', '),
+          skipped.length ? `Sin enviar: ${skipped.map(r => `${r.unit ?? ''} ${r.skipped === 'no company driver' ? '(no es Company Driver)' : r.skipped === 'driver without whatsapp group' ? '(sin grupo)' : r.skipped ?? r.error ?? ''}`).join(', ')}` : '',
+        ].filter(Boolean).join(' · '),
+        duration: 10000,
+      });
+    } catch (e: any) {
+      toast.error(`No se pudieron enviar: ${e.message}`);
+    } finally {
+      setSendingReminders(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -145,6 +171,11 @@ const Maintenance = () => {
           <p className="page-description">Fleet maintenance tracker</p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={sendReminders} disabled={sendingReminders}
+            title="Envía por WhatsApp el recordatorio a los Company Drivers con mantenimiento por vencer o vencido">
+            <Send className={`h-3.5 w-3.5 mr-1.5 ${sendingReminders ? 'animate-pulse' : ''}`} />
+            Send Reminders
+          </Button>
           <Button variant="outline" size="sm" onClick={syncFromEld} disabled={syncingEld} title="Lee el odómetro de HOS247 y RouteOne (también se actualiza solo una vez al día)">
             <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${syncingEld ? 'animate-spin' : ''}`} />
             Sync from ELD
