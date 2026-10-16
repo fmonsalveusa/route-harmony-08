@@ -118,35 +118,72 @@ function occupied(items: TextItem[], label: TextItem, side: Side, at: { x: numbe
 
 type Measure = (t: string) => number;
 
+/** Palabras de la etiqueta de cada campo, para ubicarlo dentro de una línea con varias etiquetas */
+const FIELD_LABEL: Record<Field, RegExp> = {
+  carrier_signature: /signature|signed|accepted\s*by/gi,
+  signer_name: /print(?:ed)?\s*name|print|name/gi,
+  signer_title: /title/gi,
+  sign_date: /date/gi,
+  driver_name: /driver(?:'s|\u2019s)?\s*name|driver/gi,
+  driver_phone: /cell|phone|tel(?:ephone)?|mobile/gi,
+  truck_number: /truck|tractor|unit/gi,
+};
+
+/** Para completar lo que la IA no ubicó: solo etiquetas inequívocas (no "name" suelto) */
+const FALLBACK_LABEL: Partial<Record<Field, RegExp>> = {
+  signer_name: /\bprint(?:ed)?(?:\s*name)?\b/i,
+  signer_title: /\btitle\b/i,
+  sign_date: /\bdate\b/i,
+  driver_name: /\bdriver(?:'s|’s)?\s*name\b/i,
+  driver_phone: /\b(?:driver\s*)?(?:cell|phone|mobile)\b/i,
+  truck_number: /\b(?:truck|tractor|unit)\s*(?:#|no\.?|number)?/i,
+};
+
 /**
  * Dónde se escribe el dato y cuánto espacio hay. Si el texto trae varias etiquetas en la misma línea
- * ("Driver name: ____ Driver Phone # ____"), se ubica la de este campo y su raya en blanco.
- * La posición dentro del texto se estima con el ancho proporcional de los caracteres.
+ * ("Driver name: ____ Driver Phone # ____"), se ubica la de este campo y su raya en blanco; si la IA
+ * no dijo la etiqueta (o no coincide), se busca con las palabras del campo. Una raya ya usada por
+ * otro campo no se vuelve a usar. La posición se estima con el ancho proporcional de los caracteres.
  */
-function anchor(item: TextItem, side: Side, measure: Measure, label?: string): { x: number; y: number; room: number | null } {
-  if (side === "above") return { x: item.x, y: item.y + item.h + 3, room: null };
-  if (side === "below") return { x: item.x, y: item.y - item.h - 3, room: null };
+function anchor(item: TextItem, side: Side, measure: Measure, field: Field, used: Set<number>, label?: string):
+  { x: number; y: number; room: number | null; run: number | null } | null {
+  if (side === "above") return { x: item.x, y: item.y + item.h + 3, room: null, run: null };
+  if (side === "below") return { x: item.x, y: item.y - item.h - 3, room: null, run: null };
 
   const str = item.str;
   const total = measure(str) || 1;
   const at = (i: number) => item.x + item.w * (measure(str.slice(0, i)) / total);
-  let from = 0;
+
+  // Dónde termina la etiqueta: la que dio la IA y, si no, las palabras del campo
+  const starts: number[] = [];
   if (label) {
     const idx = str.toLowerCase().indexOf(label.toLowerCase().trim());
-    if (idx >= 0) from = idx + label.trim().length;
+    if (idx >= 0) starts.push(idx + label.trim().length);
   }
-  const rest = str.slice(from);
-  const run = rest.match(/_{2,}/);
-  if (run && run.index !== undefined) {
-    const start = from + run.index;
-    return { x: at(start) + 2, y: item.y + 1, room: at(start + run[0].length) - at(start) - 4 };
+  for (const m of str.matchAll(FIELD_LABEL[field])) starts.push((m.index ?? 0) + m[0].length);
+
+  const runs = [...str.matchAll(/_{2,}/g)].map((m) => ({ start: m.index ?? 0, len: m[0].length }));
+  for (const from of starts) {
+    const run = runs.find((r) => r.start >= from && !used.has(r.start));
+    // La raya tiene que ser la siguiente después de la etiqueta (no saltar a la de otra etiqueta)
+    if (run && !runs.some((r) => r.start >= from && r.start < run.start)) {
+      return { x: at(run.start) + 2, y: item.y + 1, room: at(run.start + run.len) - at(run.start) - 4, run: run.start };
+    }
+  }
+  if (runs.length) {
+    // Rayas sin etiqueta reconocible: la primera libre, solo si la IA eligió este texto sin etiqueta
+    if (label || starts.length) return null;
+    const run = runs.find((r) => !used.has(r.start));
+    if (!run) return null;
+    return { x: at(run.start) + 2, y: item.y + 1, room: at(run.start + run.len) - at(run.start) - 4, run: run.start };
   }
   // Sin raya: justo después de la etiqueta (o del texto completo)
+  const from = starts[0] ?? 0;
   if (from > 0) {
-    const next = rest.search(/\S/);
-    return { x: at(from + Math.max(next, 0)) + 4, y: item.y, room: null };
+    const next = str.slice(from).search(/\S/);
+    return { x: at(from + Math.max(next, 0)) + 4, y: item.y, room: null, run: null };
   }
-  return { x: item.x + item.w + 6, y: item.y, room: null };
+  return { x: item.x + item.w + 6, y: item.y, room: null, run: null };
 }
 
 export interface RcData {
@@ -240,13 +277,31 @@ export async function buildSignedRc(pdfBytes: Uint8Array, signaturePng: Uint8Arr
     truck_number: data.truckNumber,
   };
 
+  // Campos que la IA no ubicó pero cuya etiqueta está en una línea que sí usó para otro campo
+  // (p. ej. "Signature: ____ Date: ____ Print: ____"): se buscan ahí por sus palabras
+  const chosen = found as any;
+  const usedItems = [...new Set(RC_FIELDS.map((f) => chosen[f]?.item).filter((i) => i !== undefined))] as number[];
+  for (const f of RC_FIELDS) {
+    if (chosen[f]) continue;
+    const re = FALLBACK_LABEL[f];
+    if (!re) continue;
+    const it = usedItems.find((i) => items[i] && re.test(items[i].str) && /_{2,}/.test(items[i].str));
+    if (it !== undefined) chosen[f] = { item: it, side: "right" };
+  }
+  // Rayas ya ocupadas por cada texto, para que dos datos no caigan en la misma
+  const usedRuns = new Map<number, Set<number>>();
+
   for (const field of RC_FIELDS) {
     const spot = (found as any)[field];
     const item = spot ? items[spot.item] : undefined;
     if (!item || !pages[item.page]) continue;
     const page = pages[item.page];
     const { width: pw } = page.getSize();
-    const { x, y, room } = anchor(item, spot.side, (t) => font.widthOfTextAtSize(t, 10), spot.label);
+    if (!usedRuns.has(item.id)) usedRuns.set(item.id, new Set());
+    const pos = anchor(item, spot.side, (t) => font.widthOfTextAtSize(t, 10), field, usedRuns.get(item.id)!, spot.label);
+    if (!pos) { skipped.push({ field, found: "sin raya libre para este dato" }); continue; }
+    const { x, y, room } = pos;
+    if (pos.run !== null) usedRuns.get(item.id)!.add(pos.run);
     const already = occupied(items, item, spot.side, { x, y }, field === "carrier_signature" ? 200 : 120);
     if (already) { skipped.push({ field, found: already }); continue; }
     if (field === "carrier_signature") {
