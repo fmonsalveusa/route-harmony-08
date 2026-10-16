@@ -670,7 +670,7 @@ const fmtPhone = (p: string | null | undefined) => {
 /** Arma el RC firmado y lo deja como borrador para revisar. No reemplaza uno ya enviado salvo force. */
 /** preview: solo arma el PDF en una ruta aparte, sin tocar el registro (para probar con un RC ya enviado) */
 async function rcPrepare(supabase: any, loadId: string, force = false, preview = false) {
-  const { data: existing } = await supabase.from("load_rc_signed").select("status").eq("load_id", loadId).maybeSingle();
+  const { data: existing } = await supabase.from("load_rc_signed").select("status, source_path").eq("load_id", loadId).maybeSingle();
   if (existing?.status === "sent" && !force && !preview) return json({ error: "El RC firmado ya se envió al broker" }, 400);
 
   const { data: load } = await supabase
@@ -680,13 +680,20 @@ async function rcPrepare(supabase: any, loadId: string, force = false, preview =
   // Los clientes de Dispatch Service firman con su propio MC: nunca se firma por ellos
   if (await isDispatchService(supabase, load)) return json({ error: "Carga de Dispatch Service: el RC lo firma el cliente" }, 400);
 
-  // RC original del broker (el que se sube con la tarifa real); si no hay, el PDF de la carga
-  let source: string | null = null;
+  // RC original del broker (el que se sube con la tarifa real); si no hay, el PDF de la carga.
+  // Una vez firmado, la carga apunta al RC firmado: para volver a preparar se usa el original
+  // sin firmar que quedó guardado en load_rc_signed.source_path (nunca se firma sobre lo firmado).
+  const isSigned = (p: string | null) => !!p && p.startsWith("loads/rc_signed/");
+  let meta: Record<string, unknown> | null = null;
   const { data: metaBlob } = await supabase.storage.from("driver-documents").download(`rc_metadata/${load.id}.json`);
   if (metaBlob) {
-    try { source = storagePath(JSON.parse(await metaBlob.text())?.rc_original_url); } catch { /* sin metadata */ }
+    try { meta = JSON.parse(await metaBlob.text()); } catch { /* sin metadata */ }
   }
-  source = source || storagePath(load.pdf_url);
+  // Si después subieron un RC nuevo (sin firmar) a la carga, ese manda sobre el original guardado
+  let source: string | null = null;
+  for (const candidate of [storagePath(meta?.rc_original_url as string), storagePath(load.pdf_url), existing?.source_path ?? null]) {
+    if (!source && candidate && !isSigned(candidate)) source = candidate;
+  }
   if (!source) return json({ error: "La carga no tiene rate confirmation en PDF" }, 400);
 
   const [{ data: pdfBlob }, { data: sigBlob }, { data: driver }, { data: tenant }] = await Promise.all([
@@ -724,6 +731,13 @@ async function rcPrepare(supabase: any, loadId: string, force = false, preview =
       placement: { placed: placements, skipped, already_signed: alreadySigned }, driver_name: rcData.driverName, driver_phone: rcData.driverPhone, truck_number: rcData.truckNumber,
       error: null, sent_to: null, sent_at: null, prepared_at: new Date().toISOString(), updated_at: new Date().toISOString(),
     }, { onConflict: "load_id" });
+    // El RC firmado reemplaza al sin firmar en la carga: "Rate Confirmation - PDF" y RC original
+    await supabase.from("loads").update({ pdf_url: path }).eq("id", load.id);
+    if (meta) {
+      await supabase.storage.from("driver-documents").upload(`rc_metadata/${load.id}.json`,
+        new Blob([JSON.stringify({ ...meta, rc_original_url: path })], { type: "application/json" }),
+        { contentType: "application/json", upsert: true });
+    }
     return json({ prepared: true, placements, skipped, already_signed: alreadySigned });
   } catch (e) {
     if (preview) return json({ error: `No se pudo preparar el RC firmado: ${errMsg(e)}` }, 500);
