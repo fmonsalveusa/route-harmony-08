@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableHeader, TableHead, TableRow, TableBody, TableCell } from '@/components/ui/table';
 import { StatTiles, SolidStatusPill, TABLE_CARD } from '@/components/StatTiles';
-import { FileText, Copy, Pencil, Eye, Download, Trash2, Plus, LayoutTemplate, Loader2, X, Clock, CheckCircle2 } from 'lucide-react';
+import { FileText, Copy, Pencil, Eye, Download, Trash2, Plus, LayoutTemplate, Loader2, X, Clock, CheckCircle2, Package } from 'lucide-react';
+import { DocumentPodDialog, type DocPodLink } from '@/components/DocumentPodDialog';
 
 const DOC_STATUS: Record<string, { label: string; color: string; border: string }> = {
   pending: { label: 'Pendiente', color: 'bg-amber-500', border: 'border-l-amber-500' },
@@ -72,6 +73,17 @@ const Documents = () => {
   const [previewLoading, setPreviewLoading] = useState(false);
   const [editingRecipient, setEditingRecipient] = useState<{ id: string; email: string } | null>(null);
   const [editingSigner, setEditingSigner] = useState<{ id: string; name: string } | null>(null);
+  // Carga a la que va cada documento como POD
+  const [podLinks, setPodLinks] = useState<Record<string, DocPodLink>>({});
+  const [podDialog, setPodDialog] = useState<{ id: string; name: string } | null>(null);
+  const fetchPodLinks = useCallback(async () => {
+    const { data } = await supabase.from('documents' as any)
+      .select('id, pod_load_id, pod_stop_order, pod_document_id, loads:pod_load_id(reference_number)');
+    setPodLinks(Object.fromEntries(((data as any[]) ?? []).map((r) => [r.id, {
+      loadId: r.pod_load_id, reference: r.loads?.reference_number ?? null, stopOrder: r.pod_stop_order, attached: !!r.pod_document_id,
+    }])));
+  }, []);
+  useEffect(() => { void fetchPodLinks(); }, [fetchPodLinks]);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -104,12 +116,13 @@ const Documents = () => {
             duration: 8000,
           });
           fetchAll();
+          void fetchPodLinks();
         }
       })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [fetchAll]);
+  }, [fetchAll, fetchPodLinks]);
 
   const copySignLink = (docId: string) => {
     const link = getSigningUrl(docId);
@@ -340,6 +353,7 @@ const Documents = () => {
                     <TableHead>Destinatario</TableHead>
                     <TableHead>Creado</TableHead>
                     <TableHead>Firmado por</TableHead>
+                    <TableHead>Carga (POD)</TableHead>
                     <TableHead className="text-right">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -407,6 +421,21 @@ const Documents = () => {
                             {(doc as any).signerName || '—'}
                           </span>
                         )}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {(() => {
+                          const link = podLinks[doc.id];
+                          return (
+                            <button type="button" onClick={() => setPodDialog({ id: doc.id, name: doc.fileName })}
+                              className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground"
+                              title={link?.attached ? 'Agregado como POD de la carga' : link?.loadId ? 'Se agrega como POD al firmarse' : 'Usar como POD de una carga'}>
+                              <Package className="h-3.5 w-3.5" />
+                              {link?.loadId
+                                ? <span className={link.attached ? 'text-green-700 font-medium' : ''}>#{link.reference}{link.attached ? ' ✓' : ''}</span>
+                                : <span className="hover:underline">Vincular</span>}
+                            </button>
+                          );
+                        })()}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center justify-end gap-1">
@@ -556,6 +585,13 @@ const Documents = () => {
           </div>
         </DialogContent>
       </Dialog>
+      {podDialog && (
+        <DocumentPodDialog
+          docId={podDialog.id} docName={podDialog.name}
+          link={podLinks[podDialog.id] ?? { loadId: null, reference: null, stopOrder: null, attached: false }}
+          onClose={() => setPodDialog(null)} onSaved={() => { void fetchPodLinks(); }}
+        />
+      )}
     </div>
   );
 };

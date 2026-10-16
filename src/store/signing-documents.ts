@@ -114,7 +114,7 @@ export async function saveDocument(doc: SignDocument): Promise<void> {
 export async function deleteDocument(id: string): Promise<void> {
   const { data } = await supabase
     .from("documents" as any)
-    .select("file_data, signed_file_data")
+    .select("file_data, signed_file_data, pod_document_id")
     .eq("id", id)
     .maybeSingle();
 
@@ -124,5 +124,7 @@ export async function deleteDocument(id: string): Promise<void> {
     .eq("id", id);
   if (error) { console.error(error); throw error; }
 
-  await removePdfs([(data as any)?.file_data, (data as any)?.signed_file_data]);
+  // Si el firmado quedó como POD de una carga, ese archivo se conserva
+  const keepSigned = !!(data as any)?.pod_document_id;
+  await removePdfs([(data as any)?.file_data, keepSigned ? null : (data as any)?.signed_file_data]);
 }
