@@ -98,7 +98,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const fetchUserData = async (userId: string, retries = 3): Promise<boolean> => {
+  /**
+   * 'ok' = perfil y rol cargados · 'denied' = no tiene perfil o rol (se cierra la sesión)
+   * 'error' = la base no respondió (red lenta o caída): NO se cierra la sesión, se reintenta
+   */
+  const fetchUserData = async (userId: string, retries = 3): Promise<'ok' | 'denied' | 'error'> => {
     for (let attempt = 1; attempt <= retries; attempt++) {
       try {
         const { data: profileData, error: profileError } = await supabase
@@ -112,7 +116,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (!profileData) {
           console.warn('[AuthContext] Profile not found for authenticated user');
           clearUserState();
-          return false;
+          return 'denied';
         }
 
         const { data: roleData, error: roleError } = await supabase
@@ -123,7 +127,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         if (roleError) throw roleError;
         // Sin rol no hay acceso: nunca se asume admin (un driver terminaría viendo el TMS)
-        if (!roleData?.role && !profileData.is_master_admin) throw new Error('User role not found');
+        if (!roleData?.role && !profileData.is_master_admin) {
+          console.warn('[AuthContext] User role not found');
+          clearUserState();
+          return 'denied';
+        }
 
         let tenantData: TenantInfo | null = null;
 
@@ -144,7 +152,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setRole((roleData?.role as AppRole) || 'master_admin');
         setTenant(tenantData);
 
-        return true;
+        return 'ok';
       } catch (error) {
         console.warn(`[AuthContext] fetchUserData attempt ${attempt}/${retries} failed:`, error);
 
@@ -158,15 +166,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     }
 
-    clearUserState();
-    return false;
+    return 'error';
   };
 
   const refreshProfile = async () => {
     if (!user) return;
     setLoading(true);
-    const success = await fetchUserData(user.id);
-    if (!success) {
+    const result = await fetchUserData(user.id);
+    if (result === 'denied') {
       applySignedOutState();
       await safeSignOut();
     }
@@ -208,24 +215,42 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       processingSessionRef.current = true;
       setLoadingIfMounted(true);
 
-      const success = await Promise.race<boolean>([
+      const result = await Promise.race<'ok' | 'denied' | 'error'>([
         fetchUserData(nextSession.user.id),
-        new Promise<boolean>((resolve) => {
-          window.setTimeout(() => resolve(false), 5000);
+        new Promise<'error'>((resolve) => {
+          window.setTimeout(() => resolve('error'), 20000);
         }),
       ]).catch((error) => {
         console.warn('[AuthContext] session processing failed:', error);
-        return false;
+        return 'error' as const;
       });
 
       if (!mounted) return;
+      processingSessionRef.current = false;
 
-      if (!success) {
+      if (result === 'denied') {
         applySignedOutState();
         await safeSignOut();
+        setLoadingIfMounted(false);
+        return;
       }
 
-      processingSessionRef.current = false;
+      if (result === 'error') {
+        // La base no respondió: la sesión sigue siendo válida, así que no se cierra.
+        // Si ya estaba cargado este usuario, se sigue trabajando; si no, se reintenta.
+        if (profileLoadedRef.current && loadedUserIdRef.current === nextSession.user.id) {
+          setLoadingIfMounted(false);
+        } else {
+          console.warn('[AuthContext] profile not loaded yet — retrying in 4s');
+          window.setTimeout(async () => {
+            // Solo si sigue siendo la misma sesión (no se cerró ni cambió de usuario mientras tanto)
+            const { data } = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
+            if (mounted && data.session?.user?.id === nextSession.user.id) void processSession(data.session, true);
+          }, 4000);
+        }
+        return;
+      }
+
       setLoadingIfMounted(false);
     };
 
