@@ -146,14 +146,9 @@ const t = {
 
     // Meeting service options
     meetSvcOptions: [
-      "Dispatching para MC# propio",
-      "Leasing bajo nuestro MC#",
-      "Curso de Dispatcher",
-      "Tracking Up App",
-      "Asesoría de Negocios",
-      "Tramitación de Permisos",
-      "Dispatch Up TMS",
+      "Servicio de Despacho de Cargas",
       "Auditoría FMCSA",
+      "Curso de Dispatcher",
     ],
 
     // Onboarding
@@ -491,14 +486,9 @@ const t = {
     meetErrorGeneric: "Error processing your request",
 
     meetSvcOptions: [
-      "Dispatching for own MC#",
-      "Leasing under our MC#",
-      "Dispatcher Course",
-      "Tracking Up App",
-      "Business Consulting",
-      "Permit Processing",
-      "Dispatch Up TMS",
+      "Freight Dispatch Service",
       "FMCSA Audit",
+      "Dispatcher Course",
     ],
 
     // Onboarding
