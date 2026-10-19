@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle2, Download, ArrowLeft, FileText } from 'lucide-react';
@@ -10,6 +10,9 @@ import type { SignDocument } from '@/types/document';
 export default function Complete() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  // Firmado desde la app del driver: se vuelve a la carga
+  const [params] = useSearchParams();
+  const back = /^\/driver\//.test(params.get('back') ?? '') ? params.get('back')! : null;
   const [doc, setDoc] = useState<SignDocument | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -80,9 +83,9 @@ export default function Complete() {
           )}
 
           <div className="flex gap-3 pt-2">
-            <Button variant="outline" className="flex-1 gap-2" onClick={() => navigate('/documents')}>
+            <Button variant="outline" className="flex-1 gap-2" onClick={() => navigate(back ?? '/documents', { replace: !!back })}>
               <ArrowLeft className="h-4 w-4" />
-              Volver
+              {back ? 'Back to load' : 'Volver'}
             </Button>
             {doc.signedFileData && (
               <Button className="flex-1 gap-2" onClick={() => {

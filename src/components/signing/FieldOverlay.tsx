@@ -60,7 +60,8 @@ export default function FieldOverlay({ field, onRemove, onMove, onResize, onDupl
     }
   };
 
-  const displayLabel = field.label || config.label;
+  // En firma por paradas se ve a qué parada pertenece el campo
+  const displayLabel = `${field.stop != null ? `P${field.stop + 1} · ` : ""}${field.label || config.label}`;
 
   useEffect(() => {
     if (!isSelected || onSelect) return;

@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { MapPin, Navigation, Camera, Check, Clock, Image, Loader2, Trash2, PackageCheck, CheckCircle2, ImagePlus, ScanLine, ChevronLeft, ChevronRight, X, FileText } from 'lucide-react';
+import { MapPin, Navigation, Camera, Check, Clock, Image, Loader2, Trash2, PackageCheck, CheckCircle2, ImagePlus, ScanLine, ChevronLeft, ChevronRight, X, FileText, PenLine } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { documentStops } from '@/lib/stopSigning';
 import { DocumentScanner } from './DocumentScanner';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -49,6 +51,37 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
   const [scannerOpen, setScannerOpen] = useState(false);
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
   const [deleteDoc, setDeleteDoc] = useState<{ id: string; file_url: string; file_name: string } | null>(null);
+
+  const navigate = useNavigate();
+  const location = useLocation();
+  // Documentos de firma de la carga que se firman en esta parada (BOL/POD por parada o de una sola firma)
+  const [signDocs, setSignDocs] = useState<{ id: string; name: string; signed: boolean }[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    supabase.from('documents' as any)
+      .select('id, file_name, status, fields, signed_stops, pod_stop_order, expires_at')
+      .eq('pod_load_id', stop.load_id)
+      .then(({ data }) => {
+        if (cancelled) return;
+        const list = ((data as any[]) ?? []).flatMap((d) => {
+          const stops = documentStops(d.fields);
+          if (stops.length) {
+            if (!stops.includes(stop.stop_order)) return [];
+            return [{ id: d.id, name: d.file_name, signed: (d.signed_stops ?? []).includes(stop.stop_order) }];
+          }
+          const here = stop.stop_type === 'delivery'
+            && (d.pod_stop_order === stop.stop_order || (d.pod_stop_order == null && !!isLastDelivery));
+          if (!here) return [];
+          if (d.status !== 'signed' && d.expires_at < Date.now()) return [];
+          return [{ id: d.id, name: d.file_name, signed: d.status === 'signed' }];
+        });
+        setSignDocs(list);
+      });
+    return () => { cancelled = true; };
+  }, [stop.load_id, stop.stop_order, stop.stop_type, isLastDelivery]);
+
+  const openSign = (docId: string) =>
+    navigate(`/sign/${docId}?stop=${stop.stop_order}&back=${encodeURIComponent(location.pathname)}`);
 
   const isAndroid = /android/i.test(navigator.userAgent);
   const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(stop.address)}`;
@@ -453,6 +486,20 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
           </Button>
         )}
       </div>
+
+      {/* Documento para que el shipper/receiver firme en esta parada */}
+      {signDocs.map((d) => d.signed ? (
+        <div key={d.id} className="flex items-center gap-2 rounded-lg border border-success/40 bg-success/5 px-3 py-2 text-sm text-success">
+          <CheckCircle2 className="h-4 w-4 shrink-0" />
+          <span className="truncate">Signed: {d.name}</span>
+        </div>
+      ) : (
+        <Button key={d.id} size="sm" className="w-full gap-1.5 text-sm bg-amber-500 hover:bg-amber-600 text-white border-0 shadow-md"
+          onClick={() => openSign(d.id)}>
+          <PenLine className="h-4 w-4" />
+          <span className="truncate">Sign document · {d.name}</span>
+        </Button>
+      ))}
 
       {/* Upload buttons - reorganized SmartHop style */}
       {isArrived && (

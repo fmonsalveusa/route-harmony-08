@@ -12,8 +12,12 @@ interface FieldSettingsDialogProps {
   open: boolean;
   field: DocumentField | null;
   onClose: () => void;
-  onSave: (id: string, settings: { label?: string; required?: boolean; defaultValue?: string; options?: string[]; addressRows?: 1 | 2 }) => void;
+  onSave: (id: string, settings: { label?: string; required?: boolean; defaultValue?: string; options?: string[]; addressRows?: 1 | 2; stop?: number }) => void;
+  /** Paradas de la carga vinculada; sin carga se ofrecen números genéricos */
+  stopOptions?: { value: number; label: string }[];
 }
+
+const GENERIC_STOPS = Array.from({ length: 8 }, (_, i) => ({ value: i, label: `Parada ${i + 1}${i === 0 ? " (primera de la carga)" : ""}` }));
 
 const FIELD_LABELS: Record<string, string> = {
   signature: "Firma", initials: "Iniciales", name: "Nombre completo", date: "Fecha",
@@ -25,7 +29,8 @@ const FIELD_LABELS: Record<string, string> = {
 
 const OPTION_FIELD_TYPES = ["dropdown", "singleChoice", "multipleChoice"];
 
-export default function FieldSettingsDialog({ open, field, onClose, onSave }: FieldSettingsDialogProps) {
+export default function FieldSettingsDialog({ open, field, onClose, onSave, stopOptions }: FieldSettingsDialogProps) {
+  const [stop, setStop] = useState<string>("");
   const [label, setLabel] = useState("");
   const [required, setRequired] = useState(false);
   const [defaultValue, setDefaultValue] = useState("");
@@ -41,6 +46,7 @@ export default function FieldSettingsDialog({ open, field, onClose, onSave }: Fi
       setOptions(field.options || []);
       setNewOption("");
       setAddressRows(field.addressRows || 2);
+      setStop(field.stop != null ? String(field.stop) : "");
     }
   }, [field]);
 
@@ -69,6 +75,7 @@ export default function FieldSettingsDialog({ open, field, onClose, onSave }: Fi
       defaultValue: defaultValue.trim() || undefined,
       ...(hasOptions ? { options: options.length > 0 ? options : undefined } : {}),
       ...(field.type === "address" ? { addressRows } : {}),
+      stop: stop === "" ? undefined : Number(stop),
     });
     onClose();
   };
@@ -89,6 +96,19 @@ export default function FieldSettingsDialog({ open, field, onClose, onSave }: Fi
               <Label htmlFor="field-required" className="cursor-pointer">Campo obligatorio</Label>
               <p className="text-xs text-muted-foreground">El firmante deberá completar este campo</p>
             </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="field-stop">Se firma en la parada</Label>
+            <select id="field-stop" value={stop} onChange={(e) => setStop(e.target.value)}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+              <option value="">Todas / sin parada (una sola firma)</option>
+              {(stopOptions?.length ? stopOptions : GENERIC_STOPS).map((s) => (
+                <option key={s.value} value={s.value}>{s.label}</option>
+              ))}
+            </select>
+            <p className="text-xs text-muted-foreground">
+              Para un BOL con varias entregas: cada receiver firma su sección desde la parada en la app del driver.
+            </p>
           </div>
           {field.type === "address" && (
             <div className="space-y-2">

@@ -20,6 +20,8 @@ const US_STATES = [
 interface GuidedFormProps {
   fields: DocumentField[];
   onComplete: (updatedFields: DocumentField[]) => void;
+  /** "en" para quien firma en la parada (receivers en USA) */
+  lang?: "es" | "en";
 }
 
 interface UniqueField {
@@ -47,7 +49,32 @@ const FIELD_LABELS: Record<string, string> = {
   singleChoice: "Opción única", multipleChoice: "Opción múltiple",
 };
 
-export default function GuidedForm({ fields, onComplete }: GuidedFormProps) {
+const FIELD_LABELS_EN: Record<string, string> = {
+  signature: "Signature", initials: "Initials", name: "Full name", date: "Date",
+  company: "Company", jobTitle: "Title", email: "Email", phone: "Phone",
+  address: "Address", notes: "Notes", number: "Number", shortText: "Text",
+  longText: "Text", checkbox: "Checkbox", dropdown: "Selection",
+  singleChoice: "Option", multipleChoice: "Options",
+};
+
+const TEXT = {
+  es: {
+    fields: "campos", completed: "Campos completados", of: "de", title: "Completa tus datos",
+    subtitle: "Llena todos los campos y luego revisa el documento", change: "Cambiar",
+    tapSign: "Toca para firmar", tapInitials: "Toca para escribir iniciales", check: "Marcar casilla",
+    done: "Completar y ver documento", missing: "Completa los campos obligatorios", initialsTitle: "Escribe tus iniciales",
+  },
+  en: {
+    fields: "fields", completed: "Fields completed", of: "of", title: "Complete and sign",
+    subtitle: "Fill in every field, then submit", change: "Change",
+    tapSign: "Tap to sign", tapInitials: "Tap to write initials", check: "Check box",
+    done: "Submit signature", missing: "Complete the required fields", initialsTitle: "Write your initials",
+  },
+};
+
+export default function GuidedForm({ fields, onComplete, lang = "es" }: GuidedFormProps) {
+  const t = TEXT[lang];
+  const today = () => lang === "en" ? new Date().toLocaleDateString("en-US") : new Date().toLocaleDateString("es-ES");
   const [sigModalOpen, setSigModalOpen] = useState(false);
   const [activeSigKey, setActiveSigKey] = useState<string | null>(null);
   const [activeSigTitle, setActiveSigTitle] = useState<string | undefined>();
@@ -70,7 +97,7 @@ export default function GuidedForm({ fields, onComplete }: GuidedFormProps) {
   const [values, setValues] = useState<Record<string, string | undefined>>(() => {
     const init: Record<string, string | undefined> = {};
     for (const uf of uniqueFields) {
-      if (uf.type === "date") init[uf.key] = uf.value || uf.defaultValue || new Date().toLocaleDateString("es-ES");
+      if (uf.type === "date") init[uf.key] = uf.value || uf.defaultValue || today();
       else init[uf.key] = uf.value || uf.defaultValue;
     }
     return init;
@@ -80,7 +107,7 @@ export default function GuidedForm({ fields, onComplete }: GuidedFormProps) {
     setValues((prev) => {
       const next = { ...prev };
       for (const uf of uniqueFields) {
-        if (uf.type === "date" && !next[uf.key]) next[uf.key] = new Date().toLocaleDateString("es-ES");
+        if (uf.type === "date" && !next[uf.key]) next[uf.key] = today();
       }
       return next;
     });
@@ -110,7 +137,7 @@ export default function GuidedForm({ fields, onComplete }: GuidedFormProps) {
 
   const handleSigClick = (key: string, type: FieldType) => {
     setActiveSigKey(key);
-    setActiveSigTitle(type === "initials" ? "Escribe tus iniciales" : undefined);
+    setActiveSigTitle(type === "initials" ? t.initialsTitle : undefined);
     setSigModalOpen(true);
   };
 
@@ -120,7 +147,7 @@ export default function GuidedForm({ fields, onComplete }: GuidedFormProps) {
 
   const renderField = (uf: UniqueField) => {
     const Icon = FIELD_ICONS[uf.type] || FileText;
-    const label = uf.label || FIELD_LABELS[uf.type] || uf.type;
+    const label = uf.label || (lang === "en" ? FIELD_LABELS_EN : FIELD_LABELS)[uf.type] || uf.type;
     const isRequired = uf.required;
     const val = values[uf.key];
     const count = uf.fieldIds.length;
@@ -135,7 +162,7 @@ export default function GuidedForm({ fields, onComplete }: GuidedFormProps) {
             {label}
             {isRequired && <span className="text-destructive ml-0.5">*</span>}
           </span>
-          {count > 1 && <span className="text-xs text-muted-foreground ml-auto">×{count} campos</span>}
+          {count > 1 && <span className="text-xs text-muted-foreground ml-auto">×{count} {t.fields}</span>}
         </div>
 
         {uf.type === "date" && (
@@ -153,12 +180,12 @@ export default function GuidedForm({ fields, onComplete }: GuidedFormProps) {
                 <div className="border rounded-md p-2 bg-muted flex items-center justify-center">
                   <img src={val} alt={label} className="max-h-16 object-contain" />
                 </div>
-                <Button variant="outline" size="sm" className="w-full" onClick={() => handleSigClick(uf.key, uf.type)}>Cambiar {label.toLowerCase()}</Button>
+                <Button variant="outline" size="sm" className="w-full" onClick={() => handleSigClick(uf.key, uf.type)}>{t.change} {label.toLowerCase()}</Button>
               </div>
             ) : (
               <Button variant="outline" className="w-full h-16 border-dashed border-2 text-muted-foreground hover:text-foreground hover:border-primary" onClick={() => handleSigClick(uf.key, uf.type)}>
                 <Pen className="h-4 w-4 mr-2" />
-                Toca para {uf.type === "initials" ? "escribir iniciales" : "firmar"}
+                {uf.type === "initials" ? t.tapInitials : t.tapSign}
               </Button>
             )}
           </div>
@@ -167,7 +194,7 @@ export default function GuidedForm({ fields, onComplete }: GuidedFormProps) {
         {uf.type === "checkbox" && (
           <div className="flex items-center gap-3">
             <Checkbox checked={val === "checked"} onCheckedChange={(checked) => setValue(uf.key, checked ? "checked" : undefined)} />
-            <span className="text-sm text-muted-foreground">Marcar casilla</span>
+            <span className="text-sm text-muted-foreground">{t.check}</span>
           </div>
         )}
 
@@ -210,8 +237,8 @@ export default function GuidedForm({ fields, onComplete }: GuidedFormProps) {
       <div className="bg-card border-b px-4 py-3">
         <div className="max-w-lg mx-auto">
           <div className="flex items-center justify-between text-sm mb-2">
-            <span className="text-muted-foreground">Campos completados</span>
-            <span className="font-semibold">{completedCount} de {uniqueFields.length}</span>
+            <span className="text-muted-foreground">{t.completed}</span>
+            <span className="font-semibold">{completedCount} {t.of} {uniqueFields.length}</span>
           </div>
           <Progress value={progress} className="h-2" />
         </div>
@@ -219,8 +246,8 @@ export default function GuidedForm({ fields, onComplete }: GuidedFormProps) {
       <div className="flex-1 overflow-y-auto px-4 py-4">
         <div className="max-w-lg mx-auto space-y-3">
           <div className="text-center mb-4">
-            <h2 className="text-lg font-semibold">Completa tus datos</h2>
-            <p className="text-sm text-muted-foreground">Llena todos los campos y luego revisa el documento</p>
+            <h2 className="text-lg font-semibold">{t.title}</h2>
+            <p className="text-sm text-muted-foreground">{t.subtitle}</p>
           </div>
           {uniqueFields.map(renderField)}
         </div>
@@ -228,11 +255,11 @@ export default function GuidedForm({ fields, onComplete }: GuidedFormProps) {
       <div className="sticky bottom-0 bg-card border-t p-4">
         <div className="max-w-lg mx-auto">
           <Button className="w-full h-12 text-base" disabled={!allComplete} onClick={handleComplete}>
-            {allComplete ? "Completar y ver documento" : "Completa los campos obligatorios"}
+            {allComplete ? t.done : t.missing}
           </Button>
         </div>
       </div>
-      <SignatureModal open={sigModalOpen} onClose={() => setSigModalOpen(false)} onConfirm={handleSigConfirm} title={activeSigTitle} />
+      <SignatureModal open={sigModalOpen} onClose={() => setSigModalOpen(false)} onConfirm={handleSigConfirm} title={activeSigTitle} lang={lang} />
     </div>
   );
 }

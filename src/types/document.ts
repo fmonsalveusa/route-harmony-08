@@ -15,6 +15,8 @@ export interface DocumentField {
   defaultValue?: string;
   options?: string[];
   addressRows?: 1 | 2;
+  /** Firma por paradas: stop_order de la parada de la carga donde se llena este campo */
+  stop?: number;
 }
 
 export type DocumentStatus = "pending" | "signed" | "expired";
@@ -41,4 +43,6 @@ export interface SignDocument {
   signerData?: { name?: string; signatureImage?: string; date?: string };
   recipientEmail?: string;
   signerName?: string;
+  /** Paradas que ya firmaron (documentos con campos por parada) */
+  signedStops?: number[];
 }
