@@ -100,7 +100,8 @@ Responde llamando a la herramienta "ubicar".` }],
 
 /** ¿Ya hay algo escrito en el espacio del dato? (p. ej. el RC ya venía firmado por el dispatcher) */
 function occupied(items: TextItem[], label: TextItem, side: Side, at: { x: number; y: number }, span: number): string | null {
-  const blank = (t: string) => /^[_xX.\s:-]*$/.test(t);
+  // Rayas, separadores de fecha ("__ / __ / __") y guías impresas debajo (M, D, YY, MM/DD/YYYY)
+  const blank = (t: string) => /^[_xX.\s:/-]*$/.test(t) || /^(m{1,2}|d{1,2}|y{1,4}|mm\s*\/\s*dd\s*\/\s*y{2,4})$/i.test(t);
   // Otras etiquetas o párrafos no cuentan como "ya escrito": solo un valor corto (un nombre, un número)
   const isValue = (t: string) =>
     t.length <= 40 && !/[:#]\s*$/.test(t) &&
@@ -286,7 +287,13 @@ export async function buildSignedRc(pdfBytes: Uint8Array, signaturePng: Uint8Arr
     const re = FALLBACK_LABEL[f];
     if (!re) continue;
     const it = usedItems.find((i) => items[i] && re.test(items[i].str) && /_{2,}/.test(items[i].str));
-    if (it !== undefined) chosen[f] = { item: it, side: "right" };
+    if (it !== undefined) { chosen[f] = { item: it, side: "right" }; continue; }
+    // La fecha suele ir en la misma línea que la firma, como texto aparte ("Carrier Signature ____ Date __/__/__")
+    if (f === "sign_date" && chosen.carrier_signature) {
+      const s = items[chosen.carrier_signature.item];
+      const d = s && items.find((i) => i.page === s.page && i.x > s.x && Math.abs(i.y - s.y) < 5 && /^date\s*:?$/i.test(i.str));
+      if (d) chosen[f] = { item: d.id, side: "right" };
+    }
   }
   // Rayas ya ocupadas por cada texto, para que dos datos no caigan en la misma
   const usedRuns = new Map<number, Set<number>>();
@@ -304,6 +311,25 @@ export async function buildSignedRc(pdfBytes: Uint8Array, signaturePng: Uint8Arr
     if (pos.run !== null) usedRuns.get(item.id)!.add(pos.run);
     const already = occupied(items, item, spot.side, { x, y }, field === "carrier_signature" ? 200 : 120);
     if (already) { skipped.push({ field, found: already }); continue; }
+    // Fecha en casillas "__ / __ / __": mes, día y año cada uno en su raya
+    const slashes = field === "sign_date" && spot.side === "right"
+      ? items.filter((i) => i.page === item.page && i.str === "/" && i.x > item.x && i.x < item.x + 260 && Math.abs(i.y - item.y) < 5)
+        .sort((a, b) => a.x - b.x)
+      : [];
+    const parts = data.date.split("/");
+    if (slashes.length === 2 && parts.length === 3) {
+      const [s1, s2] = slashes;
+      const gap = s2.x - (s1.x + s1.w);
+      const boxes = [[x, s1.x], [s1.x + s1.w, s2.x], [s2.x + s2.w, s2.x + s2.w + gap]];
+      const size = Math.min(Math.max(item.h, 8), 11);
+      parts.forEach((t, k) => {
+        const [a, b] = boxes[k];
+        const tw = font.widthOfTextAtSize(t, size);
+        page.drawText(t, { x: Math.min(a + Math.max((b - a - tw) / 2, 0), pw - tw - 8), y, size, font, color: INK });
+      });
+      placements.push({ field, page: item.page, x, y, label: item.str });
+      continue;
+    }
     if (field === "carrier_signature") {
       const sx = Math.min(x, pw - sigW - 10);
       page.drawImage(sig, { x: sx, y: spot.side === "right" ? y - 8 : y, width: sigW, height: SIG_HEIGHT });
