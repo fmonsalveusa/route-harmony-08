@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "DAT Driver Tabs (Dispatch Up)",
+  "version": "1.0.0",
+  "description": "Ponle el nombre del driver a cada pestaña de búsqueda de DAT One.",
+  "permissions": ["storage"],
+  "content_scripts": [
+    {
+      "matches": ["https://one.dat.com/*"],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}
