@@ -17,7 +17,7 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { name, email, phone, truck_type, service_type, dispatch_service_client_mc } = await req.json();
+    const { name, email, phone, truck_type, service_type, dispatch_service_client_mc, oo_mode, oo_email } = await req.json();
 
     if (!name || !email || !phone) {
       return new Response(
@@ -66,6 +66,32 @@ Deno.serve(async (req) => {
       dispatchServiceClientId = client.id;
     }
 
+    // Owner Operator que ya trabaja con nosotros (driver nuevo o camión nuevo): se identifica por su email
+    let existingInvestorId: string | null = null;
+    let existingOwnerDriverId: string | null = null;
+    const ooMode = service_type === "owner_operator" && ["add_driver", "add_truck"].includes(oo_mode) ? oo_mode : null;
+    if (ooMode) {
+      const ooEmail = String(oo_email ?? "").trim();
+      if (!ooEmail) {
+        return new Response(JSON.stringify({ error: "Escribe el email con el que estás registrado" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const { data: inv } = await supabaseAdmin.from("investors").select("id")
+        .eq("tenant_id", tenant.id).ilike("email", ooEmail).limit(1).maybeSingle();
+      if (inv) existingInvestorId = inv.id;
+      else {
+        const { data: drv } = await supabaseAdmin.from("drivers").select("id")
+          .eq("tenant_id", tenant.id).eq("service_type", "owner_operator").neq("status", "inactive")
+          .ilike("email", ooEmail).limit(1).maybeSingle();
+        if (drv) existingOwnerDriverId = drv.id;
+      }
+      if (!existingInvestorId && !existingOwnerDriverId) {
+        return new Response(
+          JSON.stringify({ error: `No encontramos un Owner Operator registrado con ${ooEmail}. Verifica el email o elige "Soy nuevo".` }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     // Create onboarding token
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
@@ -80,6 +106,9 @@ Deno.serve(async (req) => {
         truck_type: truck_type || null,
         service_type: service_type || "owner_operator",
         dispatch_service_client_id: dispatchServiceClientId,
+        oo_mode: ooMode,
+        existing_investor_id: existingInvestorId,
+        existing_owner_driver_id: existingOwnerDriverId,
         status: "pending",
         expires_at: expiresAt.toISOString(),
       })

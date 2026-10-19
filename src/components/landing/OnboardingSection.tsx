@@ -67,6 +67,10 @@ export function OnboardingSection() {
   const [dispatchExpanded, setDispatchExpanded] = useState(false);
   const [dispatchMode, setDispatchMode] = useState<"new" | "existing">("new");
   const [dispatchClientMc, setDispatchClientMc] = useState("");
+  // Owner Operator: nuevo, driver nuevo o camión nuevo (los dos últimos, para un OO ya registrado)
+  const [ooExpanded, setOoExpanded] = useState(false);
+  const [ooMode, setOoMode] = useState<"new" | "add_driver" | "add_truck">("new");
+  const [ooEmail, setOoEmail] = useState("");
 
   const createTokenAndGo = async (serviceType: ServiceType, extra: any = {}) => {
     setLoadingId(serviceType);
@@ -77,7 +81,11 @@ export function OnboardingSection() {
       body.email = body.email || "pending@onboarding.local";
       body.phone = body.phone || "000-000-0000";
       const { data, error } = await supabase.functions.invoke("create-onboarding-token", { body });
-      if (error || !data?.token) throw new Error(data?.error || tr.obErrorCreate);
+      if (error || !data?.token) {
+        // El mensaje del servidor (p. ej. "no encontramos un Owner Operator con ese email")
+        const detail = await (error as any)?.context?.json?.().catch(() => null);
+        throw new Error(detail?.error || data?.error || tr.obErrorCreate);
+      }
       navigate(`/onboarding/${data.token}`);
     } catch (err: any) {
       toast.error(err.message || tr.obErrorGeneric);
@@ -91,8 +99,21 @@ export function OnboardingSection() {
       setDispatchExpanded(true);
       return;
     }
-    // OO y CD: crear token directo y avanzar
+    if (id === "owner_operator") {
+      setOoExpanded(true);
+      return;
+    }
+    // CD: crear token directo y avanzar
     createTokenAndGo(id);
+  };
+
+  const handleOoContinue = () => {
+    if (ooMode === "new") return createTokenAndGo("owner_operator");
+    if (!ooEmail.trim()) {
+      toast.error(lang === "es" ? "Escribe el email con el que estás registrado" : "Enter the email you registered with");
+      return;
+    }
+    createTokenAndGo("owner_operator", { oo_mode: ooMode, oo_email: ooEmail.trim() });
   };
 
   const handleDispatchContinue = () => {
@@ -166,7 +187,7 @@ export function OnboardingSection() {
                 const desc = lang === "es" ? opt.descEs : opt.descEn;
                 const bullets = lang === "es" ? opt.bulletsEs : opt.bulletsEn;
                 const isLoading = loadingId === opt.id;
-                const isDispatchExpandedNow = opt.id === "dispatch_service" && dispatchExpanded;
+                const isDispatchExpandedNow = (opt.id === "dispatch_service" && dispatchExpanded) || (opt.id === "owner_operator" && ooExpanded);
                 return (
                   <div key={opt.id}>
                     <button
@@ -209,8 +230,51 @@ export function OnboardingSection() {
                       </div>
                     </button>
 
+                    {/* Sub-formulario para Owner Operator: nuevo, driver nuevo o camión nuevo */}
+                    {opt.id === "owner_operator" && ooExpanded && (
+                      <div className="mt-2 p-4 rounded-xl border-2 border-dashed border-accent/40 bg-accent/[0.03] space-y-3">
+                        <Label className="text-xs">{lang === "es" ? "¿Qué necesitas hacer?" : "What do you need to do?"}</Label>
+                        <div className="space-y-2">
+                          {([
+                            ["new", lang === "es" ? "Soy nuevo" : "I'm new", lang === "es" ? "Registro completo: tus datos, el camión, el driver y firma de todos los documentos." : "Full registration: your info, truck, driver and all documents."],
+                            ["add_driver", lang === "es" ? "Agregar un driver nuevo" : "Add a new driver", lang === "es" ? "Ya trabajas con nosotros: registra un driver para uno de tus camiones." : "Already with us: register a driver for one of your trucks."],
+                            ["add_truck", lang === "es" ? "Agregar un camión nuevo" : "Add a new truck", lang === "es" ? "Ya trabajas con nosotros: datos del camión, su driver y el leasing agreement." : "Already with us: truck info, its driver and the leasing agreement."],
+                          ] as const).map(([value, label, help]) => (
+                            <button
+                              key={value}
+                              type="button"
+                              onClick={() => setOoMode(value)}
+                              className={cn("w-full text-left rounded-lg border-2 px-3 py-2 transition-colors",
+                                ooMode === value ? "border-accent bg-accent/10" : "border-border hover:border-accent/60")}
+                            >
+                              <div className="text-sm font-semibold text-foreground">{label}</div>
+                              <div className="text-[11px] text-muted-foreground">{help}</div>
+                            </button>
+                          ))}
+                        </div>
+                        {ooMode !== "new" && (
+                          <div>
+                            <Label className="text-xs">{lang === "es" ? "Email con el que estás registrado" : "Email you registered with"}</Label>
+                            <Input type="email" placeholder="tu@email.com" value={ooEmail} onChange={(e) => setOoEmail(e.target.value)} />
+                          </div>
+                        )}
+                        <div className="flex gap-2">
+                          <Button variant="ghost" size="sm" className="gap-1 text-xs"
+                            onClick={() => { setOoExpanded(false); setOoMode("new"); setOoEmail(""); }}>
+                            <ArrowLeft className="h-3.5 w-3.5" /> {lang === "es" ? "Cancelar" : "Cancel"}
+                          </Button>
+                          <Button onClick={handleOoContinue} disabled={loadingId !== null} size="sm"
+                            className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground gap-1">
+                            {loadingId === "owner_operator"
+                              ? <><Loader2 className="h-4 w-4 animate-spin" /> {lang === "es" ? "Creando..." : "Creating..."}</>
+                              : <>{lang === "es" ? "Continuar" : "Continue"} <ArrowRight className="h-4 w-4" /></>}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Sub-formulario para Dispatch Service (nueva/existente + MC#) */}
-                    {isDispatchExpandedNow && (
+                    {opt.id === "dispatch_service" && dispatchExpanded && (
                       <div className="mt-2 p-4 rounded-xl border-2 border-dashed border-accent/40 bg-accent/[0.03] space-y-3">
                         <div>
                           <Label className="text-xs">
