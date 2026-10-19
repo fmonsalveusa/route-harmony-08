@@ -17,7 +17,6 @@ function rowToDoc(row: any): SignDocument {
     signerData: row.signer_data as any,
     recipientEmail: row.recipient_email ?? undefined,
     signerName: row.signer_name ?? undefined,
-    signedStops: row.signed_stops ?? [],
   };
 }
 
@@ -67,7 +66,7 @@ async function hydrateSignedPdf(doc: SignDocument): Promise<SignDocument> {
 export async function getDocuments(): Promise<SignDocument[]> {
   const { data, error } = await supabase
     .from("documents" as any)
-    .select("id, file_name, status, created_at, signed_at, expires_at, fields, signer_data, recipient_email, signer_name, signed_stops")
+    .select("id, file_name, status, created_at, signed_at, expires_at, fields, signer_data, recipient_email, signer_name")
     .order("created_at", { ascending: false });
   if (error) { console.error(error); return []; }
   // La lista no necesita los PDFs: se bajan al abrir cada documento
@@ -108,7 +107,6 @@ export async function saveDocument(doc: SignDocument): Promise<void> {
       signer_data: doc.signerData as any ?? null,
       recipient_email: doc.recipientEmail ?? null,
       signer_name: doc.signerName ?? null,
-      ...(doc.signedStops ? { signed_stops: doc.signedStops } : {}),
     } as any);
   if (error) { console.error(error); throw error; }
 }
@@ -116,7 +114,7 @@ export async function saveDocument(doc: SignDocument): Promise<void> {
 export async function deleteDocument(id: string): Promise<void> {
   const { data } = await supabase
     .from("documents" as any)
-    .select("file_data, signed_file_data, pod_document_id, signed_stops")
+    .select("file_data, signed_file_data, pod_document_id")
     .eq("id", id)
     .maybeSingle();
 
@@ -127,6 +125,6 @@ export async function deleteDocument(id: string): Promise<void> {
   if (error) { console.error(error); throw error; }
 
   // Si el firmado quedó como POD de una carga, ese archivo se conserva
-  const keepSigned = !!(data as any)?.pod_document_id || ((data as any)?.signed_stops ?? []).length > 0;
+  const keepSigned = !!(data as any)?.pod_document_id;
   await removePdfs([(data as any)?.file_data, keepSigned ? null : (data as any)?.signed_file_data]);
 }

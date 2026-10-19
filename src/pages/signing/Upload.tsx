@@ -40,27 +40,6 @@ export default function Upload() {
   const [detecting, setDetecting] = useState(false);
   const [loading, setLoading] = useState(!!editId);
   const [copyToPageField, setCopyToPageField] = useState<DocumentField | null>(null);
-  // Carga del documento (POD/BOL): sus paradas se usan para asignar campos por parada
-  const [loadRef, setLoadRef] = useState('');
-  const [podLoad, setPodLoad] = useState<{ id: string; ref: string } | null>(null);
-  const [stopOptions, setStopOptions] = useState<{ value: number; label: string }[]>([]);
-
-  const findLoad = useCallback(async (ref: string) => {
-    const r = ref.trim();
-    if (!r) { setPodLoad(null); setStopOptions([]); return; }
-    const { data } = await supabase.from('loads').select('id, reference_number').eq('reference_number', r).limit(1).maybeSingle();
-    if (!data) { setPodLoad(null); setStopOptions([]); toast.error(`No se encontró la carga #${r}`); return; }
-    setPodLoad({ id: data.id, ref: data.reference_number });
-  }, []);
-
-  useEffect(() => {
-    if (!podLoad) return;
-    supabase.from('load_stops').select('stop_order, stop_type, address').eq('load_id', podLoad.id).order('stop_order')
-      .then(({ data }) => setStopOptions(((data as any[]) ?? []).map((s) => ({
-        value: s.stop_order,
-        label: `Parada ${s.stop_order + 1} · ${s.stop_type === 'pickup' ? 'Pickup' : 'Entrega'} · ${String(s.address ?? '').slice(0, 40)}`,
-      }))));
-  }, [podLoad]);
 
   useEffect(() => {
     if (!editId) return;
@@ -81,13 +60,6 @@ export default function Upload() {
             setFileName(doc.fileName);
             setRecipientEmail(doc.recipientEmail || '');
             setFields(doc.fields);
-            const { data: link } = await supabase.from('documents' as any)
-              .select('pod_load_id, loads:pod_load_id(reference_number)').eq('id', editId).maybeSingle();
-            const l = link as any;
-            if (l?.pod_load_id) {
-              setPodLoad({ id: l.pod_load_id, ref: l.loads?.reference_number ?? '' });
-              setLoadRef(l.loads?.reference_number ?? '');
-            }
           }
         }
       } catch (e: any) {
@@ -222,9 +194,6 @@ export default function Upload() {
           recipientEmail: recipientEmail.trim() || undefined,
         };
         await saveDocument(doc);
-        if (podLoad) {
-          await supabase.from('documents' as any).update({ pod_load_id: podLoad.id } as any).eq('id', doc.id);
-        }
         toast.success('Documento guardado');
       }
       navigate('/documents');
@@ -301,15 +270,6 @@ export default function Upload() {
                 className="w-48"
                 type="email"
               />
-              <Label className="text-sm">Carga #:</Label>
-              <Input
-                value={loadRef}
-                onChange={e => setLoadRef(e.target.value)}
-                onBlur={() => { if (loadRef.trim() !== (podLoad?.ref ?? '')) findLoad(loadRef); }}
-                placeholder="POD/BOL (opcional)"
-                className="w-36"
-                title="Vincula el documento a una carga para asignar campos por parada"
-              />
             </div>
           )}
           <Button variant="outline" onClick={handleDetectFields} disabled={detecting} className="gap-2">
@@ -379,7 +339,6 @@ export default function Upload() {
           setSettingsOpen(false);
           setSettingsField(null);
         }}
-        stopOptions={stopOptions}
       />
 
       {/* Modal: Copiar campo a otra página */}

@@ -20,7 +20,6 @@ import { getDocuments, getDocument, deleteDocument } from '@/store/signing-docum
 import { getTemplates, deleteTemplate } from '@/store/signing-templates';
 import { supabase } from '@/integrations/supabase/client';
 import { getSigningUrl, getTemplateSigningUrl } from '@/lib/signing-url';
-import { documentStops } from '@/lib/stopSigning';
 import type { SignDocument, SignTemplate } from '@/types/document';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -367,11 +366,6 @@ const Documents = () => {
                       <TableCell className="font-medium">{doc.fileName}</TableCell>
                       <TableCell>
                         <SolidStatusPill label={DOC_STATUS[doc.status]?.label ?? doc.status} color={DOC_STATUS[doc.status]?.color ?? 'bg-gray-500'} />
-                        {documentStops(doc.fields).length > 0 && (
-                          <span className="ml-1 text-[11px] text-muted-foreground" title="Firma por paradas">
-                            {(doc.signedStops ?? []).length}/{documentStops(doc.fields).length} paradas
-                          </span>
-                        )}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {editingRecipient?.id === doc.id ? (
