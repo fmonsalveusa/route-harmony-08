@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "RTS Factoring Assistant (Dispatch Up)",
+  "version": "1.0.0",
+  "description": "Llena las facturas en el portal de RTS con las cargas de Dispatch Up: número de carga, broker, monto, RC y POD.",
+  "permissions": ["storage"],
+  "content_scripts": [
+    {
+      "matches": ["https://rtspro.com/*"],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}

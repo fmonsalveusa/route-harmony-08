@@ -68,3 +68,6 @@ verify_jwt = false
 
 [functions.eld-connections]
 verify_jwt = false
+
+[functions.rts-assistant]
+verify_jwt = false

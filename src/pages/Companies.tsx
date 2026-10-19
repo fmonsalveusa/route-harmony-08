@@ -9,6 +9,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Pencil, Building2, FileSignature, Plus, Trash2, Power, PowerOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { StatTiles, TABLE_CARD, TABLE_HEAD_ROW, TABLE_ROW } from '@/components/StatTiles';
+import { RtsAssistantDialog } from '@/components/RtsAssistantDialog';
+import { useAuth } from '@/contexts/AuthContext';
 
 type CompanyForm = {
   name: string; legal_name: string; mc_number: string; dot_number: string;
@@ -30,6 +32,9 @@ const Companies = () => {
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState<CompanyForm>(emptyForm);
   const [activeTab, setActiveTab] = useState('active');
+  const [rtsOpen, setRtsOpen] = useState(false);
+  const { role, isMasterAdmin } = useAuth();
+  const isAdmin = role === 'admin' || !!isMasterAdmin;
 
   const hasCompany = companies.length > 0;
   const isSetupMode = !hasCompany && !loading;
@@ -180,10 +185,18 @@ const Companies = () => {
           <h1 className="page-header">Companies</h1>
           <p className="page-description">Manage your carrier companies for invoices, documents, and leasing agreements</p>
         </div>
-        <Button className="gap-2 self-start sm:self-auto" onClick={openNew}>
-          <Plus className="h-4 w-4" /> Add New Company
-        </Button>
+        <div className="flex gap-2 self-start sm:self-auto">
+          {isAdmin && (
+            <Button variant="outline" className="gap-2" onClick={() => setRtsOpen(true)}>
+              <FileSignature className="h-4 w-4" /> Asistente RTS
+            </Button>
+          )}
+          <Button className="gap-2" onClick={openNew}>
+            <Plus className="h-4 w-4" /> Add New Company
+          </Button>
+        </div>
       </div>
+      <RtsAssistantDialog open={rtsOpen} onOpenChange={setRtsOpen} />
 
       <StatTiles tiles={[
         { label: 'Total Companies', value: companies.length, icon: Building2, tint: 'bg-sky-100 text-sky-700' },
