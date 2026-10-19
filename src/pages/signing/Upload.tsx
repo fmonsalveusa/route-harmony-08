@@ -16,6 +16,7 @@ import { saveDocument, getDocument } from '@/store/signing-documents';
 import { saveTemplate, getTemplate } from '@/store/signing-templates';
 import type { DocumentField, FieldType, SignDocument, SignTemplate } from '@/types/document';
 import { supabase } from '@/integrations/supabase/client';
+import { LoadStopPicker, type LoadStopValue } from '@/components/signing/LoadStopPicker';
 
 const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
 
@@ -29,6 +30,8 @@ export default function Upload() {
   const [fileName, setFileName] = useState('');
   const [templateName, setTemplateName] = useState('');
   const [recipientEmail, setRecipientEmail] = useState('');
+  // Carga y parada donde queda el documento firmado como POD/BOL
+  const [podLink, setPodLink] = useState<LoadStopValue>({ loadId: null, reference: '', stopOrder: null });
   const [fields, setFields] = useState<DocumentField[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -59,6 +62,10 @@ export default function Upload() {
             setFileData(doc.fileData);
             setFileName(doc.fileName);
             setRecipientEmail(doc.recipientEmail || '');
+            const { data: link } = await supabase.from('documents' as any)
+              .select('pod_load_id, pod_stop_order, loads:pod_load_id(reference_number)').eq('id', editId).maybeSingle();
+            const l = link as any;
+            if (l?.pod_load_id) setPodLink({ loadId: l.pod_load_id, reference: l.loads?.reference_number ?? '', stopOrder: l.pod_stop_order });
             setFields(doc.fields);
           }
         }
@@ -194,6 +201,12 @@ export default function Upload() {
           recipientEmail: recipientEmail.trim() || undefined,
         };
         await saveDocument(doc);
+        // Si ya quedó agregado como POD no se mueve
+        if (podLink.loadId || editId) {
+          await supabase.from('documents' as any)
+            .update({ pod_load_id: podLink.loadId, pod_stop_order: podLink.loadId ? podLink.stopOrder : null } as any)
+            .eq('id', doc.id).is('pod_document_id', null);
+        }
         toast.success('Documento guardado');
       }
       navigate('/documents');
@@ -270,6 +283,7 @@ export default function Upload() {
                 className="w-48"
                 type="email"
               />
+              <LoadStopPicker value={podLink} onChange={setPodLink} />
             </div>
           )}
           <Button variant="outline" onClick={handleDetectFields} disabled={detecting} className="gap-2">

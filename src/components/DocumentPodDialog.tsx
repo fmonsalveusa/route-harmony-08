@@ -14,7 +14,7 @@ export interface DocPodLink {
 }
 
 interface LoadOption { id: string; reference_number: string; destination: string | null; delivery_date: string | null; status: string }
-interface StopOption { stop_order: number; address: string }
+interface StopOption { stop_order: number; stop_type: string; address: string }
 
 /**
  * Vincula un documento de firma a una carga: al firmarse, el PDF firmado queda como POD
@@ -48,11 +48,12 @@ export function DocumentPodDialog({ docId, docName, link, onClose, onSaved }: {
 
   useEffect(() => {
     if (!selected) { setStops([]); return; }
-    supabase.from('load_stops').select('stop_order, address').eq('load_id', selected.id).eq('stop_type', 'delivery')
+    supabase.from('load_stops').select('stop_order, stop_type, address').eq('load_id', selected.id)
       .order('stop_order').then(({ data }) => {
         const list = (data as StopOption[]) ?? [];
         setStops(list);
-        setStopOrder(list.length ? list[list.length - 1].stop_order : null);
+        const deliveries = list.filter((s) => s.stop_type === 'delivery');
+        setStopOrder(deliveries.length ? deliveries[deliveries.length - 1].stop_order : null);
       });
   }, [selected]);
 
@@ -109,11 +110,11 @@ export function DocumentPodDialog({ docId, docName, link, onClose, onSaved }: {
             </div>
             {selected && stops.length > 1 && (
               <div className="space-y-1">
-                <p className="text-xs font-medium">Entrega</p>
+                <p className="text-xs font-medium">Parada</p>
                 {stops.map((s) => (
                   <label key={s.stop_order} className="flex items-center gap-2 text-sm">
                     <input type="radio" checked={stopOrder === s.stop_order} onChange={() => setStopOrder(s.stop_order)} />
-                    {s.address}
+                    <span className="text-muted-foreground">{s.stop_type === 'pickup' ? 'Pickup' : 'Entrega'} ·</span> {s.address}
                   </label>
                 ))}
               </div>
