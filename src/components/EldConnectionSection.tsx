@@ -39,6 +39,8 @@ async function call(body: Record<string, unknown>) {
  */
 export function EldConnectionSection({ driverId }: { driverId: string }) {
   const [conn, setConn] = useState<Conn | null>(null);
+  // Lectura más reciente (también cuando se lee desde las cuentas de flota de la empresa)
+  const [fleet, setFleet] = useState<{ source: string; updated_at: string } | null>(null);
   const [provider, setProvider] = useState<string>('none');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -48,6 +50,9 @@ export function EldConnectionSection({ driverId }: { driverId: string }) {
     const { data } = await supabase.from('driver_eld_connections' as any)
       .select('provider, username, status, last_error, matched_unit, last_ok_at, secret_id').eq('driver_id', driverId).maybeSingle();
     const c = (data as unknown as Conn) ?? null;
+    const { data: clock } = await supabase.from('driver_hos_clocks' as any)
+      .select('source, updated_at').eq('driver_id', driverId).maybeSingle();
+    setFleet((clock as any) ?? null);
     setConn(c);
     setProvider(c?.provider ?? 'none');
     setUsername(c?.username ?? '');
@@ -90,6 +95,13 @@ export function EldConnectionSection({ driverId }: { driverId: string }) {
                   <AlertTriangle className="h-3.5 w-3.5" /> Error: {(conn.last_error ?? '').slice(0, 60)}
                 </span>
               : <span className="text-xs text-muted-foreground">Sin probar</span>
+        )}
+        {!conn && (
+          fleet
+            ? <span className="text-xs text-green-700 dark:text-green-400 flex items-center gap-1">
+                <CheckCircle2 className="h-3.5 w-3.5" /> Conectado por cuenta de la empresa · {fleet.source} · {ago(fleet.updated_at)}
+              </span>
+            : <span className="text-xs text-muted-foreground">Sin datos del ELD de la empresa</span>
         )}
       </div>
 
