@@ -1,13 +1,27 @@
+/* La pestaña de DAT mide 48px: se compactan las líneas para que entren driver, origen y destino */
+.tab-header:has(.du-row),
+.load-details:has(.du-row) {
+  height: 46px !important;
+  max-height: 46px !important;
+}
+.load-details:has(.du-row) > div:not(.du-row),
+.load-details:has(.du-row) > div:not(.du-row) span {
+  line-height: 13px !important;
+  margin: 0 !important;
+}
+.du-row {
+  display: block;
+  line-height: 14px !important;
+  margin: 1px 0 !important;
+}
 .du-chip {
   display: inline-block;
-  margin-right: 6px;
-  padding: 1px 7px;
+  padding: 0 8px;
   border-radius: 9px;
-  font: 600 11px/16px system-ui, sans-serif;
+  font: 700 12.5px/14px system-ui, sans-serif;
   color: #fff;
   cursor: pointer;
-  vertical-align: middle;
-  max-width: 110px;
+  max-width: 200px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -17,6 +31,7 @@
   color: #8a94a6;
   border: 1px dashed #b6bdc9;
   font-weight: 500;
+  font-size: 11px;
 }
 .du-pop {
   position: fixed;

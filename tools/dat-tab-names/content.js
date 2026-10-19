@@ -8,7 +8,7 @@
 
   const keyOf = (tab) => {
     // Texto de la búsqueda sin nuestra etiqueta
-    const lines = [...tab.querySelectorAll(".load-details > div")].map((d) =>
+    const lines = [...tab.querySelectorAll(".load-details > div:not(.du-row)")].map((d) =>
       [...d.childNodes].filter((n) => !n.classList?.contains("du-chip")).map((n) => n.textContent || "").join("").replace(/\s+/g, " ").trim());
     return lines.length ? lines.join(" → ") : null;
   };
@@ -37,17 +37,22 @@
     migrate();
     tabs().forEach((tab) => {
       const key = keyOf(tab);
-      // En la línea del destino ("Anywhere"), que tiene espacio: así no se corta el origen
-      const rows = tab.querySelectorAll(".load-details > div");
-      const firstLine = rows[1] || rows[0];
-      if (!key || !firstLine) return;
-      let chip = tab.querySelector(".du-chip");
-      if (chip && chip.parentElement !== firstLine) { chip.remove(); chip = null; }
+      // Fila propia arriba de la ciudad de origen
+      const details = tab.querySelector(".load-details");
+      if (!key || !details) return;
+      let row = details.querySelector(":scope > .du-row");
+      if (!row) {
+        row = document.createElement("div");
+        row.className = "du-row";
+        details.prepend(row);
+      }
+      let chip = row.querySelector(".du-chip");
       if (!chip) {
+        tab.querySelectorAll(".du-chip").forEach((c) => c.remove());
         chip = document.createElement("span");
         chip.className = "du-chip";
         chip.addEventListener("click", (e) => { e.stopPropagation(); e.preventDefault(); openEditor(tab, chip); }, true);
-        firstLine.prepend(chip);
+        row.appendChild(chip);
       }
       const label = labels[key];
       const text = label ? label.name : "+ driver";
