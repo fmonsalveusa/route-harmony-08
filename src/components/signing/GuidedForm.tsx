@@ -70,7 +70,7 @@ export default function GuidedForm({ fields, onComplete }: GuidedFormProps) {
   const [values, setValues] = useState<Record<string, string | undefined>>(() => {
     const init: Record<string, string | undefined> = {};
     for (const uf of uniqueFields) {
-      if (uf.type === "date") init[uf.key] = uf.value || uf.defaultValue || new Date().toLocaleDateString("es-ES");
+      if (uf.type === "date") init[uf.key] = uf.value || uf.defaultValue || new Date().toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" });
       else init[uf.key] = uf.value || uf.defaultValue;
     }
     return init;
@@ -80,7 +80,7 @@ export default function GuidedForm({ fields, onComplete }: GuidedFormProps) {
     setValues((prev) => {
       const next = { ...prev };
       for (const uf of uniqueFields) {
-        if (uf.type === "date" && !next[uf.key]) next[uf.key] = new Date().toLocaleDateString("es-ES");
+        if (uf.type === "date" && !next[uf.key]) next[uf.key] = new Date().toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" });
       }
       return next;
     });

@@ -55,11 +55,11 @@ export default function Complete() {
             <div className="flex-1 min-w-0">
               <p className="font-medium truncate">{doc.fileName}</p>
               <p className="text-xs text-muted-foreground">
-                Creado: {format(new Date(doc.createdAt), 'dd/MM/yyyy HH:mm')}
+                Creado: {format(new Date(doc.createdAt), 'MM/dd/yyyy HH:mm')}
               </p>
               {doc.signedAt && (
                 <p className="text-xs text-muted-foreground">
-                  Firmado: {format(new Date(doc.signedAt), 'dd/MM/yyyy HH:mm')}
+                  Firmado: {format(new Date(doc.signedAt), 'MM/dd/yyyy HH:mm')}
                 </p>
               )}
             </div>
