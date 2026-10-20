@@ -134,6 +134,8 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
   const [selectedTruck, setSelectedTruck] = useState('');
   const [selectedDispatcher, setSelectedDispatcher] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('dispatched');
+  // Planned: pasa sola a Dispatched cuando el driver entrega su carga activa
+  const [autoDispatch, setAutoDispatch] = useState(false);
   const [selectedServiceType, setSelectedServiceType] = useState('');
   const [selectedCommissionType, setSelectedCommissionType] = useState<'commission_1' | 'commission_2'>('commission_1');
   const [selectedCompany, setSelectedCompany] = useState('');
@@ -209,6 +211,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       setSelectedTruck(editLoad.truck_id || '');
       setSelectedDispatcher(editLoad.dispatcher_id || '');
       setSelectedStatus(editLoad.status);
+      setAutoDispatch(!!(editLoad as any).auto_dispatch);
       setSelectedServiceType((editLoad as any).service_type || '');
       const editCompanyId = (editLoad as any).company_id || '';
       setSelectedCompany(editCompanyId || defaultCompanyId);
@@ -268,6 +271,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       setSelectedTruck('');
       setSelectedDispatcher('');
       setSelectedStatus('dispatched');
+      setAutoDispatch(false);
       setSelectedServiceType('');
       setSelectedCompany(defaultCompanyId);
       setExtractionStatus('idle');
@@ -639,6 +643,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       pdf_url: pdfUrl,
       notes: formData.notes || undefined,
       status: selectedStatus,
+      auto_dispatch: selectedStatus === 'planned' && autoDispatch,
       service_type: selectedServiceType || undefined,
       company_id: selectedCompany || undefined,
     } as any;
@@ -1255,6 +1260,12 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
                 <SelectItem value="cancelled">Canceled</SelectItem>
               </SelectContent>
             </Select>
+            {selectedStatus === 'planned' && (
+              <label className="flex items-start gap-2 text-xs cursor-pointer pt-1">
+                <input type="checkbox" className="mt-0.5" checked={autoDispatch} onChange={e => setAutoDispatch(e.target.checked)} />
+                <span>Pasar a <strong>Dispatched</strong> automáticamente cuando el driver entregue su carga activa</span>
+              </label>
+            )}
           </div>
           <div className="col-span-2 space-y-2">
             <Label>Notes</Label>
