@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isEnabled, logMessage, renderMessage, sendDocumentLogged, sendTextLogged } from "../_shared/messaging.ts";
 import { sendWhapiLinkPreview } from "../_shared/whapi.ts";
 
-const ANDROID_URL = "https://play.google.com/apps/internaltest/4700846304603948197";
+const ANDROID_URL = "https://play.google.com/store/apps/details?id=com.dispatchup.app";
 const APP_LOGO_URL = "https://www.dispatch-up.com/icon-512.png";
 const IOS_URL = "https://apps.apple.com/us/app/dispatch-up-driver/id6761345616";
 

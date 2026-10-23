@@ -222,7 +222,7 @@ export const AUTOMATIONS: AutomationDefinition[] = [
         ...DRIVER_NAME_VARS,
         v('usuario', 'Email con que entra a la app', 'pedro@gmail.com'),
         v('contrasena', 'Contraseña inicial', 'Pedro2026!'),
-        v('android', 'Enlace de Google Play', 'https://play.google.com/apps/internaltest/4700846304603948197'),
+        v('android', 'Enlace de Google Play', 'https://play.google.com/store/apps/details?id=com.dispatchup.app'),
         v('ios', 'Enlace de App Store', 'https://apps.apple.com/us/app/dispatch-up-driver/id6761345616'),
       ],
     }],
