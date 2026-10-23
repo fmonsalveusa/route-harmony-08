@@ -661,8 +661,9 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
         </div>
       </div>
 
+      {/* payments no está publicada en Realtime: al cerrar el editor se vuelve a pedir la lista */}
       {editPayment && (
-        <PaymentEditDialog payment={editPayment} open={!!editPayment} onOpenChange={(o) => { if (!o) { setEditPayment(null); setAdjRefresh(r => r + 1); } }} />
+        <PaymentEditDialog payment={editPayment} open={!!editPayment} onOpenChange={(o) => { if (!o) { setEditPayment(null); setAdjRefresh(r => r + 1); void refetch(); } }} />
       )}
 
       <Dialog open={!!deletePaymentId} onOpenChange={(o) => { if (!o) setDeletePaymentId(null); }}>
