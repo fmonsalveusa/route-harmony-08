@@ -30,6 +30,13 @@ export const PaymentEditDialog = ({ payment, open, onOpenChange }: Props) => {
   const [currentRate, setCurrentRate] = useState(Number(payment.total_rate));
   const [currentBaseAmount, setCurrentBaseAmount] = useState(Number(payment.amount));
   const [savingRate, setSavingRate] = useState(false);
+  // Porcentaje y monto base de este pago (solo mientras no esté pagado)
+  const canEditBase = payment.status !== 'paid';
+  const [currentPct, setCurrentPct] = useState(Number(payment.percentage_applied));
+  const [editingBase, setEditingBase] = useState(false);
+  const [pctDraft, setPctDraft] = useState(String(payment.percentage_applied));
+  const [amountDraft, setAmountDraft] = useState(String(payment.amount));
+  const [savingBase, setSavingBase] = useState(false);
 
   const finalAmount = currentBaseAmount + totalAdjustment;
 
@@ -90,8 +97,41 @@ export const PaymentEditDialog = ({ payment, open, onOpenChange }: Props) => {
     toast({ title: 'Rate actualizado en carga y pagos asociados' });
   };
 
+  // Cambiar el % recalcula el monto con el rate; cambiar el monto recalcula el %
+  const onPctChange = (v: string) => {
+    setPctDraft(v);
+    const pct = parseFloat(v);
+    if (!isNaN(pct) && currentRate > 0) setAmountDraft(String(Math.round(currentRate * pct) / 100));
+  };
+  const onAmountChange = (v: string) => {
+    setAmountDraft(v);
+    const amt = parseFloat(v);
+    if (!isNaN(amt) && currentRate > 0) setPctDraft(String(Math.round((amt / currentRate) * 10000) / 100));
+  };
+
+  const handleSaveBase = async () => {
+    const pct = parseFloat(pctDraft);
+    const amt = parseFloat(amountDraft);
+    if (isNaN(pct) || isNaN(amt) || amt < 0) return;
+    setSavingBase(true);
+    // Solo este pago: la carga y los demás pagos no cambian
+    const { error } = await supabase
+      .from('payments')
+      .update({ percentage_applied: pct, amount: amt } as any)
+      .eq('id', payment.id);
+    setSavingBase(false);
+    if (error) {
+      toast({ title: 'Error actualizando el pago', description: error.message, variant: 'destructive' });
+      return;
+    }
+    setCurrentPct(pct);
+    setCurrentBaseAmount(amt);
+    setEditingBase(false);
+    toast({ title: 'Pago actualizado' });
+  };
+
   const handleGenerateReceipt = async () => {
-    const updatedPayment = { ...payment, total_rate: currentRate, amount: currentBaseAmount };
+    const updatedPayment = { ...payment, total_rate: currentRate, amount: currentBaseAmount, percentage_applied: currentPct };
     await generatePaymentReceipt(updatedPayment, adjustments, totalAdjustment, finalAmount);
   };
 
@@ -136,8 +176,38 @@ export const PaymentEditDialog = ({ payment, open, onOpenChange }: Props) => {
                 </span>
               )}
             </div>
-            <div><span className="text-muted-foreground">Porcentaje:</span> <span className="font-medium">{payment.percentage_applied}%</span></div>
-            <div><span className="text-muted-foreground">Monto Base:</span> <span className="font-medium">${currentBaseAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span></div>
+            {editingBase ? (
+              <div className="col-span-2 flex flex-wrap items-end gap-2 rounded-md border bg-card p-2">
+                <div>
+                  <Label className="text-xs">Porcentaje (%)</Label>
+                  <Input type="number" min="0" step="0.01" value={pctDraft} onChange={e => onPctChange(e.target.value)} className="h-8 w-24 text-sm" />
+                </div>
+                <div>
+                  <Label className="text-xs">Monto Base ($)</Label>
+                  <Input type="number" min="0" step="0.01" value={amountDraft} onChange={e => onAmountChange(e.target.value)} className="h-8 w-28 text-sm" />
+                </div>
+                <Button size="sm" className="h-8 gap-1" onClick={handleSaveBase} disabled={savingBase}>
+                  <Check className="h-3.5 w-3.5" /> Guardar
+                </Button>
+                <Button size="sm" variant="ghost" className="h-8" onClick={() => { setEditingBase(false); setPctDraft(String(currentPct)); setAmountDraft(String(currentBaseAmount)); }}>
+                  Cancelar
+                </Button>
+              </div>
+            ) : (
+              <>
+                <div><span className="text-muted-foreground">Porcentaje:</span> <span className="font-medium">{currentPct}%</span></div>
+                <div>
+                  <span className="text-muted-foreground">Monto Base:</span>{' '}
+                  <span className="font-medium">${currentBaseAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                  {canEditBase && (
+                    <Button variant="ghost" size="sm" className="h-5 w-5 p-0 ml-1 inline-flex" title="Editar porcentaje y monto base"
+                      onClick={() => { setEditingBase(true); setPctDraft(String(currentPct)); setAmountDraft(String(currentBaseAmount)); }}>
+                      <Pencil className="h-3 w-3 text-muted-foreground" />
+                    </Button>
+                  )}
+                </div>
+              </>
+            )}
           </div>
 
           {/* Adjustments list */}
