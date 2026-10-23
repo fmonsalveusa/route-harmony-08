@@ -68,14 +68,20 @@ async function enqueue(supabase: any, kind: "arrival" | "docs", stopId: string, 
     if (!manual && kind === "docs" && existing.status === "sent" && existing.sent_at &&
         Date.parse(existing.sent_at) > Date.now() - 10 * 60_000) return { skipped: "ya se envió hace un momento" };
     if (kind === "docs" && existing.status === "sent") return await enqueueUpdate(supabase, existing);
+    // Una fila "pending" recién creada la está procesando otra llamada (el botón del driver y el
+    // cambio de estado llegan casi juntos): reabrirla la devolvía a "pending" mientras se enviaba
+    // y el email salía dos veces. Solo se reabre lo que quedó sin enviar.
+    if (existing.status === "pending" && Date.parse(existing.send_after) <= Date.now() + 1000) {
+      return { skipped: "ya está en cola" };
+    }
     if (["skipped", "failed", "pending", "waiting_thread"].includes(existing.status)) {
       const { data: reopened } = await supabase.from("broker_email_queue")
         .update({
           status: "pending", attempts: 0, error: null, sent_at: null,
           created_at: new Date().toISOString(), send_after: new Date().toISOString(),
         })
-        .eq("id", existing.id).select("*").single();
-      if (!reopened) return { skipped: "no se pudo reabrir" };
+        .eq("id", existing.id).eq("status", existing.status).select("*").maybeSingle();
+      if (!reopened) return { skipped: "otra llamada ya la está enviando" };
       return await processRow(supabase, reopened);
     }
     return { skipped: `already ${existing.status}` };
@@ -149,7 +155,7 @@ async function enqueueUpdate(supabase: any, base: any) {
   if (open) {
     const { data: reopened } = await supabase.from("broker_email_queue")
       .update({ status: "pending", attempts: 0, error: null, send_after: new Date().toISOString() })
-      .eq("id", open.id).select("*").single();
+      .eq("id", open.id).in("status", ["pending", "waiting_thread"]).select("*").maybeSingle();
     return reopened ? await processRow(supabase, reopened) : { skipped: "update already queued" };
   }
   const { data: row, error } = await supabase.from("broker_email_queue").insert({
@@ -332,18 +338,24 @@ async function stopDocuments(supabase: any, row: { load_id: string; stop_type: s
 // ─── Adjuntos ───
 
 async function downloadStorageFile(supabase: any, fileUrl: string): Promise<Uint8Array | null> {
-  try {
-    let filePath = fileUrl;
-    const m = fileUrl.match(/\/object\/(?:sign|public)\/([^?]+)/);
-    if (m) filePath = decodeURIComponent(m[1]);
-    const bucket = "driver-documents";
-    const path = filePath.startsWith(`${bucket}/`) ? filePath.substring(bucket.length + 1) : filePath;
-    const { data, error } = await supabase.storage.from(bucket).download(path);
-    if (error) return null;
-    return new Uint8Array(await data.arrayBuffer());
-  } catch {
-    return null;
+  let filePath = fileUrl;
+  const m = fileUrl.match(/\/object\/(?:sign|public)\/([^?]+)/);
+  if (m) filePath = decodeURIComponent(m[1]);
+  const bucket = "driver-documents";
+  const path = filePath.startsWith(`${bucket}/`) ? filePath.substring(bucket.length + 1) : filePath;
+  // Los BOL/POD escaneados se subían con "#" en la ruta, y Storage los guardó cortados en el "#"
+  // ("..._BOL "). Se prueba la ruta completa, la cortada, y una segunda vuelta por si falla la red.
+  const candidates = path.includes("#") ? [path, path.split("#")[0]] : [path];
+  for (let round = 0; round < 2; round++) {
+    for (const p of candidates) {
+      try {
+        const { data, error } = await supabase.storage.from(bucket).download(p);
+        if (!error && data) return new Uint8Array(await data.arrayBuffer());
+      } catch { /* siguiente intento */ }
+    }
+    if (round === 0) await new Promise((r) => setTimeout(r, 1500));
   }
+  return null;
 }
 
 function contentTypeOf(name: string, fileType: string | null): string {

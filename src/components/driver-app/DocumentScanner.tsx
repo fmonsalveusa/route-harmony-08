@@ -210,7 +210,9 @@ export const DocumentScanner = ({ open, onClose, stop, loadRef, driverName, onUp
       const imageDataUrls  = pages.map((p) => p.colorEnhanced ?? p.original);
       const pdfBlob        = await scanToPdf(imageDataUrls);
       const fileName       = `${docLabel} #${loadRef}.pdf`;
-      const filePath       = `pods/${stop.load_id}/${stop.id}_${fileName}`;
+      // La ruta no lleva el nombre: el "#" cortaba la ruta en Storage y dos escaneos de la misma
+      // parada chocaban. El nombre bonito queda en pod_documents.file_name.
+      const filePath       = `pods/${stop.load_id}/${stop.id}_${docLabel}_${Date.now()}.pdf`;
 
       const { error: uploadError } = await supabase.storage
         .from('driver-documents')

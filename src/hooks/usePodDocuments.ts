@@ -62,7 +62,8 @@ export function usePodDocuments(loadId: string, referenceNumber?: string) {
       const loadRef = referenceNumber || loadId.slice(0, 8);
       const timestamp = Date.now();
       const descriptiveName = `${prefix} #${loadRef}.${ext}`;
-      const storageFileName = `${timestamp}_${descriptiveName}`;
+      // Sin "#" ni espacios en la ruta de Storage (el "#" la cortaba); el nombre bonito va en file_name
+      const storageFileName = `${timestamp}_${prefix}.${ext}`;
       const storagePath = `pods/${loadId}/${storageFileName}`;
 
       const { error: uploadError } = await supabase.storage
