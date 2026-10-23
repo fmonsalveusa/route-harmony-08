@@ -15,7 +15,9 @@ SELECT cron.schedule(
     body := '{"job":"sync"}'::jsonb,
     timeout_milliseconds := 60000
   )
-  WHERE extract(hour FROM now() AT TIME ZONE 'America/New_York') = 12;
+  WHERE extract(hour FROM now() AT TIME ZONE 'America/New_York') = 12
+    -- Pausado hasta el lunes 26/10: la primera corrida es ese día a las 12:00 pm
+    AND (now() AT TIME ZONE 'America/New_York')::date >= DATE '2026-10-26';
   $$
 );
 
