@@ -47,6 +47,31 @@ const TopLabel = ({ x, y, width, value }: any) => {
   );
 };
 
+// Fecha de creación de la carga en hora del Este (YYYY-MM-DD)
+const createdDateET = (iso: string) => new Date(iso).toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+
+/**
+ * Igual que el pago de comisión: la carga cuenta en la semana/mes/año en que se CREÓ
+ * (no por pickup), con la comisión guardada en la carga (dispatcher_pay_amount).
+ */
+function inPeriod(dateStr: string, year: string, month: string, week: string) {
+  const d = new Date(dateStr + 'T00:00:00');
+  if (year !== 'all' && d.getFullYear() !== Number(year)) return false;
+  if (month !== 'all' && (d.getMonth() + 1) !== Number(month)) return false;
+  if (week !== 'all') {
+    const yr = year !== 'all' ? Number(year) : new Date().getFullYear();
+    const jan4 = new Date(yr, 0, 4);
+    const mondayOfWeek1 = new Date(jan4);
+    mondayOfWeek1.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7));
+    const weekStart = new Date(mondayOfWeek1);
+    weekStart.setDate(mondayOfWeek1.getDate() + (Number(week) - 1) * 7);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 7);
+    if (d < weekStart || d >= weekEnd) return false;
+  }
+  return true;
+}
+
 export function DispatcherCommissionsChart({ loads, dispatchers, year, month, week }: Props) {
   const [selectedDispatcher, setSelectedDispatcher] = useState<string>('all');
 
@@ -56,7 +81,9 @@ export function DispatcherCommissionsChart({ loads, dispatchers, year, month, we
       dispMap[d.id] = { name: d.name, commPct: d.commission_percentage, dispSvcPct: d.dispatch_service_percentage };
     });
 
-    const filtered = loads.filter(l => l.status !== 'cancelled' && l.dispatcher_id);
+    const filtered = loads.filter(l =>
+      l.status !== 'cancelled' && l.dispatcher_id && l.created_at && inPeriod(createdDateET(l.created_at), year, month, week),
+    );
 
     const byDisp: Record<string, { company: number; oo: number; dispatch: number }> = {};
 
@@ -66,13 +93,17 @@ export function DispatcherCommissionsChart({ loads, dispatchers, year, month, we
       if (!byDisp[l.dispatcher_id!]) byDisp[l.dispatcher_id!] = { company: 0, oo: 0, dispatch: 0 };
 
       const st = l.service_type;
+      // La comisión que se paga es la guardada en la carga (respeta C1/C2/DS); si no tiene, se estima
+      const stored = Number(l.dispatcher_pay_amount) || 0;
+      const pct = st === 'dispatch_service' ? disp.dispSvcPct : disp.commPct;
+      const amount = stored > 0 ? stored : l.total_rate * (pct / 100);
       if (st === 'dispatch_service') {
-        byDisp[l.dispatcher_id!].dispatch += l.total_rate * (disp.dispSvcPct / 100);
+        byDisp[l.dispatcher_id!].dispatch += amount;
       } else if (st === 'owner_operator') {
-        byDisp[l.dispatcher_id!].oo += l.total_rate * (disp.commPct / 100);
+        byDisp[l.dispatcher_id!].oo += amount;
       } else {
         // company_driver
-        byDisp[l.dispatcher_id!].company += l.total_rate * (disp.commPct / 100);
+        byDisp[l.dispatcher_id!].company += amount;
       }
     });
 

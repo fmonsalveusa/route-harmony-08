@@ -76,6 +76,12 @@ const AdminDashboard = () => {
     return true;
   });
 
+  // Comisiones: mismos filtros de dispatcher/driver, pero la fecha la aplica la gráfica por creación
+  const commissionLoads = loads.filter(l =>
+    (dispatcherFilter === 'all' || l.dispatcher_id === dispatcherFilter) &&
+    (driverFilter === 'all' || l.driver_id === driverFilter),
+  );
+
   const totalRevenue = filteredLoads.filter(l => l.status !== 'cancelled').reduce((s, l) => s + l.total_rate, 0);
   const pendingPayments = payments.filter(p => p.status === 'pending').reduce((s, p) => s + p.amount, 0);
   const activeLoads = loads.filter(l => !['delivered', 'paid', 'tonu', 'cancelled'].includes(l.status)).length;
@@ -184,7 +190,7 @@ const AdminDashboard = () => {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <DispatcherCommissionsChart loads={filteredLoads} dispatchers={dispatchers} year={year} month={month} week={week} />
+        <DispatcherCommissionsChart loads={commissionLoads} dispatchers={dispatchers} year={year} month={month} week={week} />
         <MarketAnalysisCard loads={filteredLoads} trucks={trucks} />
       </div>
 
@@ -256,6 +262,8 @@ const DispatcherDashboard = () => {
     return true;
   });
 
+  const commissionLoads = loads.filter(l => driverFilter === 'all' || l.driver_id === driverFilter);
+
   const totalRevenue = filteredLoads.filter(l => l.status !== 'cancelled').reduce((s, l) => s + l.total_rate, 0);
   const pendingPayments = payments.filter(p => p.status === 'pending').reduce((s, p) => s + p.amount, 0);
   const activeLoads = loads.filter(l => !['delivered', 'paid', 'tonu', 'cancelled'].includes(l.status)).length;
@@ -301,7 +309,7 @@ const DispatcherDashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <DispatcherCommissionsChart loads={filteredLoads} dispatchers={dispatchers} year={year} month={month} week={week} />
+        <DispatcherCommissionsChart loads={commissionLoads} dispatchers={dispatchers} year={year} month={month} week={week} />
         <MarketAnalysisCard loads={filteredLoads} trucks={trucks} />
       </div>
 
