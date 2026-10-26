@@ -461,6 +461,9 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
   const { role, isMasterAdmin } = useAuth();
   const canSeeGrossRate = role === 'admin' || role === 'accounting' || isMasterAdmin;
   const { stops: dbStops, loading: stopsLoading, updateStopGeodata } = useLoadStops(load.id);
+  // Para el globo del camión en el mapa: la siguiente parada sin llegada marcada
+  const stopsRef = useRef(dbStops);
+  stopsRef.current = dbStops;
   const [mapReady, setMapReady] = useState(false);
   const [gpsStatus, setGpsStatus] = useState<'active' | 'stale' | 'none'>('none');
   const [cachedRouteGeometry, setCachedRouteGeometry] = useState<[number, number][] | null>(null);
@@ -1357,6 +1360,32 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
       return `${diffHr}h ago`;
     };
 
+    // Millas por carretera hasta la siguiente parada. Se piden a Mapbox como mucho cada 2 minutos
+    // (la ubicación llega mucho más seguido); mientras tanto se reusa la última.
+    let distCache: { stopId: string; miles: number | null; at: number } | null = null;
+    const nextStopLine = async (loc: { lat: number; lng: number }) => {
+      const next = [...(stopsRef.current || [])]
+        .sort((a, b) => a.stop_order - b.stop_order)
+        .find(s => !s.arrived_at && s.lat != null && s.lng != null);
+      if (!next) return '';
+      const fresh = distCache && distCache.stopId === next.id && Date.now() - distCache.at < 2 * 60 * 1000;
+      if (!fresh) {
+        const road = await drivingDistance(loc.lat, loc.lng, Number(next.lat), Number(next.lng));
+        distCache = {
+          stopId: next.id,
+          miles: road ?? haversineMiles([loc.lat, loc.lng], [Number(next.lat), Number(next.lng)]),
+          at: Date.now(),
+        };
+      }
+      const parts = (next.address || '').split(',').map(p => p.trim()).filter(Boolean);
+      const city = parts.length >= 2
+        ? `${parts[parts.length - 2]}, ${parts[parts.length - 1].replace(/\d{5}(-\d{4})?/, '').trim()}`
+        : next.address;
+      const label = next.stop_type === 'pickup' ? 'Pickup' : 'Delivery';
+      const miles = distCache?.miles != null ? Math.round(distCache.miles) : null;
+      return miles != null ? `<b>${miles.toLocaleString()} mi</b> to ${label}<br/><small>${city}</small><br/>` : '';
+    };
+
     const createOrUpdateMarker = async (loc: { lat: number; lng: number; speed: number | null; updated_at: string }) => {
       if (isCancelled || !mapInstanceRef.current) return;
 
@@ -1373,7 +1402,9 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
       const pulseBg = active ? 'hsl(215,70%,50%,0.25)' : 'hsl(30,80%,50%,0.15)';
       const pulseAnim = active ? 'animation:pulse 2s infinite' : '';
 
-      const popupHtml = `<div style="text-align:center"><b style="color:${statusColor}">${statusLabel}</b><br/>${driver?.name || 'Driver'}<br/>${active && speedMph != null ? `${speedMph} mph<br/>` : ''}<small>${agoText}</small></div>`;
+      const nextLine = await nextStopLine(loc).catch(() => '');
+      if (isCancelled || !mapInstanceRef.current) return;
+      const popupHtml = `<div style="text-align:center"><b style="color:${statusColor}">${statusLabel}</b><br/>${driver?.name || 'Driver'}<br/>${active && speedMph != null ? `${speedMph} mph<br/>` : ''}${nextLine}<small>${agoText}</small></div>`;
 
       if (driverMarkerRef) {
         driverMarkerRef.setLatLng([loc.lat, loc.lng]);
