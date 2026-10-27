@@ -135,7 +135,7 @@ export function StopPhotoGrid({
       </div>
 
       {/* Grilla */}
-      <div className="grid grid-cols-3 lg:grid-cols-5 gap-2">
+      <div className="grid grid-cols-4 lg:grid-cols-6 gap-1.5">
         {/* Fotos existentes */}
         {photos.map((photo, idx) => {
           const label = `${prefix} #${loadReference}-${String(idx + 1).padStart(2, '0')}`;

@@ -91,10 +91,10 @@ function DocCard({
       selected
         ? 'border-primary ring-2 ring-primary/30 shadow-md'
         : 'border-border hover:border-primary/50 hover:shadow-sm'
-    }`} style={{ width: 120 }}>
+    }`} style={{ width: 96 }}>
 
       {/* Thumbnail area */}
-      <div className="h-20 bg-muted/30 relative">
+      <div className="h-16 bg-muted/30 relative">
         {isImage ? (
           <ImageThumb doc={doc} onClick={onOpen} />
         ) : (
