@@ -75,7 +75,7 @@ export const LOADS_SELECT = [
   'weight', 'cargo_type', 'total_rate', 'status', 'driver_id', 'truck_id',
   'dispatcher_id', 'broker_client', 'driver_pay_amount', 'investor_pay_amount',
   'dispatcher_pay_amount', 'company_profit', 'miles', 'factoring', 'pdf_url',
-  'notes', 'created_at', 'empty_miles', 'empty_miles_origin', 'company_id',
+  'notes', 'created_at', 'empty_miles', 'empty_miles_origin', 'empty_miles_manual', 'company_id',
   'bol_url', 'service_type', 'updated_at', 'pickup_time', 'delivery_time', 'has_detention', 'has_detention_pickup', 'has_detention_delivery', 'auto_dispatch'
 ].join(',');
 

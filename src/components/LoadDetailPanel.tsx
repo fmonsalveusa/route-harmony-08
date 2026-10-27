@@ -597,10 +597,12 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
 
       // Persist to database first
       console.log('Updating empty miles in DB:', { id: load.id, empty_miles: rounded, empty_miles_origin: trimmed });
+      // empty_miles_manual: el origen lo puso alguien a mano; el cálculo automático no lo pisa
       const { error: updateError, data: updateData, count } = await supabase.from('loads').update({
         empty_miles: rounded,
         empty_miles_origin: trimmed,
-      }).eq('id', load.id).select();
+        empty_miles_manual: true,
+      } as any).eq('id', load.id).select();
 
       console.log('Update result:', { error: updateError, data: updateData, count });
 
@@ -896,8 +898,11 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
           return roundedDist > 0;
         };
 
+        // 0) Origen puesto a mano en esta carga: manda sobre todo lo demás
+        const isManualOrigin = Boolean((load as any).empty_miles_manual) && Boolean((load as any).empty_miles_origin);
+
         // 1) Manual location has top priority (where driver starts empty)
-        if (load.driver_id && load.pickup_date) {
+        if (!isManualOrigin && load.driver_id && load.pickup_date) {
           const { data: driverData } = await supabase
             .from('drivers' as any)
             .select('manual_location_address, manual_location_lat, manual_location_lng')
@@ -935,7 +940,7 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
         const hasCachedEmptyMiles = Number((load as any).empty_miles) > 0 && Boolean((load as any).empty_miles_origin);
         const isTerminal = ['delivered', 'tonu', 'cancelled'].includes(load.status);
 
-        if (hasCachedEmptyMiles && isTerminal) {
+        if (hasCachedEmptyMiles && (isTerminal || isManualOrigin)) {
           setEmptyMiles(Number((load as any).empty_miles));
           setEmptyMilesOrigin((load as any).empty_miles_origin || null);
 
