@@ -1489,30 +1489,29 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
   }, [load.id, load.driver_id, mapReady]);
 
   return (
-    <div className="p-4 bg-muted/30 border-t animate-in slide-in-from-top-2 duration-200">
-      {/* Company Banner */}
-      {(() => {
-        const company = companies.find(c => c.id === (load as any).company_id);
-        return company ? (
-          <div className="flex items-start gap-3 p-3 mb-4 bg-primary/5 border-l-4 border-primary rounded-r-lg">
-            <Building2 className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-            <div className="min-w-0">
-              <h3 className="font-bold text-sm uppercase text-foreground tracking-wide">{company.name}</h3>
-              <p className="text-xs text-muted-foreground">
-                {[company.mc_number && `MC# ${company.mc_number}`, company.dot_number && `DOT# ${company.dot_number}`].filter(Boolean).join('  •  ') || 'Sin MC/DOT registrado'}
-              </p>
-            </div>
+    <div className="p-4 bg-muted/30 border-t animate-in slide-in-from-top-2 duration-200 space-y-4">
+      {/* Encabezado: empresa, título y documentos de la carga */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-4 min-w-0">
+          {(() => {
+            const company = companies.find(c => c.id === (load as any).company_id);
+            return company ? (
+              <div className="flex items-center gap-2 pl-3 border-l-4 border-primary">
+                <Building2 className="h-4 w-4 text-primary flex-shrink-0" />
+                <div className="min-w-0">
+                  <h3 className="font-bold text-xs uppercase text-foreground tracking-wide leading-tight">{company.name}</h3>
+                  <p className="text-[11px] text-muted-foreground leading-tight">
+                    {[company.mc_number && `MC# ${company.mc_number}`, company.dot_number && `DOT# ${company.dot_number}`].filter(Boolean).join('  •  ') || 'Sin MC/DOT registrado'}
+                  </p>
+                </div>
+              </div>
+            ) : null;
+          })()}
+          <div className="flex items-center gap-2">
+            <h4 className="font-semibold text-sm text-foreground">Load Detail</h4>
+            <CopyLoadInfoButton load={load} totalMiles={totalMiles} emptyMiles={emptyMiles} rpm={rpm} driver={driver} dispatcher={dispatcher} />
           </div>
-        ) : null;
-      })()}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
-        {/* Info */}
-          <div className="space-y-3">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <h4 className="font-semibold text-sm text-foreground">Load Detail</h4>
-              <CopyLoadInfoButton load={load} totalMiles={totalMiles} emptyMiles={emptyMiles} rpm={rpm} driver={driver} dispatcher={dispatcher} />
-            </div>
+        </div>
             <div className="flex items-center gap-2">
               {load.pdf_url && (
                 <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-green-800 text-white text-[11px]">
@@ -1546,36 +1545,29 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
                 </Button>
               </div>
             </div>
-          </div>
+      </div>
 
-          {/* Structured table layout */}
+      {/* Tres columnas: datos de la carga | ruta y paradas | mapa */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-12 gap-4 items-start">
+        {/* Columna 1: datos de la carga, ajustes y rentabilidad */}
+        <div className="xl:col-span-3 space-y-3">
           <div className="rounded-lg border bg-card overflow-hidden text-sm">
-
-            {/* Fila 1: Broker + Rate */}
-            <div className="flex items-center justify-between px-4 py-2.5 border-b">
-              <div className="flex items-center gap-2">
-                <span className="text-muted-foreground font-medium">Broker:</span>
-                <span className="font-semibold">{load.broker_client || '—'}</span>
-                <BrokerScoreRow brokerName={load.broker_client} hideLabel />
+            <div className="px-3 py-2 border-b bg-muted/50 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Carga</div>
+              <div className="flex items-start justify-between gap-3 px-3 py-2 border-b last:border-b-0">
+                <span className="text-xs text-muted-foreground font-medium pt-0.5">Broker</span>
+                <div className="text-right"><div className="font-semibold">{load.broker_client || '—'}</div><BrokerScoreRow brokerName={load.broker_client} hideLabel /></div>
               </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-muted-foreground font-medium">Rate:</span>
-                <span className="font-semibold text-primary">${Number(load.total_rate).toLocaleString()}</span>
+              <div className="flex items-start justify-between gap-3 px-3 py-2 border-b last:border-b-0">
+                <span className="text-xs text-muted-foreground font-medium pt-0.5">Rate</span>
+                <div className="text-right"><span className="font-semibold text-primary">${Number(load.total_rate).toLocaleString()}</span></div>
               </div>
-            </div>
-
-            {/* Fila 2: Weight | Empty Miles | Miles | Total Miles | RPM | RPM+DH */}
-            <div className="grid grid-cols-6 border-b">
-              <div className="px-4 py-2.5 border-r">
-                <div className="text-[11px] text-muted-foreground font-medium mb-0.5 flex items-center gap-1">
-                  <Weight className="h-3 w-3" /> Weight
-                </div>
-                <div className="font-semibold">
-                  {load.weight ? `${Number(load.weight).toLocaleString()} lbs` : '—'}
-                </div>
+              <div className="flex items-start justify-between gap-3 px-3 py-2 border-b last:border-b-0">
+                <span className="text-xs text-muted-foreground font-medium pt-0.5">Weight</span>
+                <div className="text-right"><span className="font-semibold">{load.weight ? `${Number(load.weight).toLocaleString()} lbs` : '—'}</span></div>
               </div>
-              <div className="px-4 py-2.5 border-r">
-                <div className="text-[11px] text-muted-foreground font-medium mb-0.5">Empty Miles</div>
+              <div className="flex items-start justify-between gap-3 px-3 py-2 border-b">
+                <span className="text-xs text-muted-foreground font-medium pt-0.5">Empty Miles</span>
+                <div className="text-right min-w-0">
                 <div className="flex items-center gap-1">
                   <span className="text-base font-semibold text-amber-500">{emptyMiles > 0 ? emptyMiles.toLocaleString() : '—'}</span>
                   <Popover open={editingEmptyOrigin} onOpenChange={(open) => {
@@ -1609,91 +1601,74 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
                   </Popover>
                 </div>
                 {emptyMilesOrigin && <div className="text-[10px] text-muted-foreground truncate">desde {emptyMilesOrigin}</div>}
+                </div>
               </div>
-              <div className="px-4 py-2.5 border-r">
-                <div className="text-[11px] text-muted-foreground font-medium mb-0.5">Miles</div>
-                <span className="text-base font-semibold text-primary">{totalMiles > 0 ? totalMiles.toLocaleString() : load.status === 'tonu' ? '0' : '—'}</span>
+              <div className="flex items-start justify-between gap-3 px-3 py-2 border-b last:border-b-0">
+                <span className="text-xs text-muted-foreground font-medium pt-0.5">Miles</span>
+                <div className="text-right"><span className="font-semibold text-primary">{totalMiles > 0 ? totalMiles.toLocaleString() : load.status === 'tonu' ? '0' : '—'}</span></div>
               </div>
-              <div className="px-4 py-2.5 border-r">
-                <div className="text-[11px] text-muted-foreground font-medium mb-0.5">Total Miles</div>
-                <span className="text-base font-semibold">{(emptyMiles + totalMiles) > 0 ? (emptyMiles + totalMiles).toLocaleString() : '—'}</span>
+              <div className="flex items-start justify-between gap-3 px-3 py-2 border-b last:border-b-0">
+                <span className="text-xs text-muted-foreground font-medium pt-0.5">Total Miles</span>
+                <div className="text-right"><span className="font-semibold">{(emptyMiles + totalMiles) > 0 ? (emptyMiles + totalMiles).toLocaleString() : '—'}</span></div>
               </div>
-              <div className="px-4 py-2.5 border-r">
-                <div className="text-[11px] text-muted-foreground font-medium mb-0.5">RPM</div>
-                <span className={`text-base font-semibold ${rpmColorClass}`}>{rpm > 0 ? `$${rpm.toFixed(2)}` : '—'}</span>
+              <div className="flex items-start justify-between gap-3 px-3 py-2 border-b last:border-b-0">
+                <span className="text-xs text-muted-foreground font-medium pt-0.5">RPM</span>
+                <div className="text-right"><span className={`font-semibold ${rpmColorClass}`}>{rpm > 0 ? `$${rpm.toFixed(2)}` : '—'}</span></div>
               </div>
-              <div className="px-4 py-2.5">
-                <div className="text-[11px] text-muted-foreground font-medium mb-0.5">RPM+DH</div>
-                <span className="text-base font-semibold text-muted-foreground">{(emptyMiles + totalMiles) > 0 ? `$${(Number(load.total_rate) / (emptyMiles + totalMiles)).toFixed(2)}` : '—'}</span>
+              <div className="flex items-start justify-between gap-3 px-3 py-2 border-b last:border-b-0">
+                <span className="text-xs text-muted-foreground font-medium pt-0.5">RPM+DH</span>
+                <div className="text-right"><span className="font-semibold text-muted-foreground">{(emptyMiles + totalMiles) > 0 ? `$${(Number(load.total_rate) / (emptyMiles + totalMiles)).toFixed(2)}` : '—'}</span></div>
               </div>
-            </div>
-
-            {/* Fila 3: Driver + Dispatcher */}
-            <div className="grid grid-cols-2 border-b">
-              <div className="px-4 py-2.5 border-r">
-                <div className="text-[11px] text-muted-foreground font-medium mb-0.5">Driver</div>
-                <div className="font-medium">{driver?.name || 'Sin asignar'} <span className="text-muted-foreground text-xs">· {truck?.truck_type || '—'}</span></div>
+              <div className="flex items-start justify-between gap-3 px-3 py-2 border-b last:border-b-0">
+                <span className="text-xs text-muted-foreground font-medium pt-0.5">Driver</span>
+                <div className="text-right"><span className="font-medium">{driver?.name || 'Sin asignar'}</span><div className="text-muted-foreground text-xs">{truck?.truck_type || '—'}</div></div>
               </div>
-              <div className="px-4 py-2.5">
-                <div className="text-[11px] text-muted-foreground font-medium mb-0.5">Dispatcher</div>
-                <div className="font-medium">{dispatcher?.name || '—'}</div>
+              <div className="flex items-start justify-between gap-3 px-3 py-2 border-b last:border-b-0">
+                <span className="text-xs text-muted-foreground font-medium pt-0.5">Dispatcher</span>
+                <div className="text-right"><span className="font-medium">{dispatcher?.name || '—'}</span></div>
               </div>
-            </div>
-
             {/* Gross Rate — solo Admin / Accounting / Master Admin */}
             {canSeeGrossRate && rcGrossRate && (
-              <div className="grid grid-cols-2 bg-amber-500/10">
-                <div className="px-4 py-2.5 border-r border-amber-200/30">
-                  <div className="text-[11px] text-amber-700 dark:text-amber-400 font-medium mb-0.5">Gross Rate</div>
-                  <div className="font-semibold text-amber-700 dark:text-amber-400">${Number(rcGrossRate).toLocaleString()}</div>
-                </div>
-                <div className="px-4 py-2.5">
-                  <div className="text-[11px] text-amber-700 dark:text-amber-400 font-medium mb-0.5">Comisión broker</div>
-                  <div className="font-semibold text-amber-700 dark:text-amber-400">${(Number(rcGrossRate) - Number(load.total_rate)).toLocaleString()}</div>
-                </div>
+              <>
+              <div className="flex items-start justify-between gap-3 px-3 py-2 border-b last:border-b-0 bg-amber-500/10">
+                <span className="text-xs text-muted-foreground font-medium pt-0.5"><span className="text-amber-700 dark:text-amber-400">Gross Rate</span></span>
+                <div className="text-right"><span className="font-semibold text-amber-700 dark:text-amber-400">${Number(rcGrossRate).toLocaleString()}</span></div>
               </div>
+              <div className="flex items-start justify-between gap-3 px-3 py-2 border-b last:border-b-0 bg-amber-500/10">
+                <span className="text-xs text-muted-foreground font-medium pt-0.5"><span className="text-amber-700 dark:text-amber-400">Comisión broker</span></span>
+                <div className="text-right"><span className="font-semibold text-amber-700 dark:text-amber-400">${(Number(rcGrossRate) - Number(load.total_rate)).toLocaleString()}</span></div>
+              </div>
+              </>
             )}
-
             {/* Notes */}
             {load.notes && (
-              <div className="px-4 py-3 border-t">
+              <div className="px-3 py-2.5 border-t">
                 <div className="text-[11px] text-muted-foreground font-medium mb-1 flex items-center gap-1">
                   <FileText className="h-3 w-3" /> Notes
                 </div>
-                <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
-                  {load.notes}
-                </p>
+                <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{load.notes}</p>
               </div>
             )}
           </div>
 
-          {/* Load Adjustments + Profitability — lado a lado */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 items-start">
-            {load.status !== 'delivered' ? (
-              <LoadAdjustmentsSection loadId={load.id} />
-            ) : (
-              <LoadAdjustmentsSection loadId={load.id} hideIfEmpty />
-            )}
-
-            <LoadProfitSection
-              load={load}
-              loadedMiles={totalMiles}
-              emptyMiles={emptyMiles}
-              truck={truck}
-              driver={driver}
-              dispatcher={dispatcher}
-            />
-          </div>
-
-          {/* Email al broker + RC firmado — lado a lado, mismo ancho que Load Adjustments */}
-          {!isDispatchService && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 items-start">
-              <BrokerEmailSection loadId={load.id} />
-              <RcSignedSection loadId={load.id} hasDriver={!!load.driver_id} />
-            </div>
+          {load.status !== 'delivered' ? (
+            <LoadAdjustmentsSection loadId={load.id} />
+          ) : (
+            <LoadAdjustmentsSection loadId={load.id} hideIfEmpty />
           )}
-          <PdfViewerDialog url={pdfViewer?.url ?? null} title={pdfViewer?.title ?? ''} onClose={() => setPdfViewer(null)} />
 
+          <LoadProfitSection
+            load={load}
+            loadedMiles={totalMiles}
+            emptyMiles={emptyMiles}
+            truck={truck}
+            driver={driver}
+            dispatcher={dispatcher}
+          />
+        </div>
+
+        {/* Columna 2: ruta y paradas, email al broker y RC firmado */}
+        <div className="xl:col-span-5 space-y-3">
           {/* Stops / Route breakdown */}
           <div className="p-3 rounded-lg bg-card border text-sm">
             <h5 className="font-semibold mb-2 flex items-center gap-1.5">
@@ -1770,6 +1745,14 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
             )}
           </div>
 
+          {!isDispatchService && (
+            <>
+              <BrokerEmailSection loadId={load.id} />
+              <RcSignedSection loadId={load.id} hasDriver={!!load.driver_id} />
+            </>
+          )}
+          <PdfViewerDialog url={pdfViewer?.url ?? null} title={pdfViewer?.title ?? ''} onClose={() => setPdfViewer(null)} />
+
           <BolFormDialog
             open={bolDialogOpen}
             onOpenChange={setBolDialogOpen}
@@ -1780,6 +1763,8 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
           />
         </div>
 
+        {/* Columna 3: mapa */}
+        <div className="lg:col-span-2 xl:col-span-4">
         {/* Map */}
         <div className="sticky top-4 rounded-lg overflow-hidden border bg-card relative" style={{ height: 700, zIndex: 0 }}>
           <div ref={mapRef} style={{ height: '100%', zIndex: 0 }} />
@@ -1803,6 +1788,7 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
               )}
             </div>
           )}
+        </div>
         </div>
       </div>
     </div>
