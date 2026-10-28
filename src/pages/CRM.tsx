@@ -444,7 +444,16 @@ function useContacts() {
   });
 }
 
-function ContactCard({ c, calls, onOpen }: { c: CrmContact; calls?: CallSummary; onOpen: () => void }) {
+interface MeetingSummary { date: string; time: string }
+
+// '2026-10-16' → 'Vie 10/16/2026'
+const fmtMeetingDate = (d: string) => {
+  const [y, m, day] = d.split('-').map(Number);
+  const wd = new Date(y, m - 1, day).toLocaleDateString('es-US', { weekday: 'short' });
+  return `${wd.charAt(0).toUpperCase()}${wd.slice(1).replace('.', '')} ${String(m).padStart(2, '0')}/${String(day).padStart(2, '0')}/${y}`;
+};
+
+function ContactCard({ c, calls, meeting, onOpen }: { c: CrmContact; calls?: CallSummary; meeting?: MeetingSummary; onOpen: () => void }) {
   const src = SOURCE[c.source] ?? SOURCE.manual;
   const overdue = isOverdue(c);
   return (
@@ -464,6 +473,11 @@ function ContactCard({ c, calls, onOpen }: { c: CrmContact; calls?: CallSummary;
       {c.phone && <p className="text-xs text-muted-foreground">{c.phone}</p>}
       {(c.vehicle || c.service) && (
         <p className="text-xs text-muted-foreground truncate">{[c.vehicle, c.service].filter(Boolean).join(' · ')}</p>
+      )}
+      {meeting && c.stage === 'meeting_scheduled' && (
+        <p className="text-[11px] flex items-center gap-1 font-medium text-violet-700 dark:text-violet-300">
+          <CalendarCheck className="h-3 w-3" /> Reunión: {fmtMeetingDate(meeting.date)} · {meeting.time}
+        </p>
       )}
       {calls && (
         <p className="text-[11px] flex items-center gap-1 text-muted-foreground">
@@ -890,6 +904,24 @@ export default function CRM() {
       return out;
     },
   });
+  // Reunión agendada por contacto (por teléfono): la próxima, o la última si ya pasaron todas
+  const { data: meetings = {} } = useQuery({
+    queryKey: ['crm_meetings'],
+    queryFn: async () => {
+      const { data } = await supabase.from('meeting_requests' as any)
+        .select('phone, meeting_date, meeting_time, status').neq('status', 'cancelled').order('meeting_date');
+      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+      const out: Record<string, MeetingSummary> = {};
+      for (const r of ((data as any[]) ?? [])) {
+        const key = String(r.phone ?? '').replace(/\D/g, '').slice(-10);
+        if (key.length !== 10 || !r.meeting_date) continue;
+        const cur = out[key];
+        // Ordenadas por fecha: se queda con la primera que no ha pasado
+        if (!cur || cur.date < today) out[key] = { date: r.meeting_date, time: r.meeting_time };
+      }
+      return out;
+    },
+  });
   const { data: working = new Set<string>() } = useQuery({
     queryKey: ['crm_working'],
     queryFn: async () => {
@@ -983,7 +1015,7 @@ export default function CRM() {
                 <span className="text-xs text-muted-foreground">{byStage[s.id].length}</span>
               </div>
               <div className="px-2 pb-2 space-y-2 overflow-y-auto flex-1">
-                {byStage[s.id].map(c => <ContactCard key={c.id} c={c} calls={calls[c.id]} onOpen={() => setOpenId(c.id)} />)}
+                {byStage[s.id].map(c => <ContactCard key={c.id} c={c} calls={calls[c.id]} meeting={c.phone_key ? meetings[c.phone_key] : undefined} onOpen={() => setOpenId(c.id)} />)}
               </div>
             </div>
           ))}
