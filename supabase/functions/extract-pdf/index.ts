@@ -201,7 +201,7 @@ serve(async (req) => {
               },
                 needsTarp: {
                   type: "boolean",
-                  description: "True if the document mentions that a tarp is required (e.g. 'tarp required', 'must tarp', 'needs tarp', 'tarping required', 'tarp load'). False otherwise.",
+                  description: "True ONLY if this specific load explicitly requires the carrier to tarp the freight (e.g. 'tarp required', 'must tarp', 'needs tarp', 'tarping required', 'tarp load'). False for generic carrier terms or boilerplate that only mention tarps in passing (e.g. tarp/strap policies, 'if tarped', 'no tarp needed', equipment lists), and false when the equipment is a box truck, straight truck or dry van. When in doubt, false.",
                 },
               required: ["referenceNumber", "brokerClient", "totalRate", "weight", "stops", "needsTarp"],
             },

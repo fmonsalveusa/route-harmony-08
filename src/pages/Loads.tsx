@@ -555,7 +555,8 @@ const Loads = () => {
                           </td>
                           <td className="p-4">
                             <div className="font-medium text-primary">{load.reference_number}</div>
-                            {(load.notes || '').toUpperCase().includes('TARP') && (
+                            {/* El tarp es solo para hotshot: en box truck no aplica */}
+                            {(load.notes || '').toUpperCase().includes('TARP') && !(trucks.find(t => t.id === load.truck_id)?.truck_type || '').toLowerCase().includes('box') && (
                               <span className="inline-flex items-center mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide text-white bg-[hsl(25,95%,53%)] whitespace-nowrap">
                                 NEEDS TARP
                               </span>

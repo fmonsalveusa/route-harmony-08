@@ -1719,7 +1719,7 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
                         <div className="flex items-center gap-3">
                           <div className="font-medium text-sm">{stop.address}</div>
                           <CopyStopButton text={copyText} />
-                          {i === 0 && stop.type === 'pickup' && (load.notes || '').toUpperCase().includes('TARP') && (
+                          {i === 0 && stop.type === 'pickup' && (load.notes || '').toUpperCase().includes('TARP') && !truckType.includes('box') && (
                             <span className="inline-flex items-center ml-8 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide text-white bg-[hsl(25,95%,53%)] animate-pulse whitespace-nowrap">
                               ⚠ NEEDS TARP
                             </span>
