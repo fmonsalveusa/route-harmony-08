@@ -11,7 +11,18 @@ export const isGroupChat = (to: string) => String(to ?? "").endsWith("@g.us");
 
 async function post(path: string, body: { to: string } & Record<string, unknown>) {
   if (!isGroupChat(body.to)) throw new Error(`Envío bloqueado: solo se envían mensajes a grupos (${body.to})`);
-  const res = await fetch(`${WHAPI}${path}`, { method: "POST", headers: headers(), body: JSON.stringify(body) });
+  // Si la conexión con Whapi se corta antes de responder ("Connection reset", DNS…), se
+  // reintenta hasta 2 veces. Un error HTTP no se reintenta: Whapi ya recibió el pedido.
+  let res: Response | undefined;
+  for (let attempt = 0; ; attempt++) {
+    try {
+      res = await fetch(`${WHAPI}${path}`, { method: "POST", headers: headers(), body: JSON.stringify(body) });
+      break;
+    } catch (e) {
+      if (attempt >= 2) throw e;
+      await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
+    }
+  }
   if (!res.ok) throw new Error(`Whapi HTTP ${res.status}: ${(await res.text()).slice(0, 300)}`);
   return res.json().catch(() => ({}));
 }
