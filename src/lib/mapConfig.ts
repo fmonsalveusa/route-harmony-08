@@ -17,21 +17,46 @@ export const MAPBOX_TILE_OPTIONS = {
   zoomOffset: -1 as const,
 };
 
+/**
+ * Limpia direcciones como vienen en algunos RC (ej. Nolan):
+ * "610 Airport South Parkway, Atlanta,GA 30349,USA" → "610 Airport South Parkway, Atlanta, GA 30349"
+ */
+export function normalizeUsAddress(place: string): string {
+  return (place || '')
+    .replace(/\s+/g, ' ')
+    .replace(/\s*,\s*/g, ', ')                                   // "Atlanta,GA" → "Atlanta, GA"
+    .replace(/,\s*(USA|U\.S\.A\.|US|United States( of America)?)\.?\s*$/i, '')
+    .replace(/,\s*$/, '')
+    .trim();
+}
+
+const US_STATE_RE = /\b([A-Z]{2})\s+\d{5}(-\d{4})?\b/;
+
 /** Geocoding: convierte una dirección en coordenadas [lat, lng] */
 export async function mapboxGeocode(place: string): Promise<[number, number] | null> {
-  const attempts = [place];
+  const clean = normalizeUsAddress(place);
+  const attempts = [clean];
 
-  // Intento sin suite/unidad
-  const noSuite = place.replace(/,?\s*(Suite|Ste|Unit|Apt|#)\s*\S*/gi, '').replace(/\s{2,}/g, ' ').trim();
-  if (noSuite !== place) attempts.push(noSuite);
+  // Intento sin suite/unidad/edificio/puerta
+  const noSuite = clean
+    .replace(/,?\s*\b(Suite|Ste|Unit|Apt|Bldg|Building|Door|Dock|Tower|Gate|Hangar)\b\.?\s*#?\s*[\w-]*/gi, '')
+    .replace(/,?\s*#\s*[\w-]+/g, '')
+    .replace(/\s*\([^)]*\)/g, '')
+    .replace(/(,\s*)+/g, ', ')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+  if (noSuite !== clean) attempts.push(noSuite);
 
   // Intento con solo ciudad + estado + zip
-  const parts = place.split(',').map(p => p.trim());
+  const parts = clean.split(',').map(p => p.trim());
   if (parts.length >= 2) attempts.push(parts.slice(-2).join(', '));
   if (parts.length === 1) {
-    const m = place.match(/([A-Za-z\s]+)\s+([A-Z]{2})\s+(\d{5})/);
+    const m = clean.match(/([A-Za-z\s]+)\s+([A-Z]{2})\s+(\d{5})/);
     if (m) attempts.push(`${m[1].trim()}, ${m[2]} ${m[3]}`);
   }
+
+  // Si la dirección trae estado, el resultado tiene que caer en ese estado
+  const expectedState = clean.match(US_STATE_RE)?.[1]?.toUpperCase();
 
   for (const query of attempts) {
     try {
@@ -39,8 +64,14 @@ export async function mapboxGeocode(place: string): Promise<[number, number] | n
         `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${MAPBOX_TOKEN}&country=us&limit=1&types=address,place,postcode,locality`
       );
       const data = await res.json();
-      if (data.features?.length > 0) {
-        const [lng, lat] = data.features[0].center;
+      const f = data.features?.[0];
+      if (f) {
+        if (expectedState) {
+          const region = [f, ...(f.context || [])].find((c: any) => String(c.id || '').startsWith('region'));
+          const got = String(region?.properties?.short_code || '').replace(/^US-/i, '').toUpperCase();
+          if (got && got !== expectedState) continue;
+        }
+        const [lng, lat] = f.center;
         return [lat, lng];
       }
     } catch {}

@@ -281,7 +281,14 @@ TIME EXTRACTION: Look for pickup/delivery time windows, appointment times, or op
     console.log("Extracted data:", JSON.stringify(extractedData));
 
     // ── Formatear resultado ────────────────────────────────────────────────
-    const stops      = extractedData.stops || [];
+    // Direcciones como "Atlanta,GA 30349,USA" (Nolan y otros) → "Atlanta, GA 30349"
+    const cleanAddress = (a: string) => String(a || "")
+      .replace(/\s+/g, " ")
+      .replace(/\s*,\s*/g, ", ")
+      .replace(/,\s*(USA|U\.S\.A\.|US|United States( of America)?)\.?\s*$/i, "")
+      .replace(/,\s*$/, "")
+      .trim();
+    const stops      = (extractedData.stops || []).map((s: any) => ({ ...s, address: cleanAddress(s.address) }));
     const pickups    = stops.filter((s: any) => s.stopType === "pickup");
     const deliveries = stops.filter((s: any) => s.stopType === "delivery");
 
