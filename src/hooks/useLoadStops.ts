@@ -71,7 +71,7 @@ export function useLoadStops(loadId?: string) {
     // Guardar mapping de stop_order → stop data antes de borrar
     const { data: existingData } = await supabase
       .from('load_stops')
-      .select('id, stop_order, photos')
+      .select('*')
       .eq('load_id', targetLoadId);
 
     const existingByOrder = new Map<number, { id: string; photos: any }>(
@@ -109,6 +109,11 @@ export function useLoadStops(loadId?: string) {
 
       if (error) {
         console.error('Error saving load stops:', error);
+        // No dejar la carga sin paradas: sin ellas no se pueden subir fotos ni BOL
+        if (existingData && existingData.length > 0) {
+          const { error: restoreError } = await supabase.from('load_stops').insert(existingData as any);
+          if (restoreError) console.error('Error restoring load stops:', restoreError);
+        }
       } else if (insertedStops) {
         // Migrar pod_documents a los nuevos stop_ids por stop_order
         for (const newStop of insertedStops as any[]) {
