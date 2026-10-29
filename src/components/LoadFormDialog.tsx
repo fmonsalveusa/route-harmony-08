@@ -301,6 +301,9 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
         address: s.address,
         date: s.date || '',
         time: (s as any).time || '',
+        // Sin esto, al guardar la edición se borraban los nombres de shipper/receiver
+        shipper: s.shipper || '',
+        consignee: s.consignee || '',
       })));
     } else {
       setStopEntries([
