@@ -13,6 +13,8 @@ interface BolData {
   date: string | null;
   shipperAddress: string;
   consigneeAddress: string;
+  shipperName?: string;
+  consigneeName?: string;
   carrierName: string;
   company: Company | null;
   items?: BolLineItem[];
@@ -97,7 +99,7 @@ export function generateBolPdf(data: BolData) {
   // Ship From rows
   const sfX = margin;
   let ry = y + rowH;
-  doc.rect(sfX, ry, halfW, rowH); drawLabelValue(doc, 'Name:', '', sfX + 2, ry + 5); ry += rowH;
+  doc.rect(sfX, ry, halfW, rowH); drawLabelValue(doc, 'Name:', data.shipperName || '', sfX + 2, ry + 5); ry += rowH;
   doc.rect(sfX, ry, halfW, rowH); drawLabelValue(doc, 'Address:', shipper.street, sfX + 2, ry + 5); ry += rowH;
   doc.rect(sfX, ry, halfW, rowH); drawLabelValue(doc, 'City/State/Zip:', shipper.cityStateZip, sfX + 2, ry + 5); ry += rowH;
   doc.rect(sfX, ry, halfW, rowH);
@@ -144,7 +146,7 @@ export function generateBolPdf(data: BolData) {
   doc.setTextColor(0, 0, 0);
 
   ry = y + rowH;
-  doc.rect(sfX, ry, halfW, rowH); drawLabelValue(doc, 'Name:', '', sfX + 2, ry + 5); ry += rowH;
+  doc.rect(sfX, ry, halfW, rowH); drawLabelValue(doc, 'Name:', data.consigneeName || '', sfX + 2, ry + 5); ry += rowH;
   doc.rect(sfX, ry, halfW, rowH); drawLabelValue(doc, 'Address:', consignee.street, sfX + 2, ry + 5); ry += rowH;
   doc.rect(sfX, ry, halfW, rowH); drawLabelValue(doc, 'City/State/Zip:', consignee.cityStateZip, sfX + 2, ry + 5); ry += rowH;
   doc.rect(sfX, ry, halfW, rowH);

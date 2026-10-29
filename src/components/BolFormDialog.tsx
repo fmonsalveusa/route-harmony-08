@@ -21,6 +21,8 @@ interface LoadStop {
   stop_type: string;
   address: string;
   stop_order: number;
+  shipper?: string | null;
+  consignee?: string | null;
 }
 
 interface BolFormDialogProps {
@@ -57,12 +59,21 @@ export const BolFormDialog = ({ open, onOpenChange, load, stops, company, driver
     ? load.destination
     : stops.find(s => s.id === selectedDestination)?.address || load.destination;
 
+  // Nombre de la empresa: el de la parada elegida, o si es la de por defecto, el de la
+  // primera recogida / última entrega
+  const originStop = selectedOrigin === 'default' ? pickupStops[0] : stops.find(s => s.id === selectedOrigin);
+  const destinationStop = selectedDestination === 'default' ? deliveryStops[deliveryStops.length - 1] : stops.find(s => s.id === selectedDestination);
+  const shipperName = (originStop?.shipper || '').trim();
+  const consigneeName = (destinationStop?.consignee || '').trim();
+
   const handleGenerate = () => {
     generateBolPdf({
       bolNumber: load.reference_number,
       date: load.pickup_date,
       shipperAddress: originAddress,
       consigneeAddress: destinationAddress,
+      shipperName,
+      consigneeName,
       carrierName: '',
       company,
       items: items.filter(i => i.quantity || i.description || i.weight_lb),
@@ -95,7 +106,7 @@ export const BolFormDialog = ({ open, onOpenChange, load, stops, company, driver
                   <SelectContent>
                     <SelectItem value="default">{load.origin}</SelectItem>
                     {pickupStops.map(s => (
-                      <SelectItem key={s.id} value={s.id}>{s.address}</SelectItem>
+                      <SelectItem key={s.id} value={s.id}>{s.shipper ? `${s.shipper} — ${s.address}` : s.address}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -109,7 +120,7 @@ export const BolFormDialog = ({ open, onOpenChange, load, stops, company, driver
                   <SelectContent>
                     <SelectItem value="default">{load.destination}</SelectItem>
                     {deliveryStops.map(s => (
-                      <SelectItem key={s.id} value={s.id}>{s.address}</SelectItem>
+                      <SelectItem key={s.id} value={s.id}>{s.consignee ? `${s.consignee} — ${s.address}` : s.address}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -122,11 +133,13 @@ export const BolFormDialog = ({ open, onOpenChange, load, stops, company, driver
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <Label className="text-xs font-semibold text-muted-foreground">Shipper (Origen)</Label>
-                <p className="mt-1 font-medium">{load.origin}</p>
+                {shipperName && <p className="mt-1 font-semibold">{shipperName}</p>}
+                <p className={shipperName ? 'text-muted-foreground' : 'mt-1 font-medium'}>{load.origin}</p>
               </div>
               <div>
                 <Label className="text-xs font-semibold text-muted-foreground">Consignee (Destino)</Label>
-                <p className="mt-1 font-medium">{load.destination}</p>
+                {consigneeName && <p className="mt-1 font-semibold">{consigneeName}</p>}
+                <p className={consigneeName ? 'text-muted-foreground' : 'mt-1 font-medium'}>{load.destination}</p>
               </div>
             </div>
           )}
