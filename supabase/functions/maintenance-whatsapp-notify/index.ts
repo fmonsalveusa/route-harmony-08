@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { usDate } from "../_shared/loadHelpers.ts";
+import { todayET, usDate } from "../_shared/loadHelpers.ts";
 import { isEnabled, logMessage, renderMessage, sendTextLogged } from "../_shared/messaging.ts";
 
 // • Trigger de truck_maintenance (x-cron-secret): { maintenance_id, status }
@@ -13,7 +13,7 @@ const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
 /** Envía el aviso de un mantenimiento al grupo del Company Driver del camión */
-async function notify(supabase: any, maintenanceId: string, status: string): Promise<Record<string, unknown>> {
+async function notify(supabase: any, maintenanceId: string, status: string, claimDaily = false): Promise<Record<string, unknown>> {
   const { data: item } = await supabase
     .from("truck_maintenance")
     .select("id, tenant_id, truck_id, maintenance_type, interval_miles, miles_accumulated, next_due_date")
@@ -66,7 +66,19 @@ async function notify(supabase: any, maintenanceId: string, status: string): Pro
     fecha: item.next_due_date ? usDate(item.next_due_date) : "",
   });
 
-  await sendTextLogged(supabase, { ...baseLog, groupId: driver.whatsapp_group_id, message });
+  // En DUE el aviso se repite cada día (job diario): máximo uno por día por mantenimiento
+  const dayKey = status === "due" && claimDaily ? `maintdue:${item.id}:${todayET()}` : null;
+  if (dayKey) {
+    const { error: claimErr } = await supabase
+      .from("whatsapp_message_log").insert({ tenant_id: item.tenant_id, message_key: dayKey });
+    if (claimErr) return { unit, driver: driver.name, skipped: "already notified today" };
+  }
+  try {
+    await sendTextLogged(supabase, { ...baseLog, groupId: driver.whatsapp_group_id, message });
+  } catch (e) {
+    if (dayKey) await supabase.from("whatsapp_message_log").delete().eq("message_key", dayKey);
+    throw e;
+  }
   return { unit, driver: driver.name, sent: true };
 }
 
@@ -82,7 +94,7 @@ Deno.serve(async (req) => {
     if (fromCron) {
       const { maintenance_id, status } = body;
       if (!maintenance_id || !["warning", "due"].includes(status)) return json({ error: "Bad request" }, 400);
-      return json(await notify(supabase, maintenance_id, status));
+      return json(await notify(supabase, maintenance_id, status, true));
     }
 
     // Envío manual desde el TMS: solo admin, solo su tenant

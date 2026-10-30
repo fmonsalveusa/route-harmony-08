@@ -38,6 +38,23 @@ async function sendOnce(supabase: Supa, key: string, log: MessageLog & { groupId
   }
 }
 
+// ─── Mantenimiento vencido: se le repite el aviso al driver cada día ─────────
+async function runMaintenanceDue(supabase: Supa, tenant: any) {
+  const { data: due } = await supabase
+    .from("truck_maintenance").select("id").eq("tenant_id", tenant.id).eq("status", "due");
+  let maintenanceDue = 0;
+  for (const m of (due as any[]) || []) {
+    const res = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/maintenance-whatsapp-notify`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-cron-secret": Deno.env.get("CRON_SECRET")! },
+      body: JSON.stringify({ maintenance_id: m.id, status: "due" }),
+    });
+    const out = await res.json().catch(() => ({}));
+    if (out?.sent) { maintenanceDue++; await sleep(SEND_GAP_MS); }
+  }
+  return { maintenanceDue };
+}
+
 // ─── POD ─────────────────────────────────────────────────────────────────────
 async function runPodReminders(supabase: Supa, tenant: any) {
   const hour = etHour();
@@ -643,6 +660,7 @@ Deno.serve(async (req) => {
         const stops = await getTodayStops(supabase, tenant.id, today);
         if (on("wa_daily_reminders")) Object.assign(r, await runDailyReminders(supabase, tenant, today, stops));
         if (on("wa_expiry_alerts")) Object.assign(r, await runExpiryAlerts(supabase, tenant));
+        if (on("wa_maintenance_alerts")) Object.assign(r, await runMaintenanceDue(supabase, tenant));
       }
 
       // GPS en segundo plano: 9:00 am Eastern, aparte del recordatorio de las 7
