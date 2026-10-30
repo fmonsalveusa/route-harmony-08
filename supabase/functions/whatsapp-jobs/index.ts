@@ -660,7 +660,11 @@ Deno.serve(async (req) => {
         const stops = await getTodayStops(supabase, tenant.id, today);
         if (on("wa_daily_reminders")) Object.assign(r, await runDailyReminders(supabase, tenant, today, stops));
         if (on("wa_expiry_alerts")) Object.assign(r, await runExpiryAlerts(supabase, tenant));
-        if (on("wa_maintenance_alerts")) Object.assign(r, await runMaintenanceDue(supabase, tenant));
+      }
+
+      // Mantenimiento en DUE: 8:30 am Eastern, todos los días hasta que se registre el servicio
+      if (job === "maintenance_due" && fromCron && etHour() === 8 && on("wa_maintenance_alerts")) {
+        Object.assign(r, await runMaintenanceDue(supabase, tenant));
       }
 
       // GPS en segundo plano: 9:00 am Eastern, aparte del recordatorio de las 7
