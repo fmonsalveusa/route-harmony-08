@@ -43,6 +43,11 @@ export interface LoadProfitInput {
   dieselFrozen?: boolean;
   /** TONU: el camión no hizo el viaje, así que no hay diésel ni costos fijos */
   isTonu?: boolean;
+  /**
+   * Parciales: parte que le toca a la carga del recorrido único del camión (incluye vacías).
+   * Si viene, el diésel y los costos por milla se calculan con estas millas.
+   */
+  sharedRoute?: { miles: number; sharedWith: string[] };
 }
 
 export interface FixedCostAllocation {
@@ -59,6 +64,8 @@ export interface LoadSpan {
   ref: string;
   pickupDate: string | null;
   deliveryDate: string | null;
+  /** Parte de la ruta compartida (parciales); null si va sola */
+  sharedRouteMiles?: number | null;
 }
 
 const addDays = (date: string, n: number) => {
@@ -134,6 +141,12 @@ export function calculateLoadProfit(input: LoadProfitInput): LoadProfit {
   const pct = (p: number) => rate * (Number(p) || 0) / 100;
   const lines: ProfitLine[] = [];
 
+  // Millas que gasta el camión por esta carga: las propias, o su parte de la ruta compartida
+  const costMiles = input.sharedRoute ? input.sharedRoute.miles : totalMiles;
+  const sharedNote = input.sharedRoute
+    ? ` (ruta compartida con ${input.sharedRoute.sharedWith.map(r => `#${r}`).join(', ')})`
+    : '';
+
   let revenue = rate;
   let revenueDetail = '';
 
@@ -153,11 +166,11 @@ export function calculateLoadProfit(input: LoadProfitInput): LoadProfit {
       if (input.isTonu) {
         lines.push({ label: 'Diésel', detail: 'No aplica (TONU)', amount: 0, showWhenZero: true });
       } else {
-        const gallons = input.mpg && input.mpg > 0 ? totalMiles / input.mpg : 0;
+        const gallons = input.mpg && input.mpg > 0 ? costMiles / input.mpg : 0;
         lines.push({
           label: 'Diésel',
           detail: input.mpg && input.mpg > 0
-            ? `${totalMiles.toLocaleString()} mi ÷ ${input.mpg} mpg × $${input.dieselPrice.toFixed(2)}${input.dieselFrozen ? ' (al entregar)' : ''}`
+            ? `${costMiles.toLocaleString()} mi ÷ ${input.mpg} mpg × $${input.dieselPrice.toFixed(2)}${input.dieselFrozen ? ' (al entregar)' : ''}${sharedNote}`
             : 'MPG no configurado',
           amount: gallons * (Number(input.dieselPrice) || 0),
         });
@@ -167,8 +180,8 @@ export function calculateLoadProfit(input: LoadProfitInput): LoadProfit {
       } else {
         lines.push({
           label: 'Costos por milla',
-          detail: `${totalMiles.toLocaleString()} mi × $${(Number(input.costPerMile) || 0).toFixed(3)}`,
-          amount: totalMiles * (Number(input.costPerMile) || 0),
+          detail: `${costMiles.toLocaleString()} mi × $${(Number(input.costPerMile) || 0).toFixed(3)}${sharedNote}`,
+          amount: costMiles * (Number(input.costPerMile) || 0),
         });
       }
       if (input.isTonu) {

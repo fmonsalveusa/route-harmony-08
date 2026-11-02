@@ -99,7 +99,7 @@ export function useLoadProfitData() {
     queryFn: async () => {
       const { data } = await (supabase
         .from('loads' as any)
-        .select('id, reference_number, truck_id, pickup_date, delivery_date') as any)
+        .select('id, reference_number, truck_id, pickup_date, delivery_date, shared_route_miles') as any)
         // TONU tampoco ocupa el camión: no se le reparten días de costo fijo
         .not('status', 'in', '(cancelled,tonu)')
         .not('truck_id', 'is', null)
@@ -108,6 +108,7 @@ export function useLoadProfitData() {
       ((data as any[]) || []).forEach(l => {
         (map[String(l.truck_id)] ??= []).push({
           id: l.id, ref: l.reference_number, pickupDate: l.pickup_date, deliveryDate: l.delivery_date,
+          sharedRouteMiles: l.shared_route_miles == null ? null : Number(l.shared_route_miles),
         });
       });
       return map;
@@ -158,6 +159,11 @@ export function useLoadProfitData() {
     const fixedCost = truck && load.status !== 'cancelled' && !isTonu
       ? allocateFixedCost(self, loadsByTruck[String(truck.id)] ?? [], day => getDailyCostAt(truck.id, day))
       : { amount: 0, days: 0, sharedWith: [] };
+    // Parciales: si comparte días con otras cargas del camión, sus millas son su parte de la ruta única
+    const sharedMiles = truck ? (loadsByTruck[String(truck.id)] ?? []).find(l => l.id === load.id)?.sharedRouteMiles : null;
+    const sharedRoute = sharedMiles != null && fixedCost.sharedWith.length > 0
+      ? { miles: sharedMiles, sharedWith: fixedCost.sharedWith }
+      : undefined;
 
     return calculateLoadProfit({
       serviceType,
@@ -182,6 +188,7 @@ export function useLoadProfitData() {
       dieselPrice: snapshot ?? settings.diesel_price_per_gallon,
       dieselFrozen: snapshot != null,
       isTonu,
+      sharedRoute,
     });
   }, [at, startDate, loadsByTruck, getCostsAt, getDailyCostAt, settings, expensesByLoad, dieselSnapshotByLoad]);
 

@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { useLoadProfitData, DIESEL_SNAPSHOTS_KEY } from '@/hooks/useLoadProfitData';
+import { refreshSharedRouteMiles } from '@/lib/sharedRoute';
 import type { DbLoad } from '@/hooks/useLoads';
 import type { DbTruck } from '@/hooks/useTrucks';
 import type { DbDriver } from '@/hooks/useDrivers';
@@ -41,6 +42,15 @@ export function LoadProfitSection({ load, loadedMiles, emptyMiles, truck, driver
   useEffect(() => {
     queryClient.invalidateQueries({ queryKey: ['profit_data', 'truck_load_spans'] });
   }, [load.pickup_date, load.delivery_date, load.truck_id, load.status, queryClient]);
+
+  // Parciales: recalcula la ruta única del camión con las cargas que comparten días
+  useEffect(() => {
+    let cancelled = false;
+    refreshSharedRouteMiles(load.id)
+      .then(changed => { if (changed && !cancelled) queryClient.invalidateQueries({ queryKey: ['profit_data', 'truck_load_spans'] }); })
+      .catch(e => console.warn('[profit] shared route:', e));
+    return () => { cancelled = true; };
+  }, [load.id, load.pickup_date, load.delivery_date, load.truck_id, load.status, load.miles, queryClient]);
 
   if (loading) return null;
 
