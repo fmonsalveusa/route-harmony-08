@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { getTenantId } from '@/hooks/useTenantId';
 import { WhatsAppGroupSelect, type WhatsAppGroup } from '@/components/WhatsAppGroupSelect';
 import { TemplateEditor } from '@/components/whatsapp/TemplateEditor';
+import { KnowledgePanel } from '@/components/whatsapp/KnowledgePanel';
 import { toast } from 'sonner';
 import { AUTOMATIONS } from '../../../supabase/functions/_shared/templateDefaults';
 
@@ -239,6 +240,7 @@ export function AutomationsPanel({ groups, channel = 'whatsapp' }: { groups: Wha
                     />
                   </div>
                 )}
+                {a.id === 'inbound_assistant' && <KnowledgePanel />}
                 {a.templates.map(t => (
                   <TemplateEditor
                     key={t.key}

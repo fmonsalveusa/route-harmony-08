@@ -535,12 +535,14 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
       const key = contact.phone_key!;
       const [{ data: meetings }, { data: leads }] = await Promise.all([
         supabase.from('meeting_requests' as any).select('id, phone, meeting_date, meeting_time, status, comments').order('meeting_date', { ascending: false }),
-        supabase.from('whatsapp_leads' as any).select('phone, history'),
+        supabase.from('whatsapp_leads' as any).select('phone, history, summary'),
       ]);
       const match = (p: string) => (p ?? '').replace(/\D/g, '').slice(-10) === key;
+      const lead = ((leads as any[]) ?? []).find(l => match(l.phone));
       return {
         meetings: ((meetings as any[]) ?? []).filter(m => match(m.phone)),
-        chat: (((leads as any[]) ?? []).find(l => match(l.phone))?.history ?? []) as { role: string; content: string }[],
+        chat: (lead?.history ?? []) as { role: string; content: string }[],
+        summary: (lead?.summary ?? '') as string,
       };
     },
   });
@@ -820,6 +822,11 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
       {extra && extra.chat.length > 0 && (
         <div className="space-y-1">
           <p className="text-sm font-medium">Conversación de WhatsApp (asistente)</p>
+          {extra.summary && (
+            <p className="text-xs rounded-md border border-violet-200 bg-violet-50 dark:bg-violet-900/30 px-2 py-1.5 whitespace-pre-wrap">
+              <span className="font-medium">Lo que sabe el asistente:</span> {extra.summary}
+            </p>
+          )}
           <div className="space-y-1 max-h-64 overflow-y-auto rounded-md border p-2 bg-muted/20">
             {extra.chat.map((m, i) => (
               <p key={i} className={cn('text-xs rounded px-2 py-1 max-w-[85%] whitespace-pre-wrap', m.role === 'user' ? 'bg-card border' : 'bg-green-100 dark:bg-green-900/40 ml-auto')}>

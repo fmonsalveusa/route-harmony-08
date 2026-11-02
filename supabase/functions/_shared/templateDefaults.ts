@@ -347,7 +347,7 @@ export const AUTOMATIONS: AutomationDefinition[] = [
   {
     id: 'inbound_assistant',
     title: 'Asistente de WhatsApp (mensajes entrantes)',
-    description: 'Responde a quien escribe al número de la empresa y no está en el TMS. La IA solo clasifica el mensaje y elige cuál de estos textos enviar; no redacta nada. A los contactos del TMS y a los grupos no les responde.',
+    description: 'Responde a quien escribe al número de la empresa y no está en el TMS. La IA solo clasifica el mensaje y elige cuál de estos textos o de las preguntas frecuentes enviar; no redacta nada. Recuerda lo que ya habló con cada persona. A los contactos del TMS y a los grupos no les responde.',
     toggle: 'wa_inbound_assistant',
     templates: [
       {

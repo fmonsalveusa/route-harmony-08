@@ -23,6 +23,8 @@ const digits = (s: string) => (s ?? "").replace(/\D/g, "");
 /** Los teléfonos se comparan por los últimos 10 dígitos: el formato varía mucho */
 const last10 = (s: string) => digits(s).slice(-10);
 
+const HISTORY_LIMIT = 30;           // mensajes que se guardan por contacto (memoria entre días)
+
 const SYSTEM_PROMPT = `Eres el asistente de WhatsApp de Dispatch Up, empresa de dispatch de carga en Estados Unidos (Charlotte, NC).
 Contestas a personas que escriben por primera vez preguntando por los servicios.
 
@@ -31,27 +33,81 @@ SERVICIOS: dispatch para quien tiene su propio MC#, leasing bajo el MC# de Dispa
 VEHÍCULOS CON LOS QUE SÍ TRABAJAMOS: ${VEHICLES_OK}.
 VEHÍCULOS CON LOS QUE NO TRABAJAMOS: ${VEHICLES_NO}.
 
-NO ESCRIBES MENSAJES. Solo lees lo que dice la persona y eliges una de estas cuatro acciones.
+NO ESCRIBES MENSAJES. Solo lees lo que dice la persona y eliges una de estas acciones.
 El sistema se encarga de enviar el texto que corresponda.
 
+0. "faq" — la pregunta se contesta exactamente con una de las PREGUNTAS FRECUENTES de abajo. Indica su código en faq_id.
 1. "qualified" — dijo que tiene box truck o hotshot, o pregunta por permisos, DOT, MC#, curso de dispatcher, TMS, leasing o asesoría.
 2. "ask_vehicle" — muestra interés en el servicio pero todavía no sabes qué vehículo tiene. Es el caso más común en el primer mensaje.
 3. "not_supported" — dijo que tiene un vehículo de los que NO trabajamos.
 4. "human" — pregunta precios, quiere negociar, reclama algo, ya es cliente, o el tema se sale de todo lo anterior.
 
 Ante la duda entre "ask_vehicle" y otra, elige "ask_vehicle".
-Indica también el idioma en que escribe la persona: "es" o "en".`;
+Usa "faq" solo si una pregunta frecuente responde de verdad lo que preguntó; si pregunta precios y no hay una pregunta frecuente de precios, es "human".
+Si vuelve a preguntar algo que ya se le respondió en la conversación, es "human".
+Indica también el idioma en que escribe la persona: "es" o "en".
+En "summary" deja el resumen actualizado de lo que se sabe de la persona (vehículo, ciudad, experiencia, MC#, qué busca, qué se le envió), en pocas líneas. Es la memoria para las próximas conversaciones.`;
 
-type Action = "qualified" | "ask_vehicle" | "not_supported" | "human";
+type Action = "faq" | "qualified" | "ask_vehicle" | "not_supported" | "human";
 
 interface Classification {
   action: Action;
+  faq_id: string;
   language: string;
   vehicle: string;
   service: string;
+  summary: string;
 }
 
-async function askAssistant(history: { role: string; content: string }[]): Promise<Classification | null> {
+interface Knowledge {
+  id: string;
+  question: string;
+  answer: string;
+  answer_en: string | null;
+}
+
+type HistoryItem = { role: string; content: string; at?: string };
+
+const fmtWhen = (iso?: string) => iso
+  ? new Date(iso).toLocaleString("en-US", { timeZone: "America/New_York", month: "2-digit", day: "2-digit", hour: "numeric", minute: "2-digit" })
+  : "";
+
+/** Prompt base + preguntas frecuentes + lo que ya se sabe del contacto */
+function buildSystem(knowledge: Knowledge[], lead: any, crm: string): string {
+  const parts = [SYSTEM_PROMPT];
+  if (knowledge.length > 0) {
+    parts.push("PREGUNTAS FRECUENTES (código: tema):\n" + knowledge.map((k, i) => `F${i + 1}: ${k.question}`).join("\n"));
+  }
+  const memory = [
+    lead?.summary ? `Resumen: ${lead.summary}` : "",
+    lead?.vehicle ? `Vehículo: ${lead.vehicle}` : "",
+    lead?.service ? `Interés: ${lead.service}` : "",
+    lead?.last_message_at ? `Último mensaje anterior: ${fmtWhen(lead.last_message_at)} (hora del Este)` : "",
+    crm,
+  ].filter(Boolean);
+  parts.push(memory.length > 0
+    ? "LO QUE YA SABEMOS DE ESTA PERSONA (de conversaciones anteriores):\n" + memory.join("\n")
+    : "Es la primera vez que escribe.");
+  return parts.join("\n\n");
+}
+
+/** Etapa del CRM y reunión agendada, si la persona ya está en el CRM */
+async function crmContext(supabase: any, tenantId: string, phone: string): Promise<string> {
+  const key = last10(phone);
+  if (key.length < 10) return "";
+  const [{ data: contact }, { data: meetings }] = await Promise.all([
+    supabase.from("crm_contacts").select("stage").eq("tenant_id", tenantId).eq("phone_key", key).limit(1).maybeSingle(),
+    supabase.from("meeting_requests").select("phone, meeting_date, meeting_time, status")
+      .gte("meeting_date", new Date().toISOString().slice(0, 10)).neq("status", "cancelled"),
+  ]);
+  const meeting = ((meetings as any[]) || []).find((m) => last10(m.phone) === key);
+  return [
+    contact?.stage ? `Etapa en el CRM: ${contact.stage}` : "",
+    meeting ? `Tiene reunión agendada: ${meeting.meeting_date} ${meeting.meeting_time ?? ""}` : "",
+  ].filter(Boolean).join("\n");
+}
+
+async function askAssistant(system: string, history: HistoryItem[], faqCount: number): Promise<Classification | null> {
   const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
   if (!apiKey) return null;
   try {
@@ -61,23 +117,26 @@ async function askAssistant(history: { role: string; content: string }[]): Promi
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
         max_tokens: 400,
-        system: SYSTEM_PROMPT,
+        system,
         tools: [{
           name: "responder",
           description: "Responde al mensaje de WhatsApp y clasifica la consulta",
           input_schema: {
             type: "object",
             properties: {
-              action: { type: "string", enum: ["qualified", "ask_vehicle", "not_supported", "human"], description: "Qué corresponde hacer" },
+              action: { type: "string", enum: ["faq", "qualified", "ask_vehicle", "not_supported", "human"], description: "Qué corresponde hacer" },
+              faq_id: { type: "string", enum: ["", ...Array.from({ length: faqCount }, (_, i) => `F${i + 1}`)], description: "Código de la pregunta frecuente si action es faq; si no, vacío" },
               language: { type: "string", enum: ["es", "en"], description: "Idioma en que escribe la persona" },
               vehicle: { type: "string", description: "Tipo de vehículo mencionado, o vacío si no lo dijo" },
               service: { type: "string", description: "Servicio que le interesa, o vacío si no está claro" },
+              summary: { type: "string", description: "Resumen actualizado de lo que se sabe de la persona" },
             },
-            required: ["action", "language", "vehicle", "service"],
+            required: ["action", "faq_id", "language", "vehicle", "service", "summary"],
           },
         }],
         tool_choice: { type: "tool", name: "responder" },
-        messages: history,
+        // La fecha delante de cada mensaje le dice a la IA cuánto tiempo pasó entre uno y otro
+        messages: history.map((h) => ({ role: h.role, content: h.at ? `[${fmtWhen(h.at)}] ${h.content}` : h.content })),
       }),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}: ${(await res.text()).slice(0, 200)}`);
@@ -195,10 +254,28 @@ Deno.serve(async (req) => {
     if (messages.length === 0) return json({ results });
     if (tenant.wa_inbound_assistant === false) return json({ results, skipped: "asistente apagado" });
 
+    // Los mensajes procesados hace más de 7 días ya no hace falta recordarlos
+    await supabase.from("whatsapp_inbound_seen").delete().lt("created_at", new Date(Date.now() - 7 * 864e5).toISOString());
+
+    const { data: knowledgeRows } = await supabase
+      .from("whatsapp_knowledge").select("id, question, answer, answer_en")
+      .eq("tenant_id", tenant.id).eq("active", true).order("created_at");
+    const knowledge = ((knowledgeRows as any[]) || []) as Knowledge[];
+
     for (const m of messages) {
       const chatId = String(m?.chat_id ?? m?.from ?? "");
       const text = String(m?.text?.body ?? m?.body ?? "").trim();
       if (chatId.includes("@g.us") || !text) continue;
+
+      // Whapi puede mandar el mismo mensaje dos veces: se procesa solo la primera
+      const messageId = String(m?.id ?? "");
+      if (messageId) {
+        const { error: seenErr } = await supabase.from("whatsapp_inbound_seen").insert({ message_id: messageId });
+        if (seenErr?.code === "23505") {
+          results.push({ id: messageId, skipped: "mensaje repetido" });
+          continue;
+        }
+      }
 
       // Mensaje saliente: si lo escribió una persona desde el teléfono (no nuestra API),
       // significa que alguien tomó la conversación y el asistente se calla.
@@ -210,7 +287,7 @@ Deno.serve(async (req) => {
         if (!existing) continue;
         await supabase.from("whatsapp_leads").update({
           handoff: true,
-          history: [...(((existing.history as any[]) ?? [])), { role: "assistant", content: text }].slice(-12),
+          history: [...(((existing.history as any[]) ?? [])), { role: "assistant", content: text, at: new Date().toISOString() }].slice(-HISTORY_LIMIT),
           updated_at: new Date().toISOString(),
         }).eq("phone", chatPhone);
         results.push({ phone: chatPhone, handoff: "lo tomó una persona" });
@@ -227,35 +304,48 @@ Deno.serve(async (req) => {
       const { data: lead } = await supabase
         .from("whatsapp_leads").select("*").eq("phone", phone).maybeSingle();
 
-      const today = new Date().toISOString().slice(0, 10);
+      const now = new Date().toISOString();
+      const today = now.slice(0, 10);
       const repliesToday = lead?.last_reply_date === today ? (lead?.replies_today ?? 0) : 0;
       if (lead?.handoff || repliesToday >= MAX_REPLIES_PER_DAY) {
         await supabase.from("whatsapp_leads").upsert({
           phone, name: name || lead?.name || null,
-          history: [...((lead?.history as any[]) ?? []), { role: "user", content: text }].slice(-12),
-          updated_at: new Date().toISOString(),
+          history: [...((lead?.history as any[]) ?? []), { role: "user", content: text, at: now }].slice(-HISTORY_LIMIT),
+          last_message_at: now,
+          updated_at: now,
         }, { onConflict: "phone" });
         results.push({ phone, skipped: lead?.handoff ? "en manos de una persona" : "tope diario" });
         continue;
       }
 
-      const history = [...(((lead?.history as any[]) ?? []).map((h) => ({ role: h.role, content: h.content }))), { role: "user", content: text }].slice(-12);
-      const answer = await askAssistant(history);
+      const history: HistoryItem[] = [
+        ...(((lead?.history as any[]) ?? []).map((h) => ({ role: h.role, content: h.content, at: h.at }))),
+        { role: "user", content: text, at: now },
+      ].slice(-HISTORY_LIMIT);
+      // La conversación que se le pasa a la IA tiene que empezar con un mensaje de la persona
+      while (history.length > 1 && history[0].role !== "user") history.shift();
+      const system = buildSystem(knowledge, lead, await crmContext(supabase, tenant.id, phone));
+      const answer = await askAssistant(system, history, knowledge.length);
       if (!answer) {
         results.push({ phone, skipped: "la IA no respondió" });
         continue;
       }
 
       // Todas las respuestas son textos fijos, editables desde el TMS
+      const faq = answer.action === "faq" ? knowledge[Number(String(answer.faq_id ?? "").replace(/\D/g, "")) - 1] : undefined;
+      if (answer.action === "faq" && !faq) answer.action = "human";
       const qualified = answer.action === "qualified";
-      const base = {
+      const base = ({
+        faq: "inbound_ask_vehicle",   // no se usa: la pregunta frecuente tiene su propio texto
         qualified: "inbound_meeting",
         ask_vehicle: "inbound_ask_vehicle",
         not_supported: "inbound_not_supported",
         human: "inbound_human",
-      }[answer.action] ?? "inbound_ask_vehicle";
+      } as Record<Action, string>)[answer.action] ?? "inbound_ask_vehicle";
       const templateKey = answer.language === "en" ? `${base}_en` : base;
-      const reply = (await renderMessage(supabase, tenant.id, templateKey, { nombre: name || "" })).trim();
+      const reply = (faq
+        ? (answer.language === "en" && faq.answer_en?.trim() ? faq.answer_en : faq.answer).replaceAll("{nombre}", name || "")
+        : await renderMessage(supabase, tenant.id, templateKey, { nombre: name || "" })).trim();
       if (!reply) {
         results.push({ phone, skipped: "sin respuesta que enviar" });
         continue;
@@ -264,15 +354,18 @@ Deno.serve(async (req) => {
       await sendWhapiText(chatId, reply);
       await logMessage(supabase, {
         tenantId: tenant.id, templateKey: qualified ? templateKey : "inbound_reply", recipientType: "lead",
-        recipientName: name || phone, groupId: chatId, message: reply, reference: `Entrante · ${answer.action}`,
+        recipientName: name || phone, groupId: chatId, message: reply,
+        reference: faq ? `Entrante · pregunta frecuente: ${faq.question.slice(0, 60)}` : `Entrante · ${answer.action}`,
       }, "sent");
 
-      const newHistory = [...history, { role: "assistant", content: reply }].slice(-12);
+      const newHistory = [...history, { role: "assistant", content: reply, at: new Date().toISOString() }].slice(-HISTORY_LIMIT);
       await supabase.from("whatsapp_leads").upsert({
         phone,
         name: name || lead?.name || null,
         vehicle: answer.vehicle || lead?.vehicle || null,
         service: answer.service || lead?.service || null,
+        summary: answer.summary?.trim() || lead?.summary || null,
+        last_message_at: now,
         // Con el link ya enviado, o si pide atención personal, sigue una persona
         handoff: qualified || answer.action === "human" || lead?.handoff || false,
         history: newHistory,
