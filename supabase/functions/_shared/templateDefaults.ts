@@ -409,6 +409,13 @@ export const AUTOMATIONS: AutomationDefinition[] = [
     ],
   },
   {
+    id: 'ai_agent',
+    title: 'Agente de IA (WhatsApp (980) 457-6720)',
+    description: 'Conversa con quien escribe a ese número, le pide sus datos y le agenda la reunión en los horarios libres. Solo contesta a quien escribe primero. Si alguien del equipo le contesta desde ese teléfono, el agente deja de responderle a esa persona. Solo puede dar precios y condiciones que estén en las preguntas frecuentes.',
+    toggle: 'wa_ai_agent',
+    templates: [],
+  },
+  {
     id: 'crm_reminders',
     title: 'Recordatorios del CRM',
     description: 'Cuando llega la fecha y hora de una próxima acción "Recordarme a mí" de un contacto del CRM. Se envía al grupo de administración (revisa cada 15 minutos).',

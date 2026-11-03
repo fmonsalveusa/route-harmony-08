@@ -240,7 +240,7 @@ export function AutomationsPanel({ groups, channel = 'whatsapp' }: { groups: Wha
                     />
                   </div>
                 )}
-                {a.id === 'inbound_assistant' && <KnowledgePanel />}
+                {(a.id === 'inbound_assistant' || a.id === 'ai_agent') && <KnowledgePanel />}
                 {a.templates.map(t => (
                   <TemplateEditor
                     key={t.key}

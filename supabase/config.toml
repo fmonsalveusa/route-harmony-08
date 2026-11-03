@@ -74,3 +74,6 @@ verify_jwt = false
 
 [functions.onboarding-oo]
 verify_jwt = false
+
+[functions.whatsapp-agent]
+verify_jwt = false

@@ -1,22 +1,25 @@
 const WHAPI = "https://gate.whapi.cloud";
 
-function headers() {
-  const token = Deno.env.get("WHAPI_TOKEN");
-  if (!token) throw new Error("WHAPI_TOKEN not configured");
+/** WHAPI_TOKEN = número de la operación (grupos). WHAPI_AGENT_TOKEN = número del agente de IA. */
+function headers(tokenEnv = "WHAPI_TOKEN") {
+  const token = Deno.env.get(tokenEnv);
+  if (!token) throw new Error(`${tokenEnv} not configured`);
   return { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
 }
 
 /** Solo se escribe a grupos: nunca a chats individuales (números desconocidos = riesgo de bloqueo) */
 export const isGroupChat = (to: string) => String(to ?? "").endsWith("@g.us");
 
-async function post(path: string, body: { to: string } & Record<string, unknown>) {
-  if (!isGroupChat(body.to)) throw new Error(`Envío bloqueado: solo se envían mensajes a grupos (${body.to})`);
+async function post(path: string, body: { to: string } & Record<string, unknown>, agent = false) {
+  // El número de la operación solo escribe a grupos. El número del agente contesta en chat
+  // directo, y solo a quien le escribió primero (lo controla whatsapp-agent).
+  if (!agent && !isGroupChat(body.to)) throw new Error(`Envío bloqueado: solo se envían mensajes a grupos (${body.to})`);
   // Si la conexión con Whapi se corta antes de responder ("Connection reset", DNS…), se
   // reintenta hasta 2 veces. Un error HTTP no se reintenta: Whapi ya recibió el pedido.
   let res: Response | undefined;
   for (let attempt = 0; ; attempt++) {
     try {
-      res = await fetch(`${WHAPI}${path}`, { method: "POST", headers: headers(), body: JSON.stringify(body) });
+      res = await fetch(`${WHAPI}${path}`, { method: "POST", headers: headers(agent ? "WHAPI_AGENT_TOKEN" : "WHAPI_TOKEN"), body: JSON.stringify(body) });
       break;
     } catch (e) {
       if (attempt >= 2) throw e;
@@ -29,6 +32,24 @@ async function post(path: string, body: { to: string } & Record<string, unknown>
 
 export function sendWhapiText(to: string, text: string) {
   return post("/messages/text", { to, body: text });
+}
+
+/** Respuesta del agente de IA desde su propio número, al chat de quien le escribió */
+export function sendWhapiAgentText(to: string, text: string) {
+  return post("/messages/text", { to, body: text }, true);
+}
+
+/** Muestra "escribiendo..." en el chat del agente durante unos segundos (si falla, no importa) */
+export async function whapiAgentTyping(chatId: string, seconds: number) {
+  try {
+    await fetch(`${WHAPI}/presences/${encodeURIComponent(chatId)}`, {
+      method: "PUT",
+      headers: headers("WHAPI_AGENT_TOKEN"),
+      body: JSON.stringify({ presence: "typing", delay: Math.round(seconds) }),
+    });
+  } catch {
+    // solo es cosmético
+  }
 }
 
 /** `media` puede ser una URL pública/firmada del archivo */
