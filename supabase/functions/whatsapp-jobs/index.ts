@@ -234,6 +234,7 @@ async function runDocumentSigned(supabase: Supa, tenant: any, documentId: string
     .from("documents")
     .select("id, file_name, status, signer_name, recipient_email, signed_at")
     .eq("id", documentId)
+    .eq("tenant_id", tenant.id)
     .maybeSingle();
   if (!doc || (doc as any).status !== "signed") return { document_signed: 0 };
   const d = doc as any;
@@ -242,12 +243,12 @@ async function runDocumentSigned(supabase: Supa, tenant: any, documentId: string
   let driver: any = null;
   if (d.recipient_email) {
     const { data } = await supabase
-      .from("drivers").select("id, name, whatsapp_group_id").ilike("email", d.recipient_email).maybeSingle();
+      .from("drivers").select("id, name, whatsapp_group_id").eq("tenant_id", tenant.id).ilike("email", d.recipient_email).maybeSingle();
     driver = data as any;
   }
   if (!driver && d.signer_name) {
     const { data } = await supabase
-      .from("drivers").select("id, name, whatsapp_group_id").ilike("name", d.signer_name).maybeSingle();
+      .from("drivers").select("id, name, whatsapp_group_id").eq("tenant_id", tenant.id).ilike("name", d.signer_name).maybeSingle();
     driver = data as any;
   }
 

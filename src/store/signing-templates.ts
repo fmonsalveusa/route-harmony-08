@@ -24,11 +24,9 @@ export async function getTemplates(): Promise<SignTemplate[]> {
 }
 
 export async function getTemplate(id: string): Promise<SignTemplate | undefined> {
-  const { data, error } = await supabase
-    .from("templates" as any)
-    .select("*")
-    .eq("id", id)
-    .maybeSingle();
+  // Por función: quien firma desde el enlace de la plantilla no tiene sesión
+  const { data: rows, error } = await supabase.rpc("signing_get_template" as any, { p_id: id } as any);
+  const data = (rows as any[] | null)?.[0];
   if (error || !data) return undefined;
   const tpl = rowToTemplate(data);
   return { ...tpl, fileData: (await resolvePdf(tpl.fileData)) ?? "" };

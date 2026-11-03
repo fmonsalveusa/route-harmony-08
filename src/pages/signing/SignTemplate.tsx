@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import GuidedForm from '@/components/signing/GuidedForm';
 import PdfViewer from '@/components/signing/PdfViewer';
 import { getTemplate } from '@/store/signing-templates';
-import { saveDocument } from '@/store/signing-documents';
+import { submitSignedDocument } from '@/store/signing-documents';
 import { generateSignedPdf } from '@/lib/generateSignedPdf';
 import type { SignTemplate, DocumentField } from '@/types/document';
 
@@ -58,7 +58,7 @@ export default function SignTemplate() {
         expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 días
       };
 
-      await saveDocument(newDoc as any);
+      await submitSignedDocument(newDoc as any);
       navigate(`/documents/complete/${newDoc.id}`, { replace: true });
     } catch (e: any) {
       toast.error('Error al firmar', { description: e.message });

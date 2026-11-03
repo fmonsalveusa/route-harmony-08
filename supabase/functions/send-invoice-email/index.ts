@@ -48,8 +48,11 @@ Deno.serve(async (req) => {
       .eq("id", invoice.load_id)
       .single();
 
-    // Fetch company
+    // La factura tiene que ser de la empresa de quien la envía
     const tenantId = await adminClient.rpc("get_user_tenant_id", { _user_id: user.id });
+    if (!tenantId.data || invoice.tenant_id !== tenantId.data) throw new Error("Invoice not found");
+
+    // Fetch company
     const { data: companies } = await adminClient
       .from("companies")
       .select("*")

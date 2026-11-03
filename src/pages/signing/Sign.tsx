@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { CheckCircle2, Loader2 } from 'lucide-react';
 import PdfViewer from '@/components/signing/PdfViewer';
 import GuidedForm from '@/components/signing/GuidedForm';
-import { getDocument, saveDocument } from '@/store/signing-documents';
+import { getDocument, submitSignedDocument } from '@/store/signing-documents';
 import { generateSignedPdf } from '@/lib/generateSignedPdf';
 import type { SignDocument, DocumentField } from '@/types/document';
 
@@ -64,7 +64,7 @@ export default function Sign() {
           date: new Date().toISOString(),
         },
       };
-      await saveDocument(updated);
+      await submitSignedDocument(updated);
       navigate(`/documents/complete/${doc.id}`, { replace: true });
     } catch (e: any) {
       toast.error('Error al firmar', { description: e.message });

@@ -74,11 +74,9 @@ export async function getDocuments(): Promise<SignDocument[]> {
 }
 
 export async function getDocument(id: string): Promise<SignDocument | undefined> {
-  const { data, error } = await supabase
-    .from("documents" as any)
-    .select("*")
-    .eq("id", id)
-    .maybeSingle();
+  // Por función: quien firma no tiene sesión y la tabla solo la ve el staff de cada empresa
+  const { data: rows, error } = await supabase.rpc("signing_get_document" as any, { p_id: id } as any);
+  const data = (rows as any[] | null)?.[0];
   if (error || !data) return undefined;
   return hydrateSignedPdf(await loadPdfs(rowToDoc(data)));
 }
@@ -108,6 +106,25 @@ export async function saveDocument(doc: SignDocument): Promise<void> {
       recipient_email: doc.recipientEmail ?? null,
       signer_name: doc.signerName ?? null,
     } as any);
+  if (error) { console.error(error); throw error; }
+}
+
+/** Guarda la firma de quien firma (sin sesión): completa el pendiente o crea uno desde la plantilla */
+export async function submitSignedDocument(doc: SignDocument & { templateId?: string }): Promise<void> {
+  const signedPath = doc.signedFileData && !isStoragePath(doc.signedFileData)
+    ? await uploadPdf(documentPdfPath(doc.id, "signed"), doc.signedFileData)
+    : doc.signedFileData;
+  const { error } = await supabase.rpc("signing_submit" as any, {
+    p_id: doc.id,
+    p_fields: doc.fields,
+    p_signed_file_data: signedPath ?? null,
+    p_signer_data: doc.signerData ?? null,
+    p_signed_at: doc.signedAt ?? Date.now(),
+    p_template_id: doc.templateId ?? null,
+    p_file_name: doc.fileName ?? null,
+    p_file_data: doc.fileData && isStoragePath(doc.fileData) ? doc.fileData : null,
+    p_expires_at: doc.expiresAt ?? null,
+  } as any);
   if (error) { console.error(error); throw error; }
 }
 
