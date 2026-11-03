@@ -71,12 +71,26 @@ async function readPermissions(): Promise<BackgroundPermissionStatus> {
  */
 export async function checkBackgroundPermissions(): Promise<BackgroundPermissionStatus | null> {
   if (!isNativePlatform()) return null;
-  try {
-    return await readPermissions();
-  } catch (e) {
-    console.error('[NativeTracking] checkPermissions failed:', e);
-    return null;
+  // Un reintento: a veces la primera llamada falla al arrancar la app
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      lastPermissionError = null;
+      return await readPermissions();
+    } catch (e) {
+      console.error('[NativeTracking] checkPermissions failed:', e);
+      lastPermissionError = String((e as Error)?.message ?? e).slice(0, 300);
+      if (attempt === 0) await new Promise((r) => setTimeout(r, 1000));
+    }
   }
+  return null;
+}
+
+/** Último error al leer los permisos, para reportarlo y poder diagnosticar */
+export let lastPermissionError: string | null = null;
+
+/** true si la app instalada trae el plugin nativo de GPS en background */
+export function hasBackgroundPlugin(): boolean {
+  return isNativePlatform() && Capacitor.isPluginAvailable('BackgroundGeolocation');
 }
 
 /** Versión instalada de la app, para saber quién tiene una build vieja */

@@ -10,6 +10,8 @@ import {
   requestBackgroundPermissions,
   openLocationSettings,
   getAppVersion,
+  hasBackgroundPlugin,
+  lastPermissionError,
   type BackgroundPermissionStatus,
 } from '@/lib/nativeTracking';
 import { locationDisclosureAccepted } from '@/lib/locationDisclosure';
@@ -33,7 +35,7 @@ export function GpsPermissionBanner({ driverId }: { driverId: string | null }) {
     if (!driverId) return;
     const version = await getAppVersion();
     // Evita escribir lo mismo una y otra vez en cada resume
-    const key = `${s?.location}|${s?.background}|${s?.notification}|${version}`;
+    const key = `${s?.location}|${s?.background}|${s?.notification}|${version}|${s ? '' : lastPermissionError}`;
     if (lastReported.current === key) return;
     lastReported.current = key;
 
@@ -45,6 +47,7 @@ export function GpsPermissionBanner({ driverId }: { driverId: string | null }) {
       p_notification: s ? s.notification : null,
       p_app_version: version,
       p_plugin_ok: s !== null,
+      p_error: s ? null : lastPermissionError,
     } as any);
     if (error) {
       console.error('[GpsPermissionBanner] report failed:', error);
@@ -58,7 +61,8 @@ export function GpsPermissionBanner({ driverId }: { driverId: string | null }) {
     if (!isNativePlatform()) return;
     const s = await checkBackgroundPermissions();
     setStatus(s);
-    setPluginMissing(s === null);
+    // Solo es "app vieja" si de verdad no trae el plugin; si lo trae y falló la lectura, no bloqueamos
+    setPluginMissing(s === null && !hasBackgroundPlugin());
     void report(s);
   }, [report]);
 
