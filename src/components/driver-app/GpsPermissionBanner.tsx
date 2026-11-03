@@ -46,7 +46,8 @@ export function GpsPermissionBanner({ driverId }: { driverId: string | null }) {
       p_background: s ? s.background : null,
       p_notification: s ? s.notification : null,
       p_app_version: version,
-      p_plugin_ok: s !== null,
+      // Si la app trae el plugin no es "app vieja" aunque falle la lectura (evita el WhatsApp de actualizar)
+      p_plugin_ok: s !== null || hasBackgroundPlugin(),
       p_error: s ? null : lastPermissionError,
     } as any);
     if (error) {
