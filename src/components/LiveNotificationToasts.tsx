@@ -79,92 +79,77 @@ export function LiveNotificationToasts() {
   useEffect(() => {
     if (!profile?.tenant_id) return;
 
-    let channel = supabase
-      .channel('live-toasts')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'notifications' },
-        (payload) => {
-          const n = payload.new as any;
-          if (n.tenant_id !== profile.tenant_id) return;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    let disposed = false;
 
-          // Notificaciones de onboarding solo para administradores
-          if (n.type === 'new_driver_onboarded' && !isAdmin) return;
+    const handleInsert = (payload: any) => {
+      const n = payload.new as any;
+      if (n.tenant_id !== profile.tenant_id) return;
 
-          const toast: LiveToast = {
-            id: n.id,
-            type: n.type,
-            title: n.title,
-            message: n.message,
-            load_id: n.load_id,
-            created_at: n.created_at,
-          };
+      // Notificaciones de onboarding solo para administradores
+      if (n.type === 'new_driver_onboarded' && !isAdmin) return;
 
-          setToasts((prev) => [toast, ...prev].slice(0, 5));
+      const toast: LiveToast = {
+        id: n.id,
+        type: n.type,
+        title: n.title,
+        message: n.message,
+        load_id: n.load_id,
+        created_at: n.created_at,
+      };
 
-          // Refresh loads data when a status change or driver action notification arrives.
-          // Debounced: if multiple notifications arrive in quick succession,
-          // only one invalidateQueries call is made after the burst settles.
-          if (['status_changed', 'driver_arrived', 'pod_uploaded'].includes(n.type)) {
-            if (invalidateTimerRef.current) clearTimeout(invalidateTimerRef.current);
-            invalidateTimerRef.current = setTimeout(() => {
-              queryClient.invalidateQueries({ queryKey: ['loads'] });
-              invalidateTimerRef.current = null;
-            }, 1500);
-          }
+      setToasts((prev) => [toast, ...prev].slice(0, 5));
 
-          // Notificación del navegador: mantenimiento, documento firmado y nuevo onboarding (solo admin)
-          if (n.type === 'maintenance' || n.type === 'document_signed' || (n.type === 'new_driver_onboarded' && isAdmin)) {
-            showBrowserNotification(n.title, n.message);
-          }
-        }
-      )
-      .subscribe((status) => {
-        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-          // Reintentar conexión después de 5 segundos
-          setTimeout(() => {
-            supabase.removeChannel(channel);
-            channel = supabase
-              .channel('live-toasts-retry-' + Date.now())
-              .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, (payload) => {
-                const n = payload.new as any;
-                if (n.tenant_id !== profile.tenant_id) return;
-                if (n.type === 'new_driver_onboarded' && !isAdmin) return;
-                setToasts((prev) => [{ id: n.id, type: n.type, title: n.title, message: n.message, load_id: n.load_id, created_at: n.created_at }, ...prev].slice(0, 5));
-                if (['status_changed', 'driver_arrived', 'pod_uploaded'].includes(n.type)) {
-                  if (invalidateTimerRef.current) clearTimeout(invalidateTimerRef.current);
-                  invalidateTimerRef.current = setTimeout(() => { queryClient.invalidateQueries({ queryKey: ['loads'] }); invalidateTimerRef.current = null; }, 1500);
-                }
-              })
-              .subscribe();
-          }, 5000);
-        }
-      });
+      // Refresh loads data when a status change or driver action notification arrives.
+      // Debounced: if multiple notifications arrive in quick succession,
+      // only one invalidateQueries call is made after the burst settles.
+      if (['status_changed', 'driver_arrived', 'pod_uploaded'].includes(n.type)) {
+        if (invalidateTimerRef.current) clearTimeout(invalidateTimerRef.current);
+        invalidateTimerRef.current = setTimeout(() => {
+          queryClient.invalidateQueries({ queryKey: ['loads'] });
+          invalidateTimerRef.current = null;
+        }, 1500);
+      }
 
-    // Reconectar cuando el usuario vuelve a la pestaña (visibilitychange)
-    const handleVisibility = () => {
-      if (document.visibilityState === 'visible') {
-        supabase.removeChannel(channel);
-        channel = supabase
-          .channel('live-toasts-vis-' + Date.now())
-          .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, (payload) => {
-            const n = payload.new as any;
-            if (n.tenant_id !== profile.tenant_id) return;
-            if (n.type === 'new_driver_onboarded' && !isAdmin) return;
-            setToasts((prev) => [{ id: n.id, type: n.type, title: n.title, message: n.message, load_id: n.load_id, created_at: n.created_at }, ...prev].slice(0, 5));
-            if (['status_changed', 'driver_arrived', 'pod_uploaded'].includes(n.type)) {
-              if (invalidateTimerRef.current) clearTimeout(invalidateTimerRef.current);
-              invalidateTimerRef.current = setTimeout(() => { queryClient.invalidateQueries({ queryKey: ['loads'] }); invalidateTimerRef.current = null; }, 1500);
-            }
-          })
-          .subscribe();
+      // Notificación del navegador: mantenimiento, documento firmado y nuevo onboarding (solo admin)
+      if (n.type === 'maintenance' || n.type === 'document_signed' || (n.type === 'new_driver_onboarded' && isAdmin)) {
+        showBrowserNotification(n.title, n.message);
       }
     };
+
+    // (Re)conecta el canal. Si se cae (error, timeout o cierre), reintenta cada 5s sin límite.
+    const connect = () => {
+      if (disposed) return;
+      if (retryTimer) { clearTimeout(retryTimer); retryTimer = null; }
+      if (channel) supabase.removeChannel(channel);
+      const ch = supabase
+        .channel('live-toasts-' + Date.now())
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, handleInsert)
+        .subscribe((status) => {
+          if (disposed || ch !== channel) return;
+          if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+            if (!retryTimer) retryTimer = setTimeout(connect, 5000);
+          }
+        });
+      channel = ch;
+    };
+
+    connect();
+
+    // Reconectar cuando el usuario vuelve a la pestaña o vuelve el internet
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') connect();
+    };
     document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('online', connect);
 
     return () => {
-      supabase.removeChannel(channel);
+      disposed = true;
+      if (retryTimer) clearTimeout(retryTimer);
+      if (channel) supabase.removeChannel(channel);
       document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('online', connect);
       if (invalidateTimerRef.current) clearTimeout(invalidateTimerRef.current);
     };
   }, [profile?.tenant_id]);
