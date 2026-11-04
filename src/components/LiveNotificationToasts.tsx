@@ -112,8 +112,9 @@ export function LiveNotificationToasts() {
         }, 1500);
       }
 
-      // Notificación del navegador: mantenimiento, documento firmado y nuevo onboarding (solo admin)
-      if (n.type === 'maintenance' || n.type === 'document_signed' || (n.type === 'new_driver_onboarded' && isAdmin)) {
+      // Notificación de Windows: siempre si el TMS no está a la vista; si está a la vista,
+      // solo mantenimiento, documento firmado y nuevo onboarding (solo admin)
+      if (document.visibilityState === 'hidden' || n.type === 'maintenance' || n.type === 'document_signed' || (n.type === 'new_driver_onboarded' && isAdmin)) {
         showBrowserNotification(n.title, n.message);
       }
     };
