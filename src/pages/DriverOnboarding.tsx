@@ -102,12 +102,8 @@ export default function DriverOnboarding() {
   useEffect(() => {
     if (!token) return;
     (async () => {
-      const { data, error } = await supabase
-        .from('onboarding_tokens')
-        .select('*')
-        .eq('token', token)
-        .eq('status', 'pending')
-        .single();
+      const { data: rows, error } = await supabase.rpc('onboarding_get_token' as any, { p_token: token });
+      const data = (rows as any[] | null)?.[0];
       
       if (error || !data) {
         setTokenValid(false);
