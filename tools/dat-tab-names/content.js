@@ -126,3 +126,18 @@
     if (changes.labels) { labels = changes.labels.newValue || {}; render(); }
   });
 })();
+
+// Llamar con Google Voice: los teléfonos de DAT (links tel:) se abren en Google Voice
+// con el número listo para marcar, siempre en la misma pestaña de Voice.
+(() => {
+  document.addEventListener("click", (e) => {
+    const link = e.composedPath().find((el) => el.tagName === "A" && (el.getAttribute("href") || "").startsWith("tel:"));
+    if (!link) return;
+    let digits = link.getAttribute("href").slice(4).split(/[;,?]/)[0].replace(/\D/g, "");
+    if (digits.length === 10) digits = "1" + digits;
+    if (digits.length < 11) return;
+    e.preventDefault();
+    e.stopPropagation();
+    window.open(`https://voice.google.com/u/0/calls?a=nc,%2B${digits}`, "du-google-voice");
+  }, true);
+})();
