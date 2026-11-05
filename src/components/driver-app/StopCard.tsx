@@ -100,13 +100,20 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
 
   const handleArrived = async () => {
     setArriving(true);
-    const { error } = await supabase
+    // Solo si la llegada no estaba marcada: el GPS puede haberla marcado mientras el botón seguía en pantalla
+    const { data: updated, error } = await supabase
       .from('load_stops')
       .update({ arrived_at: new Date().toISOString() } as any)
-      .eq('id', stop.id);
+      .eq('id', stop.id)
+      .is('arrived_at', null)
+      .select('id');
 
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } else if (!updated?.length) {
+      toast({ title: 'Arrived!' });
+      hapticFeedback('success');
+      onUpdate();
     } else {
       const newStatus = stop.stop_type === 'pickup' ? 'on_site_pickup' : 'on_site_delivery';
       await supabase.from('loads').update({ status: newStatus }).eq('id', stop.load_id);
