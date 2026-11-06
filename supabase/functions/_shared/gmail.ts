@@ -9,7 +9,10 @@ export interface GmailAccount {
   pass: string;
 }
 
-/** GMAIL_USER + las cuentas extra de BROKER_GMAIL_ACCOUNTS ("correo:apppassword,correo2:apppassword2") */
+/**
+ * Cuentas de los emails a brokers: las de BROKER_GMAIL_ACCOUNTS ("correo:apppassword,correo2:apppassword2").
+ * GMAIL_USER (el correo general de la app, de AG-AR que está inactiva) solo entra si no hay ninguna configurada.
+ */
 export function gmailAccounts(): GmailAccount[] {
   const list: GmailAccount[] = [];
   const add = (user: string, pass: string) => {
@@ -17,11 +20,11 @@ export function gmailAccounts(): GmailAccount[] {
     const p = pass.replace(/\s+/g, "");
     if (u && p && !list.some((a) => a.user === u)) list.push({ user: u, pass: p });
   };
-  add(Deno.env.get("GMAIL_USER") ?? "", Deno.env.get("GMAIL_APP_PASSWORD") ?? "");
   for (const pair of (Deno.env.get("BROKER_GMAIL_ACCOUNTS") ?? "").split(/[,;\n]/)) {
     const i = pair.indexOf(":");
     if (i > 0) add(pair.slice(0, i), pair.slice(i + 1));
   }
+  if (list.length === 0) add(Deno.env.get("GMAIL_USER") ?? "", Deno.env.get("GMAIL_APP_PASSWORD") ?? "");
   return list;
 }
 
