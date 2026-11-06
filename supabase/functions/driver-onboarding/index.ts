@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 import { isEnabled, renderMessage, sendTextLogged } from "../_shared/messaging.ts";
+import { appGmail } from "../_shared/gmail.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -201,8 +202,8 @@ Deno.serve(async (req) => {
 
       // Email notification
       try {
-        const gmailUser = (Deno.env.get("GMAIL_USER") ?? "").trim();
-        const gmailPass = (Deno.env.get("GMAIL_APP_PASSWORD") ?? "").replace(/\s+/g, "").trim();
+        const gmailUser = appGmail().user;
+        const gmailPass = appGmail().pass;
         if (gmailUser && gmailPass.length === 16) {
           const smtp = new SMTPClient({ connection: { hostname: "smtp.gmail.com", port: 465, tls: true, auth: { username: gmailUser, password: gmailPass } } });
           await smtp.send({
@@ -499,8 +500,8 @@ Deno.serve(async (req) => {
 
       // Email notification
       try {
-        const gmailUser = (Deno.env.get("GMAIL_USER") ?? "").trim();
-        const gmailPass = (Deno.env.get("GMAIL_APP_PASSWORD") ?? "").replace(/\s+/g, "").trim();
+        const gmailUser = appGmail().user;
+        const gmailPass = appGmail().pass;
         if (gmailUser && gmailPass.length === 16) {
           const { data: clientRow } = await supabaseAdmin.from("dispatch_service_clients").select("legal_business_name, mc_number").eq("id", clientId).single();
           const clientName = clientRow?.legal_business_name ?? "Unknown";
@@ -923,8 +924,8 @@ Deno.serve(async (req) => {
 
     // 7. Email notification
     try {
-      const gmailUser = (Deno.env.get("GMAIL_USER") ?? "").trim();
-      const gmailPass = (Deno.env.get("GMAIL_APP_PASSWORD") ?? "").replace(/\s+/g, "").trim();
+      const gmailUser = appGmail().user;
+      const gmailPass = appGmail().pass;
       const notifEmail = "58logisticsllc@gmail.com";
 
       if (gmailUser && gmailPass.length === 16) {

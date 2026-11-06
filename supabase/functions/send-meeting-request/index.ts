@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 import { isEnabled, renderMessage, sendTextLogged } from "../_shared/messaging.ts";
+import { appGmail } from "../_shared/gmail.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -95,8 +96,8 @@ Deno.serve(async (req) => {
     }
 
     // Send email notification
-    const gmailUser = (Deno.env.get("GMAIL_USER") ?? "").trim();
-    const gmailPass = (Deno.env.get("GMAIL_APP_PASSWORD") ?? "").replace(/\s+/g, "").trim();
+    const gmailUser = appGmail().user;
+    const gmailPass = appGmail().pass;
 
     if (!gmailUser || !gmailPass) {
       console.error("Missing Gmail credentials");

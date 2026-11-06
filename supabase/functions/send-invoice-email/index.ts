@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { sendMail } from "../_shared/smtp.ts";
+import { appGmail } from "../_shared/gmail.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -135,8 +136,8 @@ Deno.serve(async (req) => {
     }
 
     // --- Send email via Gmail SMTP ---
-    const gmailUser = (Deno.env.get("GMAIL_USER") ?? "").trim();
-    const gmailPassRaw = Deno.env.get("GMAIL_APP_PASSWORD") ?? "";
+    const gmailUser = appGmail().user;
+    const gmailPassRaw = appGmail().pass;
     // Google App Passwords are shown with spaces; SMTP auth expects the 16 chars without whitespace.
     const gmailPass = gmailPassRaw.replace(/\s+/g, "").trim();
 

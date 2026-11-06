@@ -28,6 +28,11 @@ export function gmailAccounts(): GmailAccount[] {
   return list;
 }
 
+/** Correo desde el que la app manda todo lo demás (facturas, onboarding, reuniones): la primera cuenta de brokers (58 Logistics) */
+export function appGmail(): GmailAccount {
+  return gmailAccounts()[0] ?? { user: "", pass: "" };
+}
+
 // ─── Cliente IMAP mínimo ───
 
 interface ImapResponse {
