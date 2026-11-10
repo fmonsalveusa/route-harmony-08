@@ -648,6 +648,21 @@ async function thankDriver(stopId: string) {
   });
 }
 
+/** "Crear y firmar RC": el WhatsApp de carga asignada esperaba al RC; ahora sí se le avisa al driver */
+async function releaseAssignedWhatsapp(supabase: any, loadId: string) {
+  const { data: released } = await supabase
+    .from("loads").update({ whatsapp_wait_rc: false })
+    .eq("id", loadId).eq("whatsapp_wait_rc", true).select("id");
+  if (!released?.length) return;
+  const secret = Deno.env.get("CRON_SECRET");
+  if (!secret) return;
+  await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/load-whatsapp-notify`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-cron-secret": secret },
+    body: JSON.stringify({ event: "assigned", load_id: loadId }),
+  }).catch((e) => console.error("releaseAssignedWhatsapp:", e));
+}
+
 // ─── Acciones del TMS ───
 
 async function authUser(req: Request) {
@@ -884,12 +899,19 @@ async function handleUserAction(req: Request, supabase: any, body: any) {
   }
 
   // Rate confirmation firmado: preparar (borrador para revisar) y enviar en el hilo del broker
-  if (action === "rc_prepare" || action === "rc_send") {
+  if (action === "rc_prepare" || action === "rc_send" || action === "rc_release") {
     const user = await authUser(req);
     const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
     const staff = ((roles as any[]) || []).some((r) => ["admin", "accounting", "dispatcher", "master_admin"].includes(r.role));
     if (!staff) return json({ error: "Unauthorized" }, 403);
-    return action === "rc_prepare" ? await rcPrepare(supabase, load.id, !!body.force) : await rcSend(supabase, load.id, accounts);
+    if (action === "rc_prepare") return await rcPrepare(supabase, load.id, !!body.force);
+    if (action === "rc_release") {
+      await releaseAssignedWhatsapp(supabase, load.id);
+      return json({ released: true });
+    }
+    const res = await rcSend(supabase, load.id, accounts);
+    if (res.ok) await releaseAssignedWhatsapp(supabase, load.id);
+    return res;
   }
 
   if (action === "send_now") {

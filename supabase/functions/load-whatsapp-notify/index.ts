@@ -75,7 +75,7 @@ Deno.serve(async (req) => {
 
     const { data: load, error: loadErr } = await supabase
       .from("loads")
-      .select("id, tenant_id, reference_number, driver_id, status, origin, destination, whatsapp_assigned_driver_id, whatsapp_delivered_sent_at, whatsapp_cancelled_sent_at")
+      .select("id, tenant_id, reference_number, driver_id, status, origin, destination, whatsapp_assigned_driver_id, whatsapp_delivered_sent_at, whatsapp_cancelled_sent_at, whatsapp_wait_rc")
       .eq("id", load_id)
       .maybeSingle();
     if (loadErr || !load) return json({ error: "Load not found" }, 404);
@@ -89,6 +89,8 @@ Deno.serve(async (req) => {
     if (event === "assigned" && load.whatsapp_assigned_driver_id === String(load.driver_id)) {
       return json({ skipped: "already notified" });
     }
+    // "Crear y firmar RC": se avisa cuando el RC firmado sale al broker (lo libera broker-email)
+    if (event === "assigned" && load.whatsapp_wait_rc) return json({ skipped: "waiting for signed RC" });
     // Mientras está en planned (o ya terminó) no se avisa; sale al pasar a dispatched
     if (event === "assigned" && ["planned", "cancelled", "delivered", "tonu", "paid"].includes(load.status)) {
       return json({ skipped: `status ${load.status}` });

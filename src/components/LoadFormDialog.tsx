@@ -649,6 +649,8 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       auto_dispatch: selectedStatus === 'planned' && autoDispatch,
       service_type: selectedServiceType || undefined,
       company_id: selectedCompany || undefined,
+      // "Crear y firmar RC": el WhatsApp de carga asignada espera a que el RC firmado salga al broker
+      ...(sign && canSignRc ? { whatsapp_wait_rc: true } : {}),
     } as any;
 
     // Prepare RC Original data (upload PDF if new file selected) — before main submit
@@ -1380,7 +1382,11 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
         loadId={rcReview.loadId}
         reference={rcReview.reference}
         preparing={rcReview.preparing}
-        onClose={() => setRcReview(null)}
+        onClose={() => {
+          // Enviado o cerrado sin enviar: ya se le avisa al driver por WhatsApp (si seguía esperando)
+          supabase.functions.invoke('broker-email', { body: { action: 'rc_release', load_id: rcReview.loadId } }).catch(() => {});
+          setRcReview(null);
+        }}
       />
     )}
     </>
