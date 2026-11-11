@@ -59,6 +59,18 @@ async function handleStopDocument(supabase: any, stopId: string) {
   return json({ success: true });
 }
 
+const AUTO_DISPATCH_DELAY_MS = 60_000;
+
+/** El trigger de auto-dispatch deja una notificación "Auto-dispatch" de la carga al pasarla a Dispatched */
+async function justAutoDispatched(supabase: any, loadId: string) {
+  const since = new Date(Date.now() - 5 * 60_000).toISOString();
+  const { data } = await supabase
+    .from("notifications").select("id")
+    .eq("load_id", loadId).eq("type", "status_changed").like("title", "Auto-dispatch%")
+    .gte("created_at", since).limit(1);
+  return !!data?.length;
+}
+
 Deno.serve(async (req) => {
   const secret = Deno.env.get("CRON_SECRET");
   if (!secret || req.headers.get("x-cron-secret") !== secret) return json({ error: "Unauthorized" }, 401);
@@ -66,12 +78,28 @@ Deno.serve(async (req) => {
   const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
   try {
-    const { load_id, event, stop_id } = await req.json();
+    const { load_id, event, stop_id, deferred } = await req.json();
     if (event === "stop_document") {
       if (!stop_id) return json({ error: "Bad request" }, 400);
       return await handleStopDocument(supabase, stop_id);
     }
     if (!load_id || !["assigned", "delivered", "cancelled"].includes(event)) return json({ error: "Bad request" }, 400);
+
+    // Carga que pasó sola a Dispatched al entregar la anterior: el aviso de la nueva carga va de último,
+    // después de "completada" y del gracias por el POD, que salen en ese mismo momento
+    if (event === "assigned" && !deferred && (await justAutoDispatched(supabase, load_id))) {
+      // @ts-ignore EdgeRuntime existe en Supabase Edge Functions
+      EdgeRuntime.waitUntil(
+        new Promise((r) => setTimeout(r, AUTO_DISPATCH_DELAY_MS)).then(() =>
+          fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/load-whatsapp-notify`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "x-cron-secret": secret },
+            body: JSON.stringify({ load_id, event, deferred: true }),
+          })
+        ).catch((e) => console.error("deferred assigned:", e)),
+      );
+      return json({ deferred: true });
+    }
 
     const { data: load, error: loadErr } = await supabase
       .from("loads")
