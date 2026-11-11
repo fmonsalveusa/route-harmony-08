@@ -1709,7 +1709,8 @@ const Tracking = () => {
         </DialogContent>
       </Dialog>
 
-      <LoadDetailModal />
+      {/* Se llama como función: como <LoadDetailModal /> se re-montaba en cada refresco de la página y parpadeaba */}
+      {LoadDetailModal()}
     </div>
   );
 };
