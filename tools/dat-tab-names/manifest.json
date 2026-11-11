@@ -1,14 +1,28 @@
 {
   "manifest_version": 3,
   "name": "DAT Driver Tabs (Dispatch Up)",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Ponle el nombre del driver a cada pestaña de búsqueda de DAT One y llama a los brokers con Google Voice.",
-  "permissions": ["storage"],
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "https://voice.google.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
   "content_scripts": [
     {
-      "matches": ["https://one.dat.com/*"],
-      "js": ["content.js"],
-      "css": ["content.css"],
+      "matches": [
+        "https://one.dat.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "css": [
+        "content.css"
+      ],
       "run_at": "document_idle"
     }
   ]

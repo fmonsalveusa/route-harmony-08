@@ -138,6 +138,6 @@
     if (digits.length < 11) return;
     e.preventDefault();
     e.stopPropagation();
-    window.open(`https://voice.google.com/u/0/calls?a=nc,%2B${digits}`, "du-google-voice");
+    chrome.runtime.sendMessage({ type: "voice-call", url: `https://voice.google.com/u/0/calls?a=nc,%2B${digits}` });
   }, true);
 })();
