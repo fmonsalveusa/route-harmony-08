@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Upload, FileCheck, X } from 'lucide-react';
+import { Upload, FileCheck, X, Truck as TruckIcon } from 'lucide-react';
 
 import type { DbTruck, TruckInput } from '@/hooks/useTrucks';
 import { toast } from 'sonner';
@@ -109,14 +109,21 @@ export function TruckFormDialog({ open, onOpenChange, truck, onSave }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{truck ? 'Edit Truck' : 'New Truck'}</DialogTitle>
-          <DialogDescription>Complete the truck information</DialogDescription>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-[28px] border-0 bg-[#f8fafd] dark:bg-background [&_label]:text-xs [&_label]:font-medium [&_label]:text-[#444746] dark:[&_label]:text-muted-foreground [&_input]:h-10 [&_input]:rounded-lg [&_input]:shadow-none [&_input]:bg-white dark:[&_input]:bg-card [&_input]:border-[#c4c7c5] dark:[&_input]:border-border [&_input:focus-visible]:ring-1 [&_input:focus-visible]:ring-[#0b57d0] [&_input:focus-visible]:border-[#0b57d0] [&_button[role=combobox]]:h-10 [&_button[role=combobox]]:rounded-lg [&_button[role=combobox]]:shadow-none [&_button[role=combobox]]:bg-white dark:[&_button[role=combobox]]:bg-card [&_button[role=combobox]]:border-[#c4c7c5] dark:[&_button[role=combobox]]:border-border">
+        <DialogHeader className="space-y-0">
+          <div className="flex items-center gap-3">
+            <span className="h-11 w-11 rounded-full bg-[#d3e3fd] dark:bg-blue-900/40 text-[#041e49] dark:text-blue-200 flex items-center justify-center shrink-0">
+              <TruckIcon className="h-5 w-5" />
+            </span>
+            <div>
+              <DialogTitle className="text-[22px] leading-7 font-normal text-[#1f1f1f] dark:text-foreground">{truck ? 'Edit Truck' : 'New Truck'}</DialogTitle>
+              <p className="text-sm text-[#444746] dark:text-muted-foreground">{truck ? `Unit #${truck.unit_number}` : 'Completa la información del camión'}</p>
+            </div>
+          </div>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
-          <div className="space-y-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-3 mt-2 rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border p-4">
+          <div className="space-y-1">
             <Label>Unit #</Label>
             <Input value={form.unit_number} onChange={e => {
               const val = e.target.value;
@@ -126,30 +133,30 @@ export function TruckFormDialog({ open, onOpenChange, truck, onSave }: Props) {
               }
             }} placeholder="e.g. 101" />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label>Truck Type</Label>
             <Select value={form.truck_type} onValueChange={v => set('truck_type', v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>{TRUCK_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
             </Select>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label>Make</Label>
             <Input value={form.make || ''} onChange={e => set('make', e.target.value)} placeholder="e.g. Freightliner" />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label>Model</Label>
             <Input value={form.model || ''} onChange={e => set('model', e.target.value)} placeholder="e.g. Cascadia" />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label>Year</Label>
             <Input type="number" value={form.year || ''} onChange={e => set('year', e.target.value ? parseInt(e.target.value) : null)} />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label>Max Payload (lbs)</Label>
             <Input type="number" value={form.max_payload_lbs ?? ''} onChange={e => set('max_payload_lbs', e.target.value ? parseFloat(e.target.value) : null)} />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label>VIN</Label>
             <Input
               value={form.vin || ''}
@@ -161,15 +168,15 @@ export function TruckFormDialog({ open, onOpenChange, truck, onSave }: Props) {
               <p className="text-[11px] text-amber-600">{(form.vin || '').length} de 17 caracteres</p>
             )}
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label>License Plate</Label>
             <Input value={form.license_plate || ''} onChange={e => set('license_plate', e.target.value)} placeholder="Ej: TX-4521" />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label>Trailer #</Label>
             <Input value={form.trailer_number || ''} onChange={e => set('trailer_number', e.target.value)} placeholder="Trailer number" />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label>Status</Label>
             <Select value={form.status} onValueChange={v => set('status', v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
@@ -183,8 +190,8 @@ export function TruckFormDialog({ open, onOpenChange, truck, onSave }: Props) {
 
         {/* Box Truck dimensions */}
         {form.truck_type === 'Box Truck' && (
-          <div className="border-t pt-4 space-y-2">
-            <Label className="text-base font-semibold">Box Truck Dimensions</Label>
+          <div className="space-y-2 rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border p-4 mt-3">
+            <h3 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground">Box Truck Dimensions</h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs">Cargo Length (ft)</Label>
@@ -212,8 +219,8 @@ export function TruckFormDialog({ open, onOpenChange, truck, onSave }: Props) {
 
         {/* Hotshot dimensions */}
         {form.truck_type === 'Hotshot' && (
-          <div className="border-t pt-4 space-y-2">
-            <Label className="text-base font-semibold">Hotshot Dimensions</Label>
+          <div className="space-y-2 rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border p-4 mt-3">
+            <h3 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground">Hotshot Dimensions</h3>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs">Trailer Length (ft)</Label>
@@ -234,8 +241,8 @@ export function TruckFormDialog({ open, onOpenChange, truck, onSave }: Props) {
         )}
 
         {/* Document uploads */}
-        <div className="space-y-3 border-t pt-4">
-          <Label className="text-base font-semibold">Documents & Photos</Label>
+        <div className="space-y-3 mt-3 rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border p-4">
+          <h3 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground">Documents & Photos</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {DOC_FIELDS.map(doc => (
               <FileUploadField
@@ -255,9 +262,9 @@ export function TruckFormDialog({ open, onOpenChange, truck, onSave }: Props) {
           </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleSubmit} disabled={saving || !form.unit_number.trim()}>
+        <DialogFooter className="mt-4">
+          <Button variant="ghost" className="h-10 rounded-full px-5 text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe] dark:text-blue-300 font-medium" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button className="h-10 rounded-full px-6 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium" onClick={handleSubmit} disabled={saving || !form.unit_number.trim()}>
             {saving ? 'Saving...' : truck ? 'Update' : 'Create'}
           </Button>
         </DialogFooter>
@@ -286,7 +293,7 @@ function FileUploadField({ label, existingUrl, file, onFileChange, onDelete, isD
       <Label className="text-xs">{label}</Label>
       <input ref={ref} type="file" accept="image/*,.pdf" className="hidden" onChange={e => { if (e.target.files?.[0]) onFileChange(e.target.files[0]); }} />
       <div className="flex items-center gap-1">
-        <Button type="button" variant="outline" size="sm" className="flex-1 justify-start gap-2 text-xs" onClick={() => ref.current?.click()}>
+        <Button type="button" variant="outline" size="sm" className="flex-1 justify-start gap-2 text-xs h-9 rounded-full shadow-none bg-[#f0f4f9] dark:bg-muted border-0 text-[#1f1f1f] dark:text-foreground hover:bg-[#e3e8ef]" onClick={() => ref.current?.click()}>
           {hasFile ? <FileCheck className="h-3.5 w-3.5 text-primary" /> : <Upload className="h-3.5 w-3.5" />}
           {file ? file.name : isDeleted ? 'Marked for deletion' : existingUrl ? 'Document uploaded ✓' : 'Upload file'}
         </Button>

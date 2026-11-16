@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Plus, Search, Phone, Truck as TruckIcon, Pencil, Trash2, Eye, Copy, Link2, ChevronDown, ChevronUp, Navigation, FileText, Check, Users, UserCheck, UserX, Clock, MapPinOff } from 'lucide-react';
+import { Plus, Search, Phone, Truck as TruckIcon, Pencil, Trash2, Eye, Copy, ChevronDown, ChevronUp, Navigation, FileText, Check, Users, UserCheck, UserX, Clock, MapPinOff } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useDrivers, DbDriver, DriverInput } from '@/hooks/useDrivers';
 import { useTrucks } from '@/hooks/useTrucks';
@@ -18,7 +18,6 @@ import { DriverFormDialog } from '@/components/DriverFormDialog';
 import { DriverDetailDialog } from '@/components/DriverDetailDialog';
 import { DriverDetailPanel } from '@/components/DriverDetailPanel';
 import { useEldStatus, EldBadge } from '@/components/EldStatus';
-import { GenerateOnboardingLinkDialog } from '@/components/GenerateOnboardingLinkDialog';
 import { DispatchServiceClientsSection } from '@/components/DispatchServiceClientsSection';
 import { TerminationLetterDialog } from '@/components/TerminationLetterDialog';
 import { CreateAccessButton } from '@/components/CreateAccessButton';
@@ -68,7 +67,6 @@ const Drivers = () => {
   const [editingDriver, setEditingDriver] = useState<DbDriver | null>(null);
   const [deletingDriver, setDeletingDriver] = useState<DbDriver | null>(null);
   const [detailDriver, setDetailDriver] = useState<DbDriver | null>(null);
-  const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('active');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
@@ -466,11 +464,6 @@ const Drivers = () => {
           </div>
         </div>
         <div className="flex gap-2">
-          {!isDispatcher && (
-            <Button variant="outline" className="h-10 rounded-full px-4 gap-2 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium" onClick={() => setOnboardingOpen(true)}>
-              <Link2 className="h-4 w-4" /> Onboarding Link
-            </Button>
-          )}
           <Button className="h-10 rounded-2xl px-5 gap-2 bg-[#c2e7ff] hover:bg-[#b3dcf5] text-[#001d35] font-medium shadow-[0_1px_2px_rgba(60,64,67,.3),0_1px_3px_1px_rgba(60,64,67,.15)]" onClick={() => {
             setEditingDriver(null);
             setFormOpen(true);
@@ -578,7 +571,6 @@ const Drivers = () => {
         onUpdateInvestor={updateDriverInvestor}
       />
       <DriverDetailDialog open={!!detailDriver} onOpenChange={open => !open && setDetailDriver(null)} driver={detailDriver} truckLabel={detailDriver ? getTruckLabel(detailDriver.truck_id) : null} dispatcherName={detailDriver ? dispatchers.find(d => d.id === detailDriver.dispatcher_id)?.name || null : null} getDocSignedUrl={getDocSignedUrl} />
-      <GenerateOnboardingLinkDialog open={onboardingOpen} onOpenChange={setOnboardingOpen} dispatchers={dispatchers} />
       <TerminationLetterDialog
         open={!!terminationDriver}
         onOpenChange={open => !open && setTerminationDriver(null)}

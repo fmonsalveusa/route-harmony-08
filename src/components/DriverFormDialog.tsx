@@ -4,11 +4,12 @@ import { EldConnectionSection } from '@/components/EldConnectionSection';
 import { DriverTaxSection } from '@/components/DriverTaxSection';
 import { useAuth } from '@/contexts/AuthContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Upload, FileText, X, Plus, Trash2 } from 'lucide-react';
+import { Upload, FileText, X, Plus, Trash2, UserRound } from 'lucide-react';
 import { todayET } from '@/lib/dateUtils';
 import { DbDriver, DriverInput, DriverInvestor, DriverInvestorInput } from '@/hooks/useDrivers';
 import { DbTruck } from '@/hooks/useTrucks';
@@ -165,37 +166,45 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{driver ? 'Edit Driver' : 'New Driver'}</DialogTitle>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-[28px] border-0 bg-[#f8fafd] dark:bg-background [&_label]:text-xs [&_label]:font-medium [&_label]:text-[#444746] dark:[&_label]:text-muted-foreground [&_input]:h-10 [&_input]:rounded-lg [&_input]:shadow-none [&_input]:bg-white dark:[&_input]:bg-card [&_input]:border-[#c4c7c5] dark:[&_input]:border-border [&_input:focus-visible]:ring-1 [&_input:focus-visible]:ring-[#0b57d0] [&_input:focus-visible]:border-[#0b57d0] [&_button[role=combobox]]:h-10 [&_button[role=combobox]]:rounded-lg [&_button[role=combobox]]:shadow-none [&_button[role=combobox]]:bg-white dark:[&_button[role=combobox]]:bg-card [&_button[role=combobox]]:border-[#c4c7c5] dark:[&_button[role=combobox]]:border-border">
+        <DialogHeader className="space-y-0">
+          <div className="flex items-center gap-3">
+            <span className="h-11 w-11 rounded-full bg-[#d3e3fd] dark:bg-blue-900/40 text-[#041e49] dark:text-blue-200 flex items-center justify-center shrink-0">
+              <UserRound className="h-5 w-5" />
+            </span>
+            <div>
+              <DialogTitle className="text-[22px] leading-7 font-normal text-[#1f1f1f] dark:text-foreground">{driver ? 'Edit Driver' : 'New Driver'}</DialogTitle>
+              <p className="text-sm text-[#444746] dark:text-muted-foreground">{driver ? driver.name : 'Completa la información del driver'}</p>
+            </div>
+          </div>
         </DialogHeader>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-          <div className="space-y-2">
+        <div className={cn('grid grid-cols-1 md:grid-cols-2 gap-x-3 gap-y-3 mt-2', 'rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border p-4')}>
+          <div className="space-y-1">
             <Label>Name *</Label>
             <Input value={form.name} onChange={e => set('name', e.target.value)} placeholder="Full name" />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label>Email *</Label>
             <Input type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="email@example.com" />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label>Phone *</Label>
             <Input value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="555-0000" />
           </div>
           <DatePickerField label="Birthday" value={form.birthday} onChange={v => set('birthday', v)} />
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label>Driver License # *</Label>
             <Input value={form.license} onChange={e => set('license', e.target.value)} placeholder="CDL-A-XXXXX" />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label>Address</Label>
             <Input value={form.address || ''} onChange={e => set('address', e.target.value)} placeholder="123 Main St" />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label>City</Label>
             <Input value={form.city || ''} onChange={e => set('city', e.target.value)} placeholder="Houston" />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label>State</Label>
             <Select value={form.state || 'none'} onValueChange={v => set('state', v === 'none' ? null : v)}>
               <SelectTrigger><SelectValue placeholder="Select state" /></SelectTrigger>
@@ -205,7 +214,7 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label>Zip Code</Label>
             <Input value={form.zip || ''} onChange={e => set('zip', e.target.value)} placeholder="77001" />
           </div>
@@ -213,16 +222,16 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
           <DatePickerField label="License Expiry *" value={form.license_expiry} onChange={v => set('license_expiry', v)} />
           <DatePickerField label="Medical Card Expiry *" value={form.medical_card_expiry} onChange={v => set('medical_card_expiry', v)} />
 
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label>Emergency Contact Name</Label>
             <Input value={form.emergency_contact_name || ''} onChange={e => set('emergency_contact_name', e.target.value)} placeholder="Jane Doe" />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label>Emergency Phone</Label>
             <Input value={form.emergency_phone || ''} onChange={e => set('emergency_phone', e.target.value)} placeholder="555-1234" />
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label>Status</Label>
             <Select value={form.status} onValueChange={v => set('status', v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
@@ -234,7 +243,7 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
             </Select>
           </div>
 
-          <div className="space-y-2 p-3 rounded-lg border-2 border-amber-400/50 bg-amber-50">
+          <div className="space-y-1.5 p-3 rounded-2xl bg-[#fef7e0] dark:bg-amber-950/30">
             <Label className="font-semibold text-amber-700">Service Type ⭐</Label>
             <Select value={form.service_type} onValueChange={v => set('service_type', v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
@@ -247,14 +256,14 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
           </div>
 
           {form.service_type === 'dispatch_service' && (
-            <div className="space-y-2 p-3 rounded-lg border-2 border-orange-400/50 bg-orange-50">
+            <div className="space-y-1.5 p-3 rounded-2xl bg-[#feefe3] dark:bg-orange-950/30">
               <Label className="font-semibold text-orange-700">% Dispatch Service Fee ⭐</Label>
               <Input type="number" step="0.5" value={form.dispatch_service_percentage ?? 0} onChange={e => set('dispatch_service_percentage', Number(e.target.value))} placeholder="Ej: 10" />
               <p className="text-xs text-orange-600">Porcentaje que la empresa cobra al driver por el servicio de despacho</p>
             </div>
           )}
 
-          <div className="space-y-2 p-3 rounded-lg border-2 border-emerald-400/50 bg-emerald-50">
+          <div className="space-y-1.5 p-3 rounded-2xl bg-[#e6f4ea] dark:bg-emerald-950/30">
             <Label className="font-semibold text-emerald-700">Assigned Dispatcher ⭐</Label>
             <Select value={form.dispatcher_id || 'none'} onValueChange={v => set('dispatcher_id', v === 'none' ? null : v)}>
               <SelectTrigger><SelectValue placeholder="Unassigned" /></SelectTrigger>
@@ -265,7 +274,7 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
             </Select>
           </div>
 
-          <div className="space-y-2 p-3 rounded-lg border-2 border-sky-400/50 bg-sky-50">
+          <div className="space-y-1.5 p-3 rounded-2xl bg-[#e8f0fe] dark:bg-blue-950/30">
             <Label className="font-semibold text-sky-700">Assigned Truck ⭐</Label>
             <Select value={form.truck_id || 'none'} onValueChange={v => set('truck_id', v === 'none' ? null : v)}>
               <SelectTrigger><SelectValue placeholder="Unassigned" /></SelectTrigger>
@@ -288,7 +297,7 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
           {/* Datos fiscales para el 1099 (solo admin y accounting) */}
           {driver?.id && canSeeTax && <DriverTaxSection driverId={driver.id} hasW9={!!(driver as any).form_w9_url} />}
 
-          <div className="space-y-3 p-3 rounded-lg border-2 border-violet-400/50 bg-violet-50 dark:bg-violet-950/20 md:col-span-2">
+          <div className="space-y-3 p-3 rounded-2xl bg-[#f3e8fd] dark:bg-violet-950/30 md:col-span-2">
             <div className="flex items-center justify-between">
               <Label className="font-semibold text-violet-700 dark:text-violet-300">Investors ⭐</Label>
               {driver?.id && driverInvestors.length < 2 && (
@@ -413,11 +422,11 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
             )}
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label>% Driver Pay</Label>
             <Input type="number" value={form.pay_percentage} onChange={e => set('pay_percentage', Number(e.target.value))} />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label>% Factoring</Label>
             <Input type="number" step="0.5" value={form.factoring_percentage ?? 2} onChange={e => set('factoring_percentage', Number(e.target.value))} />
           </div>
@@ -426,8 +435,8 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
         </div>
 
         {/* Banking Information */}
-        <div className="mt-6 space-y-3">
-          <h3 className="font-semibold text-sm">Banking Information <span className="text-xs font-normal text-muted-foreground">(ACH Direct Deposit)</span></h3>
+        <div className="mt-3 space-y-3 rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border p-4">
+          <h3 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground">Banking Information <span className="text-xs font-normal text-[#444746] dark:text-muted-foreground">(ACH Direct Deposit)</span></h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2 sm:col-span-2">
               <Label>Account Holder Name</Label>
@@ -479,15 +488,15 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
         </div>
 
         {/* Document uploads */}
-        <div className="mt-6 space-y-3">
-          <h3 className="font-semibold text-sm">Documents</h3>
+        <div className="mt-3 space-y-2 rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border p-4">
+          <h3 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground">Documents</h3>
           {docFields.map(doc => {
             const existingUrl = driver ? (driver as any)[doc.urlKey] : null;
             const selectedFile = files[doc.key];
             const isDeleted = deletedDocs.has(doc.urlKey);
             const showExisting = existingUrl && !isDeleted;
             return (
-              <div key={doc.key} className="flex items-center gap-3 p-3 border rounded-md">
+              <div key={doc.key} className="flex items-center gap-3 px-3 py-2 rounded-2xl bg-[#f0f4f9] dark:bg-muted/60">
                 <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
                 <span className="text-sm font-medium min-w-[140px]">{doc.label}</span>
                 <div className="flex-1 flex items-center gap-2">
@@ -524,7 +533,7 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
                       Undo
                     </Button>
                   )}
-                  <Button size="sm" variant="outline" onClick={() => fileRefs.current[doc.key]?.click()}>
+                  <Button size="sm" variant="outline" className="h-8 rounded-full px-3 shadow-none bg-white dark:bg-card border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium" onClick={() => fileRefs.current[doc.key]?.click()}>
                     <Upload className="h-3.5 w-3.5 mr-1" /> Upload
                   </Button>
                 </div>
@@ -533,9 +542,9 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
           })}
         </div>
 
-        <div className="flex justify-end gap-2 mt-6">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleSubmit} disabled={saving}>
+        <div className="flex justify-end gap-2 mt-4">
+          <Button variant="ghost" className="h-10 rounded-full px-5 text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe] dark:text-blue-300 font-medium" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button className="h-10 rounded-full px-6 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium" onClick={handleSubmit} disabled={saving}>
             {saving ? 'Saving...' : driver ? 'Save Changes' : 'Create Driver'}
           </Button>
         </div>
@@ -546,7 +555,7 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit, trucks,
 
 function DatePickerField({ label, value, onChange }: { label: string; value: string | null | undefined; onChange: (v: string | null) => void }) {
   return (
-    <div className="space-y-2">
+    <div className="space-y-1">
       <Label>{label}</Label>
       <Input type="date" value={value || ''} onChange={e => onChange(e.target.value || null)} />
     </div>
