@@ -548,8 +548,8 @@ Se borra de Google Calendar, se libera el horario y se le avisa por email.`)) re
         </div>
       )}
       {meeting && c.stage === 'meeting_scheduled' && (
-        <div className="text-[11px] flex items-center gap-1 font-medium rounded-lg bg-[#e8f0fe] dark:bg-blue-950/40 text-[#0b57d0] dark:text-blue-300 px-2 py-1">
-          <CalendarCheck className="h-3 w-3 shrink-0" /> <span className="truncate">Reunión: {fmtMeetingDate(meeting.date)} · {meeting.time}</span>
+        <div className="text-[11px] flex flex-wrap items-center gap-x-1 gap-y-0.5 font-medium rounded-lg bg-[#e8f0fe] dark:bg-blue-950/40 text-[#0b57d0] dark:text-blue-300 px-2 py-1">
+          <CalendarCheck className="h-3 w-3 shrink-0" /> <span className="whitespace-nowrap">{fmtMeetingDate(meeting.date)} · {meeting.time}</span>
           {meeting.date >= today && meeting.token && (
             <button
               type="button"
@@ -1172,7 +1172,7 @@ export default function CRM() {
             placeholder="Buscar nombre, teléfono, vehículo..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full h-12 rounded-full bg-[#e9eef6] dark:bg-muted pl-12 pr-10 text-[15px] text-[#1f1f1f] dark:text-foreground placeholder:text-[#444746] outline-none focus:bg-white dark:focus:bg-card focus:shadow-[0_1px_1px_rgba(65,69,73,.3),0_1px_3px_1px_rgba(65,69,73,.15)] transition"
+            className="w-full h-12 rounded-full bg-white dark:bg-card border border-[#e3e3e3] dark:border-border pl-12 pr-10 text-[15px] text-[#1f1f1f] dark:text-foreground placeholder:text-[#444746] outline-none focus:bg-white dark:focus:bg-card focus:shadow-[0_1px_1px_rgba(65,69,73,.3),0_1px_3px_1px_rgba(65,69,73,.15)] transition"
           />
           {search && (
             <button type="button" onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 h-7 w-7 rounded-full hover:bg-black/5 flex items-center justify-center">
