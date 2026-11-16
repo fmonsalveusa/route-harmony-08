@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableHeader, TableHead, TableRow, TableBody, TableCell } from '@/components/ui/table';
 import { StatTiles, SolidStatusPill, TABLE_CARD } from '@/components/StatTiles';
-import { FileText, Copy, Pencil, Eye, Download, Trash2, Plus, LayoutTemplate, Loader2, X, Clock, CheckCircle2, Package } from 'lucide-react';
+import { FileText, Copy, Pencil, Eye, Download, Trash2, Plus, LayoutTemplate, Loader2, X, Clock, CheckCircle2, Package, FileSignature } from 'lucide-react';
 import { DocumentPodDialog, type DocPodLink } from '@/components/DocumentPodDialog';
 
 const DOC_STATUS: Record<string, { label: string; color: string; border: string }> = {
@@ -285,28 +285,28 @@ const Documents = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="page-header">Documentos</h1>
-          <p className="page-description">Gestiona documentos de firma electrónica y plantillas</p>
+          <h1 className="page-header flex items-center gap-3"><span className="page-icon"><FileSignature className="h-5 w-5" /></span>Documentos</h1>
+          <p className="page-description pl-[52px]">Gestiona documentos de firma electrónica y plantillas</p>
         </div>
       </div>
 
       <StatTiles tiles={[
-        { label: 'Documentos', value: documents.length, icon: FileText, tint: 'bg-sky-100 text-sky-700' },
-        { label: 'Pendientes de firma', value: documents.filter(d => d.status === 'pending').length, icon: Clock, tint: 'bg-amber-100 text-amber-700' },
-        { label: 'Firmados', value: documents.filter(d => d.status === 'signed').length, icon: CheckCircle2, tint: 'bg-emerald-100 text-emerald-700' },
-        { label: 'Plantillas', value: templates.length, icon: LayoutTemplate, tint: 'bg-violet-100 text-violet-700' },
+        { label: 'Documentos', value: documents.length, icon: FileText, tint: 'bg-[#d3e3fd] text-[#041e49] dark:bg-blue-900/40 dark:text-blue-200' },
+        { label: 'Pendientes de firma', value: documents.filter(d => d.status === 'pending').length, icon: Clock, tint: 'bg-[#feefc3] text-[#3d2a00] dark:bg-amber-900/40 dark:text-amber-200' },
+        { label: 'Firmados', value: documents.filter(d => d.status === 'signed').length, icon: CheckCircle2, tint: 'bg-[#c4eed0] text-[#072711] dark:bg-emerald-900/40 dark:text-emerald-200' },
+        { label: 'Plantillas', value: templates.length, icon: LayoutTemplate, tint: 'bg-[#f3e8fd] text-[#4a148c] dark:bg-violet-900/40 dark:text-violet-200' },
       ]} />
 
       <Tabs defaultValue="dashboard">
-        <TabsList>
-          <TabsTrigger value="dashboard" className="gap-2">
+        <TabsList className="w-full justify-start rounded-none sm:rounded-none border-x-0 border-t-0 flex-nowrap border-b border-[#e3e3e3] dark:border-border bg-transparent h-12 p-0 px-1 overflow-x-auto overflow-y-hidden">
+          <TabsTrigger className="h-12 rounded-none border-b-[3px] border-transparent px-4 gap-2 text-sm font-medium text-[#444746] dark:text-muted-foreground data-[state=active]:border-[#0b57d0] data-[state=active]:text-[#0b57d0] dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none data-[state=active]:bg-transparent gap-2" value="dashboard">
             <FileText className="h-4 w-4" />
             Dashboard
           </TabsTrigger>
-          <TabsTrigger value="templates" className="gap-2">
+          <TabsTrigger className="h-12 rounded-none border-b-[3px] border-transparent px-4 gap-2 text-sm font-medium text-[#444746] dark:text-muted-foreground data-[state=active]:border-[#0b57d0] data-[state=active]:text-[#0b57d0] dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none data-[state=active]:bg-transparent gap-2" value="templates">
             <LayoutTemplate className="h-4 w-4" />
             Plantillas
           </TabsTrigger>
@@ -576,9 +576,9 @@ const Documents = () => {
 
       {/* PDF Preview Dialog */}
       <Dialog open={!!previewDoc} onOpenChange={(open) => !open && setPreviewDoc(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] p-0 overflow-hidden">
+        <DialogContent className="max-w-4xl max-h-[90vh] p-0 overflow-hidden rounded-[28px] border-0 bg-[#f8fafd] dark:bg-background [&_label]:text-xs [&_label]:font-medium [&_label]:text-[#444746] dark:[&_label]:text-muted-foreground [&_input]:rounded-lg [&_input]:shadow-none [&_input]:bg-white dark:[&_input]:bg-card [&_input]:border-[#c4c7c5] dark:[&_input]:border-border [&_input:focus-visible]:ring-1 [&_input:focus-visible]:ring-[#0b57d0] [&_input:focus-visible]:border-[#0b57d0] [&_button[role=combobox]]:rounded-lg [&_button[role=combobox]]:shadow-none [&_button[role=combobox]]:bg-white dark:[&_button[role=combobox]]:bg-card [&_button[role=combobox]]:border-[#c4c7c5] dark:[&_button[role=combobox]]:border-border [&_textarea]:rounded-lg [&_textarea]:shadow-none [&_textarea]:bg-white dark:[&_textarea]:bg-card [&_textarea]:border-[#c4c7c5]">
           <DialogHeader className="p-4 pb-2">
-            <DialogTitle className="truncate">{previewDoc?.fileName}</DialogTitle>
+            <DialogTitle className="truncate text-[22px] leading-7 font-normal text-[#1f1f1f] dark:text-foreground">{previewDoc?.fileName}</DialogTitle>
           </DialogHeader>
           <div className="flex-1 overflow-auto px-4 pb-4" style={{ maxHeight: 'calc(90vh - 80px)' }}>
             {previewDoc && <PdfBlobIframe dataUri={previewDoc.signedFileData || previewDoc.fileData} />}

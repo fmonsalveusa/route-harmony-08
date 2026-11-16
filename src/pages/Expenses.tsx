@@ -160,7 +160,7 @@ const Expenses = () => {
   // Empty state
   if (!loading && expenses.length === 0) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-3">
         <h1 className="page-header">Expenses</h1>
         <Card>
           <CardContent className="p-12 text-center">
@@ -184,12 +184,12 @@ const Expenses = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="page-header">Expenses</h1>
-          <p className="page-description">Track and manage all truck expenses</p>
+          <h1 className="page-header flex items-center gap-3"><span className="page-icon"><Receipt className="h-5 w-5" /></span>Expenses</h1>
+          <p className="page-description pl-[52px]">Track and manage all truck expenses</p>
         </div>
         <div className="flex gap-2">
           <Button onClick={() => { setEditExpense(null); setFormOpen(true); }} className="gap-2" size="sm">
@@ -439,16 +439,16 @@ const Expenses = () => {
 
       {/* Delete confirmation */}
       <Dialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
-        <DialogContent>
+        <DialogContent className="rounded-[28px] border-0 bg-[#f8fafd] dark:bg-background [&_label]:text-xs [&_label]:font-medium [&_label]:text-[#444746] dark:[&_label]:text-muted-foreground [&_input]:rounded-lg [&_input]:shadow-none [&_input]:bg-white dark:[&_input]:bg-card [&_input]:border-[#c4c7c5] dark:[&_input]:border-border [&_input:focus-visible]:ring-1 [&_input:focus-visible]:ring-[#0b57d0] [&_input:focus-visible]:border-[#0b57d0] [&_button[role=combobox]]:rounded-lg [&_button[role=combobox]]:shadow-none [&_button[role=combobox]]:bg-white dark:[&_button[role=combobox]]:bg-card [&_button[role=combobox]]:border-[#c4c7c5] dark:[&_button[role=combobox]]:border-border [&_textarea]:rounded-lg [&_textarea]:shadow-none [&_textarea]:bg-white dark:[&_textarea]:bg-card [&_textarea]:border-[#c4c7c5]">
           <DialogHeader>
-            <DialogTitle>Delete Expense</DialogTitle>
+            <DialogTitle className="text-[22px] leading-7 font-normal text-[#1f1f1f] dark:text-foreground">Delete Expense</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
             Are you sure you want to delete this expense of <strong>${(deleteTarget?.total_amount ?? 0).toFixed(2)}</strong>?
           </p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancel</Button>
-            <Button variant="destructive" onClick={async () => {
+            <Button className="h-10 rounded-full px-5 text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe] dark:text-blue-300 font-medium" variant="ghost" onClick={() => setDeleteTarget(null)}>Cancel</Button>
+            <Button className="h-10 rounded-full px-6 bg-[#b3261e] hover:bg-[#8c1d18] text-white font-medium"  onClick={async () => {
               if (deleteTarget) await deleteExpense(deleteTarget.id);
               setDeleteTarget(null);
             }}>Delete</Button>

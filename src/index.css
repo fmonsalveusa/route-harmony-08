@@ -117,11 +117,16 @@ html, body {
   .stat-card:hover {
     box-shadow: 0 8px 32px 0 hsl(214 68% 8% / 0.65);
   }
+  /* Títulos de página estilo Google */
   .page-header {
-    @apply text-2xl font-bold tracking-tight text-foreground;
+    @apply text-[24px] leading-8 font-normal text-[#1f1f1f] dark:text-foreground;
   }
   .page-description {
-    @apply text-sm text-muted-foreground mt-1;
+    @apply text-sm text-[#444746] dark:text-muted-foreground;
+  }
+  /* Ícono redondo al lado del título */
+  .page-icon {
+    @apply h-10 w-10 rounded-full bg-[#d3e3fd] text-[#041e49] dark:bg-blue-900/40 dark:text-blue-200 flex items-center justify-center shrink-0;
   }
   .status-badge {
     @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors;
@@ -134,26 +139,27 @@ html, body {
   .status-paid { @apply bg-[hsl(152,60%,40%)] text-white; }
   /* Sombra unificada para wrappers de filtros con ícono */
   .filter-wrapper {
-    box-shadow: 0 4px 24px 0 hsl(214 68% 8% / 0.5);
+    box-shadow: none;
     @apply rounded-md transition-shadow duration-200;
   }
   .filter-wrapper:focus-within {
-    box-shadow: 0 8px 32px 0 hsl(214 68% 8% / 0.65);
+    box-shadow: 0 1px 1px rgba(65,69,73,.3), 0 1px 3px 1px rgba(65,69,73,.15);
   }
 
   .table-container {
-    @apply rounded-lg border bg-card overflow-hidden;
-    box-shadow: 0 4px 24px 0 hsl(214 68% 8% / 0.5);
+    @apply rounded-3xl border border-[#e3e3e3] dark:border-border bg-white dark:bg-card overflow-hidden;
+    box-shadow: none;
   }
 
   /* ── Glassmorphism utilities ── */
+  /* Tarjetas estilo Google: blancas, redondeadas, borde fino, sin sombra */
   .glass-card {
-    @apply rounded-lg bg-card border;
-    box-shadow: 0 4px 24px 0 hsl(214 68% 8% / 0.5);
+    @apply rounded-3xl bg-white border border-[#e3e3e3];
+    box-shadow: none;
   }
   .dark .glass-card {
-    @apply bg-card border;
-    box-shadow: 0 4px 24px 0 hsl(214 68% 8% / 0.5);
+    @apply bg-card border-border;
+    box-shadow: none;
   }
 
   .glass-table-header {

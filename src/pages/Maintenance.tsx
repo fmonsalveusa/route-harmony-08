@@ -163,12 +163,12 @@ const Maintenance = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="page-header">Truck Maintenance</h1>
-          <p className="page-description">Fleet maintenance tracker</p>
+          <h1 className="page-header flex items-center gap-3"><span className="page-icon"><Wrench className="h-5 w-5" /></span>Truck Maintenance</h1>
+          <p className="page-description pl-[52px]">Fleet maintenance tracker</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={sendReminders} disabled={sendingReminders}
@@ -205,20 +205,20 @@ const Maintenance = () => {
         }).length;
         return (
           <StatTiles tiles={[
-            { label: 'Trucks', value: truckIds.length, icon: Truck, tint: 'bg-sky-100 text-sky-700' },
-            { label: 'Due', value: recurring.filter(i => i.status === 'due').length, icon: AlertCircle, tint: 'bg-red-100 text-red-700' },
-            { label: 'Warning', value: recurring.filter(i => i.status === 'warning').length, icon: AlertTriangle, tint: 'bg-amber-100 text-amber-700' },
-            { label: 'OK', value: recurring.filter(i => i.status === 'ok').length, icon: CheckCircle2, tint: 'bg-emerald-100 text-emerald-700' },
-            { label: 'Odómetro viejo', value: staleOdo, hint: 'más de 2 días o sin dato', icon: Gauge, tint: 'bg-orange-100 text-orange-700' },
+            { label: 'Trucks', value: truckIds.length, icon: Truck, tint: 'bg-[#d3e3fd] text-[#041e49] dark:bg-blue-900/40 dark:text-blue-200' },
+            { label: 'Due', value: recurring.filter(i => i.status === 'due').length, icon: AlertCircle, tint: 'bg-[#f9dedc] text-[#410e0b] dark:bg-red-900/40 dark:text-red-200' },
+            { label: 'Warning', value: recurring.filter(i => i.status === 'warning').length, icon: AlertTriangle, tint: 'bg-[#feefc3] text-[#3d2a00] dark:bg-amber-900/40 dark:text-amber-200' },
+            { label: 'OK', value: recurring.filter(i => i.status === 'ok').length, icon: CheckCircle2, tint: 'bg-[#c4eed0] text-[#072711] dark:bg-emerald-900/40 dark:text-emerald-200' },
+            { label: 'Odómetro viejo', value: staleOdo, hint: 'más de 2 días o sin dato', icon: Gauge, tint: 'bg-[#ffdcc1] text-[#2f1500] dark:bg-orange-900/40 dark:text-orange-200' },
           ]} />
         );
       })()}
 
       {/* Tabs */}
       <Tabs defaultValue="by-truck">
-        <TabsList>
-          <TabsTrigger value="by-truck"><Truck className="h-4 w-4" /> By Truck</TabsTrigger>
-          <TabsTrigger value="all-services"><List className="h-4 w-4" /> All Services</TabsTrigger>
+        <TabsList className="w-full justify-start rounded-none sm:rounded-none border-x-0 border-t-0 flex-nowrap border-b border-[#e3e3e3] dark:border-border bg-transparent h-12 p-0 px-1 overflow-x-auto overflow-y-hidden">
+          <TabsTrigger className="h-12 rounded-none border-b-[3px] border-transparent px-4 gap-2 text-sm font-medium text-[#444746] dark:text-muted-foreground data-[state=active]:border-[#0b57d0] data-[state=active]:text-[#0b57d0] dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none data-[state=active]:bg-transparent" value="by-truck"><Truck className="h-4 w-4" /> By Truck</TabsTrigger>
+          <TabsTrigger className="h-12 rounded-none border-b-[3px] border-transparent px-4 gap-2 text-sm font-medium text-[#444746] dark:text-muted-foreground data-[state=active]:border-[#0b57d0] data-[state=active]:text-[#0b57d0] dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none data-[state=active]:bg-transparent" value="all-services"><List className="h-4 w-4" /> All Services</TabsTrigger>
         </TabsList>
 
         {/* Filters (shared) */}
@@ -427,9 +427,9 @@ const Maintenance = () => {
 
       {/* Modal: actualizar odómetros de todos los camiones de una sentada */}
       <Dialog open={odoModalOpen} onOpenChange={setOdoModalOpen}>
-        <DialogContent className="sm:max-w-md max-h-[80vh] flex flex-col">
+        <DialogContent className="sm:max-w-md max-h-[80vh] flex flex-col rounded-[28px] border-0 bg-[#f8fafd] dark:bg-background [&_label]:text-xs [&_label]:font-medium [&_label]:text-[#444746] dark:[&_label]:text-muted-foreground [&_input]:rounded-lg [&_input]:shadow-none [&_input]:bg-white dark:[&_input]:bg-card [&_input]:border-[#c4c7c5] dark:[&_input]:border-border [&_input:focus-visible]:ring-1 [&_input:focus-visible]:ring-[#0b57d0] [&_input:focus-visible]:border-[#0b57d0] [&_button[role=combobox]]:rounded-lg [&_button[role=combobox]]:shadow-none [&_button[role=combobox]]:bg-white dark:[&_button[role=combobox]]:bg-card [&_button[role=combobox]]:border-[#c4c7c5] dark:[&_button[role=combobox]]:border-border [&_textarea]:rounded-lg [&_textarea]:shadow-none [&_textarea]:bg-white dark:[&_textarea]:bg-card [&_textarea]:border-[#c4c7c5]">
           <DialogHeader>
-            <DialogTitle>Update Odometers</DialogTitle>
+            <DialogTitle className="text-[22px] leading-7 font-normal text-[#1f1f1f] dark:text-foreground">Update Odometers</DialogTitle>
           </DialogHeader>
           <p className="text-xs text-muted-foreground">
             Enter the current odometer for any truck. Leave blank to keep the current value.
@@ -465,8 +465,8 @@ const Maintenance = () => {
               })}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOdoModalOpen(false)}>Cancel</Button>
-            <Button onClick={saveAllOdometers} disabled={savingOdo}>
+            <Button className="h-10 rounded-full px-5 text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe] dark:text-blue-300 font-medium" variant="ghost" onClick={() => setOdoModalOpen(false)}>Cancel</Button>
+            <Button className="h-10 rounded-full px-6 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium" onClick={saveAllOdometers} disabled={savingOdo}>
               {savingOdo ? 'Saving…' : 'Save odometers'}
             </Button>
           </DialogFooter>

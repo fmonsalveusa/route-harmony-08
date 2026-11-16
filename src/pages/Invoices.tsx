@@ -144,26 +144,26 @@ const Invoices = () => {
   const totalPaid = paid.reduce((s, i) => s + Number(i.amount), 0);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <div>
-        <h1 className="page-header">Facturación</h1>
-        <p className="page-description">Gestión de facturas</p>
+        <h1 className="page-header flex items-center gap-3"><span className="page-icon"><FileText className="h-5 w-5" /></span>Facturación</h1>
+        <p className="page-description pl-[52px]">Gestión de facturas</p>
       </div>
 
       <Tabs defaultValue="broker" className="w-full">
-        <TabsList>
-          <TabsTrigger value="broker">Broker Invoices</TabsTrigger>
-          <TabsTrigger value="dispatch_service">Dispatch Service</TabsTrigger>
+        <TabsList className="w-full justify-start rounded-none sm:rounded-none border-x-0 border-t-0 flex-nowrap border-b border-[#e3e3e3] dark:border-border bg-transparent h-12 p-0 px-1 overflow-x-auto overflow-y-hidden">
+          <TabsTrigger className="h-12 rounded-none border-b-[3px] border-transparent px-4 gap-2 text-sm font-medium text-[#444746] dark:text-muted-foreground data-[state=active]:border-[#0b57d0] data-[state=active]:text-[#0b57d0] dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none data-[state=active]:bg-transparent" value="broker">Broker Invoices</TabsTrigger>
+          <TabsTrigger className="h-12 rounded-none border-b-[3px] border-transparent px-4 gap-2 text-sm font-medium text-[#444746] dark:text-muted-foreground data-[state=active]:border-[#0b57d0] data-[state=active]:text-[#0b57d0] dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none data-[state=active]:bg-transparent" value="dispatch_service">Dispatch Service</TabsTrigger>
         </TabsList>
 
         <TabsContent value="broker">
-        <div className="space-y-6">
+        <div className="space-y-3">
 
       <StatTiles tiles={[
-        { label: 'Pendientes', value: `$${totalPending.toLocaleString()}`, hint: `${pending.length} facturas`, icon: AlertTriangle, tint: 'bg-amber-100 text-amber-700' },
-        { label: 'Enviadas', value: sent.length, icon: Send, tint: 'bg-blue-100 text-blue-700' },
-        { label: 'Cobradas', value: `$${totalPaid.toLocaleString()}`, hint: `${paid.length} facturas`, icon: CheckCircle, tint: 'bg-emerald-100 text-emerald-700' },
-        { label: 'Total Facturas', value: invoices.length, icon: FileText, tint: 'bg-sky-100 text-sky-700' },
+        { label: 'Pendientes', value: `$${totalPending.toLocaleString()}`, hint: `${pending.length} facturas`, icon: AlertTriangle, tint: 'bg-[#feefc3] text-[#3d2a00] dark:bg-amber-900/40 dark:text-amber-200' },
+        { label: 'Enviadas', value: sent.length, icon: Send, tint: 'bg-[#c2e7ff] text-[#001d35] dark:bg-sky-900/40 dark:text-sky-200' },
+        { label: 'Cobradas', value: `$${totalPaid.toLocaleString()}`, hint: `${paid.length} facturas`, icon: CheckCircle, tint: 'bg-[#c4eed0] text-[#072711] dark:bg-emerald-900/40 dark:text-emerald-200' },
+        { label: 'Total Facturas', value: invoices.length, icon: FileText, tint: 'bg-[#d3e3fd] text-[#041e49] dark:bg-blue-900/40 dark:text-blue-200' },
       ]} />
 
       {/* Filters */}
@@ -175,16 +175,16 @@ const Invoices = () => {
       </div>
 
       <Tabs value={statusFilter} onValueChange={setStatusFilter}>
-        <TabsList>
-          <TabsTrigger value="pending">
+        <TabsList className="w-full justify-start rounded-none sm:rounded-none border-x-0 border-t-0 flex-nowrap border-b border-[#e3e3e3] dark:border-border bg-transparent h-12 p-0 px-1 overflow-x-auto overflow-y-hidden">
+          <TabsTrigger className="h-12 rounded-none border-b-[3px] border-transparent px-4 gap-2 text-sm font-medium text-[#444746] dark:text-muted-foreground data-[state=active]:border-[#0b57d0] data-[state=active]:text-[#0b57d0] dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none data-[state=active]:bg-transparent" value="pending">
             Pending
             <span className={`ml-1.5 inline-flex items-center justify-center rounded-full text-[11px] font-semibold min-w-[20px] h-5 px-1.5 ${pending.length > 0 ? 'bg-destructive text-destructive-foreground' : 'bg-primary text-primary-foreground'}`}>{pending.length}</span>
           </TabsTrigger>
-          <TabsTrigger value="paid">
+          <TabsTrigger className="h-12 rounded-none border-b-[3px] border-transparent px-4 gap-2 text-sm font-medium text-[#444746] dark:text-muted-foreground data-[state=active]:border-[#0b57d0] data-[state=active]:text-[#0b57d0] dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none data-[state=active]:bg-transparent" value="paid">
             Paid
             <span className="ml-1.5 inline-flex items-center justify-center rounded-full text-[11px] font-semibold min-w-[20px] h-5 px-1.5 bg-primary text-primary-foreground">{paid.length}</span>
           </TabsTrigger>
-          <TabsTrigger value="all">
+          <TabsTrigger className="h-12 rounded-none border-b-[3px] border-transparent px-4 gap-2 text-sm font-medium text-[#444746] dark:text-muted-foreground data-[state=active]:border-[#0b57d0] data-[state=active]:text-[#0b57d0] dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none data-[state=active]:bg-transparent" value="all">
             All
             <span className="ml-1.5 inline-flex items-center justify-center rounded-full text-[11px] font-semibold min-w-[20px] h-5 px-1.5 bg-primary text-primary-foreground">{invoices.length}</span>
           </TabsTrigger>
@@ -197,13 +197,13 @@ const Invoices = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-[15px]">
               <thead><tr className={TABLE_HEAD_ROW}>
-                <th className="text-left p-3 font-medium text-muted-foreground">Invoice #</th>
-                <th className="text-left p-3 font-medium text-muted-foreground">Broker</th>
-                <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Company</th>
-                <th className="text-right p-3 font-medium text-muted-foreground">Amount</th>
-                <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
-                <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Date</th>
-                <th className="text-right p-3 font-medium text-muted-foreground">Actions</th>
+                <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Invoice #</th>
+                <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Broker</th>
+                <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground hidden md:table-cell">Company</th>
+                <th className="text-right px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Amount</th>
+                <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Status</th>
+                <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground hidden lg:table-cell">Date</th>
+                <th className="text-right px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Actions</th>
               </tr></thead>
               <tbody>
                 {filtered.length === 0 && !loading && (
@@ -269,9 +269,9 @@ const Invoices = () => {
 
       {/* POD Viewer Dialog */}
       <Dialog open={!!podViewLoadId} onOpenChange={() => setPodViewLoadId(null)}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto rounded-[28px] border-0 bg-[#f8fafd] dark:bg-background [&_label]:text-xs [&_label]:font-medium [&_label]:text-[#444746] dark:[&_label]:text-muted-foreground [&_input]:rounded-lg [&_input]:shadow-none [&_input]:bg-white dark:[&_input]:bg-card [&_input]:border-[#c4c7c5] dark:[&_input]:border-border [&_input:focus-visible]:ring-1 [&_input:focus-visible]:ring-[#0b57d0] [&_input:focus-visible]:border-[#0b57d0] [&_button[role=combobox]]:rounded-lg [&_button[role=combobox]]:shadow-none [&_button[role=combobox]]:bg-white dark:[&_button[role=combobox]]:bg-card [&_button[role=combobox]]:border-[#c4c7c5] dark:[&_button[role=combobox]]:border-border [&_textarea]:rounded-lg [&_textarea]:shadow-none [&_textarea]:bg-white dark:[&_textarea]:bg-card [&_textarea]:border-[#c4c7c5]">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+            <DialogTitle className="flex items-center gap-2 text-[22px] leading-7 font-normal text-[#1f1f1f] dark:text-foreground">
               <Image className="h-5 w-5" /> Proof of Delivery (POD)
             </DialogTitle>
           </DialogHeader>
@@ -315,9 +315,9 @@ const Invoices = () => {
 
       {/* Edit Dialog */}
       <Dialog open={!!editInvoice} onOpenChange={() => setEditInvoice(null)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md rounded-[28px] border-0 bg-[#f8fafd] dark:bg-background [&_label]:text-xs [&_label]:font-medium [&_label]:text-[#444746] dark:[&_label]:text-muted-foreground [&_input]:rounded-lg [&_input]:shadow-none [&_input]:bg-white dark:[&_input]:bg-card [&_input]:border-[#c4c7c5] dark:[&_input]:border-border [&_input:focus-visible]:ring-1 [&_input:focus-visible]:ring-[#0b57d0] [&_input:focus-visible]:border-[#0b57d0] [&_button[role=combobox]]:rounded-lg [&_button[role=combobox]]:shadow-none [&_button[role=combobox]]:bg-white dark:[&_button[role=combobox]]:bg-card [&_button[role=combobox]]:border-[#c4c7c5] dark:[&_button[role=combobox]]:border-border [&_textarea]:rounded-lg [&_textarea]:shadow-none [&_textarea]:bg-white dark:[&_textarea]:bg-card [&_textarea]:border-[#c4c7c5]">
           <DialogHeader>
-            <DialogTitle>Editar Invoice</DialogTitle>
+            <DialogTitle className="text-[22px] leading-7 font-normal text-[#1f1f1f] dark:text-foreground">Editar Invoice</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-2">
             <div><Label>Invoice #</Label><Input value={editForm.invoice_number} onChange={e => setEditForm(f => ({ ...f, invoice_number: e.target.value }))} /></div>
@@ -326,17 +326,17 @@ const Invoices = () => {
             <div><Label>Notas</Label><Input value={editForm.notes} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))} /></div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditInvoice(null)}>Cancelar</Button>
-            <Button onClick={handleSaveEdit}>Guardar</Button>
+            <Button className="h-10 rounded-full px-5 text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe] dark:text-blue-300 font-medium" variant="ghost" onClick={() => setEditInvoice(null)}>Cancelar</Button>
+            <Button className="h-10 rounded-full px-6 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium" onClick={handleSaveEdit}>Guardar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Email Dialog */}
       <Dialog open={!!emailInvoice} onOpenChange={() => setEmailInvoice(null)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md rounded-[28px] border-0 bg-[#f8fafd] dark:bg-background [&_label]:text-xs [&_label]:font-medium [&_label]:text-[#444746] dark:[&_label]:text-muted-foreground [&_input]:rounded-lg [&_input]:shadow-none [&_input]:bg-white dark:[&_input]:bg-card [&_input]:border-[#c4c7c5] dark:[&_input]:border-border [&_input:focus-visible]:ring-1 [&_input:focus-visible]:ring-[#0b57d0] [&_input:focus-visible]:border-[#0b57d0] [&_button[role=combobox]]:rounded-lg [&_button[role=combobox]]:shadow-none [&_button[role=combobox]]:bg-white dark:[&_button[role=combobox]]:bg-card [&_button[role=combobox]]:border-[#c4c7c5] dark:[&_button[role=combobox]]:border-border [&_textarea]:rounded-lg [&_textarea]:shadow-none [&_textarea]:bg-white dark:[&_textarea]:bg-card [&_textarea]:border-[#c4c7c5]">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+            <DialogTitle className="flex items-center gap-2 text-[22px] leading-7 font-normal text-[#1f1f1f] dark:text-foreground">
               <Mail className="h-5 w-5" /> Enviar Factura por Email
             </DialogTitle>
           </DialogHeader>
@@ -357,8 +357,8 @@ const Invoices = () => {
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEmailInvoice(null)} disabled={sendingEmail}>Cancelar</Button>
-            <Button onClick={handleSendEmail} disabled={sendingEmail || !brokerEmail}>
+            <Button className="h-10 rounded-full px-5 text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe] dark:text-blue-300 font-medium" variant="ghost" onClick={() => setEmailInvoice(null)} disabled={sendingEmail}>Cancelar</Button>
+            <Button className="h-10 rounded-full px-6 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium" onClick={handleSendEmail} disabled={sendingEmail || !brokerEmail}>
               {sendingEmail ? <><Loader2 className="h-4 w-4 animate-spin mr-1" /> Enviando...</> : <><Send className="h-4 w-4 mr-1" /> Enviar</>}
             </Button>
           </DialogFooter>

@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { getLoadRoutes } from '@/lib/loadRoute';
 import { StatTiles, PILL_INPUT } from '@/components/StatTiles';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DollarSign, TrendingUp, MapPin } from 'lucide-react';
+import { DollarSign, TrendingUp, MapPin, Route } from 'lucide-react';
 import {
   startOfWeek, endOfWeek, subWeeks,
   startOfMonth, endOfMonth, subMonths, format
@@ -301,8 +301,8 @@ const DriverRouteHistory = () => {
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
-          <h1 className="page-header">Driver Route History</h1>
-          <p className="page-description">Loads, miles and revenue per driver on the map</p>
+          <h1 className="page-header flex items-center gap-3"><span className="page-icon"><Route className="h-5 w-5" /></span>Driver Route History</h1>
+          <p className="page-description pl-[52px]">Loads, miles and revenue per driver on the map</p>
         </div>
         <div className="flex gap-2">
           <Select value={selectedDriverId} onValueChange={setSelectedDriverId}>
@@ -330,9 +330,9 @@ const DriverRouteHistory = () => {
 
       {selectedDriverId && (
         <StatTiles tiles={[
-          { label: 'Total Revenue', value: `$${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, hint: `${loads.length} loads`, icon: DollarSign, tint: 'bg-emerald-100 text-emerald-700' },
-          { label: 'Total Loaded Miles', value: totalMiles.toLocaleString(), hint: 'miles', icon: MapPin, tint: 'bg-sky-100 text-sky-700' },
-          { label: 'RPM', value: `$${rpm.toFixed(2)}`, hint: 'Revenue Per Mile', icon: TrendingUp, tint: 'bg-violet-100 text-violet-700' },
+          { label: 'Total Revenue', value: `$${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, hint: `${loads.length} loads`, icon: DollarSign, tint: 'bg-[#c4eed0] text-[#072711] dark:bg-emerald-900/40 dark:text-emerald-200' },
+          { label: 'Total Loaded Miles', value: totalMiles.toLocaleString(), hint: 'miles', icon: MapPin, tint: 'bg-[#d3e3fd] text-[#041e49] dark:bg-blue-900/40 dark:text-blue-200' },
+          { label: 'RPM', value: `$${rpm.toFixed(2)}`, hint: 'Revenue Per Mile', icon: TrendingUp, tint: 'bg-[#f3e8fd] text-[#4a148c] dark:bg-violet-900/40 dark:text-violet-200' },
         ]} />
       )}
 

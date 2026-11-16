@@ -299,15 +299,15 @@ export default function Performance() {
   const dateRangeLabel = `${format(start, 'MMM d')} - ${format(end, 'MMM d, yyyy')}`;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="page-header flex items-center gap-2">
-            <Trophy className="h-7 w-7 text-[hsl(38,92%,50%)]" />
+          <h1 className="page-header flex items-center gap-3">
+            <span className="page-icon"><Trophy className="h-5 w-5" /></span>
             Performance
           </h1>
-          <p className="page-description">Profit & Loss Analysis by Truck — Company Drivers</p>
+          <p className="page-description pl-[52px]">Profit & Loss Analysis by Truck — Company Drivers</p>
         </div>
         <div className="flex items-center gap-3">
           <span className="text-sm text-muted-foreground">{dateRangeLabel}</span>

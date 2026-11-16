@@ -9,7 +9,7 @@ import { useTrucks } from '@/hooks/useTrucks';
 import { usePayments } from '@/hooks/usePayments';
 import { useDispatchers } from '@/hooks/useDispatchers';
 import { useExpenses } from '@/hooks/useExpenses';
-import { Package, Truck, DollarSign, AlertTriangle, TrendingUp, Users, Headphones } from 'lucide-react';
+import { Package, Truck, DollarSign, AlertTriangle, TrendingUp, Users, Headphones, LayoutDashboard } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { DashboardFilters } from '@/components/dashboard/DashboardFilters';
@@ -119,10 +119,10 @@ const AdminDashboard = () => {
     : new Set(drivers.filter(d => d.service_type === serviceTypeFilter).map(d => d.id));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <div>
-        <h1 className="page-header">Dashboard</h1>
-        <p className="page-description">General overview of the transportation system</p>
+        <h1 className="page-header flex items-center gap-3"><span className="page-icon"><LayoutDashboard className="h-5 w-5" /></span>Dashboard</h1>
+        <p className="page-description pl-[52px]">General overview of the transportation system</p>
       </div>
       <DashboardFilters
         year={year} month={month} week={week}
@@ -134,11 +134,11 @@ const AdminDashboard = () => {
 
       {/* Los "+12%" y "+8%" que había aquí eran fijos, no salían de ningún cálculo: se quitaron */}
       <StatTiles tiles={[
-        { label: 'Active Loads', value: activeLoads, icon: Package, tint: 'bg-sky-100 text-sky-700' },
-        { label: 'Available Trucks', value: `${availableTrucks}/${trucks.length}`, icon: Truck, tint: 'bg-emerald-100 text-emerald-700' },
-        { label: 'Revenue', value: `$${totalRevenue.toLocaleString()}`, hint: periodLabel, icon: DollarSign, tint: 'bg-amber-100 text-amber-700' },
-        { label: 'Month-to-date', value: `$${monthToDateRevenue.toLocaleString()}`, icon: TrendingUp, tint: 'bg-blue-100 text-blue-700' },
-        { label: 'Pending Payments', value: `$${pendingPayments.toLocaleString()}`, hint: `${payments.filter(p => p.status === 'pending').length} payments`, icon: AlertTriangle, tint: 'bg-red-100 text-red-700' },
+        { label: 'Active Loads', value: activeLoads, icon: Package, tint: 'bg-[#d3e3fd] text-[#041e49] dark:bg-blue-900/40 dark:text-blue-200' },
+        { label: 'Available Trucks', value: `${availableTrucks}/${trucks.length}`, icon: Truck, tint: 'bg-[#c4eed0] text-[#072711] dark:bg-emerald-900/40 dark:text-emerald-200' },
+        { label: 'Revenue', value: `$${totalRevenue.toLocaleString()}`, hint: periodLabel, icon: DollarSign, tint: 'bg-[#feefc3] text-[#3d2a00] dark:bg-amber-900/40 dark:text-amber-200' },
+        { label: 'Month-to-date', value: `$${monthToDateRevenue.toLocaleString()}`, icon: TrendingUp, tint: 'bg-[#c2e7ff] text-[#001d35] dark:bg-sky-900/40 dark:text-sky-200' },
+        { label: 'Pending Payments', value: `$${pendingPayments.toLocaleString()}`, hint: `${payments.filter(p => p.status === 'pending').length} payments`, icon: AlertTriangle, tint: 'bg-[#f9dedc] text-[#410e0b] dark:bg-red-900/40 dark:text-red-200' },
       ]} />
 
       <div className="space-y-2">
@@ -281,10 +281,10 @@ const DispatcherDashboard = () => {
   const driverOptions = drivers.map(d => ({ id: d.id, name: d.name }));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <div>
-        <h1 className="page-header">My Dashboard</h1>
-        <p className="page-description">Overview of your loads, drivers, and commissions</p>
+        <h1 className="page-header flex items-center gap-3"><span className="page-icon"><LayoutDashboard className="h-5 w-5" /></span>My Dashboard</h1>
+        <p className="page-description pl-[52px]">Overview of your loads, drivers, and commissions</p>
       </div>
 
       <DashboardFilters
@@ -297,10 +297,10 @@ const DispatcherDashboard = () => {
       />
 
       <StatTiles tiles={[
-        { label: 'Active Loads', value: activeLoads, icon: Package, tint: 'bg-sky-100 text-sky-700' },
-        { label: 'My Drivers', value: drivers.length, icon: Users, tint: 'bg-blue-100 text-blue-700' },
-        { label: 'Revenue', value: `$${totalRevenue.toLocaleString()}`, icon: DollarSign, tint: 'bg-emerald-100 text-emerald-700' },
-        { label: 'Delivered', value: deliveredLoads, icon: TrendingUp, tint: 'bg-amber-100 text-amber-700' },
+        { label: 'Active Loads', value: activeLoads, icon: Package, tint: 'bg-[#d3e3fd] text-[#041e49] dark:bg-blue-900/40 dark:text-blue-200' },
+        { label: 'My Drivers', value: drivers.length, icon: Users, tint: 'bg-[#c2e7ff] text-[#001d35] dark:bg-sky-900/40 dark:text-sky-200' },
+        { label: 'Revenue', value: `$${totalRevenue.toLocaleString()}`, icon: DollarSign, tint: 'bg-[#c4eed0] text-[#072711] dark:bg-emerald-900/40 dark:text-emerald-200' },
+        { label: 'Delivered', value: deliveredLoads, icon: TrendingUp, tint: 'bg-[#feefc3] text-[#3d2a00] dark:bg-amber-900/40 dark:text-amber-200' },
       ]} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -319,11 +319,11 @@ const DispatcherDashboard = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead><tr className="border-b bg-muted/50">
-                <th className="text-left p-3 font-medium text-muted-foreground">Reference</th>
-                <th className="text-left p-3 font-medium text-muted-foreground">Route</th>
-                <th className="text-left p-3 font-medium text-muted-foreground">Driver</th>
-                <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
-                <th className="text-right p-3 font-medium text-muted-foreground">Rate</th>
+                <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Reference</th>
+                <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Route</th>
+                <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Driver</th>
+                <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Status</th>
+                <th className="text-right px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Rate</th>
               </tr></thead>
               <tbody>
                 {loads.slice(0, 10).map(load => {
