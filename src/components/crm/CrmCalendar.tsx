@@ -69,13 +69,16 @@ export function CrmCalendar({ contacts, onOpen }: { contacts: CalendarContact[];
   const last = dayKey(month.y, month.m, daysInMonth);
 
   const { data: meetings = [] } = useQuery({
-    queryKey: ['crm_calendar_meetings', first],
+    // Mismo prefijo que la consulta de reuniones del CRM: al cancelar se refrescan las dos
+    queryKey: ['crm_meetings', 'calendar', first],
     queryFn: async () => {
       const { data } = await supabase.from('meeting_requests' as any)
         .select('id, driver_name, phone, meeting_date, meeting_time, truck_type, status')
         .gte('meeting_date', first).lte('meeting_date', last).neq('status', 'cancelled');
       return (data as any[]) ?? [];
     },
+    // Las que el prospecto agenda o cancela desde su email también aparecen sin recargar
+    refetchInterval: 60_000,
   });
 
   const byDay = useMemo(() => {
