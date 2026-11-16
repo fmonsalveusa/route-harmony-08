@@ -64,10 +64,18 @@ function parseLabel(s: string): number | null {
 }
 const timeToMin = (t: string) => { const [h, m] = String(t).split(":").map(Number); return h * 60 + (m || 0); };
 
+/** "Lunes, 16 de Noviembre de 2026" (día y mes con mayúscula) */
 function prettyDate(date: string, lang: string): string {
-  return new Date(`${date}T12:00:00Z`).toLocaleDateString(lang === "en" ? "en-US" : "es-US", {
+  const txt = new Date(`${date}T12:00:00Z`).toLocaleDateString(lang === "en" ? "en-US" : "es-US", {
     weekday: "long", month: "long", day: "numeric", year: "numeric", timeZone: "UTC",
   });
+  return txt.replace(/\p{L}{3,}/gu, (w) => w[0].toUpperCase() + w.slice(1));
+}
+
+/** 19802988786 → "(980) 298-8786" */
+function prettyPhone(phone: string): string {
+  const d = String(phone ?? "").replace(/\D/g, "").slice(-10);
+  return d.length === 10 ? `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}` : String(phone ?? "");
 }
 
 // ─── Configuración ───
@@ -256,9 +264,11 @@ function emailHtml(title: string, intro: string, m: any, lang: string, extra = "
     <div style="border:1px solid #e5e7eb;border-top:0;border-radius:0 0 10px 10px;padding:20px">
       <p style="margin:0 0 14px;color:#111827">${intro}</p>
       <table style="width:100%;border-collapse:collapse;background:#f9fafb;border-radius:8px">
-        ${row(en ? "Date" : "Fecha", prettyDate(m.meeting_date, lang))}
-        ${row(en ? "Time" : "Hora", `${m.meeting_time} ${en ? "Eastern Time (ET)" : "hora del Este (ET)"}`)}
-        ${row(en ? "Type" : "Tipo", en ? `Phone call to ${m.phone}` : `Llamada telefónica al ${m.phone}`)}
+        ${row(en ? "NAME" : "NOMBRE", m.driver_name)}
+        ${row(en ? "DATE" : "FECHA", prettyDate(m.meeting_date, lang))}
+        ${row(en ? "TIME" : "HORA", `${m.meeting_time} ${en ? "Eastern Time (ET)" : "hora del Este (ET)"}`)}
+        ${row(en ? "PHONE" : "TELÉFONO", prettyPhone(m.phone))}
+        ${row(en ? "SERVICE TYPE" : "TIPO DE SERVICIO", m.service_interest || "—")}
       </table>
       ${extra}
       <p style="margin:18px 0 0"><a href="${manage}" style="display:inline-block;background:#266aad;color:#fff;text-decoration:none;padding:10px 16px;border-radius:8px">${en ? "Reschedule or cancel" : "Reagendar o cancelar"}</a></p>
