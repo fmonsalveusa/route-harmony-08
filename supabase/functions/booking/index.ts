@@ -302,7 +302,7 @@ async function sendInvite(m: any, cfg: Settings, kind: "new" | "update" | "cance
     ? (en ? "Cancelled: call with Dispatch Up" : "Cancelada: llamada con Dispatch Up")
     : kind === "update"
     ? (en ? "Updated: call with Dispatch Up" : "Cambio de horario: llamada con Dispatch Up")
-    : (en ? "Confirmed: call with Dispatch Up" : "Confirmada: llamada con Dispatch Up");
+    : (en ? "Meeting Confirmed with 58 Dispatch Service" : "Reunión Confirmada con 58 Dispatch Service");
   const title = kind === "cancel" ? (en ? "Call cancelled" : "Llamada cancelada")
     : kind === "update" ? (en ? "New time confirmed" : "Nuevo horario confirmado")
     : (en ? "Your call is booked" : "Tu llamada está agendada");
