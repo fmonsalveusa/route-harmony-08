@@ -80,7 +80,7 @@ const SERVICES = ['OWNER OPERATOR', 'DISPATCH SERVICE', 'COMPANY DRIVER'];
 const VEHICLES = ['BOXTRUCK', 'HOTSHOT'];
 
 /** Pasos de la reunión; los que tienen `send` mandan su texto al grupo del cliente */
-const MEETING_STEPS: { id: string; label: string; send?: boolean }[] = [
+const MEETING_STEPS: { id: string; label: string; send?: boolean; /** sin SÍ/NO, solo la respuesta escrita */ textOnly?: boolean; placeholder?: string }[] = [
   { id: 'referido', label: 'Referido' },
   { id: 'service_info', label: 'Información del Servicio', send: true },
   { id: 'own_mc', label: 'MC# Propio' },
@@ -90,6 +90,9 @@ const MEETING_STEPS: { id: string; label: string; send?: boolean }[] = [
   { id: 'eld_own_mc', label: 'Libro Electrónico MC# Propio', send: true },
   { id: 'equip_hotshot', label: 'Equipos para HOTSHOT', send: true },
   { id: 'equip_boxtruck', label: 'Equipos para BOXTRUCK', send: true },
+  { id: 'cargo_insurance', label: '¿Tiene seguro de carga?' },
+  { id: 'start_date', label: '¿Cuándo estima comenzar?', textOnly: true, placeholder: 'Ej: la próxima semana, 1 de diciembre...' },
+  { id: 'otr', label: '¿Tiene pensado viajar OTR?', placeholder: '¿Cuánto tiempo?' },
 ];
 
 /** "Juan Perez HS LB": HS = hotshot, 26BT = box truck, LB = referido */
@@ -182,10 +185,11 @@ function MeetingSection({ contact, name, vehicle }: { contact: CrmContact; name:
 
   // Preguntas respondidas (las de antes, marcadas con el check, cuentan como SÍ)
   const answerOf = (id: string) => answers[id]?.a ?? (checks[id] ? 'yes' : undefined);
-  const done = MEETING_STEPS.filter(s => answerOf(s.id)).length;
+  const answered = (st: typeof MEETING_STEPS[number]) => (st.textOnly ? !!answers[st.id]?.c : !!answerOf(st.id));
+  const done = MEETING_STEPS.filter(answered).length;
 
   return (
-    <div className={G_CARD + ' space-y-3'}>
+    <div className={G_CARD + ' space-y-2'}>
       <div className="flex items-center gap-3">
         <p className="text-base font-medium text-[#1f1f1f] dark:text-foreground flex-1">Primera reunión</p>
         <span className="text-xs font-medium text-[#444746] dark:text-muted-foreground">{done} de {MEETING_STEPS.length}</span>
@@ -227,11 +231,11 @@ function MeetingSection({ contact, name, vehicle }: { contact: CrmContact; name:
         {MEETING_STEPS.map(step => {
           const a = answerOf(step.id);
           return (
-            <div key={step.id} className="py-2 space-y-1.5">
+            <div key={step.id} className="py-1.5 space-y-1">
               <div className="flex items-center gap-2">
                 <span className="flex-1 text-sm font-medium text-[#1f1f1f] dark:text-foreground">{step.label}</span>
                 {/* SÍ / NO */}
-                <div className="inline-flex rounded-full border border-[#c4c7c5] dark:border-border overflow-hidden shrink-0">
+                {!step.textOnly && <div className="inline-flex rounded-full border border-[#c4c7c5] dark:border-border overflow-hidden shrink-0">
                   {(['yes', 'no'] as const).map((v, k) => (
                     <button key={v} type="button" onClick={() => saveAnswer(step.id, { a: v })}
                       className={cn('h-7 px-3 text-xs font-medium inline-flex items-center gap-1 transition-colors', k > 0 && 'border-l border-[#c4c7c5] dark:border-border',
@@ -241,7 +245,7 @@ function MeetingSection({ contact, name, vehicle }: { contact: CrmContact; name:
                       {a === v && <Check className="h-3.5 w-3.5" />} {v === 'yes' ? 'SÍ' : 'NO'}
                     </button>
                   ))}
-                </div>
+                </div>}
                 {step.send && (
                   <Button
                     size="sm" variant="outline"
@@ -264,10 +268,10 @@ function MeetingSection({ contact, name, vehicle }: { contact: CrmContact; name:
                   onBlur={saveReferredBy}
                   onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
                   placeholder="¿Quién lo refirió?"
-                  className="h-8 text-sm rounded-lg shadow-none bg-[#f8fafd] dark:bg-muted/40 border-[#e3e3e3] dark:border-border"
+                  className="h-7 text-sm rounded-lg shadow-none bg-[#f8fafd] dark:bg-muted/40 border-[#e3e3e3] dark:border-border"
                 />
               ) : (
-                <CommentInput value={answers[step.id]?.c ?? ''} onSave={c => saveAnswer(step.id, { c })} />
+                <CommentInput value={answers[step.id]?.c ?? ''} placeholder={step.placeholder} onSave={c => saveAnswer(step.id, { c })} />
               )}
               {sent[step.id] && <p className="text-[11px] text-[#188038] dark:text-emerald-400">Enviado al grupo {fmt(sent[step.id])}</p>}
             </div>
@@ -279,7 +283,7 @@ function MeetingSection({ contact, name, vehicle }: { contact: CrmContact; name:
 }
 
 /** Comentario de una pregunta: se guarda al salir del campo o con Enter */
-function CommentInput({ value, onSave }: { value: string; onSave: (v: string) => void }) {
+function CommentInput({ value, onSave, placeholder }: { value: string; onSave: (v: string) => void; placeholder?: string }) {
   const [v, setV] = useState(value);
   useEffect(() => setV(value), [value]);
   return (
@@ -288,8 +292,8 @@ function CommentInput({ value, onSave }: { value: string; onSave: (v: string) =>
       onChange={e => setV(e.target.value)}
       onBlur={() => { if (v.trim() !== value) onSave(v.trim()); }}
       onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-      placeholder="Comentario..."
-      className="h-8 text-sm rounded-lg shadow-none bg-[#f8fafd] dark:bg-muted/40 border-[#e3e3e3] dark:border-border"
+      placeholder={placeholder ?? 'Comentario...'}
+      className="h-7 text-sm rounded-lg shadow-none bg-[#f8fafd] dark:bg-muted/40 border-[#e3e3e3] dark:border-border"
     />
   );
 }
@@ -471,15 +475,15 @@ const waLink = (phone: string | null) => {
 };
 
 // ─── Estilo de la ficha del contacto (al estilo de las páginas de Google / Material 3) ───
-const G_CARD = 'rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border p-5';
+const G_CARD = 'rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border px-4 py-3';
 const G_LABEL = 'text-xs font-medium text-[#444746] dark:text-muted-foreground';
-const INPUT = 'h-10 text-sm rounded-lg shadow-none border-[#c4c7c5] dark:border-border bg-transparent focus-visible:ring-1 focus-visible:ring-[#0b57d0] focus-visible:border-[#0b57d0]';
+const INPUT = 'h-9 text-sm rounded-lg shadow-none border-[#c4c7c5] dark:border-border bg-transparent focus-visible:ring-1 focus-visible:ring-[#0b57d0] focus-visible:border-[#0b57d0]';
 
 /** Tarjeta de sección de la ficha del contacto */
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className={G_CARD}>
-      <p className="text-base font-medium text-[#1f1f1f] dark:text-foreground mb-4">{title}</p>
+      <p className="text-base font-medium text-[#1f1f1f] dark:text-foreground mb-2">{title}</p>
       {children}
     </div>
   );
@@ -780,7 +784,7 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
 
   const link = waLink(form.phone);
   const field = (key: 'name' | 'phone' | 'email' | 'city', label: string, type = 'text', span = false) => (
-    <div className={cn('space-y-1.5', span && 'col-span-2')}>
+    <div className={cn('space-y-1', span && 'col-span-2')}>
       <Label className={G_LABEL}>{label}</Label>
       <Input type={type} value={form[key]} onChange={e => edit({ [key]: e.target.value })} className={INPUT} />
     </div>
@@ -874,15 +878,15 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
       </div>
 
       {/* ── Cuerpo ── */}
-      <div className="grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] gap-4 p-4 sm:p-6 overflow-y-auto md:overflow-hidden flex-1 min-h-0">
-        <div className="space-y-4 md:overflow-y-auto md:pr-1">
+      <div className="grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] gap-3 p-3 sm:p-4 overflow-y-auto md:overflow-hidden flex-1 min-h-0">
+        <div className="space-y-3 md:overflow-y-auto md:pr-1">
           <Card title="Datos de contacto">
-            <div className="grid grid-cols-2 gap-x-3 gap-y-4">
+            <div className="grid grid-cols-2 gap-x-3 gap-y-2">
               {field('name', 'Nombre', 'text', true)}
               {field('phone', 'Teléfono')}
               {field('city', 'Ciudad')}
               {field('email', 'Email', 'email', true)}
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 <Label className={G_LABEL}>Vehículo</Label>
                 <Select value={form.vehicle || undefined} onValueChange={v => edit({ vehicle: v })}>
                   <SelectTrigger className={INPUT}><SelectValue placeholder="Seleccionar" /></SelectTrigger>
@@ -892,7 +896,7 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 <Label className={G_LABEL}>Servicio</Label>
                 <Select value={form.service || undefined} onValueChange={v => edit({ service: v })}>
                   <SelectTrigger className={INPUT}><SelectValue placeholder="Seleccionar" /></SelectTrigger>
@@ -905,7 +909,7 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
             </div>
           </Card>
           <Card title="Próxima acción">
-            <div className="inline-flex rounded-full border border-[#c4c7c5] dark:border-border overflow-hidden mb-4">
+            <div className="inline-flex rounded-full border border-[#c4c7c5] dark:border-border overflow-hidden mb-2">
               {([['reminder', 'Recordarme a mí', Bell], ['client_message', 'Mensaje al cliente', Send]] as const).map(([v, l, I], i) => (
                 <button key={v} type="button" onClick={() => edit({ next_action_type: v })}
                   className={cn('h-9 px-4 text-sm font-medium inline-flex items-center gap-1.5 transition-colors', i > 0 && 'border-l border-[#c4c7c5] dark:border-border',
@@ -914,7 +918,7 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
                 </button>
               ))}
             </div>
-            <div className="space-y-3">
+            <div className="space-y-2">
               <Input
                 placeholder={form.next_action_type === 'client_message' ? 'Nota interna (opcional)' : 'Ej: Llamar para enviar el link de onboarding'}
                 value={form.next_action}
@@ -944,7 +948,7 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
           </p>
         </div>
 
-        <div className="space-y-4 md:overflow-y-auto md:pr-1">
+        <div className="space-y-3 md:overflow-y-auto md:pr-1">
           <MeetingSection contact={contact} name={form.name} vehicle={form.vehicle} />
 
           <div className="rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border overflow-hidden">
