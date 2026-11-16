@@ -530,7 +530,7 @@ const Loads = () => {
                 <th className={cn(G_TH, 'text-right')}>Rate</th>
                 <th className={cn(G_TH, 'hidden lg:table-cell')}>Dispatcher</th>
                 <th className={cn(G_TH)}>Status</th>
-                <th className={cn(G_TH, 'hidden lg:table-cell')}>Delivered</th>
+                <th className={cn(G_TH, activeTab === 'delivered' ? 'hidden lg:table-cell' : 'hidden 2xl:table-cell')}>Delivered</th>
                 <th className={cn(G_TH, 'hidden lg:table-cell')}>Factoring</th>
                 <th className={cn(G_TH, 'text-right')}>Acciones</th>
               </tr></thead>
@@ -666,7 +666,7 @@ const Loads = () => {
                               return <div className="text-xs font-medium text-muted-foreground">${rpm.toFixed(2)}/mi</div>;
                             })()}
                           </td>
-                          <td className="px-3 py-2 hidden lg:table-cell whitespace-nowrap">{dispatcher?.name || '—'}</td>
+                          <td className="px-3 py-2 hidden lg:table-cell"><div className="whitespace-nowrap max-w-[120px] truncate" title={dispatcher?.name}>{dispatcher?.name || '—'}</div></td>
                           <td className="px-3 py-2" onClick={e => e.stopPropagation()}>
                             <Select value={load.status} onValueChange={async (val) => {
                               const prevStatus = load.status;
@@ -686,7 +686,7 @@ const Loads = () => {
                                 await deletePaymentsForLoad(load.id);
                               }
                             }}>
-                              <SelectTrigger className="h-8 w-[155px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:hidden bg-transparent">
+                              <SelectTrigger className="h-8 w-[136px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:hidden bg-transparent">
                                 <span className="flex items-center justify-between w-full gap-1">
                                   <StatusBadge status={load.status} className="text-[11px] px-3 py-1.5" />
                                   <span className="inline-flex h-5 w-5 items-center justify-center rounded border border-border bg-muted/40 text-muted-foreground ml-auto">
@@ -713,7 +713,7 @@ const Loads = () => {
                               </SelectContent>
                             </Select>
                           </td>
-                          <td className="px-3 py-2 hidden lg:table-cell text-muted-foreground">
+                          <td className={cn('px-3 py-2 text-muted-foreground whitespace-nowrap', activeTab === 'delivered' ? 'hidden lg:table-cell' : 'hidden 2xl:table-cell')}>
                             {load.status === 'delivered' ? formatDate(load.delivery_date) : '—'}
                           </td>
                           <td className="px-3 py-2 hidden lg:table-cell" onClick={e => e.stopPropagation()}>
@@ -730,7 +730,7 @@ const Loads = () => {
                                   await deletePaymentsForLoad(load.id);
                                 }
                               }}>
-                              <SelectTrigger className="h-8 w-[145px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:hidden bg-transparent">
+                              <SelectTrigger className="h-8 w-[128px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:hidden bg-transparent">
                                 <span className="flex items-center justify-between w-full gap-1">
                                   {load.factoring ? <StatusBadge status={`${load.factoring}_factoring`} className="text-[11px] px-3 py-1.5" /> : <span className="text-muted-foreground">—</span>}
                                   <span className="inline-flex h-5 w-5 items-center justify-center rounded border border-border bg-muted/40 text-muted-foreground ml-auto">
