@@ -257,21 +257,21 @@ const Drivers = () => {
     const totalPages = Math.max(1, Math.ceil(driversList.length / pageSize));
     const paged = driversList.slice((page - 1) * pageSize, page * pageSize);
     return (
-    <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+    <div className="rounded-3xl border border-[#e3e3e3] dark:border-border bg-white dark:bg-card overflow-hidden mt-3">
       <div className="p-0">
         <div className="overflow-x-auto">
-          <table className="w-full text-[15px]">
+          <table className="w-full text-sm">
             <thead>
-              <tr className="border-b bg-muted/50">
+              <tr className="border-b border-[#e3e3e3] dark:border-border bg-[#f8fafd] dark:bg-muted/30">
                 <th className="w-8 p-3"></th>
-                <th className="text-left p-3 font-medium text-muted-foreground">Driver</th>
+                <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Driver</th>
                 <th className="w-[60px] p-3"></th>
-                <th className="text-left p-3 font-medium text-muted-foreground">Phone</th>
-                <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Truck</th>
-                <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Servicio</th>
-                <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Dispatcher</th>
-                <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
-                <th className="text-right p-3 font-medium text-muted-foreground">Actions</th>
+                <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Phone</th>
+                <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground hidden md:table-cell">Truck</th>
+                <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground hidden lg:table-cell">Servicio</th>
+                <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground hidden lg:table-cell">Dispatcher</th>
+                <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Status</th>
+                <th className="text-right px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -282,30 +282,30 @@ const Drivers = () => {
                 const dispatcher = dispatchers.find(d => d.id === driver.dispatcher_id);
 
                 const statusBorder = driver.status === 'available'
-                  ? 'border-l-4 border-l-green-600'
+                  ? 'border-l-4 border-l-[#188038]'
                   : driver.status === 'inactive'
-                  ? 'border-l-4 border-l-red-600'
-                  : 'border-l-4 border-l-yellow-500'; // pending
+                  ? 'border-l-4 border-l-[#d93025]'
+                  : 'border-l-4 border-l-[#f9ab00]'; // pending
 
                 const avatarBg = driver.status === 'available'
-                  ? 'bg-[#639922]'
+                  ? 'bg-[#188038]'
                   : driver.status === 'inactive'
-                  ? 'bg-[#DC2626]'
-                  : 'bg-[#EF9F27]';
+                  ? 'bg-[#d93025]'
+                  : 'bg-[#e37400]';
 
                 return (
                   <>{/* Fragment needed for expand row */}
-                    <tr key={driver.id} className={cn("border-b cursor-pointer transition-colors hover:bg-muted/40", statusBorder, isExpanded && "bg-muted/40")} onClick={() => setExpandedId(isExpanded ? null : driver.id)}>
-                      <td className="p-3 text-muted-foreground">
+                    <tr key={driver.id} className={cn("border-b border-[#f0f0f0] dark:border-border cursor-pointer transition-colors hover:bg-[#f8fafd] dark:hover:bg-muted/30", statusBorder, isExpanded && "bg-[#f0f4f9] dark:bg-muted/50 hover:bg-[#f0f4f9]")} onClick={() => setExpandedId(isExpanded ? null : driver.id)}>
+                      <td className="px-3 py-2 text-muted-foreground">
                         {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                       </td>
-                      <td className="p-3">
+                      <td className="px-3 py-2">
                         <div className="flex items-center gap-3">
                           <div className={`h-9 w-9 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0 ${avatarBg}`}>
                             {initials.slice(0, 2).toUpperCase()}
                           </div>
                           <div className="flex flex-col items-start">
-                            <span className="font-semibold flex items-center gap-1.5">
+                            <span className="font-medium text-[#1f1f1f] dark:text-foreground flex items-center gap-1.5 whitespace-nowrap">
                               {driver.name}
                               {activeDriverIds.has(driver.id) && (
                                 <span className="inline-flex items-center gap-1 rounded-md bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700" title="GPS reportando en los últimos 5 minutos">
@@ -333,12 +333,12 @@ const Drivers = () => {
                           </div>
                         </div>
                       </td>
-                      <td className="p-3 pl-0" onClick={e => e.stopPropagation()}>
+                      <td className="px-3 py-2 pl-0" onClick={e => e.stopPropagation()}>
                         <Button variant="ghost" size="sm" className="glass-action-btn tint-blue shadow-[0_2px_4px_rgba(0,0,0,0.25),0_-1px_0_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.15)] active:shadow-[0_1px_2px_rgba(0,0,0,0.2),inset_0_1px_3px_rgba(0,0,0,0.15)] active:translate-y-px transition-all" onClick={() => copyDriverInfo(driver)} title="Copy">
                           <Copy className="h-3 w-3" /> Copy
                         </Button>
                       </td>
-                      <td className="p-3 text-muted-foreground">
+                      <td className="px-3 py-2 text-muted-foreground">
                         <div className="flex items-center gap-1.5">
                           <Phone className="h-3.5 w-3.5" />{formatPhone(driver.phone)}
                           <button
@@ -350,22 +350,22 @@ const Drivers = () => {
                           </button>
                         </div>
                       </td>
-                      <td className="p-3 hidden md:table-cell">
+                      <td className="px-3 py-2 hidden md:table-cell">
                         <div className="flex items-center gap-1.5">
                           <TruckIcon className="h-3.5 w-3.5 text-primary" />
                           <span>{truckLabel || <span className="text-muted-foreground italic">Unassigned</span>}</span>
                         </div>
                       </td>
-                      <td className="p-3 hidden lg:table-cell">
+                      <td className="px-3 py-2 hidden lg:table-cell">
                         <ServiceTypeBadge serviceType={driver.service_type} className="!text-[13px] !px-3 !py-1" />
                       </td>
-                      <td className="p-3 hidden lg:table-cell text-sm">
+                      <td className="px-3 py-2 hidden lg:table-cell text-sm">
                         {dispatcher
                           ? <span className="font-medium">{dispatcher.name}</span>
                           : <span className="text-muted-foreground italic">Unassigned</span>
                         }
                       </td>
-                      <td className="p-3" onClick={e => e.stopPropagation()}>
+                      <td className="px-3 py-2" onClick={e => e.stopPropagation()}>
                         <Select value={driver.status} onValueChange={v => updateDriver(driver.id, { status: v })}>
                           <SelectTrigger className="h-8 w-[155px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:hidden bg-transparent">
                             <span className="flex items-center justify-between w-full gap-1">
@@ -382,22 +382,22 @@ const Drivers = () => {
                           </SelectContent>
                         </Select>
                       </td>
-                      <td className="p-4" onClick={e => e.stopPropagation()}>
+                      <td className="px-3 py-2" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-1">
-                          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1 text-green-600 hover:text-green-700 hover:bg-green-50" onClick={() => setDetailDriver(driver)} title="Detail">
+                          <Button variant="ghost" size="sm" className="h-8 rounded-full px-3 text-xs gap-1 text-[#188038] hover:text-[#188038] hover:bg-[#e6f4ea] font-medium" onClick={() => setDetailDriver(driver)} title="Detail">
                             <Eye className="h-3.5 w-3.5" /> Detail
                           </Button>
                           {!isDispatcher && (
                             <>
-                              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={() => { setEditingDriver(driver); setFormOpen(true); }} title="Edit">
-                                <Pencil className="h-3.5 w-3.5" /> Edit
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe]" onClick={() => { setEditingDriver(driver); setFormOpen(true); }} title="Edit">
+                                <Pencil className="h-4 w-4" />
                               </Button>
                               <CreateAccessButton name={driver.name} email={driver.email} phone={driver.phone} role="driver" />
-                              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground" onClick={() => setTerminationDriver(driver)} title="Termination Letter">
-                                <FileText className="h-3.5 w-3.5" /> Termination
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full text-[#444746] hover:text-[#1f1f1f] hover:bg-[#f0f4f9]" onClick={() => setTerminationDriver(driver)} title="Termination Letter">
+                                <FileText className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1 text-red-500 hover:text-red-600 hover:bg-red-50" onClick={async () => { if (window.confirm(`Delete driver ${driver.name}? This action is permanent.`)) { await deleteDriver(driver.id); } }} title="Delete">
-                                <Trash2 className="h-3.5 w-3.5" /> Delete
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full text-[#b3261e] hover:text-[#b3261e] hover:bg-[#fce8e6]" onClick={async () => { if (window.confirm(`Delete driver ${driver.name}? This action is permanent.`)) { await deleteDriver(driver.id); } }} title="Delete">
+                                <Trash2 className="h-4 w-4" />
                               </Button>
                             </>
                           )}
@@ -419,21 +419,21 @@ const Drivers = () => {
         </div>
 
         {/* Pagination Footer */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border-t">
-          <div className="text-sm text-muted-foreground">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-4 py-2.5 border-t border-[#e3e3e3] dark:border-border">
+          <div className="text-sm text-[#444746] dark:text-muted-foreground">
             {driversList.length} drivers
           </div>
           <div className="flex items-center gap-3 mt-2 sm:mt-0">
             <Select value={String(pageSize)} onValueChange={v => { setPageSize(Number(v)); setPage(1); }}>
-              <SelectTrigger className="w-[80px] h-8 text-xs"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-[100px] h-8 text-xs rounded-lg shadow-none font-medium bg-white dark:bg-card border-[#c4c7c5] dark:border-border text-[#444746] dark:text-muted-foreground"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {PAGE_SIZES.map(s => <SelectItem key={s} value={String(s)}>{s}/page</SelectItem>)}
               </SelectContent>
             </Select>
             <div className="flex items-center gap-1">
-              <Button variant="outline" size="sm" className="h-8" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>Prev</Button>
-              <span className="text-sm px-2">{page}/{totalPages}</span>
-              <Button variant="outline" size="sm" className="h-8" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>Next</Button>
+              <Button variant="ghost" size="sm" className="h-8 rounded-full px-3 text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe] dark:text-blue-300 font-medium" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>Prev</Button>
+              <span className="text-sm px-2 text-[#444746] dark:text-muted-foreground">{page} de {totalPages}</span>
+              <Button variant="ghost" size="sm" className="h-8 rounded-full px-3 text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe] dark:text-blue-300 font-medium" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>Next</Button>
             </div>
           </div>
         </div>
@@ -443,34 +443,39 @@ const Drivers = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
+    <div className="space-y-3">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span className="h-10 w-10 rounded-full bg-[#d3e3fd] dark:bg-blue-900/40 text-[#041e49] dark:text-blue-200 flex items-center justify-center shrink-0">
+            <Users className="h-5 w-5" />
+          </span>
+          <div>
           <div className="flex items-center gap-3">
-            <h1 className="page-header">Drivers</h1>
+            <h1 className="text-[24px] leading-8 font-normal text-[#1f1f1f] dark:text-foreground">Drivers</h1>
             {(() => {
               const pendingCount = drivers.filter(d => d.status === 'pending').length;
               return pendingCount > 0 ? (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-yellow-100 text-yellow-800 text-sm font-semibold border border-yellow-300 animate-fade-in">
-                  <span className="h-2 w-2 rounded-full bg-yellow-500 animate-pulse" />
+                <span className="inline-flex items-center gap-1.5 px-3 h-7 rounded-full bg-[#feefc3] text-[#3d2a00] text-xs font-medium animate-fade-in">
+                  <span className="h-2 w-2 rounded-full bg-[#e37400] animate-pulse" />
                   {pendingCount} pending
                 </span>
               ) : null;
             })()}
           </div>
-          <p className="page-description">{isDispatcher ? 'Drivers under your management' : 'Complete driver management'}</p>
+          <p className="text-sm text-[#444746] dark:text-muted-foreground">{isDispatcher ? 'Drivers under your management' : 'Complete driver management'}</p>
+          </div>
         </div>
         <div className="flex gap-2">
           {!isDispatcher && (
-            <Button size="sm" variant="outline" className="gap-2" onClick={() => setOnboardingOpen(true)}>
+            <Button variant="outline" className="h-10 rounded-full px-4 gap-2 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium" onClick={() => setOnboardingOpen(true)}>
               <Link2 className="h-4 w-4" /> Onboarding Link
             </Button>
           )}
-          <Button size="sm" className="gap-2" onClick={() => {
+          <Button className="h-10 rounded-2xl px-5 gap-2 bg-[#c2e7ff] hover:bg-[#b3dcf5] text-[#001d35] font-medium shadow-[0_1px_2px_rgba(60,64,67,.3),0_1px_3px_1px_rgba(60,64,67,.15)]" onClick={() => {
             setEditingDriver(null);
             setFormOpen(true);
           }}>
-            <Plus className="h-4 w-4" /> New Driver
+            <Plus className="h-5 w-5" /> New Driver
           </Button>
         </div>
       </div>
@@ -479,23 +484,23 @@ const Drivers = () => {
       {(() => {
         const current = scopedDrivers.filter(d => d.status !== 'inactive');
         const tiles = [
-          { label: 'Total Drivers', value: current.length, icon: Users, tint: 'bg-sky-100 text-sky-700' },
-          { label: 'Available', value: current.filter(d => d.status === 'available').length, icon: UserCheck, tint: 'bg-emerald-100 text-emerald-700' },
-          { label: 'Pending', value: current.filter(d => d.status === 'pending').length, icon: Clock, tint: 'bg-yellow-100 text-yellow-700' },
-          { label: 'Inactive', value: scopedDrivers.filter(d => d.status === 'inactive').length, icon: UserX, tint: 'bg-red-100 text-red-700' },
-          { label: 'GPS en vivo', value: current.filter(d => activeDriverIds.has(d.id)).length, icon: Navigation, tint: 'bg-blue-100 text-blue-700' },
-          { label: 'Sin permiso GPS', value: current.filter(d => (d as any).gps_background_granted === false).length, icon: MapPinOff, tint: 'bg-amber-100 text-amber-700' },
+          { label: 'Total Drivers', value: current.length, icon: Users, tint: 'bg-[#d3e3fd] text-[#041e49] dark:bg-blue-900/40 dark:text-blue-200' },
+          { label: 'Available', value: current.filter(d => d.status === 'available').length, icon: UserCheck, tint: 'bg-[#c4eed0] text-[#072711] dark:bg-emerald-900/40 dark:text-emerald-200' },
+          { label: 'Pending', value: current.filter(d => d.status === 'pending').length, icon: Clock, tint: 'bg-[#feefc3] text-[#3d2a00] dark:bg-amber-900/40 dark:text-amber-200' },
+          { label: 'Inactive', value: scopedDrivers.filter(d => d.status === 'inactive').length, icon: UserX, tint: 'bg-[#f9dedc] text-[#410e0b] dark:bg-red-900/40 dark:text-red-200' },
+          { label: 'GPS en vivo', value: current.filter(d => activeDriverIds.has(d.id)).length, icon: Navigation, tint: 'bg-[#c2e7ff] text-[#001d35] dark:bg-sky-900/40 dark:text-sky-200' },
+          { label: 'Sin permiso GPS', value: current.filter(d => (d as any).gps_background_granted === false).length, icon: MapPinOff, tint: 'bg-[#ffdcc1] text-[#2f1500] dark:bg-orange-900/40 dark:text-orange-200' },
         ];
         return (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
             {tiles.map(t => (
-              <div key={t.label} className="flex items-center gap-3 rounded-xl border bg-card px-4 py-3 shadow-sm">
-                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${t.tint}`}>
-                  <t.icon className="h-5 w-5" />
+              <div key={t.label} className="flex items-center gap-3 rounded-2xl border border-[#e3e3e3] dark:border-border bg-white dark:bg-card px-4 py-2.5">
+                <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${t.tint}`}>
+                  <t.icon className="h-[18px] w-[18px]" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs text-muted-foreground truncate">{t.label}</p>
-                  <p className="text-xl font-semibold leading-tight">{t.value}</p>
+                  <p className="text-[22px] leading-7 font-normal text-[#1f1f1f] dark:text-foreground">{t.value}</p>
+                  <p className="text-xs font-medium text-[#444746] dark:text-muted-foreground truncate">{t.label}</p>
                 </div>
               </div>
             ))}
@@ -503,14 +508,15 @@ const Drivers = () => {
         );
       })()}
 
-      <div className="flex flex-wrap gap-3 items-center">
+      <div className="flex flex-wrap gap-2 items-center">
         <div className="relative flex-1 min-w-[200px] max-w-sm">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search by name or email..." value={search} onChange={e => setSearch(e.target.value)} className="pl-10 h-10 rounded-full bg-card shadow-sm" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#444746] dark:text-muted-foreground" />
+          <input placeholder="Buscar por nombre o email..." value={search} onChange={e => setSearch(e.target.value)}
+            className="w-full h-10 rounded-full bg-white dark:bg-card border border-[#e3e3e3] dark:border-border pl-10 pr-4 text-sm text-[#1f1f1f] dark:text-foreground placeholder:text-[#444746] outline-none focus:shadow-[0_1px_1px_rgba(65,69,73,.3),0_1px_3px_1px_rgba(65,69,73,.15)] transition" />
         </div>
         {!isDispatcher && (
           <Select value={dispatcherFilter} onValueChange={v => { setDispatcherFilter(v); setPage(1); }}>
-            <SelectTrigger className="w-[200px] h-10 rounded-full bg-card shadow-sm">
+            <SelectTrigger className={cn('w-[190px] h-8 text-xs rounded-lg shadow-none font-medium', dispatcherFilter !== 'all' ? 'bg-[#c2e7ff] border-[#c2e7ff] text-[#001d35] dark:bg-blue-900/50 dark:border-blue-900/50 dark:text-blue-100' : 'bg-white dark:bg-card border-[#c4c7c5] dark:border-border text-[#444746] dark:text-muted-foreground')}>
               <SelectValue placeholder="All Dispatchers" />
             </SelectTrigger>
             <SelectContent>
@@ -522,7 +528,7 @@ const Drivers = () => {
           </Select>
         )}
         <Select value={serviceFilter} onValueChange={v => { setServiceFilter(v); setPage(1); }}>
-          <SelectTrigger className="w-[200px] h-10 rounded-full bg-card shadow-sm">
+          <SelectTrigger className={cn('w-[190px] h-8 text-xs rounded-lg shadow-none font-medium', serviceFilter !== 'all' ? 'bg-[#c2e7ff] border-[#c2e7ff] text-[#001d35] dark:bg-blue-900/50 dark:border-blue-900/50 dark:text-blue-100' : 'bg-white dark:bg-card border-[#c4c7c5] dark:border-border text-[#444746] dark:text-muted-foreground')}>
             <SelectValue placeholder="All Service Types" />
           </SelectTrigger>
           <SelectContent>
@@ -538,11 +544,11 @@ const Drivers = () => {
         <p className="text-muted-foreground text-sm">Loading drivers...</p>
       ) : (
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
-            <TabsTrigger value="active" onClick={() => setPage(1)}>Active <span className={`text-xs rounded-full px-2 py-0.5 font-semibold ${filtered.filter(d => d.status !== 'inactive').length > 0 ? 'bg-destructive text-destructive-foreground' : activeTab === 'active' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{filtered.filter(d => d.status !== 'inactive').length}</span></TabsTrigger>
-            <TabsTrigger value="inactive" onClick={() => setPage(1)}>Inactive <span className={`text-xs rounded-full px-2 py-0.5 font-semibold ${activeTab === 'inactive' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{filtered.filter(d => d.status === 'inactive').length}</span></TabsTrigger>
-            <TabsTrigger value="all" onClick={() => setPage(1)}>All <span className={`text-xs rounded-full px-2 py-0.5 font-semibold ${activeTab === 'all' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{filtered.length}</span></TabsTrigger>
-            <TabsTrigger value="dispatch_clients">Dispatch Clients</TabsTrigger>
+          <TabsList className="w-full justify-start rounded-none border-b border-[#e3e3e3] dark:border-border bg-transparent h-12 p-0 px-1 overflow-x-auto overflow-y-hidden">
+            <TabsTrigger className="h-12 rounded-none border-b-[3px] border-transparent px-4 gap-2 text-sm font-medium text-[#444746] dark:text-muted-foreground data-[state=active]:border-[#0b57d0] data-[state=active]:text-[#0b57d0] dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none data-[state=active]:bg-transparent" value="active" onClick={() => setPage(1)}>Active <span className={`text-xs rounded-full px-2 py-0.5 font-semibold ${filtered.filter(d => d.status !== 'inactive').length > 0 ? 'bg-destructive text-destructive-foreground' : activeTab === 'active' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{filtered.filter(d => d.status !== 'inactive').length}</span></TabsTrigger>
+            <TabsTrigger className="h-12 rounded-none border-b-[3px] border-transparent px-4 gap-2 text-sm font-medium text-[#444746] dark:text-muted-foreground data-[state=active]:border-[#0b57d0] data-[state=active]:text-[#0b57d0] dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none data-[state=active]:bg-transparent" value="inactive" onClick={() => setPage(1)}>Inactive <span className={`text-xs rounded-full px-2 py-0.5 font-semibold ${activeTab === 'inactive' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{filtered.filter(d => d.status === 'inactive').length}</span></TabsTrigger>
+            <TabsTrigger className="h-12 rounded-none border-b-[3px] border-transparent px-4 gap-2 text-sm font-medium text-[#444746] dark:text-muted-foreground data-[state=active]:border-[#0b57d0] data-[state=active]:text-[#0b57d0] dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none data-[state=active]:bg-transparent" value="all" onClick={() => setPage(1)}>All <span className={`text-xs rounded-full px-2 py-0.5 font-semibold ${activeTab === 'all' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{filtered.length}</span></TabsTrigger>
+            <TabsTrigger className="h-12 rounded-none border-b-[3px] border-transparent px-4 gap-2 text-sm font-medium text-[#444746] dark:text-muted-foreground data-[state=active]:border-[#0b57d0] data-[state=active]:text-[#0b57d0] dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none data-[state=active]:bg-transparent" value="dispatch_clients">Dispatch Clients</TabsTrigger>
           </TabsList>
           {['active', 'inactive', 'all'].map(tab => (
             <TabsContent key={tab} value={tab}>

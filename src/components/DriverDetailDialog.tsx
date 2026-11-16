@@ -19,8 +19,8 @@ interface DriverDetailDialogProps {
 function Info({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="font-medium text-sm">{children}</p>
+      <p className="text-xs text-[#444746] dark:text-muted-foreground">{label}</p>
+      <p className="font-medium text-sm text-[#1f1f1f] dark:text-foreground">{children}</p>
     </div>
   );
 }
@@ -71,18 +71,19 @@ export function DriverDetailDialog({ open, onOpenChange, driver, truckLabel, dis
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-[28px] border-0 bg-[#f8fafd] dark:bg-background">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-3">
+          <DialogTitle className="flex items-center gap-3 text-[22px] font-normal text-[#1f1f1f] dark:text-foreground">
+            <span className="h-11 w-11 rounded-full bg-[#0b57d0] text-white text-lg flex items-center justify-center shrink-0">{driver.name.trim().charAt(0).toUpperCase()}</span>
             {driver.name}
             <StatusBadge status={driver.status as any} />
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-5 mt-2">
+        <div className="space-y-3 mt-2">
           {/* Personal Information */}
-          <section className="space-y-2">
-            <h3 className="font-semibold text-sm border-b pb-1">Personal Information</h3>
+          <section className="space-y-2 rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border p-4">
+            <h3 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground">Personal Information</h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3">
               <Info label="Email">{driver.email}</Info>
               <Info label="Phone">{formatPhone(driver.phone)}</Info>
@@ -93,8 +94,8 @@ export function DriverDetailDialog({ open, onOpenChange, driver, truckLabel, dis
           </section>
 
           {/* Address */}
-          <section className="space-y-2 border-t pt-4">
-            <h3 className="font-semibold text-sm border-b pb-1">Address</h3>
+          <section className="space-y-2 rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border p-4">
+            <h3 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground">Address</h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3">
               <Info label="Address">{(driver as any).address || '—'}</Info>
               <Info label="City">{(driver as any).city || '—'}</Info>
@@ -104,8 +105,8 @@ export function DriverDetailDialog({ open, onOpenChange, driver, truckLabel, dis
           </section>
 
           {/* Emergency Contact */}
-          <section className="space-y-2 border-t pt-4">
-            <h3 className="font-semibold text-sm border-b pb-1">Emergency Contact</h3>
+          <section className="space-y-2 rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border p-4">
+            <h3 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground">Emergency Contact</h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3">
               <Info label="Name">{(driver as any).emergency_contact_name || '—'}</Info>
               <Info label="Phone">{formatPhone((driver as any).emergency_phone)}</Info>
@@ -113,8 +114,8 @@ export function DriverDetailDialog({ open, onOpenChange, driver, truckLabel, dis
           </section>
 
           {/* License & Medical */}
-          <section className="space-y-2 border-t pt-4">
-            <h3 className="font-semibold text-sm border-b pb-1">License & Medical Card</h3>
+          <section className="space-y-2 rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border p-4">
+            <h3 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground">License & Medical Card</h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3">
               <Info label="Driver License #">{driver.license}{driver.state ? ` (${driver.state})` : ''}</Info>
               <Info label="License Expiry">{formatDate(driver.license_expiry)}</Info>
@@ -124,8 +125,8 @@ export function DriverDetailDialog({ open, onOpenChange, driver, truckLabel, dis
           </section>
 
           {/* Assignments */}
-          <section className="space-y-2 border-t pt-4">
-            <h3 className="font-semibold text-sm border-b pb-1">Assignments</h3>
+          <section className="space-y-2 rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border p-4">
+            <h3 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground">Assignments</h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3">
               <Info label="Dispatcher">{dispatcherName || 'Unassigned'}</Info>
               <Info label="Truck">{truckLabel || 'Unassigned'}</Info>
@@ -135,8 +136,8 @@ export function DriverDetailDialog({ open, onOpenChange, driver, truckLabel, dis
           </section>
 
           {/* Payments & Performance */}
-          <section className="space-y-2 border-t pt-4">
-            <h3 className="font-semibold text-sm border-b pb-1">Payments & Performance</h3>
+          <section className="space-y-2 rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border p-4">
+            <h3 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground">Payments & Performance</h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3">
               <Info label="% Driver Pay">{driver.pay_percentage}%</Info>
               <Info label="% Investor Pay">{driver.investor_pay_percentage ?? '—'}%</Info>
@@ -150,8 +151,8 @@ export function DriverDetailDialog({ open, onOpenChange, driver, truckLabel, dis
 
           {/* Banking Information */}
           {((driver as any).bank_name || (driver as any).routing_number || (driver as any).account_number) && (
-            <section className="space-y-2 border-t pt-4">
-              <h3 className="font-semibold text-sm border-b pb-1">Banking Information (ACH)</h3>
+            <section className="space-y-2 rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border p-4">
+              <h3 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground">Banking Information (ACH)</h3>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3">
                 <Info label="Account Holder">{(driver as any).account_holder_name || '—'}</Info>
                 <Info label="Bank Name">{(driver as any).bank_name || '—'}</Info>
@@ -171,8 +172,8 @@ export function DriverDetailDialog({ open, onOpenChange, driver, truckLabel, dis
           )}
 
           {/* Documents */}
-          <section className="space-y-2 border-t pt-4">
-            <h3 className="font-semibold text-sm border-b pb-1">Documents</h3>
+          <section className="space-y-2 rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border p-4">
+            <h3 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground">Documents</h3>
             <div className="space-y-2">
               {docFields.map(doc => {
                 const url = (driver as any)[doc.key];

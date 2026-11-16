@@ -20,8 +20,8 @@ import { getTenantId } from '@/hooks/useTenantId';
 function Info({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="font-medium text-sm">{children}</p>
+      <p className="text-xs text-[#444746] dark:text-muted-foreground">{label}</p>
+      <p className="font-medium text-sm text-[#1f1f1f] dark:text-foreground">{children}</p>
     </div>
   );
 }
@@ -239,21 +239,21 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
   };
 
   return (
-    <div className="p-5 bg-muted/20 border-t animate-fade-in">
+    <div className="px-4 py-3 bg-[#f8fafd] dark:bg-background/60 border-t border-[#e3e3e3] dark:border-border animate-fade-in">
       {/* Document Expiry Alerts — arriba, span completo */}
       {(driver.license_expiry || driver.medical_card_expiry) && (
-        <div className="flex flex-wrap gap-2 mb-4">
+        <div className="flex flex-wrap gap-2 mb-3">
           <ExpiryBadge date={driver.license_expiry} label="Driver License" />
           <ExpiryBadge date={driver.medical_card_expiry} label="Medical Card" />
         </div>
       )}
 
       {/* Grid de 3 columnas con separadores verticales */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 lg:divide-x lg:divide-border gap-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 items-start">
 
         {/* ═══ COLUMNA 1 — Informacion General ═══ */}
-        <div className="lg:pr-6 space-y-4">
-          <h3 className="text-lg font-bold uppercase tracking-wide text-foreground border-b pb-2">
+        <div className="rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border p-4 space-y-3">
+          <h3 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground">
             General Information
           </h3>
 
@@ -265,19 +265,19 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
             <Info label="Service Type"><ServiceTypeBadge serviceType={driver.service_type} /></Info>
           </div>
 
-          <div className="grid grid-cols-2 gap-x-4 gap-y-3 border-t pt-3">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-3 border-t border-[#f0f0f0] dark:border-border pt-3">
             <Info label="Address">{(driver as any).address || '—'}</Info>
             <Info label="City">{(driver as any).city || '—'}</Info>
             <Info label="State">{driver.state || '—'}</Info>
             <Info label="Zip">{(driver as any).zip || '—'}</Info>
           </div>
 
-          <div className="grid grid-cols-2 gap-x-4 gap-y-3 border-t pt-3">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-3 border-t border-[#f0f0f0] dark:border-border pt-3">
             <Info label="Emergency Contact">{(driver as any).emergency_contact_name || '—'}</Info>
             <Info label="Emergency Phone">{formatPhone((driver as any).emergency_phone)}</Info>
           </div>
 
-          <div className="grid grid-cols-2 gap-x-4 gap-y-3 border-t pt-3">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-3 border-t border-[#f0f0f0] dark:border-border pt-3">
             <Info label="Dispatcher">{dispatcherName || 'Unassigned'}</Info>
             <Info label="Truck">{truckLabel || 'Unassigned'}</Info>
           </div>
@@ -286,8 +286,8 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
         </div>
 
         {/* ═══ COLUMNA 2 — Pagos ═══ */}
-        <div className="lg:px-6 space-y-4">
-          <h3 className="text-lg font-bold uppercase tracking-wide text-foreground border-b pb-2">
+        <div className="rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border p-4 space-y-3">
+          <h3 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground">
             Payments
           </h3>
 
@@ -300,7 +300,7 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
 
           {/* Investors */}
           <div className="pt-2">
-            <h3 className="text-lg font-bold uppercase tracking-wide text-foreground border-b pb-2 mb-3">Investors</h3>
+            <h3 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground mb-2">Investors</h3>
             {investorsLoading ? (
               <p className="text-sm text-muted-foreground">Loading...</p>
             ) : investors.length === 0 ? (
@@ -308,12 +308,12 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
             ) : (
               <div className="space-y-3">
                 {investors.map((inv, i) => (
-                  <div key={i} className="p-3 rounded-md bg-card border space-y-1.5">
+                  <div key={i} className="px-3 py-2 rounded-2xl bg-[#f0f4f9] dark:bg-muted/60 space-y-1">
                     <div className="flex items-center justify-between">
                       <p className="text-sm font-semibold text-foreground">
                         {inv.investor_name || '—'}
                       </p>
-                      <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                      <span className="text-xs font-medium text-[#041e49] bg-[#d3e3fd] dark:bg-blue-900/40 dark:text-blue-200 px-2 py-0.5 rounded-full">
                         {inv.pay_percentage ?? 0}%
                       </span>
                     </div>
@@ -329,7 +329,7 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
           {/* Banking */}
           {((driver as any).bank_name || (driver as any).routing_number || (driver as any).account_number) && (
             <div className="pt-2">
-              <h3 className="text-lg font-bold uppercase tracking-wide text-foreground border-b pb-2 mb-3">Banking (ACH)</h3>
+              <h3 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground mb-2">Banking (ACH)</h3>
               <div className="grid grid-cols-2 gap-x-4 gap-y-3">
                 <Info label="Account Holder">{(driver as any).account_holder_name || '—'}</Info>
                 <Info label="Bank Name">{(driver as any).bank_name || '—'}</Info>
@@ -353,9 +353,9 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
         </div>
 
         {/* ═══ COLUMNA 3 — Documentos ═══ */}
-        <div className="lg:pl-6 space-y-4">
-          <div className="flex items-center justify-between border-b pb-2">
-            <h3 className="text-lg font-bold uppercase tracking-wide text-foreground">
+        <div className="rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground">
               Documents
             </h3>
           </div>
@@ -367,18 +367,18 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
             <Info label="Medical Card Expiry">{formatDate(driver.medical_card_expiry)}</Info>
           </div>
 
-          <div className="flex gap-2 border-t pt-3">
-            <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={() => setAddingLeasing(v => !v)}>
+          <div className="flex gap-2 border-t border-[#f0f0f0] dark:border-border pt-3">
+            <Button variant="outline" size="sm" className="h-8 rounded-full px-3 text-xs gap-1.5 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium" onClick={() => setAddingLeasing(v => !v)}>
               <Plus className="h-3 w-3" /> Add Leasing
             </Button>
-            <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={e => { e.stopPropagation(); handleDownloadPdf(); }}>
+            <Button variant="outline" size="sm" className="h-8 rounded-full px-3 text-xs gap-1.5 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium" onClick={e => { e.stopPropagation(); handleDownloadPdf(); }}>
               <Download className="h-3.5 w-3.5" /> Download PDF
             </Button>
           </div>
 
           {/* Formulario para agregar nuevo leasing */}
         {addingLeasing && (
-          <div className="mb-3 p-3 rounded-lg border border-dashed border-primary/40 bg-primary/5 space-y-2">
+          <div className="mb-3 p-3 rounded-2xl bg-[#e8f0fe] dark:bg-blue-950/40 space-y-2">
             <p className="text-xs font-medium text-muted-foreground">Nuevo Leasing Agreement</p>
             <Input
               placeholder="Nombre de la empresa (ej: AG AR Transportation)"

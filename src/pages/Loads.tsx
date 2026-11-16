@@ -299,7 +299,7 @@ const Loads = () => {
             URL.revokeObjectURL(url);
             toast.success(`${data.length} load(s) exported`);
           }}>
-            <Download className="h-4 w-4" /> Export CSV
+            <Download className="h-4 w-4" /> Generar Reporte
           </Button>
         </div>
       </div>
