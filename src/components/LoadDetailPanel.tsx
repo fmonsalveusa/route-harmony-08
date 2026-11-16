@@ -229,8 +229,8 @@ function BrokerScoreRow({ brokerName, hideLabel }: { brokerName: string | null |
           </button>
         )}
         {existing && (
-          <button onClick={() => { setAdding(true); setLetterInput(existing.rating ?? ''); setDaysInput(String(existing.days_to_pay ?? '')); }} className="p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground" title="Editar RTS Score">
-            <Pencil className="h-3 w-3" />
+          <button onClick={() => { setAdding(true); setLetterInput(existing.rating ?? ''); setDaysInput(String(existing.days_to_pay ?? '')); }} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[11px] font-medium text-[#0b57d0] hover:bg-[#e8f0fe] dark:text-blue-300" title="Editar RTS Score">
+            <Pencil className="h-3 w-3" /> Editar
           </button>
         )}
       </div>
@@ -1582,8 +1582,8 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
                     if (open) setCustomOriginInput(emptyMilesOrigin || '');
                   }}>
                     <PopoverTrigger asChild>
-                      <button className="p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground" title="Editar origen">
-                        <Pencil className="h-3 w-3" />
+                      <button className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[11px] font-medium text-[#0b57d0] hover:bg-[#e8f0fe] dark:text-blue-300" title="Editar origen">
+                        <Pencil className="h-3 w-3" /> Editar
                       </button>
                     </PopoverTrigger>
                     <PopoverContent className="w-80" align="start">

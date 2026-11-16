@@ -252,7 +252,7 @@ const Invoices = () => {
                           <Mail className="h-4 w-4" /> Mail
                         </button>
                         <button className="glass-action-btn tint-amber inline-flex items-center" onClick={() => openEdit(inv)} title="Edit">
-                          <Pencil className="h-4 w-4" /> Edit
+                          <Pencil className="h-4 w-4" /> Editar
                         </button>
                         <button className="glass-action-btn tint-red inline-flex items-center" onClick={async () => { if (window.confirm(`¿Eliminar factura ${inv.invoice_number}? Esta acción es permanente.`)) { await deleteInvoice(inv.id); } }} title="Delete">
                           <Trash2 className="h-4 w-4" /> Delete

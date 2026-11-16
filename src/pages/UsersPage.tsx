@@ -263,7 +263,7 @@ const UsersPage = () => {
                             {!isDispatcherView && (
                               <>
                                 <button className="glass-action-btn tint-amber inline-flex items-center" onClick={() => handleEdit(u)} title="Edit">
-                                  <Pencil className="h-4 w-4" /> Edit
+                                  <Pencil className="h-4 w-4" /> Editar
                                 </button>
                                 {u.id !== profile?.id && (
                                   <button className="glass-action-btn tint-red inline-flex items-center" onClick={() => setDeletingUser(u)} title="Delete">

@@ -323,8 +323,8 @@ export function AnnualPaymentsReportDialog({ open, onOpenChange }: { open: boole
                           </div>
                         ) : <span className="text-xs text-amber-600">Falta</span>}
                         {r.recipientId && (
-                          <button type="button" className="p-1 rounded hover:bg-muted text-muted-foreground" title="Editar datos fiscales" onClick={() => setEditing(r)}>
-                            <Pencil className="h-3 w-3" />
+                          <button type="button" className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[11px] font-medium text-[#0b57d0] hover:bg-[#e8f0fe] dark:text-blue-300" title="Editar datos fiscales" onClick={() => setEditing(r)}>
+                            <Pencil className="h-3 w-3" /> Editar
                           </button>
                         )}
                         {r.w9 && <button type="button" className="text-[11px] text-blue-600 hover:underline" onClick={() => openW9(r.w9!)}>W-9</button>}

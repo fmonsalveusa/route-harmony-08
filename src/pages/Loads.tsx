@@ -754,8 +754,8 @@ const Loads = () => {
                               <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full text-[#444746] hover:text-[#1f1f1f] hover:bg-[#f0f4f9] dark:text-muted-foreground" onClick={() => handleGenerateInvoice(load)} title="Invoice">
                                 <FileText className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe] dark:text-blue-300" onClick={() => { setEditLoad(load); setShowForm(true); }} title="Edit">
-                                <Pencil className="h-4 w-4" />
+                              <Button variant="ghost" size="sm" className="h-8 px-2.5 gap-1 rounded-full text-xs font-medium rounded-full text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe] dark:text-blue-300" onClick={() => { setEditLoad(load); setShowForm(true); }} title="Edit">
+                                <Pencil className="h-4 w-4" /> Editar
                               </Button>
                               <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full text-[#b3261e] hover:text-[#b3261e] hover:bg-[#fce8e6]" onClick={async (e) => { e.stopPropagation(); e.preventDefault(); if (window.confirm(`¿Eliminar carga ${load.reference_number}? Esta acción es permanente.`)) { await deleteLoad(load.id); } }} title="Delete">
                                 <Trash2 className="h-4 w-4" />

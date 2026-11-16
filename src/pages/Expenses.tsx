@@ -371,7 +371,7 @@ const Expenses = () => {
                         <div className="flex items-center justify-end gap-1.5">
                           <button className="glass-action-btn tint-amber inline-flex items-center"
                             onClick={() => { setEditExpense(expense); setFormOpen(true); }}>
-                            <Pencil className="h-3.5 w-3.5" /> Edit
+                            <Pencil className="h-3.5 w-3.5" /> Editar
                           </button>
                           <button className="glass-action-btn tint-red inline-flex items-center"
                             onClick={() => setDeleteTarget(expense)}>

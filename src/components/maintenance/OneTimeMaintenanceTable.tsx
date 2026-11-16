@@ -60,8 +60,8 @@ export function OneTimeMaintenanceTable({ items, onEdit, onDelete }: OneTimeMain
                   </TableCell>
                   <TableCell className="py-2">
                     <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(item)}>
-                        <Pencil className="h-3.5 w-3.5" />
+                      <Button variant="ghost" size="sm" className="h-8 px-2.5 gap-1 rounded-full text-xs font-medium" onClick={() => onEdit(item)}>
+                        <Pencil className="h-3.5 w-3.5" /> Editar
                       </Button>
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => onDelete(item.id)}>
                         <Trash2 className="h-3.5 w-3.5" />

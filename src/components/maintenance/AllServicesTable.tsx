@@ -206,8 +206,8 @@ function ServiceHistoryRow({ maintenanceId, onViewPhoto }: { maintenanceId: stri
                   </Button>
                 ) : null;
               })()}
-              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => startEdit(log)} title="Editar">
-                <Pencil className="h-3 w-3" />
+              <Button variant="ghost" size="sm" className="h-8 px-2.5 gap-1 rounded-full text-xs font-medium" onClick={() => startEdit(log)} title="Editar">
+                <Pencil className="h-3 w-3" /> Editar
               </Button>
               <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => handleDelete(log.id)} disabled={deletingId === log.id} title="Eliminar">
                 {deletingId === log.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
@@ -337,8 +337,8 @@ export function AllServicesTable({ items, getTruckLabel, onEdit, onDelete, onLog
                           <RotateCcw className="h-3.5 w-3.5" />
                         </Button>
                       )}
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(item)}>
-                        <Pencil className="h-3.5 w-3.5" />
+                      <Button variant="ghost" size="sm" className="h-8 px-2.5 gap-1 rounded-full text-xs font-medium" onClick={() => onEdit(item)}>
+                        <Pencil className="h-3.5 w-3.5" /> Editar
                       </Button>
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => onDelete(item.id)}>
                         <Trash2 className="h-3.5 w-3.5" />

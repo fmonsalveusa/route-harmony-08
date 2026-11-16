@@ -601,7 +601,7 @@ function ClientCard({
           </div>
           <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
             <Button variant="outline" size="sm" onClick={onEdit} className="h-7 gap-1 text-xs">
-              <Pencil className="h-3 w-3" /> Edit
+              <Pencil className="h-3 w-3" /> Editar
             </Button>
             <Button variant="outline" size="sm" onClick={onDelete} className="h-7 gap-1 text-xs text-destructive hover:text-destructive">
               <Trash2 className="h-3 w-3" />

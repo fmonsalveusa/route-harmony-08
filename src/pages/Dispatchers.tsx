@@ -140,9 +140,9 @@ const Dispatchers = () => {
                 </td>
                 <td className="px-3 py-2 text-right" onClick={e => e.stopPropagation()}>
                   <div className="flex items-center justify-end gap-1">
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe]" title="Edit"
+                    <Button variant="ghost" size="sm" className="h-8 px-2.5 gap-1 rounded-full text-xs font-medium rounded-full text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe]" title="Edit"
                       onClick={() => { setEditingDispatcher(d); setFormOpen(true); }}>
-                      <Pencil className="h-4 w-4" />
+                      <Pencil className="h-4 w-4" /> Editar
                     </Button>
                     <CreateAccessButton name={d.name} email={d.email} phone={d.phone} role="dispatcher" />
                     <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full text-[#b3261e] hover:text-[#b3261e] hover:bg-[#fce8e6]" title="Delete"

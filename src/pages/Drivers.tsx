@@ -387,8 +387,8 @@ const Drivers = () => {
                           </Button>
                           {!isDispatcher && (
                             <>
-                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe]" onClick={() => { setEditingDriver(driver); setFormOpen(true); }} title="Edit">
-                                <Pencil className="h-4 w-4" />
+                              <Button variant="ghost" size="sm" className="h-8 px-2.5 gap-1 rounded-full text-xs font-medium rounded-full text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe]" onClick={() => { setEditingDriver(driver); setFormOpen(true); }} title="Edit">
+                                <Pencil className="h-4 w-4" /> Editar
                               </Button>
                               <CreateAccessButton name={driver.name} email={driver.email} phone={driver.phone} role="driver" />
                               <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full text-[#444746] hover:text-[#1f1f1f] hover:bg-[#f0f4f9]" onClick={() => setTerminationDriver(driver)} title="Termination Letter">

@@ -408,8 +408,8 @@ const Documents = () => {
                               autoFocus
                               placeholder="Nombre del firmante"
                             />
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={saveSignerName}>
-                              <Pencil className="h-3 w-3" />
+                            <Button variant="ghost" size="sm" className="h-8 px-2.5 gap-1 rounded-full text-xs font-medium" onClick={saveSignerName}>
+                              <Pencil className="h-3 w-3" /> Editar
                             </Button>
                           </div>
                         ) : (
@@ -444,8 +444,8 @@ const Documents = () => {
                               <Button variant="ghost" size="icon" onClick={() => copySignLink(doc.id)} title="Copiar enlace">
                                 <Copy className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="icon" onClick={() => navigate(`/documents/upload?edit=${doc.id}`)} title="Editar">
-                                <Pencil className="h-4 w-4" />
+                              <Button className="h-8 px-2.5 gap-1 rounded-full text-xs font-medium text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe]" variant="ghost" size="sm" onClick={() => navigate(`/documents/upload?edit=${doc.id}`)} title="Editar">
+                                <Pencil className="h-4 w-4" /> Editar
                               </Button>
                             </>
                           )}
@@ -518,8 +518,8 @@ const Documents = () => {
                           <Button variant="ghost" size="icon" onClick={() => { navigator.clipboard.writeText(getTemplateSigningUrl(tpl.id)); toast.success('Enlace de plantilla copiado'); }} title="Copiar enlace">
                             <Copy className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" onClick={() => navigate(`/documents/upload?mode=template&edit=${tpl.id}`)} title="Editar plantilla">
-                            <Pencil className="h-4 w-4" />
+                          <Button className="h-8 px-2.5 gap-1 rounded-full text-xs font-medium text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe]" variant="ghost" size="sm" onClick={() => navigate(`/documents/upload?mode=template&edit=${tpl.id}`)} title="Editar plantilla">
+                            <Pencil className="h-4 w-4" /> Editar
                           </Button>
                           <Button variant="ghost" size="icon" onClick={() => setDeleteTarget({ type: 'tpl', id: tpl.id, name: tpl.name })} title="Eliminar" className="text-destructive hover:text-destructive">
                             <Trash2 className="h-4 w-4" />

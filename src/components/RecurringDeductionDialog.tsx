@@ -216,7 +216,7 @@ export function RecurringDeductionDialog({ open, onOpenChange }: Props) {
                       <Badge variant="outline" className="text-xs">{FREQUENCIES.find(f => f.value === d.frequency)?.label}</Badge>
                       {d.effective_from && <span className="text-xs text-muted-foreground">from {d.effective_from}</span>}
                       <span className={`font-semibold ${d.amount >= 0 ? 'text-destructive' : 'text-green-600'}`}>{d.amount >= 0 ? `-$${Number(d.amount).toFixed(2)}` : `+$${Math.abs(d.amount).toFixed(2)}`}</span>
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEdit(d)}><Pencil className="h-3.5 w-3.5" /></Button>
+                      <Button variant="ghost" size="sm" className="h-8 px-2.5 gap-1 rounded-full text-xs font-medium" onClick={() => handleEdit(d)}><Pencil className="h-3.5 w-3.5" /> Editar</Button>
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteDeduction(d.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
                     </div>
                   ))}

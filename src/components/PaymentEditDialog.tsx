@@ -170,8 +170,8 @@ export const PaymentEditDialog = ({ payment, open, onOpenChange }: Props) => {
               ) : (
                 <span className="font-medium">
                   ${currentRate.toLocaleString()}
-                  <Button variant="ghost" size="sm" className="h-5 w-5 p-0 ml-1 inline-flex" onClick={() => { setEditingRate(true); setNewRate(String(currentRate)); }}>
-                    <Pencil className="h-3 w-3 text-muted-foreground" />
+                  <Button variant="ghost" size="sm" className="h-6 ml-1 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[11px] font-medium text-[#0b57d0] hover:bg-[#e8f0fe] dark:text-blue-300" onClick={() => { setEditingRate(true); setNewRate(String(currentRate)); }}>
+                    <Pencil className="h-3 w-3" /> Editar
                   </Button>
                 </span>
               )}
@@ -200,9 +200,9 @@ export const PaymentEditDialog = ({ payment, open, onOpenChange }: Props) => {
                   <span className="text-muted-foreground">Monto Base:</span>{' '}
                   <span className="font-medium">${currentBaseAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
                   {canEditBase && (
-                    <Button variant="ghost" size="sm" className="h-5 w-5 p-0 ml-1 inline-flex" title="Editar porcentaje y monto base"
+                    <Button variant="ghost" size="sm" className="h-6 ml-1 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[11px] font-medium text-[#0b57d0] hover:bg-[#e8f0fe] dark:text-blue-300" title="Editar porcentaje y monto base"
                       onClick={() => { setEditingBase(true); setPctDraft(String(currentPct)); setAmountDraft(String(currentBaseAmount)); }}>
-                      <Pencil className="h-3 w-3 text-muted-foreground" />
+                      <Pencil className="h-3 w-3" /> Editar
                     </Button>
                   )}
                 </div>

@@ -258,8 +258,8 @@ const Fleet = () => {
                           <Button variant="ghost" size="sm" className="h-8 rounded-full px-3 text-xs gap-1 text-[#188038] hover:text-[#188038] hover:bg-[#e6f4ea] font-medium" onClick={() => setDetailTruck(truck)} title="Detail">
                             <Eye className="h-3.5 w-3.5" /> Detail
                           </Button>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe]" onClick={() => openEdit(truck)} title="Edit">
-                            <Pencil className="h-4 w-4" />
+                          <Button variant="ghost" size="sm" className="h-8 px-2.5 gap-1 rounded-full text-xs font-medium rounded-full text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe]" onClick={() => openEdit(truck)} title="Edit">
+                            <Pencil className="h-4 w-4" /> Editar
                           </Button>
                           <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full text-[#b3261e] hover:text-[#b3261e] hover:bg-[#fce8e6]" onClick={async () => { if (window.confirm(`Delete truck Unit #${truck.unit_number}? This action is permanent.`)) { await deleteTruck(truck.id); } }} title="Delete">
                             <Trash2 className="h-4 w-4" />
