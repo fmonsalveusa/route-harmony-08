@@ -96,16 +96,16 @@ export function GlobalSearch() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="hidden md:flex items-center gap-2 h-8 w-64 lg:w-80 rounded-full bg-white/15 hover:bg-white/25 px-3 text-xs text-white/80 transition-colors"
+        className="hidden md:flex items-center gap-3 h-11 w-72 lg:w-[480px] rounded-full bg-[#e9eef6] hover:bg-[#dfe5ee] dark:bg-white/10 dark:hover:bg-white/15 px-4 text-sm text-[#444746] dark:text-white/80 transition-colors"
       >
-        <Search className="h-3.5 w-3.5" />
+        <Search className="h-5 w-5" />
         <span className="flex-1 text-left">Buscar carga, driver, unidad...</span>
-        <kbd className="rounded border border-white/30 px-1.5 py-0.5 text-[10px] font-mono">Ctrl K</kbd>
+        <kbd className="rounded-md border border-[#c4c7c5] dark:border-white/30 px-1.5 py-0.5 text-[10px] font-mono">Ctrl K</kbd>
       </button>
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="md:hidden p-1.5 rounded-md hover:bg-white/10 text-white"
+        className="md:hidden p-2 rounded-full hover:bg-[#e8ebee] dark:hover:bg-white/10 text-[#444746] dark:text-white"
         aria-label="Buscar"
       >
         <Search className="h-5 w-5" />

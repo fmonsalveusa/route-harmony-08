@@ -73,10 +73,10 @@ const allNavItems: NavItem[] = [
 ];
 
 // Menú lateral oscuro (estilo RouteOne) con el azul de la marca
-const SIDEBAR_BG = 'bg-[#15253a]';
-const SIDEBAR_LINK = 'text-slate-300 hover:bg-white/10 hover:text-white';
+const SIDEBAR_BG = 'bg-[#f8fafd] dark:bg-[#1b1f24]';
+const SIDEBAR_LINK = 'text-[#1f1f1f] hover:bg-[#e8ebee] dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white';
 // Color fijo (no bg-sky-100): el menú es oscuro en los dos modos y el resaltado debe verse igual
-const SIDEBAR_ACTIVE = 'bg-[#e0f2fe] text-[#0f2a47] font-semibold';
+const SIDEBAR_ACTIVE = 'bg-[#d3e3fd] text-[#041e49] font-semibold dark:bg-blue-900/50 dark:text-blue-100';
 
 const roleBadgeStyles: Record<string, string> = {
   admin: 'bg-destructive text-destructive-foreground',
@@ -183,7 +183,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
           <TooltipTrigger asChild>
             <Link
               to={item.path}
-              className={`flex justify-center items-center p-2.5 rounded-lg transition-colors ${
+              className={`flex justify-center items-center h-10 w-10 mx-auto rounded-full transition-colors ${
                 active ? SIDEBAR_ACTIVE : SIDEBAR_LINK
               }`}
             >
@@ -198,11 +198,11 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
       <Link
         key={item.path}
         to={item.path}
-        className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+        className={`flex items-center gap-3 px-4 h-9 rounded-full text-sm font-medium transition-colors ${
           active ? SIDEBAR_ACTIVE : SIDEBAR_LINK
         }`}
       >
-        <item.icon className="h-4 w-4 flex-shrink-0" />
+        <item.icon className="h-[18px] w-[18px] flex-shrink-0" />
         <span className="flex-1 truncate">{item.label}</span>
         {item.path === '/drivers' && pendingDrivers > 0 && (
           <span className="inline-flex items-center justify-center h-4 min-w-[16px] px-1 rounded-full bg-orange-500 text-white text-[10px] font-bold leading-none">
@@ -219,11 +219,10 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
   };
 
   const renderSectionLabel = (label: string) => {
-    if (collapsed) return <div className="my-2 border-t border-white/10 mx-2" />;
+    if (collapsed) return <div className="my-2 border-t border-[#e3e3e3] dark:border-white/10 mx-2" />;
     return (
       <div className="pt-3">
-        <div className="mx-3 mb-2 border-t border-white/10" />
-        <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+        <p className="px-4 pb-1 text-[11px] font-medium text-[#444746] dark:text-slate-400">
           {label}
         </p>
       </div>
@@ -231,7 +230,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="flex h-screen overflow-hidden bg-[#f8fafd] dark:bg-background">
 
       {/* ── Sidebar (desktop) ── */}
       <aside
@@ -240,20 +239,20 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
         }`}
       >
         {/* Logo / brand */}
-        <div className={`flex items-center gap-3 h-14 border-b border-white/10 shrink-0 ${collapsed ? 'justify-center px-2' : 'px-4'}`}>
+        <div className={`flex items-center gap-3 h-16 shrink-0 ${collapsed ? 'justify-center px-2' : 'px-5'}`}>
           {tenant?.logo_url
             ? <img src={tenant.logo_url} alt="" className="h-7 w-7 rounded flex-shrink-0 object-cover" />
             : <img src={logoImg} alt="Dispatch Up" className="h-7 w-7 rounded flex-shrink-0 object-cover" />
           }
           {!collapsed && (
-            <span className="text-lg font-extrabold tracking-tight truncate text-white">
+            <span className="text-[20px] font-normal tracking-tight truncate text-[#1f1f1f] dark:text-white">
               Dispatch Up TMS
             </span>
           )}
         </div>
 
         {/* Nav items */}
-        <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
+        <nav className="flex-1 overflow-y-auto py-1 px-3 space-y-0.5">
           {filterVisible(topLevelItems).map(renderSidebarLink)}
 
           {filterVisible(teamItems).length > 0 && (
@@ -286,13 +285,13 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
         </nav>
 
         {/* User profile + collapse */}
-        <div className="border-t border-white/10 p-3 shrink-0">
+        <div className="border-t border-[#e3e3e3] dark:border-white/10 p-3 shrink-0">
           {collapsed ? (
             <div className="flex flex-col items-center gap-2">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Avatar className="h-8 w-8 cursor-pointer">
-                    <AvatarFallback className="text-[10px] font-semibold bg-[#266aad] text-white">
+                    <AvatarFallback className="text-[11px] font-medium bg-[#0b57d0] text-white">
                       {initials}
                     </AvatarFallback>
                   </Avatar>
@@ -301,7 +300,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button onClick={signOut} className="p-1.5 rounded-md hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
+                  <button onClick={signOut} className="p-2 rounded-full hover:bg-[#e8ebee] dark:hover:bg-white/10 text-[#444746] dark:text-slate-400 transition-colors">
                     <LogOut className="h-4 w-4" />
                   </button>
                 </TooltipTrigger>
@@ -311,15 +310,15 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
           ) : (
             <div className="flex items-center gap-2 mb-2">
               <Avatar className="h-8 w-8 flex-shrink-0">
-                <AvatarFallback className="text-[10px] font-semibold bg-[#266aad] text-white">
+                <AvatarFallback className="text-[11px] font-medium bg-[#0b57d0] text-white">
                   {initials}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold truncate text-white">{profile.full_name}</p>
-                <p className="text-[10px] text-slate-400 truncate">{profile.email}</p>
+                <p className="text-xs font-medium truncate text-[#1f1f1f] dark:text-white">{profile.full_name}</p>
+                <p className="text-[11px] text-[#444746] dark:text-slate-400 truncate">{profile.email}</p>
               </div>
-              <button onClick={signOut} className="p-1.5 rounded-md hover:bg-white/10 text-slate-400 hover:text-white transition-colors flex-shrink-0">
+              <button onClick={signOut} className="p-2 rounded-full hover:bg-[#e8ebee] dark:hover:bg-white/10 text-[#444746] dark:text-slate-400 transition-colors flex-shrink-0">
                 <LogOut className="h-4 w-4" />
               </button>
             </div>
@@ -328,7 +327,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
           {/* Collapse toggle */}
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs text-slate-400 hover:bg-white/10 hover:text-white transition-colors ${collapsed ? 'justify-center' : ''}`}
+            className={`w-full flex items-center gap-2 px-3 h-8 rounded-full text-xs text-[#444746] dark:text-slate-400 hover:bg-[#e8ebee] dark:hover:bg-white/10 transition-colors ${collapsed ? 'justify-center' : ''}`}
           >
             {collapsed
               ? <ChevronRight className="h-4 w-4" />
@@ -342,10 +341,10 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
 
         {/* Top bar */}
-        <header className="top-header flex items-center justify-between h-14 px-4 lg:px-5 shrink-0" style={{ paddingTop: 'max(0.5rem, env(safe-area-inset-top, 0.5rem))' }}>
+        <header className="top-header flex items-center justify-between h-16 px-4 lg:px-5 shrink-0" style={{ paddingTop: 'max(0.5rem, env(safe-area-inset-top, 0.5rem))' }}>
           <div className="flex items-center gap-3">
             {/* Mobile hamburger */}
-            <button className="lg:hidden p-1.5 rounded-md hover:bg-white/10" onClick={() => setMobileMenuOpen(true)}>
+            <button className="lg:hidden p-2 rounded-full hover:bg-[#e8ebee] dark:hover:bg-white/10 text-[#444746] dark:text-slate-400" onClick={() => setMobileMenuOpen(true)}>
               <Menu className="h-5 w-5" />
             </button>
             {/* Mobile logo */}
@@ -354,7 +353,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
                 ? <img src={tenant.logo_url} alt="" className="h-7 w-7 rounded object-cover" />
                 : <img src={logoImg} alt="" className="h-7 w-7 rounded" />
               }
-              <span className="text-sm font-semibold text-white truncate max-w-[140px]">
+              <span className="text-sm font-medium text-[#1f1f1f] dark:text-white truncate max-w-[140px]">
                 {tenant?.name || 'Dispatch Up'}
               </span>
             </div>
@@ -363,10 +362,10 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
               <Button
                 size="sm"
                 onClick={() => setLoadDialogOpen(true)}
-                className="gap-1.5 h-8 text-xs bg-white hover:bg-white/90 text-[#266aad] border-[#266aad] border shadow-[0_0_0_2px_#266aad33]"
+                className="gap-2 h-10 rounded-2xl px-4 text-sm font-medium bg-[#c2e7ff] hover:bg-[#b3dcf5] text-[#001d35] border-0 shadow-[0_1px_2px_rgba(60,64,67,.3),0_1px_3px_1px_rgba(60,64,67,.15)] dark:bg-blue-900/60 dark:text-blue-100"
                 variant="outline"
               >
-                <Plus className="h-3.5 w-3.5" />
+                <Plus className="h-5 w-5" />
                 <span className="hidden sm:inline">New Load</span>
               </Button>
             )}
@@ -379,7 +378,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
 
           <div className="flex items-center gap-2">
             {tenant?.name && (
-              <span className="hidden lg:inline text-sm font-semibold text-white truncate max-w-[200px]">
+              <span className="hidden lg:inline text-sm font-medium text-[#1f1f1f] dark:text-white truncate max-w-[200px]">
                 {tenant.name}
               </span>
             )}
@@ -402,16 +401,16 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
         <>
           <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setMobileMenuOpen(false)} />
           <div className={`fixed inset-y-0 left-0 z-50 w-72 ${SIDEBAR_BG} shadow-xl lg:hidden flex flex-col animate-in slide-in-from-left duration-200`}>
-            <div className="flex items-center justify-between h-14 px-4 border-b border-white/10">
+            <div className="flex items-center justify-between h-14 px-4 border-b border-[#e3e3e3] dark:border-white/10">
               <div className="flex items-center gap-2">
                 <img src={logoImg} alt="" className="h-6 w-6 rounded" />
-                <span className="text-sm font-semibold text-white">{tenant?.name || 'Dispatch Up TMS'}</span>
+                <span className="text-sm font-medium text-[#1f1f1f] dark:text-white">{tenant?.name || 'Dispatch Up TMS'}</span>
               </div>
-              <button onClick={() => setMobileMenuOpen(false)} className="p-1.5 rounded-md hover:bg-white/10 text-slate-300">
+              <button onClick={() => setMobileMenuOpen(false)} className="p-2 rounded-full hover:bg-[#e8ebee] dark:hover:bg-white/10 text-[#444746] dark:text-slate-400">
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <nav className="flex-1 overflow-y-auto py-2 px-2 space-y-0.5">
+            <nav className="flex-1 overflow-y-auto py-2 px-3 space-y-0.5">
               {mobileItems.map((item) => {
                 const active = location.pathname === item.path;
                 return (
@@ -419,7 +418,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
                     key={item.path}
                     to={item.path}
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                    className={`flex items-center gap-3 rounded-full px-4 h-10 text-sm font-medium transition-colors ${
                       active ? SIDEBAR_ACTIVE : SIDEBAR_LINK
                     }`}
                   >
@@ -439,18 +438,18 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
                 );
               })}
             </nav>
-            <div className="border-t border-white/10 p-3">
+            <div className="border-t border-[#e3e3e3] dark:border-white/10 p-3">
               <div className="flex items-center gap-2">
                 <Avatar className="h-8 w-8">
-                  <AvatarFallback className="text-xs font-semibold bg-[#266aad] text-white">
+                  <AvatarFallback className="text-xs font-medium bg-[#0b57d0] text-white">
                     {initials}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold truncate text-white">{profile.full_name}</p>
-                  <p className="text-[10px] text-slate-400 truncate">{profile.email}</p>
+                  <p className="text-xs font-medium truncate text-[#1f1f1f] dark:text-white">{profile.full_name}</p>
+                  <p className="text-[11px] text-[#444746] dark:text-slate-400 truncate">{profile.email}</p>
                 </div>
-                <button onClick={signOut} className="p-1.5 rounded-md hover:bg-white/10 text-slate-400 hover:text-white">
+                <button onClick={signOut} className="p-2 rounded-full hover:bg-[#e8ebee] dark:hover:bg-white/10 text-[#444746] dark:text-slate-400">
                   <LogOut className="h-4 w-4" />
                 </button>
               </div>

@@ -253,12 +253,14 @@ html, body {
   }
 
   /* ── Top Navigation (Chase-style) ── */
+  /* Barra superior estilo Google: mismo gris claro de la barra lateral */
   .top-header {
-    background: #266aad;
-    color: white;
+    background: #f8fafd;
+    color: #1f1f1f;
   }
   .dark .top-header {
-    background: #266aad;
+    background: #1b1f24;
+    color: white;
   }
 
   .top-nav {
