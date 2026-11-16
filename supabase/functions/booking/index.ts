@@ -88,7 +88,7 @@ async function loadSettings(supabase: any) {
     minNotice: s?.min_notice_hours ?? 2,
     maxDays: s?.max_days_ahead ?? 30,
     calendarEmail: (s?.calendar_email ?? "").trim() || null,
-    title: s?.meeting_title ?? "Llamada con Dispatch Up",
+    title: s?.meeting_title ?? "Reunión con 58 Dispatch Service",
   };
 }
 type Settings = Awaited<ReturnType<typeof loadSettings>>;
@@ -213,11 +213,11 @@ function buildIcs(m: any, cfg: Settings, method: "REQUEST" | "CANCEL", organizer
   ].filter((x) => x !== "").join("\n");
   const attendees = [
     m.email ? `ATTENDEE;CN=${icsEsc(m.driver_name)};ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE:mailto:${m.email}` : "",
-    cfg.calendarEmail ? `ATTENDEE;CN=Dispatch Up;ROLE=REQ-PARTICIPANT;PARTSTAT=ACCEPTED:mailto:${cfg.calendarEmail}` : "",
+    cfg.calendarEmail ? `ATTENDEE;CN=58 Dispatch Service;ROLE=REQ-PARTICIPANT;PARTSTAT=ACCEPTED:mailto:${cfg.calendarEmail}` : "",
   ].filter(Boolean);
   const lines = [
     "BEGIN:VCALENDAR",
-    "PRODID:-//Dispatch Up//Agenda//ES",
+    "PRODID:-//58 Dispatch Service//Agenda//ES",
     "VERSION:2.0",
     "CALSCALE:GREGORIAN",
     `METHOD:${method}`,
@@ -231,7 +231,7 @@ function buildIcs(m: any, cfg: Settings, method: "REQUEST" | "CANCEL", organizer
     `DESCRIPTION:${icsEsc(desc)}`,
     `LOCATION:${icsEsc(`Llamada telefónica al ${m.phone}`)}`,
     `URL:${manage}`,
-    `ORGANIZER;CN=Dispatch Up:mailto:${organizer}`,
+    `ORGANIZER;CN=58 Dispatch Service:mailto:${organizer}`,
     ...attendees,
     `STATUS:${method === "CANCEL" ? "CANCELLED" : "CONFIRMED"}`,
     "TRANSP:OPAQUE",
@@ -262,7 +262,7 @@ function emailHtml(title: string, intro: string, m: any, lang: string, extra = "
       </table>
       ${extra}
       <p style="margin:18px 0 0"><a href="${manage}" style="display:inline-block;background:#266aad;color:#fff;text-decoration:none;padding:10px 16px;border-radius:8px">${en ? "Reschedule or cancel" : "Reagendar o cancelar"}</a></p>
-      <p style="margin:18px 0 0;color:#6b7280;font-size:12px">Dispatch Up · 58 Logistics LLC</p>
+      <p style="margin:18px 0 0;color:#6b7280;font-size:12px">58 Dispatch Service · 58 Logistics LLC</p>
     </div></div>`;
 }
 
@@ -272,7 +272,7 @@ async function sendMail(to: string[], subject: string, html: string, ics?: { bod
   const client = new SMTPClient({ connection: { hostname: "smtp.gmail.com", port: 465, tls: true, auth: { username: user, password: pass } } });
   try {
     await client.send({
-      from: `Dispatch Up <${user}>`,
+      from: `58 Dispatch Service <${user}>`,
       to,
       subject,
       html,
@@ -299,9 +299,9 @@ async function sendInvite(m: any, cfg: Settings, kind: "new" | "update" | "cance
   const en = lang === "en";
   const ics = buildIcs(m, cfg, kind === "cancel" ? "CANCEL" : "REQUEST", organizer);
   const subj = kind === "cancel"
-    ? (en ? "Cancelled: call with Dispatch Up" : "Cancelada: llamada con Dispatch Up")
+    ? (en ? "Meeting Cancelled with 58 Dispatch Service" : "Reunión Cancelada con 58 Dispatch Service")
     : kind === "update"
-    ? (en ? "Updated: call with Dispatch Up" : "Cambio de horario: llamada con Dispatch Up")
+    ? (en ? "Meeting Rescheduled with 58 Dispatch Service" : "Reunión Reagendada con 58 Dispatch Service")
     : (en ? "Meeting Confirmed with 58 Dispatch Service" : "Reunión Confirmada con 58 Dispatch Service");
   const title = kind === "cancel" ? (en ? "Call cancelled" : "Llamada cancelada")
     : kind === "update" ? (en ? "New time confirmed" : "Nuevo horario confirmado")
@@ -411,8 +411,8 @@ async function reminders(supabase: any, cfg: Settings) {
     if (!claimed?.length) continue;
     try {
       const soon = which === "1h" ? "en 1 hora" : "mañana";
-      await sendMail([m.email], `Recordatorio: llamada con Dispatch Up ${soon} – ${m.meeting_time} ET`,
-        emailHtml("Recordatorio de tu llamada", `Hola ${m.driver_name}, te recordamos tu llamada con Dispatch Up ${soon}. Te llamaremos al ${m.phone}.`, m, "es"));
+      await sendMail([m.email], `Recordatorio: Reunión con 58 Dispatch Service ${soon} – ${m.meeting_time} ET`,
+        emailHtml("Recordatorio de tu llamada", `Hola ${m.driver_name}, te recordamos tu reunión con 58 Dispatch Service ${soon}. Te llamaremos al ${m.phone}.`, m, "es"));
       sent++;
     } catch (e) {
       console.error("reminder:", errMsg(e));

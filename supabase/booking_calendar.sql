@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS booking_settings (
   min_notice_hours int NOT NULL DEFAULT 2,
   max_days_ahead int NOT NULL DEFAULT 30,
   calendar_email text,                                -- tu Google Calendar: recibe la invitación de cada reunión
-  meeting_title text NOT NULL DEFAULT 'Llamada con Dispatch Up',
+  meeting_title text NOT NULL DEFAULT 'Reunión con 58 Dispatch Service',
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 ALTER TABLE booking_settings ENABLE ROW LEVEL SECURITY;
