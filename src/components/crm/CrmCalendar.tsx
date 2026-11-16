@@ -128,7 +128,7 @@ export function CrmCalendar({ contacts, onOpen }: { contacts: CalendarContact[];
     <div className="rounded-xl border bg-card flex flex-col max-h-[70vh]">
       <div className="flex items-center gap-1 px-2 py-1.5 border-b">
         <CalendarDays className="h-4 w-4 text-primary shrink-0" />
-        <span className="text-sm font-semibold capitalize flex-1 truncate">{monthLabel}</span>
+        <span className="text-base font-semibold capitalize flex-1 truncate">{monthLabel}</span>
         <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => shift(-1)}><ChevronLeft className="h-4 w-4" /></Button>
         <Button variant="ghost" size="sm" className="h-6 px-1.5 text-[11px]" onClick={() => { setMonth({ y: ty, m: tm - 1 }); setSelected(todayKey); }}>Hoy</Button>
         <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => shift(1)}><ChevronRight className="h-4 w-4" /></Button>
@@ -136,11 +136,11 @@ export function CrmCalendar({ contacts, onOpen }: { contacts: CalendarContact[];
 
       <div className="p-2">
         <div className="grid grid-cols-7 mb-0.5">
-          {WEEKDAYS.map(d => <div key={d} className="text-[10px] font-medium text-muted-foreground text-center">{d.charAt(0)}</div>)}
+          {WEEKDAYS.map(d => <div key={d} className="text-[11px] font-medium text-muted-foreground text-center">{d.charAt(0)}</div>)}
         </div>
         <div className="grid grid-cols-7 gap-0.5">
           {cells.map((d, i) => {
-            if (d === null) return <div key={`e${i}`} className="h-9" />;
+            if (d === null) return <div key={`e${i}`} className="h-11" />;
             const key = dayKey(month.y, month.m, d);
             const items = byDay[key] ?? [];
             const kinds = [...new Set(items.map(it => (it.overdue ? 'overdue' : it.kind)))];
@@ -150,7 +150,7 @@ export function CrmCalendar({ contacts, onOpen }: { contacts: CalendarContact[];
                 type="button"
                 onClick={() => setSelected(key)}
                 className={cn(
-                  'h-9 rounded-md flex flex-col items-center justify-center text-[11px] transition-colors',
+                  'h-11 rounded-md flex flex-col items-center justify-center text-xs transition-colors',
                   key === selected ? 'bg-primary text-primary-foreground' : key === todayKey ? 'bg-primary/10 text-primary font-semibold' : 'hover:bg-muted',
                   key < todayKey && key !== selected && 'text-muted-foreground',
                 )}

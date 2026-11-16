@@ -1079,7 +1079,7 @@ export default function CRM() {
             </div>
           ))}
         </div>
-        <div className="w-[270px] shrink-0 hidden lg:block">
+        <div className="w-1/4 min-w-[300px] shrink-0 hidden lg:block">
           <CrmCalendar contacts={contacts} onOpen={setOpenId} />
         </div>
         </div>
