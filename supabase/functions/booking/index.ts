@@ -317,7 +317,15 @@ async function sendInvite(m: any, cfg: Settings, kind: "new" | "update" | "cance
   }
   // Tu calendario: con el script de Google, el evento se crea/mueve/borra directo en Google Calendar
   // (Gmail no agrega al calendario una invitación que la cuenta se manda a sí misma)
-  if (Deno.env.get("GCAL_SCRIPT_URL")) return;
+  if (Deno.env.get("GCAL_SCRIPT_URL")) {
+    // Aviso por email a la cuenta de 58 (sin invitación: el evento ya lo crea el script)
+    if (cfg.calendarEmail && cfg.calendarEmail.toLowerCase() !== (m.email ?? "").toLowerCase()) {
+      const what = kind === "cancel" ? "Reunión cancelada" : kind === "update" ? "Reunión reagendada" : "Nueva reunión agendada";
+      await sendMail([cfg.calendarEmail], `${what} – ${m.driver_name} – ${prettyDate(m.meeting_date, "es")} ${m.meeting_time} ET`,
+        emailHtml(what, "", m, "es"));
+    }
+    return;
+  }
   if (cfg.calendarEmail && cfg.calendarEmail.toLowerCase() !== (m.email ?? "").toLowerCase()) {
     await sendMail([cfg.calendarEmail], `${subj} – ${m.driver_name}`, emailHtml(title, "", m, "es"),
       { body: ics, method: kind === "cancel" ? "CANCEL" : "REQUEST" });
