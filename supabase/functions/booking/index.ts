@@ -95,9 +95,12 @@ type Settings = Awaited<ReturnType<typeof loadSettings>>;
 
 // ─── Google Calendar (dirección secreta iCal): horas ocupadas ───
 
+/** Estado de la última lectura de Google Calendar (se muestra en el CRM) */
+let calendarStatus: { state: "off" | "ok" | "error"; events?: number; error?: string } = { state: "off" };
+
 async function googleBusy(from: Date, to: Date): Promise<{ start: number; end: number }[]> {
   const url = Deno.env.get("GCAL_ICS_URL");
-  if (!url) return [];
+  if (!url) { calendarStatus = { state: "off" }; return []; }
   try {
     const res = await fetch(url);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -129,9 +132,11 @@ async function googleBusy(from: Date, to: Date): Promise<{ start: number; end: n
         if (e > lo && s < hi) busy.push({ start: s, end: Math.max(e, s + 60000) });
       }
     }
+    calendarStatus = { state: "ok", events: busy.length };
     return busy;
   } catch (e) {
     console.error("googleBusy:", errMsg(e));
+    calendarStatus = { state: "error", error: errMsg(e) };
     return [];
   }
 }
@@ -427,7 +432,7 @@ Deno.serve(async (req) => {
 
     switch (body.action) {
       case "availability":
-        return json({ timezone: TZ, duration: cfg.duration, days: await availability(supabase, cfg, body.exclude_token ? (await byToken(supabase, body.exclude_token))?.id : undefined) });
+        return json({ timezone: TZ, duration: cfg.duration, days: await availability(supabase, cfg, body.exclude_token ? (await byToken(supabase, body.exclude_token))?.id : undefined), calendar: calendarStatus.state });
 
       case "book":
         return await book(supabase, cfg, body);

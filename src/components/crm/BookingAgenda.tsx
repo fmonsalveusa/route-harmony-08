@@ -121,8 +121,10 @@ function Availability() {
   const canEdit = role === 'admin' || isMasterAdmin;
   const [s, setS] = useState<Settings | null>(null);
   const [saving, setSaving] = useState(false);
+  const [calendar, setCalendar] = useState<'ok' | 'error' | 'off' | null>(null);
 
   useEffect(() => {
+    supabase.functions.invoke('booking', { body: { action: 'availability' } }).then(({ data }) => setCalendar(data?.calendar ?? null));
     supabase.from('booking_settings' as any).select('*').limit(1).maybeSingle()
       .then(({ data }) => setS(data ? { ...(data as any), day_start: (data as any).day_start.slice(0, 5), day_end: (data as any).day_end.slice(0, 5) } : null));
   }, []);
@@ -186,6 +188,13 @@ function Availability() {
         <Label className="text-xs">Tu Google Calendar (email que recibe cada invitación)</Label>
         <Input type="email" placeholder="tu-cuenta@gmail.com" value={s.calendar_email ?? ''} disabled={!canEdit} onChange={e => set('calendar_email', e.target.value)} className="h-9" />
         <p className="text-[11px] text-muted-foreground mt-1">Las horas ocupadas de ese calendario se bloquean solas en la agenda.</p>
+        {calendar && (
+          <p className={cn('text-[11px] mt-1 font-medium', calendar === 'ok' ? 'text-green-600' : calendar === 'error' ? 'text-destructive' : 'text-muted-foreground')}>
+            {calendar === 'ok' ? '● Google Calendar conectado: tus horas ocupadas se están bloqueando'
+              : calendar === 'error' ? '● No se pudo leer Google Calendar (revisa la dirección secreta iCal)'
+              : '○ Google Calendar sin conectar (falta la dirección secreta iCal)'}
+          </p>
+        )}
       </div>
       <div>
         <Label className="text-xs">Nombre del evento</Label>
