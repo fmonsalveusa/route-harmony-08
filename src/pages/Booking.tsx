@@ -28,12 +28,14 @@ const L = {
   },
 };
 
+/** Español por defecto; inglés con ?lang=en o si la persona lo eligió con el botón */
 function initialLang(): Lang {
+  const q = new URLSearchParams(window.location.search).get("lang");
+  if (q === "en" || q === "es") return q;
   try {
-    const stored = localStorage.getItem("landing-lang");
-    if (stored === "en" || stored === "es") return stored;
+    if (localStorage.getItem("landing-lang") === "en") return "en";
   } catch { /* sin almacenamiento */ }
-  return navigator.language?.toLowerCase().startsWith("es") ? "es" : "en";
+  return "es";
 }
 
 interface Meeting { name: string; date: string; time: string; cancelled: boolean; past: boolean }
