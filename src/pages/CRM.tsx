@@ -934,7 +934,7 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
 
           <div className="rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border overflow-hidden">
             <Tabs defaultValue="calls">
-              <TabsList className="w-full justify-start rounded-none border-b border-[#e3e3e3] dark:border-border bg-transparent h-12 p-0 px-3 overflow-x-auto overflow-y-hidden">
+              <TabsList className="w-full justify-start rounded-none sm:rounded-none border-x-0 border-t-0 flex-nowrap border-b border-[#e3e3e3] dark:border-border bg-transparent h-12 p-0 px-3 overflow-x-auto overflow-y-hidden">
                 {tabs.map(([v, l]) => (
                   <TabsTrigger key={v} value={v}
                     className="h-12 rounded-none border-b-[3px] border-transparent px-4 text-sm font-medium text-[#444746] dark:text-muted-foreground data-[state=active]:border-[#0b57d0] data-[state=active]:text-[#0b57d0] dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none data-[state=active]:bg-transparent">

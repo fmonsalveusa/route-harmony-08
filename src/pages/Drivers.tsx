@@ -334,7 +334,7 @@ const Drivers = () => {
                         </div>
                       </td>
                       <td className="px-3 py-2 pl-0" onClick={e => e.stopPropagation()}>
-                        <Button variant="ghost" size="sm" className="glass-action-btn tint-blue shadow-[0_2px_4px_rgba(0,0,0,0.25),0_-1px_0_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.15)] active:shadow-[0_1px_2px_rgba(0,0,0,0.2),inset_0_1px_3px_rgba(0,0,0,0.15)] active:translate-y-px transition-all" onClick={() => copyDriverInfo(driver)} title="Copy">
+                        <Button variant="ghost" size="sm" className="h-8 rounded-full px-3 gap-1 text-xs font-medium text-[#0b57d0] hover:text-[#0b57d0] bg-[#e8f0fe] hover:bg-[#d3e3fd] dark:bg-blue-950/40 dark:text-blue-300" onClick={() => copyDriverInfo(driver)} title="Copy">
                           <Copy className="h-3 w-3" /> Copy
                         </Button>
                       </td>
@@ -544,7 +544,7 @@ const Drivers = () => {
         <p className="text-muted-foreground text-sm">Loading drivers...</p>
       ) : (
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="w-full justify-start rounded-none border-b border-[#e3e3e3] dark:border-border bg-transparent h-12 p-0 px-1 overflow-x-auto overflow-y-hidden">
+          <TabsList className="w-full justify-start rounded-none sm:rounded-none border-x-0 border-t-0 flex-nowrap border-b border-[#e3e3e3] dark:border-border bg-transparent h-12 p-0 px-1 overflow-x-auto overflow-y-hidden">
             <TabsTrigger className="h-12 rounded-none border-b-[3px] border-transparent px-4 gap-2 text-sm font-medium text-[#444746] dark:text-muted-foreground data-[state=active]:border-[#0b57d0] data-[state=active]:text-[#0b57d0] dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none data-[state=active]:bg-transparent" value="active" onClick={() => setPage(1)}>Active <span className={`text-xs rounded-full px-2 py-0.5 font-semibold ${filtered.filter(d => d.status !== 'inactive').length > 0 ? 'bg-destructive text-destructive-foreground' : activeTab === 'active' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{filtered.filter(d => d.status !== 'inactive').length}</span></TabsTrigger>
             <TabsTrigger className="h-12 rounded-none border-b-[3px] border-transparent px-4 gap-2 text-sm font-medium text-[#444746] dark:text-muted-foreground data-[state=active]:border-[#0b57d0] data-[state=active]:text-[#0b57d0] dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none data-[state=active]:bg-transparent" value="inactive" onClick={() => setPage(1)}>Inactive <span className={`text-xs rounded-full px-2 py-0.5 font-semibold ${activeTab === 'inactive' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{filtered.filter(d => d.status === 'inactive').length}</span></TabsTrigger>
             <TabsTrigger className="h-12 rounded-none border-b-[3px] border-transparent px-4 gap-2 text-sm font-medium text-[#444746] dark:text-muted-foreground data-[state=active]:border-[#0b57d0] data-[state=active]:text-[#0b57d0] dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none data-[state=active]:bg-transparent" value="all" onClick={() => setPage(1)}>All <span className={`text-xs rounded-full px-2 py-0.5 font-semibold ${activeTab === 'all' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{filtered.length}</span></TabsTrigger>
