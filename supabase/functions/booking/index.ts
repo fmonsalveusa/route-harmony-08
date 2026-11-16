@@ -262,12 +262,13 @@ function emailHtml(title: string, intro: string, m: any, lang: string, extra = "
   return `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:16px">
     <div style="background:#1e3a5f;color:#fff;padding:18px 20px;border-radius:10px 10px 0 0"><h2 style="margin:0;font-size:20px">${title}</h2></div>
     <div style="border:1px solid #e5e7eb;border-top:0;border-radius:0 0 10px 10px;padding:20px">
-      <p style="margin:0 0 14px;color:#111827">${intro}</p>
+      ${intro ? `<p style="margin:0 0 14px;color:#111827">${intro}</p>` : ""}
       <table style="width:100%;border-collapse:collapse;background:#f9fafb;border-radius:8px">
         ${row(en ? "NAME" : "NOMBRE", m.driver_name)}
         ${row(en ? "DATE" : "FECHA", prettyDate(m.meeting_date, lang))}
         ${row(en ? "TIME" : "HORA", `${m.meeting_time} ${en ? "Eastern Time (ET)" : "hora del Este (ET)"}`)}
         ${row(en ? "PHONE" : "TELÉFONO", prettyPhone(m.phone))}
+        ${row(en ? "VEHICLE TYPE" : "TIPO DE VEHÍCULO", m.truck_type || "—")}
         ${row(en ? "SERVICE TYPE" : "TIPO DE SERVICIO", m.service_interest || "—")}
       </table>
       ${extra}
@@ -316,7 +317,7 @@ async function sendInvite(m: any, cfg: Settings, kind: "new" | "update" | "cance
   }
   // Tu calendario: la misma invitación, para que el evento quede (o se quite) en Google Calendar
   if (cfg.calendarEmail && cfg.calendarEmail.toLowerCase() !== (m.email ?? "").toLowerCase()) {
-    await sendMail([cfg.calendarEmail], `${subj} – ${m.driver_name}`, emailHtml(title, `${m.driver_name} · ${m.phone}${m.truck_type ? ` · ${m.truck_type}` : ""}`, m, "es"),
+    await sendMail([cfg.calendarEmail], `${subj} – ${m.driver_name}`, emailHtml(title, "", m, "es"),
       { body: ics, method: kind === "cancel" ? "CANCEL" : "REQUEST" });
   }
 }

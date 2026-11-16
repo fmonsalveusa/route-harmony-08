@@ -146,7 +146,7 @@ const t = {
 
     // Meeting service options
     meetSvcOptions: [
-      "Servicio de Despacho de Cargas",
+      "Servicio de Dispatcher",
       "Auditoría FMCSA",
       "Curso de Dispatcher",
     ],
@@ -486,7 +486,7 @@ const t = {
     meetErrorGeneric: "Error processing your request",
 
     meetSvcOptions: [
-      "Freight Dispatch Service",
+      "Dispatcher Service",
       "FMCSA Audit",
       "Dispatcher Course",
     ],
