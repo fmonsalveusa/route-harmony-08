@@ -67,3 +67,6 @@ BEGIN
 END $$;
 
 NOTIFY pgrst, 'reload schema';
+
+-- Evento de Google Calendar creado por el script de Google (GCAL_SCRIPT_URL): para moverlo o borrarlo
+ALTER TABLE meeting_requests ADD COLUMN IF NOT EXISTS gcal_event_id text;

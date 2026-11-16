@@ -315,10 +315,48 @@ async function sendInvite(m: any, cfg: Settings, kind: "new" | "update" | "cance
   if (m.email) {
     await sendMail([m.email], `${subj} – ${m.meeting_time} ET`, emailHtml(title, intro, m, lang), { body: ics, method: kind === "cancel" ? "CANCEL" : "REQUEST" });
   }
-  // Tu calendario: la misma invitación, para que el evento quede (o se quite) en Google Calendar
+  // Tu calendario: con el script de Google, el evento se crea/mueve/borra directo en Google Calendar
+  // (Gmail no agrega al calendario una invitación que la cuenta se manda a sí misma)
+  if (Deno.env.get("GCAL_SCRIPT_URL")) return;
   if (cfg.calendarEmail && cfg.calendarEmail.toLowerCase() !== (m.email ?? "").toLowerCase()) {
     await sendMail([cfg.calendarEmail], `${subj} – ${m.driver_name}`, emailHtml(title, "", m, "es"),
       { body: ics, method: kind === "cancel" ? "CANCEL" : "REQUEST" });
+  }
+}
+
+// ─── Google Calendar: evento directo con el script de Google (Apps Script) ───
+
+async function syncGoogleEvent(supabase: any, m: any, cfg: Settings) {
+  const url = Deno.env.get("GCAL_SCRIPT_URL"), secret = Deno.env.get("GCAL_SCRIPT_SECRET");
+  if (!url || !secret) return;
+  const cancelled = m.status === "cancelled";
+  if (cancelled && !m.gcal_event_id) return;
+  const start = etToUtc(m.meeting_date, parseLabel(m.meeting_time)!);
+  const end = new Date(start.getTime() + (m.duration_min ?? cfg.duration) * 60000);
+  const description = [
+    `NOMBRE: ${m.driver_name}`,
+    `TELÉFONO: ${prettyPhone(m.phone)}`,
+    m.email ? `EMAIL: ${m.email}` : "",
+    m.city || m.state ? `CIUDAD: ${[m.city, m.state].filter(Boolean).join(", ")}` : "",
+    `TIPO DE VEHÍCULO: ${m.truck_type || "—"}`,
+    `TIPO DE SERVICIO: ${m.service_interest || "—"}`,
+    m.comments ? `COMENTARIOS: ${m.comments}` : "",
+  ].filter(Boolean).join("\n");
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain" },
+    body: JSON.stringify(cancelled
+      ? { secret, action: "delete", eventId: m.gcal_event_id }
+      : {
+        secret, action: "upsert", eventId: m.gcal_event_id ?? null,
+        title: `${cfg.title} – ${m.driver_name}`, start: start.toISOString(), end: end.toISOString(),
+        description, location: `Llamada al ${prettyPhone(m.phone)}`,
+      }),
+  });
+  const out = await res.json().catch(() => ({}));
+  if (!res.ok || out.error) throw new Error(`Google Calendar: ${out.error ?? `HTTP ${res.status}`}`);
+  if (!cancelled && out.eventId && out.eventId !== m.gcal_event_id) {
+    await supabase.from("meeting_requests").update({ gcal_event_id: out.eventId }).eq("id", m.id);
   }
 }
 
@@ -377,6 +415,7 @@ async function book(supabase: any, cfg: Settings, b: any) {
 
   await Promise.allSettled([
     sendInvite(m, cfg, "new", lang).catch((e) => console.error("invite:", errMsg(e))),
+    syncGoogleEvent(supabase, m, cfg).catch((e) => console.error("gcal:", errMsg(e))),
     notifyGroup(supabase, cfg, m, "new").catch((e) => console.error("group:", errMsg(e))),
   ]);
   return json({ success: true, token: m.manage_token, date: m.meeting_date, time: m.meeting_time });
@@ -458,6 +497,7 @@ Deno.serve(async (req) => {
           .eq("id", m.id).select("*").single();
         await Promise.allSettled([
           sendInvite(upd, cfg, "cancel", body.lang).catch((e) => console.error("invite:", errMsg(e))),
+          syncGoogleEvent(supabase, upd, cfg).catch((e) => console.error("gcal:", errMsg(e))),
           notifyGroup(supabase, cfg, upd, "cancel").catch((e) => console.error("group:", errMsg(e))),
         ]);
         return json({ success: true });
@@ -479,6 +519,7 @@ Deno.serve(async (req) => {
         await supabase.from("whatsapp_message_log").delete().eq("message_key", `meeting:${m.id}`);
         await Promise.allSettled([
           sendInvite(upd, cfg, "update", body.lang).catch((e) => console.error("invite:", errMsg(e))),
+          syncGoogleEvent(supabase, upd, cfg).catch((e) => console.error("gcal:", errMsg(e))),
           notifyGroup(supabase, cfg, upd, "update").catch((e) => console.error("group:", errMsg(e))),
         ]);
         return json({ success: true, date: upd.meeting_date, time: upd.meeting_time });
@@ -490,7 +531,8 @@ Deno.serve(async (req) => {
         if (!secret || req.headers.get("x-cron-secret") !== secret) return json({ error: "Unauthorized" }, 401);
         const m = await byToken(supabase, body.token);
         if (!m) return json({ error: "No encontramos esa reunión." }, 404);
-        await sendInvite(m, cfg, m.status === "cancelled" ? "cancel" : "new", body.lang ?? "es");
+        if (!body.calendar_only) await sendInvite(m, cfg, m.status === "cancelled" ? "cancel" : "new", body.lang ?? "es");
+        await syncGoogleEvent(supabase, m, cfg);
         return json({ success: true });
       }
 
