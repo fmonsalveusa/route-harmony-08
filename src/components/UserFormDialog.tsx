@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { Mail, Lock, User, Phone } from 'lucide-react';
+import { Mail, Lock, User, Phone, UserCog } from 'lucide-react';
 
 interface UserData {
   id: string;
@@ -87,12 +87,20 @@ export const UserFormDialog = ({ open, onOpenChange, user, onSuccess }: UserForm
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>{isEdit ? 'Edit User' : 'New User'}</DialogTitle>
+      <DialogContent className="sm:max-w-md rounded-[28px] border-0 bg-[#f8fafd] dark:bg-background [&_label]:text-xs [&_label]:font-medium [&_label]:text-[#444746] dark:[&_label]:text-muted-foreground [&_input]:h-10 [&_input]:rounded-lg [&_input]:shadow-none [&_input]:bg-white dark:[&_input]:bg-card [&_input]:border-[#c4c7c5] dark:[&_input]:border-border [&_input:focus-visible]:ring-1 [&_input:focus-visible]:ring-[#0b57d0] [&_input:focus-visible]:border-[#0b57d0] [&_button[role=combobox]]:h-10 [&_button[role=combobox]]:rounded-lg [&_button[role=combobox]]:shadow-none [&_button[role=combobox]]:bg-white dark:[&_button[role=combobox]]:bg-card [&_button[role=combobox]]:border-[#c4c7c5] dark:[&_button[role=combobox]]:border-border [&_textarea]:rounded-lg [&_textarea]:shadow-none [&_textarea]:bg-white dark:[&_textarea]:bg-card [&_textarea]:border-[#c4c7c5]">
+        <DialogHeader className="space-y-0">
+          <div className="flex items-center gap-3">
+            <span className="h-11 w-11 rounded-full bg-[#d3e3fd] dark:bg-blue-900/40 text-[#041e49] dark:text-blue-200 flex items-center justify-center shrink-0">
+              <UserCog className="h-5 w-5" />
+            </span>
+            <div>
+              <DialogTitle className="text-[22px] leading-7 font-normal text-[#1f1f1f] dark:text-foreground">{isEdit ? 'Edit User' : 'New User'}</DialogTitle>
+              <p className="text-sm text-[#444746] dark:text-muted-foreground">{isEdit ? 'Actualiza el acceso del usuario' : 'Crea el acceso a la app'}</p>
+            </div>
+          </div>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
+        <form onSubmit={handleSubmit} className="space-y-3 rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border px-4 py-3">
+          <div className="space-y-1">
             <Label htmlFor="fullName">Full Name</Label>
             <div className="relative">
               <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -100,7 +108,7 @@ export const UserFormDialog = ({ open, onOpenChange, user, onSuccess }: UserForm
             </div>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label htmlFor="email">Email</Label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -108,7 +116,7 @@ export const UserFormDialog = ({ open, onOpenChange, user, onSuccess }: UserForm
             </div>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label htmlFor="phone">Phone</Label>
             <div className="relative">
               <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -116,7 +124,7 @@ export const UserFormDialog = ({ open, onOpenChange, user, onSuccess }: UserForm
             </div>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label htmlFor="role">Role</Label>
             <Select value={role} onValueChange={setRole}>
               <SelectTrigger><SelectValue /></SelectTrigger>
@@ -128,7 +136,7 @@ export const UserFormDialog = ({ open, onOpenChange, user, onSuccess }: UserForm
             </Select>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label htmlFor="password">{isEdit ? 'New password (leave empty to keep current)' : 'Password'}</Label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -137,15 +145,15 @@ export const UserFormDialog = ({ open, onOpenChange, user, onSuccess }: UserForm
           </div>
 
           {isEdit && (
-            <div className="flex items-center justify-between rounded-md border p-3">
+            <div className="flex items-center justify-between rounded-2xl bg-[#f0f4f9] dark:bg-muted/60 px-3 py-2">
               <Label htmlFor="is-active" className="cursor-pointer">Active user</Label>
               <Switch id="is-active" checked={isActive} onCheckedChange={setIsActive} />
             </div>
           )}
 
-          <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button type="submit" disabled={loading}>
+          <div className="flex justify-end gap-2 pt-1">
+            <Button type="button" variant="ghost" className="h-10 rounded-full px-5 text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe] dark:text-blue-300 font-medium" onClick={() => onOpenChange(false)}>Cancel</Button>
+            <Button type="submit" className="h-10 rounded-full px-6 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium" disabled={loading}>
               {loading ? 'Saving...' : isEdit ? 'Update' : 'Create User'}
             </Button>
           </div>

@@ -10,6 +10,7 @@ import { EXPENSE_TYPES, EXPENSE_TYPE_LABELS, CATEGORIES_BY_TYPE, PAYMENT_METHODS
 import type { DbTruck } from '@/hooks/useTrucks';
 import type { CreateExpenseInput, DbExpense } from '@/hooks/useExpenses';
 import { toast } from '@/hooks/use-toast';
+import { Receipt } from 'lucide-react';
 
 interface Props {
   open: boolean;
@@ -116,16 +117,24 @@ export function ExpenseFormDialog({ open, onOpenChange, onSubmit, trucks, driver
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{editExpense ? 'Edit Expense' : 'Add New Expense'}</DialogTitle>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-[28px] border-0 bg-[#f8fafd] dark:bg-background [&_label]:text-xs [&_label]:font-medium [&_label]:text-[#444746] dark:[&_label]:text-muted-foreground [&_input]:h-10 [&_input]:rounded-lg [&_input]:shadow-none [&_input]:bg-white dark:[&_input]:bg-card [&_input]:border-[#c4c7c5] dark:[&_input]:border-border [&_input:focus-visible]:ring-1 [&_input:focus-visible]:ring-[#0b57d0] [&_input:focus-visible]:border-[#0b57d0] [&_button[role=combobox]]:h-10 [&_button[role=combobox]]:rounded-lg [&_button[role=combobox]]:shadow-none [&_button[role=combobox]]:bg-white dark:[&_button[role=combobox]]:bg-card [&_button[role=combobox]]:border-[#c4c7c5] dark:[&_button[role=combobox]]:border-border [&_textarea]:rounded-lg [&_textarea]:shadow-none [&_textarea]:bg-white dark:[&_textarea]:bg-card [&_textarea]:border-[#c4c7c5]">
+        <DialogHeader className="space-y-0">
+          <div className="flex items-center gap-3">
+            <span className="h-11 w-11 rounded-full bg-[#d3e3fd] dark:bg-blue-900/40 text-[#041e49] dark:text-blue-200 flex items-center justify-center shrink-0">
+              <Receipt className="h-5 w-5" />
+            </span>
+            <div>
+              <DialogTitle className="text-[22px] leading-7 font-normal text-[#1f1f1f] dark:text-foreground">{editExpense ? 'Edit Expense' : 'Add New Expense'}</DialogTitle>
+              <p className="text-sm text-[#444746] dark:text-muted-foreground">{editExpense ? 'Actualiza los datos del gasto' : 'Registra un gasto del camión'}</p>
+            </div>
+          </div>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-3">
           {/* Basic Info */}
-          <div>
-            <h3 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">Basic Information</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border px-4 py-3">
+            <h3 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground mb-2">Basic Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-3 gap-y-2">
               <div>
                 <Label>Expense Date *</Label>
                 <Input type="date" value={form.expense_date} max={new Date().toISOString().split('T')[0]}
@@ -164,9 +173,9 @@ export function ExpenseFormDialog({ open, onOpenChange, onSubmit, trucks, driver
           </div>
 
           {/* Expense Details */}
-          <div>
-            <h3 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">Expense Details</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border px-4 py-3">
+            <h3 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground mb-2">Expense Details</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-3 gap-y-2">
               <div>
                 <Label>Expense Type *</Label>
                 <Select value={form.expense_type} onValueChange={v => setForm({ ...form, expense_type: v, category: '' })}>
@@ -200,9 +209,9 @@ export function ExpenseFormDialog({ open, onOpenChange, onSubmit, trucks, driver
           </div>
 
           {/* Cost Info */}
-          <div>
-            <h3 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">Cost Information</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border px-4 py-3">
+            <h3 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground mb-2">Cost Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-x-3 gap-y-2">
               <div>
                 <Label>Amount *</Label>
                 <div className="relative">
@@ -252,9 +261,9 @@ export function ExpenseFormDialog({ open, onOpenChange, onSubmit, trucks, driver
           </div>
 
           {/* Additional Info */}
-          <div>
-            <h3 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">Additional Information</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border px-4 py-3">
+            <h3 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground mb-2">Additional Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-3 gap-y-2">
               <div>
                 <Label>Odometer Reading</Label>
                 <Input type="number" value={form.odometer_reading}
@@ -277,9 +286,9 @@ export function ExpenseFormDialog({ open, onOpenChange, onSubmit, trucks, driver
           </div>
         </div>
 
-        <div className="flex justify-end gap-2 mt-4">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleSubmit} disabled={saving}>
+        <div className="flex justify-end gap-2 mt-3">
+          <Button variant="ghost" className="h-10 rounded-full px-5 text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe] dark:text-blue-300 font-medium" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button className="h-10 rounded-full px-6 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium" onClick={handleSubmit} disabled={saving}>
             {saving ? 'Saving...' : editExpense ? 'Update Expense' : 'Save Expense'}
           </Button>
         </div>
