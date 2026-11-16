@@ -67,9 +67,9 @@ export function LoadAdjustmentsSection({ loadId, hideIfEmpty = false }: LoadAdju
   const reasonLabel = (value: string) => ADJUSTMENT_REASONS.find(r => r.value === value)?.label || value;
 
   return (
-    <div className="p-3 rounded-lg bg-card border text-sm">
+    <div className="px-4 py-3 rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border text-sm">
       <div className="flex items-center justify-between mb-2">
-        <h5 className="font-semibold text-sm">Load Adjustments</h5>
+        <h5 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground">Load Adjustments</h5>
         {!showForm && (
           <Button variant="outline" size="sm" className="h-7 gap-1 text-xs" onClick={handleOpenForm}>
             <Plus className="h-3 w-3" /> Add

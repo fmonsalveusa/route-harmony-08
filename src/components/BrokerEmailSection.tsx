@@ -113,9 +113,9 @@ export function BrokerEmailSection({ loadId }: { loadId: string }) {
   const candidates = picking ? results : null;
 
   return (
-    <div className="p-3 rounded-lg bg-card border text-sm space-y-2">
+    <div className="px-4 py-3 rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border text-sm space-y-2">
       <div className="flex items-center justify-between gap-2">
-        <h5 className="font-semibold text-sm flex items-center gap-1.5"><Mail className="h-3.5 w-3.5" /> Email al broker</h5>
+        <h5 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground flex items-center gap-1.5"><Mail className="h-4 w-4 text-[#0b57d0] dark:text-blue-300" /> Email al broker</h5>
         {!picking && (
           <Button variant="outline" size="sm" className="h-7 text-xs" onClick={openPicker}>
             {link?.status === 'linked' ? 'Cambiar hilo' : 'Elegir hilo'}

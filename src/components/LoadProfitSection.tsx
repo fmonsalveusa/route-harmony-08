@@ -26,7 +26,7 @@ const usDate = (d: string) => {
 };
 
 function Header({ children }: { children?: React.ReactNode }) {
-  return <h5 className="font-semibold flex items-center gap-1.5">{children}</h5>;
+  return <h5 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground flex items-center gap-1.5">{children}</h5>;
 }
 
 export function LoadProfitSection({ load, loadedMiles, emptyMiles, truck, driver, dispatcher }: Props) {
@@ -58,7 +58,7 @@ export function LoadProfitSection({ load, loadedMiles, emptyMiles, truck, driver
 
   if (!profit) {
     return (
-      <div className="p-3 rounded-lg bg-card border text-sm">
+      <div className="px-4 py-3 rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border text-sm">
         <Header><TrendingUp className="h-3.5 w-3.5 text-muted-foreground" /> Rentabilidad</Header>
         <p className="text-xs text-muted-foreground mt-1">
           No disponible: la carga es anterior al {usDate(startDate)}, fecha en que empezó el cálculo de profit.
@@ -73,7 +73,7 @@ export function LoadProfitSection({ load, loadedMiles, emptyMiles, truck, driver
 
   if (isCompanyDriver && !truck) {
     return (
-      <div className="p-3 rounded-lg bg-card border text-sm">
+      <div className="px-4 py-3 rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border text-sm">
         <Header><TrendingUp className="h-3.5 w-3.5 text-primary" /> Rentabilidad</Header>
         <p className="text-xs text-muted-foreground mt-1">Asigna un camión para calcular el profit de esta carga.</p>
       </div>
@@ -81,7 +81,7 @@ export function LoadProfitSection({ load, loadedMiles, emptyMiles, truck, driver
   }
 
   return (
-    <div className="p-3 rounded-lg bg-card border text-sm">
+    <div className="px-4 py-3 rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border text-sm">
       <div className="flex items-center justify-between mb-2">
         <Header>
           {isProfit

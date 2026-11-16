@@ -1494,18 +1494,20 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
   }, [load.id, load.driver_id, mapReady]);
 
   return (
-    <div className="p-4 bg-muted/30 border-t animate-in slide-in-from-top-2 duration-200 space-y-4">
+    <div className="px-4 py-3 bg-[#f8fafd] dark:bg-background/60 border-t border-[#e3e3e3] dark:border-border animate-in slide-in-from-top-2 duration-200 space-y-3">
       {/* Encabezado: empresa, título y documentos de la carga */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-4 min-w-0">
           {(() => {
             const company = companies.find(c => c.id === (load as any).company_id);
             return company ? (
-              <div className="flex items-center gap-2 pl-3 border-l-4 border-primary">
-                <Building2 className="h-4 w-4 text-primary flex-shrink-0" />
+              <div className="flex items-center gap-2.5">
+                <span className="h-9 w-9 rounded-full bg-[#d3e3fd] dark:bg-blue-900/40 text-[#041e49] dark:text-blue-200 flex items-center justify-center flex-shrink-0">
+                  <Building2 className="h-[18px] w-[18px]" />
+                </span>
                 <div className="min-w-0">
-                  <h3 className="font-bold text-xs uppercase text-foreground tracking-wide leading-tight">{company.name}</h3>
-                  <p className="text-[11px] text-muted-foreground leading-tight">
+                  <h3 className="font-medium text-sm text-[#1f1f1f] dark:text-foreground leading-tight">{company.name}</h3>
+                  <p className="text-[11px] text-[#444746] dark:text-muted-foreground leading-tight">
                     {[company.mc_number && `MC# ${company.mc_number}`, company.dot_number && `DOT# ${company.dot_number}`].filter(Boolean).join('  •  ') || 'Sin MC/DOT registrado'}
                   </p>
                 </div>
@@ -1513,65 +1515,65 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
             ) : null;
           })()}
           <div className="flex items-center gap-2">
-            <h4 className="font-semibold text-sm text-foreground">Load Detail</h4>
+            <h4 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground">Load Detail</h4>
             <CopyLoadInfoButton load={load} totalMiles={totalMiles} emptyMiles={emptyMiles} rpm={rpm} driver={driver} dispatcher={dispatcher} />
           </div>
         </div>
             <div className="flex items-center gap-2">
               {load.pdf_url && (
-                <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-green-800 text-white text-[11px]">
+                <div className="flex items-center gap-1 pl-3 pr-1 h-9 rounded-full text-xs font-medium bg-[#c4eed0] text-[#072711] dark:bg-emerald-900/40 dark:text-emerald-200">
                   <FileText className="h-3 w-3 flex-shrink-0" />
                   <span className="font-medium">Rate Confirmation - PDF</span>
-                  <Button variant="outline" size="sm" className="gap-1 h-6 px-1.5 text-[10px] bg-white border-white text-green-800 hover:bg-green-50 ml-1" onClick={() => { void openOriginalPdf(); }}>
-                    <ExternalLink className="h-2.5 w-2.5" /> Ver
+                  <Button variant="outline" size="sm" className="gap-1 h-7 px-2.5 text-[11px] rounded-full shadow-none border-0 bg-white/80 text-[#072711] hover:bg-white ml-1" onClick={() => { void openOriginalPdf(); }}>
+                    <ExternalLink className="h-3 w-3" /> Ver
                   </Button>
-                  <Button variant="outline" size="sm" className="gap-1 h-6 px-1.5 text-[10px] bg-white border-white text-green-800 hover:bg-green-50" onClick={() => { void downloadOriginalPdf(); }}>
-                    <Download className="h-2.5 w-2.5" /> Bajar
+                  <Button variant="outline" size="sm" className="gap-1 h-7 px-2.5 text-[11px] rounded-full shadow-none border-0 bg-white/80 text-[#072711] hover:bg-white" onClick={() => { void downloadOriginalPdf(); }}>
+                    <Download className="h-3 w-3" /> Bajar
                   </Button>
                 </div>
               )}
               {canSeeGrossRate && rcOriginalUrl && (
-                <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-red-600 text-white text-[11px]">
+                <div className="flex items-center gap-1 pl-3 pr-1 h-9 rounded-full text-xs font-medium bg-[#f9dedc] text-[#410e0b] dark:bg-red-900/40 dark:text-red-200">
                   <FileText className="h-3 w-3 flex-shrink-0" />
                   <span className="font-medium">RC Original - PDF</span>
-                  <Button variant="outline" size="sm" className="gap-1 h-6 px-1.5 text-[10px] bg-white border-white text-red-600 hover:bg-red-50 ml-1" onClick={() => { void openRcOriginalPdf(); }}>
-                    <ExternalLink className="h-2.5 w-2.5" /> Ver
+                  <Button variant="outline" size="sm" className="gap-1 h-7 px-2.5 text-[11px] rounded-full shadow-none border-0 bg-white/80 text-[#410e0b] hover:bg-white ml-1" onClick={() => { void openRcOriginalPdf(); }}>
+                    <ExternalLink className="h-3 w-3" /> Ver
                   </Button>
-                  <Button variant="outline" size="sm" className="gap-1 h-6 px-1.5 text-[10px] bg-white border-white text-red-600 hover:bg-red-50" onClick={() => { void downloadRcOriginalPdf(); }}>
-                    <Download className="h-2.5 w-2.5" /> Bajar
+                  <Button variant="outline" size="sm" className="gap-1 h-7 px-2.5 text-[11px] rounded-full shadow-none border-0 bg-white/80 text-[#410e0b] hover:bg-white" onClick={() => { void downloadRcOriginalPdf(); }}>
+                    <Download className="h-3 w-3" /> Bajar
                   </Button>
                 </div>
               )}
-              <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-white text-[11px]" style={{ backgroundColor: '#266aad' }}>
+              <div className="flex items-center gap-1 pl-3 pr-1 h-9 rounded-full text-xs font-medium bg-[#d3e3fd] text-[#041e49] dark:bg-blue-900/40 dark:text-blue-200">
                 <FileText className="h-3 w-3 flex-shrink-0" />
                 <span className="font-medium">BOL</span>
-                <Button variant="outline" size="sm" className="gap-1 h-6 px-1.5 text-[10px] bg-white border-white hover:bg-blue-50 ml-1" style={{ color: '#266aad' }} onClick={() => setBolDialogOpen(true)}>
-                  <Download className="h-2.5 w-2.5" /> Generar
+                <Button variant="outline" size="sm" className="gap-1 h-7 px-2.5 text-[11px] rounded-full shadow-none border-0 bg-white/80 text-[#041e49] hover:bg-white ml-1" onClick={() => setBolDialogOpen(true)}>
+                  <Download className="h-3 w-3" /> Generar
                 </Button>
               </div>
             </div>
       </div>
 
       {/* Tres columnas: datos de la carga | ruta y paradas | mapa */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-12 gap-4 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-12 gap-3 items-start">
         {/* Columna 1: datos de la carga, ajustes y rentabilidad */}
         <div className="xl:col-span-3 space-y-3">
-          <div className="rounded-lg border bg-card overflow-hidden text-sm">
-            <div className="px-3 py-2 border-b bg-muted/50 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Carga</div>
-              <div className="flex items-start justify-between gap-3 px-3 py-2 border-b last:border-b-0">
-                <span className="text-xs text-muted-foreground font-medium pt-0.5">Broker</span>
+          <div className="rounded-3xl border border-[#e3e3e3] dark:border-border bg-white dark:bg-card overflow-hidden text-sm">
+            <div className="px-4 pt-3 pb-1.5 text-[15px] font-medium text-[#1f1f1f] dark:text-foreground">Carga</div>
+              <div className="flex items-start justify-between gap-3 px-4 py-1.5 border-b border-[#f0f0f0] dark:border-border last:border-b-0">
+                <span className="text-xs text-[#444746] dark:text-muted-foreground font-medium pt-0.5">Broker</span>
                 <div className="text-right"><div className="font-semibold">{load.broker_client || '—'}</div><BrokerScoreRow brokerName={load.broker_client} hideLabel /></div>
               </div>
-              <div className="flex items-start justify-between gap-3 px-3 py-2 border-b last:border-b-0">
-                <span className="text-xs text-muted-foreground font-medium pt-0.5">Rate</span>
-                <div className="text-right"><span className="font-semibold text-primary">${Number(load.total_rate).toLocaleString()}</span></div>
+              <div className="flex items-start justify-between gap-3 px-4 py-1.5 border-b border-[#f0f0f0] dark:border-border last:border-b-0">
+                <span className="text-xs text-[#444746] dark:text-muted-foreground font-medium pt-0.5">Rate</span>
+                <div className="text-right"><span className="font-medium text-[#188038] dark:text-emerald-400">${Number(load.total_rate).toLocaleString()}</span></div>
               </div>
-              <div className="flex items-start justify-between gap-3 px-3 py-2 border-b last:border-b-0">
-                <span className="text-xs text-muted-foreground font-medium pt-0.5">Weight</span>
+              <div className="flex items-start justify-between gap-3 px-4 py-1.5 border-b border-[#f0f0f0] dark:border-border last:border-b-0">
+                <span className="text-xs text-[#444746] dark:text-muted-foreground font-medium pt-0.5">Weight</span>
                 <div className="text-right"><span className="font-semibold">{load.weight ? `${Number(load.weight).toLocaleString()} lbs` : '—'}</span></div>
               </div>
-              <div className="flex items-start justify-between gap-3 px-3 py-2 border-b">
-                <span className="text-xs text-muted-foreground font-medium pt-0.5">Empty Miles</span>
+              <div className="flex items-start justify-between gap-3 px-4 py-1.5 border-b border-[#f0f0f0] dark:border-border">
+                <span className="text-xs text-[#444746] dark:text-muted-foreground font-medium pt-0.5">Empty Miles</span>
                 <div className="text-right min-w-0">
                 <div className="flex items-center gap-1">
                   <span className="text-base font-semibold text-amber-500">{emptyMiles > 0 ? emptyMiles.toLocaleString() : '—'}</span>
@@ -1608,47 +1610,47 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
                 {emptyMilesOrigin && <div className="text-[10px] text-muted-foreground truncate">desde {emptyMilesOrigin}</div>}
                 </div>
               </div>
-              <div className="flex items-start justify-between gap-3 px-3 py-2 border-b last:border-b-0">
-                <span className="text-xs text-muted-foreground font-medium pt-0.5">Miles</span>
+              <div className="flex items-start justify-between gap-3 px-4 py-1.5 border-b border-[#f0f0f0] dark:border-border last:border-b-0">
+                <span className="text-xs text-[#444746] dark:text-muted-foreground font-medium pt-0.5">Miles</span>
                 <div className="text-right"><span className="font-semibold text-primary">{totalMiles > 0 ? totalMiles.toLocaleString() : load.status === 'tonu' ? '0' : '—'}</span></div>
               </div>
-              <div className="flex items-start justify-between gap-3 px-3 py-2 border-b last:border-b-0">
-                <span className="text-xs text-muted-foreground font-medium pt-0.5">Total Miles</span>
+              <div className="flex items-start justify-between gap-3 px-4 py-1.5 border-b border-[#f0f0f0] dark:border-border last:border-b-0">
+                <span className="text-xs text-[#444746] dark:text-muted-foreground font-medium pt-0.5">Total Miles</span>
                 <div className="text-right"><span className="font-semibold">{(emptyMiles + totalMiles) > 0 ? (emptyMiles + totalMiles).toLocaleString() : '—'}</span></div>
               </div>
-              <div className="flex items-start justify-between gap-3 px-3 py-2 border-b last:border-b-0">
-                <span className="text-xs text-muted-foreground font-medium pt-0.5">RPM</span>
+              <div className="flex items-start justify-between gap-3 px-4 py-1.5 border-b border-[#f0f0f0] dark:border-border last:border-b-0">
+                <span className="text-xs text-[#444746] dark:text-muted-foreground font-medium pt-0.5">RPM</span>
                 <div className="text-right"><span className={`font-semibold ${rpmColorClass}`}>{rpm > 0 ? `$${rpm.toFixed(2)}` : '—'}</span></div>
               </div>
-              <div className="flex items-start justify-between gap-3 px-3 py-2 border-b last:border-b-0">
-                <span className="text-xs text-muted-foreground font-medium pt-0.5">RPM+DH</span>
+              <div className="flex items-start justify-between gap-3 px-4 py-1.5 border-b border-[#f0f0f0] dark:border-border last:border-b-0">
+                <span className="text-xs text-[#444746] dark:text-muted-foreground font-medium pt-0.5">RPM+DH</span>
                 <div className="text-right"><span className="font-semibold text-muted-foreground">{(emptyMiles + totalMiles) > 0 ? `$${(Number(load.total_rate) / (emptyMiles + totalMiles)).toFixed(2)}` : '—'}</span></div>
               </div>
-              <div className="flex items-start justify-between gap-3 px-3 py-2 border-b last:border-b-0">
-                <span className="text-xs text-muted-foreground font-medium pt-0.5">Driver</span>
+              <div className="flex items-start justify-between gap-3 px-4 py-1.5 border-b border-[#f0f0f0] dark:border-border last:border-b-0">
+                <span className="text-xs text-[#444746] dark:text-muted-foreground font-medium pt-0.5">Driver</span>
                 <div className="text-right"><span className="font-medium">{driver?.name || 'Sin asignar'}</span><div className="text-muted-foreground text-xs">{truck?.truck_type || '—'}</div></div>
               </div>
-              <div className="flex items-start justify-between gap-3 px-3 py-2 border-b last:border-b-0">
-                <span className="text-xs text-muted-foreground font-medium pt-0.5">Dispatcher</span>
+              <div className="flex items-start justify-between gap-3 px-4 py-1.5 border-b border-[#f0f0f0] dark:border-border last:border-b-0">
+                <span className="text-xs text-[#444746] dark:text-muted-foreground font-medium pt-0.5">Dispatcher</span>
                 <div className="text-right"><span className="font-medium">{dispatcher?.name || '—'}</span></div>
               </div>
             {/* Gross Rate — solo Admin / Accounting / Master Admin */}
             {canSeeGrossRate && rcGrossRate && (
               <>
-              <div className="flex items-start justify-between gap-3 px-3 py-2 border-b last:border-b-0 bg-amber-500/10">
-                <span className="text-xs text-muted-foreground font-medium pt-0.5"><span className="text-amber-700 dark:text-amber-400">Gross Rate</span></span>
+              <div className="flex items-start justify-between gap-3 px-4 py-1.5 border-b border-[#f0f0f0] last:border-b-0 bg-[#fef7e0] dark:bg-amber-950/30">
+                <span className="text-xs text-[#444746] dark:text-muted-foreground font-medium pt-0.5"><span className="text-amber-700 dark:text-amber-400">Gross Rate</span></span>
                 <div className="text-right"><span className="font-semibold text-amber-700 dark:text-amber-400">${Number(rcGrossRate).toLocaleString()}</span></div>
               </div>
-              <div className="flex items-start justify-between gap-3 px-3 py-2 border-b last:border-b-0 bg-amber-500/10">
-                <span className="text-xs text-muted-foreground font-medium pt-0.5"><span className="text-amber-700 dark:text-amber-400">Comisión broker</span></span>
+              <div className="flex items-start justify-between gap-3 px-4 py-1.5 border-b border-[#f0f0f0] last:border-b-0 bg-[#fef7e0] dark:bg-amber-950/30">
+                <span className="text-xs text-[#444746] dark:text-muted-foreground font-medium pt-0.5"><span className="text-amber-700 dark:text-amber-400">Comisión broker</span></span>
                 <div className="text-right"><span className="font-semibold text-amber-700 dark:text-amber-400">${(Number(rcGrossRate) - Number(load.total_rate)).toLocaleString()}</span></div>
               </div>
               </>
             )}
             {/* Notes */}
             {load.notes && (
-              <div className="px-3 py-2.5 border-t">
-                <div className="text-[11px] text-muted-foreground font-medium mb-1 flex items-center gap-1">
+              <div className="mx-3 mb-3 mt-1 px-3 py-2 rounded-2xl bg-[#f0f4f9] dark:bg-muted/60">
+                <div className="text-[11px] text-[#444746] dark:text-muted-foreground font-medium mb-1 flex items-center gap-1">
                   <FileText className="h-3 w-3" /> Notes
                 </div>
                 <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{load.notes}</p>
@@ -1675,9 +1677,9 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
         {/* Columna 2: ruta y paradas, email al broker y RC firmado */}
         <div className="xl:col-span-5 space-y-3">
           {/* Stops / Route breakdown */}
-          <div className="p-3 rounded-lg bg-card border text-sm">
-            <h5 className="font-semibold mb-2 flex items-center gap-1.5">
-              <Navigation className="h-3.5 w-3.5 text-primary" /> Ruta y Paradas
+          <div className="px-4 py-3 rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border text-sm">
+            <h5 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground mb-2 flex items-center gap-1.5">
+              <Navigation className="h-4 w-4 text-[#0b57d0] dark:text-blue-300" /> Ruta y Paradas
             </h5>
             {resolvedStops.length > 0 ? (
               <div className="space-y-3">
@@ -1696,13 +1698,13 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
                   ].filter(Boolean).join('\n');
                   return (
                     <div key={i} className="flex items-start gap-2">
-                      <div className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white ${stop.type === 'pickup' ? 'bg-[hsl(152,60%,40%)]' : 'bg-[hsl(0,72%,51%)]'}`}>
+                      <div className={`mt-0.5 flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-medium text-white ${stop.type === 'pickup' ? 'bg-[#188038]' : 'bg-[#d93025]'}`}>
                         {stop.type === 'pickup' ? 'P' : 'D'}
                       </div>
                       <div className="flex-1">
                         {/* Fila 1: nombre + fecha */}
                         <div className="flex items-start justify-between gap-2">
-                          <div className="font-semibold text-sm text-foreground">{nameLabel || stopTypeLabel}</div>
+                          <div className="font-medium text-sm text-[#1f1f1f] dark:text-foreground">{nameLabel || stopTypeLabel}</div>
                           {stopDate && (
                             <div className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0 text-right">
                               <div>
@@ -1727,7 +1729,7 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
                         </div>
                         {/* Fila 3: distancia */}
                         {stop.distanceFromPrev != null && (
-                          <div className="text-xs text-primary font-semibold">
+                          <div className="text-xs text-[#0b57d0] dark:text-blue-300 font-medium">
                             ↳ {stop.distanceFromPrev.toLocaleString()} mi desde parada anterior
                           </div>
                         )}
@@ -1739,9 +1741,9 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
                   );
                 })}
                 {totalMiles > 0 && (
-                  <div className="pt-2 border-t flex justify-between text-xs font-semibold">
-                    <span className="text-muted-foreground">Distancia Total</span>
-                    <span className="text-primary">{totalMiles.toLocaleString()} miles</span>
+                  <div className="pt-2 border-t border-[#f0f0f0] dark:border-border flex justify-between text-xs font-medium">
+                    <span className="text-[#444746] dark:text-muted-foreground">Distancia Total</span>
+                    <span className="text-[#0b57d0] dark:text-blue-300">{totalMiles.toLocaleString()} miles</span>
                   </div>
                 )}
               </div>
@@ -1771,7 +1773,7 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
         {/* Columna 3: mapa */}
         <div className="lg:col-span-2 xl:col-span-4">
         {/* Map */}
-        <div className="sticky top-4 rounded-lg overflow-hidden border bg-card relative" style={{ height: 700, zIndex: 0 }}>
+        <div className="sticky top-4 rounded-3xl overflow-hidden border border-[#e3e3e3] dark:border-border bg-white dark:bg-card relative" style={{ height: 640, zIndex: 0 }}>
           <div ref={mapRef} style={{ height: '100%', zIndex: 0 }} />
           {gpsStatus !== 'none' && (
             <div className="absolute top-2 right-2 z-[1000] pointer-events-none">
