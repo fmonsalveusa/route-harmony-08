@@ -20,7 +20,7 @@ function Info({ label, children }: { label: string; children: React.ReactNode })
   return (
     <div>
       <p className="text-xs text-[#444746] dark:text-muted-foreground">{label}</p>
-      <p className="font-medium text-sm text-[#1f1f1f] dark:text-foreground">{children}</p>
+      <p className="font-medium text-sm text-[#1f1f1f] dark:text-foreground [overflow-wrap:anywhere]">{children}</p>
     </div>
   );
 }
