@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Contact, Plus, Search, Phone, MessageCircle, Globe, UserCheck, PenLine, CalendarClock, AlertCircle,
-  Users as UsersIcon, CalendarCheck, Trophy, Bell, Trash2, Loader2, Send, Check,
+  Users as UsersIcon, CalendarCheck, Trophy, Bell, Trash2, Loader2, Send, Check, X,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -445,7 +445,7 @@ function useContacts() {
   });
 }
 
-interface MeetingSummary { date: string; time: string }
+interface MeetingSummary { date: string; time: string; token: string }
 
 // '2026-10-16' → 'Vie 10/16/2026'
 const fmtMeetingDate = (d: string) => {
@@ -457,6 +457,29 @@ const fmtMeetingDate = (d: string) => {
 function ContactCard({ c, calls, meeting, onOpen }: { c: CrmContact; calls?: CallSummary; meeting?: MeetingSummary; onOpen: () => void }) {
   const src = SOURCE[c.source] ?? SOURCE.manual;
   const overdue = isOverdue(c);
+  const qc = useQueryClient();
+  const [cancelling, setCancelling] = useState(false);
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+
+  // Cancela la reunión en todos lados: libera el horario, borra el evento de Google Calendar,
+  // avisa al prospecto por email y al grupo de reuniones; el contacto vuelve a "Nuevo"
+  const cancelMeeting = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!meeting || !window.confirm(`¿Cancelar la reunión de ${c.name || c.phone} del ${fmtMeetingDate(meeting.date)} a las ${meeting.time}?
+
+Se borra de Google Calendar, se libera el horario y se le avisa por email.`)) return;
+    setCancelling(true);
+    const { data, error } = await supabase.functions.invoke('booking', { body: { action: 'cancel', token: meeting.token } });
+    if (error || data?.error) { setCancelling(false); toast.error(data?.error ?? error?.message); return; }
+    await supabase.from('crm_contacts' as any).update({ stage: 'new' } as any).eq('id', c.id).eq('stage', 'meeting_scheduled');
+    await supabase.from('crm_notes' as any).insert({ tenant_id: (c as any).tenant_id, contact_id: c.id, kind: 'system', body: `Reunión del ${fmtMeetingDate(meeting.date)} a las ${meeting.time} cancelada desde el CRM` } as any);
+    setCancelling(false);
+    toast.success('Reunión cancelada');
+    qc.invalidateQueries({ queryKey: ['crm_meetings'] });
+    qc.invalidateQueries({ queryKey: ['crm_contacts'] });
+    qc.invalidateQueries({ queryKey: ['booking_upcoming'] });
+  };
+
   return (
     <div
       draggable
@@ -476,9 +499,20 @@ function ContactCard({ c, calls, meeting, onOpen }: { c: CrmContact; calls?: Cal
         <p className="text-xs text-muted-foreground truncate">{[c.vehicle, c.service].filter(Boolean).join(' · ')}</p>
       )}
       {meeting && c.stage === 'meeting_scheduled' && (
-        <p className="text-[11px] flex items-center gap-1 font-medium text-violet-700 dark:text-violet-300">
-          <CalendarCheck className="h-3 w-3" /> Reunión: {fmtMeetingDate(meeting.date)} · {meeting.time}
-        </p>
+        <div className="text-[11px] flex items-center gap-1 font-medium text-violet-700 dark:text-violet-300">
+          <CalendarCheck className="h-3 w-3 shrink-0" /> <span className="truncate">Reunión: {fmtMeetingDate(meeting.date)} · {meeting.time}</span>
+          {meeting.date >= today && meeting.token && (
+            <button
+              type="button"
+              onClick={cancelMeeting}
+              disabled={cancelling}
+              title="Cancelar reunión"
+              className="ml-auto shrink-0 inline-flex items-center gap-0.5 rounded px-1 py-0.5 text-[10px] font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40"
+            >
+              {cancelling ? <Loader2 className="h-3 w-3 animate-spin" /> : <X className="h-3 w-3" />} Cancelar
+            </button>
+          )}
+        </div>
       )}
       {calls && (
         <p className="text-[11px] flex items-center gap-1 text-muted-foreground">
@@ -931,7 +965,7 @@ export default function CRM() {
     queryKey: ['crm_meetings'],
     queryFn: async () => {
       const { data } = await supabase.from('meeting_requests' as any)
-        .select('phone, meeting_date, meeting_time, status').neq('status', 'cancelled').order('meeting_date');
+        .select('phone, meeting_date, meeting_time, status, manage_token').neq('status', 'cancelled').order('meeting_date');
       const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
       const out: Record<string, MeetingSummary> = {};
       for (const r of ((data as any[]) ?? [])) {
@@ -939,7 +973,7 @@ export default function CRM() {
         if (key.length !== 10 || !r.meeting_date) continue;
         const cur = out[key];
         // Ordenadas por fecha: se queda con la primera que no ha pasado
-        if (!cur || cur.date < today) out[key] = { date: r.meeting_date, time: r.meeting_time };
+        if (!cur || cur.date < today) out[key] = { date: r.meeting_date, time: r.meeting_time, token: r.manage_token };
       }
       return out;
     },
