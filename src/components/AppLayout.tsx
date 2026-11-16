@@ -73,8 +73,8 @@ const allNavItems: NavItem[] = [
 ];
 
 // Menú lateral oscuro (estilo RouteOne) con el azul de la marca
-const SIDEBAR_BG = 'bg-[#f8fafd] dark:bg-[#1b1f24]';
-const SIDEBAR_LINK = 'text-[#1f1f1f] hover:bg-[#e8ebee] dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white';
+const SIDEBAR_BG = 'bg-[#eef2f7] dark:bg-[#1b1f24]';
+const SIDEBAR_LINK = 'text-[#1f1f1f] hover:bg-[#e1e6ee] dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white';
 // Color fijo (no bg-sky-100): el menú es oscuro en los dos modos y el resaltado debe verse igual
 const SIDEBAR_ACTIVE = 'bg-[#d3e3fd] text-[#041e49] font-semibold dark:bg-blue-900/50 dark:text-blue-100';
 
@@ -300,7 +300,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button onClick={signOut} className="p-2 rounded-full hover:bg-[#e8ebee] dark:hover:bg-white/10 text-[#444746] dark:text-slate-400 transition-colors">
+                  <button onClick={signOut} className="p-2 rounded-full hover:bg-[#e1e6ee] dark:hover:bg-white/10 text-[#444746] dark:text-slate-400 transition-colors">
                     <LogOut className="h-4 w-4" />
                   </button>
                 </TooltipTrigger>
@@ -318,7 +318,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
                 <p className="text-xs font-medium truncate text-[#1f1f1f] dark:text-white">{profile.full_name}</p>
                 <p className="text-[11px] text-[#444746] dark:text-slate-400 truncate">{profile.email}</p>
               </div>
-              <button onClick={signOut} className="p-2 rounded-full hover:bg-[#e8ebee] dark:hover:bg-white/10 text-[#444746] dark:text-slate-400 transition-colors flex-shrink-0">
+              <button onClick={signOut} className="p-2 rounded-full hover:bg-[#e1e6ee] dark:hover:bg-white/10 text-[#444746] dark:text-slate-400 transition-colors flex-shrink-0">
                 <LogOut className="h-4 w-4" />
               </button>
             </div>
@@ -327,7 +327,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
           {/* Collapse toggle */}
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className={`w-full flex items-center gap-2 px-3 h-8 rounded-full text-xs text-[#444746] dark:text-slate-400 hover:bg-[#e8ebee] dark:hover:bg-white/10 transition-colors ${collapsed ? 'justify-center' : ''}`}
+            className={`w-full flex items-center gap-2 px-3 h-8 rounded-full text-xs text-[#444746] dark:text-slate-400 hover:bg-[#e1e6ee] dark:hover:bg-white/10 transition-colors ${collapsed ? 'justify-center' : ''}`}
           >
             {collapsed
               ? <ChevronRight className="h-4 w-4" />
@@ -344,7 +344,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
         <header className="top-header flex items-center justify-between h-16 px-4 lg:px-5 shrink-0" style={{ paddingTop: 'max(0.5rem, env(safe-area-inset-top, 0.5rem))' }}>
           <div className="flex items-center gap-3">
             {/* Mobile hamburger */}
-            <button className="lg:hidden p-2 rounded-full hover:bg-[#e8ebee] dark:hover:bg-white/10 text-[#444746] dark:text-slate-400" onClick={() => setMobileMenuOpen(true)}>
+            <button className="lg:hidden p-2 rounded-full hover:bg-[#e1e6ee] dark:hover:bg-white/10 text-[#444746] dark:text-slate-400" onClick={() => setMobileMenuOpen(true)}>
               <Menu className="h-5 w-5" />
             </button>
             {/* Mobile logo */}
@@ -406,7 +406,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
                 <img src={logoImg} alt="" className="h-6 w-6 rounded" />
                 <span className="text-sm font-medium text-[#1f1f1f] dark:text-white">{tenant?.name || 'Dispatch Up TMS'}</span>
               </div>
-              <button onClick={() => setMobileMenuOpen(false)} className="p-2 rounded-full hover:bg-[#e8ebee] dark:hover:bg-white/10 text-[#444746] dark:text-slate-400">
+              <button onClick={() => setMobileMenuOpen(false)} className="p-2 rounded-full hover:bg-[#e1e6ee] dark:hover:bg-white/10 text-[#444746] dark:text-slate-400">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -449,7 +449,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
                   <p className="text-xs font-medium truncate text-[#1f1f1f] dark:text-white">{profile.full_name}</p>
                   <p className="text-[11px] text-[#444746] dark:text-slate-400 truncate">{profile.email}</p>
                 </div>
-                <button onClick={signOut} className="p-2 rounded-full hover:bg-[#e8ebee] dark:hover:bg-white/10 text-[#444746] dark:text-slate-400">
+                <button onClick={signOut} className="p-2 rounded-full hover:bg-[#e1e6ee] dark:hover:bg-white/10 text-[#444746] dark:text-slate-400">
                   <LogOut className="h-4 w-4" />
                 </button>
               </div>

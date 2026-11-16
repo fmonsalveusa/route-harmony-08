@@ -76,7 +76,7 @@ export const NotificationBell = () => {
     <div className="relative" ref={panelRef}>
       <button
         onClick={() => setOpen(!open)}
-        className="relative p-2 rounded-full text-[#444746] hover:bg-[#e8ebee] dark:text-white dark:hover:bg-white/10 transition-colors"
+        className="relative p-2 rounded-full text-[#444746] hover:bg-[#e1e6ee] dark:text-white dark:hover:bg-white/10 transition-colors"
       >
         <Bell className="h-5 w-5" />
         {unreadCount > 0 && (

@@ -96,7 +96,7 @@ export function GlobalSearch() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="hidden md:flex items-center gap-3 h-11 w-72 lg:w-[480px] rounded-full bg-[#e9eef6] hover:bg-[#dfe5ee] dark:bg-white/10 dark:hover:bg-white/15 px-4 text-sm text-[#444746] dark:text-white/80 transition-colors"
+        className="hidden md:flex items-center gap-3 h-11 w-72 lg:w-[480px] rounded-full bg-white hover:bg-white hover:shadow-[0_1px_1px_rgba(65,69,73,.3),0_1px_3px_1px_rgba(65,69,73,.15)] dark:bg-white/10 dark:hover:bg-white/15 px-4 text-sm text-[#444746] dark:text-white/80 transition-colors"
       >
         <Search className="h-5 w-5" />
         <span className="flex-1 text-left">Buscar carga, driver, unidad...</span>
@@ -105,7 +105,7 @@ export function GlobalSearch() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="md:hidden p-2 rounded-full hover:bg-[#e8ebee] dark:hover:bg-white/10 text-[#444746] dark:text-white"
+        className="md:hidden p-2 rounded-full hover:bg-[#e1e6ee] dark:hover:bg-white/10 text-[#444746] dark:text-white"
         aria-label="Buscar"
       >
         <Search className="h-5 w-5" />
