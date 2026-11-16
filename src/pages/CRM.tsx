@@ -509,7 +509,7 @@ Se borra de Google Calendar, se libera el horario y se le avisa por email.`)) re
               title="Cancelar reunión"
               className="ml-auto shrink-0 inline-flex items-center gap-0.5 rounded px-1 py-0.5 text-[10px] font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40"
             >
-              {cancelling ? <Loader2 className="h-3 w-3 animate-spin" /> : <X className="h-3 w-3" />} Cancelar
+              {cancelling ? <Loader2 className="h-3 w-3 animate-spin" /> : <X className="h-3 w-3" />} Cancelar Reunión
             </button>
           )}
         </div>
