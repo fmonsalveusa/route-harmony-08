@@ -182,9 +182,11 @@ function MeetingSection({ contact, name, vehicle, scheduledAt }: { contact: CrmC
     if (sent[id] && !window.confirm(`"${label}" ya se envió. ¿Enviarlo de nuevo?`)) return;
     setBusy(id);
     try {
-      const r = await invokeGroups({ action: 'crm_send_step', contact_id: contact.id, step: id });
+      const r = await invokeGroups(id === 'welcome'
+        ? { action: 'crm_send_welcome', contact_id: contact.id }
+        : { action: 'crm_send_step', contact_id: contact.id, step: id });
       setSent(s => ({ ...s, [id]: r.sent_at }));
-      setChecks(c => ({ ...c, [id]: true }));
+      if (id !== 'welcome') setChecks(c => ({ ...c, [id]: true }));
       toast.success(`${label} enviado al grupo`);
       refresh();
     } catch (e: any) {
@@ -232,7 +234,23 @@ function MeetingSection({ contact, name, vehicle, scheduledAt }: { contact: CrmC
           <p className="text-xs flex items-center gap-1.5 text-green-700 dark:text-green-400">
             <MessageCircle className="h-3.5 w-3.5" /> Grupo de WhatsApp
           </p>
-          <WhatsAppGroupSelect compact className="" groupId={group.id} groupName={group.name} onChange={linkGroup} />
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex-1 min-w-[220px]">
+              <WhatsAppGroupSelect compact className="" groupId={group.id} groupName={group.name} onChange={linkGroup} />
+            </div>
+            <Button
+              size="sm"
+              onClick={() => sendStep('welcome', 'Bienvenida')}
+              disabled={busy !== null}
+              title={sent.welcome ? `Enviada ${fmt(sent.welcome)} — clic para reenviar` : 'Enviar el mensaje de bienvenida al grupo'}
+              className={cn('h-8 rounded-full px-3 gap-1.5 text-xs font-medium shadow-none',
+                sent.welcome ? 'bg-[#c4eed0] text-[#0d652d] hover:bg-[#b3e6c2]' : 'bg-[#0b57d0] hover:bg-[#0842a0] text-white')}
+            >
+              {busy === 'welcome' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : sent.welcome ? <Check className="h-3.5 w-3.5" /> : <Send className="h-3.5 w-3.5" />}
+              {sent.welcome ? 'Bienvenida enviada' : 'Enviar bienvenida'}
+            </Button>
+          </div>
+          {sent.welcome && <p className="text-[11px] text-[#188038] dark:text-emerald-400">Bienvenida enviada {fmt(sent.welcome)}</p>}
         </div>
       ) : (
         <div className="space-y-2">

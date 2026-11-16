@@ -130,7 +130,7 @@ Deno.serve(async (req) => {
     }
 
     // CRM: crear el grupo del cliente / enviar un paso de la reunión
-    if (action === "crm_create_group" || action === "crm_send_step") {
+    if (action === "crm_create_group" || action === "crm_send_step" || action === "crm_send_welcome") {
       const { data: profile } = await supabase.from("profiles").select("tenant_id").eq("id", user.id).maybeSingle();
       const { data: contact } = await supabase.from("crm_contacts").select("*").eq("id", body.contact_id).maybeSingle();
       if (!contact || contact.tenant_id !== profile?.tenant_id) return json({ error: "Contacto no encontrado" }, 404);
@@ -157,6 +157,27 @@ Deno.serve(async (req) => {
         await supabase.from("crm_contacts").update({ whatsapp_group_id: groupId, whatsapp_group_name: subject }).eq("id", contact.id);
         await note(`Grupo de WhatsApp creado: ${subject}`);
         return json({ group_id: groupId, name: subject });
+      }
+
+      // Bienvenida manual: el grupo ya existe (creado desde el teléfono) y el cliente ya está adentro
+      if (action === "crm_send_welcome") {
+        if (!contact.whatsapp_group_id) return json({ error: "Primero vincula el grupo de WhatsApp" }, 400);
+        const name = String(contact.name ?? "").trim();
+        const message = (await renderMessage(supabase, contact.tenant_id, "group_welcome", {
+          nombre: name.split(/\s+/)[0] || "Hola", driver: name, grupo: String(contact.whatsapp_group_name ?? ""),
+        })).trim();
+        if (!message) return json({ error: "El mensaje de bienvenida está vacío. Escríbelo en WhatsApp → Automatizaciones" }, 400);
+        await sendTextLogged(supabase, {
+          tenantId: contact.tenant_id, templateKey: "group_welcome", recipientType: "lead",
+          recipientName: name, groupId: contact.whatsapp_group_id, message, reference: "CRM · Bienvenida",
+        });
+        const meeting = (contact.meeting ?? {}) as { sent?: Record<string, string> };
+        const sentAt = new Date().toISOString();
+        await supabase.from("crm_contacts").update({
+          meeting: { ...meeting, sent: { ...(meeting.sent ?? {}), welcome: sentAt } },
+        }).eq("id", contact.id);
+        await note("Enviado por WhatsApp: Bienvenida al grupo");
+        return json({ success: true, sent_at: sentAt });
       }
 
       const STEPS: Record<string, { key: string; label: string }> = {
