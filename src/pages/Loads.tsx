@@ -494,7 +494,7 @@ const Loads = () => {
       {/* Table */}
       <div className="rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border overflow-hidden">
         {/* Pestañas estilo Google */}
-        <div className="flex items-center gap-1 border-b border-[#e3e3e3] dark:border-border px-3 overflow-x-auto">
+        <div className="flex items-center gap-1 border-b border-[#e3e3e3] dark:border-border px-3 overflow-x-auto overflow-y-hidden">
           {([
             { key: 'active' as const, label: 'Active Loads', count: activeLoads.length },
             { key: 'delivered' as const, label: 'Delivered', count: deliveredLoads.length },
@@ -516,7 +516,7 @@ const Loads = () => {
         </div>
         <div className="p-0">
           <div className="overflow-x-auto">
-            <table className="w-full text-[15px]">
+            <table className="w-full text-sm">
               <thead><tr className="border-b border-[#e3e3e3] dark:border-border bg-[#f8fafd] dark:bg-muted/30">
                 <th className="w-8 px-2 py-2.5"></th>
                 <th className={cn(G_TH)}>Load #</th>
@@ -597,13 +597,13 @@ const Loads = () => {
                                 </div>
                               )}
                               <div>
-                                <div className="text-sm font-medium text-foreground">{driver?.name || <span className="text-muted-foreground italic font-normal">Sin asignar</span>}</div>
-                                <div className="text-muted-foreground text-xs">{trucks.find(t => t.id === load.truck_id)?.unit_number ? `Unit #${trucks.find(t => t.id === load.truck_id)!.unit_number}` : '—'}</div>
+                                <div className="text-sm font-medium text-[#1f1f1f] dark:text-foreground whitespace-nowrap max-w-[150px] truncate" title={driver?.name}>{driver?.name || <span className="text-muted-foreground italic font-normal">Sin asignar</span>}</div>
+                                <div className="text-muted-foreground text-xs whitespace-nowrap">{trucks.find(t => t.id === load.truck_id)?.unit_number ? `Unit #${trucks.find(t => t.id === load.truck_id)!.unit_number}` : '—'}</div>
                               </div>
                             </div>
                           </td>
                           <td className="px-3 py-2 text-foreground">
-                            <div>{load.broker_client || '—'}</div>
+                            <div className="max-w-[170px] truncate" title={load.broker_client || ''}>{load.broker_client || '—'}</div>
                             {load.delivery_date && load.delivery_date.split('T')[0] === new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' }) && (
                               <span className="inline-flex items-center mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide text-white bg-[#ea580c] whitespace-nowrap">
                                 TODAY
@@ -623,27 +623,27 @@ const Loads = () => {
                                 <div className="space-y-0.5">
                                   <div className="flex items-center gap-1.5">
                                     <MapPin className="h-3.5 w-3.5 text-[#188038] flex-shrink-0" />
-                                    <div className="text-xs font-medium text-foreground">{originCity}{originState ? `, ${originState}` : ''}</div>
+                                    <div className="text-xs font-medium text-foreground whitespace-nowrap max-w-[150px] truncate">{originCity}{originState ? `, ${originState}` : ''}</div>
                                   </div>
                                   <div className="flex items-center gap-1.5">
                                     <MapPin className="h-3.5 w-3.5 text-[#d93025] flex-shrink-0" />
-                                    <div className="text-xs font-medium text-foreground">{destCity}{destState ? `, ${destState}` : ''}</div>
+                                    <div className="text-xs font-medium text-foreground whitespace-nowrap max-w-[150px] truncate">{destCity}{destState ? `, ${destState}` : ''}</div>
                                   </div>
                                 </div>
                               );
                             })()}
                           </td>
                           <td className="px-3 py-2 hidden lg:table-cell text-muted-foreground">
-                            <div>{formatDate(load.pickup_date)}</div>
+                            <div className="whitespace-nowrap">{formatDate(load.pickup_date)}</div>
                             {(load as any).pickup_time && (
-                              <div className="text-[11px] text-muted-foreground/70">{(load as any).pickup_time}</div>
+                              <div className="text-[11px] text-muted-foreground/70 whitespace-nowrap max-w-[110px] truncate" title={(load as any).pickup_time}>{(load as any).pickup_time}</div>
                             )}
                             {(load as any).has_detention_pickup && <DetentionBadge />}
                           </td>
                           <td className="px-3 py-2 hidden lg:table-cell text-muted-foreground">
-                            <div>{formatDate(load.delivery_date)}</div>
+                            <div className="whitespace-nowrap">{formatDate(load.delivery_date)}</div>
                             {(load as any).delivery_time && (
-                              <div className="text-[11px] text-muted-foreground/70">{(load as any).delivery_time}</div>
+                              <div className="text-[11px] text-muted-foreground/70 whitespace-nowrap max-w-[110px] truncate" title={(load as any).delivery_time}>{(load as any).delivery_time}</div>
                             )}
                             {(load as any).has_detention_delivery && <DetentionBadge />}
                           </td>
@@ -666,7 +666,7 @@ const Loads = () => {
                               return <div className="text-xs font-medium text-muted-foreground">${rpm.toFixed(2)}/mi</div>;
                             })()}
                           </td>
-                          <td className="px-3 py-2 hidden lg:table-cell">{dispatcher?.name || '—'}</td>
+                          <td className="px-3 py-2 hidden lg:table-cell whitespace-nowrap">{dispatcher?.name || '—'}</td>
                           <td className="px-3 py-2" onClick={e => e.stopPropagation()}>
                             <Select value={load.status} onValueChange={async (val) => {
                               const prevStatus = load.status;
@@ -753,15 +753,15 @@ const Loads = () => {
                             </Select>
                           </td>
                           <td className="px-3 py-2 text-right" onClick={e => e.stopPropagation()}>
-                            <div className="flex justify-end gap-1">
-                              <Button variant="ghost" size="sm" className="h-8 rounded-full px-2.5 text-xs gap-1 text-[#444746] hover:text-[#1f1f1f] hover:bg-[#f0f4f9] dark:text-muted-foreground" onClick={() => handleGenerateInvoice(load)} title="Invoice">
-                                <FileText className="h-3.5 w-3.5" /> Invoice
+                            <div className="flex justify-end gap-0.5">
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full text-[#444746] hover:text-[#1f1f1f] hover:bg-[#f0f4f9] dark:text-muted-foreground" onClick={() => handleGenerateInvoice(load)} title="Invoice">
+                                <FileText className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="sm" className="h-8 rounded-full px-2.5 text-xs gap-1 text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe] dark:text-blue-300" onClick={() => { setEditLoad(load); setShowForm(true); }} title="Edit">
-                                <Pencil className="h-3.5 w-3.5" /> Edit
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe] dark:text-blue-300" onClick={() => { setEditLoad(load); setShowForm(true); }} title="Edit">
+                                <Pencil className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="sm" className="h-8 rounded-full px-2.5 text-xs gap-1 text-[#b3261e] hover:text-[#b3261e] hover:bg-[#fce8e6]" onClick={async (e) => { e.stopPropagation(); e.preventDefault(); if (window.confirm(`¿Eliminar carga ${load.reference_number}? Esta acción es permanente.`)) { await deleteLoad(load.id); } }} title="Delete">
-                                <Trash2 className="h-3.5 w-3.5" /> Delete
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full text-[#b3261e] hover:text-[#b3261e] hover:bg-[#fce8e6]" onClick={async (e) => { e.stopPropagation(); e.preventDefault(); if (window.confirm(`¿Eliminar carga ${load.reference_number}? Esta acción es permanente.`)) { await deleteLoad(load.id); } }} title="Delete">
+                                <Trash2 className="h-4 w-4" />
                               </Button>
                             </div>
                             <InlinePodInput loadId={load.id} inputRefMap={inputRefMap} />
