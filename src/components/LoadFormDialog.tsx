@@ -6,7 +6,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
-import { Upload, FileText, Loader2, CheckCircle, AlertCircle, Eye, Download, X, Plus, Trash2, FileSignature } from 'lucide-react';
+import { Upload, FileText, Loader2, CheckCircle, AlertCircle, Eye, Download, X, Plus, Trash2, FileSignature, MapPin, User, DollarSign } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { deleteLoadRoute } from '@/lib/loadRoute';
 import { useToast } from '@/hooks/use-toast';
@@ -94,6 +95,27 @@ async function refreshSignedUrl(url: string): Promise<string> {
  * oculta por los filtros de fecha. Un RC siempre es de fechas cercanas: si el año está lejos,
  * se usa el año (anterior, actual o siguiente) que deja la fecha más cerca de hoy.
  */
+// ─── Estilo Google / Material 3 ───
+const G_LABEL = 'text-xs font-medium text-[#444746] dark:text-muted-foreground';
+const G_INPUT = 'h-10 text-sm rounded-lg shadow-none border-[#c4c7c5] dark:border-border focus-visible:ring-1 focus-visible:ring-[#0b57d0] focus-visible:border-[#0b57d0]';
+const G_CHIP = 'inline-flex items-center gap-1.5 rounded-lg h-8 px-3 text-sm font-medium border transition-colors';
+const G_CHIP_ON = 'bg-[#c2e7ff] border-[#c2e7ff] text-[#001d35] dark:bg-blue-900/50 dark:border-blue-900/50 dark:text-blue-100';
+const G_CHIP_OFF = 'border-[#c4c7c5] dark:border-border text-[#444746] dark:text-muted-foreground hover:bg-[#f0f4f9] dark:hover:bg-muted';
+const G_TEXT_BTN = 'h-9 rounded-full px-3 gap-1.5 text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe] dark:text-blue-300 dark:hover:bg-blue-950/40 font-medium';
+
+/** Tarjeta de sección del formulario */
+function GSection({ title, icon: Icon, className, children }: { title: string; icon: typeof FileText; className?: string; children: React.ReactNode }) {
+  return (
+    <section className={cn('rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border p-5', className)}>
+      <div className="flex items-center gap-2.5 mb-4">
+        <Icon className="h-5 w-5 text-[#0b57d0] dark:text-blue-300" />
+        <h4 className="text-base font-medium text-[#1f1f1f] dark:text-foreground">{title}</h4>
+      </div>
+      {children}
+    </section>
+  );
+}
+
 function fixYear(value: unknown): unknown {
   if (typeof value !== 'string') return value;
   const m = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
@@ -826,23 +848,33 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
   return (
     <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[1750px] w-[98vw] max-h-[95vh] overflow-hidden p-0 flex flex-col gap-0">
-        <DialogHeader className="p-4 border-b shrink-0">
-          <DialogTitle>{editLoad ? 'Edit Load' : 'Create New Load'}</DialogTitle>
+      <DialogContent className="max-w-[1750px] w-[98vw] max-h-[95vh] overflow-hidden p-0 flex flex-col gap-0 rounded-[28px] border-0 bg-[#f8fafd] dark:bg-background">
+        <DialogHeader className="px-6 py-4 border-b border-[#e3e3e3] dark:border-border bg-white dark:bg-card shrink-0 space-y-0">
+          <div className="flex items-center gap-3">
+            <span className="h-10 w-10 rounded-full bg-[#d3e3fd] dark:bg-blue-900/40 text-[#041e49] dark:text-blue-200 flex items-center justify-center">
+              {editLoad ? <FileText className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
+            </span>
+            <div>
+              <DialogTitle className="text-[22px] leading-7 font-normal text-[#1f1f1f] dark:text-foreground">{editLoad ? 'Editar carga' : 'Nueva carga'}</DialogTitle>
+              <p className="text-sm text-[#444746] dark:text-muted-foreground">
+                {editLoad ? `Load #${editLoad.reference_number}` : 'Sube el Rate Confirmation para llenar los datos automáticamente'}
+              </p>
+            </div>
+          </div>
         </DialogHeader>
 
         <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[minmax(560px,720px)_minmax(0,1fr)]">
           {/* ═══ COLUMNA DERECHA (visual) — Form ═══ */}
-          <div className="overflow-y-auto p-4 lg:order-2">
+          <div className="overflow-y-auto p-4 sm:p-6 lg:order-2">
 
         <input ref={fileInputRef} type="file" accept=".pdf" onChange={handlePdfUpload} className="hidden" />
 
         {/* Extractor + Preview COMPACTO — solo mobile (< lg). En desktop va en la columna derecha. */}
         <div className="lg:hidden mb-3 space-y-2">
-          <div className="p-3 rounded-lg border-2 border-dashed border-primary/30 bg-primary/5">
+          <div className="p-4 rounded-3xl border border-dashed border-[#a8c7fa] bg-[#e8f0fe] dark:bg-blue-950/30">
             <div className="flex items-center gap-2 mb-2">
               <FileText className="h-4 w-4 text-primary" />
-              <h4 className="text-xs font-semibold">{editLoad ? 'Replace Rate Confirmation' : 'Extract data from PDF'}</h4>
+              <h4 className="text-xs font-semibold">{editLoad ? 'Reemplazar Rate Confirmation' : 'Extraer datos del PDF'}</h4>
             </div>
             {extractionStatus === 'idle' && (
               <Button variant="outline" size="sm" className="w-full gap-2" onClick={() => fileInputRef.current?.click()}>
@@ -883,12 +915,14 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
 
         {/* RC Original — solo Admin / Accounting / Master Admin */}
         {canSeeGrossRate && (
-          <div className="mt-2 p-4 rounded-lg border-2 border-dashed border-amber-500/40 bg-amber-500/5">
-            <div className="flex items-center gap-3 mb-3">
-              <FileText className="h-5 w-5 text-amber-500" />
+          <div className="mt-2 p-5 rounded-3xl bg-[#fef7e0] dark:bg-amber-950/30 border border-[#fde293] dark:border-amber-900/50">
+            <div className="flex items-center gap-3 mb-4">
+              <span className="h-9 w-9 rounded-full bg-[#feefc3] dark:bg-amber-900/50 text-[#b06000] dark:text-amber-300 flex items-center justify-center">
+                <DollarSign className="h-5 w-5" />
+              </span>
               <div>
-                <h4 className="text-sm font-semibold text-amber-600 dark:text-amber-400">RC Original (Gross Rate) — Solo Admin</h4>
-                <p className="text-xs text-muted-foreground">PDF con el monto original del broker. No visible para el driver.</p>
+                <h4 className="text-base font-medium text-[#1f1f1f] dark:text-foreground">RC Original (Gross Rate)</h4>
+                <p className="text-xs text-[#444746] dark:text-muted-foreground">Solo admin · Monto original del broker, no visible para el driver.</p>
               </div>
             </div>
 
@@ -902,7 +936,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
                 placeholder="0.00"
                 value={grossRate || ''}
                 onChange={e => { setGrossRate(parseFloat(e.target.value) || 0); setAdjustmentSaved(false); }}
-                className="h-8 text-sm w-36"
+                className={cn(G_INPUT, 'w-40 bg-white dark:bg-background')}
               />
               {grossRate > 0 && formData.totalRate > 0 && (
                 <span className="text-xs text-muted-foreground">
@@ -930,7 +964,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
               };
 
               return (
-                <div className="mt-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 space-y-3">
+                <div className="mt-3 p-4 rounded-2xl bg-white dark:bg-background border border-[#fde293] dark:border-amber-900/50 space-y-3">
                   <div className="flex items-center justify-between">
                     <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">
                       Distribución del Ajuste — Delta: <span className="text-amber-600">${delta.toLocaleString()}</span>
@@ -1014,7 +1048,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
               <Button
                 variant="outline"
                 size="sm"
-                className="w-full gap-2 border-amber-500/40 text-amber-600 hover:bg-amber-500/10"
+                className="w-full gap-2 h-10 rounded-full border-[#b06000]/40 bg-white dark:bg-background text-[#b06000] hover:bg-[#feefc3] hover:text-[#b06000]"
                 onClick={() => rcOriginalFileInputRef.current?.click()}
               >
                 <Upload className="h-4 w-4" /> Subir RC Original PDF
@@ -1058,243 +1092,237 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
           </div>
         )}
 
-        {/* Form Fields */}
-        <div className="grid grid-cols-2 gap-4 mt-4">
-          <div className="space-y-2">
-            <Label>Load #</Label>
-            <Input placeholder="RC-2024-XXX" value={formData.referenceNumber} onChange={e => updateField('referenceNumber', e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label>Broker/Cliente</Label>
-            <Input placeholder="Nombre del broker" value={formData.brokerClient} onChange={e => updateField('brokerClient', e.target.value)} />
-          </div>
-        </div>
-
-        {/* Multi-Stop Section */}
-        <div className="mt-4 space-y-3">
-          <h4 className="text-sm font-semibold">Paradas de Recogida (Pick Up)</h4>
-          {pickupStops.map((stop, idx) => (
-            <div key={stop.originalIndex} className="flex items-center gap-2">
-              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-[hsl(152,60%,40%)] flex items-center justify-center text-[10px] font-bold text-white">P{idx + 1}</div>
-              <Input
-                placeholder="Dirección de recogida"
-                value={stop.address}
-                onChange={e => updateStop(stop.originalIndex, 'address', e.target.value)}
-                className="flex-1"
-              />
-              <Input
-                type="date"
-                value={stop.date}
-                onChange={e => updateStop(stop.originalIndex, 'date', e.target.value)}
-                className="w-36"
-              />
-              <Input
-                placeholder="Hora (ej. 08:00-15:00)"
-                value={stop.time}
-                onChange={e => updateStop(stop.originalIndex, 'time', e.target.value)}
-                className="w-36"
-              />
-              {pickupStops.length > 1 && (
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => removeStop(stop.originalIndex)}>
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
-              )}
+        {/* ── Datos de la carga ── */}
+        <GSection title="Datos de la carga" icon={FileText} className="mt-4">
+          <div className="grid grid-cols-2 gap-x-3 gap-y-4">
+            <div className="space-y-1.5">
+              <Label className={G_LABEL}>Load #</Label>
+              <Input placeholder="RC-2024-XXX" value={formData.referenceNumber} onChange={e => updateField('referenceNumber', e.target.value)} className={G_INPUT} />
             </div>
-          ))}
-          <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => addStop('pickup')}>
-            <Plus className="h-3.5 w-3.5" /> Add Pick Up
-          </Button>
-
-          <h4 className="text-sm font-semibold pt-2">Paradas de Entrega (Delivery)</h4>
-          {deliveryStops.map((stop, idx) => (
-            <div key={stop.originalIndex} className="flex items-center gap-2">
-              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-[hsl(0,72%,51%)] flex items-center justify-center text-[10px] font-bold text-white">D{idx + 1}</div>
-              <Input
-                placeholder="Dirección de entrega"
-                value={stop.address}
-                onChange={e => updateStop(stop.originalIndex, 'address', e.target.value)}
-                className="flex-1"
-              />
-              <Input
-                type="date"
-                value={stop.date}
-                onChange={e => updateStop(stop.originalIndex, 'date', e.target.value)}
-                className="w-36"
-              />
-              <Input
-                placeholder="Hora (ej. 08:00-15:00)"
-                value={stop.time}
-                onChange={e => updateStop(stop.originalIndex, 'time', e.target.value)}
-                className="w-36"
-              />
-              {deliveryStops.length > 1 && (
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => removeStop(stop.originalIndex)}>
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
-              )}
+            <div className="space-y-1.5">
+              <Label className={G_LABEL}>Broker / Cliente</Label>
+              <Input placeholder="Nombre del broker" value={formData.brokerClient} onChange={e => updateField('brokerClient', e.target.value)} className={G_INPUT} />
             </div>
-          ))}
-          <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => addStop('delivery')}>
-            <Plus className="h-3.5 w-3.5" /> Add Delivery
-          </Button>
-        </div>
+            <div className="space-y-1.5">
+              <Label className={G_LABEL}>Tarifa total ($)</Label>
+              <Input type="number" placeholder="2500" value={formData.totalRate || ''} onChange={e => updateField('totalRate', Number(e.target.value))} className={cn(G_INPUT, 'font-medium')} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className={G_LABEL}>Millas</Label>
+                <Input type="number" placeholder="500" value={formData.miles || ''} onChange={e => updateField('miles', Number(e.target.value))} className={G_INPUT} />
+              </div>
+              <div className="space-y-1.5">
+                <Label className={G_LABEL}>Peso (lbs)</Label>
+                <Input type="number" placeholder="40000" value={formData.weight || ''} onChange={e => updateField('weight', Number(e.target.value))} className={G_INPUT} />
+              </div>
+            </div>
+            {formData.totalRate > 0 && formData.miles > 0 && (
+              <p className="col-span-2 -mt-1 text-xs text-[#444746] dark:text-muted-foreground">
+                RPM: <span className="font-medium text-[#1f1f1f] dark:text-foreground">${(formData.totalRate / formData.miles).toFixed(2)}</span>
+              </p>
+            )}
+          </div>
+        </GSection>
 
-        {/* Rest of fields */}
-        <div className="grid grid-cols-2 gap-4 mt-4">
-          <div className="space-y-2">
-            <Label>Peso (lbs)</Label>
-            <Input type="number" placeholder="40000" value={formData.weight || ''} onChange={e => updateField('weight', Number(e.target.value))} />
-          </div>
-          <div className="space-y-2">
-            <Label>Tarifa Total ($)</Label>
-            <Input type="number" placeholder="2500" value={formData.totalRate || ''} onChange={e => updateField('totalRate', Number(e.target.value))} />
-          </div>
-          <div className="space-y-2">
-            <Label>Driver <span className="text-destructive">*</span></Label>
-            <Select value={selectedDriver} onValueChange={(val) => {
-              setSelectedDriver(val);
-              const driver = drivers.find(d => d.id === val);
-              if (driver?.truck_id) {
-                setSelectedTruck(driver.truck_id);
-              } else {
-                setSelectedTruck('');
-              }
-              if (driver?.dispatcher_id) {
-                setSelectedDispatcher(driver.dispatcher_id);
-              } else {
-                setSelectedDispatcher('');
-              }
-              // Auto-populate service type from driver's default
-              if (driver?.service_type) {
-                setSelectedServiceType(driver.service_type);
-              }
-            }}>
-              <SelectTrigger><SelectValue placeholder="Seleccionar driver" /></SelectTrigger>
-              <SelectContent>
-                {drivers
-                  .filter(d => d.status === 'available' || d.id === selectedDriver)
-                  .filter(d => dispatcherId ? d.dispatcher_id === dispatcherId : true)
-                  .map(d => (
-                  <SelectItem key={d.id} value={d.id}>
-                    {d.name}{d.id === selectedDriver && d.status !== 'available' ? ' (asignado)' : ''}
-                  </SelectItem>
+        {/* ── Paradas ── */}
+        <GSection title="Ruta" icon={MapPin} className="mt-4">
+          <div className="space-y-5">
+            {([
+              ['pickup', 'Pick Up', pickupStops, 'P', 'bg-[#188038]', 'Dirección de recogida', 'Agregar Pick Up'],
+              ['delivery', 'Delivery', deliveryStops, 'D', 'bg-[#d93025]', 'Dirección de entrega', 'Agregar Delivery'],
+            ] as const).map(([type, title, list, prefix, color, ph, addLabel]) => (
+              <div key={type} className="space-y-2">
+                <p className={G_LABEL}>{title}</p>
+                {list.map((stop, idx) => (
+                  <div key={stop.originalIndex} className="flex items-center gap-2 rounded-2xl bg-[#f0f4f9] dark:bg-muted/60 p-2">
+                    <div className={cn('flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium text-white', color)}>{prefix}{idx + 1}</div>
+                    <Input
+                      placeholder={ph}
+                      value={stop.address}
+                      onChange={e => updateStop(stop.originalIndex, 'address', e.target.value)}
+                      className={cn(G_INPUT, 'flex-1 bg-white dark:bg-background')}
+                    />
+                    <Input
+                      type="date"
+                      value={stop.date}
+                      onChange={e => updateStop(stop.originalIndex, 'date', e.target.value)}
+                      className={cn(G_INPUT, 'w-36 bg-white dark:bg-background')}
+                    />
+                    <Input
+                      placeholder="Hora (08:00-15:00)"
+                      value={stop.time}
+                      onChange={e => updateStop(stop.originalIndex, 'time', e.target.value)}
+                      className={cn(G_INPUT, 'w-36 bg-white dark:bg-background')}
+                    />
+                    {list.length > 1 && (
+                      <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full text-[#b3261e] hover:bg-[#fce8e6] hover:text-[#b3261e]" onClick={() => removeStop(stop.originalIndex)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                 ))}
-              </SelectContent>
-            </Select>
+                <Button variant="ghost" size="sm" className={G_TEXT_BTN} onClick={() => addStop(type)}>
+                  <Plus className="h-4 w-4" /> {addLabel}
+                </Button>
+              </div>
+            ))}
           </div>
-          <div className="space-y-2">
-            <Label>Truck #</Label>
-            <Select value={selectedTruck} onValueChange={setSelectedTruck}>
-              <SelectTrigger><SelectValue placeholder="Asignar truck" /></SelectTrigger>
-              <SelectContent>
-                {activeTrucks.map(t => (
-                  <SelectItem key={t.id} value={t.id}>{t.unit_number} - {t.truck_type}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label>Dispatcher</Label>
-            <Select value={selectedDispatcher} onValueChange={(val) => {
-              setSelectedDispatcher(val);
-              setSelectedCommissionType('commission_1');
-            }}>
-              <SelectTrigger><SelectValue placeholder="Seleccionar dispatcher" /></SelectTrigger>
-              <SelectContent>
-                {dispatchers
-                  .filter(d => d.status === 'active')
-                  .filter(d => dispatcherId ? d.id === dispatcherId : true)
-                  .map(d => (
-                  <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          {selectedDispatcherObj && (selectedDispatcherObj.commission_2_percentage ?? 0) > 0 && (
-            <div className="space-y-2">
-              <Label>Commission Type</Label>
-              <Select value={selectedCommissionType} onValueChange={(v) => setSelectedCommissionType(v as 'commission_1' | 'commission_2')}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+        </GSection>
+
+        {/* ── Asignación ── */}
+        <GSection title="Asignación" icon={User} className="mt-4">
+          <div className="grid grid-cols-2 gap-x-3 gap-y-4">
+            <div className="space-y-1.5">
+              <Label className={G_LABEL}>Driver <span className="text-[#b3261e]">*</span></Label>
+              <Select value={selectedDriver} onValueChange={(val) => {
+                setSelectedDriver(val);
+                const driver = drivers.find(d => d.id === val);
+                if (driver?.truck_id) {
+                  setSelectedTruck(driver.truck_id);
+                } else {
+                  setSelectedTruck('');
+                }
+                if (driver?.dispatcher_id) {
+                  setSelectedDispatcher(driver.dispatcher_id);
+                } else {
+                  setSelectedDispatcher('');
+                }
+                // Auto-populate service type from driver's default
+                if (driver?.service_type) {
+                  setSelectedServiceType(driver.service_type);
+                }
+              }}>
+                <SelectTrigger className={G_INPUT}><SelectValue placeholder="Seleccionar driver" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="commission_1">Commission 1: {selectedDispatcherObj.commission_percentage}%</SelectItem>
-                  <SelectItem value="commission_2">Commission 2: {selectedDispatcherObj.commission_2_percentage}%</SelectItem>
+                  {drivers
+                    .filter(d => d.status === 'available' || d.id === selectedDriver)
+                    .filter(d => dispatcherId ? d.dispatcher_id === dispatcherId : true)
+                    .map(d => (
+                    <SelectItem key={d.id} value={d.id}>
+                      {d.name}{d.id === selectedDriver && d.status !== 'available' ? ' (asignado)' : ''}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
-          )}
-          <div className="space-y-2">
-            <Label>Empresa</Label>
-            <Select value={selectedCompany} onValueChange={setSelectedCompany}>
-              <SelectTrigger><SelectValue placeholder="Seleccionar empresa" /></SelectTrigger>
-              <SelectContent>
-                {/* Solo empresas activas (y la que ya tenga la carga al editarla) */}
-                {companies.filter(c => c.status !== 'inactive' || c.id === (editLoad as any)?.company_id).map(c => (
-                  <SelectItem key={c.id} value={c.id}>{c.name}{c.mc_number ? ` (MC# ${c.mc_number})` : ''}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label>Service Type</Label>
-            <Select value={selectedServiceType} onValueChange={setSelectedServiceType}>
-              <SelectTrigger><SelectValue placeholder="Tipo de servicio" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="owner_operator">OWNER OPERATOR</SelectItem>
-                <SelectItem value="company_driver">COMPANY DRIVER</SelectItem>
-                <SelectItem value="dispatch_service">DISPATCH SERVICE</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label>Miles</Label>
-            <Input type="number" placeholder="500" value={formData.miles || ''} onChange={e => updateField('miles', Number(e.target.value))} />
-          </div>
-          <div className="space-y-2">
-            <Label>Estado</Label>
-            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="planned">Planned</SelectItem>
-                <SelectItem value="dispatched">Dispatched</SelectItem>
-                <SelectItem value="in_transit">In Transit</SelectItem>
-                <SelectItem value="on_site_pickup">On Site - Pickup</SelectItem>
-                <SelectItem value="picked_up">Picked Up</SelectItem>
-                <SelectItem value="on_site_delivery">On Site - Delivery</SelectItem>
-                <SelectItem value="delivered">Delivered</SelectItem>
-                <SelectItem value="tonu">TONU</SelectItem>
-                <SelectItem value="cancelled">Canceled</SelectItem>
-              </SelectContent>
-            </Select>
-            {selectedStatus === 'planned' && (
-              <label className="flex items-start gap-2 text-xs cursor-pointer pt-1">
-                <input type="checkbox" className="mt-0.5" checked={autoDispatch} onChange={e => setAutoDispatch(e.target.checked)} />
-                <span>Pasar a <strong>Dispatched</strong> automáticamente cuando el driver entregue su carga activa</span>
-              </label>
+            <div className="space-y-1.5">
+              <Label className={G_LABEL}>Truck #</Label>
+              <Select value={selectedTruck} onValueChange={setSelectedTruck}>
+                <SelectTrigger className={G_INPUT}><SelectValue placeholder="Asignar truck" /></SelectTrigger>
+                <SelectContent>
+                  {activeTrucks.map(t => (
+                    <SelectItem key={t.id} value={t.id}>{t.unit_number} - {t.truck_type}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className={G_LABEL}>Dispatcher</Label>
+              <Select value={selectedDispatcher} onValueChange={(val) => {
+                setSelectedDispatcher(val);
+                setSelectedCommissionType('commission_1');
+              }}>
+                <SelectTrigger className={G_INPUT}><SelectValue placeholder="Seleccionar dispatcher" /></SelectTrigger>
+                <SelectContent>
+                  {dispatchers
+                    .filter(d => d.status === 'active')
+                    .filter(d => dispatcherId ? d.id === dispatcherId : true)
+                    .map(d => (
+                    <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {selectedDispatcherObj && (selectedDispatcherObj.commission_2_percentage ?? 0) > 0 && (
+              <div className="space-y-1.5">
+                <Label className={G_LABEL}>Commission Type</Label>
+                <Select value={selectedCommissionType} onValueChange={(v) => setSelectedCommissionType(v as 'commission_1' | 'commission_2')}>
+                  <SelectTrigger className={G_INPUT}><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="commission_1">Commission 1: {selectedDispatcherObj.commission_percentage}%</SelectItem>
+                    <SelectItem value="commission_2">Commission 2: {selectedDispatcherObj.commission_2_percentage}%</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             )}
+            <div className="space-y-1.5">
+              <Label className={G_LABEL}>Empresa</Label>
+              <Select value={selectedCompany} onValueChange={setSelectedCompany}>
+                <SelectTrigger className={G_INPUT}><SelectValue placeholder="Seleccionar empresa" /></SelectTrigger>
+                <SelectContent>
+                  {/* Solo empresas activas (y la que ya tenga la carga al editarla) */}
+                  {companies.filter(c => c.status !== 'inactive' || c.id === (editLoad as any)?.company_id).map(c => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}{c.mc_number ? ` (MC# ${c.mc_number})` : ''}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="col-span-2 space-y-1.5">
+              <Label className={G_LABEL}>Tipo de servicio</Label>
+              <div className="flex flex-wrap gap-2">
+                {([['owner_operator', 'Owner Operator'], ['company_driver', 'Company Driver'], ['dispatch_service', 'Dispatch Service']] as const).map(([v, l]) => (
+                  <button key={v} type="button" onClick={() => setSelectedServiceType(v)}
+                    className={cn(G_CHIP, selectedServiceType === v ? G_CHIP_ON : G_CHIP_OFF)}>
+                    {selectedServiceType === v && <CheckCircle className="h-4 w-4" />} {l}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
-          <div className="col-span-2 space-y-2">
-            <Label>Notes</Label>
-            <Textarea placeholder="Additional notes about the load..." value={formData.notes} onChange={e => updateField('notes', e.target.value)} rows={3} />
+        </GSection>
+
+        {/* ── Estado y notas ── */}
+        <GSection title="Estado" icon={CheckCircle} className="mt-4">
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label className={G_LABEL}>Estado de la carga</Label>
+              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                <SelectTrigger className={cn(G_INPUT, 'w-64')}><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="planned">Planned</SelectItem>
+                  <SelectItem value="dispatched">Dispatched</SelectItem>
+                  <SelectItem value="in_transit">In Transit</SelectItem>
+                  <SelectItem value="on_site_pickup">On Site - Pickup</SelectItem>
+                  <SelectItem value="picked_up">Picked Up</SelectItem>
+                  <SelectItem value="on_site_delivery">On Site - Delivery</SelectItem>
+                  <SelectItem value="delivered">Delivered</SelectItem>
+                  <SelectItem value="tonu">TONU</SelectItem>
+                  <SelectItem value="cancelled">Canceled</SelectItem>
+                </SelectContent>
+              </Select>
+              {selectedStatus === 'planned' && (
+                <label className="flex items-start gap-3 rounded-2xl bg-[#e8f0fe] dark:bg-blue-950/40 px-4 py-3 text-sm text-[#041e49] dark:text-blue-100 cursor-pointer mt-2">
+                  <input type="checkbox" className="mt-0.5 h-4 w-4 accent-[#0b57d0]" checked={autoDispatch} onChange={e => setAutoDispatch(e.target.checked)} />
+                  <span>Pasar a <strong>Dispatched</strong> automáticamente cuando el driver entregue su carga activa</span>
+                </label>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label className={G_LABEL}>Notas</Label>
+              <Textarea placeholder="Notas adicionales de la carga..." value={formData.notes} onChange={e => updateField('notes', e.target.value)} rows={3}
+                className="rounded-lg shadow-none bg-transparent border-[#c4c7c5] dark:border-border focus-visible:ring-1 focus-visible:ring-[#0b57d0] focus-visible:border-[#0b57d0]" />
+            </div>
           </div>
-        </div>
+        </GSection>
 
           </div>
           {/* ═══ FIN COLUMNA (Form, visual derecha) ═══ */}
 
           {/* ═══ COLUMNA IZQUIERDA (visual) — PDF viewer ═══ */}
-          <div className="hidden lg:flex flex-col overflow-hidden p-4 gap-3 bg-muted/20 min-h-0 lg:order-1 lg:border-r">
+          <div className="hidden lg:flex flex-col overflow-hidden p-6 pr-0 gap-4 min-h-0 lg:order-1">
             {/* Extractor compacto arriba */}
-            <div className="rounded-lg border-2 border-dashed border-primary/30 bg-primary/5 p-3 shrink-0">
+            <div className="rounded-3xl border border-dashed border-[#a8c7fa] bg-[#e8f0fe] dark:bg-blue-950/30 p-4 shrink-0">
               <div className="flex items-center gap-2 mb-2">
                 <FileText className="h-4 w-4 text-primary shrink-0" />
                 <div className="min-w-0">
-                  <h4 className="text-xs font-semibold truncate">{editLoad ? 'Replace Rate Confirmation' : 'Extract data from PDF'}</h4>
-                  <p className="text-[10px] text-muted-foreground truncate">{editLoad ? 'Upload a new PDF to update' : 'Upload a rate confirmation or BOL'}</p>
+                  <h4 className="text-xs font-semibold truncate">{editLoad ? 'Reemplazar Rate Confirmation' : 'Extraer datos del PDF'}</h4>
+                  <p className="text-[10px] text-muted-foreground truncate">{editLoad ? 'Sube un PDF nuevo para actualizar' : 'Sube un rate confirmation o BOL'}</p>
                 </div>
               </div>
               {extractionStatus === 'idle' && (
-                <Button variant="outline" size="sm" className="w-full gap-2 h-8 text-xs" onClick={() => fileInputRef.current?.click()}>
-                  <Upload className="h-3.5 w-3.5" /> Select PDF
+                <Button size="sm" className="w-full gap-2 h-10 rounded-full bg-[#0b57d0] hover:bg-[#0842a0] text-white" onClick={() => fileInputRef.current?.click()}>
+                  <Upload className="h-4 w-4" /> Seleccionar PDF
                 </Button>
               )}
               {(extractionStatus === 'uploading' || extractionStatus === 'processing') && (
@@ -1329,8 +1357,8 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
 
             {/* Preview grande abajo (o placeholder) */}
             {pdfPreviewUrl ? (
-              <div className="flex-1 min-h-0 flex flex-col rounded-lg border bg-background overflow-hidden">
-                <div className="flex items-center justify-between px-2 py-1 border-b bg-muted/40 shrink-0">
+              <div className="flex-1 min-h-0 flex flex-col rounded-3xl border border-[#e3e3e3] dark:border-border bg-white dark:bg-card overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-2 border-b border-[#e3e3e3] dark:border-border shrink-0">
                   <div className="flex items-center gap-1.5 text-xs font-medium min-w-0">
                     <FileText className="h-3.5 w-3.5 text-primary shrink-0" />
                     <span className="truncate">{pdfFileName || 'PDF Original'}</span>
@@ -1354,8 +1382,10 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
                 <iframe src={pdfPreviewUrl} className="flex-1 w-full" title="PDF Preview" />
               </div>
             ) : (
-              <div className="flex-1 min-h-0 flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/20 text-muted-foreground p-8 text-center">
-                <FileText className="h-12 w-12 mb-3 opacity-40" />
+              <div className="flex-1 min-h-0 flex flex-col items-center justify-center rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border text-[#444746] dark:text-muted-foreground p-8 text-center">
+                <span className="h-16 w-16 rounded-full bg-[#f0f4f9] dark:bg-muted flex items-center justify-center mb-4">
+                  <FileText className="h-8 w-8 text-[#0b57d0] dark:text-blue-300" />
+                </span>
                 <p className="text-sm font-medium">Sube un Rate Confirmation</p>
                 <p className="text-xs mt-1">Aparecerá aquí para poder revisarlo mientras completas los datos.</p>
               </div>
@@ -1364,16 +1394,22 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
           {/* ═══ FIN COLUMNA DERECHA ═══ */}
         </div>
 
-        <div className="flex flex-wrap items-center justify-end gap-2 p-4 border-t shrink-0">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+        <div className="flex flex-wrap items-center justify-end gap-2 px-6 py-4 border-t border-[#e3e3e3] dark:border-border bg-white dark:bg-card shrink-0">
+          <Button variant="ghost" className="h-10 rounded-full px-5 text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe] dark:text-blue-300 font-medium" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button
+            variant="outline"
+            className={cn('h-10 rounded-full px-5 font-medium', canSignRc
+              ? 'border-[#747775] text-[#0b57d0] hover:bg-[#e8f0fe] hover:text-[#0b57d0] dark:text-blue-300'
+              : 'border-0 bg-[#0b57d0] hover:bg-[#0842a0] text-white hover:text-white')}
+            onClick={() => handleSubmit(false)}
+          >
+            {editLoad ? 'Guardar cambios' : 'Crear carga'}
+          </Button>
           {canSignRc && (
-            <Button onClick={() => handleSubmit(true)} className="gap-1.5" title="Guarda la carga, firma el RC con los datos del driver y lo abre para enviarlo al broker">
+            <Button onClick={() => handleSubmit(true)} className="h-10 rounded-full px-5 gap-2 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium" title="Guarda la carga, firma el RC con los datos del driver y lo abre para enviarlo al broker">
               <FileSignature className="h-4 w-4" /> {editLoad ? 'Guardar y firmar RC' : 'Crear y firmar RC'}
             </Button>
           )}
-          <Button variant={canSignRc ? 'outline' : 'default'} onClick={() => handleSubmit(false)}>
-            {editLoad ? 'Guardar Cambios' : 'Crear Carga'}
-          </Button>
         </div>
       </DialogContent>
     </Dialog>
