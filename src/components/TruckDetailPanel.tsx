@@ -14,8 +14,8 @@ import { TruckCostsSection } from '@/components/TruckCostsSection';
 function Info({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="text-muted-foreground text-xs">{label}</p>
-      <div className="font-medium text-sm mt-0.5">{children}</div>
+      <p className="text-xs text-[#444746] dark:text-muted-foreground">{label}</p>
+      <div className="font-medium text-sm mt-0.5 text-[#1f1f1f] dark:text-foreground [overflow-wrap:anywhere]">{children}</div>
     </div>
   );
 }
@@ -60,10 +60,10 @@ export function TruckDetailPanel({ truck, driverName, getDocSignedUrl, onUpdateT
   };
 
   return (
-    <div className="p-5 bg-muted/20 border-t animate-fade-in">
+    <div className="px-4 py-3 bg-[#f8fafd] dark:bg-background/60 border-t border-[#e3e3e3] dark:border-border animate-fade-in">
       {/* Document Expiry Alerts */}
       {(truck.registration_expiry || truck.insurance_expiry || (truck as any).annual_inspection_expiry) && (
-        <div className="flex flex-wrap gap-2 mb-4">
+        <div className="flex flex-wrap gap-2 mb-3">
           <ExpiryBadge date={truck.registration_expiry} label="Registration" />
           <ExpiryBadge date={truck.insurance_expiry} label="Insurance" />
           <ExpiryBadge date={(truck as any).annual_inspection_expiry} label="Annual Inspection" />
@@ -71,11 +71,11 @@ export function TruckDetailPanel({ truck, driverName, getDocSignedUrl, onUpdateT
       )}
 
       {/* Grid de 3 columnas con separadores verticales */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 lg:divide-x lg:divide-border gap-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 items-start">
 
         {/* ═══ COLUMNA 1 — General Information ═══ */}
-        <div className="lg:pr-6 space-y-4">
-          <h3 className="text-lg font-bold uppercase tracking-wide text-foreground border-b pb-2">
+        <div className="rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border p-4 space-y-3">
+          <h3 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground">
             General Information
           </h3>
 
@@ -92,7 +92,7 @@ export function TruckDetailPanel({ truck, driverName, getDocSignedUrl, onUpdateT
 
           {/* Box Truck dimensions */}
           {truck.truck_type === 'Box Truck' && (
-            <div className="grid grid-cols-2 gap-x-4 gap-y-3 border-t pt-3">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-3 border-t border-[#f0f0f0] dark:border-border pt-3">
               <Info label="Cargo Length (ft)">{truck.cargo_length_ft ?? '—'}</Info>
               <Info label="Cargo Width (in)">{truck.cargo_width_in ?? '—'}</Info>
               <Info label="Cargo Height (in)">{truck.cargo_height_in ?? '—'}</Info>
@@ -103,8 +103,8 @@ export function TruckDetailPanel({ truck, driverName, getDocSignedUrl, onUpdateT
         </div>
 
         {/* ═══ COLUMNA 2 — Trailer Information ═══ */}
-        <div className="lg:px-6 space-y-4">
-          <h3 className="text-lg font-bold uppercase tracking-wide text-foreground border-b pb-2">
+        <div className="rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border p-4 space-y-3">
+          <h3 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground">
             Trailer Information
           </h3>
 
@@ -116,7 +116,7 @@ export function TruckDetailPanel({ truck, driverName, getDocSignedUrl, onUpdateT
 
           {/* Maintenance Summary */}
           {truckMaint.length > 0 && (
-            <div className="border-t pt-3">
+            <div className="border-t border-[#f0f0f0] dark:border-border pt-3">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Maintenance Items</p>
               <div className="space-y-2">
                 {truckMaint.map(m => {
@@ -142,8 +142,8 @@ export function TruckDetailPanel({ truck, driverName, getDocSignedUrl, onUpdateT
         </div>
 
         {/* ═══ COLUMNA 3 — Documents ═══ */}
-        <div className="lg:pl-6 space-y-4">
-          <h3 className="text-lg font-bold uppercase tracking-wide text-foreground border-b pb-2">
+        <div className="rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border p-4 space-y-3">
+          <h3 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground">
             Documents
           </h3>
 

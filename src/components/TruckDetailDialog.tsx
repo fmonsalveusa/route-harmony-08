@@ -51,22 +51,22 @@ export function TruckDetailDialog({ open, onOpenChange, truck, getDocSignedUrl }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-[28px] border-0 bg-[#f8fafd] dark:bg-background">
         <DialogHeader>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-              <TruckIcon className="h-5 w-5 text-primary" />
+            <div className="w-11 h-11 rounded-full bg-[#d3e3fd] dark:bg-blue-900/40 text-[#041e49] dark:text-blue-200 flex items-center justify-center">
+              <TruckIcon className="h-5 w-5" />
             </div>
             <div>
-              <DialogTitle>Unit #{truck.unit_number}</DialogTitle>
-              <DialogDescription>{truck.truck_type} — {truck.make} {truck.model}</DialogDescription>
+              <DialogTitle className="text-[22px] font-normal text-[#1f1f1f] dark:text-foreground">Unit #{truck.unit_number}</DialogTitle>
+              <DialogDescription className="text-[#444746] dark:text-muted-foreground">{truck.truck_type} — {truck.make} {truck.model}</DialogDescription>
             </div>
           </div>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        <div className="space-y-3 py-2">
           {/* General info */}
-          <section className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3 text-sm">
+          <section className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3 text-sm rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border p-4">
             <Info label="Status"><StatusBadge status={truck.status} /></Info>
             <Info label="Year">{truck.year ?? '—'}</Info>
             <Info label="Max Payload">{truck.max_payload_lbs ? `${truck.max_payload_lbs.toLocaleString()} lbs` : '—'}</Info>
@@ -81,8 +81,8 @@ export function TruckDetailDialog({ open, onOpenChange, truck, getDocSignedUrl }
 
           {/* Box Truck dimensions */}
           {truck.truck_type === 'Box Truck' && (truck.cargo_length_ft || truck.cargo_width_in || truck.cargo_height_in || truck.rear_door_width_in || truck.rear_door_height_in) && (
-            <section className="border-t pt-4 space-y-2">
-              <h3 className="font-semibold text-sm">Dimensiones Box Truck</h3>
+            <section className="rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border p-4 space-y-2">
+              <h3 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground">Dimensiones Box Truck</h3>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3 text-sm">
                 <Info label="Cargo Length (ft)">{truck.cargo_length_ft ?? '—'}</Info>
                 <Info label="Cargo Width (in)">{truck.cargo_width_in ?? '—'}</Info>
@@ -95,8 +95,8 @@ export function TruckDetailDialog({ open, onOpenChange, truck, getDocSignedUrl }
 
           {/* Hotshot dimensions */}
           {truck.truck_type === 'Hotshot' && (truck.trailer_number || truck.trailer_length_ft || truck.mega_ramp) && (
-            <section className="border-t pt-4 space-y-2">
-              <h3 className="font-semibold text-sm">Dimensiones Hotshot</h3>
+            <section className="rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border p-4 space-y-2">
+              <h3 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground">Dimensiones Hotshot</h3>
               <div className="grid grid-cols-3 gap-x-6 gap-y-3 text-sm">
                 <Info label="Trailer #">{truck.trailer_number ?? '—'}</Info>
                 <Info label="Trailer Length (ft)">{truck.trailer_length_ft ?? '—'}</Info>
@@ -106,8 +106,8 @@ export function TruckDetailDialog({ open, onOpenChange, truck, getDocSignedUrl }
           )}
 
           {/* Documents */}
-          <section className="border-t pt-4 space-y-3">
-            <h3 className="font-semibold text-sm">Documentos y Fotos</h3>
+          <section className="rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border p-4 space-y-3">
+            <h3 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground">Documentos y Fotos</h3>
             <DocCardGrid
               docs={DOC_LABELS.map(d => ({ key: String(d.key), label: d.label, url: truck[d.key] as string | null }))}
               getDocSignedUrl={getDocSignedUrl}
@@ -122,8 +122,8 @@ export function TruckDetailDialog({ open, onOpenChange, truck, getDocSignedUrl }
 function Info({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="text-muted-foreground text-xs">{label}</p>
-      <div className="font-medium mt-0.5">{children}</div>
+      <p className="text-xs text-[#444746] dark:text-muted-foreground">{label}</p>
+      <div className="font-medium mt-0.5 text-[#1f1f1f] dark:text-foreground [overflow-wrap:anywhere]">{children}</div>
     </div>
   );
 }

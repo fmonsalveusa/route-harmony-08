@@ -5,6 +5,7 @@ import { useDispatchers } from '@/hooks/useDispatchers';
 import { useAuth } from '@/contexts/AuthContext';
 import { StatTiles, SolidStatusPill, PILL_INPUT, TABLE_CARD, TABLE_HEAD_ROW, TABLE_ROW } from '@/components/StatTiles';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { cn } from '@/lib/utils';
 import { TruckFormDialog } from '@/components/TruckFormDialog';
 import { TruckDetailDialog } from '@/components/TruckDetailDialog';
 import { TruckDetailPanel } from '@/components/TruckDetailPanel';
@@ -158,21 +159,21 @@ const Fleet = () => {
     const paged = filtered.slice((page - 1) * pageSize, page * pageSize);
     const colSpan = 9;
     return (
-    <div className={TABLE_CARD}>
+    <div className={cn(TABLE_CARD, 'mt-3')}>
       <div className="p-0">
         <div className="overflow-x-auto">
-          <table className="w-full text-[15px]">
+          <table className="w-full text-sm">
             <thead>
               <tr className={TABLE_HEAD_ROW}>
                 <th className="w-8 p-3"></th>
-                <th className="text-left p-3 font-medium text-muted-foreground">Unit #</th>
-                <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Driver</th>
-                <th className="text-left p-3 font-medium text-muted-foreground">Type</th>
-                <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Make / Model</th>
-                <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">VIN</th>
-                <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">License Plate</th>
-                <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
-                <th className="text-right p-3 font-medium text-muted-foreground">Actions</th>
+                <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Unit #</th>
+                <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground hidden md:table-cell">Driver</th>
+                <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Type</th>
+                <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground hidden lg:table-cell">Make / Model</th>
+                <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground hidden lg:table-cell">VIN</th>
+                <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground hidden md:table-cell">License Plate</th>
+                <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Status</th>
+                <th className="text-right px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -183,30 +184,30 @@ const Fleet = () => {
                 const driverName = getDriverName(truck.id);
 
                 const statusBorder = truck.status === 'active'
-                  ? 'border-l-4 border-l-green-600'
+                  ? 'border-l-4 border-l-[#188038]'
                   : truck.status === 'inactive'
-                  ? 'border-l-4 border-l-red-600'
-                  : 'border-l-4 border-l-orange-500'; // maintenance
+                  ? 'border-l-4 border-l-[#d93025]'
+                  : 'border-l-4 border-l-[#e37400]'; // maintenance
 
                 const iconBg = truck.status === 'active'
-                  ? 'border-2 border-[#639922] text-[#639922] bg-white'
+                  ? 'bg-[#e6f4ea] text-[#188038] dark:bg-emerald-900/40 dark:text-emerald-300'
                   : truck.status === 'inactive'
-                  ? 'border-2 border-[#DC2626] text-[#DC2626] bg-white'
-                  : 'border-2 border-[#EF9F27] text-[#EF9F27] bg-white';
+                  ? 'bg-[#fce8e6] text-[#d93025] dark:bg-red-900/40 dark:text-red-300'
+                  : 'bg-[#feefe3] text-[#e37400] dark:bg-orange-900/40 dark:text-orange-300';
 
                 return (
                   <>
-                    <tr key={truck.id} className={`${TABLE_ROW} cursor-pointer ${statusBorder} ${isExpanded ? 'bg-muted/40' : ''}`} onClick={() => setExpandedId(isExpanded ? null : truck.id)}>
-                      <td className="p-3 text-muted-foreground">
+                    <tr key={truck.id} className={`${TABLE_ROW} cursor-pointer ${statusBorder} ${isExpanded ? 'bg-[#f0f4f9] dark:bg-muted/50 hover:bg-[#f0f4f9]' : ''}`} onClick={() => setExpandedId(isExpanded ? null : truck.id)}>
+                      <td className="px-3 py-2 text-muted-foreground">
                         {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                       </td>
-                      <td className="p-3">
+                      <td className="px-3 py-2">
                         <div className="flex items-center gap-2">
                           <div className={`w-9 h-9 rounded-full flex items-center justify-center ${iconBg}`}>
                             <TruckIcon className="h-4 w-4" />
                           </div>
                           <div className="flex flex-col">
-                            <span className="font-bold text-base">#{truck.unit_number}</span>
+                            <span className="font-medium text-[15px] text-[#1f1f1f] dark:text-foreground">#{truck.unit_number}</span>
                             <ExpiryIndicators items={[
                               { date: truck.registration_expiry, label: 'Registration' },
                               { date: truck.insurance_expiry, label: 'Insurance' },
@@ -215,27 +216,27 @@ const Fleet = () => {
                           </div>
                         </div>
                       </td>
-                      <td className="p-3 hidden md:table-cell">
+                      <td className="px-3 py-2 hidden md:table-cell">
                         <span className="flex items-center gap-1">
                           {driverName ? (
-                            <><User className="h-3 w-3 text-primary" />{driverName}</>
+                            <><User className="h-3 w-3 text-[#0b57d0] dark:text-blue-300" /><span className="whitespace-nowrap">{driverName}</span></>
                           ) : (
-                            <span className="text-destructive font-medium">Unassigned</span>
+                            <span className="text-[#b3261e] font-medium">Unassigned</span>
                           )}
                         </span>
                       </td>
-                      <td className="p-3">{truck.truck_type}</td>
-                      <td className="p-3 hidden lg:table-cell">
+                      <td className="px-3 py-2">{truck.truck_type}</td>
+                      <td className="px-3 py-2 hidden lg:table-cell">
                         <span className="text-sm">{[truck.make, truck.model].filter(Boolean).join(' ') || '—'}</span>
                         {truck.year && <span className="text-xs text-muted-foreground ml-1">({truck.year})</span>}
                       </td>
-                      <td className="p-3 hidden lg:table-cell">
+                      <td className="px-3 py-2 hidden lg:table-cell">
                         <span className="text-sm font-mono">{truck.vin || '—'}</span>
                       </td>
-                      <td className="p-3 hidden md:table-cell">
+                      <td className="px-3 py-2 hidden md:table-cell">
                         <span className="text-sm">{truck.license_plate || '—'}</span>
                       </td>
-                      <td className="p-3" onClick={e => e.stopPropagation()}>
+                      <td className="px-3 py-2" onClick={e => e.stopPropagation()}>
                         <Select value={truck.status} onValueChange={v => updateTruck(truck.id, { status: v })}>
                           <SelectTrigger className="h-8 w-[155px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:hidden bg-transparent">
                             <span className="flex items-center justify-between w-full gap-1">
@@ -252,16 +253,16 @@ const Fleet = () => {
                           </SelectContent>
                         </Select>
                       </td>
-                      <td className="p-4" onClick={e => e.stopPropagation()}>
+                      <td className="px-3 py-2" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-1">
-                          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1 text-green-600 hover:text-green-700 hover:bg-green-50" onClick={() => setDetailTruck(truck)} title="Detail">
+                          <Button variant="ghost" size="sm" className="h-8 rounded-full px-3 text-xs gap-1 text-[#188038] hover:text-[#188038] hover:bg-[#e6f4ea] font-medium" onClick={() => setDetailTruck(truck)} title="Detail">
                             <Eye className="h-3.5 w-3.5" /> Detail
                           </Button>
-                          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={() => openEdit(truck)} title="Edit">
-                            <Pencil className="h-3.5 w-3.5" /> Edit
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe]" onClick={() => openEdit(truck)} title="Edit">
+                            <Pencil className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1 text-red-500 hover:text-red-600 hover:bg-red-50" onClick={async () => { if (window.confirm(`Delete truck Unit #${truck.unit_number}? This action is permanent.`)) { await deleteTruck(truck.id); } }} title="Delete">
-                            <Trash2 className="h-3.5 w-3.5" /> Delete
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full text-[#b3261e] hover:text-[#b3261e] hover:bg-[#fce8e6]" onClick={async () => { if (window.confirm(`Delete truck Unit #${truck.unit_number}? This action is permanent.`)) { await deleteTruck(truck.id); } }} title="Delete">
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
                       </td>
@@ -281,21 +282,21 @@ const Fleet = () => {
         </div>
 
         {/* Pagination Footer */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border-t">
-          <div className="text-sm text-muted-foreground">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-4 py-2.5 border-t border-[#e3e3e3] dark:border-border">
+          <div className="text-sm text-[#444746] dark:text-muted-foreground">
             {filtered.length} trucks
           </div>
           <div className="flex items-center gap-3 mt-2 sm:mt-0">
             <Select value={String(pageSize)} onValueChange={v => { setPageSize(Number(v)); setPage(1); }}>
-              <SelectTrigger className="w-[80px] h-8 text-xs"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-[100px] h-8 text-xs rounded-lg shadow-none font-medium bg-white dark:bg-card border-[#c4c7c5] dark:border-border text-[#444746] dark:text-muted-foreground"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {PAGE_SIZES.map(s => <SelectItem key={s} value={String(s)}>{s}/page</SelectItem>)}
               </SelectContent>
             </Select>
             <div className="flex items-center gap-1">
-              <Button variant="outline" size="sm" className="h-8" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>Prev</Button>
-              <span className="text-sm px-2">{page}/{totalPages}</span>
-              <Button variant="outline" size="sm" className="h-8" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>Next</Button>
+              <Button variant="ghost" size="sm" className="h-8 rounded-full px-3 text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe] dark:text-blue-300 font-medium" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>Prev</Button>
+              <span className="text-sm px-2 text-[#444746] dark:text-muted-foreground">{page} de {totalPages}</span>
+              <Button variant="ghost" size="sm" className="h-8 rounded-full px-3 text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe] dark:text-blue-300 font-medium" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>Next</Button>
             </div>
           </div>
         </div>
@@ -305,14 +306,19 @@ const Fleet = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="page-header">Truck Fleet</h1>
-          <p className="page-description">Vehicle management and availability</p>
+    <div className="space-y-3">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span className="h-10 w-10 rounded-full bg-[#d3e3fd] dark:bg-blue-900/40 text-[#041e49] dark:text-blue-200 flex items-center justify-center shrink-0">
+            <TruckIcon className="h-5 w-5" />
+          </span>
+          <div>
+            <h1 className="text-[24px] leading-8 font-normal text-[#1f1f1f] dark:text-foreground">Truck Fleet</h1>
+            <p className="text-sm text-[#444746] dark:text-muted-foreground">Vehicle management and availability</p>
+          </div>
         </div>
-        <Button size="sm" className="gap-2" onClick={openNew}>
-          <Plus className="h-4 w-4" /> New Truck
+        <Button className="h-10 rounded-2xl px-5 gap-2 bg-[#c2e7ff] hover:bg-[#b3dcf5] text-[#001d35] font-medium shadow-[0_1px_2px_rgba(60,64,67,.3),0_1px_3px_1px_rgba(60,64,67,.15)]" onClick={openNew}>
+          <Plus className="h-5 w-5" /> New Truck
         </Button>
       </div>
 
@@ -322,20 +328,20 @@ const Fleet = () => {
         const current = scoped.filter(t => t.status !== 'inactive');
         return (
           <StatTiles tiles={[
-            { label: 'Total Trucks', value: current.length, icon: TruckIcon, tint: 'bg-sky-100 text-sky-700' },
-            { label: 'Active', value: current.filter(t => t.status === 'active').length, icon: CheckCircle2, tint: 'bg-emerald-100 text-emerald-700' },
-            { label: 'Maintenance', value: current.filter(t => t.status === 'maintenance').length, icon: Wrench, tint: 'bg-orange-100 text-orange-700' },
-            { label: 'Inactive', value: scoped.filter(t => t.status === 'inactive').length, icon: XCircle, tint: 'bg-red-100 text-red-700' },
-            { label: 'Sin driver', value: current.filter(t => !getDriverName(t.id)).length, icon: UserX, tint: 'bg-slate-100 text-slate-700' },
-            { label: 'VIN pendiente', value: current.filter(t => !isValidVin(t.vin)).length, icon: AlertTriangle, tint: 'bg-amber-100 text-amber-700' },
+            { label: 'Total Trucks', value: current.length, icon: TruckIcon, tint: 'bg-[#d3e3fd] text-[#041e49] dark:bg-blue-900/40 dark:text-blue-200' },
+            { label: 'Active', value: current.filter(t => t.status === 'active').length, icon: CheckCircle2, tint: 'bg-[#c4eed0] text-[#072711] dark:bg-emerald-900/40 dark:text-emerald-200' },
+            { label: 'Maintenance', value: current.filter(t => t.status === 'maintenance').length, icon: Wrench, tint: 'bg-[#ffdcc1] text-[#2f1500] dark:bg-orange-900/40 dark:text-orange-200' },
+            { label: 'Inactive', value: scoped.filter(t => t.status === 'inactive').length, icon: XCircle, tint: 'bg-[#f9dedc] text-[#410e0b] dark:bg-red-900/40 dark:text-red-200' },
+            { label: 'Sin driver', value: current.filter(t => !getDriverName(t.id)).length, icon: UserX, tint: 'bg-[#e3e3e3] text-[#1f1f1f] dark:bg-muted dark:text-foreground' },
+            { label: 'VIN pendiente', value: current.filter(t => !isValidVin(t.vin)).length, icon: AlertTriangle, tint: 'bg-[#feefc3] text-[#3d2a00] dark:bg-amber-900/40 dark:text-amber-200' },
           ]} />
         );
       })()}
 
       {/* Search & Filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
         <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#444746] dark:text-muted-foreground" />
           <Input
             placeholder="Search unit, make, model, VIN..."
             value={searchQuery}
@@ -344,7 +350,7 @@ const Fleet = () => {
           />
         </div>
         <Select value={dispatcherFilter} onValueChange={v => { setDispatcherFilter(v); setPage(1); }}>
-          <SelectTrigger className={`w-full sm:w-52 ${PILL_INPUT}`}>
+          <SelectTrigger className={cn('w-full sm:w-52 h-8 text-xs rounded-lg shadow-none font-medium', dispatcherFilter !== 'all' ? 'bg-[#c2e7ff] border-[#c2e7ff] text-[#001d35] dark:bg-blue-900/50 dark:border-blue-900/50 dark:text-blue-100' : 'bg-white dark:bg-card border-[#c4c7c5] dark:border-border text-[#444746] dark:text-muted-foreground')}>
             <SelectValue placeholder="Filter by Dispatcher" />
           </SelectTrigger>
           <SelectContent className="max-h-60">
@@ -355,7 +361,7 @@ const Fleet = () => {
           </SelectContent>
         </Select>
         <Select value={vinFilter} onValueChange={v => { setVinFilter(v); setPage(1); }}>
-          <SelectTrigger className={`w-full sm:w-52 ${PILL_INPUT}`}>
+          <SelectTrigger className={cn('w-full sm:w-52 h-8 text-xs rounded-lg shadow-none font-medium', vinFilter !== 'all' ? 'bg-[#c2e7ff] border-[#c2e7ff] text-[#001d35] dark:bg-blue-900/50 dark:border-blue-900/50 dark:text-blue-100' : 'bg-white dark:bg-card border-[#c4c7c5] dark:border-border text-[#444746] dark:text-muted-foreground')}>
             <SelectValue placeholder="Filter by VIN" />
           </SelectTrigger>
           <SelectContent className="max-h-60">
@@ -368,7 +374,7 @@ const Fleet = () => {
           </SelectContent>
         </Select>
         <Select value={plateFilter} onValueChange={v => { setPlateFilter(v); setPage(1); }}>
-          <SelectTrigger className={`w-full sm:w-44 ${PILL_INPUT}`}>
+          <SelectTrigger className={cn('w-full sm:w-44 h-8 text-xs rounded-lg shadow-none font-medium', plateFilter !== 'all' ? 'bg-[#c2e7ff] border-[#c2e7ff] text-[#001d35] dark:bg-blue-900/50 dark:border-blue-900/50 dark:text-blue-100' : 'bg-white dark:bg-card border-[#c4c7c5] dark:border-border text-[#444746] dark:text-muted-foreground')}>
             <SelectValue placeholder="Filter by Plate" />
           </SelectTrigger>
           <SelectContent className="max-h-60">
@@ -384,10 +390,10 @@ const Fleet = () => {
         <p className="text-muted-foreground text-center py-12">Loading trucks...</p>
       ) : (
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
-            <TabsTrigger value="active" onClick={() => setPage(1)}>Active <span className={`text-xs rounded-full px-2 py-0.5 font-semibold ${trucks.filter(t => t.status !== 'inactive').length > 0 ? 'bg-destructive text-destructive-foreground' : activeTab === 'active' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{trucks.filter(t => t.status !== 'inactive').length}</span></TabsTrigger>
-            <TabsTrigger value="inactive" onClick={() => setPage(1)}>Inactive <span className={`text-xs rounded-full px-2 py-0.5 font-semibold ${activeTab === 'inactive' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{trucks.filter(t => t.status === 'inactive').length}</span></TabsTrigger>
-            <TabsTrigger value="all" onClick={() => setPage(1)}>All <span className={`text-xs rounded-full px-2 py-0.5 font-semibold ${activeTab === 'all' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{trucks.length}</span></TabsTrigger>
+          <TabsList className="w-full justify-start rounded-none sm:rounded-none border-x-0 border-t-0 flex-nowrap border-b border-[#e3e3e3] dark:border-border bg-transparent h-12 p-0 px-1 overflow-x-auto overflow-y-hidden">
+            <TabsTrigger className="h-12 rounded-none border-b-[3px] border-transparent px-4 gap-2 text-sm font-medium text-[#444746] dark:text-muted-foreground data-[state=active]:border-[#0b57d0] data-[state=active]:text-[#0b57d0] dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none data-[state=active]:bg-transparent" value="active" onClick={() => setPage(1)}>Active <span className={`text-xs rounded-full px-2 py-0.5 font-semibold ${trucks.filter(t => t.status !== 'inactive').length > 0 ? 'bg-destructive text-destructive-foreground' : activeTab === 'active' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{trucks.filter(t => t.status !== 'inactive').length}</span></TabsTrigger>
+            <TabsTrigger className="h-12 rounded-none border-b-[3px] border-transparent px-4 gap-2 text-sm font-medium text-[#444746] dark:text-muted-foreground data-[state=active]:border-[#0b57d0] data-[state=active]:text-[#0b57d0] dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none data-[state=active]:bg-transparent" value="inactive" onClick={() => setPage(1)}>Inactive <span className={`text-xs rounded-full px-2 py-0.5 font-semibold ${activeTab === 'inactive' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{trucks.filter(t => t.status === 'inactive').length}</span></TabsTrigger>
+            <TabsTrigger className="h-12 rounded-none border-b-[3px] border-transparent px-4 gap-2 text-sm font-medium text-[#444746] dark:text-muted-foreground data-[state=active]:border-[#0b57d0] data-[state=active]:text-[#0b57d0] dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none data-[state=active]:bg-transparent" value="all" onClick={() => setPage(1)}>All <span className={`text-xs rounded-full px-2 py-0.5 font-semibold ${activeTab === 'all' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{trucks.length}</span></TabsTrigger>
           </TabsList>
           {['active', 'inactive', 'all'].map(tab => (
             <TabsContent key={tab} value={tab}>

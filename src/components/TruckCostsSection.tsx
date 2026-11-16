@@ -126,7 +126,7 @@ export function TruckCostsSection({ truck }: { truck: DbTruck }) {
 
   return (
     <div className="mt-6 border-t pt-4">
-      <h3 className="text-lg font-bold uppercase tracking-wide text-foreground border-b pb-2 mb-3">
+      <h3 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground mb-2">
         Costs &amp; Expenses
       </h3>
       <p className="text-xs text-muted-foreground -mt-1 mb-3">

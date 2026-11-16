@@ -23,16 +23,16 @@ const LG_COLS: Record<number, string> = {
 /** Fila de tarjetas de resumen arriba de cada página (estilo RouteOne) */
 export function StatTiles({ tiles, className }: { tiles: StatTile[]; className?: string }) {
   return (
-    <div className={cn('grid grid-cols-2 sm:grid-cols-3 gap-3', LG_COLS[tiles.length] ?? 'lg:grid-cols-6', className)}>
+    <div className={cn('grid grid-cols-2 sm:grid-cols-3 gap-2.5', LG_COLS[tiles.length] ?? 'lg:grid-cols-6', className)}>
       {tiles.map(t => (
-        <div key={t.label} className="flex items-center gap-3 rounded-xl border bg-card px-4 py-3 shadow-sm">
-          <div className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-lg', t.tint)}>
-            <t.icon className="h-5 w-5" />
+        <div key={t.label} className="flex items-center gap-3 rounded-2xl border border-[#e3e3e3] dark:border-border bg-white dark:bg-card px-4 py-2.5" title={t.hint}>
+          <div className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-full', t.tint)}>
+            <t.icon className="h-[18px] w-[18px]" />
           </div>
           <div className="min-w-0">
-            <p className="text-xs text-muted-foreground truncate">{t.label}</p>
-            <p className="text-xl font-semibold leading-tight truncate">{t.value}</p>
-            {t.hint && <p className="text-[11px] text-muted-foreground truncate">{t.hint}</p>}
+            <p className="text-[22px] leading-7 font-normal text-[#1f1f1f] dark:text-foreground truncate">{t.value}</p>
+            <p className="text-xs font-medium text-[#444746] dark:text-muted-foreground truncate">{t.label}</p>
+            {t.hint && <p className="text-[11px] text-[#444746]/80 dark:text-muted-foreground truncate">{t.hint}</p>}
           </div>
         </div>
       ))}
@@ -50,7 +50,7 @@ export function SolidStatusPill({ label, color }: { label: string; color: string
 }
 
 /** Clases compartidas: buscador/filtros en píldora y contenedor de tabla */
-export const PILL_INPUT = 'h-10 rounded-full bg-card shadow-sm';
-export const TABLE_CARD = 'rounded-xl border bg-card shadow-sm overflow-hidden';
-export const TABLE_HEAD_ROW = 'border-b bg-muted/50';
-export const TABLE_ROW = 'border-b transition-colors hover:bg-muted/40';
+export const PILL_INPUT = 'h-10 rounded-full bg-white dark:bg-card border-[#e3e3e3] dark:border-border shadow-none';
+export const TABLE_CARD = 'rounded-3xl border border-[#e3e3e3] dark:border-border bg-white dark:bg-card overflow-hidden';
+export const TABLE_HEAD_ROW = 'border-b border-[#e3e3e3] dark:border-border bg-[#f8fafd] dark:bg-muted/30';
+export const TABLE_ROW = 'border-b border-[#f0f0f0] dark:border-border transition-colors hover:bg-[#f8fafd] dark:hover:bg-muted/30';
