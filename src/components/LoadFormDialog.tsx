@@ -97,19 +97,20 @@ async function refreshSignedUrl(url: string): Promise<string> {
  */
 // ─── Estilo Google / Material 3 ───
 const G_LABEL = 'text-xs font-medium text-[#444746] dark:text-muted-foreground';
-const G_INPUT = 'h-10 text-sm rounded-lg shadow-none border-[#c4c7c5] dark:border-border focus-visible:ring-1 focus-visible:ring-[#0b57d0] focus-visible:border-[#0b57d0]';
-const G_CHIP = 'inline-flex items-center gap-1.5 rounded-lg h-8 px-3 text-sm font-medium border transition-colors';
+const G_INPUT = 'h-9 text-sm rounded-lg shadow-none border-[#c4c7c5] dark:border-border focus-visible:ring-1 focus-visible:ring-[#0b57d0] focus-visible:border-[#0b57d0]';
+const G_CHIP = 'inline-flex items-center gap-1 rounded-lg h-9 px-2.5 text-xs font-medium border transition-colors whitespace-nowrap';
 const G_CHIP_ON = 'bg-[#c2e7ff] border-[#c2e7ff] text-[#001d35] dark:bg-blue-900/50 dark:border-blue-900/50 dark:text-blue-100';
 const G_CHIP_OFF = 'border-[#c4c7c5] dark:border-border text-[#444746] dark:text-muted-foreground hover:bg-[#f0f4f9] dark:hover:bg-muted';
-const G_TEXT_BTN = 'h-9 rounded-full px-3 gap-1.5 text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe] dark:text-blue-300 dark:hover:bg-blue-950/40 font-medium';
+const G_TEXT_BTN = 'h-7 rounded-full px-3 gap-1.5 text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe] dark:text-blue-300 dark:hover:bg-blue-950/40 font-medium';
 
 /** Tarjeta de sección del formulario */
-function GSection({ title, icon: Icon, className, children }: { title: string; icon: typeof FileText; className?: string; children: React.ReactNode }) {
+function GSection({ title, icon: Icon, className, right, children }: { title: string; icon: typeof FileText; className?: string; right?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <section className={cn('rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border p-5', className)}>
-      <div className="flex items-center gap-2.5 mb-4">
+    <section className={cn('rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border px-5 py-3', className)}>
+      <div className="flex items-center gap-2.5 mb-2">
         <Icon className="h-5 w-5 text-[#0b57d0] dark:text-blue-300" />
-        <h4 className="text-base font-medium text-[#1f1f1f] dark:text-foreground">{title}</h4>
+        <h4 className="text-base font-medium text-[#1f1f1f] dark:text-foreground flex-1">{title}</h4>
+        {right}
       </div>
       {children}
     </section>
@@ -848,8 +849,8 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
   return (
     <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[1750px] w-[98vw] max-h-[95vh] overflow-hidden p-0 flex flex-col gap-0 rounded-[28px] border-0 bg-[#f8fafd] dark:bg-background">
-        <DialogHeader className="px-6 py-4 border-b border-[#e3e3e3] dark:border-border bg-white dark:bg-card shrink-0 space-y-0">
+      <DialogContent className="max-w-[1750px] w-[98vw] max-h-[96vh] overflow-hidden p-0 flex flex-col gap-0 rounded-[28px] border-0 bg-[#f8fafd] dark:bg-background">
+        <DialogHeader className="px-6 py-3 border-b border-[#e3e3e3] dark:border-border bg-white dark:bg-card shrink-0 space-y-0">
           <div className="flex items-center gap-3">
             <span className="h-10 w-10 rounded-full bg-[#d3e3fd] dark:bg-blue-900/40 text-[#041e49] dark:text-blue-200 flex items-center justify-center">
               {editLoad ? <FileText className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
@@ -865,7 +866,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
 
         <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[minmax(560px,720px)_minmax(0,1fr)]">
           {/* ═══ COLUMNA DERECHA (visual) — Form ═══ */}
-          <div className="overflow-y-auto p-4 sm:p-6 lg:order-2">
+          <div className="overflow-y-auto p-4 sm:px-6 sm:py-3 lg:order-2">
 
         <input ref={fileInputRef} type="file" accept=".pdf" onChange={handlePdfUpload} className="hidden" />
 
@@ -915,34 +916,47 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
 
         {/* RC Original — solo Admin / Accounting / Master Admin */}
         {canSeeGrossRate && (
-          <div className="mt-2 p-5 rounded-3xl bg-[#fef7e0] dark:bg-amber-950/30 border border-[#fde293] dark:border-amber-900/50">
-            <div className="flex items-center gap-3 mb-4">
-              <span className="h-9 w-9 rounded-full bg-[#feefc3] dark:bg-amber-900/50 text-[#b06000] dark:text-amber-300 flex items-center justify-center">
-                <DollarSign className="h-5 w-5" />
+          <div className="mt-1 px-4 py-2.5 rounded-3xl bg-[#fef7e0] dark:bg-amber-950/30 border border-[#fde293] dark:border-amber-900/50">
+            {/* Una sola fila: título, Gross Rate, delta y el PDF del RC original (solo admin, no lo ve el driver) */}
+            <input ref={rcOriginalFileInputRef} type="file" accept=".pdf" onChange={handleRcOriginalUpload} className="hidden" />
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+              <span className="h-8 w-8 rounded-full bg-[#feefc3] dark:bg-amber-900/50 text-[#b06000] dark:text-amber-300 flex items-center justify-center shrink-0" title="Solo admin · Monto original del broker, no visible para el driver">
+                <DollarSign className="h-4 w-4" />
               </span>
-              <div>
-                <h4 className="text-base font-medium text-[#1f1f1f] dark:text-foreground">RC Original (Gross Rate)</h4>
-                <p className="text-xs text-[#444746] dark:text-muted-foreground">Solo admin · Monto original del broker, no visible para el driver.</p>
-              </div>
-            </div>
-
-            {/* Gross Rate input */}
-            <div className="mb-3 flex items-center gap-2">
-              <Label className="text-xs whitespace-nowrap">$ Gross Rate:</Label>
+              <span className="text-sm font-medium text-[#1f1f1f] dark:text-foreground">RC Original</span>
               <Input
                 type="number"
                 min={0}
                 step={0.01}
-                placeholder="0.00"
+                placeholder="Gross rate $"
                 value={grossRate || ''}
                 onChange={e => { setGrossRate(parseFloat(e.target.value) || 0); setAdjustmentSaved(false); }}
-                className={cn(G_INPUT, 'w-40 bg-white dark:bg-background')}
+                className={cn(G_INPUT, 'w-32 bg-white dark:bg-background')}
               />
               {grossRate > 0 && formData.totalRate > 0 && (
-                <span className="text-xs text-muted-foreground">
-                  Delta: <strong className="text-amber-600">${(grossRate - formData.totalRate).toLocaleString()}</strong>
+                <span className="text-xs text-[#444746] dark:text-muted-foreground">
+                  Delta: <strong className="text-[#b06000]">${(grossRate - formData.totalRate).toLocaleString()}</strong>
                 </span>
               )}
+              <div className="ml-auto flex items-center gap-1">
+                {!rcOriginalPreviewUrl ? (
+                  <Button variant="outline" size="sm" className="h-8 gap-1.5 rounded-full border-[#b06000]/40 bg-white dark:bg-background text-[#b06000] hover:bg-[#feefc3] hover:text-[#b06000]"
+                    onClick={() => rcOriginalFileInputRef.current?.click()}>
+                    <Upload className="h-3.5 w-3.5" /> Subir PDF
+                  </Button>
+                ) : (
+                  <>
+                    <span className="flex items-center gap-1 text-xs text-[#1f1f1f] dark:text-foreground max-w-[160px] truncate">
+                      <FileText className="h-3.5 w-3.5 text-[#b06000] shrink-0" />{rcOriginalFileName || 'RC Original.pdf'}
+                    </span>
+                    <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs rounded-full" asChild>
+                      <a href={rcOriginalPreviewUrl} target="_blank" rel="noopener noreferrer"><Eye className="h-3.5 w-3.5" /> Ver</a>
+                    </Button>
+                    <Button variant="ghost" size="sm" className="h-7 text-xs rounded-full" onClick={() => rcOriginalFileInputRef.current?.click()}>Cambiar</Button>
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 rounded-full text-[#b3261e]" onClick={removeRcOriginal}><X className="h-3.5 w-3.5" /></Button>
+                  </>
+                )}
+              </div>
             </div>
 
             {/* Panel de distribución del delta */}
@@ -1036,107 +1050,55 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
               );
             })()}
 
-            {/* RC Original PDF upload */}
-            <input
-              ref={rcOriginalFileInputRef}
-              type="file"
-              accept=".pdf"
-              onChange={handleRcOriginalUpload}
-              className="hidden"
-            />
-            {!rcOriginalPreviewUrl ? (
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full gap-2 h-10 rounded-full border-[#b06000]/40 bg-white dark:bg-background text-[#b06000] hover:bg-[#feefc3] hover:text-[#b06000]"
-                onClick={() => rcOriginalFileInputRef.current?.click()}
-              >
-                <Upload className="h-4 w-4" /> Subir RC Original PDF
-              </Button>
-            ) : (
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2 text-sm font-medium">
-                    <FileText className="h-4 w-4 text-amber-500" />
-                    <span className="text-xs truncate max-w-[200px]">{rcOriginalFileName || 'RC Original.pdf'}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" asChild>
-                      <a href={rcOriginalPreviewUrl} target="_blank" rel="noopener noreferrer">
-                        <Eye className="h-3.5 w-3.5" /> Ver
-                      </a>
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 gap-1 text-xs"
-                      onClick={() => rcOriginalFileInputRef.current?.click()}
-                    >
-                      Cambiar
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 text-xs text-destructive"
-                      onClick={removeRcOriginal}
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </div>
-                <div className="rounded border bg-background h-32 overflow-hidden">
-                  <iframe src={rcOriginalPreviewUrl} className="w-full h-full" title="RC Original Preview" />
-                </div>
-              </div>
-            )}
           </div>
         )}
 
         {/* ── Datos de la carga ── */}
-        <GSection title="Datos de la carga" icon={FileText} className="mt-4">
-          <div className="grid grid-cols-2 gap-x-3 gap-y-4">
-            <div className="space-y-1.5">
+        <GSection title="Datos de la carga" icon={FileText} className="mt-2"
+          right={formData.totalRate > 0 && formData.miles > 0 ? (
+            <span className="text-xs text-[#444746] dark:text-muted-foreground">RPM <span className="font-medium text-[#1f1f1f] dark:text-foreground">${(formData.totalRate / formData.miles).toFixed(2)}</span></span>
+          ) : undefined}>
+          <div className="grid grid-cols-[1fr_1.4fr_1fr_0.8fr_0.8fr] gap-x-3">
+            <div className="space-y-1">
               <Label className={G_LABEL}>Load #</Label>
               <Input placeholder="RC-2024-XXX" value={formData.referenceNumber} onChange={e => updateField('referenceNumber', e.target.value)} className={G_INPUT} />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               <Label className={G_LABEL}>Broker / Cliente</Label>
               <Input placeholder="Nombre del broker" value={formData.brokerClient} onChange={e => updateField('brokerClient', e.target.value)} className={G_INPUT} />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               <Label className={G_LABEL}>Tarifa total ($)</Label>
               <Input type="number" placeholder="2500" value={formData.totalRate || ''} onChange={e => updateField('totalRate', Number(e.target.value))} className={cn(G_INPUT, 'font-medium')} />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className={G_LABEL}>Millas</Label>
-                <Input type="number" placeholder="500" value={formData.miles || ''} onChange={e => updateField('miles', Number(e.target.value))} className={G_INPUT} />
-              </div>
-              <div className="space-y-1.5">
-                <Label className={G_LABEL}>Peso (lbs)</Label>
-                <Input type="number" placeholder="40000" value={formData.weight || ''} onChange={e => updateField('weight', Number(e.target.value))} className={G_INPUT} />
-              </div>
+            <div className="space-y-1">
+              <Label className={G_LABEL}>Millas</Label>
+              <Input type="number" placeholder="500" value={formData.miles || ''} onChange={e => updateField('miles', Number(e.target.value))} className={G_INPUT} />
             </div>
-            {formData.totalRate > 0 && formData.miles > 0 && (
-              <p className="col-span-2 -mt-1 text-xs text-[#444746] dark:text-muted-foreground">
-                RPM: <span className="font-medium text-[#1f1f1f] dark:text-foreground">${(formData.totalRate / formData.miles).toFixed(2)}</span>
-              </p>
-            )}
+            <div className="space-y-1">
+              <Label className={G_LABEL}>Peso (lbs)</Label>
+              <Input type="number" placeholder="40000" value={formData.weight || ''} onChange={e => updateField('weight', Number(e.target.value))} className={G_INPUT} />
+            </div>
           </div>
         </GSection>
 
         {/* ── Paradas ── */}
-        <GSection title="Ruta" icon={MapPin} className="mt-4">
-          <div className="space-y-5">
+        <GSection title="Ruta" icon={MapPin} className="mt-2">
+          <div className="space-y-2">
             {([
               ['pickup', 'Pick Up', pickupStops, 'P', 'bg-[#188038]', 'Dirección de recogida', 'Agregar Pick Up'],
               ['delivery', 'Delivery', deliveryStops, 'D', 'bg-[#d93025]', 'Dirección de entrega', 'Agregar Delivery'],
             ] as const).map(([type, title, list, prefix, color, ph, addLabel]) => (
-              <div key={type} className="space-y-2">
-                <p className={G_LABEL}>{title}</p>
+              <div key={type} className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <p className={G_LABEL}>{title}</p>
+                  <Button variant="ghost" size="sm" className={G_TEXT_BTN} onClick={() => addStop(type)}>
+                    <Plus className="h-4 w-4" /> {addLabel}
+                  </Button>
+                </div>
                 {list.map((stop, idx) => (
-                  <div key={stop.originalIndex} className="flex items-center gap-2 rounded-2xl bg-[#f0f4f9] dark:bg-muted/60 p-2">
-                    <div className={cn('flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium text-white', color)}>{prefix}{idx + 1}</div>
+                  <div key={stop.originalIndex} className="flex items-center gap-2 rounded-2xl bg-[#f0f4f9] dark:bg-muted/60 p-1.5">
+                    <div className={cn('flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium text-white', color)}>{prefix}{idx + 1}</div>
                     <Input
                       placeholder={ph}
                       value={stop.address}
@@ -1156,24 +1118,21 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
                       className={cn(G_INPUT, 'w-36 bg-white dark:bg-background')}
                     />
                     {list.length > 1 && (
-                      <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full text-[#b3261e] hover:bg-[#fce8e6] hover:text-[#b3261e]" onClick={() => removeStop(stop.originalIndex)}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-[#b3261e] hover:bg-[#fce8e6] hover:text-[#b3261e]" onClick={() => removeStop(stop.originalIndex)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     )}
                   </div>
                 ))}
-                <Button variant="ghost" size="sm" className={G_TEXT_BTN} onClick={() => addStop(type)}>
-                  <Plus className="h-4 w-4" /> {addLabel}
-                </Button>
               </div>
             ))}
           </div>
         </GSection>
 
         {/* ── Asignación ── */}
-        <GSection title="Asignación" icon={User} className="mt-4">
-          <div className="grid grid-cols-2 gap-x-3 gap-y-4">
-            <div className="space-y-1.5">
+        <GSection title="Asignación y estado" icon={User} className="mt-2">
+          <div className="grid grid-cols-4 gap-x-3 gap-y-2.5">
+            <div className="space-y-1">
               <Label className={G_LABEL}>Driver <span className="text-[#b3261e]">*</span></Label>
               <Select value={selectedDriver} onValueChange={(val) => {
                 setSelectedDriver(val);
@@ -1206,7 +1165,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               <Label className={G_LABEL}>Truck #</Label>
               <Select value={selectedTruck} onValueChange={setSelectedTruck}>
                 <SelectTrigger className={G_INPUT}><SelectValue placeholder="Asignar truck" /></SelectTrigger>
@@ -1217,7 +1176,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               <Label className={G_LABEL}>Dispatcher</Label>
               <Select value={selectedDispatcher} onValueChange={(val) => {
                 setSelectedDispatcher(val);
@@ -1235,7 +1194,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
               </Select>
             </div>
             {selectedDispatcherObj && (selectedDispatcherObj.commission_2_percentage ?? 0) > 0 && (
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 <Label className={G_LABEL}>Commission Type</Label>
                 <Select value={selectedCommissionType} onValueChange={(v) => setSelectedCommissionType(v as 'commission_1' | 'commission_2')}>
                   <SelectTrigger className={G_INPUT}><SelectValue /></SelectTrigger>
@@ -1246,7 +1205,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
                 </Select>
               </div>
             )}
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               <Label className={G_LABEL}>Empresa</Label>
               <Select value={selectedCompany} onValueChange={setSelectedCompany}>
                 <SelectTrigger className={G_INPUT}><SelectValue placeholder="Seleccionar empresa" /></SelectTrigger>
@@ -1258,27 +1217,21 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
                 </SelectContent>
               </Select>
             </div>
-            <div className="col-span-2 space-y-1.5">
+            <div className="col-span-2 space-y-1">
               <Label className={G_LABEL}>Tipo de servicio</Label>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex gap-1.5">
                 {([['owner_operator', 'Owner Operator'], ['company_driver', 'Company Driver'], ['dispatch_service', 'Dispatch Service']] as const).map(([v, l]) => (
                   <button key={v} type="button" onClick={() => setSelectedServiceType(v)}
                     className={cn(G_CHIP, selectedServiceType === v ? G_CHIP_ON : G_CHIP_OFF)}>
-                    {selectedServiceType === v && <CheckCircle className="h-4 w-4" />} {l}
+                    {selectedServiceType === v && <CheckCircle className="h-3.5 w-3.5" />} {l}
                   </button>
                 ))}
               </div>
             </div>
-          </div>
-        </GSection>
-
-        {/* ── Estado y notas ── */}
-        <GSection title="Estado" icon={CheckCircle} className="mt-4">
-          <div className="space-y-4">
-            <div className="space-y-1.5">
+            <div className="col-span-2 space-y-1">
               <Label className={G_LABEL}>Estado de la carga</Label>
               <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                <SelectTrigger className={cn(G_INPUT, 'w-64')}><SelectValue /></SelectTrigger>
+                <SelectTrigger className={G_INPUT}><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="planned">Planned</SelectItem>
                   <SelectItem value="dispatched">Dispatched</SelectItem>
@@ -1291,17 +1244,17 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
                   <SelectItem value="cancelled">Canceled</SelectItem>
                 </SelectContent>
               </Select>
-              {selectedStatus === 'planned' && (
-                <label className="flex items-start gap-3 rounded-2xl bg-[#e8f0fe] dark:bg-blue-950/40 px-4 py-3 text-sm text-[#041e49] dark:text-blue-100 cursor-pointer mt-2">
-                  <input type="checkbox" className="mt-0.5 h-4 w-4 accent-[#0b57d0]" checked={autoDispatch} onChange={e => setAutoDispatch(e.target.checked)} />
-                  <span>Pasar a <strong>Dispatched</strong> automáticamente cuando el driver entregue su carga activa</span>
-                </label>
-              )}
             </div>
-            <div className="space-y-1.5">
+            {selectedStatus === 'planned' && (
+              <label className="col-span-4 flex items-center gap-2 rounded-2xl bg-[#e8f0fe] dark:bg-blue-950/40 px-3 py-2 text-xs text-[#041e49] dark:text-blue-100 cursor-pointer">
+                <input type="checkbox" className="h-4 w-4 accent-[#0b57d0]" checked={autoDispatch} onChange={e => setAutoDispatch(e.target.checked)} />
+                <span>Pasar a <strong>Dispatched</strong> automáticamente cuando el driver entregue su carga activa</span>
+              </label>
+            )}
+            <div className="col-span-4 space-y-1">
               <Label className={G_LABEL}>Notas</Label>
-              <Textarea placeholder="Notas adicionales de la carga..." value={formData.notes} onChange={e => updateField('notes', e.target.value)} rows={3}
-                className="rounded-lg shadow-none bg-transparent border-[#c4c7c5] dark:border-border focus-visible:ring-1 focus-visible:ring-[#0b57d0] focus-visible:border-[#0b57d0]" />
+              <Textarea placeholder="Notas adicionales de la carga..." value={formData.notes} onChange={e => updateField('notes', e.target.value)} rows={1}
+                className="min-h-9 py-2 rounded-lg shadow-none bg-transparent border-[#c4c7c5] dark:border-border focus-visible:ring-1 focus-visible:ring-[#0b57d0] focus-visible:border-[#0b57d0]" />
             </div>
           </div>
         </GSection>
@@ -1310,9 +1263,9 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
           {/* ═══ FIN COLUMNA (Form, visual derecha) ═══ */}
 
           {/* ═══ COLUMNA IZQUIERDA (visual) — PDF viewer ═══ */}
-          <div className="hidden lg:flex flex-col overflow-hidden p-6 pr-0 gap-4 min-h-0 lg:order-1">
+          <div className="hidden lg:flex flex-col overflow-hidden px-6 py-4 pr-0 gap-3 min-h-0 lg:order-1">
             {/* Extractor compacto arriba */}
-            <div className="rounded-3xl border border-dashed border-[#a8c7fa] bg-[#e8f0fe] dark:bg-blue-950/30 p-4 shrink-0">
+            <div className="rounded-3xl border border-dashed border-[#a8c7fa] bg-[#e8f0fe] dark:bg-blue-950/30 px-4 py-3 shrink-0">
               <div className="flex items-center gap-2 mb-2">
                 <FileText className="h-4 w-4 text-primary shrink-0" />
                 <div className="min-w-0">
@@ -1394,7 +1347,7 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
           {/* ═══ FIN COLUMNA DERECHA ═══ */}
         </div>
 
-        <div className="flex flex-wrap items-center justify-end gap-2 px-6 py-4 border-t border-[#e3e3e3] dark:border-border bg-white dark:bg-card shrink-0">
+        <div className="flex flex-wrap items-center justify-end gap-2 px-6 py-3 border-t border-[#e3e3e3] dark:border-border bg-white dark:bg-card shrink-0">
           <Button variant="ghost" className="h-10 rounded-full px-5 text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe] dark:text-blue-300 font-medium" onClick={() => onOpenChange(false)}>Cancelar</Button>
           <Button
             variant="outline"
