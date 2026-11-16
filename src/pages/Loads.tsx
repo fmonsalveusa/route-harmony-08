@@ -301,9 +301,6 @@ const Loads = () => {
           }}>
             <Download className="h-4 w-4" /> Export CSV
           </Button>
-          <Button className="h-10 rounded-2xl px-5 gap-2 bg-[#c2e7ff] hover:bg-[#b3dcf5] text-[#001d35] font-medium shadow-[0_1px_2px_rgba(60,64,67,.3),0_1px_3px_1px_rgba(60,64,67,.15)]" onClick={() => { setEditLoad(null); setShowForm(true); }}>
-            <Plus className="h-5 w-5" /> New Load
-          </Button>
         </div>
       </div>
 
