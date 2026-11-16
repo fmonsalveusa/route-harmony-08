@@ -1036,26 +1036,47 @@ function NewContactDialog({ open, onOpenChange }: { open: boolean; onOpenChange:
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md rounded-[28px] border-0 p-6">
-        <DialogHeader><DialogTitle className="text-2xl font-normal text-[#1f1f1f] dark:text-foreground">Nuevo contacto</DialogTitle></DialogHeader>
-        <div className="grid gap-3">
+      <DialogContent className="sm:max-w-md rounded-[28px] border-0 p-0 gap-0 overflow-hidden bg-white dark:bg-background">
+        <DialogHeader className="px-6 pt-6 pb-4 space-y-0">
+          <div className="flex items-center gap-3">
+            <span className={cn('h-12 w-12 rounded-full flex items-center justify-center text-xl text-white transition-colors',
+              form.name.trim() ? avatarColor(form.name) : 'bg-[#d3e3fd] text-[#041e49] dark:bg-blue-900/40 dark:text-blue-200')}>
+              {form.name.trim() ? form.name.trim().charAt(0).toUpperCase() : <UserCheck className="h-5 w-5" />}
+            </span>
+            <div>
+              <DialogTitle className="text-[22px] leading-7 font-normal text-[#1f1f1f] dark:text-foreground">Nuevo contacto</DialogTitle>
+              <p className="text-sm text-[#444746] dark:text-muted-foreground">Entra al CRM en la columna "Nuevo"</p>
+            </div>
+          </div>
+        </DialogHeader>
+        <div className="px-6 pb-2 grid gap-4">
           {(['name', 'phone'] as const).map(k => (
             <div key={k} className="space-y-1">
               <Label className={G_LABEL}>{{ name: 'Nombre', phone: 'Teléfono' }[k]}</Label>
-              <Input value={form[k]} onChange={e => setForm(f => ({ ...f, [k]: e.target.value }))} className={INPUT} />
+              <Input value={form[k]} onChange={e => setForm(f => ({ ...f, [k]: e.target.value }))} className={INPUT}
+                type={k === 'phone' ? 'tel' : 'text'} placeholder={k === 'phone' ? '(704) 555-1234' : 'Nombre y apellido'} autoFocus={k === 'name'} />
             </div>
           ))}
           {([['vehicle', 'Vehículo', VEHICLES], ['service', 'Servicio de interés', SERVICES]] as const).map(([k, label, options]) => (
-            <div key={k} className="space-y-1">
+            <div key={k} className="space-y-1.5">
               <Label className={G_LABEL}>{label}</Label>
-              <Select value={form[k] || undefined} onValueChange={v => setForm(f => ({ ...f, [k]: v }))}>
-                <SelectTrigger className={INPUT}><SelectValue placeholder="Seleccionar" /></SelectTrigger>
-                <SelectContent>{options.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
-              </Select>
+              <div className="flex flex-wrap gap-2">
+                {options.map(o => {
+                  const on = form[k] === o;
+                  return (
+                    <button key={o} type="button" onClick={() => setForm(f => ({ ...f, [k]: on ? '' : o }))}
+                      className={cn('inline-flex items-center gap-1.5 rounded-lg h-8 px-3 text-xs font-medium border transition-colors',
+                        on ? 'bg-[#c2e7ff] border-[#c2e7ff] text-[#001d35] dark:bg-blue-900/50 dark:border-blue-900/50 dark:text-blue-100'
+                          : 'border-[#c4c7c5] dark:border-border text-[#444746] dark:text-muted-foreground hover:bg-[#f0f4f9] dark:hover:bg-muted')}>
+                      {on && <Check className="h-3.5 w-3.5" />} {o}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           ))}
         </div>
-        <DialogFooter>
+        <DialogFooter className="px-6 py-4">
           <Button variant="ghost" className="h-10 rounded-full px-5 text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe] font-medium" onClick={() => onOpenChange(false)}>Cancelar</Button>
           <Button onClick={create} disabled={saving} className="h-10 rounded-full px-6 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium">{saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}Crear</Button>
         </DialogFooter>
