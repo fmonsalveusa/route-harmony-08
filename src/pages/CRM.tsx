@@ -60,10 +60,10 @@ interface CrmNote {
 }
 
 const STAGES: { id: Stage; label: string; tint: string }[] = [
-  { id: 'new', label: 'Nuevo', tint: 'border-t-slate-400' },
-  { id: 'meeting_scheduled', label: 'Reunión agendada', tint: 'border-t-violet-500' },
-  { id: 'meeting_done', label: 'Reunión hecha', tint: 'border-t-amber-500' },
-  { id: 'client', label: 'Cliente registrado', tint: 'border-t-green-600' },
+  { id: 'new', label: 'Nuevo', tint: 'bg-[#5f6368]' },
+  { id: 'meeting_scheduled', label: 'Reunión agendada', tint: 'bg-[#0b57d0]' },
+  { id: 'meeting_done', label: 'Reunión hecha', tint: 'bg-[#e37400]' },
+  { id: 'client', label: 'Cliente registrado', tint: 'bg-[#188038]' },
 ];
 const STAGE_LABEL = Object.fromEntries(STAGES.map(s => [s.id, s.label])) as Record<Stage, string>;
 
@@ -491,6 +491,9 @@ const fmtMeetingDate = (d: string) => {
   return `${wd.charAt(0).toUpperCase()}${wd.slice(1).replace('.', '')} ${String(m).padStart(2, '0')}/${String(day).padStart(2, '0')}/${y}`;
 };
 
+/** Color del avatar según el nombre (como en Google) */
+const avatarColor = (name: string) => AVATAR_COLORS[[...name].reduce((n, ch) => n + ch.charCodeAt(0), 0) % AVATAR_COLORS.length];
+
 function ContactCard({ c, calls, meeting, onOpen }: { c: CrmContact; calls?: CallSummary; meeting?: MeetingSummary; onOpen: () => void }) {
   const src = SOURCE[c.source] ?? SOURCE.manual;
   const overdue = isOverdue(c);
@@ -523,20 +526,29 @@ Se borra de Google Calendar, se libera el horario y se le avisa por email.`)) re
       onDragStart={e => e.dataTransfer.setData('text/plain', c.id)}
       onClick={onOpen}
       className={cn(
-        'rounded-lg border bg-card p-2.5 shadow-sm cursor-pointer hover:border-primary/50 transition-colors space-y-1',
-        overdue && 'border-red-400 bg-red-50 dark:bg-red-950/30',
+        'rounded-2xl bg-white dark:bg-card p-3 cursor-pointer transition-shadow space-y-1.5 border border-transparent shadow-[0_1px_2px_rgba(60,64,67,.3),0_1px_3px_1px_rgba(60,64,67,.15)] hover:shadow-[0_1px_3px_rgba(60,64,67,.3),0_4px_8px_3px_rgba(60,64,67,.15)]',
+        overdue && 'border-[#f9dedc] bg-[#fff8f7] dark:bg-red-950/30',
       )}
     >
-      <div className="flex items-start justify-between gap-2">
-        <p className="text-sm font-medium leading-tight truncate">{c.name || c.phone}</p>
-        <src.icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-label={src.label} />
+      <div className="flex items-center gap-2.5">
+        <span className={cn('h-8 w-8 shrink-0 rounded-full flex items-center justify-center text-sm text-white', avatarColor(c.name || c.phone || '?'))}>
+          {(c.name || c.phone || '?').trim().charAt(0).toUpperCase()}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium leading-tight truncate text-[#1f1f1f] dark:text-foreground">{c.name || c.phone}</p>
+          {c.phone && <p className="text-xs text-[#444746] dark:text-muted-foreground">{c.phone}</p>}
+        </div>
+        <src.icon className="h-4 w-4 text-[#444746] dark:text-muted-foreground shrink-0" aria-label={src.label} />
       </div>
-      {c.phone && <p className="text-xs text-muted-foreground">{c.phone}</p>}
       {(c.vehicle || c.service) && (
-        <p className="text-xs text-muted-foreground truncate">{[c.vehicle, c.service].filter(Boolean).join(' · ')}</p>
+        <div className="flex flex-wrap gap-1">
+          {[c.vehicle, c.service].filter(Boolean).map(t => (
+            <span key={t} className="rounded-md bg-[#f0f4f9] dark:bg-muted px-1.5 py-0.5 text-[10.5px] font-medium text-[#444746] dark:text-muted-foreground">{t}</span>
+          ))}
+        </div>
       )}
       {meeting && c.stage === 'meeting_scheduled' && (
-        <div className="text-[11px] flex items-center gap-1 font-medium text-violet-700 dark:text-violet-300">
+        <div className="text-[11px] flex items-center gap-1 font-medium rounded-lg bg-[#e8f0fe] dark:bg-blue-950/40 text-[#0b57d0] dark:text-blue-300 px-2 py-1">
           <CalendarCheck className="h-3 w-3 shrink-0" /> <span className="truncate">Reunión: {fmtMeetingDate(meeting.date)} · {meeting.time}</span>
           {meeting.date >= today && meeting.token && (
             <button
@@ -544,7 +556,7 @@ Se borra de Google Calendar, se libera el horario y se le avisa por email.`)) re
               onClick={cancelMeeting}
               disabled={cancelling}
               title="Cancelar reunión"
-              className="ml-auto shrink-0 inline-flex items-center gap-0.5 rounded px-1 py-0.5 text-[10px] font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40"
+              className="ml-auto shrink-0 inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold text-[#b3261e] hover:bg-[#fce8e6] dark:hover:bg-red-950/40"
             >
               {cancelling ? <Loader2 className="h-3 w-3 animate-spin" /> : <X className="h-3 w-3" />} Cancelar Reunión
             </button>
@@ -552,7 +564,7 @@ Se borra de Google Calendar, se libera el horario y se le avisa por email.`)) re
         </div>
       )}
       {calls && (
-        <p className="text-[11px] flex items-center gap-1 text-muted-foreground">
+        <p className="text-[11px] flex items-center gap-1 text-[#444746] dark:text-muted-foreground">
           <Phone className="h-3 w-3" /> Última llamada: {ago(calls.last)} · {calls.count} {calls.count === 1 ? 'intento' : 'intentos'}
         </p>
       )}
@@ -566,7 +578,7 @@ Se borra de Google Calendar, se libera el horario y se le avisa por email.`)) re
             <Send className="h-3 w-3" /> Seguimiento: se envía en los próximos minutos
           </p>
         ) : (
-          <p className={cn('text-[11px] flex items-center gap-1', overdue ? 'text-red-600 font-medium' : 'text-blue-600')}>
+          <p className={cn('text-[11px] flex items-center gap-1', overdue ? 'text-[#b3261e] font-medium' : 'text-[#0b57d0] dark:text-blue-300')}>
             {overdue ? <AlertCircle className="h-3 w-3" /> : <CalendarClock className="h-3 w-3" />}
             {fmt(c.next_action_at)}{c.next_action ? ` · ${c.next_action}` : ''}
           </p>
@@ -1024,27 +1036,28 @@ function NewContactDialog({ open, onOpenChange }: { open: boolean; onOpenChange:
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader><DialogTitle>Nuevo contacto</DialogTitle></DialogHeader>
+      <DialogContent className="sm:max-w-md rounded-[28px] border-0 p-6">
+        <DialogHeader><DialogTitle className="text-2xl font-normal text-[#1f1f1f] dark:text-foreground">Nuevo contacto</DialogTitle></DialogHeader>
         <div className="grid gap-3">
           {(['name', 'phone'] as const).map(k => (
             <div key={k} className="space-y-1">
-              <Label className="text-xs">{{ name: 'Nombre', phone: 'Teléfono' }[k]}</Label>
-              <Input value={form[k]} onChange={e => setForm(f => ({ ...f, [k]: e.target.value }))} />
+              <Label className={G_LABEL}>{{ name: 'Nombre', phone: 'Teléfono' }[k]}</Label>
+              <Input value={form[k]} onChange={e => setForm(f => ({ ...f, [k]: e.target.value }))} className={INPUT} />
             </div>
           ))}
           {([['vehicle', 'Vehículo', VEHICLES], ['service', 'Servicio de interés', SERVICES]] as const).map(([k, label, options]) => (
             <div key={k} className="space-y-1">
-              <Label className="text-xs">{label}</Label>
+              <Label className={G_LABEL}>{label}</Label>
               <Select value={form[k] || undefined} onValueChange={v => setForm(f => ({ ...f, [k]: v }))}>
-                <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+                <SelectTrigger className={INPUT}><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                 <SelectContent>{options.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
               </Select>
             </div>
           ))}
         </div>
         <DialogFooter>
-          <Button onClick={create} disabled={saving}>{saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}Crear</Button>
+          <Button variant="ghost" className="h-10 rounded-full px-5 text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe] font-medium" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button onClick={create} disabled={saving} className="h-10 rounded-full px-6 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium">{saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}Crear</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -1141,47 +1154,77 @@ export default function CRM() {
   const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="page-header flex items-center gap-2"><Contact className="h-6 w-6 text-primary" /> CRM</h1>
-          <p className="page-description">Personas que nos contactan, reuniones, notas y seguimiento</p>
-        </div>
-        <div className="flex gap-2">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Buscar nombre, teléfono..." value={search} onChange={e => setSearch(e.target.value)} className="pl-8 w-56" />
+    <div className="space-y-5">
+      {/* Encabezado estilo Google: título, buscador tipo Gmail y acciones */}
+      <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+        <div className="flex items-center gap-3 shrink-0">
+          <span className="h-11 w-11 rounded-full bg-[#d3e3fd] dark:bg-blue-900/40 text-[#041e49] dark:text-blue-200 flex items-center justify-center">
+            <Contact className="h-5 w-5" />
+          </span>
+          <div>
+            <h1 className="text-[28px] leading-9 font-normal text-[#1f1f1f] dark:text-foreground">CRM</h1>
+            <p className="text-sm text-[#444746] dark:text-muted-foreground">Personas que nos contactan, reuniones, notas y seguimiento</p>
           </div>
+        </div>
+        <div className="relative flex-1 lg:max-w-xl lg:mx-auto">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[#444746] dark:text-muted-foreground" />
+          <input
+            placeholder="Buscar nombre, teléfono, vehículo..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="w-full h-12 rounded-full bg-[#e9eef6] dark:bg-muted pl-12 pr-10 text-[15px] text-[#1f1f1f] dark:text-foreground placeholder:text-[#444746] outline-none focus:bg-white dark:focus:bg-card focus:shadow-[0_1px_1px_rgba(65,69,73,.3),0_1px_3px_1px_rgba(65,69,73,.15)] transition"
+          />
+          {search && (
+            <button type="button" onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 h-7 w-7 rounded-full hover:bg-black/5 flex items-center justify-center">
+              <X className="h-4 w-4 text-[#444746]" />
+            </button>
+          )}
+        </div>
+        <div className="flex gap-2 shrink-0">
           <BookingAgenda />
-          <Button className="gap-1.5" onClick={() => setCreating(true)}><Plus className="h-4 w-4" /> Contacto</Button>
+          <Button className="h-12 rounded-2xl px-5 gap-2 bg-[#c2e7ff] hover:bg-[#b3dcf5] text-[#001d35] font-medium shadow-[0_1px_2px_rgba(60,64,67,.3),0_1px_3px_1px_rgba(60,64,67,.15)]" onClick={() => setCreating(true)}>
+            <Plus className="h-5 w-5" /> Contacto
+          </Button>
         </div>
       </div>
 
-      <StatTiles tiles={[
-        { label: 'En proceso', value: active.length, icon: UsersIcon, tint: 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300' },
-        { label: 'Reuniones agendadas', value: contacts.filter(c => c.stage === 'meeting_scheduled').length, icon: CalendarCheck, tint: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300' },
-        { label: 'Seguimientos vencidos', value: contacts.filter(isOverdue).length, icon: AlertCircle, tint: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' },
-        { label: 'Clientes este mes', value: contacts.filter(c => c.stage === 'client' && new Date(c.updated_at) >= monthStart).length, icon: Trophy, tint: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' },
-      ]} />
+      {/* Resumen */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {[
+          { label: 'En proceso', value: active.length, icon: UsersIcon, tone: 'bg-[#d3e3fd] text-[#041e49] dark:bg-blue-900/40 dark:text-blue-200' },
+          { label: 'Reuniones agendadas', value: contacts.filter(c => c.stage === 'meeting_scheduled').length, icon: CalendarCheck, tone: 'bg-[#c2e7ff] text-[#001d35] dark:bg-sky-900/40 dark:text-sky-200' },
+          { label: 'Seguimientos vencidos', value: contacts.filter(isOverdue).length, icon: AlertCircle, tone: 'bg-[#f9dedc] text-[#410e0b] dark:bg-red-900/40 dark:text-red-200' },
+          { label: 'Clientes este mes', value: contacts.filter(c => c.stage === 'client' && new Date(c.updated_at) >= monthStart).length, icon: Trophy, tone: 'bg-[#c4eed0] text-[#072711] dark:bg-emerald-900/40 dark:text-emerald-200' },
+        ].map(t => (
+          <div key={t.label} className="rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border px-5 py-4 flex items-center gap-4">
+            <span className={cn('h-11 w-11 rounded-full flex items-center justify-center shrink-0', t.tone)}><t.icon className="h-5 w-5" /></span>
+            <div className="min-w-0">
+              <p className="text-[28px] leading-8 font-normal text-[#1f1f1f] dark:text-foreground">{t.value}</p>
+              <p className="text-xs font-medium text-[#444746] dark:text-muted-foreground truncate">{t.label}</p>
+            </div>
+          </div>
+        ))}
+      </div>
 
       {isLoading ? (
         <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
       ) : (
         <div className="flex gap-3 items-start">
-        <div className="flex gap-2 overflow-x-auto pb-4 flex-1 min-w-0">
+        <div className="flex gap-3 overflow-x-auto pb-4 flex-1 min-w-0">
           {STAGES.map(s => (
             <div
               key={s.id}
               onDragOver={e => { e.preventDefault(); setDragOver(s.id); }}
               onDragLeave={() => setDragOver(d => (d === s.id ? null : d))}
               onDrop={e => { e.preventDefault(); setDragOver(null); moveTo(e.dataTransfer.getData('text/plain'), s.id); }}
-              className={cn('flex-1 min-w-[175px] rounded-xl border border-t-4 bg-muted/30 flex flex-col max-h-[70vh]', s.tint, dragOver === s.id && 'ring-2 ring-primary/40')}
+              className={cn('flex-1 min-w-[190px] rounded-3xl bg-[#f0f4f9] dark:bg-muted/40 flex flex-col max-h-[70vh] transition-colors', dragOver === s.id && 'bg-[#d3e3fd] dark:bg-blue-950/40 ring-2 ring-[#0b57d0]/40')}
             >
-              <div className="px-3 py-2 flex items-center justify-between">
-                <p className="text-sm font-semibold">{s.label}</p>
-                <span className="text-xs text-muted-foreground">{byStage[s.id].length}</span>
+              <div className="px-4 pt-3.5 pb-2.5 flex items-center gap-2">
+                <span className={cn('h-2.5 w-2.5 rounded-full', s.tint)} />
+                <p className="text-sm font-medium text-[#1f1f1f] dark:text-foreground flex-1 truncate">{s.label}</p>
+                <span className="min-w-6 h-6 px-2 rounded-full bg-white dark:bg-card text-xs font-medium text-[#444746] dark:text-muted-foreground flex items-center justify-center">{byStage[s.id].length}</span>
               </div>
-              <div className="px-2 pb-2 space-y-2 overflow-y-auto flex-1">
+              <div className="px-2.5 pb-2.5 space-y-2 overflow-y-auto flex-1">
                 {byStage[s.id].map(c => <ContactCard key={c.id} c={c} calls={calls[c.id]} meeting={c.phone_key ? meetings[c.phone_key] : undefined} onOpen={() => setOpenId(c.id)} />)}
               </div>
             </div>

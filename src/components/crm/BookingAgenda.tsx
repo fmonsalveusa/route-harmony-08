@@ -215,7 +215,7 @@ export function BookingAgenda() {
   const copy = () => { navigator.clipboard.writeText(BOOKING_URL); toast.success('Enlace copiado'); };
   return (
     <>
-      <Button variant="outline" className="gap-1.5" onClick={() => setOpen(true)}><CalendarDays className="h-4 w-4" /> Agenda</Button>
+      <Button variant="outline" className="h-12 rounded-2xl px-5 gap-2 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium" onClick={() => setOpen(true)}><CalendarDays className="h-5 w-5" /> Agenda</Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-xl">
           <DialogHeader><DialogTitle className="flex items-center gap-2"><CalendarDays className="h-5 w-5 text-primary" /> Agenda de llamadas</DialogTitle></DialogHeader>

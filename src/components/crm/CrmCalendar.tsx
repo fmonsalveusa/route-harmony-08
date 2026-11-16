@@ -48,13 +48,13 @@ const labelMinutes = (t: string) => {
 };
 
 const KIND_STYLE: Record<Kind, { icon: typeof Bell; cls: string; label: string }> = {
-  meeting: { icon: CalendarCheck, cls: 'bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-200', label: 'Reunión' },
-  reminder: { icon: Bell, cls: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200', label: 'Seguimiento' },
-  client_message: { icon: Send, cls: 'bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200', label: 'Mensaje al cliente' },
+  meeting: { icon: CalendarCheck, cls: 'bg-[#d3e3fd] text-[#041e49] dark:bg-blue-900/40 dark:text-blue-200', label: 'Reunión' },
+  reminder: { icon: Bell, cls: 'bg-[#feefc3] text-[#3d2a00] dark:bg-amber-900/40 dark:text-amber-200', label: 'Seguimiento' },
+  client_message: { icon: Send, cls: 'bg-[#c4eed0] text-[#072711] dark:bg-emerald-900/40 dark:text-emerald-200', label: 'Mensaje al cliente' },
 };
 
 const DOT: Record<string, string> = {
-  meeting: 'bg-violet-500', reminder: 'bg-amber-500', client_message: 'bg-sky-500', overdue: 'bg-red-500',
+  meeting: 'bg-[#0b57d0]', reminder: 'bg-[#e37400]', client_message: 'bg-[#188038]', overdue: 'bg-[#d93025]',
 };
 
 /** Calendario compacto del CRM (al lado del tablero): reuniones, seguimientos y mensajes programados del mes */
@@ -115,7 +115,8 @@ export function CrmCalendar({ contacts, onOpen }: { contacts: CalendarContact[];
   const cells: (number | null)[] = [...Array(lead).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
   while (cells.length % 7) cells.push(null);
 
-  const monthLabel = new Date(month.y, month.m, 1).toLocaleDateString('es-US', { month: 'long', year: 'numeric' });
+  const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
+  const monthLabel = cap(new Date(month.y, month.m, 1).toLocaleDateString('es-US', { month: 'long', year: 'numeric' }));
   const shift = (n: number) => setMonth(({ y, m }) => {
     const d = new Date(y, m + n, 1);
     return { y: d.getFullYear(), m: d.getMonth() };
@@ -124,20 +125,20 @@ export function CrmCalendar({ contacts, onOpen }: { contacts: CalendarContact[];
   const selectedLabel = (() => {
     const [y, m, d] = selected.split('-').map(Number);
     const txt = new Date(y, m - 1, d).toLocaleDateString('es-US', { weekday: 'long', day: 'numeric', month: 'short' });
-    return selected === todayKey ? `Hoy · ${txt}` : txt;
+    return selected === todayKey ? `Hoy · ${txt}` : cap(txt);
   })();
 
   return (
-    <div className="rounded-xl border bg-card flex flex-col max-h-[70vh]">
-      <div className="flex items-center gap-1 px-2 py-1.5 border-b">
-        <CalendarDays className="h-4 w-4 text-primary shrink-0" />
-        <span className="text-base font-semibold capitalize flex-1 truncate">{monthLabel}</span>
-        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => shift(-1)}><ChevronLeft className="h-4 w-4" /></Button>
-        <Button variant="ghost" size="sm" className="h-6 px-1.5 text-[11px]" onClick={() => { setMonth({ y: ty, m: tm - 1 }); setSelected(todayKey); }}>Hoy</Button>
-        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => shift(1)}><ChevronRight className="h-4 w-4" /></Button>
+    <div className="rounded-3xl border border-[#e3e3e3] dark:border-border bg-white dark:bg-card flex flex-col max-h-[70vh] overflow-hidden">
+      <div className="flex items-center gap-1 px-4 pt-3.5 pb-2">
+        <CalendarDays className="h-5 w-5 text-[#0b57d0] dark:text-blue-300 shrink-0" />
+        <span className="text-base font-medium text-[#1f1f1f] dark:text-foreground flex-1 truncate ml-1">{monthLabel}</span>
+        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => shift(-1)}><ChevronLeft className="h-4 w-4" /></Button>
+        <Button variant="outline" size="sm" className="h-8 px-3 rounded-full text-xs font-medium shadow-none border-[#747775] dark:border-border" onClick={() => { setMonth({ y: ty, m: tm - 1 }); setSelected(todayKey); }}>Hoy</Button>
+        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => shift(1)}><ChevronRight className="h-4 w-4" /></Button>
       </div>
 
-      <div className="p-2">
+      <div className="px-3 pb-2">
         <div className="grid grid-cols-7 mb-0.5">
           {WEEKDAYS.map(d => <div key={d} className="text-[11px] font-medium text-muted-foreground text-center">{d.charAt(0)}</div>)}
         </div>
@@ -153,8 +154,8 @@ export function CrmCalendar({ contacts, onOpen }: { contacts: CalendarContact[];
                 type="button"
                 onClick={() => setSelected(key)}
                 className={cn(
-                  'h-11 rounded-md flex flex-col items-center justify-center text-xs transition-colors',
-                  key === selected ? 'bg-primary text-primary-foreground' : key === todayKey ? 'bg-primary/10 text-primary font-semibold' : 'hover:bg-muted',
+                  'h-11 rounded-full flex flex-col items-center justify-center text-xs transition-colors',
+                  key === selected ? 'bg-[#0b57d0] text-white' : key === todayKey ? 'bg-[#d3e3fd] text-[#041e49] dark:bg-blue-900/40 dark:text-blue-200 font-semibold' : 'text-[#1f1f1f] dark:text-foreground hover:bg-[#f0f4f9] dark:hover:bg-muted',
                   key < todayKey && key !== selected && 'text-muted-foreground',
                 )}
               >
@@ -168,8 +169,8 @@ export function CrmCalendar({ contacts, onOpen }: { contacts: CalendarContact[];
         </div>
       </div>
 
-      <div className="border-t px-2 py-1.5 flex-1 min-h-0 flex flex-col">
-        <p className="text-[11px] font-semibold text-muted-foreground capitalize mb-1">{selectedLabel}</p>
+      <div className="border-t border-[#e3e3e3] dark:border-border px-3 py-2.5 flex-1 min-h-0 flex flex-col bg-[#f8fafd] dark:bg-background/40">
+        <p className="text-xs font-medium text-[#444746] dark:text-muted-foreground mb-1.5 px-1">{selectedLabel}</p>
         <div className="space-y-1 overflow-y-auto">
           {dayItems.length === 0 && <p className="text-xs text-muted-foreground py-2">Nada agendado.</p>}
           {dayItems.map(it => {
@@ -182,8 +183,8 @@ export function CrmCalendar({ contacts, onOpen }: { contacts: CalendarContact[];
                 onClick={() => it.contactId && onOpen(it.contactId)}
                 title={it.detail ?? ''}
                 className={cn(
-                  'w-full text-left rounded-md px-1.5 py-1 text-xs flex items-start gap-1.5',
-                  it.overdue ? 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200' : st.cls,
+                  'w-full text-left rounded-xl px-2.5 py-1.5 text-xs flex items-start gap-2',
+                  it.overdue ? 'bg-[#f9dedc] text-[#410e0b] dark:bg-red-900/40 dark:text-red-200' : st.cls,
                   it.done && 'line-through opacity-60',
                   it.contactId && 'hover:ring-1 hover:ring-current',
                 )}
