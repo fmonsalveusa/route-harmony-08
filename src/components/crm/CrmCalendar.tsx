@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { CalendarDays, ChevronLeft, ChevronRight, Bell, CalendarCheck, Send } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight, Bell, CalendarCheck, Send, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const TZ = 'America/New_York';
@@ -18,6 +18,7 @@ export interface CalendarContact {
   next_action_at: string | null;
   next_action_type: 'reminder' | 'client_message' | null;
   reminder_sent_at: string | null;
+  meeting?: { first_at?: string | null } | null;
 }
 
 type Kind = 'meeting' | 'reminder' | 'client_message';
@@ -31,6 +32,8 @@ interface Item {
   contactId?: string;
   overdue: boolean;
   done: boolean;
+  /** Cumplida: REUNIÓN HECHA / SEGUIMIENTO ENVIADO */
+  doneLabel?: string;
 }
 
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -84,19 +87,22 @@ export function CrmCalendar({ contacts, onOpen }: { contacts: CalendarContact[];
   const byDay = useMemo(() => {
     const map: Record<string, Item[]> = {};
     const add = (d: string, it: Item) => { (map[d] ??= []).push(it); };
-    const byPhone = new Map(contacts.filter(c => c.phone_key).map(c => [c.phone_key!, c.id]));
+    const byPhone = new Map(contacts.filter(c => c.phone_key).map(c => [c.phone_key!, c]));
     const now = Date.now();
 
     for (const m of meetings) {
       const key = String(m.phone ?? '').replace(/\D/g, '').slice(-10);
+      const contact = byPhone.get(key);
+      // Hecha: el contacto tiene la fecha de la primera reunión puesta (o ya pasó de etapa)
+      const held = !!contact?.meeting?.first_at || contact?.stage === 'meeting_done' || contact?.stage === 'client';
       add(m.meeting_date, {
         key: `m-${m.id}`, kind: 'meeting', minutes: labelMinutes(m.meeting_time), time: m.meeting_time,
-        title: m.driver_name, detail: m.truck_type ?? undefined, contactId: byPhone.get(key),
-        overdue: false, done: m.meeting_date < todayKey,
+        title: m.driver_name, detail: m.truck_type ?? undefined, contactId: contact?.id,
+        overdue: false, done: held || m.meeting_date < todayKey, doneLabel: held ? 'REUNIÓN HECHA' : undefined,
       });
     }
     for (const c of contacts) {
-      if (!c.next_action_at || c.stage === 'client') continue;
+      if (!c.next_action_at) continue;
       const d = etDay(c.next_action_at);
       if (d < first || d > last) continue;
       const kind: Kind = c.next_action_type === 'client_message' ? 'client_message' : 'reminder';
@@ -105,6 +111,7 @@ export function CrmCalendar({ contacts, onOpen }: { contacts: CalendarContact[];
         key: `c-${c.id}`, kind, minutes: etMinutes(c.next_action_at), time: etTime(c.next_action_at),
         title: c.name || c.phone || '—', detail: c.next_action ?? undefined, contactId: c.id,
         overdue: !done && new Date(c.next_action_at).getTime() <= now, done,
+        doneLabel: done ? 'SEGUIMIENTO ENVIADO' : undefined,
       });
     }
     for (const list of Object.values(map)) list.sort((a, b) => a.minutes - b.minutes);
@@ -185,13 +192,18 @@ export function CrmCalendar({ contacts, onOpen }: { contacts: CalendarContact[];
                 className={cn(
                   'w-full text-left rounded-xl px-2.5 py-1.5 text-xs flex items-start gap-2',
                   it.overdue ? 'bg-[#f9dedc] text-[#410e0b] dark:bg-red-900/40 dark:text-red-200' : st.cls,
-                  it.done && 'line-through opacity-60',
+                  it.done && !it.doneLabel && 'opacity-60',
                   it.contactId && 'hover:ring-1 hover:ring-current',
                 )}
               >
                 <st.icon className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-                <span className="min-w-0">
+                <span className="min-w-0 flex-1">
                   <span className="font-semibold">{it.time}</span> · <span className="font-medium">{it.title}</span>
+                  {it.doneLabel && (
+                    <span className="mt-0.5 mb-0.5 flex w-fit items-center gap-1 rounded-full bg-[#188038] px-2 py-0.5 text-[10px] font-bold tracking-wide text-white">
+                      <CheckCircle2 className="h-3 w-3" /> {it.doneLabel}
+                    </span>
+                  )}
                   <span className="block text-[10.5px] opacity-80 truncate">{it.overdue ? 'Vencido · ' : ''}{st.label}{it.detail ? ` — ${it.detail}` : ''}</span>
                 </span>
               </button>
