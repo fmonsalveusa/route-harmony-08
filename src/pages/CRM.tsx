@@ -269,7 +269,7 @@ function MeetingSection({ contact, name, vehicle, scheduledAt }: { contact: CrmC
                     <button key={v} type="button" onClick={() => saveAnswer(step.id, { a: v })}
                       className={cn('h-7 px-3 text-xs font-medium inline-flex items-center gap-1 transition-colors', k > 0 && 'border-l border-[#c4c7c5] dark:border-border',
                         a === v
-                          ? (v === 'yes' ? 'bg-[#c4eed0] text-[#072711] dark:bg-emerald-900/50 dark:text-emerald-200' : 'bg-[#f9dedc] text-[#410e0b] dark:bg-red-900/50 dark:text-red-200')
+                          ? (v === 'yes' ? 'bg-[#188038] text-white' : 'bg-[#d93025] text-white')
                           : 'text-[#444746] dark:text-muted-foreground hover:bg-[#f0f4f9] dark:hover:bg-muted')}>
                       {a === v && <Check className="h-3.5 w-3.5" />} {v === 'yes' ? 'SÍ' : 'NO'}
                     </button>
