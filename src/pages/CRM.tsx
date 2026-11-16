@@ -640,12 +640,26 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
   };
 
   const remove = async () => {
-    if (!window.confirm(`¿Eliminar a ${contact.name || contact.phone} del CRM? Se borran también sus notas.`)) return;
+    // Reuniones pendientes del contacto (por teléfono): se cancelan para liberar el horario y el Google Calendar
+    const key = (contact.phone ?? '').replace(/\D/g, '').slice(-10);
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+    const { data: pending } = key.length === 10
+      ? await supabase.from('meeting_requests' as any).select('manage_token, phone')
+        .gte('meeting_date', today).neq('status', 'cancelled').ilike('phone', `%${key.slice(-4)}`)
+      : { data: [] };
+    const meetings = ((pending as any[]) ?? []).filter(m => String(m.phone ?? '').replace(/\D/g, '').slice(-10) === key);
+    const extra = meetings.length ? `\n\nTiene ${meetings.length} reunión(es) pendiente(s): se cancelan, se borran de Google Calendar y se le avisa por email.` : '';
+    if (!window.confirm(`¿Eliminar a ${contact.name || contact.phone} del CRM? Se borran también sus notas.${extra}`)) return;
     dirty.current = false;
     clearTimeout(timer.current);
+    for (const m of meetings) {
+      await supabase.functions.invoke('booking', { body: { action: 'cancel', token: m.manage_token } });
+    }
     const { error } = await supabase.from('crm_contacts' as any).delete().eq('id', contact.id);
     if (error) { toast.error(error.message); return; }
     qc.invalidateQueries({ queryKey: ['crm_contacts'] });
+    qc.invalidateQueries({ queryKey: ['crm_meetings'] });
+    qc.invalidateQueries({ queryKey: ['booking_upcoming'] });
     onClose();
   };
 
