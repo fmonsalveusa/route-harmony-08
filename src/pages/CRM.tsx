@@ -8,7 +8,6 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -41,13 +40,16 @@ interface CrmContact {
   has_medical_card: boolean;
   has_active_mc: boolean;
   has_eld: boolean;
-  meeting: { checks?: Record<string, boolean>; sent?: Record<string, string> } | null;
+  meeting: { checks?: Record<string, boolean>; sent?: Record<string, string>; answers?: Record<string, MeetingAnswer> } | null;
   whatsapp_group_id: string | null;
   whatsapp_group_name: string | null;
   referred_by: string | null;
   created_at: string;
   updated_at: string;
 }
+
+/** Respuesta de la primera reunión: SÍ / NO y comentario */
+interface MeetingAnswer { a?: 'yes' | 'no'; c?: string }
 
 interface CrmNote {
   id: string;
@@ -76,12 +78,6 @@ const SOURCE: Record<string, { label: string; icon: typeof Globe }> = {
 
 const SERVICES = ['OWNER OPERATOR', 'DISPATCH SERVICE', 'COMPANY DRIVER'];
 const VEHICLES = ['BOXTRUCK', 'HOTSHOT'];
-
-const CHECKS = [
-  { key: 'has_active_mc', label: 'MC# Activo' },
-  { key: 'has_medical_card', label: 'Medical Card' },
-  { key: 'has_eld', label: 'Libro Electrónico' },
-] as const;
 
 /** Pasos de la reunión; los que tienen `send` mandan su texto al grupo del cliente */
 const MEETING_STEPS: { id: string; label: string; send?: boolean }[] = [
@@ -115,6 +111,7 @@ function MeetingSection({ contact, name, vehicle }: { contact: CrmContact; name:
   const qc = useQueryClient();
   const [checks, setChecks] = useState<Record<string, boolean>>(contact.meeting?.checks ?? {});
   const [sent, setSent] = useState<Record<string, string>>(contact.meeting?.sent ?? {});
+  const [answers, setAnswers] = useState<Record<string, MeetingAnswer>>(contact.meeting?.answers ?? {});
   const [group, setGroup] = useState({ id: contact.whatsapp_group_id, name: contact.whatsapp_group_name });
   const [busy, setBusy] = useState<string | null>(null);
   const [referredBy, setReferredBy] = useState(contact.referred_by ?? '');
@@ -126,7 +123,7 @@ function MeetingSection({ contact, name, vehicle }: { contact: CrmContact; name:
     const nextChecks = value && !checks.referido ? { ...checks, referido: true } : checks;
     if (nextChecks !== checks) setChecks(nextChecks);
     const { error } = await supabase.from('crm_contacts' as any)
-      .update({ referred_by: value || null, meeting: { checks: nextChecks, sent } } as any).eq('id', contact.id);
+      .update({ referred_by: value || null, meeting: { checks: nextChecks, sent, answers } } as any).eq('id', contact.id);
     if (error) { toast.error(error.message); return; }
     qc.invalidateQueries({ queryKey: ['crm_contacts'] });
   };
@@ -139,11 +136,14 @@ function MeetingSection({ contact, name, vehicle }: { contact: CrmContact; name:
     qc.invalidateQueries({ queryKey: ['crm_calls'] });
   };
 
-  const toggle = async (id: string, value: boolean) => {
-    const next = { ...checks, [id]: value };
-    setChecks(next);
+  /** Guarda la respuesta (SÍ/NO y comentario); SÍ marca el paso como hecho */
+  const saveAnswer = async (id: string, patch: MeetingAnswer) => {
+    const nextAnswers = { ...answers, [id]: { ...answers[id], ...patch } };
+    const nextChecks = patch.a ? { ...checks, [id]: patch.a === 'yes' } : checks;
+    setAnswers(nextAnswers);
+    setChecks(nextChecks);
     const { error } = await supabase.from('crm_contacts' as any)
-      .update({ meeting: { checks: next, sent } } as any).eq('id', contact.id);
+      .update({ meeting: { checks: nextChecks, sent, answers: nextAnswers } } as any).eq('id', contact.id);
     if (error) toast.error(error.message);
     else qc.invalidateQueries({ queryKey: ['crm_contacts'] });
   };
@@ -180,12 +180,14 @@ function MeetingSection({ contact, name, vehicle }: { contact: CrmContact; name:
     }
   };
 
-  const done = MEETING_STEPS.filter(s => checks[s.id]).length;
+  // Preguntas respondidas (las de antes, marcadas con el check, cuentan como SÍ)
+  const answerOf = (id: string) => answers[id]?.a ?? (checks[id] ? 'yes' : undefined);
+  const done = MEETING_STEPS.filter(s => answerOf(s.id)).length;
 
   return (
     <div className={G_CARD + ' space-y-3'}>
       <div className="flex items-center gap-3">
-        <p className="text-base font-medium text-[#1f1f1f] dark:text-foreground flex-1">Reunión</p>
+        <p className="text-base font-medium text-[#1f1f1f] dark:text-foreground flex-1">Primera reunión</p>
         <span className="text-xs font-medium text-[#444746] dark:text-muted-foreground">{done} de {MEETING_STEPS.length}</span>
       </div>
       <div className="h-1 rounded-full bg-[#e3e3e3] dark:bg-muted overflow-hidden">
@@ -221,44 +223,74 @@ function MeetingSection({ contact, name, vehicle }: { contact: CrmContact; name:
         </div>
       )}
 
-      <div className="space-y-1.5">
-        {MEETING_STEPS.map(step => (
-          <div key={step.id} className="flex items-center gap-2 min-h-9 rounded-full px-3 -mx-3 hover:bg-[#f0f4f9] dark:hover:bg-muted/50">
-            <label className={cn('flex items-center gap-2 text-sm cursor-pointer', step.id !== 'referido' && 'flex-1')}>
-              <Checkbox checked={!!checks[step.id]} onCheckedChange={v => toggle(step.id, v === true)} />
-              <span className={cn(checks[step.id] && 'text-muted-foreground line-through')}>{step.label}</span>
-            </label>
-            {step.id === 'referido' && (
-              <Input
-                value={referredBy}
-                onChange={e => setReferredBy(e.target.value)}
-                onBlur={saveReferredBy}
-                onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                placeholder="¿Quién lo refirió?"
-                className="h-7 text-sm flex-1"
-              />
-            )}
-            {step.send && (
-              <>
-                {sent[step.id] && <span className="text-[11px] text-green-700 dark:text-green-400">{fmt(sent[step.id])}</span>}
-                {/* Verde = ya se envió (queda guardado); se puede volver a enviar */}
-                <Button
-                  size="sm" variant="outline"
-                  className={cn('h-7 px-2 gap-1 text-xs',
-                    sent[step.id] && 'bg-green-600 text-white border-green-600 hover:bg-green-700 hover:text-white')}
-                  onClick={() => sendStep(step.id, step.label)}
-                  disabled={busy !== null || !group.id}
-                  title={!group.id ? 'Primero vincula el grupo de WhatsApp' : sent[step.id] ? `Enviado ${fmt(sent[step.id])} — clic para reenviar` : 'Enviar al grupo de WhatsApp'}
-                >
-                  {busy === step.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : sent[step.id] ? <Check className="h-3.5 w-3.5" /> : <Send className="h-3.5 w-3.5" />}
-                  {sent[step.id] ? 'Enviado' : 'Enviar'}
-                </Button>
-              </>
-            )}
-          </div>
-        ))}
+      <div className="divide-y divide-[#f0f0f0] dark:divide-border">
+        {MEETING_STEPS.map(step => {
+          const a = answerOf(step.id);
+          return (
+            <div key={step.id} className="py-2 space-y-1.5">
+              <div className="flex items-center gap-2">
+                <span className="flex-1 text-sm font-medium text-[#1f1f1f] dark:text-foreground">{step.label}</span>
+                {/* SÍ / NO */}
+                <div className="inline-flex rounded-full border border-[#c4c7c5] dark:border-border overflow-hidden shrink-0">
+                  {(['yes', 'no'] as const).map((v, k) => (
+                    <button key={v} type="button" onClick={() => saveAnswer(step.id, { a: v })}
+                      className={cn('h-7 px-3 text-xs font-medium inline-flex items-center gap-1 transition-colors', k > 0 && 'border-l border-[#c4c7c5] dark:border-border',
+                        a === v
+                          ? (v === 'yes' ? 'bg-[#c4eed0] text-[#072711] dark:bg-emerald-900/50 dark:text-emerald-200' : 'bg-[#f9dedc] text-[#410e0b] dark:bg-red-900/50 dark:text-red-200')
+                          : 'text-[#444746] dark:text-muted-foreground hover:bg-[#f0f4f9] dark:hover:bg-muted')}>
+                      {a === v && <Check className="h-3.5 w-3.5" />} {v === 'yes' ? 'SÍ' : 'NO'}
+                    </button>
+                  ))}
+                </div>
+                {step.send && (
+                  <Button
+                    size="sm" variant="outline"
+                    className={cn('h-7 px-2.5 gap-1 text-xs rounded-full shadow-none shrink-0',
+                      sent[step.id] ? 'bg-[#188038] text-white border-[#188038] hover:bg-[#137333] hover:text-white' : 'border-[#747775] text-[#0b57d0] hover:bg-[#e8f0fe] hover:text-[#0b57d0]')}
+                    onClick={() => sendStep(step.id, step.label)}
+                    disabled={busy !== null || !group.id}
+                    title={!group.id ? 'Primero vincula el grupo de WhatsApp' : sent[step.id] ? `Enviado ${fmt(sent[step.id])} — clic para reenviar` : 'Enviar al grupo de WhatsApp'}
+                  >
+                    {busy === step.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : sent[step.id] ? <Check className="h-3.5 w-3.5" /> : <Send className="h-3.5 w-3.5" />}
+                    {sent[step.id] ? 'Enviado' : 'Enviar'}
+                  </Button>
+                )}
+              </div>
+              {/* Comentario (en Referido: quién lo refirió) */}
+              {step.id === 'referido' ? (
+                <Input
+                  value={referredBy}
+                  onChange={e => setReferredBy(e.target.value)}
+                  onBlur={saveReferredBy}
+                  onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                  placeholder="¿Quién lo refirió?"
+                  className="h-8 text-sm rounded-lg shadow-none bg-[#f8fafd] dark:bg-muted/40 border-[#e3e3e3] dark:border-border"
+                />
+              ) : (
+                <CommentInput value={answers[step.id]?.c ?? ''} onSave={c => saveAnswer(step.id, { c })} />
+              )}
+              {sent[step.id] && <p className="text-[11px] text-[#188038] dark:text-emerald-400">Enviado al grupo {fmt(sent[step.id])}</p>}
+            </div>
+          );
+        })}
       </div>
     </div>
+  );
+}
+
+/** Comentario de una pregunta: se guarda al salir del campo o con Enter */
+function CommentInput({ value, onSave }: { value: string; onSave: (v: string) => void }) {
+  const [v, setV] = useState(value);
+  useEffect(() => setV(value), [value]);
+  return (
+    <Input
+      value={v}
+      onChange={e => setV(e.target.value)}
+      onBlur={() => { if (v.trim() !== value) onSave(v.trim()); }}
+      onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+      placeholder="Comentario..."
+      className="h-8 text-sm rounded-lg shadow-none bg-[#f8fafd] dark:bg-muted/40 border-[#e3e3e3] dark:border-border"
+    />
   );
 }
 
@@ -872,23 +904,6 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
               </div>
             </div>
           </Card>
-
-          <Card title="Al momento de la reunión tiene">
-            <div className="flex flex-wrap gap-2">
-              {CHECKS.map(ch => {
-                const on = form[ch.key];
-                return (
-                  <button key={ch.key} type="button" onClick={() => edit({ [ch.key]: !on })}
-                    className={cn('inline-flex items-center gap-1.5 rounded-lg h-8 px-3 text-sm font-medium border transition-colors',
-                      on ? 'bg-[#c4eed0] border-[#c4eed0] text-[#072711] dark:bg-emerald-900/40 dark:border-emerald-900/40 dark:text-emerald-200'
-                        : 'border-[#c4c7c5] dark:border-border text-[#444746] dark:text-muted-foreground hover:bg-[#f0f4f9] dark:hover:bg-muted')}>
-                    {on && <Check className="h-4 w-4" />} {ch.label}
-                  </button>
-                );
-              })}
-            </div>
-          </Card>
-
           <Card title="Próxima acción">
             <div className="inline-flex rounded-full border border-[#c4c7c5] dark:border-border overflow-hidden mb-4">
               {([['reminder', 'Recordarme a mí', Bell], ['client_message', 'Mensaje al cliente', Send]] as const).map(([v, l, I], i) => (
