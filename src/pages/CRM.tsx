@@ -19,6 +19,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { BookingAgenda } from '@/components/crm/BookingAgenda';
 import { CrmCalendar } from '@/components/crm/CrmCalendar';
+import { useCompanies } from '@/hooks/useCompanies';
 
 type Stage = 'new' | 'meeting_scheduled' | 'meeting_done' | 'client';
 
@@ -371,37 +372,47 @@ function CallDialog({ open, initial, onClose, onSave }: {
 
   return (
     <Dialog open={open} onOpenChange={o => !o && onClose()}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader><DialogTitle>{initial ? 'Editar llamada' : '📞 Registrar llamada'}</DialogTitle></DialogHeader>
-        <div className="grid gap-3">
+      <DialogContent className="sm:max-w-md rounded-[28px] border-0 bg-[#f8fafd] dark:bg-background">
+        <DialogHeader className="space-y-0">
+          <div className="flex items-center gap-3">
+            <span className="h-11 w-11 rounded-full bg-[#d3e3fd] dark:bg-blue-900/40 text-[#041e49] dark:text-blue-200 flex items-center justify-center shrink-0">
+              <Phone className="h-5 w-5" />
+            </span>
+            <div>
+              <DialogTitle className="text-[22px] leading-7 font-normal text-[#1f1f1f] dark:text-foreground">{initial ? 'Editar llamada' : 'Registrar llamada'}</DialogTitle>
+              <p className="text-sm text-[#444746] dark:text-muted-foreground">Resultado y lo que se habló</p>
+            </div>
+          </div>
+        </DialogHeader>
+        <div className="grid gap-2.5 rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border px-4 py-3">
           <div className="space-y-1">
-            <Label className="text-xs">Fecha y hora de la llamada</Label>
-            <Input type="datetime-local" value={v.call_at} onChange={e => setV(x => ({ ...x, call_at: e.target.value }))} />
+            <Label className="text-xs font-medium text-[#444746] dark:text-muted-foreground">Fecha y hora de la llamada</Label>
+            <Input className={INPUT} type="datetime-local" value={v.call_at} onChange={e => setV(x => ({ ...x, call_at: e.target.value }))} />
           </div>
           <div className="space-y-1">
-            <Label className="text-xs">Resultado</Label>
+            <Label className="text-xs font-medium text-[#444746] dark:text-muted-foreground">Resultado</Label>
             <Select value={v.call_result} onValueChange={r => setV(x => ({ ...x, call_result: r }))}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger className={INPUT}><SelectValue /></SelectTrigger>
               <SelectContent>
                 {Object.entries(CALL_RESULTS).map(([k, r]) => <SelectItem key={k} value={k}>{r.icon} {r.label}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-1">
-            <Label className="text-xs">Anotaciones</Label>
-            <Textarea rows={4} placeholder="Qué se habló, qué necesita, qué quedó pendiente..." value={v.body} onChange={e => setV(x => ({ ...x, body: e.target.value }))} />
+            <Label className="text-xs font-medium text-[#444746] dark:text-muted-foreground">Anotaciones</Label>
+            <Textarea className="rounded-lg shadow-none border-[#c4c7c5] dark:border-border focus-visible:ring-1 focus-visible:ring-[#0b57d0]" rows={4} placeholder="Qué se habló, qué necesita, qué quedó pendiente..." value={v.body} onChange={e => setV(x => ({ ...x, body: e.target.value }))} />
           </div>
           {!initial && (
             <div className="space-y-1">
-              <Label className="text-xs">Próxima llamada (opcional)</Label>
-              <Input type="datetime-local" value={v.next_call} onChange={e => setV(x => ({ ...x, next_call: e.target.value }))} />
+              <Label className="text-xs font-medium text-[#444746] dark:text-muted-foreground">Próxima llamada (opcional)</Label>
+              <Input className={INPUT} type="datetime-local" value={v.next_call} onChange={e => setV(x => ({ ...x, next_call: e.target.value }))} />
               <p className="text-[11px] text-muted-foreground">Queda como próxima acción y te llega el recordatorio al grupo de administración.</p>
             </div>
           )}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancelar</Button>
-          <Button onClick={save} disabled={saving}>{saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}Guardar</Button>
+          <Button variant="ghost" className="h-10 rounded-full px-5 text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe] dark:text-blue-300 font-medium" onClick={onClose}>Cancelar</Button>
+          <Button className="h-10 rounded-full px-6 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium" onClick={save} disabled={saving}>{saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}Guardar</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -495,12 +506,6 @@ const followupQueued = (c: CrmContact) =>
 
 const isOverdue = (c: CrmContact) =>
   !!c.next_action_at && new Date(c.next_action_at) <= new Date() && c.stage !== 'client' && !followupSent(c) && !followupQueued(c);
-
-const waLink = (phone: string | null) => {
-  const d = (phone ?? '').replace(/\D/g, '');
-  if (d.length < 10) return null;
-  return `https://wa.me/${d.length === 10 ? '1' + d : d}`;
-};
 
 // ─── Estilo de la ficha del contacto (al estilo de las páginas de Google / Material 3) ───
 const G_CARD = 'rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border px-4 py-3';
@@ -810,7 +815,17 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
     onClose();
   };
 
-  const link = waLink(form.phone);
+  // Llamar por Google Voice con la cuenta de la empresa activa (su email), listo para marcar
+  const { companies } = useCompanies();
+  const voiceEmail = companies.filter(c => c.status !== 'inactive' && c.email).sort((a, b) => a.name.localeCompare(b.name))[0]?.email;
+  const callWithVoice = () => {
+    let digits = form.phone.replace(/\D/g, '');
+    if (digits.length === 10) digits = '1' + digits;
+    if (digits.length < 11) { toast.error('Teléfono inválido'); return; }
+    const account = voiceEmail ? `&authuser=${encodeURIComponent(voiceEmail)}` : '';
+    window.open(`https://voice.google.com/calls?a=nc,%2B${digits}${account}`, 'du-google-voice');
+  };
+
   const field = (key: 'name' | 'phone' | 'email' | 'city', label: string, type = 'text', span = false) => (
     <div className={cn('space-y-1', span && 'col-span-2')}>
       <Label className={G_LABEL}>{label}</Label>
@@ -879,8 +894,7 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
             </div>
           </div>
           <div className="flex gap-1 sm:gap-2">
-            {form.phone && <ActionButton icon={Phone} label="Llamar" onClick={() => { window.location.href = `tel:${form.phone}`; }} />}
-            {link && <ActionButton icon={MessageCircle} label="WhatsApp" onClick={() => window.open(link, '_blank')} />}
+            {form.phone && <ActionButton icon={Phone} label="Llamar" onClick={callWithVoice} />}
             <ActionButton icon={PenLine} label="Registrar" onClick={() => setCallOpen(true)} />
             <ActionButton icon={Trash2} label="Eliminar" onClick={remove} danger />
           </div>
