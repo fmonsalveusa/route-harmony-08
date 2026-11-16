@@ -139,7 +139,7 @@ export function DriverTaxInfo({ driverId }: { driverId: string }) {
   const SOURCE: Record<string, string> = { onboarding: 'Onboarding (W-9)', w9: 'Leído del W-9', manual: 'Manual' };
   return (
     <div className="pt-2">
-      <h3 className="text-lg font-bold uppercase tracking-wide text-foreground border-b pb-2 mb-3">Tax Information</h3>
+      <h3 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground mb-2">Tax Information</h3>
       {tax === undefined ? (
         <p className="text-sm text-muted-foreground">Loading...</p>
       ) : !tax ? (

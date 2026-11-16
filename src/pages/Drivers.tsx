@@ -339,7 +339,7 @@ const Drivers = () => {
                         </Button>
                       </td>
                       <td className="px-3 py-2 text-muted-foreground">
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 whitespace-nowrap">
                           <Phone className="h-3.5 w-3.5" />{formatPhone(driver.phone)}
                           <button
                             onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(driver.phone); }}
@@ -351,15 +351,15 @@ const Drivers = () => {
                         </div>
                       </td>
                       <td className="px-3 py-2 hidden md:table-cell">
-                        <div className="flex items-center gap-1.5">
-                          <TruckIcon className="h-3.5 w-3.5 text-primary" />
+                        <div className="flex items-center gap-1.5 whitespace-nowrap">
+                          <TruckIcon className="h-3.5 w-3.5 text-[#0b57d0] dark:text-blue-300" />
                           <span>{truckLabel || <span className="text-muted-foreground italic">Unassigned</span>}</span>
                         </div>
                       </td>
                       <td className="px-3 py-2 hidden lg:table-cell">
                         <ServiceTypeBadge serviceType={driver.service_type} className="!text-[13px] !px-3 !py-1" />
                       </td>
-                      <td className="px-3 py-2 hidden lg:table-cell text-sm">
+                      <td className="px-3 py-2 hidden lg:table-cell text-sm whitespace-nowrap">
                         {dispatcher
                           ? <span className="font-medium">{dispatcher.name}</span>
                           : <span className="text-muted-foreground italic">Unassigned</span>
