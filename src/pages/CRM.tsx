@@ -133,6 +133,15 @@ function MeetingSection({ contact, name, vehicle, scheduledAt }: { contact: CrmC
     qc.invalidateQueries({ queryKey: ['crm_contacts'] });
   };
 
+  // Se guarda solo al dejar de escribir y al cerrar la ventana (antes solo al salir del campo y se perdía)
+  const saveRefLatest = useRef(saveReferredBy);
+  saveRefLatest.current = saveReferredBy;
+  useEffect(() => {
+    const t = setTimeout(() => saveRefLatest.current(), 800);
+    return () => clearTimeout(t);
+  }, [referredBy]);
+  useEffect(() => () => { saveRefLatest.current(); }, []);
+
   const suggested = suggestedGroupName(name, vehicle, !!checks.referido);
 
   const refresh = () => {
@@ -332,11 +341,25 @@ function MeetingSection({ contact, name, vehicle, scheduledAt }: { contact: CrmC
 function CommentInput({ value, onSave, placeholder }: { value: string; onSave: (v: string) => void; placeholder?: string }) {
   const [v, setV] = useState(value);
   useEffect(() => setV(value), [value]);
+  // Guarda al dejar de escribir y al cerrar la ventana, no solo al salir del campo
+  const saved = useRef(value);
+  useEffect(() => { saved.current = value; }, [value]);
+  const latest = useRef({ v, onSave });
+  latest.current = { v, onSave };
+  const flush = () => {
+    const t = latest.current.v.trim();
+    if (t !== saved.current) { saved.current = t; latest.current.onSave(t); }
+  };
+  useEffect(() => {
+    const t = setTimeout(flush, 800);
+    return () => clearTimeout(t);
+  }, [v]);
+  useEffect(() => () => flush(), []);
   return (
     <Input
       value={v}
       onChange={e => setV(e.target.value)}
-      onBlur={() => { if (v.trim() !== value) onSave(v.trim()); }}
+      onBlur={flush}
       onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
       placeholder={placeholder ?? 'Comentario...'}
       className="h-7 text-sm rounded-lg shadow-none bg-[#f8fafd] dark:bg-muted/40 border-[#e3e3e3] dark:border-border"
