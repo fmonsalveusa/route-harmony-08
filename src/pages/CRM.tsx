@@ -1056,19 +1056,18 @@ export default function CRM() {
         { label: 'Clientes este mes', value: contacts.filter(c => c.stage === 'client' && new Date(c.updated_at) >= monthStart).length, icon: Trophy, tint: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' },
       ]} />
 
-      <CrmCalendar contacts={contacts} onOpen={setOpenId} />
-
       {isLoading ? (
         <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
       ) : (
-        <div className="flex gap-3 overflow-x-auto pb-4">
+        <div className="flex gap-3 items-start">
+        <div className="flex gap-2 overflow-x-auto pb-4 flex-1 min-w-0">
           {STAGES.map(s => (
             <div
               key={s.id}
               onDragOver={e => { e.preventDefault(); setDragOver(s.id); }}
               onDragLeave={() => setDragOver(d => (d === s.id ? null : d))}
               onDrop={e => { e.preventDefault(); setDragOver(null); moveTo(e.dataTransfer.getData('text/plain'), s.id); }}
-              className={cn('flex-1 min-w-[220px] rounded-xl border border-t-4 bg-muted/30 flex flex-col max-h-[70vh]', s.tint, dragOver === s.id && 'ring-2 ring-primary/40')}
+              className={cn('flex-1 min-w-[175px] rounded-xl border border-t-4 bg-muted/30 flex flex-col max-h-[70vh]', s.tint, dragOver === s.id && 'ring-2 ring-primary/40')}
             >
               <div className="px-3 py-2 flex items-center justify-between">
                 <p className="text-sm font-semibold">{s.label}</p>
@@ -1080,7 +1079,13 @@ export default function CRM() {
             </div>
           ))}
         </div>
+        <div className="w-[270px] shrink-0 hidden lg:block">
+          <CrmCalendar contacts={contacts} onOpen={setOpenId} />
+        </div>
+        </div>
       )}
+      {/* En pantallas pequeñas el calendario va debajo del tablero */}
+      {!isLoading && <div className="lg:hidden max-w-sm"><CrmCalendar contacts={contacts} onOpen={setOpenId} /></div>}
 
       <Dialog open={!!openContact} onOpenChange={v => !v && setOpenId(null)}>
         <DialogContent className="max-w-5xl w-[95vw] max-h-[92vh] overflow-y-auto">
