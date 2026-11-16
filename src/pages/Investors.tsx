@@ -295,27 +295,29 @@ const Investors = () => {
   }, []);
 
   // Count drivers per investor (usando driver_investors)
+  // Solo drivers activos (los inactivos siguen vinculados para el historial de pagos)
+  const activeDriverIds = useMemo(() => new Set(drivers.filter(d => d.status !== 'inactive').map(d => d.id)), [drivers]);
   const driversPerInvestor = useMemo(() => {
     const map: Record<string, number> = {};
     driverInvestorLinks.forEach(link => {
-      if (link.investor_id) map[link.investor_id] = (map[link.investor_id] || 0) + 1;
+      if (link.investor_id && activeDriverIds.has(link.driver_id)) map[link.investor_id] = (map[link.investor_id] || 0) + 1;
     });
     return map;
-  }, [driverInvestorLinks]);
+  }, [driverInvestorLinks, activeDriverIds]);
 
   // Lista de nombres de drivers por investor (para el tooltip)
   const driverNamesPerInvestor = useMemo(() => {
     const map: Record<string, string[]> = {};
     const driverById = new Map(drivers.map(d => [d.id, d.name]));
     driverInvestorLinks.forEach(link => {
-      if (link.investor_id) {
+      if (link.investor_id && activeDriverIds.has(link.driver_id)) {
         if (!map[link.investor_id]) map[link.investor_id] = [];
         const name = driverById.get(link.driver_id);
         if (name) map[link.investor_id].push(name);
       }
     });
     return map;
-  }, [driverInvestorLinks, drivers]);
+  }, [driverInvestorLinks, drivers, activeDriverIds]);
 
   // Pending payment amount per investor (by recipient_id = investor.id for new payments)
   const pendingPerInvestor = useMemo(() => {

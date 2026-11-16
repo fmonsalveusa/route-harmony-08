@@ -49,6 +49,8 @@ export function InvestorDetailPanel({ investor, links, drivers }: { investor: Db
   const week = useMemo(() => weekAt(offset), [offset]);
   const myLinks = links.filter(l => l.investor_id === investor.id);
   const driverIds = myLinks.map(l => l.driver_id);
+  // En la lista y el conteo solo los drivers activos; los inactivos salen solo si tuvieron cargas en la semana
+  const activeIds = driverIds.filter(id => drivers.find(d => d.id === id)?.status !== 'inactive');
   const pctByDriver = Object.fromEntries(myLinks.map(l => [l.driver_id, Number(l.pay_percentage ?? investor.pay_percentage) || 0]));
 
   const { data: loads = [], isLoading } = useQuery({
@@ -83,7 +85,7 @@ export function InvestorDetailPanel({ investor, links, drivers }: { investor: Db
       byDriver[key].share += (Number(l.total_rate) || 0) * ((pctByDriver[l.driver_id] || 0) / 100);
     }
     // Drivers sin cargas esta semana también aparecen, en cero
-    for (const id of driverIds) {
+    for (const id of activeIds) {
       const d = drivers.find(x => x.id === id);
       if (!Object.keys(byDriver).some(k => k.startsWith(`${id}|`))) {
         byDriver[`${id}|${d?.service_type || 'owner_operator'}`] = { loads: 0, revenue: 0, share: 0, service: d?.service_type || 'owner_operator' };
@@ -121,7 +123,7 @@ export function InvestorDetailPanel({ investor, links, drivers }: { investor: Db
           )}
         </div>
         {[
-          { icon: Users, label: 'Drivers', value: String(driverIds.length), tone: 'bg-[#d3e3fd] text-[#041e49] dark:bg-blue-900/40 dark:text-blue-200' },
+          { icon: Users, label: 'Drivers', value: String(activeIds.length), tone: 'bg-[#d3e3fd] text-[#041e49] dark:bg-blue-900/40 dark:text-blue-200' },
           { icon: Package, label: 'Cargas', value: String(totals.loads), tone: 'bg-[#e3e3e3] text-[#1f1f1f] dark:bg-muted dark:text-foreground' },
           { icon: DollarSign, label: 'Total cargas', value: money(totals.revenue), tone: 'bg-[#c4eed0] text-[#072711] dark:bg-emerald-900/40 dark:text-emerald-200' },
           { icon: DollarSign, label: 'Total investor', value: money(totals.share), tone: 'bg-[#f3e8fd] text-[#4a148c] dark:bg-violet-900/40 dark:text-violet-200' },
