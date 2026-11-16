@@ -230,7 +230,7 @@ function Availability() {
       </div>
 
       {canEdit ? (
-        <div className="flex justify-end">
+        <div className="sticky bottom-0 -mx-1 px-1 pt-2 pb-1 bg-white dark:bg-background flex justify-end">
           <Button onClick={save} disabled={saving} className="h-10 rounded-full px-6 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium">
             {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}Guardar
           </Button>
