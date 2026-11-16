@@ -114,24 +114,32 @@ const InvestorFormDialog = ({
   return (
     <Dialog open={open} onOpenChange={handleOpen}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-[28px] border-0 bg-[#f8fafd] dark:bg-background [&_label]:text-xs [&_label]:font-medium [&_label]:text-[#444746] dark:[&_label]:text-muted-foreground [&_input]:rounded-lg [&_input]:shadow-none [&_input]:bg-white dark:[&_input]:bg-card [&_input]:border-[#c4c7c5] dark:[&_input]:border-border [&_input:focus-visible]:ring-1 [&_input:focus-visible]:ring-[#0b57d0] [&_input:focus-visible]:border-[#0b57d0] [&_button[role=combobox]]:rounded-lg [&_button[role=combobox]]:shadow-none [&_button[role=combobox]]:bg-white dark:[&_button[role=combobox]]:bg-card [&_button[role=combobox]]:border-[#c4c7c5] dark:[&_button[role=combobox]]:border-border [&_textarea]:rounded-lg [&_textarea]:shadow-none [&_textarea]:bg-white dark:[&_textarea]:bg-card [&_textarea]:border-[#c4c7c5]">
-        <DialogHeader>
-          <DialogTitle className="text-[22px] leading-7 font-normal text-[#1f1f1f] dark:text-foreground">{investor ? 'Edit Investor' : 'New Investor'}</DialogTitle>
+        <DialogHeader className="space-y-0">
+          <div className="flex items-center gap-3">
+            <span className="h-11 w-11 rounded-full bg-[#d3e3fd] dark:bg-blue-900/40 text-[#041e49] dark:text-blue-200 flex items-center justify-center shrink-0">
+              <Landmark className="h-5 w-5" />
+            </span>
+            <div>
+              <DialogTitle className="text-[22px] leading-7 font-normal text-[#1f1f1f] dark:text-foreground">{investor ? 'Edit Investor' : 'New Investor'}</DialogTitle>
+              <p className="text-sm text-[#444746] dark:text-muted-foreground">{investor ? investor.name : 'Completa la información del investor'}</p>
+            </div>
+          </div>
         </DialogHeader>
-        <div className="space-y-6 py-2">
+        <div className="space-y-3 py-1">
 
           {/* Basic Info */}
-          <div className="space-y-3">
+          <div className="space-y-2 rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border px-4 py-3">
             <h3 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground">Personal Information</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2 sm:col-span-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-2">
+              <div className="space-y-1 sm:col-span-2">
                 <Label>Full Name *</Label>
                 <Input value={form.name} onChange={e => set('name', e.target.value)} placeholder="Full name" autoFocus />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <Label>Email</Label>
                 <Input type="email" value={form.email || ''} onChange={e => set('email', e.target.value)} placeholder="investor@email.com" />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <Label>Phone</Label>
                 <Input value={form.phone || ''} onChange={e => set('phone', e.target.value)} placeholder="555-0000" />
               </div>
@@ -139,22 +147,22 @@ const InvestorFormDialog = ({
           </div>
 
           {/* Address */}
-          <div className="space-y-3 border-t pt-4">
+          <div className="space-y-2 rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border px-4 py-3">
             <h3 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground">Address</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2 sm:col-span-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-2">
+              <div className="space-y-1 sm:col-span-2">
                 <Label>Street Address</Label>
                 <Input value={form.address || ''} onChange={e => set('address', e.target.value)} placeholder="123 Main St" />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <Label>City</Label>
                 <Input value={form.city || ''} onChange={e => set('city', e.target.value)} placeholder="Miami" />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <Label>State</Label>
                 <Input value={form.state || ''} onChange={e => set('state', e.target.value)} placeholder="FL" maxLength={2} />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <Label>Zip Code</Label>
                 <Input value={form.zip || ''} onChange={e => set('zip', e.target.value)} placeholder="33101" />
               </div>
@@ -162,18 +170,18 @@ const InvestorFormDialog = ({
           </div>
 
           {/* Business Info */}
-          <div className="space-y-3 border-t pt-4">
+          <div className="space-y-2 rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border px-4 py-3">
             <h3 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground">Business Information <span className="text-xs font-normal text-[#444746] dark:text-muted-foreground">(opcional)</span></h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2 sm:col-span-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-2">
+              <div className="space-y-1 sm:col-span-2">
                 <Label>Business Name (LLC / Corp)</Label>
                 <Input value={form.business_name || ''} onChange={e => set('business_name', e.target.value)} placeholder="e.g. Smith Transport LLC" />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <Label>EIN (si tiene empresa)</Label>
                 <Input value={form.ein || ''} onChange={e => set('ein', e.target.value)} placeholder="XX-XXXXXXX" />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <Label>SSN Last 4 (si es persona natural)</Label>
                 <Input value={form.ssn_last4 || ''} onChange={e => set('ssn_last4', e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="XXXX" maxLength={4} />
               </div>
@@ -182,14 +190,14 @@ const InvestorFormDialog = ({
 
           {/* Tax Information para el 1099 (solo admin y accounting, al editar) */}
           {investor?.id && canSeeTax && (
-            <div className="border-t pt-4">
+            <div className="rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border px-4 py-3">
               <h3 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground mb-2">Tax Information</h3>
               <DriverTaxSection driverId={investor.id} recipientType="investor" hasW9={!!investor.w9_url} />
             </div>
           )}
 
           {/* Pay % */}
-          <div className="space-y-2 border-t pt-4 p-3 rounded-lg border-2 border-violet-400/50 bg-violet-50 dark:bg-violet-950/20">
+          <div className="space-y-1.5 px-4 py-3 rounded-3xl bg-[#f3e8fd] dark:bg-violet-950/30">
             <Label className="font-semibold text-violet-700 dark:text-violet-300 flex items-center gap-1.5">
               <Percent className="h-4 w-4" /> Investor Pay % ⭐
             </Label>
@@ -206,18 +214,18 @@ const InvestorFormDialog = ({
           </div>
 
           {/* Banking */}
-          <div className="space-y-3 border-t pt-4">
+          <div className="space-y-2 rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border px-4 py-3">
             <h3 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground">Banking Information <span className="text-xs font-normal text-[#444746] dark:text-muted-foreground">(ACH Direct Deposit)</span></h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2 sm:col-span-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-2">
+              <div className="space-y-1 sm:col-span-2">
                 <Label>Account Holder Name</Label>
                 <Input value={form.account_holder_name || ''} onChange={e => set('account_holder_name', e.target.value)} placeholder="Full name as it appears on the account" />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <Label>Bank Name</Label>
                 <Input value={form.bank_name || ''} onChange={e => set('bank_name', e.target.value)} placeholder="e.g. Chase, Bank of America" />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <Label>Account Type</Label>
                 <select
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
@@ -228,11 +236,11 @@ const InvestorFormDialog = ({
                   <option value="savings">Savings</option>
                 </select>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <Label>Routing Number</Label>
                 <Input value={form.routing_number || ''} onChange={e => set('routing_number', e.target.value.replace(/\D/g, '').slice(0, 9))} placeholder="9-digit routing number" maxLength={9} />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <Label>Account Number</Label>
                 <Input value={form.account_number || ''} onChange={e => set('account_number', e.target.value.replace(/\D/g, ''))} placeholder="Account number" />
               </div>
@@ -248,7 +256,7 @@ const InvestorFormDialog = ({
           />
 
           {/* Notes */}
-          <div className="space-y-2 border-t pt-4">
+          <div className="space-y-2 rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border px-4 py-3">
             <Label>Notes</Label>
             <Input value={form.notes || ''} onChange={e => set('notes', e.target.value)} placeholder="Optional notes" />
           </div>
