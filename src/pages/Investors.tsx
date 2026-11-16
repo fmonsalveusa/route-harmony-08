@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, Fragment } from 'react';
 import { WhatsAppGroupSelect } from '@/components/WhatsAppGroupSelect';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -16,9 +16,10 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { StatTiles, SolidStatusPill, PILL_INPUT, TABLE_CARD, TABLE_HEAD_ROW, TABLE_ROW } from '@/components/StatTiles';
 import { CreateAccessButton } from '@/components/CreateAccessButton';
 import { DriverTaxSection } from '@/components/DriverTaxSection';
-import { ChevronDown, Landmark, Pencil, Trash2, PlusCircle, Search, Phone, Mail, Users, DollarSign, X, Percent, UserX } from 'lucide-react';
+import { ChevronDown, ChevronUp, Landmark, Pencil, Trash2, PlusCircle, Search, Phone, Mail, Users, DollarSign, X, Percent, UserX } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatPhone } from '@/lib/phoneUtils';
+import { InvestorDetailPanel, InvestorLink } from '@/components/InvestorDetailPanel';
 
 // ─── Create / Edit Dialog ────────────────────────────────────
 const InvestorFormDialog = ({
@@ -283,11 +284,12 @@ const Investors = () => {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   // Cargar driver_investors activos (relación many-to-many real)
-  const [driverInvestorLinks, setDriverInvestorLinks] = useState<{ driver_id: string; investor_id: string }[]>([]);
+  const [driverInvestorLinks, setDriverInvestorLinks] = useState<InvestorLink[]>([]);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   useEffect(() => {
     supabase
       .from('driver_investors' as any)
-      .select('driver_id, investor_id')
+      .select('driver_id, investor_id, pay_percentage')
       .eq('is_active', true)
       .then(({ data }) => setDriverInvestorLinks((data as any) || []));
   }, []);
@@ -361,34 +363,39 @@ const Investors = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="page-header">Investors</h1>
-          <p className="page-description">Manage investors linked to your drivers</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span className="h-10 w-10 rounded-full bg-[#d3e3fd] dark:bg-blue-900/40 text-[#041e49] dark:text-blue-200 flex items-center justify-center shrink-0">
+            <Landmark className="h-5 w-5" />
+          </span>
+          <div>
+            <h1 className="text-[24px] leading-8 font-normal text-[#1f1f1f] dark:text-foreground">Investors</h1>
+            <p className="text-sm text-[#444746] dark:text-muted-foreground">Manage investors linked to your drivers</p>
+          </div>
         </div>
-        <Button onClick={() => { setEditingInvestor(null); setFormOpen(true); }} className="gap-1.5">
-          <PlusCircle className="h-4 w-4" /> New Investor
+        <Button onClick={() => { setEditingInvestor(null); setFormOpen(true); }} className="h-10 rounded-2xl px-5 gap-2 bg-[#c2e7ff] hover:bg-[#b3dcf5] text-[#001d35] font-medium shadow-[0_1px_2px_rgba(60,64,67,.3),0_1px_3px_1px_rgba(60,64,67,.15)]">
+          <PlusCircle className="h-5 w-5" /> New Investor
         </Button>
       </div>
 
       {/* Resumen */}
       <StatTiles tiles={[
-        { label: 'Active Investors', value: investors.filter(i => (i.status || 'active') !== 'inactive').length, icon: Landmark, tint: 'bg-sky-100 text-sky-700' },
-        { label: 'Drivers Assigned', value: Object.values(driversPerInvestor).reduce((a, b) => a + b, 0), icon: Users, tint: 'bg-emerald-100 text-emerald-700' },
-        { label: 'Pending Payments', value: `$${totalPending.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, icon: DollarSign, tint: 'bg-amber-100 text-amber-700' },
-        { label: 'Inactive', value: investors.filter(i => i.status === 'inactive').length, icon: UserX, tint: 'bg-red-100 text-red-700' },
+        { label: 'Active Investors', value: investors.filter(i => (i.status || 'active') !== 'inactive').length, icon: Landmark, tint: 'bg-[#d3e3fd] text-[#041e49] dark:bg-blue-900/40 dark:text-blue-200' },
+        { label: 'Drivers Assigned', value: Object.values(driversPerInvestor).reduce((a, b) => a + b, 0), icon: Users, tint: 'bg-[#c4eed0] text-[#072711] dark:bg-emerald-900/40 dark:text-emerald-200' },
+        { label: 'Pending Payments', value: `$${totalPending.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, icon: DollarSign, tint: 'bg-[#feefc3] text-[#3d2a00] dark:bg-amber-900/40 dark:text-amber-200' },
+        { label: 'Inactive', value: investors.filter(i => i.status === 'inactive').length, icon: UserX, tint: 'bg-[#f9dedc] text-[#410e0b] dark:bg-red-900/40 dark:text-red-200' },
       ]} />
 
       {/* Search */}
       <div className="relative w-full max-w-sm">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Search investors..."
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#444746] dark:text-muted-foreground" />
+        <input
+          placeholder="Buscar investors..."
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className={`pl-10 ${PILL_INPUT}`}
+          className="w-full h-10 rounded-full bg-white dark:bg-card border border-[#e3e3e3] dark:border-border pl-10 pr-8 text-sm text-[#1f1f1f] dark:text-foreground placeholder:text-[#444746] outline-none focus:shadow-[0_1px_1px_rgba(65,69,73,.3),0_1px_3px_1px_rgba(65,69,73,.15)] transition"
         />
         {search && (
           <button
@@ -402,51 +409,57 @@ const Investors = () => {
 
       {/* Tabs por status */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="active">
-            Active <span className={`ml-1.5 text-xs rounded-full px-2 py-0.5 font-semibold ${activeTab === 'active' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{investors.filter(i => (i.status || 'active') !== 'inactive').length}</span>
+        <TabsList className="w-full justify-start rounded-none sm:rounded-none border-x-0 border-t-0 flex-nowrap border-b border-[#e3e3e3] dark:border-border bg-transparent h-12 p-0 px-1 overflow-x-auto overflow-y-hidden">
+          <TabsTrigger className="h-12 rounded-none border-b-[3px] border-transparent px-4 gap-2 text-sm font-medium text-[#444746] dark:text-muted-foreground data-[state=active]:border-[#0b57d0] data-[state=active]:text-[#0b57d0] dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none data-[state=active]:bg-transparent" value="active">
+            Active <span className={`text-[11px] rounded-full px-1.5 py-0.5 font-medium ${activeTab === 'active' ? 'bg-[#0b57d0] text-white' : 'bg-[#f0f4f9] dark:bg-muted text-[#444746] dark:text-muted-foreground'}`}>{investors.filter(i => (i.status || 'active') !== 'inactive').length}</span>
           </TabsTrigger>
-          <TabsTrigger value="inactive">
-            Inactive <span className={`ml-1.5 text-xs rounded-full px-2 py-0.5 font-semibold ${activeTab === 'inactive' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{investors.filter(i => i.status === 'inactive').length}</span>
+          <TabsTrigger className="h-12 rounded-none border-b-[3px] border-transparent px-4 gap-2 text-sm font-medium text-[#444746] dark:text-muted-foreground data-[state=active]:border-[#0b57d0] data-[state=active]:text-[#0b57d0] dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none data-[state=active]:bg-transparent" value="inactive">
+            Inactive <span className={`text-[11px] rounded-full px-1.5 py-0.5 font-medium ${activeTab === 'inactive' ? 'bg-[#0b57d0] text-white' : 'bg-[#f0f4f9] dark:bg-muted text-[#444746] dark:text-muted-foreground'}`}>{investors.filter(i => i.status === 'inactive').length}</span>
           </TabsTrigger>
-          <TabsTrigger value="all">
-            All <span className={`ml-1.5 text-xs rounded-full px-2 py-0.5 font-semibold ${activeTab === 'all' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{investors.length}</span>
+          <TabsTrigger className="h-12 rounded-none border-b-[3px] border-transparent px-4 gap-2 text-sm font-medium text-[#444746] dark:text-muted-foreground data-[state=active]:border-[#0b57d0] data-[state=active]:text-[#0b57d0] dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none data-[state=active]:bg-transparent" value="all">
+            All <span className={`text-[11px] rounded-full px-1.5 py-0.5 font-medium ${activeTab === 'all' ? 'bg-[#0b57d0] text-white' : 'bg-[#f0f4f9] dark:bg-muted text-[#444746] dark:text-muted-foreground'}`}>{investors.length}</span>
           </TabsTrigger>
         </TabsList>
 
       {/* Table */}
-      <div className={`${TABLE_CARD} mt-4`}>
+      <div className={`${TABLE_CARD} mt-3 overflow-x-auto`}>
         <table className="w-full text-sm">
           <thead>
             <tr className={TABLE_HEAD_ROW}>
-              <th className="text-left p-4 font-medium text-muted-foreground">Name</th>
-              <th className="text-left p-4 font-medium text-muted-foreground">Email</th>
-              <th className="text-left p-4 font-medium text-muted-foreground">Phone</th>
-              <th className="text-left p-4 font-medium text-muted-foreground hidden md:table-cell">Location</th>
-              <th className="text-center p-4 font-medium text-muted-foreground">Pay %</th>
-              <th className="text-center p-4 font-medium text-muted-foreground">Drivers</th>
-              <th className="text-right p-4 font-medium text-muted-foreground">Pending</th>
-              <th className="text-left p-4 font-medium text-muted-foreground">Status</th>
-              <th className="text-right p-4 font-medium text-muted-foreground">Actions</th>
+              <th className="w-8 px-2 py-2.5"></th>
+              <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Name</th>
+              <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Email</th>
+              <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Phone</th>
+              <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground hidden md:table-cell">Location</th>
+              <th className="text-center px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Pay %</th>
+              <th className="text-center px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Drivers</th>
+              <th className="text-right px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Pending</th>
+              <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Status</th>
+              <th className="text-right px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Actions</th>
             </tr>
           </thead>
           <tbody>
             {loading && (
-              <tr><td colSpan={9} className="text-center p-8 text-muted-foreground">Loading...</td></tr>
+              <tr><td colSpan={10} className="text-center p-8 text-muted-foreground">Loading...</td></tr>
             )}
             {!loading && filtered.length === 0 && (
               <tr>
-                <td colSpan={9} className="text-center p-8 text-muted-foreground">
+                <td colSpan={10} className="text-center p-8 text-muted-foreground">
                   {search ? 'No investors match your search.' : 'No investors yet — click "New Investor" to add one.'}
                 </td>
               </tr>
             )}
             {filtered.map(inv => (
-              <tr key={inv.id} className={`${TABLE_ROW} last:border-b-0 border-l-4 ${inv.status === 'inactive' ? 'border-l-red-600' : 'border-l-green-600'}`}>
-                <td className="p-4 font-semibold">
+              <Fragment key={inv.id}>
+              <tr className={`${TABLE_ROW} cursor-pointer border-l-4 ${inv.status === 'inactive' ? 'border-l-[#d93025]' : 'border-l-[#188038]'} ${expandedId === inv.id ? 'bg-[#f0f4f9] dark:bg-muted/50 hover:bg-[#f0f4f9]' : ''}`}
+                onClick={() => setExpandedId(expandedId === inv.id ? null : inv.id)}>
+                <td className="pl-3 pr-1 py-2 text-[#444746]">
+                  {expandedId === inv.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </td>
+                <td className="px-3 py-2 font-medium text-[#1f1f1f] dark:text-foreground whitespace-nowrap">
                   <div className="flex items-center gap-2">
-                    <div className="h-8 w-8 rounded-full bg-[#185FA5]/10 flex items-center justify-center shrink-0">
-                      <Landmark className="h-4 w-4 text-[#185FA5]" />
+                    <div className="h-8 w-8 rounded-full bg-[#d3e3fd] dark:bg-blue-900/40 flex items-center justify-center shrink-0">
+                      <Landmark className="h-4 w-4 text-[#041e49] dark:text-blue-200" />
                     </div>
                     {inv.name}
                     {inv.business_name && (
@@ -454,31 +467,31 @@ const Investors = () => {
                     )}
                   </div>
                 </td>
-                <td className="p-4 text-muted-foreground">
+                <td className="px-3 py-2 text-muted-foreground">
                   {inv.email
-                    ? <a href={`mailto:${inv.email}`} className="flex items-center gap-1 hover:text-primary"><Mail className="h-3.5 w-3.5" />{inv.email}</a>
+                    ? <a href={`mailto:${inv.email}`} className="flex items-center gap-1 hover:text-[#0b57d0] whitespace-nowrap"><Mail className="h-3.5 w-3.5" />{inv.email}</a>
                     : '—'}
                 </td>
-                <td className="p-4 text-muted-foreground">
+                <td className="px-3 py-2 text-muted-foreground">
                   {inv.phone
-                    ? <span className="flex items-center gap-1"><Phone className="h-3.5 w-3.5" />{formatPhone(inv.phone)}</span>
+                    ? <span className="flex items-center gap-1 whitespace-nowrap"><Phone className="h-3.5 w-3.5" />{formatPhone(inv.phone)}</span>
                     : '—'}
                 </td>
-                <td className="p-4 text-muted-foreground text-xs hidden md:table-cell">
+                <td className="px-3 py-2 text-muted-foreground text-xs hidden md:table-cell">
                   {inv.city && inv.state ? `${inv.city}, ${inv.state}` : inv.city || inv.state || '—'}
                 </td>
-                <td className="p-4 text-center">
-                  <span className="inline-flex items-center justify-center rounded-full bg-violet-500/10 text-violet-600 dark:text-violet-400 text-xs font-semibold min-w-[40px] h-6 px-2">
+                <td className="px-3 py-2 text-center">
+                  <span className="inline-flex items-center justify-center rounded-full bg-[#f3e8fd] text-[#4a148c] dark:bg-violet-900/40 dark:text-violet-200 text-xs font-medium min-w-[40px] h-6 px-2">
                     {inv.pay_percentage}%
                   </span>
                 </td>
-                <td className="p-4 text-center">
+                <td className="px-3 py-2 text-center">
                   {driversPerInvestor[inv.id] > 0
                     ? (
                       <TooltipProvider delayDuration={200}>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <span className="inline-flex items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-semibold min-w-[24px] h-6 px-2 cursor-help">{driversPerInvestor[inv.id]}</span>
+                            <span className="inline-flex items-center justify-center rounded-full bg-[#d3e3fd] text-[#041e49] dark:bg-blue-900/40 dark:text-blue-200 text-xs font-medium min-w-[24px] h-6 px-2 cursor-help">{driversPerInvestor[inv.id]}</span>
                           </TooltipTrigger>
                           <TooltipContent>
                             <div className="text-xs">
@@ -492,12 +505,12 @@ const Investors = () => {
                     )
                     : <span className="text-muted-foreground text-xs">—</span>}
                 </td>
-                <td className="p-4 text-right">
+                <td className="px-3 py-2 text-right">
                   {pendingPerInvestor[inv.id] > 0
                     ? <span className="font-semibold text-amber-500">${pendingPerInvestor[inv.id].toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
                     : <span className="text-muted-foreground text-xs">—</span>}
                 </td>
-                <td className="p-4" onClick={e => e.stopPropagation()}>
+                <td className="px-3 py-2" onClick={e => e.stopPropagation()}>
                   <Select value={inv.status || 'active'} onValueChange={v => updateInvestor(inv.id, { status: v })}>
                     <SelectTrigger className="h-8 w-[140px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:hidden bg-transparent">
                       <span className="flex items-center justify-between w-full gap-1">
@@ -515,20 +528,28 @@ const Investors = () => {
                     </SelectContent>
                   </Select>
                 </td>
-                <td className="p-4 text-right">
+                <td className="px-3 py-2 text-right" onClick={e => e.stopPropagation()}>
                   <div className="flex items-center justify-end gap-1">
-                    <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe]" title="Edit"
                       onClick={() => { setEditingInvestor(inv); setFormOpen(true); }}>
-                      <Pencil className="h-3.5 w-3.5" /> Edit
+                      <Pencil className="h-4 w-4" />
                     </Button>
                     <CreateAccessButton name={inv.name} email={inv.email} phone={inv.phone} role="investor" />
-                    <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1 text-red-500 hover:text-red-600 hover:bg-red-50"
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full text-[#b3261e] hover:text-[#b3261e] hover:bg-[#fce8e6]" title="Delete"
                       onClick={() => setDeleteConfirmId(inv.id)}>
-                      <Trash2 className="h-3.5 w-3.5" /> Delete
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 </td>
               </tr>
+              {expandedId === inv.id && (
+                <tr>
+                  <td colSpan={10} className="p-0">
+                    <InvestorDetailPanel investor={inv} links={driverInvestorLinks} drivers={drivers} />
+                  </td>
+                </tr>
+              )}
+              </Fragment>
             ))}
           </tbody>
         </table>
