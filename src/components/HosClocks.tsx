@@ -33,17 +33,17 @@ function Ring({ label, minutes, limit }: { label: string; minutes: number | null
   const r = 26, c = 2 * Math.PI * r;
   return (
     <div className="flex flex-col items-center gap-1">
-      <div className="relative h-14 w-14">
-        <svg viewBox="0 0 56 56" className="h-14 w-14 -rotate-90">
+      <div className="relative h-11 w-11">
+        <svg viewBox="0 0 56 56" className="h-11 w-11 -rotate-90">
           <circle cx="28" cy="28" r={r} fill="none" strokeWidth="2" className="stroke-muted" />
           <circle cx="28" cy="28" r={r} fill="none" strokeWidth="2.5" strokeLinecap="round" className={color}
             strokeDasharray={c} strokeDashoffset={c * (1 - pct)} />
         </svg>
-        <span className="absolute inset-0 flex items-center justify-center text-[13px] font-medium tabular-nums">
+        <span className="absolute inset-0 flex items-center justify-center text-[11px] font-medium tabular-nums">
           {minutes == null ? '—' : hhmm(left)}
         </span>
       </div>
-      <span className="text-[10px] font-semibold leading-none">{label}</span>
+      <span className="text-[9px] font-medium leading-none text-[#444746] dark:text-muted-foreground">{label}</span>
     </div>
   );
 }
@@ -57,9 +57,9 @@ const ago = (iso: string) => {
 export function HosClocks({ row, className }: { row: HosClockRow; className?: string }) {
   const duty = row.duty_status ? DUTY[row.duty_status] : null;
   return (
-    <div className={cn('rounded-lg border bg-white dark:bg-card px-2.5 py-2', className)}>
-      <div className="flex items-center justify-between gap-2 mb-1.5">
-        <span className="text-xs font-semibold">Hours of service</span>
+    <div className={cn('rounded-2xl border border-[#e3e3e3] dark:border-border bg-white dark:bg-card px-2.5 py-1.5', className)}>
+      <div className="flex items-center justify-between gap-2 mb-1">
+        <span className="text-[11px] font-medium text-[#1f1f1f] dark:text-foreground">Hours of service</span>
         <div className="flex items-center gap-1.5">
           {duty && <span className={cn('rounded px-1.5 py-0.5 text-[10px] font-semibold', duty.cls)}>{duty.label}</span>}
           <span className="text-[9px] text-muted-foreground" title={`${row.source}${row.computed ? ' · calculado con los eventos del ELD' : ''}`}>

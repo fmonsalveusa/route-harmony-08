@@ -1175,7 +1175,7 @@ const Tracking = () => {
               </Select>
             )}
           </CardHeader>
-          <CardContent className="flex-1 overflow-y-auto px-3 pb-3 space-y-2">
+          <CardContent className="flex-1 overflow-y-auto px-3 pb-3 space-y-1.5">
             {availableDrivers.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
                 <User className="h-8 w-8 mb-2 opacity-40" />
@@ -1203,22 +1203,18 @@ const Tracking = () => {
                     key={driver.id}
                     className={`flex overflow-hidden rounded-2xl border transition-shadow cursor-pointer hover:shadow-[0_1px_3px_rgba(60,64,67,.3),0_4px_8px_3px_rgba(60,64,67,.15)] ${
                       // Fondo según la carga: verde si está cargado, naranja si está vacío
-                      activeLoad ? 'bg-[#e6f4ea] border-[#ceead6] dark:bg-emerald-950/30 dark:border-emerald-900/50' : 'bg-[#fef1e7] border-[#fad2b4] dark:bg-orange-950/30 dark:border-orange-900/50'
+                      activeLoad ? 'bg-white border-[#ceead6] dark:bg-card dark:border-emerald-900/50' : 'bg-white border-[#fad2b4] dark:bg-card dark:border-orange-900/50'
                     } ${isPaused ? 'opacity-60' : ''}`}
                     onClick={() => setSelectedDriverLoad({ driver, load: activeLoad || null, lastDelivered: lastDel ? { address: lastDel.address, date: lastDel.date } : undefined })}
                   >
                     {/* Franja vertical izquierda: LOADED / EMPTY, letra por letra */}
-                    <div className={`flex w-7 shrink-0 items-center justify-center ${activeLoad ? 'bg-[#188038]' : 'bg-[#e37400]'}`}>
-                      <span className="flex flex-col items-center text-[12px] font-medium leading-[1.15] text-white">
-                        {(activeLoad ? 'LOADED' : 'EMPTY').split('').map((letter, i) => (
-                          <span key={i}>{letter}</span>
-                        ))}
-                      </span>
-                    </div>
+                    {/* Franja fina de color: verde cargado, naranja vacío */}
+                    <div className={`w-1.5 shrink-0 ${activeLoad ? 'bg-[#188038]' : 'bg-[#e37400]'}`} />
                     <div className="flex-1 min-w-0">
                     {/* Línea 1: nombre, teléfono, carga y tipo de servicio */}
-                    <div className="flex items-center gap-1.5 px-3 pt-2.5">
-                      <p className="text-sm font-semibold truncate">{driver.name}</p>
+                    <div className="flex items-center gap-1.5 px-3 pt-2">
+                      <span className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-medium ${activeLoad ? 'bg-[#c4eed0] text-[#072711] dark:bg-emerald-900/40 dark:text-emerald-200' : 'bg-[#ffdcc1] text-[#2f1500] dark:bg-orange-900/40 dark:text-orange-200'}`}>{activeLoad ? 'LOADED' : 'EMPTY'}</span>
+                      <p className="text-sm font-medium text-[#1f1f1f] dark:text-foreground truncate">{driver.name}</p>
                       <button
                         onClick={(e) => copyField(driver.id, 'name', driver.name, e)}
                         className="shrink-0 p-0.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
@@ -1245,7 +1241,7 @@ const Tracking = () => {
                     </div>
 
                     {/* Línea 2: unidad y VIN */}
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 px-3 pt-1 text-[11px] text-muted-foreground">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 px-3 pt-0.5 text-[11px] text-[#444746] dark:text-muted-foreground">
                       {truck?.unit_number && (
                         <span className="flex items-center gap-1">
                           <Package className="h-3 w-3" /> {truck.unit_number}
@@ -1267,7 +1263,7 @@ const Tracking = () => {
 
                     {/* Línea 3: GPS — hace cuánto reportó y a qué velocidad */}
                     {(loc && locAge != null && locAge <= MAX_LOCATION_AGE_MS) || (driver as any).gps_background_granted === false ? (
-                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 px-3 pt-1 text-[11px]">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 px-3 pt-0.5 text-[11px]">
                         {loc && locAge != null && locAge <= MAX_LOCATION_AGE_MS && (
                           <span className={`flex items-center gap-1 ${locLive ? 'text-blue-700' : 'text-muted-foreground'}`}>
                             <span className={`h-2 w-2 rounded-full ${locLive ? 'bg-blue-600 animate-pulse' : 'bg-gray-400'}`} />
@@ -1288,7 +1284,7 @@ const Tracking = () => {
 
                     {/* Ubicación manual */}
                     {(driver as any).manual_location_address && (
-                      <div className="mx-3 mt-2 rounded-lg bg-amber-50 px-2.5 py-1.5">
+                      <div className="mx-3 mt-1.5 rounded-xl bg-[#fef7e0] dark:bg-amber-950/30 px-2.5 py-1">
                         <p className="text-[10px] font-medium text-amber-800 flex items-center gap-1">
                           <MapPin className="h-3 w-3" /> Manual Location
                         </p>
@@ -1297,7 +1293,7 @@ const Tracking = () => {
                     )}
 
                     {/* Próxima parada o última entrega + relojes HOS a la derecha */}
-                    <div className="flex items-start gap-2 px-3 pt-2">
+                    <div className="flex items-center gap-2 px-3 pt-1.5">
                     <div className="min-w-0 flex-1 text-xs text-muted-foreground">
                       {displayInfo ? (
                         <>
@@ -1306,7 +1302,7 @@ const Tracking = () => {
                           </p>
                           <div className="flex items-center gap-1 mt-0.5">
                             <MapPin className={`h-3.5 w-3.5 shrink-0 ${displayInfo.isActive ? 'text-primary' : 'text-destructive'}`} />
-                            <span className="text-base font-semibold leading-tight text-foreground">
+                            <span className="text-[15px] font-medium leading-tight text-[#1f1f1f] dark:text-foreground">
                               {extractCityState(displayInfo.address)}
                             </span>
                             <button
@@ -1324,10 +1320,10 @@ const Tracking = () => {
                             {displayInfo.isActive && (() => {
                               const delivery = (activeLoad?.delivery_date || '').slice(0, 10);
                               if (delivery === todayET) {
-                                return <span className="shrink-0 rounded-md bg-red-600 px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-white" title="Entrega hoy">TODAY</span>;
+                                return <span className="shrink-0 rounded-md bg-[#f9dedc] text-[#410e0b] px-1.5 py-0.5 text-[10px] font-medium" title="Entrega hoy">TODAY</span>;
                               }
                               if (delivery === tomorrowET) {
-                                return <span className="shrink-0 rounded-md bg-blue-600 px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-white" title="Entrega mañana">TOMORROW</span>;
+                                return <span className="shrink-0 rounded-md bg-[#d3e3fd] text-[#041e49] px-1.5 py-0.5 text-[10px] font-medium" title="Entrega mañana">TOMORROW</span>;
                               }
                               return null;
                             })()}
@@ -1342,11 +1338,11 @@ const Tracking = () => {
                         )
                       )}
                     </div>
-                    {hosClocks[driver.id] && <HosClocks row={hosClocks[driver.id]} className="shrink-0 w-[330px] max-w-[60%]" />}
+                    {hosClocks[driver.id] && <HosClocks row={hosClocks[driver.id]} className="shrink-0 w-[270px] max-w-[60%]" />}
                     </div>
 
                     {/* Acciones */}
-                    <div className="flex items-center gap-1 border-t mt-2.5 px-3 py-2">
+                    <div className="flex items-center gap-1 mt-1.5 px-3 pb-2">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -1354,7 +1350,7 @@ const Tracking = () => {
                           setCopiedInfoId(driver.id);
                           setTimeout(() => setCopiedInfoId(null), 1500);
                         }}
-                        className="shrink-0 px-2 py-1 rounded-md text-xs font-semibold bg-muted hover:bg-muted/70 text-green-600 transition-colors whitespace-nowrap flex items-center gap-1"
+                        className="shrink-0 h-7 px-2.5 rounded-full text-xs font-medium bg-[#f0f4f9] hover:bg-[#e3e8ef] dark:bg-muted text-[#188038] transition-colors whitespace-nowrap flex items-center gap-1"
                         title="Copy Driver Info"
                       >
                         {copiedInfoId === driver.id ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
@@ -1366,7 +1362,7 @@ const Tracking = () => {
                           setEditLocationDriver(driver.id);
                           setLocationInput((driver as any).manual_location_address || '');
                         }}
-                        className="shrink-0 px-2 py-1 rounded-md text-xs font-semibold bg-muted hover:bg-muted/70 text-blue-600 transition-colors whitespace-nowrap flex items-center gap-1"
+                        className="shrink-0 h-7 px-2.5 rounded-full text-xs font-medium bg-[#f0f4f9] hover:bg-[#e3e8ef] dark:bg-muted text-[#0b57d0] transition-colors whitespace-nowrap flex items-center gap-1"
                         title="New Location"
                       >
                         <Pencil className="h-3 w-3" />
@@ -1374,10 +1370,10 @@ const Tracking = () => {
                       </button>
                       <button
                         onClick={(e) => togglePauseDriver(driver.id, e)}
-                        className={`shrink-0 p-1.5 rounded-md transition-colors ${
+                        className={`shrink-0 h-7 w-7 flex items-center justify-center rounded-full transition-colors ${
                           isPaused
                             ? 'bg-emerald-500 text-white hover:bg-emerald-600'
-                            : 'bg-muted text-muted-foreground hover:bg-muted/70 hover:text-foreground'
+                            : 'bg-[#f0f4f9] text-[#444746] hover:bg-[#e3e8ef] dark:bg-muted'
                         }`}
                         title={isPaused ? 'Reanudar driver' : 'Pausar driver (vacaciones/inactivo temporal)'}
                       >
@@ -1385,18 +1381,18 @@ const Tracking = () => {
                       </button>
                       <div className="flex-1" />
                       {isPaused ? (
-                        <span className="shrink-0 px-2 py-1 rounded-md text-[10px] font-bold bg-slate-600 text-white whitespace-nowrap flex items-center gap-1">
+                        <span className="shrink-0 h-7 px-3 rounded-full text-[11px] font-medium bg-[#e3e3e3] text-[#1f1f1f] whitespace-nowrap flex items-center gap-1">
                           <Pause className="h-3 w-3" /> PAUSADO
                         </span>
                       ) : (
                         <button
                           onClick={(e) => cycleSearchStatus(driver.id, e)}
-                          className={`shrink-0 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase transition-colors whitespace-nowrap flex items-center gap-1 ${
+                          className={`shrink-0 h-7 px-3 rounded-full text-[11px] font-medium transition-colors whitespace-nowrap flex items-center gap-1 ${
                             sStatus === 'ready'
-                              ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                              ? 'bg-[#c4eed0] text-[#072711] hover:bg-[#b4e4c2]'
                               : sStatus === 'searching'
-                              ? 'bg-orange-500 text-white hover:bg-orange-600'
-                              : 'bg-muted text-muted-foreground hover:bg-muted/70'
+                              ? 'bg-[#ffdcc1] text-[#2f1500] hover:bg-[#fccfae]'
+                              : 'bg-[#f0f4f9] text-[#444746] hover:bg-[#e3e8ef] dark:bg-muted'
                           }`}
                           title={sStatus === 'ready' ? 'Listo — click para quitar' : sStatus === 'searching' ? 'Buscando — click para marcar Listo' : 'Standby — click para marcar Buscando'}
                         >
