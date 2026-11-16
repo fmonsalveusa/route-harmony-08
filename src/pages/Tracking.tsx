@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { getTenantId } from '@/hooks/useTenantId';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -591,7 +592,7 @@ const Tracking = () => {
 
     // Get last delivered load per driver.
     // Desempate: cuando dos cargas comparten delivery_date (ej. dos entregas el mismo d├¡a),
-    // gana la de created_at m├ís reciente ΓÇö la registrada despu├⌐s es la ├║ltima real.
+    // gana la de created_at m├ís reciente — la registrada despu├⌐s es la ├║ltima real.
     // TONU cuenta como "última carga": el camión se quedó en el pickup
     supabase
       .from('loads')
@@ -836,7 +837,7 @@ const Tracking = () => {
   const searchingCount = Object.values(searchStatus).filter(s => s === 'searching').length;
   const readyCount = Object.values(searchStatus).filter(s => s === 'ready').length;
 
-  // Filter loads ΓÇö respeta el scope de rol y el filtro de dispatcher del dropdown
+  // Filter loads — respeta el scope de rol y el filtro de dispatcher del dropdown
   const filteredLoads = useMemo(() => {
     return enrichedLoads.filter(l => {
       // Scope por dispatcher (rol o dropdown): solo cargas de esos drivers
@@ -855,7 +856,7 @@ const Tracking = () => {
 
   const selectedLoad = enrichedLoads.find(l => l.id === selectedLoadId);
 
-  // Stats ΓÇö filtered by dispatcher scope (rol o dropdown)
+  // Stats — filtered by dispatcher scope (rol o dropdown)
   const scopedActiveLoads = scopedDriverIds
     ? activeLoads.filter(l => l.driver_id && scopedDriverIds.has(l.driver_id))
     : activeLoads;
@@ -924,7 +925,7 @@ const Tracking = () => {
 
     return (
       <Dialog open={!!selectedDriverLoad} onOpenChange={() => setSelectedDriverLoad(null)}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg rounded-[28px] border-0">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <User className="h-4 w-4" />
@@ -945,11 +946,11 @@ const Tracking = () => {
                 </div>
                 <div className="text-center">
                   <p className="text-xs text-muted-foreground">Broker</p>
-                  <p className="text-sm font-semibold truncate">{load.broker_client || 'ΓÇö'}</p>
+                  <p className="text-sm font-semibold truncate">{load.broker_client || '—'}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-xs text-muted-foreground">Truck</p>
-                  <p className="text-sm font-semibold">{truck ? `Unit #${truck.unit_number}` : 'ΓÇö'}</p>
+                  <p className="text-sm font-semibold">{truck ? `Unit #${truck.unit_number}` : '—'}</p>
                 </div>
               </div>
 
@@ -957,23 +958,23 @@ const Tracking = () => {
               <div className="grid grid-cols-5 gap-2">
                 <div className="bg-muted/40 rounded-lg p-3 text-center">
                   <p className="text-xs text-muted-foreground">Rate</p>
-                  <p className="text-base font-bold text-[hsl(152,60%,35%)]">{load.total_rate ? `$${Number(load.total_rate).toLocaleString()}` : 'ΓÇö'}</p>
+                  <p className="text-base font-bold text-[hsl(152,60%,35%)]">{load.total_rate ? `$${Number(load.total_rate).toLocaleString()}` : '—'}</p>
                 </div>
                 <div className="bg-muted/40 rounded-lg p-3 text-center">
                   <p className="text-xs text-muted-foreground">Weight</p>
-                  <p className="text-base font-bold">{load.weight ? `${Number(load.weight).toLocaleString()} lbs` : 'ΓÇö'}</p>
+                  <p className="text-base font-bold">{load.weight ? `${Number(load.weight).toLocaleString()} lbs` : '—'}</p>
                 </div>
                 <div className="bg-muted/40 rounded-lg p-3 text-center">
                   <p className="text-xs text-muted-foreground">Empty Miles</p>
-                  <p className="text-base font-bold">{load.empty_miles ? Number(load.empty_miles).toLocaleString() : 'ΓÇö'}</p>
+                  <p className="text-base font-bold">{load.empty_miles ? Number(load.empty_miles).toLocaleString() : '—'}</p>
                 </div>
                 <div className="bg-muted/40 rounded-lg p-3 text-center">
                   <p className="text-xs text-muted-foreground">Miles</p>
-                  <p className="text-base font-bold">{load.miles ? Number(load.miles).toLocaleString() : 'ΓÇö'}</p>
+                  <p className="text-base font-bold">{load.miles ? Number(load.miles).toLocaleString() : '—'}</p>
                 </div>
                 <div className="bg-muted/40 rounded-lg p-3 text-center">
                   <p className="text-xs text-muted-foreground">RPM</p>
-                  <p className={`text-base font-bold ${rpmColor}`}>{rpm ? `$${rpm}` : 'ΓÇö'}</p>
+                  <p className={`text-base font-bold ${rpmColor}`}>{rpm ? `$${rpm}` : '—'}</p>
                 </div>
               </div>
 
@@ -1058,10 +1059,10 @@ const Tracking = () => {
   // Resumen de arriba: sale de los mismos drivers que muestra Next Plan
   const activeDrivers = availableDrivers.filter(d => !(d as any).is_paused);
   const summaryTiles = [
-    { label: 'Drivers', value: availableDrivers.length, icon: Users, tint: 'bg-sky-100 text-sky-700' },
-    { label: 'Loaded', value: activeDrivers.filter(d => activeLoadByDriver[d.id]).length, icon: Package, tint: 'bg-emerald-100 text-emerald-700' },
-    { label: 'Empty', value: activeDrivers.filter(d => !activeLoadByDriver[d.id]).length, icon: User, tint: 'bg-orange-100 text-orange-700' },
-    { label: 'Buscando', value: activeDrivers.filter(d => searchStatus[d.id] === 'searching').length, icon: Search, tint: 'bg-amber-100 text-amber-700' },
+    { label: 'Drivers', value: availableDrivers.length, icon: Users, tint: 'bg-[#d3e3fd] text-[#041e49] dark:bg-blue-900/40 dark:text-blue-200' },
+    { label: 'Loaded', value: activeDrivers.filter(d => activeLoadByDriver[d.id]).length, icon: Package, tint: 'bg-[#c4eed0] text-[#072711] dark:bg-emerald-900/40 dark:text-emerald-200' },
+    { label: 'Empty', value: activeDrivers.filter(d => !activeLoadByDriver[d.id]).length, icon: User, tint: 'bg-[#ffdcc1] text-[#2f1500] dark:bg-orange-900/40 dark:text-orange-200' },
+    { label: 'Buscando', value: activeDrivers.filter(d => searchStatus[d.id] === 'searching').length, icon: Search, tint: 'bg-[#feefc3] text-[#3d2a00] dark:bg-amber-900/40 dark:text-amber-200' },
     {
       label: 'GPS en vivo',
       value: availableDrivers.filter(d => {
@@ -1069,45 +1070,53 @@ const Tracking = () => {
         return l && nowTick - new Date(l.updated_at).getTime() <= LIVE_LOCATION_MS;
       }).length,
       icon: Navigation,
-      tint: 'bg-blue-100 text-blue-700',
+      tint: 'bg-[#c2e7ff] text-[#001d35] dark:bg-sky-900/40 dark:text-sky-200',
     },
   ];
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="page-header">Live Tracking</h1>
-        <p className="page-description">Real-time fleet monitoring and load tracking</p>
+    <div className="space-y-3">
+      {/* Encabezado estilo Google */}
+      <div className="flex items-center gap-3">
+        <span className="h-10 w-10 rounded-full bg-[#d3e3fd] dark:bg-blue-900/40 text-[#041e49] dark:text-blue-200 flex items-center justify-center shrink-0">
+          <Navigation className="h-5 w-5" />
+        </span>
+        <div>
+          <h1 className="text-[24px] leading-8 font-normal text-[#1f1f1f] dark:text-foreground">Live Tracking</h1>
+          <p className="text-sm text-[#444746] dark:text-muted-foreground">Real-time fleet monitoring and load tracking</p>
+        </div>
       </div>
 
       {/* Resumen */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
         {summaryTiles.map(t => (
-          <div key={t.label} className="flex items-center gap-3 rounded-xl border bg-card px-4 py-3 shadow-sm">
-            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${t.tint}`}>
-              <t.icon className="h-5 w-5" />
+          <div key={t.label} className="flex items-center gap-3 rounded-2xl border border-[#e3e3e3] dark:border-border bg-white dark:bg-card px-4 py-2.5">
+            <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${t.tint}`}>
+              <t.icon className="h-[18px] w-[18px]" />
             </div>
             <div className="min-w-0">
-              <p className="text-xs text-muted-foreground truncate">{t.label}</p>
-              <p className="text-xl font-semibold leading-tight">{t.value}</p>
+              <p className="text-[22px] leading-7 font-normal text-[#1f1f1f] dark:text-foreground">{t.value}</p>
+              <p className="text-xs font-medium text-[#444746] dark:text-muted-foreground truncate">{t.label}</p>
             </div>
           </div>
         ))}
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[200px] max-w-sm">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search loads..."
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#444746] dark:text-muted-foreground" />
+          <input
+            placeholder="Buscar cargas..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="pl-10 h-10 rounded-full bg-card shadow-sm"
+            className="w-full h-10 rounded-full bg-white dark:bg-card border border-[#e3e3e3] dark:border-border pl-10 pr-4 text-sm text-[#1f1f1f] dark:text-foreground placeholder:text-[#444746] outline-none focus:shadow-[0_1px_1px_rgba(65,69,73,.3),0_1px_3px_1px_rgba(65,69,73,.15)] transition"
           />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[180px] h-10 rounded-full bg-card shadow-sm">
+          <SelectTrigger className={cn('w-[170px] h-8 text-xs rounded-lg shadow-none font-medium', statusFilter !== 'all'
+            ? 'bg-[#c2e7ff] border-[#c2e7ff] text-[#001d35] dark:bg-blue-900/50 dark:border-blue-900/50 dark:text-blue-100'
+            : 'bg-white dark:bg-card border-[#c4c7c5] dark:border-border text-[#444746] dark:text-muted-foreground')}>
             <SelectValue placeholder="All Statuses" />
           </SelectTrigger>
           <SelectContent>
@@ -1122,18 +1131,18 @@ const Tracking = () => {
       </div>
 
       {/* Main layout: Map + Side Panel */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-3">
         {/* Side Panel - Next Plan */}
         {/* Mismo formato que la tarjeta Drivers Load Timeline: fondo blanco, borde y título text-base */}
-        <Card className="flex flex-col overflow-hidden h-[1040px] lg:col-span-2 lg:row-span-2 lg:col-start-1">
-          <CardHeader className="pb-2 px-3 pt-4">
+        <Card className="flex flex-col overflow-hidden h-[1040px] lg:col-span-2 lg:row-span-2 lg:col-start-1 rounded-3xl border-[#e3e3e3] dark:border-border shadow-none bg-white dark:bg-card">
+          <CardHeader className="pb-2 px-4 pt-3.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Users className="h-4 w-4" />
+                <CardTitle className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground flex items-center gap-2">
+                  <Users className="h-4 w-4 text-[#0b57d0] dark:text-blue-300" />
                   NEXT PLAN ({availableDrivers.length})
                 </CardTitle>
-                <button type="button" onClick={copyTodayDate} title="Copy today's date" className="flex items-center gap-1 rounded-md border bg-card px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground hover:bg-accent transition-colors shrink-0">
+                <button type="button" onClick={copyTodayDate} title="Copy today's date" className="flex items-center gap-1 rounded-full bg-[#f0f4f9] dark:bg-muted px-2 py-0.5 text-[11px] font-medium text-[#444746] dark:text-muted-foreground hover:bg-[#e3e8ef] transition-colors shrink-0">
                   {todayEastern}
                   {copiedDate ? <Check className="h-3 w-3 text-[#5ee14c]" /> : <Copy className="h-3 w-3" />}
                 </button>
@@ -1142,7 +1151,7 @@ const Tracking = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-7 text-xs gap-1"
+                  className="h-8 rounded-full px-3 text-xs gap-1 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium"
                   onClick={handleExportNextPlan}
                 >
                   <Download className="h-3 w-3" />
@@ -1152,7 +1161,9 @@ const Tracking = () => {
             </div>
             {!isDispatcher && (
               <Select value={dispatcherFilter} onValueChange={setDispatcherFilter}>
-                <SelectTrigger className="w-full h-8 text-xs mt-2">
+                <SelectTrigger className={cn('w-full h-8 text-xs mt-2 rounded-lg shadow-none font-medium', dispatcherFilter !== 'all'
+                  ? 'bg-[#c2e7ff] border-[#c2e7ff] text-[#001d35] dark:bg-blue-900/50 dark:border-blue-900/50 dark:text-blue-100'
+                  : 'border-[#c4c7c5] dark:border-border text-[#444746] dark:text-muted-foreground')}>
                   <SelectValue placeholder="All Dispatchers" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1164,7 +1175,7 @@ const Tracking = () => {
               </Select>
             )}
           </CardHeader>
-          <CardContent className="flex-1 overflow-y-auto px-3 pb-3 space-y-2.5">
+          <CardContent className="flex-1 overflow-y-auto px-3 pb-3 space-y-2">
             {availableDrivers.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
                 <User className="h-8 w-8 mb-2 opacity-40" />
@@ -1190,15 +1201,15 @@ const Tracking = () => {
                 return (
                   <div
                     key={driver.id}
-                    className={`flex overflow-hidden rounded-xl border shadow-sm transition-all cursor-pointer hover:shadow-md ${
+                    className={`flex overflow-hidden rounded-2xl border transition-shadow cursor-pointer hover:shadow-[0_1px_3px_rgba(60,64,67,.3),0_4px_8px_3px_rgba(60,64,67,.15)] ${
                       // Fondo según la carga: verde si está cargado, naranja si está vacío
-                      activeLoad ? 'bg-emerald-50 border-emerald-200' : 'bg-orange-50 border-orange-200'
+                      activeLoad ? 'bg-[#e6f4ea] border-[#ceead6] dark:bg-emerald-950/30 dark:border-emerald-900/50' : 'bg-[#fef1e7] border-[#fad2b4] dark:bg-orange-950/30 dark:border-orange-900/50'
                     } ${isPaused ? 'opacity-60' : ''}`}
                     onClick={() => setSelectedDriverLoad({ driver, load: activeLoad || null, lastDelivered: lastDel ? { address: lastDel.address, date: lastDel.date } : undefined })}
                   >
                     {/* Franja vertical izquierda: LOADED / EMPTY, letra por letra */}
-                    <div className={`flex w-8 shrink-0 items-center justify-center ${activeLoad ? 'bg-emerald-600' : 'bg-orange-500'}`}>
-                      <span className="flex flex-col items-center text-[13px] font-bold leading-[1.15] text-white">
+                    <div className={`flex w-7 shrink-0 items-center justify-center ${activeLoad ? 'bg-[#188038]' : 'bg-[#e37400]'}`}>
+                      <span className="flex flex-col items-center text-[12px] font-medium leading-[1.15] text-white">
                         {(activeLoad ? 'LOADED' : 'EMPTY').split('').map((letter, i) => (
                           <span key={i}>{letter}</span>
                         ))}
@@ -1404,11 +1415,11 @@ const Tracking = () => {
         </Card>
 
         {/* Map */}
-        <Card className="lg:col-span-3 lg:col-start-3 overflow-hidden self-start rounded-xl shadow-sm">
+        <Card className="lg:col-span-3 lg:col-start-3 overflow-hidden self-start rounded-3xl border-[#e3e3e3] dark:border-border shadow-none">
           {/* isolate: la leyenda y las capas del mapa (z-index altos) quedan dentro del mapa y no por encima de las ventanas */}
           <div className="relative isolate h-[600px]">
             {/* Leyenda del mapa */}
-            <div className="absolute bottom-3 left-3 z-[1000] flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg bg-white/95 px-3 py-1.5 text-[11px] text-gray-700 shadow-md">
+            <div className="absolute bottom-3 left-3 z-[1000] flex flex-wrap items-center gap-x-3 gap-y-1 rounded-full bg-white/95 px-4 py-1.5 text-[11px] font-medium text-[#444746] shadow-[0_1px_2px_rgba(60,64,67,.3),0_1px_3px_1px_rgba(60,64,67,.15)]">
               <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-[#266aad]" /> GPS en vivo</span>
               <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-gray-400" /> Sin actualizar</span>
               <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-[hsl(38,92%,50%)]" /> Manual</span>
@@ -1454,12 +1465,12 @@ const Tracking = () => {
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 12px', fontSize: 12 }}>
                               <div>
                                 <span style={{ color: '#888' }}>Driver</span>
-                                <p style={{ fontWeight: 600, margin: 0 }}>{driver?.name || 'ΓÇö'}</p>
+                                <p style={{ fontWeight: 600, margin: 0 }}>{driver?.name || '—'}</p>
                               </div>
                               <div>
                                 <span style={{ color: '#888' }}>Truck</span>
                                 <p style={{ fontWeight: 600, margin: 0 }}>
-                                  {load.truck_id ? `#${trucks.find(t => t.id === load.truck_id)?.unit_number || 'ΓÇö'}` : 'ΓÇö'}
+                                  {load.truck_id ? `#${trucks.find(t => t.id === load.truck_id)?.unit_number || '—'}` : '—'}
                                 </p>
                               </div>
                               <div>
@@ -1482,14 +1493,14 @@ const Tracking = () => {
                                 <span style={{ color: '#16a34a', fontWeight: 700 }}>P</span>
                                 <div>
                                   <p style={{ fontWeight: 600, margin: 0 }}>{formatCityState(load.origin)}</p>
-                                  <p style={{ color: '#888', margin: 0 }}>{load.pickup_date || 'ΓÇö'}</p>
+                                  <p style={{ color: '#888', margin: 0 }}>{load.pickup_date || '—'}</p>
                                 </div>
                               </div>
                               <div style={{ display: 'flex', gap: 6 }}>
                                 <span style={{ color: '#dc2626', fontWeight: 700 }}>D</span>
                                 <div>
                                   <p style={{ fontWeight: 600, margin: 0 }}>{formatCityState(load.destination)}</p>
-                                  <p style={{ color: '#888', margin: 0 }}>{load.delivery_date || 'ΓÇö'}</p>
+                                  <p style={{ color: '#888', margin: 0 }}>{load.delivery_date || '—'}</p>
                                 </div>
                               </div>
                             </div>
@@ -1542,7 +1553,7 @@ const Tracking = () => {
                   </div>
                 );
               })}
-              {/* Driver live location markers ΓÇö filtered by dispatcher scope (rol o dropdown) */}
+              {/* Driver live location markers — filtered by dispatcher scope (rol o dropdown) */}
               {driverLocations
                 .filter(loc => !scopedDriverIds || scopedDriverIds.has(loc.driver_id))
                 .map(loc => {
@@ -1597,7 +1608,7 @@ const Tracking = () => {
           </div>
         </Card>
 
-        {/* Drivers Load Timeline ΓÇö debajo del mapa, misma columna */}
+        {/* Drivers Load Timeline — debajo del mapa, misma columna */}
         <div className="lg:col-span-3 lg:col-start-3">
           <DriversTimelineCard
             loads={scopedAllLoads}
@@ -1609,12 +1620,12 @@ const Tracking = () => {
 
       {/* Selected Load Detail */}
       {selectedLoad && (
-        <Card className="animate-fade-in">
+        <Card className="animate-fade-in rounded-3xl border-[#e3e3e3] dark:border-border shadow-none">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Eye className="h-4 w-4" />
-                Load Details ΓÇö {selectedLoad.reference_number}
+              <CardTitle className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground flex items-center gap-2">
+                <Eye className="h-4 w-4 text-[#0b57d0] dark:text-blue-300" />
+                Load Details — {selectedLoad.reference_number}
               </CardTitle>
               <StatusBadge status={selectedLoad.status} />
             </div>
@@ -1623,15 +1634,15 @@ const Tracking = () => {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
               <div>
                 <p className="text-muted-foreground text-xs">Broker/Client</p>
-                <p className="font-medium">{selectedLoad.broker_client || 'ΓÇö'}</p>
+                <p className="font-medium">{selectedLoad.broker_client || '—'}</p>
               </div>
               <div>
                 <p className="text-muted-foreground text-xs">Driver</p>
-                <p className="font-medium">{drivers.find(d => d.id === selectedLoad.driver_id)?.name || 'ΓÇö'}</p>
+                <p className="font-medium">{drivers.find(d => d.id === selectedLoad.driver_id)?.name || '—'}</p>
               </div>
               <div>
                 <p className="text-muted-foreground text-xs">Truck</p>
-                <p className="font-medium">{trucks.find(t => t.id === selectedLoad.truck_id)?.unit_number || 'ΓÇö'}</p>
+                <p className="font-medium">{trucks.find(t => t.id === selectedLoad.truck_id)?.unit_number || '—'}</p>
               </div>
               <div>
                 <p className="text-muted-foreground text-xs">Total Rate</p>
@@ -1639,19 +1650,19 @@ const Tracking = () => {
               </div>
               <div>
                 <p className="text-muted-foreground text-xs">Pickup Date</p>
-                <p className="font-medium">{selectedLoad.pickup_date ? format(parseISO(selectedLoad.pickup_date), 'MMM dd, yyyy') : 'ΓÇö'}</p>
+                <p className="font-medium">{selectedLoad.pickup_date ? format(parseISO(selectedLoad.pickup_date), 'MMM dd, yyyy') : '—'}</p>
               </div>
               <div>
                 <p className="text-muted-foreground text-xs">Delivery Date</p>
-                <p className="font-medium">{selectedLoad.delivery_date ? format(parseISO(selectedLoad.delivery_date), 'MMM dd, yyyy') : 'ΓÇö'}</p>
+                <p className="font-medium">{selectedLoad.delivery_date ? format(parseISO(selectedLoad.delivery_date), 'MMM dd, yyyy') : '—'}</p>
               </div>
               <div>
                 <p className="text-muted-foreground text-xs">Miles</p>
-                <p className="font-medium">{selectedLoad.miles > 0 ? `${selectedLoad.miles} mi` : 'ΓÇö'}</p>
+                <p className="font-medium">{selectedLoad.miles > 0 ? `${selectedLoad.miles} mi` : '—'}</p>
               </div>
               <div>
                 <p className="text-muted-foreground text-xs">Cargo Type</p>
-                <p className="font-medium">{selectedLoad.cargo_type || 'ΓÇö'}</p>
+                <p className="font-medium">{selectedLoad.cargo_type || '—'}</p>
               </div>
             </div>
 

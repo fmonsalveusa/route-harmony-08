@@ -200,7 +200,7 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [] }: Props) => {
 
   if (driverEntries.length === 0) {
     return (
-      <Card>
+      <Card className="rounded-3xl border-[#e3e3e3] dark:border-border shadow-none">
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <Users className="h-4 w-4" /> Drivers Load Timeline
@@ -238,7 +238,7 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [] }: Props) => {
   };
 
   return (
-    <Card ref={cardRef} className="relative">
+    <Card ref={cardRef} className="relative rounded-3xl border-[#e3e3e3] dark:border-border shadow-none">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base flex items-center gap-2">
