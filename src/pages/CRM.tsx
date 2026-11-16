@@ -40,7 +40,7 @@ interface CrmContact {
   has_medical_card: boolean;
   has_active_mc: boolean;
   has_eld: boolean;
-  meeting: { checks?: Record<string, boolean>; sent?: Record<string, string>; answers?: Record<string, MeetingAnswer> } | null;
+  meeting: { checks?: Record<string, boolean>; sent?: Record<string, string>; answers?: Record<string, MeetingAnswer>; first_at?: string | null } | null;
   whatsapp_group_id: string | null;
   whatsapp_group_name: string | null;
   referred_by: string | null;
@@ -110,11 +110,12 @@ const invokeGroups = async (body: Record<string, unknown>) => {
   return data;
 };
 
-function MeetingSection({ contact, name, vehicle }: { contact: CrmContact; name: string; vehicle: string }) {
+function MeetingSection({ contact, name, vehicle, scheduledAt }: { contact: CrmContact; name: string; vehicle: string; /** reunión agendada, en hora local (datetime-local) */ scheduledAt?: string }) {
   const qc = useQueryClient();
   const [checks, setChecks] = useState<Record<string, boolean>>(contact.meeting?.checks ?? {});
   const [sent, setSent] = useState<Record<string, string>>(contact.meeting?.sent ?? {});
   const [answers, setAnswers] = useState<Record<string, MeetingAnswer>>(contact.meeting?.answers ?? {});
+  const [firstAt, setFirstAt] = useState(toLocalInput(contact.meeting?.first_at ?? null));
   const [group, setGroup] = useState({ id: contact.whatsapp_group_id, name: contact.whatsapp_group_name });
   const [busy, setBusy] = useState<string | null>(null);
   const [referredBy, setReferredBy] = useState(contact.referred_by ?? '');
@@ -126,7 +127,7 @@ function MeetingSection({ contact, name, vehicle }: { contact: CrmContact; name:
     const nextChecks = value && !checks.referido ? { ...checks, referido: true } : checks;
     if (nextChecks !== checks) setChecks(nextChecks);
     const { error } = await supabase.from('crm_contacts' as any)
-      .update({ referred_by: value || null, meeting: { checks: nextChecks, sent, answers } } as any).eq('id', contact.id);
+      .update({ referred_by: value || null, meeting: { ...contact.meeting, checks: nextChecks, sent, answers, first_at: firstAt ? new Date(firstAt).toISOString() : null } } as any).eq('id', contact.id);
     if (error) { toast.error(error.message); return; }
     qc.invalidateQueries({ queryKey: ['crm_contacts'] });
   };
@@ -139,6 +140,15 @@ function MeetingSection({ contact, name, vehicle }: { contact: CrmContact; name:
     qc.invalidateQueries({ queryKey: ['crm_calls'] });
   };
 
+  /** Fecha y hora de la primera reunión */
+  const saveFirstAt = async (value: string) => {
+    setFirstAt(value);
+    const { error } = await supabase.from('crm_contacts' as any)
+      .update({ meeting: { ...contact.meeting, checks, sent, answers, first_at: value ? new Date(value).toISOString() : null } } as any).eq('id', contact.id);
+    if (error) toast.error(error.message);
+    else qc.invalidateQueries({ queryKey: ['crm_contacts'] });
+  };
+
   /** Guarda la respuesta (SÍ/NO y comentario); SÍ marca el paso como hecho */
   const saveAnswer = async (id: string, patch: MeetingAnswer) => {
     const nextAnswers = { ...answers, [id]: { ...answers[id], ...patch } };
@@ -146,7 +156,7 @@ function MeetingSection({ contact, name, vehicle }: { contact: CrmContact; name:
     setAnswers(nextAnswers);
     setChecks(nextChecks);
     const { error } = await supabase.from('crm_contacts' as any)
-      .update({ meeting: { checks: nextChecks, sent, answers: nextAnswers } } as any).eq('id', contact.id);
+      .update({ meeting: { ...contact.meeting, checks: nextChecks, sent, answers: nextAnswers, first_at: firstAt ? new Date(firstAt).toISOString() : null } } as any).eq('id', contact.id);
     if (error) toast.error(error.message);
     else qc.invalidateQueries({ queryKey: ['crm_contacts'] });
   };
@@ -196,6 +206,24 @@ function MeetingSection({ contact, name, vehicle }: { contact: CrmContact; name:
       </div>
       <div className="h-1 rounded-full bg-[#e3e3e3] dark:bg-muted overflow-hidden">
         <div className="h-full rounded-full bg-[#0b57d0] transition-all" style={{ width: `${(done / MEETING_STEPS.length) * 100}%` }} />
+      </div>
+
+      {/* Fecha y hora de la primera reunión: calendario del navegador + atajos de un clic */}
+      <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-[#f0f4f9] dark:bg-muted/60 px-3 py-2">
+        <CalendarClock className="h-4 w-4 text-[#0b57d0] dark:text-blue-300 shrink-0" />
+        <span className="text-xs font-medium text-[#444746] dark:text-muted-foreground">Fecha y hora</span>
+        <Input type="datetime-local" value={firstAt} onChange={e => saveFirstAt(e.target.value)}
+          className="h-8 w-[210px] text-sm rounded-lg shadow-none bg-white dark:bg-card border-[#c4c7c5] dark:border-border" />
+        <button type="button" onClick={() => saveFirstAt(toLocalInput(new Date().toISOString()))}
+          className="h-7 px-3 rounded-full text-xs font-medium border border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe]">Ahora</button>
+        {scheduledAt && scheduledAt !== firstAt && (
+          <button type="button" onClick={() => saveFirstAt(scheduledAt)}
+            className="h-7 px-3 rounded-full text-xs font-medium border border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe]">La agendada</button>
+        )}
+        {firstAt && (
+          <button type="button" onClick={() => saveFirstAt('')} title="Quitar fecha"
+            className="h-7 w-7 rounded-full flex items-center justify-center text-[#444746] hover:bg-[#e3e8ef]"><X className="h-3.5 w-3.5" /></button>
+        )}
       </div>
 
       {group.id ? (
@@ -809,6 +837,16 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
     qc.invalidateQueries({ queryKey: ['booking_upcoming'] });
   };
 
+  // Última reunión agendada (no cancelada), para llenar la fecha de la primera reunión con un clic
+  const lastBooked = (extra?.meetings ?? []).find((m: any) => m.status !== 'cancelled') as any;
+  const scheduledLocal = (() => {
+    if (!lastBooked?.meeting_date || !lastBooked?.meeting_time) return undefined;
+    const t = String(lastBooked.meeting_time).match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+    if (!t) return undefined;
+    const h = (Number(t[1]) % 12) + (t[3].toUpperCase() === 'PM' ? 12 : 0);
+    return `${lastBooked.meeting_date}T${String(h).padStart(2, '0')}:${t[2]}`;
+  })();
+
   const src = SOURCE[contact.source] ?? SOURCE.manual;
   const displayName = form.name || form.phone || 'Sin nombre';
   const initial = displayName.trim().charAt(0).toUpperCase();
@@ -946,10 +984,6 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
           <p className={cn('text-xs text-right pr-2', status === 'error' ? 'text-destructive' : 'text-[#444746] dark:text-muted-foreground')}>
             {saving || status === 'pending' ? 'Guardando…' : status === 'saved' ? '✓ Cambios guardados' : status === 'error' ? 'No se guardó' : 'Los cambios se guardan solos'}
           </p>
-        </div>
-
-        <div className="space-y-3 md:overflow-y-auto md:pr-1">
-          <MeetingSection contact={contact} name={form.name} vehicle={form.vehicle} />
 
           <div className="rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border overflow-hidden">
             <Tabs defaultValue="calls">
@@ -1023,6 +1057,11 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
               )}
             </Tabs>
           </div>
+        </div>
+
+        <div className="space-y-3 md:overflow-y-auto md:pr-1">
+          <MeetingSection contact={contact} name={form.name} vehicle={form.vehicle} scheduledAt={scheduledLocal} />
+
           <CallDialog open={callOpen} onClose={() => setCallOpen(false)} onSave={saveCall} />
         </div>
       </div>
