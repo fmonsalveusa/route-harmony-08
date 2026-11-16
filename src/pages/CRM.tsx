@@ -17,6 +17,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { getTenantId } from '@/hooks/useTenantId';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { BookingAgenda } from '@/components/crm/BookingAgenda';
 
 type Stage = 'new' | 'meeting_scheduled' | 'meeting_done' | 'client';
 
@@ -994,6 +995,7 @@ export default function CRM() {
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input placeholder="Buscar nombre, teléfono..." value={search} onChange={e => setSearch(e.target.value)} className="pl-8 w-56" />
           </div>
+          <BookingAgenda />
           <Button className="gap-1.5" onClick={() => setCreating(true)}><Plus className="h-4 w-4" /> Contacto</Button>
         </div>
       </div>

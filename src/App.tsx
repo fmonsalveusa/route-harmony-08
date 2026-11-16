@@ -30,6 +30,7 @@ import WhatsAppPage from "./pages/WhatsApp";
 import CRM from "./pages/CRM";
 import NotFound from "./pages/NotFound";
 import DriverOnboarding from "./pages/DriverOnboarding";
+import Booking from "./pages/Booking";
 import Install from "./pages/Install";
 import Landing from "./pages/Landing";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
@@ -186,6 +187,8 @@ const AppRoutes = () => {
     <Routes>
       <Route path="/auth" element={user ? <Navigate to={getRedirectPath()} replace /> : <Auth />} />
       <Route path="/onboarding/:token" element={<DriverOnboarding />} />
+      <Route path="/agendar" element={<Booking />} />
+      <Route path="/agendar/:token" element={<Booking />} />
       <Route path="/install" element={<Install />} />
       <Route path="/" element={user ? <Navigate to={getRedirectPath()} replace /> : isNativePlatform() ? <Navigate to="/auth" replace /> : <Landing />} />
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />

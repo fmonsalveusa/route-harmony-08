@@ -77,3 +77,6 @@ verify_jwt = false
 
 [functions.whatsapp-agent]
 verify_jwt = false
+
+[functions.booking]
+verify_jwt = false
