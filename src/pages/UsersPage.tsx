@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Plus, Shield, Calculator, Headphones, Truck as TruckIcon, Loader2, Pencil, Trash2, ChevronDown, Landmark, Copy, Check, Users, UserX } from 'lucide-react';
+import { Plus, Shield, Calculator, Headphones, Truck as TruckIcon, Loader2, Pencil, Trash2, ChevronDown, Landmark, Copy, Check, Users, UserX, UserCog } from 'lucide-react';
 
 const activePill = (active: boolean) => active
   ? <SolidStatusPill label="Active" color="bg-green-600" />
@@ -148,11 +148,11 @@ const UsersPage = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="page-header">User Management</h1>
-          <p className="page-description">Account and permission administration</p>
+          <h1 className="page-header flex items-center gap-3"><span className="page-icon"><UserCog className="h-5 w-5" /></span>User Management</h1>
+          <p className="page-description pl-[52px]">Account and permission administration</p>
         </div>
         {!isDispatcherView && (
           <Button size="sm" className="gap-2" onClick={handleCreate}>
@@ -162,22 +162,22 @@ const UsersPage = () => {
       </div>
 
       <StatTiles tiles={[
-        { label: 'Active Users', value: activeUsers.length, icon: Users, tint: 'bg-sky-100 text-sky-700' },
-        { label: 'Admins', value: activeUsers.filter(u => u.role === 'admin' || u.role === 'accounting').length, icon: Shield, tint: 'bg-red-100 text-red-700' },
-        { label: 'Dispatchers', value: activeUsers.filter(u => u.role === 'dispatcher').length, icon: Headphones, tint: 'bg-blue-100 text-blue-700' },
-        { label: 'Drivers', value: activeUsers.filter(u => u.role === 'driver').length, icon: TruckIcon, tint: 'bg-emerald-100 text-emerald-700' },
-        { label: 'Inactive', value: inactiveUsers.length, icon: UserX, tint: 'bg-slate-100 text-slate-700' },
+        { label: 'Active Users', value: activeUsers.length, icon: Users, tint: 'bg-[#d3e3fd] text-[#041e49] dark:bg-blue-900/40 dark:text-blue-200' },
+        { label: 'Admins', value: activeUsers.filter(u => u.role === 'admin' || u.role === 'accounting').length, icon: Shield, tint: 'bg-[#f9dedc] text-[#410e0b] dark:bg-red-900/40 dark:text-red-200' },
+        { label: 'Dispatchers', value: activeUsers.filter(u => u.role === 'dispatcher').length, icon: Headphones, tint: 'bg-[#c2e7ff] text-[#001d35] dark:bg-sky-900/40 dark:text-sky-200' },
+        { label: 'Drivers', value: activeUsers.filter(u => u.role === 'driver').length, icon: TruckIcon, tint: 'bg-[#c4eed0] text-[#072711] dark:bg-emerald-900/40 dark:text-emerald-200' },
+        { label: 'Inactive', value: inactiveUsers.length, icon: UserX, tint: 'bg-[#e3e3e3] text-[#1f1f1f] dark:bg-muted dark:text-foreground' },
       ]} />
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="active">
+        <TabsList className="w-full justify-start rounded-none sm:rounded-none border-x-0 border-t-0 flex-nowrap border-b border-[#e3e3e3] dark:border-border bg-transparent h-12 p-0 px-1 overflow-x-auto overflow-y-hidden">
+          <TabsTrigger className="h-12 rounded-none border-b-[3px] border-transparent px-4 gap-2 text-sm font-medium text-[#444746] dark:text-muted-foreground data-[state=active]:border-[#0b57d0] data-[state=active]:text-[#0b57d0] dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none data-[state=active]:bg-transparent" value="active">
             Active <span className={`ml-1.5 text-xs rounded-full px-2 py-0.5 font-semibold ${activeTab === 'active' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{activeUsers.length}</span>
           </TabsTrigger>
-          <TabsTrigger value="inactive">
+          <TabsTrigger className="h-12 rounded-none border-b-[3px] border-transparent px-4 gap-2 text-sm font-medium text-[#444746] dark:text-muted-foreground data-[state=active]:border-[#0b57d0] data-[state=active]:text-[#0b57d0] dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none data-[state=active]:bg-transparent" value="inactive">
             Inactive <span className={`ml-1.5 text-xs rounded-full px-2 py-0.5 font-semibold ${activeTab === 'inactive' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{inactiveUsers.length}</span>
           </TabsTrigger>
-          <TabsTrigger value="all">
+          <TabsTrigger className="h-12 rounded-none border-b-[3px] border-transparent px-4 gap-2 text-sm font-medium text-[#444746] dark:text-muted-foreground data-[state=active]:border-[#0b57d0] data-[state=active]:text-[#0b57d0] dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none data-[state=active]:bg-transparent" value="all">
             All <span className={`ml-1.5 text-xs rounded-full px-2 py-0.5 font-semibold ${activeTab === 'all' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{users.length}</span>
           </TabsTrigger>
         </TabsList>
@@ -193,12 +193,12 @@ const UsersPage = () => {
               <table className="w-full text-sm">
                 <thead>
                   <tr className={TABLE_HEAD_ROW}>
-                    <th className="text-left p-3 font-medium text-muted-foreground">User</th>
-                    <th className="text-left p-3 font-medium text-muted-foreground">Email</th>
-                    <th className="text-left p-3 font-medium text-muted-foreground">Phone</th>
-                    <th className="text-left p-3 font-medium text-muted-foreground">Role</th>
-                    <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
-                    <th className="text-right p-3 font-medium text-muted-foreground">Actions</th>
+                    <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">User</th>
+                    <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Email</th>
+                    <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Phone</th>
+                    <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Role</th>
+                    <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Status</th>
+                    <th className="text-right px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Actions</th>
                   </tr>
                 </thead>
                 <tbody>

@@ -217,13 +217,13 @@ export default function WhatsAppPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="page-header flex items-center gap-2">
-            <MessageCircle className="h-6 w-6 text-green-600" /> WhatsApp
+          <h1 className="page-header flex items-center gap-3">
+            <span className="page-icon"><MessageCircle className="h-5 w-5" /></span> WhatsApp
           </h1>
-          <p className="page-description">Grupos, avisos automáticos y conexión del número</p>
+          <p className="page-description pl-[52px]">Grupos, avisos automáticos y conexión del número</p>
         </div>
         <Button variant="outline" size="sm" className="gap-2" onClick={loadGroups} disabled={loadingGroups}>
           <RefreshCw className={`h-4 w-4 ${loadingGroups ? 'animate-spin' : ''}`} /> Recargar grupos
@@ -282,31 +282,31 @@ export default function WhatsAppPage() {
         const p = withGroup(rows.dispatchers);
         return (
           <StatTiles tiles={[
-            { label: 'Drivers con grupo', value: `${d.done}/${d.total}`, hint: d.total - d.done > 0 ? `${d.total - d.done} sin grupo` : 'todos asignados', icon: UsersIcon, tint: 'bg-emerald-100 text-emerald-700' },
-            { label: 'Investors con grupo', value: `${i.done}/${i.total}`, hint: i.total - i.done > 0 ? `${i.total - i.done} sin grupo` : 'todos asignados', icon: Landmark, tint: 'bg-violet-100 text-violet-700' },
-            { label: 'Dispatchers con grupo', value: `${p.done}/${p.total}`, hint: p.total - p.done > 0 ? `${p.total - p.done} sin grupo` : 'todos asignados', icon: Headset, tint: 'bg-blue-100 text-blue-700' },
-            { label: 'Grupos del número', value: groups ? groups.length : '…', icon: LayoutGrid, tint: 'bg-sky-100 text-sky-700' },
+            { label: 'Drivers con grupo', value: `${d.done}/${d.total}`, hint: d.total - d.done > 0 ? `${d.total - d.done} sin grupo` : 'todos asignados', icon: UsersIcon, tint: 'bg-[#c4eed0] text-[#072711] dark:bg-emerald-900/40 dark:text-emerald-200' },
+            { label: 'Investors con grupo', value: `${i.done}/${i.total}`, hint: i.total - i.done > 0 ? `${i.total - i.done} sin grupo` : 'todos asignados', icon: Landmark, tint: 'bg-[#f3e8fd] text-[#4a148c] dark:bg-violet-900/40 dark:text-violet-200' },
+            { label: 'Dispatchers con grupo', value: `${p.done}/${p.total}`, hint: p.total - p.done > 0 ? `${p.total - p.done} sin grupo` : 'todos asignados', icon: Headset, tint: 'bg-[#c2e7ff] text-[#001d35] dark:bg-sky-900/40 dark:text-sky-200' },
+            { label: 'Grupos del número', value: groups ? groups.length : '…', icon: LayoutGrid, tint: 'bg-[#d3e3fd] text-[#041e49] dark:bg-blue-900/40 dark:text-blue-200' },
           ]} />
         );
       })()}
 
       <Tabs defaultValue="groups">
-        <TabsList>
-          <TabsTrigger value="groups">Grupos</TabsTrigger>
-          <TabsTrigger value="automations">Avisos</TabsTrigger>
-          <TabsTrigger value="broadcast">Mensaje masivo</TabsTrigger>
-          <TabsTrigger value="history">Historial</TabsTrigger>
-          <TabsTrigger value="broker_email">Emails al broker</TabsTrigger>
-          <TabsTrigger value="health">Estado</TabsTrigger>
+        <TabsList className="w-full justify-start rounded-none sm:rounded-none border-x-0 border-t-0 flex-nowrap border-b border-[#e3e3e3] dark:border-border bg-transparent h-12 p-0 px-1 overflow-x-auto overflow-y-hidden">
+          <TabsTrigger className="h-12 rounded-none border-b-[3px] border-transparent px-4 gap-2 text-sm font-medium text-[#444746] dark:text-muted-foreground data-[state=active]:border-[#0b57d0] data-[state=active]:text-[#0b57d0] dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none data-[state=active]:bg-transparent" value="groups">Grupos</TabsTrigger>
+          <TabsTrigger className="h-12 rounded-none border-b-[3px] border-transparent px-4 gap-2 text-sm font-medium text-[#444746] dark:text-muted-foreground data-[state=active]:border-[#0b57d0] data-[state=active]:text-[#0b57d0] dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none data-[state=active]:bg-transparent" value="automations">Avisos</TabsTrigger>
+          <TabsTrigger className="h-12 rounded-none border-b-[3px] border-transparent px-4 gap-2 text-sm font-medium text-[#444746] dark:text-muted-foreground data-[state=active]:border-[#0b57d0] data-[state=active]:text-[#0b57d0] dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none data-[state=active]:bg-transparent" value="broadcast">Mensaje masivo</TabsTrigger>
+          <TabsTrigger className="h-12 rounded-none border-b-[3px] border-transparent px-4 gap-2 text-sm font-medium text-[#444746] dark:text-muted-foreground data-[state=active]:border-[#0b57d0] data-[state=active]:text-[#0b57d0] dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none data-[state=active]:bg-transparent" value="history">Historial</TabsTrigger>
+          <TabsTrigger className="h-12 rounded-none border-b-[3px] border-transparent px-4 gap-2 text-sm font-medium text-[#444746] dark:text-muted-foreground data-[state=active]:border-[#0b57d0] data-[state=active]:text-[#0b57d0] dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none data-[state=active]:bg-transparent" value="broker_email">Emails al broker</TabsTrigger>
+          <TabsTrigger className="h-12 rounded-none border-b-[3px] border-transparent px-4 gap-2 text-sm font-medium text-[#444746] dark:text-muted-foreground data-[state=active]:border-[#0b57d0] data-[state=active]:text-[#0b57d0] dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none data-[state=active]:bg-transparent" value="health">Estado</TabsTrigger>
         </TabsList>
 
         <TabsContent value="groups" className="mt-4">
           <div className="rounded-xl border bg-card shadow-sm p-4">
             <Tabs defaultValue="drivers">
-              <TabsList>
-                <TabsTrigger value="drivers">Drivers ({counter(rows.drivers)})</TabsTrigger>
-                <TabsTrigger value="investors">Investors ({counter(rows.investors)})</TabsTrigger>
-                <TabsTrigger value="dispatchers">Dispatchers ({counter(rows.dispatchers)})</TabsTrigger>
+              <TabsList className="w-full justify-start rounded-none sm:rounded-none border-x-0 border-t-0 flex-nowrap border-b border-[#e3e3e3] dark:border-border bg-transparent h-12 p-0 px-1 overflow-x-auto overflow-y-hidden">
+                <TabsTrigger className="h-12 rounded-none border-b-[3px] border-transparent px-4 gap-2 text-sm font-medium text-[#444746] dark:text-muted-foreground data-[state=active]:border-[#0b57d0] data-[state=active]:text-[#0b57d0] dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none data-[state=active]:bg-transparent" value="drivers">Drivers ({counter(rows.drivers)})</TabsTrigger>
+                <TabsTrigger className="h-12 rounded-none border-b-[3px] border-transparent px-4 gap-2 text-sm font-medium text-[#444746] dark:text-muted-foreground data-[state=active]:border-[#0b57d0] data-[state=active]:text-[#0b57d0] dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none data-[state=active]:bg-transparent" value="investors">Investors ({counter(rows.investors)})</TabsTrigger>
+                <TabsTrigger className="h-12 rounded-none border-b-[3px] border-transparent px-4 gap-2 text-sm font-medium text-[#444746] dark:text-muted-foreground data-[state=active]:border-[#0b57d0] data-[state=active]:text-[#0b57d0] dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none data-[state=active]:bg-transparent" value="dispatchers">Dispatchers ({counter(rows.dispatchers)})</TabsTrigger>
               </TabsList>
               {(['drivers', 'investors', 'dispatchers'] as EntityType[]).map(type => (
                 <TabsContent key={type} value={type} className="mt-3">

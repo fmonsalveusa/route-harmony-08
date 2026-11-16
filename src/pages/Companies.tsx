@@ -115,18 +115,18 @@ const Companies = () => {
         <div className="overflow-x-auto">
           <table className="w-full text-[15px]">
             <thead><tr className={TABLE_HEAD_ROW}>
-              <th className="text-left p-3 font-medium text-muted-foreground">Empresa</th>
-              <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">MC#</th>
-              <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">DOT#</th>
-              <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Ciudad</th>
-              <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Teléfono</th>
-              <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Email</th>
-              <th className="text-center p-3 font-medium text-muted-foreground">
+              <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Empresa</th>
+              <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground hidden md:table-cell">MC#</th>
+              <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground hidden md:table-cell">DOT#</th>
+              <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground hidden lg:table-cell">Ciudad</th>
+              <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground hidden lg:table-cell">Teléfono</th>
+              <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground hidden lg:table-cell">Email</th>
+              <th className="text-center px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">
                 <div className="flex items-center justify-center gap-1">
                   <FileSignature className="h-3.5 w-3.5" /> Leasing
                 </div>
               </th>
-              <th className="text-right p-3 font-medium text-muted-foreground">Acciones</th>
+              <th className="text-right px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Acciones</th>
             </tr></thead>
             <tbody>
               {list.length === 0 && (
@@ -179,11 +179,11 @@ const Companies = () => {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="page-header">Companies</h1>
-          <p className="page-description">Manage your carrier companies for invoices, documents, and leasing agreements</p>
+          <h1 className="page-header flex items-center gap-3"><span className="page-icon"><Building2 className="h-5 w-5" /></span>Companies</h1>
+          <p className="page-description pl-[52px]">Manage your carrier companies for invoices, documents, and leasing agreements</p>
         </div>
         <div className="flex gap-2 self-start sm:self-auto">
           {isAdmin && (
@@ -199,16 +199,16 @@ const Companies = () => {
       <RtsAssistantDialog open={rtsOpen} onOpenChange={setRtsOpen} />
 
       <StatTiles tiles={[
-        { label: 'Total Companies', value: companies.length, icon: Building2, tint: 'bg-sky-100 text-sky-700' },
-        { label: 'Active', value: activeCompanies.length, icon: Power, tint: 'bg-emerald-100 text-emerald-700' },
-        { label: 'Inactive', value: inactiveCompanies.length, icon: PowerOff, tint: 'bg-red-100 text-red-700' },
-        { label: 'En Leasing Agreement', value: activeCompanies.filter(c => c.leasing_agreement_active).length, icon: FileSignature, tint: 'bg-violet-100 text-violet-700' },
+        { label: 'Total Companies', value: companies.length, icon: Building2, tint: 'bg-[#d3e3fd] text-[#041e49] dark:bg-blue-900/40 dark:text-blue-200' },
+        { label: 'Active', value: activeCompanies.length, icon: Power, tint: 'bg-[#c4eed0] text-[#072711] dark:bg-emerald-900/40 dark:text-emerald-200' },
+        { label: 'Inactive', value: inactiveCompanies.length, icon: PowerOff, tint: 'bg-[#f9dedc] text-[#410e0b] dark:bg-red-900/40 dark:text-red-200' },
+        { label: 'En Leasing Agreement', value: activeCompanies.filter(c => c.leasing_agreement_active).length, icon: FileSignature, tint: 'bg-[#f3e8fd] text-[#4a148c] dark:bg-violet-900/40 dark:text-violet-200' },
       ]} />
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="active">Active ({activeCompanies.length})</TabsTrigger>
-          <TabsTrigger value="inactive">Inactive ({inactiveCompanies.length})</TabsTrigger>
+        <TabsList className="w-full justify-start rounded-none sm:rounded-none border-x-0 border-t-0 flex-nowrap border-b border-[#e3e3e3] dark:border-border bg-transparent h-12 p-0 px-1 overflow-x-auto overflow-y-hidden">
+          <TabsTrigger className="h-12 rounded-none border-b-[3px] border-transparent px-4 gap-2 text-sm font-medium text-[#444746] dark:text-muted-foreground data-[state=active]:border-[#0b57d0] data-[state=active]:text-[#0b57d0] dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none data-[state=active]:bg-transparent" value="active">Active ({activeCompanies.length})</TabsTrigger>
+          <TabsTrigger className="h-12 rounded-none border-b-[3px] border-transparent px-4 gap-2 text-sm font-medium text-[#444746] dark:text-muted-foreground data-[state=active]:border-[#0b57d0] data-[state=active]:text-[#0b57d0] dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none data-[state=active]:bg-transparent" value="inactive">Inactive ({inactiveCompanies.length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="active" className="mt-4">
@@ -237,9 +237,9 @@ const CompanyFormDialog = ({
   onSave: () => void;
 }) => (
   <Dialog open={open} onOpenChange={onOpenChange}>
-    <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+    <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto rounded-[28px] border-0 bg-[#f8fafd] dark:bg-background [&_label]:text-xs [&_label]:font-medium [&_label]:text-[#444746] dark:[&_label]:text-muted-foreground [&_input]:rounded-lg [&_input]:shadow-none [&_input]:bg-white dark:[&_input]:bg-card [&_input]:border-[#c4c7c5] dark:[&_input]:border-border [&_input:focus-visible]:ring-1 [&_input:focus-visible]:ring-[#0b57d0] [&_input:focus-visible]:border-[#0b57d0] [&_button[role=combobox]]:rounded-lg [&_button[role=combobox]]:shadow-none [&_button[role=combobox]]:bg-white dark:[&_button[role=combobox]]:bg-card [&_button[role=combobox]]:border-[#c4c7c5] dark:[&_button[role=combobox]]:border-border [&_textarea]:rounded-lg [&_textarea]:shadow-none [&_textarea]:bg-white dark:[&_textarea]:bg-card [&_textarea]:border-[#c4c7c5]">
       <DialogHeader>
-        <DialogTitle>{editId ? 'Editar Empresa' : 'Configurar Empresa'}</DialogTitle>
+        <DialogTitle className="text-[22px] leading-7 font-normal text-[#1f1f1f] dark:text-foreground">{editId ? 'Editar Empresa' : 'Configurar Empresa'}</DialogTitle>
       </DialogHeader>
       <div className="grid gap-4 py-2">
         <div className="grid grid-cols-2 gap-3">
@@ -277,8 +277,8 @@ const CompanyFormDialog = ({
         </div>
       </div>
       <DialogFooter>
-        <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-        <Button onClick={onSave} disabled={!form.name.trim()}>Guardar</Button>
+        <Button className="h-10 rounded-full px-5 text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe] dark:text-blue-300 font-medium" variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
+        <Button className="h-10 rounded-full px-6 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium" onClick={onSave} disabled={!form.name.trim()}>Guardar</Button>
       </DialogFooter>
     </DialogContent>
   </Dialog>
