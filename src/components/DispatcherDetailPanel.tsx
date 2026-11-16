@@ -1,20 +1,20 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import type { DbDispatcher } from '@/hooks/useDispatchers';
 import type { DbDriver } from '@/hooks/useDrivers';
-import { Loader2, Package, DollarSign, Users } from 'lucide-react';
+import { Loader2, Package, DollarSign, Users, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const TZ = 'America/New_York';
 const money = (n: number) => `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-/** Semana actual (lunes a domingo, hora del Este) */
-function currentWeek() {
+/** Semana de lunes a domingo (hora del Este); offset 0 = esta semana, -1 = la anterior… */
+function weekAt(offset: number) {
   const today = new Date().toLocaleDateString('en-CA', { timeZone: TZ });
   const [y, m, d] = today.split('-').map(Number);
   const start = new Date(Date.UTC(y, m - 1, d));
-  start.setUTCDate(start.getUTCDate() - ((start.getUTCDay() + 6) % 7));
+  start.setUTCDate(start.getUTCDate() - ((start.getUTCDay() + 6) % 7) + offset * 7);
   const end = new Date(start);
   end.setUTCDate(start.getUTCDate() + 6);
   const iso = (x: Date) => x.toISOString().slice(0, 10);
@@ -43,7 +43,8 @@ interface WeekLoad {
  * Igual que el pago de comisión: la carga cuenta en la semana en que se CREÓ, con la comisión guardada en la carga.
  */
 export function DispatcherDetailPanel({ dispatcher, drivers }: { dispatcher: DbDispatcher; drivers: DbDriver[] }) {
-  const week = useMemo(currentWeek, []);
+  const [offset, setOffset] = useState(0);
+  const week = useMemo(() => weekAt(offset), [offset]);
 
   const { data: loads = [], isLoading } = useQuery({
     queryKey: ['dispatcher_week_loads', dispatcher.id, week.start],
@@ -95,7 +96,26 @@ export function DispatcherDetailPanel({ dispatcher, drivers }: { dispatcher: DbD
   return (
     <div className="px-4 py-3 bg-[#f8fafd] dark:bg-background/60 border-t border-[#e3e3e3] dark:border-border animate-fade-in space-y-3">
       <div className="flex flex-wrap items-center gap-2">
-        <p className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground mr-2">Semana actual <span className="text-sm font-normal text-[#444746] dark:text-muted-foreground">· {week.label}</span></p>
+        {/* Selector de semana */}
+        <div className="flex items-center gap-0.5 mr-2">
+          <button type="button" onClick={() => setOffset(o => o - 1)} title="Semana anterior"
+            className="h-8 w-8 rounded-full flex items-center justify-center text-[#444746] hover:bg-[#e8ebee] dark:text-muted-foreground dark:hover:bg-muted">
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <p className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground px-1 whitespace-nowrap">
+            {offset === 0 ? 'Semana actual' : offset === -1 ? 'Semana pasada' : 'Semana'} <span className="text-sm font-normal text-[#444746] dark:text-muted-foreground">· {week.label}</span>
+          </p>
+          <button type="button" onClick={() => setOffset(o => Math.min(0, o + 1))} disabled={offset === 0} title="Semana siguiente"
+            className="h-8 w-8 rounded-full flex items-center justify-center text-[#444746] hover:bg-[#e8ebee] disabled:opacity-30 disabled:hover:bg-transparent dark:text-muted-foreground dark:hover:bg-muted">
+            <ChevronRight className="h-4 w-4" />
+          </button>
+          {offset !== 0 && (
+            <button type="button" onClick={() => setOffset(0)}
+              className="ml-1 h-7 px-3 rounded-full border border-[#747775] dark:border-border text-xs font-medium text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe]">
+              Esta semana
+            </button>
+          )}
+        </div>
         {[
           { icon: Users, label: 'Drivers', value: String(myDrivers.length), tone: 'bg-[#d3e3fd] text-[#041e49] dark:bg-blue-900/40 dark:text-blue-200' },
           { icon: Package, label: 'Cargas', value: String(totals.loads), tone: 'bg-[#e3e3e3] text-[#1f1f1f] dark:bg-muted dark:text-foreground' },
