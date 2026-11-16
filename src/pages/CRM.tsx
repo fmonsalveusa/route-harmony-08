@@ -18,6 +18,7 @@ import { getTenantId } from '@/hooks/useTenantId';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { BookingAgenda } from '@/components/crm/BookingAgenda';
+import { CrmCalendar } from '@/components/crm/CrmCalendar';
 
 type Stage = 'new' | 'meeting_scheduled' | 'meeting_done' | 'client';
 
@@ -1054,6 +1055,8 @@ export default function CRM() {
         { label: 'Seguimientos vencidos', value: contacts.filter(isOverdue).length, icon: AlertCircle, tint: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' },
         { label: 'Clientes este mes', value: contacts.filter(c => c.stage === 'client' && new Date(c.updated_at) >= monthStart).length, icon: Trophy, tint: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' },
       ]} />
+
+      <CrmCalendar contacts={contacts} onOpen={setOpenId} />
 
       {isLoading ? (
         <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
