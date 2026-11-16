@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, Fragment } from 'react';
 import { useDispatchers, DbDispatcher, DispatcherInput } from '@/hooks/useDispatchers';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
@@ -8,9 +8,10 @@ import { useDrivers } from '@/hooks/useDrivers';
 import { Input } from '@/components/ui/input';
 import { CreateAccessButton } from '@/components/CreateAccessButton';
 import { Button } from '@/components/ui/button';
-import { Plus, Phone, Mail, Percent, Pencil, Trash2, ChevronDown, Headset, UserX, Users, UserMinus, Search } from 'lucide-react';
+import { Plus, Phone, Mail, Percent, Pencil, Trash2, ChevronDown, ChevronUp, Headset, UserX, Users, UserMinus, Search } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatPhone } from '@/lib/phoneUtils';
+import { DispatcherDetailPanel } from '@/components/DispatcherDetailPanel';
 
 const Dispatchers = () => {
   const { dispatchers, loading, createDispatcher, updateDispatcher, deleteDispatcher } = useDispatchers();
@@ -18,6 +19,7 @@ const Dispatchers = () => {
   const [editingDispatcher, setEditingDispatcher] = useState<DbDispatcher | null>(null);
   const [activeTab, setActiveTab] = useState('active');
   const [search, setSearch] = useState('');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const { drivers } = useDrivers();
 
   // Drivers activos por dispatcher, para la columna y el resumen
@@ -52,6 +54,7 @@ const Dispatchers = () => {
       <table className="w-full text-sm">
         <thead>
           <tr className={TABLE_HEAD_ROW}>
+            <th className="w-8 px-2 py-2.5"></th>
             <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Dispatcher</th>
             <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground hidden md:table-cell">Email</th>
             <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground hidden md:table-cell">Phone</th>
@@ -65,7 +68,7 @@ const Dispatchers = () => {
         </thead>
         <tbody>
           {list.length === 0 ? (
-            <tr><td colSpan={9} className="text-center p-8 text-muted-foreground">No dispatchers found.</td></tr>
+            <tr><td colSpan={10} className="text-center p-8 text-muted-foreground">No dispatchers found.</td></tr>
           ) : list.map(d => {
             const initials = d.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
             const statusBorder = d.status === 'active'
@@ -74,7 +77,11 @@ const Dispatchers = () => {
             const avatarColor = d.color || '#94A3B8';
 
             return (
-              <tr key={d.id} className={`${TABLE_ROW} last:border-b-0 ${statusBorder}`}>
+              <Fragment key={d.id}>
+              <tr className={`${TABLE_ROW} cursor-pointer ${statusBorder} ${expandedId === d.id ? 'bg-[#f0f4f9] dark:bg-muted/50 hover:bg-[#f0f4f9]' : ''}`} onClick={() => setExpandedId(expandedId === d.id ? null : d.id)}>
+                <td className="pl-3 pr-1 py-2 text-[#444746]">
+                  {expandedId === d.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </td>
                 <td className="px-3 py-2">
                   <div className="flex items-center gap-3">
                     <div className="h-9 w-9 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0" style={{ backgroundColor: avatarColor }}>
@@ -145,6 +152,14 @@ const Dispatchers = () => {
                   </div>
                 </td>
               </tr>
+              {expandedId === d.id && (
+                <tr>
+                  <td colSpan={10} className="p-0">
+                    <DispatcherDetailPanel dispatcher={d} drivers={drivers} />
+                  </td>
+                </tr>
+              )}
+              </Fragment>
             );
           })}
         </tbody>
