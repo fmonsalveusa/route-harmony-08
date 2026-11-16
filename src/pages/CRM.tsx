@@ -260,11 +260,10 @@ function MeetingSection({ contact, name, vehicle, scheduledAt }: { contact: CrmC
         {MEETING_STEPS.map(step => {
           const a = answerOf(step.id);
           return (
-            <div key={step.id} className="py-1.5 space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="flex-1 text-sm font-medium text-[#1f1f1f] dark:text-foreground">{step.label}</span>
+            <div key={step.id} className="flex flex-wrap md:flex-nowrap items-center gap-2 py-1.5">
+                <span className="w-full md:w-60 shrink-0 text-sm font-medium text-[#1f1f1f] dark:text-foreground">{step.label}</span>
                 {/* SÍ / NO */}
-                {!step.textOnly && <div className="inline-flex rounded-full border border-[#c4c7c5] dark:border-border overflow-hidden shrink-0">
+                {step.textOnly ? <span className="hidden md:block w-[94px] shrink-0" /> : <div className="inline-flex rounded-full border border-[#c4c7c5] dark:border-border overflow-hidden shrink-0">
                   {(['yes', 'no'] as const).map((v, k) => (
                     <button key={v} type="button" onClick={() => saveAnswer(step.id, { a: v })}
                       className={cn('h-7 px-3 text-xs font-medium inline-flex items-center gap-1 transition-colors', k > 0 && 'border-l border-[#c4c7c5] dark:border-border',
@@ -275,6 +274,21 @@ function MeetingSection({ contact, name, vehicle, scheduledAt }: { contact: CrmC
                     </button>
                   ))}
                 </div>}
+                {/* Comentario (en Referido: quién lo refirió) */}
+                <div className="flex-1 min-w-[180px]">
+                {step.id === 'referido' ? (
+                  <Input
+                    value={referredBy}
+                    onChange={e => setReferredBy(e.target.value)}
+                    onBlur={saveReferredBy}
+                    onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                    placeholder="¿Quién lo refirió?"
+                    className="h-7 text-sm rounded-lg shadow-none bg-[#f8fafd] dark:bg-muted/40 border-[#e3e3e3] dark:border-border"
+                  />
+                ) : (
+                  <CommentInput value={answers[step.id]?.c ?? ''} placeholder={step.placeholder} onSave={c => saveAnswer(step.id, { c })} />
+                )}
+                </div>
                 {step.send && (
                   <Button
                     size="sm" variant="outline"
@@ -288,21 +302,6 @@ function MeetingSection({ contact, name, vehicle, scheduledAt }: { contact: CrmC
                     {sent[step.id] ? 'Enviado' : 'Enviar'}
                   </Button>
                 )}
-              </div>
-              {/* Comentario (en Referido: quién lo refirió) */}
-              {step.id === 'referido' ? (
-                <Input
-                  value={referredBy}
-                  onChange={e => setReferredBy(e.target.value)}
-                  onBlur={saveReferredBy}
-                  onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                  placeholder="¿Quién lo refirió?"
-                  className="h-7 text-sm rounded-lg shadow-none bg-[#f8fafd] dark:bg-muted/40 border-[#e3e3e3] dark:border-border"
-                />
-              ) : (
-                <CommentInput value={answers[step.id]?.c ?? ''} placeholder={step.placeholder} onSave={c => saveAnswer(step.id, { c })} />
-              )}
-              {sent[step.id] && <p className="text-[11px] text-[#188038] dark:text-emerald-400">Enviado al grupo {fmt(sent[step.id])}</p>}
             </div>
           );
         })}
@@ -826,8 +825,9 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
     window.open(`https://voice.google.com/calls?a=nc,%2B${digits}${account}`, 'du-google-voice');
   };
 
-  const field = (key: 'name' | 'phone' | 'email' | 'city', label: string, type = 'text', span = false) => (
-    <div className={cn('space-y-1', span && 'col-span-2')}>
+  const ROW = 'grid grid-cols-[76px_minmax(0,1fr)] items-center gap-2';
+  const field = (key: 'name' | 'phone' | 'email' | 'city', label: string, type = 'text') => (
+    <div className={ROW}>
       <Label className={G_LABEL}>{label}</Label>
       <Input type={type} value={form[key]} onChange={e => edit({ [key]: e.target.value })} className={INPUT} />
     </div>
@@ -930,154 +930,155 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
       </div>
 
       {/* ── Cuerpo ── */}
-      <div className="grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] gap-3 p-3 sm:p-4 overflow-y-auto md:overflow-hidden flex-1 min-h-0">
-        <div className="space-y-3 md:overflow-y-auto md:pr-1">
-          <Card title="Datos de contacto">
-            <div className="grid grid-cols-2 gap-x-3 gap-y-2">
-              {field('name', 'Nombre', 'text', true)}
-              {field('phone', 'Teléfono')}
-              {field('city', 'Ciudad')}
-              {field('email', 'Email', 'email', true)}
-              <div className="space-y-1">
-                <Label className={G_LABEL}>Vehículo</Label>
-                <Select value={form.vehicle || undefined} onValueChange={v => edit({ vehicle: v })}>
-                  <SelectTrigger className={INPUT}><SelectValue placeholder="Seleccionar" /></SelectTrigger>
-                  <SelectContent>
-                    {VEHICLES.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-                    {form.vehicle && !VEHICLES.includes(form.vehicle) && <SelectItem value={form.vehicle}>{form.vehicle}</SelectItem>}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <Label className={G_LABEL}>Servicio</Label>
-                <Select value={form.service || undefined} onValueChange={v => edit({ service: v })}>
-                  <SelectTrigger className={INPUT}><SelectValue placeholder="Seleccionar" /></SelectTrigger>
-                  <SelectContent>
-                    {SERVICES.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-                    {form.service && !SERVICES.includes(form.service) && <SelectItem value={form.service}>{form.service}</SelectItem>}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </Card>
-          <Card title="Próxima acción">
-            <div className="inline-flex rounded-full border border-[#c4c7c5] dark:border-border overflow-hidden mb-2">
-              {([['reminder', 'Recordarme a mí', Bell], ['client_message', 'Mensaje al cliente', Send]] as const).map(([v, l, I], i) => (
-                <button key={v} type="button" onClick={() => edit({ next_action_type: v })}
-                  className={cn('h-9 px-4 text-sm font-medium inline-flex items-center gap-1.5 transition-colors', i > 0 && 'border-l border-[#c4c7c5] dark:border-border',
-                    form.next_action_type === v ? 'bg-[#c2e7ff] text-[#001d35] dark:bg-blue-900/50 dark:text-blue-100' : 'text-[#444746] dark:text-muted-foreground hover:bg-[#f0f4f9] dark:hover:bg-muted')}>
-                  {form.next_action_type === v ? <Check className="h-4 w-4" /> : <I className="h-4 w-4" />} {l}
-                </button>
-              ))}
-            </div>
-            <div className="space-y-2">
-              <Input
-                placeholder={form.next_action_type === 'client_message' ? 'Nota interna (opcional)' : 'Ej: Llamar para enviar el link de onboarding'}
-                value={form.next_action}
-                onChange={e => edit({ next_action: e.target.value })}
-                className={INPUT}
-              />
-              <div className="flex gap-2 items-center">
-                <Input type="datetime-local" value={form.next_action_at} onChange={e => edit({ next_action_at: e.target.value })} className={INPUT} />
-                {form.next_action_at && (
-                  <Button size="sm" variant="ghost" className="h-10 rounded-full text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe]" onClick={() => edit({ next_action_at: '', next_action: '' })}>Quitar</Button>
-                )}
-              </div>
-              <p className="text-xs text-[#444746] dark:text-muted-foreground leading-relaxed">
-                {form.next_action_type === 'client_message'
-                  ? (contact.whatsapp_group_id
-                    ? 'A esa hora se le envía al cliente el mensaje de seguimiento a su grupo de WhatsApp. El texto se edita en WhatsApp → Automatizaciones → Seguimientos del CRM al cliente.'
-                    : '⚠️ Este cliente no tiene grupo de WhatsApp: el seguimiento no se envía (solo se escribe a grupos). Vincula su grupo en Reunión.')
-                  : 'A esa hora llega un recordatorio al grupo de administración por WhatsApp.'}
-                {contact.reminder_sent_at && contact.next_action_at === (form.next_action_at ? new Date(form.next_action_at).toISOString() : null)
-                  ? ` Enviado ${fmt(contact.reminder_sent_at)}.` : ''}
-              </p>
-            </div>
-          </Card>
-
-          <p className={cn('text-xs text-right pr-2', status === 'error' ? 'text-destructive' : 'text-[#444746] dark:text-muted-foreground')}>
-            {saving || status === 'pending' ? 'Guardando…' : status === 'saved' ? '✓ Cambios guardados' : status === 'error' ? 'No se guardó' : 'Los cambios se guardan solos'}
-          </p>
-
-          <div className="rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border overflow-hidden">
-            <Tabs defaultValue="calls">
-              <TabsList className="w-full justify-start rounded-none sm:rounded-none border-x-0 border-t-0 flex-nowrap border-b border-[#e3e3e3] dark:border-border bg-transparent h-12 p-0 px-3 overflow-x-auto overflow-y-hidden">
-                {tabs.map(([v, l]) => (
-                  <TabsTrigger key={v} value={v}
-                    className="h-12 rounded-none border-b-[3px] border-transparent px-4 text-sm font-medium text-[#444746] dark:text-muted-foreground data-[state=active]:border-[#0b57d0] data-[state=active]:text-[#0b57d0] dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none data-[state=active]:bg-transparent">
-                    {l}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-
-              <TabsContent value="calls" className="p-5 mt-0 space-y-2">
-                <Button size="sm" className="h-10 gap-2 rounded-full bg-[#0b57d0] hover:bg-[#0842a0] text-white px-5" onClick={() => setCallOpen(true)}>
-                  <Phone className="h-4 w-4" /> Registrar llamada
-                </Button>
-                {calls.map(n => <NoteItem key={n.id} n={n} userName={n.created_by ? users[n.created_by] : undefined} onChanged={refresh} />)}
-                {!calls.length && <p className="text-sm text-[#444746] dark:text-muted-foreground py-2">Sin llamadas registradas.</p>}
-              </TabsContent>
-
-              <TabsContent value="notes" className="p-5 mt-0 space-y-3">
-                <div className="rounded-2xl border border-[#c4c7c5] dark:border-border focus-within:border-[#0b57d0] focus-within:ring-1 focus-within:ring-[#0b57d0] p-2 space-y-2">
-                  <Textarea rows={3} placeholder="Qué se habló, qué necesita, próximos pasos..." value={noteBody}
-                    onChange={e => setNoteBody(e.target.value)} className="border-0 bg-transparent shadow-none focus-visible:ring-0 resize-none" />
-                  <div className="flex items-center gap-2">
-                    {([['note', 'Nota'], ['meeting', 'Reunión']] as const).map(([v, l]) => (
-                      <button key={v} type="button" onClick={() => setNoteKind(v)}
-                        className={cn('inline-flex items-center gap-1 rounded-lg h-7 px-2.5 text-xs font-medium border',
-                          noteKind === v ? 'bg-[#c2e7ff] border-[#c2e7ff] text-[#001d35] dark:bg-blue-900/50 dark:border-blue-900/50 dark:text-blue-100' : 'border-[#c4c7c5] dark:border-border text-[#444746] dark:text-muted-foreground')}>
-                        {noteKind === v && <Check className="h-3.5 w-3.5" />} {l}
-                      </button>
-                    ))}
-                    {noteKind === 'meeting' && <p className="text-[11px] text-[#444746] dark:text-muted-foreground">Pasa el contacto a "Reunión hecha"</p>}
-                    <Button size="sm" className="h-8 rounded-full ml-auto bg-[#0b57d0] hover:bg-[#0842a0] text-white px-4" onClick={addNote} disabled={!noteBody.trim()}>Agregar</Button>
-                  </div>
+      <div className="p-3 sm:p-4 overflow-y-auto flex-1 min-h-0 space-y-3">
+        <div className="grid md:grid-cols-2 gap-3 items-start">
+          <div className="space-y-2">
+            <Card title="Datos de contacto">
+              <div className="space-y-2">
+                {field('name', 'Nombre')}
+                {field('phone', 'Teléfono')}
+                {field('city', 'Ciudad')}
+                {field('email', 'Email', 'email')}
+                <div className={ROW}>
+                  <Label className={G_LABEL}>Vehículo</Label>
+                  <Select value={form.vehicle || undefined} onValueChange={v => edit({ vehicle: v })}>
+                    <SelectTrigger className={INPUT}><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+                    <SelectContent>
+                      {VEHICLES.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                      {form.vehicle && !VEHICLES.includes(form.vehicle) && <SelectItem value={form.vehicle}>{form.vehicle}</SelectItem>}
+                    </SelectContent>
+                  </Select>
                 </div>
-                {otherNotes.map(n => <NoteItem key={n.id} n={n} userName={n.created_by ? users[n.created_by] : undefined} onChanged={refresh} />)}
-                {!otherNotes.length && <p className="text-sm text-[#444746] dark:text-muted-foreground">Sin notas todavía.</p>}
-              </TabsContent>
-
-              {extra && extra.meetings.length > 0 && (
-                <TabsContent value="meetings" className="p-5 mt-0 space-y-2">
-                  {extra.meetings.map((m: any) => (
-                    <div key={m.id} className={cn('flex items-center gap-3 rounded-2xl bg-[#f0f4f9] dark:bg-muted px-4 py-3', m.status === 'cancelled' && 'opacity-60')}>
-                      <CalendarCheck className={cn('h-5 w-5', m.status === 'cancelled' ? 'text-[#444746]' : 'text-[#0b57d0] dark:text-blue-300')} />
-                      <div className="text-sm flex-1 min-w-0">
-                        <p className={cn('font-medium text-[#1f1f1f] dark:text-foreground', m.status === 'cancelled' && 'line-through')}>{fmtMeetingDate(m.meeting_date)} · {m.meeting_time}</p>
-                        {m.comments && <p className="text-xs text-[#444746] dark:text-muted-foreground truncate">{m.comments}</p>}
-                      </div>
-                      {m.status === 'cancelled' && <span className="text-xs font-medium text-[#444746] dark:text-muted-foreground">Cancelada</span>}
-                    </div>
-                  ))}
-                </TabsContent>
-              )}
-
-              {extra && extra.chat.length > 0 && (
-                <TabsContent value="chat" className="p-5 mt-0 space-y-2">
-                  {extra.summary && (
-                    <p className="text-sm rounded-2xl bg-[#e8f0fe] dark:bg-blue-950/40 text-[#041e49] dark:text-blue-100 px-4 py-3 whitespace-pre-wrap">
-                      <span className="font-medium">Lo que sabe el asistente:</span> {extra.summary}
-                    </p>
+                <div className={ROW}>
+                  <Label className={G_LABEL}>Servicio</Label>
+                  <Select value={form.service || undefined} onValueChange={v => edit({ service: v })}>
+                    <SelectTrigger className={INPUT}><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+                    <SelectContent>
+                      {SERVICES.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                      {form.service && !SERVICES.includes(form.service) && <SelectItem value={form.service}>{form.service}</SelectItem>}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </Card>
+            <p className={cn('text-xs text-right pr-2', status === 'error' ? 'text-destructive' : 'text-[#444746] dark:text-muted-foreground')}>
+              {saving || status === 'pending' ? 'Guardando…' : status === 'saved' ? '✓ Cambios guardados' : status === 'error' ? 'No se guardó' : 'Los cambios se guardan solos'}
+            </p>
+          </div>
+          <div className="space-y-3">
+            <Card title="Próxima acción">
+              <div className="inline-flex rounded-full border border-[#c4c7c5] dark:border-border overflow-hidden mb-2">
+                {([['reminder', 'Recordarme a mí', Bell], ['client_message', 'Mensaje al cliente', Send]] as const).map(([v, l, I], i) => (
+                  <button key={v} type="button" onClick={() => edit({ next_action_type: v })}
+                    className={cn('h-9 px-4 text-sm font-medium inline-flex items-center gap-1.5 transition-colors', i > 0 && 'border-l border-[#c4c7c5] dark:border-border',
+                      form.next_action_type === v ? 'bg-[#c2e7ff] text-[#001d35] dark:bg-blue-900/50 dark:text-blue-100' : 'text-[#444746] dark:text-muted-foreground hover:bg-[#f0f4f9] dark:hover:bg-muted')}>
+                    {form.next_action_type === v ? <Check className="h-4 w-4" /> : <I className="h-4 w-4" />} {l}
+                  </button>
+                ))}
+              </div>
+              <div className="space-y-2">
+                <Input
+                  placeholder={form.next_action_type === 'client_message' ? 'Nota interna (opcional)' : 'Ej: Llamar para enviar el link de onboarding'}
+                  value={form.next_action}
+                  onChange={e => edit({ next_action: e.target.value })}
+                  className={INPUT}
+                />
+                <div className="flex gap-2 items-center">
+                  <Input type="datetime-local" value={form.next_action_at} onChange={e => edit({ next_action_at: e.target.value })} className={INPUT} />
+                  {form.next_action_at && (
+                    <Button size="sm" variant="ghost" className="h-10 rounded-full text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe]" onClick={() => edit({ next_action_at: '', next_action: '' })}>Quitar</Button>
                   )}
-                  <div className="space-y-1.5 max-h-80 overflow-y-auto rounded-2xl bg-[#f0f4f9] dark:bg-muted p-3">
-                    {extra.chat.map((m, i) => (
-                      <p key={i} className={cn('text-xs rounded-2xl px-3 py-1.5 max-w-[85%] w-fit whitespace-pre-wrap', m.role === 'user' ? 'bg-white dark:bg-card' : 'bg-[#d3e3fd] dark:bg-blue-900/40 ml-auto')}>
-                        {m.content}
-                      </p>
-                    ))}
-                  </div>
+                </div>
+                <p className="text-xs text-[#444746] dark:text-muted-foreground leading-relaxed">
+                  {form.next_action_type === 'client_message'
+                    ? (contact.whatsapp_group_id
+                      ? 'A esa hora se le envía al cliente el mensaje de seguimiento a su grupo de WhatsApp. El texto se edita en WhatsApp → Automatizaciones → Seguimientos del CRM al cliente.'
+                      : '⚠️ Este cliente no tiene grupo de WhatsApp: el seguimiento no se envía (solo se escribe a grupos). Vincula su grupo en Reunión.')
+                    : 'A esa hora llega un recordatorio al grupo de administración por WhatsApp.'}
+                  {contact.reminder_sent_at && contact.next_action_at === (form.next_action_at ? new Date(form.next_action_at).toISOString() : null)
+                    ? ` Enviado ${fmt(contact.reminder_sent_at)}.` : ''}
+                </p>
+              </div>
+            </Card>
+  
+            <div className="rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border overflow-hidden">
+              <Tabs defaultValue="calls">
+                <TabsList className="w-full justify-start rounded-none sm:rounded-none border-x-0 border-t-0 flex-nowrap border-b border-[#e3e3e3] dark:border-border bg-transparent h-12 p-0 px-3 overflow-x-auto overflow-y-hidden">
+                  {tabs.map(([v, l]) => (
+                    <TabsTrigger key={v} value={v}
+                      className="h-12 rounded-none border-b-[3px] border-transparent px-4 text-sm font-medium text-[#444746] dark:text-muted-foreground data-[state=active]:border-[#0b57d0] data-[state=active]:text-[#0b57d0] dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none data-[state=active]:bg-transparent">
+                      {l}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+  
+                <TabsContent value="calls" className="p-5 mt-0 space-y-2">
+                  <Button size="sm" className="h-10 gap-2 rounded-full bg-[#0b57d0] hover:bg-[#0842a0] text-white px-5" onClick={() => setCallOpen(true)}>
+                    <Phone className="h-4 w-4" /> Registrar llamada
+                  </Button>
+                  {calls.map(n => <NoteItem key={n.id} n={n} userName={n.created_by ? users[n.created_by] : undefined} onChanged={refresh} />)}
+                  {!calls.length && <p className="text-sm text-[#444746] dark:text-muted-foreground py-2">Sin llamadas registradas.</p>}
                 </TabsContent>
-              )}
-            </Tabs>
+  
+                <TabsContent value="notes" className="p-5 mt-0 space-y-3">
+                  <div className="rounded-2xl border border-[#c4c7c5] dark:border-border focus-within:border-[#0b57d0] focus-within:ring-1 focus-within:ring-[#0b57d0] p-2 space-y-2">
+                    <Textarea rows={3} placeholder="Qué se habló, qué necesita, próximos pasos..." value={noteBody}
+                      onChange={e => setNoteBody(e.target.value)} className="border-0 bg-transparent shadow-none focus-visible:ring-0 resize-none" />
+                    <div className="flex items-center gap-2">
+                      {([['note', 'Nota'], ['meeting', 'Reunión']] as const).map(([v, l]) => (
+                        <button key={v} type="button" onClick={() => setNoteKind(v)}
+                          className={cn('inline-flex items-center gap-1 rounded-lg h-7 px-2.5 text-xs font-medium border',
+                            noteKind === v ? 'bg-[#c2e7ff] border-[#c2e7ff] text-[#001d35] dark:bg-blue-900/50 dark:border-blue-900/50 dark:text-blue-100' : 'border-[#c4c7c5] dark:border-border text-[#444746] dark:text-muted-foreground')}>
+                          {noteKind === v && <Check className="h-3.5 w-3.5" />} {l}
+                        </button>
+                      ))}
+                      {noteKind === 'meeting' && <p className="text-[11px] text-[#444746] dark:text-muted-foreground">Pasa el contacto a "Reunión hecha"</p>}
+                      <Button size="sm" className="h-8 rounded-full ml-auto bg-[#0b57d0] hover:bg-[#0842a0] text-white px-4" onClick={addNote} disabled={!noteBody.trim()}>Agregar</Button>
+                    </div>
+                  </div>
+                  {otherNotes.map(n => <NoteItem key={n.id} n={n} userName={n.created_by ? users[n.created_by] : undefined} onChanged={refresh} />)}
+                  {!otherNotes.length && <p className="text-sm text-[#444746] dark:text-muted-foreground">Sin notas todavía.</p>}
+                </TabsContent>
+  
+                {extra && extra.meetings.length > 0 && (
+                  <TabsContent value="meetings" className="p-5 mt-0 space-y-2">
+                    {extra.meetings.map((m: any) => (
+                      <div key={m.id} className={cn('flex items-center gap-3 rounded-2xl bg-[#f0f4f9] dark:bg-muted px-4 py-3', m.status === 'cancelled' && 'opacity-60')}>
+                        <CalendarCheck className={cn('h-5 w-5', m.status === 'cancelled' ? 'text-[#444746]' : 'text-[#0b57d0] dark:text-blue-300')} />
+                        <div className="text-sm flex-1 min-w-0">
+                          <p className={cn('font-medium text-[#1f1f1f] dark:text-foreground', m.status === 'cancelled' && 'line-through')}>{fmtMeetingDate(m.meeting_date)} · {m.meeting_time}</p>
+                          {m.comments && <p className="text-xs text-[#444746] dark:text-muted-foreground truncate">{m.comments}</p>}
+                        </div>
+                        {m.status === 'cancelled' && <span className="text-xs font-medium text-[#444746] dark:text-muted-foreground">Cancelada</span>}
+                      </div>
+                    ))}
+                  </TabsContent>
+                )}
+  
+                {extra && extra.chat.length > 0 && (
+                  <TabsContent value="chat" className="p-5 mt-0 space-y-2">
+                    {extra.summary && (
+                      <p className="text-sm rounded-2xl bg-[#e8f0fe] dark:bg-blue-950/40 text-[#041e49] dark:text-blue-100 px-4 py-3 whitespace-pre-wrap">
+                        <span className="font-medium">Lo que sabe el asistente:</span> {extra.summary}
+                      </p>
+                    )}
+                    <div className="space-y-1.5 max-h-80 overflow-y-auto rounded-2xl bg-[#f0f4f9] dark:bg-muted p-3">
+                      {extra.chat.map((m, i) => (
+                        <p key={i} className={cn('text-xs rounded-2xl px-3 py-1.5 max-w-[85%] w-fit whitespace-pre-wrap', m.role === 'user' ? 'bg-white dark:bg-card' : 'bg-[#d3e3fd] dark:bg-blue-900/40 ml-auto')}>
+                          {m.content}
+                        </p>
+                      ))}
+                    </div>
+                  </TabsContent>
+                )}
+              </Tabs>
+            </div>
           </div>
         </div>
 
-        <div className="space-y-3 md:overflow-y-auto md:pr-1">
-          <MeetingSection contact={contact} name={form.name} vehicle={form.vehicle} scheduledAt={scheduledLocal} />
-
-          <CallDialog open={callOpen} onClose={() => setCallOpen(false)} onSave={saveCall} />
-        </div>
+        {/* Primera reunión: a todo el ancho */}
+  <MeetingSection contact={contact} name={form.name} vehicle={form.vehicle} scheduledAt={scheduledLocal} />
+        <CallDialog open={callOpen} onClose={() => setCallOpen(false)} onSave={saveCall} />
       </div>
     </div>
   );
