@@ -5,8 +5,8 @@
 //  • reminders (cron, x-cron-secret): recordatorios por email al prospecto 24 h y 1 h antes
 // Las invitaciones .ics salen desde el Gmail de la app (58 Logistics) al prospecto y a tu calendario.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
-import { quotedPrintableEncode } from "https://deno.land/x/denomailer@1.6.0/config/mail/encoding.ts";
+// nodemailer y no denomailer: denomailer rompe los asuntos largos con acentos (y con ellos todo el email)
+import nodemailer from "npm:nodemailer@6.9.16";
 import ICAL from "npm:ical.js@1.5.0";
 import { isEnabled, renderMessage, sendTextLogged } from "../_shared/messaging.ts";
 import { appGmail } from "../_shared/gmail.ts";
@@ -269,27 +269,18 @@ function emailHtml(title: string, intro: string, m: any, lang: string, extra = "
 async function sendMail(to: string[], subject: string, html: string, ics?: { body: string; method: string }) {
   const { user, pass } = appGmail();
   if (!user || !pass) throw new Error("Falta el Gmail de la app");
-  const client = new SMTPClient({ connection: { hostname: "smtp.gmail.com", port: 465, tls: true, auth: { username: user, password: pass } } });
+  const transport = nodemailer.createTransport({ host: "smtp.gmail.com", port: 465, secure: true, auth: { user, pass } });
   try {
-    await client.send({
-      from: `58 Dispatch Service <${user}>`,
+    await transport.sendMail({
+      from: { name: "58 Dispatch Service", address: user },
       to,
       subject,
       html,
-      content: "auto",
-      ...(ics
-        ? {
-          mimeContent: [{
-            mimeType: `text/calendar; charset="utf-8"; method=${ics.method}`,
-            content: quotedPrintableEncode(ics.body),
-            transferEncoding: "quoted-printable",
-          }],
-          attachments: [{ contentType: "application/ics", filename: "invite.ics", encoding: "text", content: ics.body }],
-        }
-        : {}),
-    } as any);
+      // Invitación de calendario: Gmail/Outlook la muestran con Sí / No / Quizás y la agregan al calendario
+      ...(ics ? { icalEvent: { method: ics.method, filename: "invite.ics", content: ics.body } } : {}),
+    });
   } finally {
-    await client.close();
+    transport.close();
   }
 }
 
@@ -480,6 +471,16 @@ Deno.serve(async (req) => {
           notifyGroup(supabase, cfg, upd, "update").catch((e) => console.error("group:", errMsg(e))),
         ]);
         return json({ success: true, date: upd.meeting_date, time: upd.meeting_time });
+      }
+
+      // Reenviar la invitación de una reunión (pruebas / soporte), solo con x-cron-secret
+      case "resend": {
+        const secret = Deno.env.get("CRON_SECRET");
+        if (!secret || req.headers.get("x-cron-secret") !== secret) return json({ error: "Unauthorized" }, 401);
+        const m = await byToken(supabase, body.token);
+        if (!m) return json({ error: "No encontramos esa reunión." }, 404);
+        await sendInvite(m, cfg, m.status === "cancelled" ? "cancel" : "new", body.lang ?? "es");
+        return json({ success: true });
       }
 
       case "reminders": {
