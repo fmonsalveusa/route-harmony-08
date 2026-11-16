@@ -391,7 +391,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
         </header>
 
         {/* Page content */}
-        <main ref={mainRef} className="flex-1 overflow-y-auto p-4 lg:p-6 pb-[88px] lg:pb-6">
+        <main ref={mainRef} className="flex-1 overflow-y-auto p-4 lg:p-6 pb-[88px] lg:pb-6 bg-white dark:bg-background">
           {children}
         </main>
       </div>
