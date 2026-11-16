@@ -5,7 +5,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useDispatcherDriverIds } from '@/hooks/useDispatcherDriverIds';
 import { mockDrivers, mockDispatchers } from '@/data/mockData';
 import { StatusBadge } from '@/components/StatusBadge';
-import { StatTiles, TABLE_CARD, TABLE_ROW } from '@/components/StatTiles';
 import { useLoads } from '@/hooks/useLoads';
 import { usePodDocuments } from '@/hooks/usePodDocuments';
 import { useDrivers } from '@/hooks/useDrivers';
@@ -29,7 +28,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { PodUploadSection } from '@/components/PodUploadSection';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Search, Package, Pencil, Trash2, ChevronDown, ChevronUp, MapPin, Upload, ExternalLink, Filter, FileText, Download, CalendarDays, Clock, Navigation, DollarSign, Landmark } from 'lucide-react';
+import { Plus, Search, Package, Pencil, Trash2, ChevronDown, ChevronUp, MapPin, Upload, ExternalLink, Filter, FileText, Download, CalendarDays, Clock, Navigation, DollarSign, Landmark, X } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+// ─── Estilo Google / Material 3 ───
+/** Chip de filtro: azul tonal cuando tiene un valor elegido */
+const gChip = (active: boolean) => cn(
+  'h-8 text-xs rounded-lg shadow-none font-medium focus:ring-1 focus:ring-[#0b57d0] transition-colors',
+  active ? 'bg-[#c2e7ff] border-[#c2e7ff] text-[#001d35] dark:bg-blue-900/50 dark:border-blue-900/50 dark:text-blue-100'
+    : 'bg-white dark:bg-card border-[#c4c7c5] dark:border-border text-[#444746] dark:text-muted-foreground hover:bg-[#f0f4f9] dark:hover:bg-muted',
+);
+const G_TH = 'text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground whitespace-nowrap';
 import { toast } from 'sonner';
 import { useSearchParams } from 'react-router-dom';
 import type { DbLoad } from '@/hooks/useLoads';
@@ -258,14 +267,20 @@ const Loads = () => {
   const loads = loadsAll.slice((page - 1) * pageSize, page * pageSize);
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="page-header">Load Management</h1>
-          <p className="page-description">Manage all loads and assignments</p>
+    <div className="space-y-3">
+      {/* Encabezado estilo Google */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span className="h-10 w-10 rounded-full bg-[#d3e3fd] dark:bg-blue-900/40 text-[#041e49] dark:text-blue-200 flex items-center justify-center shrink-0">
+            <Package className="h-5 w-5" />
+          </span>
+          <div>
+            <h1 className="text-[24px] leading-8 font-normal text-[#1f1f1f] dark:text-foreground">Loads</h1>
+            <p className="text-sm text-[#444746] dark:text-muted-foreground">Manage all loads and assignments</p>
+          </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="gap-2" onClick={() => {
+          <Button variant="outline" className="h-10 rounded-full px-4 gap-2 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium" onClick={() => {
             const data = activeTab === 'all' ? baseLoads : activeTab === 'active' ? activeLoads : activeTab === 'delivered' ? deliveredLoads : cancelledLoads;
             if (data.length === 0) { toast.error('No data to export'); return; }
             const headers = ['Reference', 'Driver', 'Truck', 'Broker', 'Origin', 'Destination', 'Pickup Date', 'Delivery Date', 'Rate', 'DH-O', 'Miles', 'RPM', 'Dispatcher', 'Status', 'Factoring', 'Notes'];
@@ -286,8 +301,8 @@ const Loads = () => {
           }}>
             <Download className="h-4 w-4" /> Export CSV
           </Button>
-          <Button size="sm" className="gap-2" onClick={() => { setEditLoad(null); setShowForm(true); }}>
-            <Plus className="h-4 w-4" /> New Load
+          <Button className="h-10 rounded-2xl px-5 gap-2 bg-[#c2e7ff] hover:bg-[#b3dcf5] text-[#001d35] font-medium shadow-[0_1px_2px_rgba(60,64,67,.3),0_1px_3px_1px_rgba(60,64,67,.15)]" onClick={() => { setEditLoad(null); setShowForm(true); }}>
+            <Plus className="h-5 w-5" /> New Load
           </Button>
         </div>
       </div>
@@ -300,25 +315,41 @@ const Loads = () => {
         const revenue = baseLoads.filter(l => l.status !== 'cancelled').reduce((s, l) => s + Number(l.total_rate || 0), 0);
         const factoringOpen = deliveredLoads.filter(l => l.factoring && l.factoring !== 'ready');
         return (
-          <StatTiles tiles={[
-            { label: 'Active Loads', value: activeLoads.length, icon: Package, tint: 'bg-sky-100 text-sky-700' },
-            { label: 'En ruta', value: activeLoads.filter(l => moving.includes(l.status)).length, hint: 'in transit / on site / picked up', icon: Navigation, tint: 'bg-blue-100 text-blue-700' },
-            { label: 'Entregan hoy', value: deliveringToday.length, icon: Clock, tint: 'bg-red-100 text-red-700' },
-            { label: 'Revenue', value: `$${revenue.toLocaleString('en-US', { maximumFractionDigits: 0 })}`, hint: `${baseLoads.filter(l => l.status !== 'cancelled').length} loads con los filtros`, icon: DollarSign, tint: 'bg-emerald-100 text-emerald-700' },
-            { label: 'Factoring abierto', value: factoringOpen.length, hint: 'entregadas sin Ready', icon: Landmark, tint: 'bg-amber-100 text-amber-700' },
-          ]} />
+          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-2.5">
+            {[
+              { label: 'Active Loads', value: activeLoads.length, icon: Package, tone: 'bg-[#d3e3fd] text-[#041e49] dark:bg-blue-900/40 dark:text-blue-200' },
+              { label: 'En ruta', value: activeLoads.filter(l => moving.includes(l.status)).length, hint: 'in transit / on site / picked up', icon: Navigation, tone: 'bg-[#c2e7ff] text-[#001d35] dark:bg-sky-900/40 dark:text-sky-200' },
+              { label: 'Entregan hoy', value: deliveringToday.length, icon: Clock, tone: 'bg-[#f9dedc] text-[#410e0b] dark:bg-red-900/40 dark:text-red-200' },
+              { label: 'Revenue', value: `$${revenue.toLocaleString('en-US', { maximumFractionDigits: 0 })}`, hint: `${baseLoads.filter(l => l.status !== 'cancelled').length} loads con los filtros`, icon: DollarSign, tone: 'bg-[#c4eed0] text-[#072711] dark:bg-emerald-900/40 dark:text-emerald-200' },
+              { label: 'Factoring abierto', value: factoringOpen.length, hint: 'entregadas sin Ready', icon: Landmark, tone: 'bg-[#feefc3] text-[#3d2a00] dark:bg-amber-900/40 dark:text-amber-200' },
+            ].map(t => (
+              <div key={t.label} className="rounded-2xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border px-4 py-2.5 flex items-center gap-3" title={t.hint}>
+                <span className={cn('h-9 w-9 rounded-full flex items-center justify-center shrink-0', t.tone)}><t.icon className="h-[18px] w-[18px]" /></span>
+                <div className="min-w-0">
+                  <p className="text-[22px] leading-7 font-normal text-[#1f1f1f] dark:text-foreground truncate">{t.value}</p>
+                  <p className="text-xs font-medium text-[#444746] dark:text-muted-foreground truncate">{t.label}{t.hint ? <span className="font-normal opacity-75"> · {t.hint}</span> : null}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         );
       })()}
 
       {/* Search + Filters */}
       <div className="flex flex-wrap gap-2 items-center">
         <div className="relative">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-9 w-[200px] text-xs rounded-full bg-card shadow-sm" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#444746] dark:text-muted-foreground" />
+          <input placeholder="Buscar carga, broker, ciudad..." value={search} onChange={e => setSearch(e.target.value)}
+            className="h-10 w-[260px] rounded-full bg-white dark:bg-card border border-[#e3e3e3] dark:border-border pl-10 pr-8 text-sm text-[#1f1f1f] dark:text-foreground placeholder:text-[#444746] outline-none focus:shadow-[0_1px_1px_rgba(65,69,73,.3),0_1px_3px_1px_rgba(65,69,73,.15)] transition" />
+          {search && (
+            <button type="button" onClick={() => setSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 rounded-full hover:bg-black/5 flex items-center justify-center">
+              <X className="h-3.5 w-3.5 text-[#444746]" />
+            </button>
+          )}
         </div>
-        <Filter className="h-4 w-4 text-muted-foreground" />
+        <Filter className="h-4 w-4 text-[#444746] dark:text-muted-foreground" />
           <Select value={filterDriver} onValueChange={setFilterDriver}>
-            <SelectTrigger className="w-[160px] h-9 text-xs rounded-full bg-card shadow-sm">
+            <SelectTrigger className={cn('w-[160px]', gChip(filterDriver !== 'all'))}>
               <SelectValue placeholder="Driver" />
             </SelectTrigger>
             <SelectContent>
@@ -332,7 +363,7 @@ const Loads = () => {
             </SelectContent>
           </Select>
           <Select value={filterTruck} onValueChange={setFilterTruck}>
-            <SelectTrigger className="w-[160px] h-9 text-xs rounded-full bg-card shadow-sm">
+            <SelectTrigger className={cn('w-[160px]', gChip(filterTruck !== 'all'))}>
               <SelectValue placeholder="Truck" />
             </SelectTrigger>
             <SelectContent>
@@ -344,7 +375,7 @@ const Loads = () => {
           </Select>
           {!isDispatcher && (
           <Select value={filterDispatcher} onValueChange={setFilterDispatcher}>
-            <SelectTrigger className="w-[160px] h-9 text-xs rounded-full bg-card shadow-sm">
+            <SelectTrigger className={cn('w-[160px]', gChip(filterDispatcher !== 'all'))}>
               <SelectValue placeholder="Dispatcher" />
             </SelectTrigger>
             <SelectContent>
@@ -356,7 +387,7 @@ const Loads = () => {
           </Select>
           )}
           <Select value={filterYear} onValueChange={setFilterYear}>
-            <SelectTrigger className="w-[110px] h-9 text-xs rounded-full bg-card shadow-sm">
+            <SelectTrigger className={cn('w-[110px]', gChip(filterYear !== String(new Date().getFullYear())))}>
               <SelectValue placeholder="Year" />
             </SelectTrigger>
             <SelectContent>
@@ -367,7 +398,7 @@ const Loads = () => {
             </SelectContent>
           </Select>
           <Select value={filterMonth} onValueChange={setFilterMonth}>
-            <SelectTrigger className="w-[150px] h-9 text-xs rounded-full bg-card shadow-sm">
+            <SelectTrigger className={cn('w-[140px]', gChip(filterMonth !== 'all'))}>
               <SelectValue placeholder="Month" />
             </SelectTrigger>
             <SelectContent>
@@ -379,7 +410,7 @@ const Loads = () => {
           </Select>
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="h-9 text-xs gap-1.5 min-w-[180px] justify-start rounded-full bg-card shadow-sm">
+              <Button variant="outline" size="sm" className={cn('gap-1.5 min-w-[150px] justify-start px-3', gChip(filterWeeks.size > 0))}>
                 <CalendarDays className="h-3.5 w-3.5" />
                 {filterWeeks.size === 0 ? 'All Weeks' : filterWeeks.size === 1 ? `Week ${[...filterWeeks][0]}` : `${filterWeeks.size} Weeks`}
               </Button>
@@ -420,7 +451,7 @@ const Loads = () => {
             </PopoverContent>
           </Popover>
           <Select value={filterBroker} onValueChange={setFilterBroker}>
-            <SelectTrigger className="w-[160px] h-9 text-xs rounded-full bg-card shadow-sm">
+            <SelectTrigger className={cn('w-[160px]', gChip(filterBroker !== 'all'))}>
               <SelectValue placeholder="Broker" />
             </SelectTrigger>
             <SelectContent>
@@ -431,7 +462,7 @@ const Loads = () => {
             </SelectContent>
           </Select>
           <Select value={filterFactoring} onValueChange={setFilterFactoring}>
-            <SelectTrigger className="w-[160px] h-9 text-xs rounded-full bg-card shadow-sm">
+            <SelectTrigger className={cn('w-[160px]', gChip(filterFactoring !== 'all'))}>
               <SelectValue placeholder="Factoring" />
             </SelectTrigger>
             <SelectContent>
@@ -442,12 +473,12 @@ const Loads = () => {
             </SelectContent>
           </Select>
           {(filterDriver !== 'all' || filterTruck !== 'all' || filterDispatcher !== 'all' || filterWeeks.size > 0 || filterYear !== String(new Date().getFullYear()) || filterMonth !== 'all' || filterBroker !== 'all' || filterFactoring !== 'all') && (
-            <Button variant="ghost" size="sm" className="h-8 text-xs text-muted-foreground" onClick={() => { setFilterDriver('all'); setFilterTruck('all'); setFilterDispatcher('all'); setFilterWeeks(new Set()); setFilterYear(String(new Date().getFullYear())); setFilterMonth('all'); setFilterBroker('all'); setFilterFactoring('all'); }}>
+            <Button variant="ghost" size="sm" className="h-8 rounded-full px-3 text-xs font-medium text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe] dark:text-blue-300" onClick={() => { setFilterDriver('all'); setFilterTruck('all'); setFilterDispatcher('all'); setFilterWeeks(new Set()); setFilterYear(String(new Date().getFullYear())); setFilterMonth('all'); setFilterBroker('all'); setFilterFactoring('all'); }}>
               Clear filters
             </Button>
           )}
           <Select value={sortBy} onValueChange={(v) => setSortBy(v as 'delivery_date' | 'pickup_date')}>
-            <SelectTrigger className="w-[170px] h-9 text-xs rounded-full bg-card shadow-sm">
+            <SelectTrigger className={cn('w-[170px]', gChip(false))}>
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
             <SelectContent>
@@ -460,63 +491,54 @@ const Loads = () => {
           </div>
       </div>
 
-      <div className="inline-flex max-w-full flex-wrap items-center gap-1 rounded-xl sm:rounded-full bg-muted p-1 border border-border/60">
-        {([
-          { key: 'active' as const, label: 'Active Loads', count: activeLoads.length },
-          { key: 'delivered' as const, label: 'Delivered', count: deliveredLoads.length },
-          { key: 'cancelled' as const, label: 'Cancelled', count: cancelledLoads.length },
-          { key: 'all' as const, label: 'All Loads', count: baseLoads.length },
-        ]).map(tab => (
-          <button
-            key={tab.key}
-            onClick={() => { setActiveTab(tab.key); setExpandedId(null); setPage(1); }}
-            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all flex items-center gap-2 whitespace-nowrap ${
-              activeTab === tab.key
-                ? 'bg-card text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {tab.label}
-            <span className={`text-xs rounded-full px-2 py-0.5 font-semibold ${
-              tab.key === 'active' && tab.count > 0
-                ? 'bg-destructive text-destructive-foreground'
-                : activeTab === tab.key
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-muted-foreground'
-            }`}>{tab.count}</span>
-          </button>
-        ))}
-      </div>
-
       {/* Table */}
-      <div className={TABLE_CARD}>
+      <div className="rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border overflow-hidden">
+        {/* Pestañas estilo Google */}
+        <div className="flex items-center gap-1 border-b border-[#e3e3e3] dark:border-border px-3 overflow-x-auto">
+          {([
+            { key: 'active' as const, label: 'Active Loads', count: activeLoads.length },
+            { key: 'delivered' as const, label: 'Delivered', count: deliveredLoads.length },
+            { key: 'cancelled' as const, label: 'Cancelled', count: cancelledLoads.length },
+            { key: 'all' as const, label: 'All Loads', count: baseLoads.length },
+          ]).map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => { setActiveTab(tab.key); setExpandedId(null); setPage(1); }}
+              className={cn('h-12 px-4 text-sm font-medium border-b-[3px] -mb-px flex items-center gap-2 whitespace-nowrap transition-colors',
+                activeTab === tab.key ? 'border-[#0b57d0] text-[#0b57d0] dark:text-blue-300' : 'border-transparent text-[#444746] dark:text-muted-foreground hover:text-[#1f1f1f] hover:bg-[#f8fafd] dark:hover:bg-muted/40')}
+            >
+              {tab.label}
+              <span className={cn('min-w-6 h-5 px-1.5 rounded-full text-[11px] font-medium flex items-center justify-center',
+                tab.key === 'active' && tab.count > 0 ? 'bg-[#b3261e] text-white'
+                  : activeTab === tab.key ? 'bg-[#0b57d0] text-white' : 'bg-[#f0f4f9] dark:bg-muted text-[#444746] dark:text-muted-foreground')}>{tab.count}</span>
+            </button>
+          ))}
+        </div>
         <div className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-[15px]">
-              <thead><tr className="border-b bg-muted/50">
-                <th className="w-8 p-3"></th>
-                <th className="text-left p-3 text-xs font-bold text-muted-foreground uppercase tracking-wider">Load #</th>
-                <th className="text-left p-3 text-xs font-bold text-muted-foreground uppercase tracking-wider">Driver/Truck</th>
-                <th className="text-left p-3 text-xs font-bold text-muted-foreground uppercase tracking-wider">Broker</th>
-                <th className="text-left p-3 text-xs font-bold text-muted-foreground uppercase tracking-wider hidden md:table-cell">Ruta</th>
-                <th className="text-left p-3 text-xs font-bold text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Pickup</th>
-                <th className="text-left p-3 text-xs font-bold text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Delivery</th>
-                <th className="text-right p-3 text-xs font-bold text-muted-foreground uppercase tracking-wider hidden md:table-cell whitespace-nowrap">DH-O</th>
-                <th className="text-right p-3 text-xs font-bold text-muted-foreground uppercase tracking-wider hidden md:table-cell">Miles</th>
-                <th className="text-right p-3 text-xs font-bold text-muted-foreground uppercase tracking-wider">Rate</th>
-                <th className="text-left p-3 text-xs font-bold text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Dispatcher</th>
-                <th className="text-left p-3 text-xs font-bold text-muted-foreground uppercase tracking-wider">Status</th>
-                <th className="text-left p-3 text-xs font-bold text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Delivered</th>
-                <th className="text-left p-3 text-xs font-bold text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Factoring</th>
-                <th className="text-right p-3 text-xs font-bold text-muted-foreground uppercase tracking-wider">Acciones</th>
+              <thead><tr className="border-b border-[#e3e3e3] dark:border-border bg-[#f8fafd] dark:bg-muted/30">
+                <th className="w-8 px-2 py-2.5"></th>
+                <th className={cn(G_TH)}>Load #</th>
+                <th className={cn(G_TH)}>Driver/Truck</th>
+                <th className={cn(G_TH)}>Broker</th>
+                <th className={cn(G_TH, 'hidden md:table-cell')}>Ruta</th>
+                <th className={cn(G_TH, 'hidden lg:table-cell')}>Pickup</th>
+                <th className={cn(G_TH, 'hidden lg:table-cell')}>Delivery</th>
+                <th className={cn(G_TH, 'text-right hidden md:table-cell whitespace-nowrap')}>DH-O</th>
+                <th className={cn(G_TH, 'text-right hidden md:table-cell')}>Miles</th>
+                <th className={cn(G_TH, 'text-right')}>Rate</th>
+                <th className={cn(G_TH, 'hidden lg:table-cell')}>Dispatcher</th>
+                <th className={cn(G_TH)}>Status</th>
+                <th className={cn(G_TH, 'hidden lg:table-cell')}>Delivered</th>
+                <th className={cn(G_TH, 'hidden lg:table-cell')}>Factoring</th>
+                <th className={cn(G_TH, 'text-right')}>Acciones</th>
               </tr></thead>
               <tbody>
                 {loads.map(load => {
                   const driver = drivers.find(d => d.id === load.driver_id);
                   const dispatcher = dispatchers.find(d => d.id === load.dispatcher_id);
                   const isExpanded = expandedId === load.id;
-                  const rowIndex = loads.indexOf(load);
-                  const isOdd = rowIndex % 2 !== 0;
 
                   const statusBorderColor = (() => {
                     switch (load.status) {
@@ -539,7 +561,7 @@ const Loads = () => {
                       <Fragment key={load.id}>
                         <tr
                           id={`load-row-${load.id}`}
-                          className={`${TABLE_ROW} last:border-b-0 cursor-pointer ${statusBorderColor} ${isOdd ? 'bg-muted/30' : ''} ${isExpanded ? 'bg-muted/50' : ''}`}
+                          className={cn('border-b border-[#f0f0f0] dark:border-border last:border-b-0 cursor-pointer transition-colors hover:bg-[#f8fafd] dark:hover:bg-muted/30', statusBorderColor, isExpanded && 'bg-[#f0f4f9] dark:bg-muted/50 hover:bg-[#f0f4f9]')}
                           onClick={() => {
                             const newId = isExpanded ? null : load.id;
                             setExpandedId(newId);
@@ -550,11 +572,11 @@ const Loads = () => {
                             }
                           }}
                         >
-                          <td className="p-4 text-muted-foreground">
+                          <td className="pl-3 pr-1 py-2 text-[#444746]">
                             {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                           </td>
-                          <td className="p-4">
-                            <div className="font-medium text-primary">{load.reference_number}</div>
+                          <td className="px-3 py-2">
+                            <div className="font-medium text-[#0b57d0] dark:text-blue-300">{load.reference_number}</div>
                             {/* El tarp es solo para hotshot: en box truck no aplica */}
                             {(load.notes || '').toUpperCase().includes('TARP') && !(trucks.find(t => t.id === load.truck_id)?.truck_type || '').toLowerCase().includes('box') && (
                               <span className="inline-flex items-center mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide text-white bg-[hsl(25,95%,53%)] whitespace-nowrap">
@@ -563,7 +585,7 @@ const Loads = () => {
                             )}
 
                           </td>
-                          <td className="p-4">
+                          <td className="px-3 py-2">
                             <div className="flex items-center gap-2">
                               {driver ? (
                                 <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 text-white" style={{ backgroundColor: dispatcherColor }}>
@@ -580,7 +602,7 @@ const Loads = () => {
                               </div>
                             </div>
                           </td>
-                          <td className="p-4 text-foreground">
+                          <td className="px-3 py-2 text-foreground">
                             <div>{load.broker_client || '—'}</div>
                             {load.delivery_date && load.delivery_date.split('T')[0] === new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' }) && (
                               <span className="inline-flex items-center mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide text-white bg-[#ea580c] whitespace-nowrap">
@@ -593,42 +615,42 @@ const Loads = () => {
                               </span>
                             )}
                           </td>
-                          <td className="p-4 hidden md:table-cell">
+                          <td className="px-3 py-2 hidden md:table-cell">
                             {(() => {
                               const { city: originCity, state: originState } = extractCityState(load.origin);
                               const { city: destCity, state: destState } = extractCityState(load.destination);
                               return (
-                                <div className="space-y-1.5">
+                                <div className="space-y-0.5">
                                   <div className="flex items-center gap-1.5">
-                                    <MapPin className="h-3.5 w-3.5 text-green-600 flex-shrink-0" />
+                                    <MapPin className="h-3.5 w-3.5 text-[#188038] flex-shrink-0" />
                                     <div className="text-xs font-medium text-foreground">{originCity}{originState ? `, ${originState}` : ''}</div>
                                   </div>
                                   <div className="flex items-center gap-1.5">
-                                    <MapPin className="h-3.5 w-3.5 text-red-500 flex-shrink-0" />
+                                    <MapPin className="h-3.5 w-3.5 text-[#d93025] flex-shrink-0" />
                                     <div className="text-xs font-medium text-foreground">{destCity}{destState ? `, ${destState}` : ''}</div>
                                   </div>
                                 </div>
                               );
                             })()}
                           </td>
-                          <td className="p-4 hidden lg:table-cell text-muted-foreground">
+                          <td className="px-3 py-2 hidden lg:table-cell text-muted-foreground">
                             <div>{formatDate(load.pickup_date)}</div>
                             {(load as any).pickup_time && (
                               <div className="text-[11px] text-muted-foreground/70">{(load as any).pickup_time}</div>
                             )}
                             {(load as any).has_detention_pickup && <DetentionBadge />}
                           </td>
-                          <td className="p-4 hidden lg:table-cell text-muted-foreground">
+                          <td className="px-3 py-2 hidden lg:table-cell text-muted-foreground">
                             <div>{formatDate(load.delivery_date)}</div>
                             {(load as any).delivery_time && (
                               <div className="text-[11px] text-muted-foreground/70">{(load as any).delivery_time}</div>
                             )}
                             {(load as any).has_detention_delivery && <DetentionBadge />}
                           </td>
-                          <td className="p-4 text-right hidden md:table-cell text-muted-foreground">{load.empty_miles && Number(load.empty_miles) > 0 ? Number(load.empty_miles).toLocaleString() : '—'}</td>
-                          <td className="p-4 text-right hidden md:table-cell text-muted-foreground">{load.miles && Number(load.miles) > 0 ? Number(load.miles).toLocaleString() : '—'}</td>
-                          <td className="p-4 text-right">
-                            <div className="text-base font-bold text-green-600">${Number(load.total_rate).toLocaleString()}</div>
+                          <td className="px-3 py-2 text-right hidden md:table-cell text-muted-foreground">{load.empty_miles && Number(load.empty_miles) > 0 ? Number(load.empty_miles).toLocaleString() : '—'}</td>
+                          <td className="px-3 py-2 text-right hidden md:table-cell text-muted-foreground">{load.miles && Number(load.miles) > 0 ? Number(load.miles).toLocaleString() : '—'}</td>
+                          <td className="px-3 py-2 text-right">
+                            <div className="text-base font-medium text-[#188038] dark:text-emerald-400">${Number(load.total_rate).toLocaleString()}</div>
                             {load.miles && Number(load.miles) > 0 && (() => {
                               const rpm = Number(load.total_rate) / Number(load.miles);
                               const truck = trucks.find(t => t.id === load.truck_id);
@@ -644,8 +666,8 @@ const Loads = () => {
                               return <div className="text-xs font-medium text-muted-foreground">${rpm.toFixed(2)}/mi</div>;
                             })()}
                           </td>
-                          <td className="p-4 hidden lg:table-cell">{dispatcher?.name || '—'}</td>
-                          <td className="p-4" onClick={e => e.stopPropagation()}>
+                          <td className="px-3 py-2 hidden lg:table-cell">{dispatcher?.name || '—'}</td>
+                          <td className="px-3 py-2" onClick={e => e.stopPropagation()}>
                             <Select value={load.status} onValueChange={async (val) => {
                               const prevStatus = load.status;
                               const updates: any = { status: val };
@@ -691,10 +713,10 @@ const Loads = () => {
                               </SelectContent>
                             </Select>
                           </td>
-                          <td className="p-4 hidden lg:table-cell text-muted-foreground">
+                          <td className="px-3 py-2 hidden lg:table-cell text-muted-foreground">
                             {load.status === 'delivered' ? formatDate(load.delivery_date) : '—'}
                           </td>
-                          <td className="p-4 hidden lg:table-cell" onClick={e => e.stopPropagation()}>
+                          <td className="px-3 py-2 hidden lg:table-cell" onClick={e => e.stopPropagation()}>
                             <Select
                               value={load.factoring || ''}
                               disabled={generatingPaymentIds.has(load.id)}
@@ -730,15 +752,15 @@ const Loads = () => {
                               </SelectContent>
                             </Select>
                           </td>
-                          <td className="p-4 text-right" onClick={e => e.stopPropagation()}>
+                          <td className="px-3 py-2 text-right" onClick={e => e.stopPropagation()}>
                             <div className="flex justify-end gap-1">
-                              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground" onClick={() => handleGenerateInvoice(load)} title="Invoice">
+                              <Button variant="ghost" size="sm" className="h-8 rounded-full px-2.5 text-xs gap-1 text-[#444746] hover:text-[#1f1f1f] hover:bg-[#f0f4f9] dark:text-muted-foreground" onClick={() => handleGenerateInvoice(load)} title="Invoice">
                                 <FileText className="h-3.5 w-3.5" /> Invoice
                               </Button>
-                              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={() => { setEditLoad(load); setShowForm(true); }} title="Edit">
+                              <Button variant="ghost" size="sm" className="h-8 rounded-full px-2.5 text-xs gap-1 text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe] dark:text-blue-300" onClick={() => { setEditLoad(load); setShowForm(true); }} title="Edit">
                                 <Pencil className="h-3.5 w-3.5" /> Edit
                               </Button>
-                              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1 text-red-500 hover:text-red-600 hover:bg-red-50" onClick={async (e) => { e.stopPropagation(); e.preventDefault(); if (window.confirm(`¿Eliminar carga ${load.reference_number}? Esta acción es permanente.`)) { await deleteLoad(load.id); } }} title="Delete">
+                              <Button variant="ghost" size="sm" className="h-8 rounded-full px-2.5 text-xs gap-1 text-[#b3261e] hover:text-[#b3261e] hover:bg-[#fce8e6]" onClick={async (e) => { e.stopPropagation(); e.preventDefault(); if (window.confirm(`¿Eliminar carga ${load.reference_number}? Esta acción es permanente.`)) { await deleteLoad(load.id); } }} title="Delete">
                                 <Trash2 className="h-3.5 w-3.5" /> Delete
                               </Button>
                             </div>
@@ -771,28 +793,28 @@ const Loads = () => {
             </table>
           </div>
           {loads.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-              <Package className="h-10 w-10 mb-3 opacity-50" />
-              <p>No se encontraron cargas</p>
+            <div className="flex flex-col items-center justify-center py-12 text-[#444746] dark:text-muted-foreground">
+              <span className="h-14 w-14 rounded-full bg-[#f0f4f9] dark:bg-muted flex items-center justify-center mb-3"><Package className="h-7 w-7 text-[#0b57d0] dark:text-blue-300" /></span>
+              <p className="text-sm">No se encontraron cargas</p>
             </div>
           )}
 
           {/* Pagination Footer */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border-t">
-            <div className="text-sm text-muted-foreground">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-4 py-2.5 border-t border-[#e3e3e3] dark:border-border">
+            <div className="text-sm text-[#444746] dark:text-muted-foreground">
               {loadsAll.length} loads
             </div>
             <div className="flex items-center gap-3 mt-2 sm:mt-0">
               <Select value={String(pageSize)} onValueChange={v => { setPageSize(Number(v)); setPage(1); }}>
-                <SelectTrigger className="w-[80px] h-8 text-xs"><SelectValue /></SelectTrigger>
+                <SelectTrigger className={cn('w-[100px]', gChip(false))}><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {PAGE_SIZES.map(s => <SelectItem key={s} value={String(s)}>{s}/page</SelectItem>)}
                 </SelectContent>
               </Select>
               <div className="flex items-center gap-1">
-                <Button variant="outline" size="sm" className="h-8" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>Prev</Button>
-                <span className="text-sm px-2">{page}/{totalPages}</span>
-                <Button variant="outline" size="sm" className="h-8" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>Next</Button>
+                <Button variant="ghost" size="sm" className="h-8 rounded-full px-3 text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe] dark:text-blue-300 font-medium" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>Prev</Button>
+                <span className="text-sm px-2 text-[#444746] dark:text-muted-foreground">{page} de {totalPages}</span>
+                <Button variant="ghost" size="sm" className="h-8 rounded-full px-3 text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe] dark:text-blue-300 font-medium" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>Next</Button>
               </div>
             </div>
           </div>
@@ -819,13 +841,13 @@ const Loads = () => {
 
       {/* POD Upload Dialog on Delivered */}
       <Dialog open={!!podUploadLoadId} onOpenChange={(open) => { if (!open) setPodUploadLoadId(null); }}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md rounded-[28px] border-0">
           <DialogHeader>
-            <DialogTitle>Subir POD — Proof of Delivery</DialogTitle>
+            <DialogTitle className="text-[22px] font-normal text-[#1f1f1f] dark:text-foreground">Subir POD — Proof of Delivery</DialogTitle>
           </DialogHeader>
           {podUploadLoadId && <PodUploadSection loadId={podUploadLoadId} referenceNumber={loads.find(l => l.id === podUploadLoadId)?.reference_number} />}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setPodUploadLoadId(null)}>Cerrar</Button>
+            <Button variant="ghost" className="h-10 rounded-full px-5 text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe] font-medium" onClick={() => setPodUploadLoadId(null)}>Cerrar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
