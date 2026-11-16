@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { todayET } from '@/lib/dateUtils';
 import { DbDispatcher, DispatcherInput } from '@/hooks/useDispatchers';
 import { toast } from 'sonner';
+import { Headset } from 'lucide-react';
 
 interface Props {
   open: boolean;
@@ -70,24 +71,32 @@ export function DispatcherFormDialog({ open, onOpenChange, dispatcher, onSubmit 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{dispatcher ? 'Edit Dispatcher' : 'New Dispatcher'}</DialogTitle>
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto rounded-[28px] border-0 bg-[#f8fafd] dark:bg-background [&_label]:text-xs [&_label]:font-medium [&_label]:text-[#444746] dark:[&_label]:text-muted-foreground [&_input]:h-10 [&_input]:rounded-lg [&_input]:shadow-none [&_input]:bg-white dark:[&_input]:bg-card [&_input]:border-[#c4c7c5] dark:[&_input]:border-border [&_input:focus-visible]:ring-1 [&_input:focus-visible]:ring-[#0b57d0] [&_input:focus-visible]:border-[#0b57d0] [&_button[role=combobox]]:h-10 [&_button[role=combobox]]:rounded-lg [&_button[role=combobox]]:shadow-none [&_button[role=combobox]]:bg-white dark:[&_button[role=combobox]]:bg-card [&_button[role=combobox]]:border-[#c4c7c5] dark:[&_button[role=combobox]]:border-border">
+        <DialogHeader className="space-y-0">
+          <div className="flex items-center gap-3">
+            <span className="h-11 w-11 rounded-full bg-[#d3e3fd] dark:bg-blue-900/40 text-[#041e49] dark:text-blue-200 flex items-center justify-center shrink-0">
+              <Headset className="h-5 w-5" />
+            </span>
+            <div>
+              <DialogTitle className="text-[22px] leading-7 font-normal text-[#1f1f1f] dark:text-foreground">{dispatcher ? 'Edit Dispatcher' : 'New Dispatcher'}</DialogTitle>
+              <p className="text-sm text-[#444746] dark:text-muted-foreground">{dispatcher ? dispatcher.name : 'Completa la información del dispatcher'}</p>
+            </div>
+          </div>
         </DialogHeader>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-          <div className="space-y-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-3 mt-2 rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border p-4">
+          <div className="space-y-1">
             <Label>Name *</Label>
             <Input value={form.name} onChange={e => set('name', e.target.value)} placeholder="Full name" />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label>Email *</Label>
             <Input type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="email@example.com" />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label>Phone *</Label>
             <Input value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="555-0000" />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label>Status</Label>
             <Select value={form.status} onValueChange={v => set('status', v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
@@ -97,19 +106,19 @@ export function DispatcherFormDialog({ open, onOpenChange, dispatcher, onSubmit 
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label>% Commission 1</Label>
             <Input type="number" value={form.commission_percentage} onChange={e => set('commission_percentage', Number(e.target.value))} />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label>% Commission 2</Label>
             <Input type="number" value={form.commission_2_percentage} onChange={e => set('commission_2_percentage', Number(e.target.value))} placeholder="0" />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label>% Dispatch Service</Label>
             <Input type="number" value={form.dispatch_service_percentage} onChange={e => set('dispatch_service_percentage', Number(e.target.value))} />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label>Pay Type</Label>
             <Select value={form.pay_type} onValueChange={v => set('pay_type', v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
@@ -119,7 +128,7 @@ export function DispatcherFormDialog({ open, onOpenChange, dispatcher, onSubmit 
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label>Start Date</Label>
             <Input type="date" value={form.start_date} onChange={e => set('start_date', e.target.value)} />
           </div>
@@ -154,9 +163,9 @@ export function DispatcherFormDialog({ open, onOpenChange, dispatcher, onSubmit 
             </div>
           </div>
         </div>
-        <div className="flex justify-end gap-2 mt-6">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleSubmit} disabled={saving}>
+        <div className="flex justify-end gap-2 mt-4">
+          <Button variant="ghost" className="h-10 rounded-full px-5 text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe] dark:text-blue-300 font-medium" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button className="h-10 rounded-full px-6 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium" onClick={handleSubmit} disabled={saving}>
             {saving ? 'Saving...' : dispatcher ? 'Save Changes' : 'Create Dispatcher'}
           </Button>
         </div>
