@@ -670,8 +670,8 @@ Se borra de Google Calendar, se libera el horario y se le avisa por email.`)) re
           </p>
         ) : (
           <p className={cn('text-[11px] flex items-center gap-1', overdue ? 'text-[#b3261e] font-medium' : 'text-[#0b57d0] dark:text-blue-300')}>
-            {overdue ? <AlertCircle className="h-3 w-3" /> : <CalendarClock className="h-3 w-3" />}
-            {fmt(c.next_action_at)}{c.next_action ? ` · ${c.next_action}` : ''}
+            {overdue ? <AlertCircle className="h-3 w-3 shrink-0" /> : <CalendarClock className="h-3 w-3 shrink-0" />}
+            <span><span className="font-semibold">Próximo seguimiento:</span> {fmt(c.next_action_at)}{c.next_action ? ` · ${c.next_action}` : ''}</span>
           </p>
         )
       )}
