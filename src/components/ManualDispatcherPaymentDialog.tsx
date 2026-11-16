@@ -363,9 +363,9 @@ export const ManualDispatcherPaymentDialog = ({ open, onOpenChange, onComplete }
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col">
+      <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col rounded-[28px] border-0 bg-[#f8fafd] dark:bg-background [&_label]:text-xs [&_label]:font-medium [&_label]:text-[#444746] dark:[&_label]:text-muted-foreground [&_input]:rounded-lg [&_input]:shadow-none [&_input]:bg-white dark:[&_input]:bg-card [&_input]:border-[#c4c7c5] dark:[&_input]:border-border [&_input:focus-visible]:ring-1 [&_input:focus-visible]:ring-[#0b57d0] [&_input:focus-visible]:border-[#0b57d0] [&_button[role=combobox]]:rounded-lg [&_button[role=combobox]]:shadow-none [&_button[role=combobox]]:bg-white dark:[&_button[role=combobox]]:bg-card [&_button[role=combobox]]:border-[#c4c7c5] dark:[&_button[role=combobox]]:border-border [&_textarea]:rounded-lg [&_textarea]:shadow-none [&_textarea]:bg-white dark:[&_textarea]:bg-card [&_textarea]:border-[#c4c7c5]">
         <DialogHeader>
-          <DialogTitle>Generate Dispatcher Payment</DialogTitle>
+          <DialogTitle className="text-[22px] leading-7 font-normal text-[#1f1f1f] dark:text-foreground">Generate Dispatcher Payment</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 flex-1 overflow-hidden flex flex-col">
@@ -506,8 +506,8 @@ export const ManualDispatcherPaymentDialog = ({ open, onOpenChange, onComplete }
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => handleClose(false)}>Cancel</Button>
-          <Button onClick={handleSubmit} disabled={selectedLoadIds.size === 0 || submitting}>
+          <Button className="h-10 rounded-full px-5 text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe] dark:text-blue-300 font-medium" variant="ghost" onClick={() => handleClose(false)}>Cancel</Button>
+          <Button className="h-10 rounded-full px-6 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium" onClick={handleSubmit} disabled={selectedLoadIds.size === 0 || submitting}>
             {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             Generate Consolidated Payment{selectedLoadIds.size > 0 ? ` (${selectedLoadIds.size} loads)` : ''}
           </Button>

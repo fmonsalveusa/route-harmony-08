@@ -113,15 +113,15 @@ const InvestorFormDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={handleOpen}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-[28px] border-0 bg-[#f8fafd] dark:bg-background [&_label]:text-xs [&_label]:font-medium [&_label]:text-[#444746] dark:[&_label]:text-muted-foreground [&_input]:rounded-lg [&_input]:shadow-none [&_input]:bg-white dark:[&_input]:bg-card [&_input]:border-[#c4c7c5] dark:[&_input]:border-border [&_input:focus-visible]:ring-1 [&_input:focus-visible]:ring-[#0b57d0] [&_input:focus-visible]:border-[#0b57d0] [&_button[role=combobox]]:rounded-lg [&_button[role=combobox]]:shadow-none [&_button[role=combobox]]:bg-white dark:[&_button[role=combobox]]:bg-card [&_button[role=combobox]]:border-[#c4c7c5] dark:[&_button[role=combobox]]:border-border [&_textarea]:rounded-lg [&_textarea]:shadow-none [&_textarea]:bg-white dark:[&_textarea]:bg-card [&_textarea]:border-[#c4c7c5]">
         <DialogHeader>
-          <DialogTitle>{investor ? 'Edit Investor' : 'New Investor'}</DialogTitle>
+          <DialogTitle className="text-[22px] leading-7 font-normal text-[#1f1f1f] dark:text-foreground">{investor ? 'Edit Investor' : 'New Investor'}</DialogTitle>
         </DialogHeader>
         <div className="space-y-6 py-2">
 
           {/* Basic Info */}
           <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Personal Information</h3>
+            <h3 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground">Personal Information</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2 sm:col-span-2">
                 <Label>Full Name *</Label>
@@ -140,7 +140,7 @@ const InvestorFormDialog = ({
 
           {/* Address */}
           <div className="space-y-3 border-t pt-4">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Address</h3>
+            <h3 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground">Address</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2 sm:col-span-2">
                 <Label>Street Address</Label>
@@ -163,7 +163,7 @@ const InvestorFormDialog = ({
 
           {/* Business Info */}
           <div className="space-y-3 border-t pt-4">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Business Information <span className="text-xs font-normal normal-case">(opcional)</span></h3>
+            <h3 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground">Business Information <span className="text-xs font-normal text-[#444746] dark:text-muted-foreground">(opcional)</span></h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2 sm:col-span-2">
                 <Label>Business Name (LLC / Corp)</Label>
@@ -183,7 +183,7 @@ const InvestorFormDialog = ({
           {/* Tax Information para el 1099 (solo admin y accounting, al editar) */}
           {investor?.id && canSeeTax && (
             <div className="border-t pt-4">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Tax Information</h3>
+              <h3 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground mb-2">Tax Information</h3>
               <DriverTaxSection driverId={investor.id} recipientType="investor" hasW9={!!investor.w9_url} />
             </div>
           )}
@@ -207,7 +207,7 @@ const InvestorFormDialog = ({
 
           {/* Banking */}
           <div className="space-y-3 border-t pt-4">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Banking Information <span className="text-xs font-normal normal-case">(ACH Direct Deposit)</span></h3>
+            <h3 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground">Banking Information <span className="text-xs font-normal text-[#444746] dark:text-muted-foreground">(ACH Direct Deposit)</span></h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2 sm:col-span-2">
                 <Label>Account Holder Name</Label>
@@ -255,8 +255,8 @@ const InvestorFormDialog = ({
 
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleSubmit} disabled={saving}>
+          <Button className="h-10 rounded-full px-5 text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe] dark:text-blue-300 font-medium" variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button className="h-10 rounded-full px-6 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium" onClick={handleSubmit} disabled={saving}>
             {saving ? 'Saving...' : investor ? 'Save Changes' : 'Create Investor'}
           </Button>
         </DialogFooter>
@@ -568,9 +568,9 @@ const Investors = () => {
 
       {/* Delete confirmation */}
       <Dialog open={!!deleteConfirmId} onOpenChange={open => { if (!open) setDeleteConfirmId(null); }}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-sm rounded-[28px] border-0 bg-[#f8fafd] dark:bg-background [&_label]:text-xs [&_label]:font-medium [&_label]:text-[#444746] dark:[&_label]:text-muted-foreground [&_input]:rounded-lg [&_input]:shadow-none [&_input]:bg-white dark:[&_input]:bg-card [&_input]:border-[#c4c7c5] dark:[&_input]:border-border [&_input:focus-visible]:ring-1 [&_input:focus-visible]:ring-[#0b57d0] [&_input:focus-visible]:border-[#0b57d0] [&_button[role=combobox]]:rounded-lg [&_button[role=combobox]]:shadow-none [&_button[role=combobox]]:bg-white dark:[&_button[role=combobox]]:bg-card [&_button[role=combobox]]:border-[#c4c7c5] dark:[&_button[role=combobox]]:border-border [&_textarea]:rounded-lg [&_textarea]:shadow-none [&_textarea]:bg-white dark:[&_textarea]:bg-card [&_textarea]:border-[#c4c7c5]">
           <DialogHeader>
-            <DialogTitle>Delete investor?</DialogTitle>
+            <DialogTitle className="text-[22px] leading-7 font-normal text-[#1f1f1f] dark:text-foreground">Delete investor?</DialogTitle>
           </DialogHeader>
           <div className="py-2 text-sm text-muted-foreground space-y-2">
             <p>This will permanently delete <strong className="text-foreground">{deleteTarget?.name}</strong>.</p>
@@ -582,8 +582,8 @@ const Investors = () => {
             <p>Existing payment records are not affected.</p>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteConfirmId(null)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleDelete}>Delete</Button>
+            <Button className="h-10 rounded-full px-5 text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe] dark:text-blue-300 font-medium" variant="ghost" onClick={() => setDeleteConfirmId(null)}>Cancel</Button>
+            <Button className="h-10 rounded-full px-6 bg-[#b3261e] hover:bg-[#8c1d18] text-white font-medium"  onClick={handleDelete}>Delete</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

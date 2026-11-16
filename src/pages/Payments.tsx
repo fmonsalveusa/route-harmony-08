@@ -391,32 +391,32 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
 
       <Tabs value={statusFilter} onValueChange={setStatusFilter}>
         <div className="flex items-center gap-4 flex-wrap">
-          <TabsList>
-            <TabsTrigger value="pending">
+          <TabsList className="w-full justify-start rounded-none sm:rounded-none border-x-0 border-t-0 flex-nowrap border-b border-[#e3e3e3] dark:border-border bg-transparent h-12 p-0 px-1 overflow-x-auto overflow-y-hidden w-auto">
+            <TabsTrigger className="h-12 rounded-none border-b-[3px] border-transparent px-4 gap-2 text-sm font-medium text-[#444746] dark:text-muted-foreground data-[state=active]:border-[#0b57d0] data-[state=active]:text-[#0b57d0] dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none data-[state=active]:bg-transparent" value="pending">
               Pending
-              <span className={`ml-1.5 inline-flex items-center justify-center rounded-full text-[11px] font-semibold min-w-[20px] h-5 px-1.5 ${pendingCount > 0 ? 'bg-destructive text-destructive-foreground' : 'bg-primary text-primary-foreground'}`}>{pendingCount}</span>
+              <span className={`inline-flex items-center justify-center rounded-full text-[11px] font-medium min-w-[20px] h-5 px-1.5 ${pendingCount > 0 ? 'bg-[#b3261e] text-white' : 'bg-[#f0f4f9] dark:bg-muted text-[#444746] dark:text-muted-foreground'}`}>{pendingCount}</span>
             </TabsTrigger>
-            <TabsTrigger value="in_process">
+            <TabsTrigger className="h-12 rounded-none border-b-[3px] border-transparent px-4 gap-2 text-sm font-medium text-[#444746] dark:text-muted-foreground data-[state=active]:border-[#0b57d0] data-[state=active]:text-[#0b57d0] dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none data-[state=active]:bg-transparent" value="in_process">
               In Process
-              <span className={`ml-1.5 inline-flex items-center justify-center rounded-full text-[11px] font-semibold min-w-[20px] h-5 px-1.5 ${inProcessCount > 0 ? 'bg-destructive text-destructive-foreground' : 'bg-primary text-primary-foreground'}`}>{inProcessCount}</span>
+              <span className={`inline-flex items-center justify-center rounded-full text-[11px] font-medium min-w-[20px] h-5 px-1.5 ${inProcessCount > 0 ? 'bg-[#b3261e] text-white' : 'bg-[#f0f4f9] dark:bg-muted text-[#444746] dark:text-muted-foreground'}`}>{inProcessCount}</span>
             </TabsTrigger>
-            <TabsTrigger value="paid">
+            <TabsTrigger className="h-12 rounded-none border-b-[3px] border-transparent px-4 gap-2 text-sm font-medium text-[#444746] dark:text-muted-foreground data-[state=active]:border-[#0b57d0] data-[state=active]:text-[#0b57d0] dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none data-[state=active]:bg-transparent" value="paid">
               Paid
-              <span className="ml-1.5 inline-flex items-center justify-center rounded-full text-[11px] font-semibold min-w-[20px] h-5 px-1.5 bg-primary text-primary-foreground">{paidCount}</span>
+              <span className="ml-1.5 inline-flex items-center justify-center rounded-full text-[11px] font-medium min-w-[20px] h-5 px-1.5 bg-[#f0f4f9] dark:bg-muted text-[#444746] dark:text-muted-foreground">{paidCount}</span>
             </TabsTrigger>
-            <TabsTrigger value="all">
+            <TabsTrigger className="h-12 rounded-none border-b-[3px] border-transparent px-4 gap-2 text-sm font-medium text-[#444746] dark:text-muted-foreground data-[state=active]:border-[#0b57d0] data-[state=active]:text-[#0b57d0] dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none data-[state=active]:bg-transparent" value="all">
               All
-              <span className="ml-1.5 inline-flex items-center justify-center rounded-full text-[11px] font-semibold min-w-[20px] h-5 px-1.5 bg-primary text-primary-foreground">{allTypePayments.length}</span>
+              <span className="ml-1.5 inline-flex items-center justify-center rounded-full text-[11px] font-medium min-w-[20px] h-5 px-1.5 bg-[#f0f4f9] dark:bg-muted text-[#444746] dark:text-muted-foreground">{allTypePayments.length}</span>
             </TabsTrigger>
           </TabsList>
           {onCreateManual && (
-            <div className="ml-24">
-              <Button size="sm" className="gap-1.5" onClick={onCreateManual}>
-                <PlusCircle className="h-4 w-4" /> {createLabel}
+            <div className="ml-auto">
+              <Button className="h-10 rounded-2xl px-5 gap-2 bg-[#c2e7ff] hover:bg-[#b3dcf5] text-[#001d35] font-medium shadow-[0_1px_2px_rgba(60,64,67,.3),0_1px_3px_1px_rgba(60,64,67,.15)]" onClick={onCreateManual}>
+                <PlusCircle className="h-5 w-5" /> {createLabel}
               </Button>
             </div>
           )}
@@ -431,13 +431,13 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
             placeholder="Search..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="pl-9 h-9 w-[200px] text-xs rounded-full bg-card shadow-sm"
+            className="pl-9 h-9 w-[220px] text-sm rounded-full bg-white dark:bg-card border-[#e3e3e3] dark:border-border shadow-none"
           />
         </div>
         <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">Beneficiary</label>
+          <label className="text-xs font-medium text-[#444746] dark:text-muted-foreground">Beneficiary</label>
           <Select value={beneficiaryFilter} onValueChange={setBeneficiaryFilter}>
-            <SelectTrigger className="rounded-full bg-card shadow-sm h-9 w-[180px] text-xs">
+            <SelectTrigger className="rounded-lg shadow-none font-medium bg-white dark:bg-card border-[#c4c7c5] dark:border-border text-[#444746] dark:text-muted-foreground h-8 w-[180px] text-xs">
               <SelectValue placeholder="All" />
             </SelectTrigger>
             <SelectContent className="bg-popover z-50">
@@ -450,9 +450,9 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">Week</label>
+          <label className="text-xs font-medium text-[#444746] dark:text-muted-foreground">Week</label>
           <Select value={weekFilter} onValueChange={setWeekFilter}>
-            <SelectTrigger className="rounded-full bg-card shadow-sm h-9 w-[140px] text-xs">
+            <SelectTrigger className="rounded-lg shadow-none font-medium bg-white dark:bg-card border-[#c4c7c5] dark:border-border text-[#444746] dark:text-muted-foreground h-8 w-[140px] text-xs">
               <SelectValue placeholder="All" />
             </SelectTrigger>
             <SelectContent className="bg-popover z-50">
@@ -465,9 +465,9 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">Month</label>
+          <label className="text-xs font-medium text-[#444746] dark:text-muted-foreground">Month</label>
           <Select value={monthFilter} onValueChange={setMonthFilter}>
-            <SelectTrigger className="rounded-full bg-card shadow-sm h-9 w-[140px] text-xs">
+            <SelectTrigger className="rounded-lg shadow-none font-medium bg-white dark:bg-card border-[#c4c7c5] dark:border-border text-[#444746] dark:text-muted-foreground h-8 w-[140px] text-xs">
               <SelectValue placeholder="All" />
             </SelectTrigger>
             <SelectContent className="bg-popover z-50">
@@ -481,9 +481,9 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">Year</label>
+          <label className="text-xs font-medium text-[#444746] dark:text-muted-foreground">Year</label>
           <Select value={yearFilter} onValueChange={setYearFilter}>
-            <SelectTrigger className="rounded-full bg-card shadow-sm h-9 w-[100px] text-xs">
+            <SelectTrigger className="rounded-lg shadow-none font-medium bg-white dark:bg-card border-[#c4c7c5] dark:border-border text-[#444746] dark:text-muted-foreground h-8 w-[100px] text-xs">
               <SelectValue placeholder="All" />
             </SelectTrigger>
             <SelectContent className="bg-popover z-50">
@@ -496,21 +496,21 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">From</label>
-          <Input type="date" className="rounded-full bg-card shadow-sm h-9 w-[150px] text-xs" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
+          <label className="text-xs font-medium text-[#444746] dark:text-muted-foreground">From</label>
+          <Input type="date" className="rounded-lg shadow-none font-medium bg-white dark:bg-card border-[#c4c7c5] dark:border-border text-[#444746] dark:text-muted-foreground h-8 w-[150px] text-xs" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">To</label>
-          <Input type="date" className="rounded-full bg-card shadow-sm h-9 w-[150px] text-xs" value={dateTo} onChange={e => setDateTo(e.target.value)} />
+          <label className="text-xs font-medium text-[#444746] dark:text-muted-foreground">To</label>
+          <Input type="date" className="rounded-lg shadow-none font-medium bg-white dark:bg-card border-[#c4c7c5] dark:border-border text-[#444746] dark:text-muted-foreground h-8 w-[150px] text-xs" value={dateTo} onChange={e => setDateTo(e.target.value)} />
         </div>
 
         {hasActiveFilters && (
-          <Button variant="ghost" size="sm" className="h-8 gap-1 text-xs" onClick={clearFilters}>
+          <Button variant="ghost" size="sm" className="h-8 rounded-full px-3 gap-1 text-xs text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe] dark:text-blue-300 font-medium" onClick={clearFilters}>
             <X className="h-3.5 w-3.5" /> Clear
           </Button>
         )}
-        <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs ml-auto" onClick={() => {
+        <Button variant="outline" size="sm" className="h-9 rounded-full px-4 gap-1.5 text-xs ml-auto shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium" onClick={() => {
           if (payments.length === 0) {
             toast({ title: 'No data to export', variant: 'destructive' });
             return;
@@ -549,7 +549,7 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
       </div>
 
       {selectedIds.size > 0 && (
-        <div className="flex items-center gap-3 p-3 rounded-lg border bg-primary/5 border-primary/20">
+        <div className="flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-[#e8f0fe] dark:bg-blue-950/40 text-[#041e49] dark:text-blue-100">
           <span className="text-sm font-medium">{selectedIds.size} selected</span>
           <span className="text-sm text-muted-foreground">•</span>
           <span className="text-sm font-semibold">${selectedTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
@@ -565,10 +565,10 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
             <span className="text-xs text-muted-foreground ml-2">⚠ Selected items not visible in current filter</span>
           )}
           <div className="ml-auto flex items-center gap-2">
-            <Button size="sm" variant="outline" className="gap-1.5" onClick={handleBatchReceiptOnly} disabled={!canBatchPay}>
+            <Button size="sm" variant="outline" className="h-9 rounded-full px-4 gap-1.5 shadow-none bg-white dark:bg-card border-[#747775] text-[#0b57d0] hover:bg-[#f8fafd] hover:text-[#0b57d0] font-medium" onClick={handleBatchReceiptOnly} disabled={!canBatchPay}>
               <FileText className="h-3.5 w-3.5" /> Receipt
             </Button>
-            <Button size="sm" className="gap-1.5" onClick={handleBatchPayAndReceipt} disabled={!canBatchPay || batchProcessing}>
+            <Button size="sm" className="h-9 rounded-full px-4 gap-1.5 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium" onClick={handleBatchPayAndReceipt} disabled={!canBatchPay || batchProcessing}>
               <CheckCheck className="h-3.5 w-3.5" /> Pay & Generate Receipt
             </Button>
             <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>Cancel</Button>
@@ -579,7 +579,7 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
       <div className={TABLE_CARD}>
         <div className="p-0">
           <div className="overflow-x-auto">
-            <table className="w-full text-[15px]">
+            <table className="w-full text-sm">
               <thead><tr className={TABLE_HEAD_ROW}>
                 <th className="p-3 w-10">
                   <Checkbox
@@ -587,42 +587,42 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
                     onCheckedChange={toggleSelectAll}
                   />
                 </th>
-                <th className="text-left p-3 font-medium text-muted-foreground">Reference</th>
-                <th className="text-left p-3 font-medium text-muted-foreground">Beneficiary</th>
-                <th className="text-left p-3 font-medium text-muted-foreground">{type === 'dispatcher' ? 'Date' : 'Delivered Date'}</th>
-                <th className="text-right p-3 font-medium text-muted-foreground">Rate</th>
-                <th className="text-right p-3 font-medium text-muted-foreground">%</th>
-                <th className="text-right p-3 font-medium text-muted-foreground">Base Amount</th>
-                <th className="text-right p-3 font-medium text-muted-foreground">Adjustment</th>
-                <th className="text-right p-3 font-medium text-muted-foreground">Total Amount</th>
-                <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
-                <th className="text-left p-3 font-medium text-muted-foreground">Payment Date</th>
-                <th className="text-right p-3 font-medium text-muted-foreground">Actions</th>
+                <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Reference</th>
+                <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Beneficiary</th>
+                <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">{type === 'dispatcher' ? 'Date' : 'Delivered Date'}</th>
+                <th className="text-right px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Rate</th>
+                <th className="text-right px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">%</th>
+                <th className="text-right px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Base Amount</th>
+                <th className="text-right px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Adjustment</th>
+                <th className="text-right px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Total Amount</th>
+                <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Status</th>
+                <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Payment Date</th>
+                <th className="text-right px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Actions</th>
               </tr></thead>
               <tbody>
                 {payments.length === 0 && !loading && (
                   <tr><td colSpan={12} className="p-6 text-center text-muted-foreground">No payments recorded</td></tr>
                 )}
                 {payments.map(p => (
-                  <tr key={p.id} className={`${TABLE_ROW} last:border-0 border-l-4 ${PAYMENT_STATUS[p.status]?.border ?? 'border-l-transparent'} ${selectedIds.has(p.id) ? 'bg-primary/5' : ''}`}>
-                    <td className="p-3">
+                  <tr key={p.id} className={`${TABLE_ROW} last:border-0 border-l-4 ${PAYMENT_STATUS[p.status]?.border ?? 'border-l-transparent'} ${selectedIds.has(p.id) ? 'bg-[#e8f0fe] dark:bg-blue-950/40' : ''}`}>
+                    <td className="px-3 py-2">
                       <Checkbox checked={selectedIds.has(p.id)} onCheckedChange={() => toggleSelect(p.id)} />
                     </td>
-                    <td className="p-3 font-medium text-primary">{p.load_reference}</td>
-                    <td className="p-3">{p.recipient_name}</td>
-                    <td className="p-3 text-muted-foreground">{formatDate(p.created_at)}</td>
-                    <td className="p-3 text-right text-muted-foreground">${Number(p.total_rate).toLocaleString()}</td>
-                    <td className="p-3 text-right text-muted-foreground">{p.percentage_applied}%</td>
-                    <td className="p-3 text-right text-muted-foreground">${Number(p.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
-                    <td className="p-3 text-right">
+                    <td className="px-3 py-2 font-medium text-[#0b57d0] dark:text-blue-300">{p.load_reference}</td>
+                    <td className="px-3 py-2">{p.recipient_name}</td>
+                    <td className="px-3 py-2 text-muted-foreground">{formatDate(p.created_at)}</td>
+                    <td className="px-3 py-2 text-right text-muted-foreground">${Number(p.total_rate).toLocaleString()}</td>
+                    <td className="px-3 py-2 text-right text-muted-foreground">{p.percentage_applied}%</td>
+                    <td className="px-3 py-2 text-right text-muted-foreground">${Number(p.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                    <td className="px-3 py-2 text-right">
                       {(adjMap[p.id] || 0) !== 0 ? (
                         <span className={`font-semibold ${(adjMap[p.id] || 0) > 0 ? 'text-green-600' : 'text-red-600'}`}>
                           {(adjMap[p.id] || 0) > 0 ? '+' : ''}${(adjMap[p.id] || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                         </span>
                       ) : <span className="text-muted-foreground">—</span>}
                     </td>
-                    <td className="p-3 text-right font-semibold">${(Number(p.amount) + (adjMap[p.id] || 0)).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
-                    <td className="p-3" onClick={e => e.stopPropagation()}>
+                    <td className="px-3 py-2 text-right font-semibold">${(Number(p.amount) + (adjMap[p.id] || 0)).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                    <td className="px-3 py-2" onClick={e => e.stopPropagation()}>
                       <Select value={p.status} onValueChange={(val) => handleStatusChange(p, val)}>
                         <SelectTrigger className="h-8 w-[155px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:hidden bg-transparent">
                           <span className="flex items-center justify-between w-full gap-1">
@@ -639,8 +639,8 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
                         </SelectContent>
                       </Select>
                     </td>
-                    <td className="p-3 text-muted-foreground">{p.payment_date ? formatDate(p.payment_date) : formatDate(p.created_at)}</td>
-                    <td className="p-3 text-right">
+                    <td className="px-3 py-2 text-muted-foreground">{p.payment_date ? formatDate(p.payment_date) : formatDate(p.created_at)}</td>
+                    <td className="px-3 py-2 text-right">
                       <div className="flex items-center justify-end gap-1.5">
                         <button className="glass-action-btn tint-amber inline-flex items-center" onClick={(e) => { e.stopPropagation(); setEditPayment(p); }} title="Edit">
                           <Pencil className="h-4 w-4" /> Edit
@@ -667,14 +667,14 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
       )}
 
       <Dialog open={!!deletePaymentId} onOpenChange={(o) => { if (!o) setDeletePaymentId(null); }}>
-        <DialogContent>
+        <DialogContent className="rounded-[28px] border-0 bg-[#f8fafd] dark:bg-background [&_label]:text-xs [&_label]:font-medium [&_label]:text-[#444746] dark:[&_label]:text-muted-foreground [&_input]:rounded-lg [&_input]:shadow-none [&_input]:bg-white dark:[&_input]:bg-card [&_input]:border-[#c4c7c5] dark:[&_input]:border-border [&_input:focus-visible]:ring-1 [&_input:focus-visible]:ring-[#0b57d0] [&_input:focus-visible]:border-[#0b57d0] [&_button[role=combobox]]:rounded-lg [&_button[role=combobox]]:shadow-none [&_button[role=combobox]]:bg-white dark:[&_button[role=combobox]]:bg-card [&_button[role=combobox]]:border-[#c4c7c5] dark:[&_button[role=combobox]]:border-border [&_textarea]:rounded-lg [&_textarea]:shadow-none [&_textarea]:bg-white dark:[&_textarea]:bg-card [&_textarea]:border-[#c4c7c5]">
           <DialogHeader>
-            <DialogTitle>Delete this payment?</DialogTitle>
+            <DialogTitle className="text-[22px] leading-7 font-normal text-[#1f1f1f] dark:text-foreground">Delete this payment?</DialogTitle>
             <DialogDescription>This action cannot be undone.</DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeletePaymentId(null)}>Cancel</Button>
-            <Button variant="destructive" onClick={confirmDelete}>Delete</Button>
+            <Button className="h-10 rounded-full px-5 text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe] dark:text-blue-300 font-medium" variant="ghost" onClick={() => setDeletePaymentId(null)}>Cancel</Button>
+            <Button className="h-10 rounded-full px-6 bg-[#b3261e] hover:bg-[#8c1d18] text-white font-medium"  onClick={confirmDelete}>Delete</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -700,17 +700,22 @@ const Payments = () => {
   const handleManualComplete = () => { refetch(); setRefreshKey(k => k + 1); };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="page-header">Payments</h1>
-          <p className="page-description">Manage payments to drivers, investors, and dispatchers</p>
+    <div className="space-y-3">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span className="h-10 w-10 rounded-full bg-[#d3e3fd] dark:bg-blue-900/40 text-[#041e49] dark:text-blue-200 flex items-center justify-center shrink-0">
+            <DollarSign className="h-5 w-5" />
+          </span>
+          <div>
+            <h1 className="text-[24px] leading-8 font-normal text-[#1f1f1f] dark:text-foreground">Payments</h1>
+            <p className="text-sm text-[#444746] dark:text-muted-foreground">Manage payments to drivers, investors, and dispatchers</p>
+          </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => setAnnualOpen(true)}>
+          <Button variant="outline" className="h-10 rounded-full px-4 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium" onClick={() => setAnnualOpen(true)}>
             <FileText className="h-4 w-4 mr-1.5" /> Reporte anual (1099)
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setRecurringOpen(true)}>
+          <Button variant="outline" className="h-10 rounded-full px-4 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium" onClick={() => setRecurringOpen(true)}>
             <RefreshCw className="h-4 w-4 mr-1.5" /> Recurring Deductions
           </Button>
         </div>
@@ -728,19 +733,19 @@ const Payments = () => {
         const paidThisMonth = allP.filter(p => p.status === 'paid' && (p.payment_date || '').slice(0, 7) === thisMonth);
         return (
           <StatTiles tiles={[
-            { label: 'Total Pending', value: money(totalPending), hint: `${pending.length} payments`, icon: Clock, tint: 'bg-amber-100 text-amber-700' },
-            { label: 'Total In Process', value: money(totalInProcess), hint: `${inProcess.length} payments`, icon: RefreshCw, tint: 'bg-blue-100 text-blue-700' },
-            { label: 'Pending + In Process', value: money(totalPending + totalInProcess), hint: `${pending.length + inProcess.length} payments`, icon: DollarSign, tint: 'bg-sky-100 text-sky-700' },
-            { label: 'Paid this month', value: money(paidThisMonth.reduce((s, p) => s + Number(p.amount), 0)), hint: `${paidThisMonth.length} payments`, icon: CheckCircle, tint: 'bg-emerald-100 text-emerald-700' },
+            { label: 'Total Pending', value: money(totalPending), hint: `${pending.length} payments`, icon: Clock, tint: 'bg-[#feefc3] text-[#3d2a00] dark:bg-amber-900/40 dark:text-amber-200' },
+            { label: 'Total In Process', value: money(totalInProcess), hint: `${inProcess.length} payments`, icon: RefreshCw, tint: 'bg-[#c2e7ff] text-[#001d35] dark:bg-sky-900/40 dark:text-sky-200' },
+            { label: 'Pending + In Process', value: money(totalPending + totalInProcess), hint: `${pending.length + inProcess.length} payments`, icon: DollarSign, tint: 'bg-[#d3e3fd] text-[#041e49] dark:bg-blue-900/40 dark:text-blue-200' },
+            { label: 'Paid this month', value: money(paidThisMonth.reduce((s, p) => s + Number(p.amount), 0)), hint: `${paidThisMonth.length} payments`, icon: CheckCircle, tint: 'bg-[#c4eed0] text-[#072711] dark:bg-emerald-900/40 dark:text-emerald-200' },
           ]} />
         );
       })()}
 
       <Tabs defaultValue="drivers">
-        <TabsList>
-          <TabsTrigger value="drivers">Drivers <span className={`ml-1.5 inline-flex items-center justify-center rounded-full text-[11px] font-semibold min-w-[20px] h-5 px-1.5 ${pendingDrivers > 0 ? 'bg-destructive text-destructive-foreground' : 'bg-primary text-primary-foreground'}`}>{pendingDrivers > 0 ? pendingDrivers : totalDrivers}</span></TabsTrigger>
-          <TabsTrigger value="investors">Investors <span className={`ml-1.5 inline-flex items-center justify-center rounded-full text-[11px] font-semibold min-w-[20px] h-5 px-1.5 ${pendingInvestors > 0 ? 'bg-destructive text-destructive-foreground' : 'bg-primary text-primary-foreground'}`}>{pendingInvestors > 0 ? pendingInvestors : totalInvestors}</span></TabsTrigger>
-          <TabsTrigger value="dispatchers">Dispatchers <span className={`ml-1.5 inline-flex items-center justify-center rounded-full text-[11px] font-semibold min-w-[20px] h-5 px-1.5 ${pendingDispatchers > 0 ? 'bg-destructive text-destructive-foreground' : 'bg-primary text-primary-foreground'}`}>{pendingDispatchers > 0 ? pendingDispatchers : totalDispatchers}</span></TabsTrigger>
+        <TabsList className="w-full justify-start rounded-none sm:rounded-none border-x-0 border-t-0 flex-nowrap border-b border-[#e3e3e3] dark:border-border bg-transparent h-12 p-0 px-1 overflow-x-auto overflow-y-hidden">
+          <TabsTrigger className="h-12 rounded-none border-b-[3px] border-transparent px-4 gap-2 text-sm font-medium text-[#444746] dark:text-muted-foreground data-[state=active]:border-[#0b57d0] data-[state=active]:text-[#0b57d0] dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none data-[state=active]:bg-transparent" value="drivers">Drivers <span className={`inline-flex items-center justify-center rounded-full text-[11px] font-medium min-w-[20px] h-5 px-1.5 ${pendingDrivers > 0 ? 'bg-[#b3261e] text-white' : 'bg-[#f0f4f9] dark:bg-muted text-[#444746] dark:text-muted-foreground'}`}>{pendingDrivers > 0 ? pendingDrivers : totalDrivers}</span></TabsTrigger>
+          <TabsTrigger className="h-12 rounded-none border-b-[3px] border-transparent px-4 gap-2 text-sm font-medium text-[#444746] dark:text-muted-foreground data-[state=active]:border-[#0b57d0] data-[state=active]:text-[#0b57d0] dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none data-[state=active]:bg-transparent" value="investors">Investors <span className={`inline-flex items-center justify-center rounded-full text-[11px] font-medium min-w-[20px] h-5 px-1.5 ${pendingInvestors > 0 ? 'bg-[#b3261e] text-white' : 'bg-[#f0f4f9] dark:bg-muted text-[#444746] dark:text-muted-foreground'}`}>{pendingInvestors > 0 ? pendingInvestors : totalInvestors}</span></TabsTrigger>
+          <TabsTrigger className="h-12 rounded-none border-b-[3px] border-transparent px-4 gap-2 text-sm font-medium text-[#444746] dark:text-muted-foreground data-[state=active]:border-[#0b57d0] data-[state=active]:text-[#0b57d0] dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none data-[state=active]:bg-transparent" value="dispatchers">Dispatchers <span className={`inline-flex items-center justify-center rounded-full text-[11px] font-medium min-w-[20px] h-5 px-1.5 ${pendingDispatchers > 0 ? 'bg-[#b3261e] text-white' : 'bg-[#f0f4f9] dark:bg-muted text-[#444746] dark:text-muted-foreground'}`}>{pendingDispatchers > 0 ? pendingDispatchers : totalDispatchers}</span></TabsTrigger>
         </TabsList>
         <TabsContent value="drivers">
           <PaymentsSection key={`driver-${refreshKey}`} type="driver" refreshKey={refreshKey} onCreateManual={() => setManualDriverDialogOpen(true)} />

@@ -246,9 +246,9 @@ export function AnnualPaymentsReportDialog({ open, onOpenChange }: { open: boole
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-6xl max-h-[90vh] flex flex-col rounded-[28px] border-0 bg-[#f8fafd] dark:bg-background [&_label]:text-xs [&_label]:font-medium [&_label]:text-[#444746] dark:[&_label]:text-muted-foreground [&_input]:rounded-lg [&_input]:shadow-none [&_input]:bg-white dark:[&_input]:bg-card [&_input]:border-[#c4c7c5] dark:[&_input]:border-border [&_input:focus-visible]:ring-1 [&_input:focus-visible]:ring-[#0b57d0] [&_input:focus-visible]:border-[#0b57d0] [&_button[role=combobox]]:rounded-lg [&_button[role=combobox]]:shadow-none [&_button[role=combobox]]:bg-white dark:[&_button[role=combobox]]:bg-card [&_button[role=combobox]]:border-[#c4c7c5] dark:[&_button[role=combobox]]:border-border [&_textarea]:rounded-lg [&_textarea]:shadow-none [&_textarea]:bg-white dark:[&_textarea]:bg-card [&_textarea]:border-[#c4c7c5]">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2"><FileText className="h-5 w-5" /> Reporte anual (1099)</DialogTitle>
+          <DialogTitle className="flex items-center gap-2 text-[22px] leading-7 font-normal text-[#1f1f1f] dark:text-foreground"><FileText className="h-5 w-5" /> Reporte anual (1099)</DialogTitle>
           <DialogDescription>
             Lo pagado en el año según la fecha de pago (solo pagos en estado Paid). Neto = bruto ± ajustes. Las millas son las de las cargas pagadas.
           </DialogDescription>
@@ -372,9 +372,9 @@ function TaxInfoDialog({ row, onClose, onSave }: { row: Row; onClose: () => void
   const [taxId, setTaxId] = useState(fmtTaxId(row.tax));
   return (
     <Dialog open onOpenChange={o => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="max-w-sm rounded-[28px] border-0 bg-[#f8fafd] dark:bg-background [&_label]:text-xs [&_label]:font-medium [&_label]:text-[#444746] dark:[&_label]:text-muted-foreground [&_input]:rounded-lg [&_input]:shadow-none [&_input]:bg-white dark:[&_input]:bg-card [&_input]:border-[#c4c7c5] dark:[&_input]:border-border [&_input:focus-visible]:ring-1 [&_input:focus-visible]:ring-[#0b57d0] [&_input:focus-visible]:border-[#0b57d0] [&_button[role=combobox]]:rounded-lg [&_button[role=combobox]]:shadow-none [&_button[role=combobox]]:bg-white dark:[&_button[role=combobox]]:bg-card [&_button[role=combobox]]:border-[#c4c7c5] dark:[&_button[role=combobox]]:border-border [&_textarea]:rounded-lg [&_textarea]:shadow-none [&_textarea]:bg-white dark:[&_textarea]:bg-card [&_textarea]:border-[#c4c7c5]">
         <DialogHeader>
-          <DialogTitle>Datos fiscales · {row.name}</DialogTitle>
+          <DialogTitle className="text-[22px] leading-7 font-normal text-[#1f1f1f] dark:text-foreground">Datos fiscales · {row.name}</DialogTitle>
           <DialogDescription>Como aparecen en su W-9. Solo admin y accounting pueden verlos.</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">

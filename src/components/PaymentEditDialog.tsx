@@ -139,9 +139,9 @@ export const PaymentEditDialog = ({ payment, open, onOpenChange }: Props) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg rounded-[28px] border-0 bg-[#f8fafd] dark:bg-background [&_label]:text-xs [&_label]:font-medium [&_label]:text-[#444746] dark:[&_label]:text-muted-foreground [&_input]:rounded-lg [&_input]:shadow-none [&_input]:bg-white dark:[&_input]:bg-card [&_input]:border-[#c4c7c5] dark:[&_input]:border-border [&_input:focus-visible]:ring-1 [&_input:focus-visible]:ring-[#0b57d0] [&_input:focus-visible]:border-[#0b57d0] [&_button[role=combobox]]:rounded-lg [&_button[role=combobox]]:shadow-none [&_button[role=combobox]]:bg-white dark:[&_button[role=combobox]]:bg-card [&_button[role=combobox]]:border-[#c4c7c5] dark:[&_button[role=combobox]]:border-border [&_textarea]:rounded-lg [&_textarea]:shadow-none [&_textarea]:bg-white dark:[&_textarea]:bg-card [&_textarea]:border-[#c4c7c5]">
         <DialogHeader>
-          <DialogTitle className="text-lg">Editar Pago — {payment.load_reference}</DialogTitle>
+          <DialogTitle className=" text-[22px] leading-7 font-normal text-[#1f1f1f] dark:text-foreground">Editar Pago — {payment.load_reference}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -296,10 +296,10 @@ export const PaymentEditDialog = ({ payment, open, onOpenChange }: Props) => {
         </div>
 
         <DialogFooter className="gap-2">
-          <Button variant="outline" size="sm" className="gap-1.5" onClick={handleGenerateReceipt}>
+          <Button variant="ghost" size="sm" className="gap-1.5 h-10 rounded-full px-5 text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe] dark:text-blue-300 font-medium" onClick={handleGenerateReceipt}>
             <FileText className="h-4 w-4" /> Generar Recibo PDF
           </Button>
-          <Button size="sm" onClick={() => onOpenChange(false)}>Cerrar</Button>
+          <Button className="h-10 rounded-full px-6 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium" size="sm" onClick={() => onOpenChange(false)}>Cerrar</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
