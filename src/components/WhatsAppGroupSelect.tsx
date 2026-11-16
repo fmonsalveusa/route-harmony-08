@@ -118,8 +118,8 @@ export function WhatsAppGroupSelect({ groupId, groupName, onChange, className = 
   if (compact) return <div className={className}>{controls}</div>;
 
   return (
-    <div className={`space-y-2 p-3 rounded-lg border-2 border-green-500/40 bg-green-50 dark:bg-green-950/20 ${className}`}>
-      <Label className="font-semibold text-green-700 flex items-center gap-1.5">
+    <div className={`space-y-1.5 p-3 rounded-2xl bg-[#e6f4ea] dark:bg-emerald-950/30 ${className}`}>
+      <Label className="font-medium text-[#0d652d] dark:text-emerald-300 flex items-center gap-1.5">
         <MessageCircle className="h-4 w-4" /> Grupo de WhatsApp
       </Label>
       {controls}
