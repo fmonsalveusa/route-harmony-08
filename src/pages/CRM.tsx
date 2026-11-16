@@ -649,19 +649,24 @@ Se borra de Google Calendar, se libera el horario y se le avisa por email.`)) re
           )}
         </div>
       )}
+      {c.referred_by?.trim() && (
+        <p className="text-[11px] flex items-center gap-1 text-[#444746] dark:text-muted-foreground truncate">
+          <UsersIcon className="h-3 w-3 shrink-0" /> Referido por <span className="font-medium text-[#1f1f1f] dark:text-foreground truncate">{c.referred_by.trim()}</span>
+        </p>
+      )}
       {calls && (
         <p className="text-[11px] flex items-center gap-1 text-[#444746] dark:text-muted-foreground">
           <Phone className="h-3 w-3" /> Última llamada: {ago(calls.last)} · {calls.count} {calls.count === 1 ? 'intento' : 'intentos'}
         </p>
       )}
-      {c.next_action_at && c.stage !== 'client' && (
+      {c.next_action_at && (
         followupSent(c) ? (
           <p className="text-[11px] flex items-center gap-1 text-green-600">
-            <Check className="h-3 w-3" /> Seguimiento enviado {fmt(c.reminder_sent_at!)}
+            <Check className="h-3 w-3 shrink-0" /> Seguimiento enviado {fmt(c.reminder_sent_at!)}{c.next_action ? ` · ${c.next_action}` : ''}
           </p>
         ) : followupQueued(c) ? (
           <p className="text-[11px] flex items-center gap-1 text-amber-600">
-            <Send className="h-3 w-3" /> Seguimiento: se envía en los próximos minutos
+            <Send className="h-3 w-3 shrink-0" /> Seguimiento: se envía en los próximos minutos{c.next_action ? ` · ${c.next_action}` : ''}
           </p>
         ) : (
           <p className={cn('text-[11px] flex items-center gap-1', overdue ? 'text-[#b3261e] font-medium' : 'text-[#0b57d0] dark:text-blue-300')}>
