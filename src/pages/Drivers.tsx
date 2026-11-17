@@ -264,9 +264,7 @@ const Drivers = () => {
                 <th className="w-8 p-3"></th>
                 <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Driver</th>
                 <th className="w-[60px] p-3"></th>
-                <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Phone</th>
                 <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground hidden md:table-cell">Truck</th>
-                <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground hidden lg:table-cell">Servicio</th>
                 <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground hidden lg:table-cell">Dispatcher</th>
                 <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Status</th>
                 <th className="text-right px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Actions</th>
@@ -297,14 +295,15 @@ const Drivers = () => {
                       <td className="px-3 py-2 text-muted-foreground">
                         {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                       </td>
-                      <td className="px-3 py-2">
+                      <td className="px-3 py-3">
                         <div className="flex items-center gap-3">
-                          <div className={`h-9 w-9 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0 ${avatarBg}`}>
-                            {initials.slice(0, 2).toUpperCase()}
+                          <div className="h-11 w-11 rounded-full flex items-center justify-center text-white text-lg font-medium flex-shrink-0 bg-[#0b57d0]">
+                            {initials.slice(0, 1).toUpperCase()}
                           </div>
-                          <div className="flex flex-col items-start">
-                            <span className="font-medium text-[#1f1f1f] dark:text-foreground flex items-center gap-1.5 whitespace-nowrap">
-                              {driver.name}
+                          <div className="flex flex-col items-start min-w-0">
+                            <span className="flex flex-wrap items-center gap-1.5">
+                              <span className="text-[18px] leading-6 font-normal text-[#1f1f1f] dark:text-foreground whitespace-nowrap">{driver.name}</span>
+                              <ServiceTypeBadge serviceType={driver.service_type} />
                               {activeDriverIds.has(driver.id) && (
                                 <span className="inline-flex items-center gap-1 rounded-md bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700" title="GPS reportando en los últimos 5 minutos">
                                   <span className="h-1.5 w-1.5 rounded-full bg-blue-600 animate-pulse" /> GPS
@@ -318,11 +317,22 @@ const Drivers = () => {
                               )}
                               <button
                                 onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(driver.name); }}
-                                className="text-muted-foreground hover:text-foreground transition-colors ml-0.5"
+                                className="text-muted-foreground hover:text-foreground transition-colors"
                                 title="Copiar nombre"
                               >
                                 <Copy className="h-3 w-3" />
                               </button>
+                            </span>
+                            <span className="flex items-center gap-1 text-sm text-[#444746] dark:text-muted-foreground whitespace-nowrap">
+                              {formatPhone(driver.phone)}
+                              <button
+                                onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(driver.phone); }}
+                                className="text-muted-foreground hover:text-foreground transition-colors"
+                                title="Copiar teléfono"
+                              >
+                                <Copy className="h-3 w-3" />
+                              </button>
+                              {driver.email && <span className="hidden xl:inline">· {driver.email}</span>}
                             </span>
                             <ExpiryIndicators items={[
                               { date: driver.license_expiry, label: 'License' },
@@ -336,32 +346,27 @@ const Drivers = () => {
                           <Copy className="h-3 w-3" /> Copy
                         </Button>
                       </td>
-                      <td className="px-3 py-2 text-muted-foreground">
-                        <div className="flex items-center gap-1.5 whitespace-nowrap">
-                          <Phone className="h-3.5 w-3.5" />{formatPhone(driver.phone)}
-                          <button
-                            onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(driver.phone); }}
-                            className="text-muted-foreground hover:text-foreground transition-colors"
-                            title="Copiar teléfono"
-                          >
-                            <Copy className="h-3 w-3" />
-                          </button>
+                      <td className="px-3 py-3 hidden md:table-cell">
+                        <div className="inline-flex items-center gap-2.5 rounded-full bg-[#f0f4f9] dark:bg-muted/60 pl-1.5 pr-4 py-1.5 whitespace-nowrap">
+                          <span className={cn('h-9 w-9 rounded-full flex items-center justify-center shrink-0', truckLabel ? 'bg-[#d3e3fd] text-[#041e49] dark:bg-blue-900/40 dark:text-blue-200' : 'bg-[#e3e3e3] text-[#444746]')}>
+                            <TruckIcon className="h-4 w-4" />
+                          </span>
+                          <span className="leading-tight">
+                            <span className="block text-[10.5px] uppercase tracking-wide text-[#444746] dark:text-muted-foreground">Truck</span>
+                            <span className="block text-sm text-[#1f1f1f] dark:text-foreground">{truckLabel || 'Sin asignar'}</span>
+                          </span>
                         </div>
                       </td>
-                      <td className="px-3 py-2 hidden md:table-cell">
-                        <div className="flex items-center gap-1.5 whitespace-nowrap">
-                          <TruckIcon className="h-3.5 w-3.5 text-[#0b57d0] dark:text-blue-300" />
-                          <span>{truckLabel || <span className="text-muted-foreground italic">Unassigned</span>}</span>
+                      <td className="px-3 py-3 hidden lg:table-cell">
+                        <div className="inline-flex items-center gap-2.5 rounded-full bg-[#f0f4f9] dark:bg-muted/60 pl-1.5 pr-4 py-1.5 whitespace-nowrap">
+                          <span className={cn('h-9 w-9 rounded-full flex items-center justify-center shrink-0 text-sm font-medium text-white', dispatcher ? 'bg-[#188038]' : 'bg-[#9aa0a6]')}>
+                            {dispatcher ? dispatcher.name.trim().charAt(0).toUpperCase() : '?'}
+                          </span>
+                          <span className="leading-tight">
+                            <span className="block text-[10.5px] uppercase tracking-wide text-[#444746] dark:text-muted-foreground">Dispatcher</span>
+                            <span className="block text-sm text-[#1f1f1f] dark:text-foreground">{dispatcher?.name || 'Sin asignar'}</span>
+                          </span>
                         </div>
-                      </td>
-                      <td className="px-3 py-2 hidden lg:table-cell">
-                        <ServiceTypeBadge serviceType={driver.service_type} className="!text-[13px] !px-3 !py-1" />
-                      </td>
-                      <td className="px-3 py-2 hidden lg:table-cell text-sm whitespace-nowrap">
-                        {dispatcher
-                          ? <span className="font-medium">{dispatcher.name}</span>
-                          : <span className="text-muted-foreground italic">Unassigned</span>
-                        }
                       </td>
                       <td className="px-3 py-2" onClick={e => e.stopPropagation()}>
                         <Select value={driver.status} onValueChange={v => updateDriver(driver.id, { status: v })}>
@@ -404,7 +409,7 @@ const Drivers = () => {
                     </tr>
                     {isExpanded && (
                       <tr key={`${driver.id}-detail`}>
-                        <td colSpan={9} className="p-0">
+                        <td colSpan={7} className="p-0">
                           <DriverDetailPanel driver={driver} truckLabel={truckLabel} dispatcherName={dispatcher?.name || null} getDocSignedUrl={getDocSignedUrl} truck={getTruck(driver.truck_id)} onUpdateDriver={updateDriver} />
                         </td>
                       </tr>
