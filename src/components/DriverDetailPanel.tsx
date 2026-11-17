@@ -304,6 +304,13 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
             <Tile icon={Percent} tone="amber" label="Driver Pay" value={`${driver.pay_percentage ?? 0}%`} />
             <div className="sm:col-span-2 lg:col-span-1 2xl:col-span-2"><Tile icon={MapPin} tone="red" label="Address" value={address || '—'} copy={address || null} /></div>
           </div>
+          <p className="text-[11px] uppercase tracking-wide text-[#444746] dark:text-muted-foreground pt-1">Driver License & Medical Card</p>
+          <Tile icon={IdCard} tone="blue" label="Driver License #" value={<span className="font-mono text-[13px]">{driver.license || '—'}{driver.state ? ` (${driver.state})` : ''}</span>} copy={driver.license} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 2xl:grid-cols-2 gap-2">
+            <ExpiryRing icon={IdCard} label="Driver License" date={driver.license_expiry} />
+            <ExpiryRing icon={HeartPulse} label="Medical Card" date={driver.medical_card_expiry} />
+          </div>
+
           <p className="text-[11px] uppercase tracking-wide text-[#444746] dark:text-muted-foreground pt-1">Emergency Contact</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 2xl:grid-cols-2 gap-2">
             <Tile icon={UserRound} tone="gray" label="Name" value={d.emergency_contact_name || '—'} />
@@ -322,12 +329,6 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
               <h3 className={DETAIL_TITLE}>Documents</h3>
               <span className="text-xs text-[#444746] dark:text-muted-foreground">{docsLoaded} de {docs.length} cargados</span>
             </div>
-            <Tile icon={IdCard} tone="blue" label="Driver License #" value={<span className="font-mono text-[13px]">{driver.license || '—'}{driver.state ? ` (${driver.state})` : ''}</span>} copy={driver.license} />
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <ExpiryRing icon={IdCard} label="Driver License" date={driver.license_expiry} />
-              <ExpiryRing icon={HeartPulse} label="Medical Card" date={driver.medical_card_expiry} />
-            </div>
-
             <div className="flex flex-wrap gap-2">
               <Button variant="outline" size="sm" className={PILL_BTN} onClick={() => setAddingLeasing(v => !v)}>
                 <Plus className="h-3 w-3" /> Add Leasing

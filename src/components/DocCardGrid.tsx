@@ -203,7 +203,7 @@ function DocTile({
     }
   };
 
-  const ICON_BTN = 'h-7 w-7 rounded-full flex items-center justify-center';
+  const ICON_BTN = 'h-6 w-6 shrink-0 rounded-full flex items-center justify-center';
   if (card) {
     return (
       <div className="group flex flex-col rounded-2xl bg-[#f8fafd] dark:bg-muted/40 border border-[#e3e3e3] dark:border-border overflow-hidden">
@@ -211,22 +211,22 @@ function DocTile({
           type="button"
           disabled={!item.url}
           onClick={e => { e.stopPropagation(); if (item.url) onPreview(item); }}
-          className="relative h-24 w-full bg-white dark:bg-card flex items-center justify-center overflow-hidden"
+          className="relative h-12 w-full bg-white dark:bg-card flex items-center justify-center overflow-hidden"
         >
           {item.url ? (
             img ? <ImageThumb url={item.url} label={item.label} getDocSignedUrl={getDocSignedUrl} />
-              : <span className="flex flex-col items-center gap-1 text-[#d93025]"><FileText className="h-8 w-8" /><span className="text-[10px] font-bold tracking-wide">PDF</span></span>
+              : <span className="flex flex-col items-center gap-1 text-[#d93025]"><FileText className="h-5 w-5" /><span className="text-[9px] font-bold tracking-wide leading-none">PDF</span></span>
           ) : (
-            <span className="flex flex-col items-center gap-1 text-[#c4c7c5]"><FileText className="h-8 w-8" /><span className="text-[10px] font-medium">Sin archivo</span></span>
+            <span className="flex flex-col items-center gap-1 text-[#c4c7c5]"><FileText className="h-5 w-5" /></span>
           )}
           {item.url && (
             <span className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors flex items-center justify-center">
-              <Eye className="h-5 w-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+              <Eye className="h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
             </span>
           )}
         </button>
-        <div className="px-2.5 pt-1.5 pb-1.5 border-t border-[#e3e3e3] dark:border-border">
-          <p className="text-[13px] text-[#1f1f1f] dark:text-foreground truncate" title={item.label}>{item.label}</p>
+        <div className="px-2 pt-1 pb-1 border-t border-[#e3e3e3] dark:border-border">
+          <p className="text-xs text-[#1f1f1f] dark:text-foreground truncate" title={item.label}>{item.label}</p>
           <div className="flex items-center gap-0.5">
             <span className={`flex-1 min-w-0 text-[11px] flex items-center gap-1 ${item.url ? 'text-[#188038] dark:text-emerald-400' : 'text-[#b3261e] dark:text-red-300'}`}>
               <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${item.url ? 'bg-[#188038]' : 'bg-[#d93025]'}`} />
@@ -331,7 +331,7 @@ export function DocCardGrid({ docs, getDocSignedUrl, allowUpload, onUpload, uplo
   return (
     <>
       {variant === 'tiles' || variant === 'cards' ? (
-        <div className={variant === 'cards' ? 'grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-2' : 'space-y-1.5'}>
+        <div className={variant === 'cards' ? 'grid grid-cols-[repeat(auto-fill,minmax(118px,1fr))] gap-2' : 'space-y-1.5'}>
           {docs.map(item => (
             <DocTile
               card={variant === 'cards'}
