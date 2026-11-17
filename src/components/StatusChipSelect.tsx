@@ -1,4 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
+import { Minus } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 
@@ -22,13 +23,16 @@ export const CHIP_TONE = {
 };
 
 /** Status como pastilla tonal con círculo de color e ícono; al abrir muestra cada opción con su explicación */
-export function StatusChipSelect({ value, options, onChange, disabled }: {
+export function StatusChipSelect({ value, options, onChange, disabled, placeholder }: {
   value: string;
   options: StatusChipOption[];
   onChange: (v: string) => void;
   disabled?: boolean;
+  /** Texto cuando el valor no está en la lista (p. ej. factoring sin definir) */
+  placeholder?: string;
 }) {
-  const current = options.find(o => o.value === value) ?? options[0];
+  const current: StatusChipOption = options.find(o => o.value === value)
+    ?? { value: value || '', label: placeholder ?? (value || '—'), icon: Minus, ...CHIP_TONE.gray };
   return (
     <Select value={value} onValueChange={onChange} disabled={disabled}>
       <SelectTrigger

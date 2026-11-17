@@ -1,4 +1,6 @@
 import { useState, useRef, useMemo, Fragment, useEffect, useCallback } from 'react';
+import { StatusChipSelect, type StatusChipOption } from '@/components/StatusChipSelect';
+import { ClipboardList, Send as SendIcon, Truck as TruckGo, MapPin as MapPinIcon, PackageCheck, MapPinned, CheckCircle2 as DoneIcon, Ban, XCircle as XIcon, Clock as ClockIcon, RefreshCw, AlertTriangle as WarnIcon } from 'lucide-react';
 
 import { formatDate, todayET } from '@/lib/dateUtils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -33,6 +35,26 @@ import { cn } from '@/lib/utils';
 
 // ─── Estilo Google / Material 3 ───
 /** Chip de filtro: azul tonal cuando tiene un valor elegido */
+
+const LOAD_STATUS_CHIPS: StatusChipOption[] = [
+  { value: 'planned', label: 'Planned', hint: 'Sin despachar', icon: ClipboardList, dot: 'bg-[#94A3B8]', chip: 'bg-[#94A3B8] text-white hover:bg-[#7c8ba0]' },
+  { value: 'dispatched', label: 'Dispatched', hint: 'Asignada al driver', icon: SendIcon, dot: 'bg-[#2563EB]', chip: 'bg-[#2563EB] text-white hover:bg-[#1d4fd0]' },
+  { value: 'in_transit', label: 'In Transit', hint: 'Rumbo al pickup', icon: TruckGo, dot: 'bg-[#65A30D]', chip: 'bg-[#65A30D] text-white hover:bg-[#538a0a]' },
+  { value: 'on_site_pickup', label: 'On Site - Pickup', hint: 'En el shipper', icon: MapPinIcon, dot: 'bg-[#06B6D4]', chip: 'bg-[#06B6D4] text-white hover:bg-[#0599b3]' },
+  { value: 'picked_up', label: 'Picked Up', hint: 'Cargado', icon: PackageCheck, dot: 'bg-[#D946EF]', chip: 'bg-[#D946EF] text-white hover:bg-[#c026d3]' },
+  { value: 'on_site_delivery', label: 'On Site - Delivery', hint: 'En el receiver', icon: MapPinned, dot: 'bg-[#F97316]', chip: 'bg-[#F97316] text-white hover:bg-[#ea620c]' },
+  { value: 'delivered', label: 'Delivered', hint: 'Entregada', icon: DoneIcon, dot: 'bg-[#178504]', chip: 'bg-[#178504] text-white hover:bg-[#126b03]' },
+  { value: 'tonu', label: 'TONU', hint: 'Truck ordered not used', icon: Ban, dot: 'bg-[#B45309]', chip: 'bg-[#B45309] text-white hover:bg-[#984607]' },
+  { value: 'cancelled', label: 'Canceled', hint: 'Cancelada', icon: XIcon, dot: 'bg-[#DC2626]', chip: 'bg-[#DC2626] text-white hover:bg-[#bd1f1f]' },
+];
+
+const FACTORING_CHIPS: StatusChipOption[] = [
+  { value: 'pending', label: 'Pending', hint: 'Falta enviar', icon: ClockIcon, dot: 'bg-[#e8a20c]', chip: 'bg-[#e8a20c] text-white hover:bg-[#cc8e0a]' },
+  { value: 'in_progress', label: 'In Progress', hint: 'En proceso', icon: RefreshCw, dot: 'bg-[#266aad]', chip: 'bg-[#266aad] text-white hover:bg-[#1f5891]' },
+  { value: 'waiting_for_adjustments', label: 'Waiting Adj.', hint: 'Esperando ajustes', icon: WarnIcon, dot: 'bg-[#dc2626]', chip: 'bg-[#dc2626] text-white hover:bg-[#bd1f1f]' },
+  { value: 'ready', label: 'Ready', hint: 'Genera los pagos', icon: DoneIcon, dot: 'bg-[#178504]', chip: 'bg-[#178504] text-white hover:bg-[#126b03]' },
+];
+
 const gChip = (active: boolean) => cn(
   'h-8 text-xs rounded-lg shadow-none font-medium focus:ring-1 focus:ring-[#0b57d0] transition-colors',
   active ? 'bg-[#c2e7ff] border-[#c2e7ff] text-[#001d35] dark:bg-blue-900/50 dark:border-blue-900/50 dark:text-blue-100'
@@ -665,7 +687,7 @@ const Loads = () => {
                           </td>
                           <td className="px-2 py-3.5 hidden lg:table-cell"><div className="whitespace-nowrap max-w-[120px] truncate" title={dispatcher?.name}>{dispatcher?.name || '—'}</div></td>
                           <td className="px-2 py-3.5" onClick={e => e.stopPropagation()}>
-                            <Select value={load.status} onValueChange={async (val) => {
+                            <StatusChipSelect value={load.status} options={LOAD_STATUS_CHIPS} onChange={async (val) => {
                               const prevStatus = load.status;
                               const updates: any = { status: val };
                               if (val === 'delivered') {
@@ -682,42 +704,18 @@ const Loads = () => {
                                 // Reverting from a terminal status — remove only pending payments
                                 await deletePaymentsForLoad(load.id);
                               }
-                            }}>
-                              <SelectTrigger className="h-8 w-[136px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:hidden bg-transparent">
-                                <span className="flex items-center justify-between w-full gap-1">
-                                  <StatusBadge status={load.status} className="text-[11px] px-3 py-1.5" />
-                                  <span className="inline-flex h-5 w-5 items-center justify-center rounded border border-border bg-muted/40 text-muted-foreground ml-auto">
-                                    <ChevronDown className="h-3 w-3 shrink-0" />
-                                  </span>
-                                </span>
-                              </SelectTrigger>
-                              <SelectContent>
-                                {[
-                                  { value: 'planned', label: 'Planned' },
-                                  { value: 'dispatched', label: 'Dispatched' },
-                                  { value: 'in_transit', label: 'In Transit' },
-                                  { value: 'on_site_pickup', label: 'On Site - Pickup' },
-                                  { value: 'picked_up', label: 'Picked Up' },
-                                  { value: 'on_site_delivery', label: 'On Site - Delivery' },
-                                  { value: 'delivered', label: 'Delivered' },
-                                  { value: 'tonu', label: 'TONU' },
-                                  { value: 'cancelled', label: 'Canceled' },
-                                ].map(s => (
-                                  <SelectItem key={s.value} value={s.value}>
-                                    <StatusBadge status={s.value} />
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            }} />
                           </td>
                           <td className={cn('px-2 py-3.5 text-muted-foreground whitespace-nowrap', ['delivered', 'all'].includes(activeTab) ? 'hidden lg:table-cell' : 'hidden')}>
                             {load.status === 'delivered' ? formatDate(load.delivery_date) : '—'}
                           </td>
                           <td className="px-2 py-3.5 hidden lg:table-cell" onClick={e => e.stopPropagation()}>
-                            <Select
+                            <StatusChipSelect
                               value={load.factoring || ''}
+                              options={FACTORING_CHIPS}
+                              placeholder="—"
                               disabled={generatingPaymentIds.has(load.id)}
-                              onValueChange={async (val) => {
+                              onChange={async (val) => {
                                 const prevFactoring = load.factoring;
                                 await updateLoad(load.id, { factoring: val });
                                 // Los pagos (driver + investors) los genera el trigger de DB
@@ -726,28 +724,8 @@ const Loads = () => {
                                 if (prevFactoring === 'ready' && val !== 'ready') {
                                   await deletePaymentsForLoad(load.id);
                                 }
-                              }}>
-                              <SelectTrigger className="h-8 w-[128px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:hidden bg-transparent">
-                                <span className="flex items-center justify-between w-full gap-1">
-                                  {load.factoring ? <StatusBadge status={`${load.factoring}_factoring`} className="text-[11px] px-3 py-1.5" /> : <span className="text-muted-foreground">—</span>}
-                                  <span className="inline-flex h-5 w-5 items-center justify-center rounded border border-border bg-muted/40 text-muted-foreground ml-auto">
-                                    <ChevronDown className="h-3 w-3 shrink-0" />
-                                  </span>
-                                </span>
-                              </SelectTrigger>
-                              <SelectContent>
-                                {[
-                                  { value: 'pending', label: 'Pending' },
-                                  { value: 'in_progress', label: 'In Progress' },
-                                  { value: 'waiting_for_adjustments', label: 'Waiting for Adjustments' },
-                                  { value: 'ready', label: 'Ready' },
-                                ].map(s => (
-                                  <SelectItem key={s.value} value={s.value}>
-                                    <StatusBadge status={`${s.value}_factoring`} />
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                              }} />
+
                           </td>
                           <td className="px-2 py-3.5 text-right" onClick={e => e.stopPropagation()}>
                             <div className="flex justify-end gap-0.5">
