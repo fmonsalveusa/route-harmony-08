@@ -117,6 +117,16 @@ html, body {
   .stat-card:hover {
     box-shadow: 0 8px 32px 0 hsl(214 68% 8% / 0.65);
   }
+  /* Tarjetas de resumen arriba de las páginas: sombra para efecto 3D */
+  .stat-tile-3d {
+    box-shadow: 0 1px 2px rgba(60,64,67,.3), 0 2px 6px 2px rgba(60,64,67,.15);
+    transition: box-shadow .2s, transform .2s;
+  }
+  .stat-tile-3d:hover {
+    box-shadow: 0 2px 4px rgba(60,64,67,.3), 0 6px 14px 4px rgba(60,64,67,.18);
+    transform: translateY(-1px);
+  }
+  .dark .stat-tile-3d { box-shadow: 0 2px 8px rgba(0,0,0,.5); }
   /* Títulos de página estilo Google */
   .page-header {
     @apply text-[24px] leading-8 font-normal text-[#1f1f1f] dark:text-foreground;

@@ -25,7 +25,7 @@ export function StatTiles({ tiles, className }: { tiles: StatTile[]; className?:
   return (
     <div className={cn('grid grid-cols-2 sm:grid-cols-3 gap-2.5', LG_COLS[tiles.length] ?? 'lg:grid-cols-6', className)}>
       {tiles.map(t => (
-        <div key={t.label} className="flex items-center gap-3 rounded-2xl border border-[#e3e3e3] dark:border-border bg-white dark:bg-card px-4 py-2.5" title={t.hint}>
+        <div key={t.label} className="stat-tile-3d flex items-center gap-3 rounded-2xl border border-[#e3e3e3] dark:border-border bg-white dark:bg-card px-4 py-2.5" title={t.hint}>
           <div className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-full', t.tint)}>
             <t.icon className="h-[18px] w-[18px]" />
           </div>

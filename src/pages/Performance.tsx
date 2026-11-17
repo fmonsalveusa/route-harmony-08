@@ -330,7 +330,7 @@ export default function Performance() {
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* Revenue */}
-        <Card className="rounded-xl shadow-sm border-l-4 border-l-[hsl(152,60%,40%)]">
+        <Card className="stat-tile-3d rounded-xl border-l-4 border-l-[hsl(152,60%,40%)]">
           <CardContent className="p-5">
             <div className="flex items-start justify-between">
               <div className="space-y-1">
@@ -350,7 +350,7 @@ export default function Performance() {
         </Card>
 
         {/* Expenses */}
-        <Card className="rounded-xl shadow-sm border-l-4 border-l-destructive">
+        <Card className="stat-tile-3d rounded-xl border-l-4 border-l-destructive">
           <CardContent className="p-5">
             <div className="flex items-start justify-between">
               <div className="space-y-1">
@@ -373,7 +373,7 @@ export default function Performance() {
         </Card>
 
         {/* Net Profit */}
-        <Card className="rounded-xl shadow-sm border-l-4 border-l-[hsl(38,92%,50%)]">
+        <Card className="stat-tile-3d rounded-xl border-l-4 border-l-[hsl(38,92%,50%)]">
           <CardContent className="p-5">
             <div className="flex items-start justify-between">
               <div className="space-y-1">

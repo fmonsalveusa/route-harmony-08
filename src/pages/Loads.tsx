@@ -320,7 +320,7 @@ const Loads = () => {
               { label: 'Revenue', value: `$${revenue.toLocaleString('en-US', { maximumFractionDigits: 0 })}`, hint: `${baseLoads.filter(l => l.status !== 'cancelled').length} loads con los filtros`, icon: DollarSign, tone: 'bg-[#c4eed0] text-[#072711] dark:bg-emerald-900/40 dark:text-emerald-200' },
               { label: 'Factoring abierto', value: factoringOpen.length, hint: 'entregadas sin Ready', icon: Landmark, tone: 'bg-[#feefc3] text-[#3d2a00] dark:bg-amber-900/40 dark:text-amber-200' },
             ].map(t => (
-              <div key={t.label} className="rounded-2xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border px-4 py-2.5 flex items-center gap-3" title={t.hint}>
+              <div key={t.label} className="stat-tile-3d rounded-2xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border px-4 py-2.5 flex items-center gap-3" title={t.hint}>
                 <span className={cn('h-9 w-9 rounded-full flex items-center justify-center shrink-0', t.tone)}><t.icon className="h-[18px] w-[18px]" /></span>
                 <div className="min-w-0">
                   <p className="text-[22px] leading-7 font-normal text-[#1f1f1f] dark:text-foreground truncate">{t.value}</p>
