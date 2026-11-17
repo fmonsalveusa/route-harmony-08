@@ -1337,7 +1337,7 @@ const Tracking = () => {
                                 return <span className="shrink-0 rounded-md bg-[#d93025] text-white px-2 py-0.5 text-xs font-bold tracking-wide" title="Entrega hoy">TODAY</span>;
                               }
                               if (delivery === tomorrowET) {
-                                return <span className="shrink-0 rounded-md bg-[#d3e3fd] text-[#041e49] px-1.5 py-0.5 text-[10px] font-medium" title="Entrega mañana">TOMORROW</span>;
+                                return <span className="shrink-0 rounded-md bg-[#0b57d0] text-white px-2 py-0.5 text-xs font-bold tracking-wide" title="Entrega mañana">TOMORROW</span>;
                               }
                               return null;
                             })()}
