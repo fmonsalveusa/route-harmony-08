@@ -569,10 +569,10 @@ const Loads = () => {
                             }
                           }}
                         >
-                          <td className="pl-3 pr-1 py-2 text-[#444746]">
+                          <td className="pl-3 pr-1 py-3.5 text-[#444746]">
                             {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                           </td>
-                          <td className="px-2 py-2">
+                          <td className="px-2 py-3.5">
                             <div className="font-medium text-[#0b57d0] dark:text-blue-300">{load.reference_number}</div>
                             {/* El tarp es solo para hotshot: en box truck no aplica */}
                             {(load.notes || '').toUpperCase().includes('TARP') && !(trucks.find(t => t.id === load.truck_id)?.truck_type || '').toLowerCase().includes('box') && (
@@ -582,7 +582,7 @@ const Loads = () => {
                             )}
 
                           </td>
-                          <td className="px-2 py-2">
+                          <td className="px-2 py-3.5">
                             <div className="flex items-center gap-2">
                               {driver ? (
                                 <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 text-white" style={{ backgroundColor: dispatcherColor }}>
@@ -599,7 +599,7 @@ const Loads = () => {
                               </div>
                             </div>
                           </td>
-                          <td className="px-2 py-2 text-foreground">
+                          <td className="px-2 py-3.5 text-foreground">
                             <div className="max-w-[170px] truncate" title={load.broker_client || ''}>{load.broker_client || '—'}</div>
                             {load.delivery_date && load.delivery_date.split('T')[0] === new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' }) && (
                               <span className="inline-flex items-center mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide text-white bg-[#ea580c] whitespace-nowrap">
@@ -612,7 +612,7 @@ const Loads = () => {
                               </span>
                             )}
                           </td>
-                          <td className="px-2 py-2 hidden md:table-cell">
+                          <td className="px-2 py-3.5 hidden md:table-cell">
                             {(() => {
                               const { city: originCity, state: originState } = extractCityState(load.origin);
                               const { city: destCity, state: destState } = extractCityState(load.destination);
@@ -630,23 +630,23 @@ const Loads = () => {
                               );
                             })()}
                           </td>
-                          <td className="px-2 py-2 hidden lg:table-cell text-muted-foreground">
+                          <td className="px-2 py-3.5 hidden lg:table-cell text-muted-foreground">
                             <div className="whitespace-nowrap">{formatDate(load.pickup_date)}</div>
                             {(load as any).pickup_time && (
                               <div className="text-[11px] text-muted-foreground/70 whitespace-nowrap max-w-[110px] truncate" title={(load as any).pickup_time}>{(load as any).pickup_time}</div>
                             )}
                             {(load as any).has_detention_pickup && <DetentionBadge />}
                           </td>
-                          <td className="px-2 py-2 hidden lg:table-cell text-muted-foreground">
+                          <td className="px-2 py-3.5 hidden lg:table-cell text-muted-foreground">
                             <div className="whitespace-nowrap">{formatDate(load.delivery_date)}</div>
                             {(load as any).delivery_time && (
                               <div className="text-[11px] text-muted-foreground/70 whitespace-nowrap max-w-[110px] truncate" title={(load as any).delivery_time}>{(load as any).delivery_time}</div>
                             )}
                             {(load as any).has_detention_delivery && <DetentionBadge />}
                           </td>
-                          <td className="px-2 py-2 text-right hidden md:table-cell text-muted-foreground">{load.empty_miles && Number(load.empty_miles) > 0 ? Number(load.empty_miles).toLocaleString() : '—'}</td>
-                          <td className="px-2 py-2 text-right hidden md:table-cell text-muted-foreground">{load.miles && Number(load.miles) > 0 ? Number(load.miles).toLocaleString() : '—'}</td>
-                          <td className="px-2 py-2 text-right">
+                          <td className="px-2 py-3.5 text-right hidden md:table-cell text-muted-foreground">{load.empty_miles && Number(load.empty_miles) > 0 ? Number(load.empty_miles).toLocaleString() : '—'}</td>
+                          <td className="px-2 py-3.5 text-right hidden md:table-cell text-muted-foreground">{load.miles && Number(load.miles) > 0 ? Number(load.miles).toLocaleString() : '—'}</td>
+                          <td className="px-2 py-3.5 text-right">
                             <div className="text-base font-medium text-[#188038] dark:text-emerald-400">${Number(load.total_rate).toLocaleString()}</div>
                             {load.miles && Number(load.miles) > 0 && (() => {
                               const rpm = Number(load.total_rate) / Number(load.miles);
@@ -663,8 +663,8 @@ const Loads = () => {
                               return <div className="text-xs font-medium text-muted-foreground">${rpm.toFixed(2)}/mi</div>;
                             })()}
                           </td>
-                          <td className="px-2 py-2 hidden lg:table-cell"><div className="whitespace-nowrap max-w-[120px] truncate" title={dispatcher?.name}>{dispatcher?.name || '—'}</div></td>
-                          <td className="px-2 py-2" onClick={e => e.stopPropagation()}>
+                          <td className="px-2 py-3.5 hidden lg:table-cell"><div className="whitespace-nowrap max-w-[120px] truncate" title={dispatcher?.name}>{dispatcher?.name || '—'}</div></td>
+                          <td className="px-2 py-3.5" onClick={e => e.stopPropagation()}>
                             <Select value={load.status} onValueChange={async (val) => {
                               const prevStatus = load.status;
                               const updates: any = { status: val };
@@ -710,10 +710,10 @@ const Loads = () => {
                               </SelectContent>
                             </Select>
                           </td>
-                          <td className={cn('px-2 py-2 text-muted-foreground whitespace-nowrap', ['delivered', 'all'].includes(activeTab) ? 'hidden lg:table-cell' : 'hidden')}>
+                          <td className={cn('px-2 py-3.5 text-muted-foreground whitespace-nowrap', ['delivered', 'all'].includes(activeTab) ? 'hidden lg:table-cell' : 'hidden')}>
                             {load.status === 'delivered' ? formatDate(load.delivery_date) : '—'}
                           </td>
-                          <td className="px-2 py-2 hidden lg:table-cell" onClick={e => e.stopPropagation()}>
+                          <td className="px-2 py-3.5 hidden lg:table-cell" onClick={e => e.stopPropagation()}>
                             <Select
                               value={load.factoring || ''}
                               disabled={generatingPaymentIds.has(load.id)}
@@ -749,7 +749,7 @@ const Loads = () => {
                               </SelectContent>
                             </Select>
                           </td>
-                          <td className="px-2 py-2 text-right" onClick={e => e.stopPropagation()}>
+                          <td className="px-2 py-3.5 text-right" onClick={e => e.stopPropagation()}>
                             <div className="flex justify-end gap-0.5">
                               <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full text-[#444746] hover:text-[#1f1f1f] hover:bg-[#f0f4f9] dark:text-muted-foreground" onClick={() => handleGenerateInvoice(load)} title="Invoice">
                                 <FileText className="h-4 w-4" />
