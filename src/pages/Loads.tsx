@@ -36,10 +36,10 @@ import { cn } from '@/lib/utils';
 // ─── Estilo Google / Material 3 ───
 /** Chip de filtro: azul tonal cuando tiene un valor elegido */
 
-const gChip = (active: boolean) => cn(
-  'h-8 text-xs rounded-lg shadow-none font-medium focus:ring-1 focus:ring-[#0b57d0] transition-colors',
-  active ? 'bg-[#c2e7ff] border-[#c2e7ff] text-[#001d35] dark:bg-blue-900/50 dark:border-blue-900/50 dark:text-blue-100'
-    : 'bg-white dark:bg-card border-[#c4c7c5] dark:border-border text-[#444746] dark:text-muted-foreground hover:bg-[#f0f4f9] dark:hover:bg-muted',
+// Mismo diseño que los filtros del Dashboard
+const gChip = (_active: boolean) => cn(
+  'h-9 text-xs rounded-full shadow-none font-normal focus:ring-1 focus:ring-[#0b57d0] transition-colors',
+  'bg-white dark:bg-card border-[#747775] dark:border-border text-[#1f1f1f] dark:text-foreground hover:bg-[#f0f4f9] dark:hover:bg-muted',
 );
 const G_TH = 'text-left px-2 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground whitespace-nowrap';
 import { toast } from 'sonner';

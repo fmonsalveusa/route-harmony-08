@@ -438,21 +438,21 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
           />
         </div>
         <FilterChip value={beneficiaryFilter} onValueChange={setBeneficiaryFilter} label="Beneficiary">
-              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="all">All Beneficiaries</SelectItem>
               {uniqueBeneficiaries.map(name => (
                 <SelectItem key={name} value={name}>{name}</SelectItem>
               ))}
           </FilterChip>
 
         <FilterChip value={weekFilter} onValueChange={setWeekFilter} label="Week">
-              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="all">All Weeks</SelectItem>
               {dateOptions.weeks.map(w => (
                 <SelectItem key={w} value={w}>{w}</SelectItem>
               ))}
           </FilterChip>
 
         <FilterChip value={monthFilter} onValueChange={setMonthFilter} label="Month">
-              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="all">All Months</SelectItem>
               {dateOptions.months.map(m => {
                 const [y, mo] = m.split('-');
                 return <SelectItem key={m} value={m}>{monthNames[parseInt(mo) - 1]} {y}</SelectItem>;
@@ -460,22 +460,18 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
           </FilterChip>
 
         <FilterChip value={yearFilter} onValueChange={setYearFilter} label="Year">
-              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="all">All Years</SelectItem>
               {dateOptions.years.map(y => (
                 <SelectItem key={y} value={y}>{y}</SelectItem>
               ))}
           </FilterChip>
 
-        <label className={cn('inline-flex items-center gap-1.5 h-8 rounded-lg border px-3 text-xs font-medium cursor-pointer', dateFrom
-          ? 'bg-[#c2e7ff] border-[#c2e7ff] text-[#001d35] dark:bg-blue-900/50 dark:border-blue-900/50 dark:text-blue-100'
-          : 'bg-white dark:bg-card border-[#747775] dark:border-border text-[#444746] dark:text-muted-foreground hover:bg-[#f0f4f9] dark:hover:bg-muted')}>
+        <label className="inline-flex items-center gap-1.5 h-9 rounded-full border px-3 text-xs cursor-pointer bg-white dark:bg-card border-[#747775] dark:border-border text-[#444746] dark:text-muted-foreground hover:bg-[#f0f4f9] dark:hover:bg-muted">
           From
           <input type="date" className="bg-transparent outline-none text-xs" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
         </label>
 
-        <label className={cn('inline-flex items-center gap-1.5 h-8 rounded-lg border px-3 text-xs font-medium cursor-pointer', dateTo
-          ? 'bg-[#c2e7ff] border-[#c2e7ff] text-[#001d35] dark:bg-blue-900/50 dark:border-blue-900/50 dark:text-blue-100'
-          : 'bg-white dark:bg-card border-[#747775] dark:border-border text-[#444746] dark:text-muted-foreground hover:bg-[#f0f4f9] dark:hover:bg-muted')}>
+        <label className="inline-flex items-center gap-1.5 h-9 rounded-full border px-3 text-xs cursor-pointer bg-white dark:bg-card border-[#747775] dark:border-border text-[#444746] dark:text-muted-foreground hover:bg-[#f0f4f9] dark:hover:bg-muted">
           To
           <input type="date" className="bg-transparent outline-none text-xs" value={dateTo} onChange={e => setDateTo(e.target.value)} />
         </label>
