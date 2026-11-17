@@ -110,7 +110,7 @@ const CustomLabel = ({ x, y, width, value, bruto }: any) => {
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-card border rounded-lg shadow-lg p-3 text-xs space-y-1 min-w-[180px]">
+    <div className="bg-white dark:bg-card rounded-xl border border-[#e3e3e3] dark:border-border shadow-[0_1px_3px_rgba(60,64,67,.3),0_4px_8px_3px_rgba(60,64,67,.15)] p-3 text-xs space-y-1 min-w-[180px]">
       <p className="font-semibold text-sm mb-2">{label}</p>
       {payload.map((entry: any) => (
         <div key={entry.name} className="flex items-center justify-between gap-4">
@@ -130,7 +130,7 @@ function SegmentChart({ title, data, bruto }: { title: string; data: { name: str
   const chartData = [data.reduce((acc, d) => ({ ...acc, [d.name]: d.value }), { segment: title })];
   return (
     <div className="space-y-1">
-      <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{title}</p>
+      <p className="text-sm font-medium text-[#444746] dark:text-muted-foreground">{title}</p>
       <ResponsiveContainer width="100%" height={200}>
         <BarChart data={chartData} margin={{ top: 36, right: 8, left: 8, bottom: 4 }} barGap={4}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
@@ -246,7 +246,7 @@ export function RevenueBySegmentChart({ loads, drivers, dispatchers, expenses }:
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div>
-            <CardTitle className="text-base">Ingresos por Segmento</CardTitle>
+            <CardTitle className="text-base font-medium text-[#1f1f1f] dark:text-foreground">Ingresos por Segmento</CardTitle>
             <p className="text-xs text-muted-foreground mt-0.5">
               Bruto total: <span className="font-semibold text-foreground">${totalGross.toLocaleString()}</span>
               {' · '}
@@ -254,7 +254,7 @@ export function RevenueBySegmentChart({ loads, drivers, dispatchers, expenses }:
             </p>
           </div>
           <Select value={period} onValueChange={v => setPeriod(v as Period)}>
-            <SelectTrigger className="h-8 w-[150px] text-xs"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-8 w-[150px] text-xs rounded-full shadow-none bg-white dark:bg-card border-[#747775] dark:border-border"><SelectValue /></SelectTrigger>
             <SelectContent>
               {(Object.keys(PERIOD_LABELS) as Period[]).map(p => (
                 <SelectItem key={p} value={p}>{PERIOD_LABELS[p]}</SelectItem>
@@ -264,9 +264,9 @@ export function RevenueBySegmentChart({ loads, drivers, dispatchers, expenses }:
         </div>
         {period === 'custom' && (
           <div className="flex items-center gap-2 mt-2">
-            <input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)} className="h-8 text-xs border rounded-md px-2 bg-background" />
+            <input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)} className="h-8 text-xs px-3 rounded-full border border-[#747775] dark:border-border bg-white dark:bg-card shadow-none text-[#1f1f1f] dark:text-foreground" />
             <span className="text-xs text-muted-foreground">a</span>
-            <input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)} className="h-8 text-xs border rounded-md px-2 bg-background" />
+            <input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)} className="h-8 text-xs px-3 rounded-full border border-[#747775] dark:border-border bg-white dark:bg-card shadow-none text-[#1f1f1f] dark:text-foreground" />
           </div>
         )}
       </CardHeader>

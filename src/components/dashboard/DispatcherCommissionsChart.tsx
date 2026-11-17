@@ -23,7 +23,7 @@ const fmt = (v: number) => `$${Number(v).toLocaleString('en-US', { minimumFracti
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-card border rounded-lg shadow-lg p-3 text-xs space-y-1 min-w-[200px]">
+    <div className="bg-white dark:bg-card rounded-xl border border-[#e3e3e3] dark:border-border shadow-[0_1px_3px_rgba(60,64,67,.3),0_4px_8px_3px_rgba(60,64,67,.15)] p-3 text-xs space-y-1 min-w-[200px]">
       <p className="font-semibold text-sm mb-2">{label}</p>
       {payload.map((entry: any) => (
         <div key={entry.name} className="flex items-center justify-between gap-4">
@@ -129,7 +129,7 @@ export function DispatcherCommissionsChart({ loads, dispatchers, year, month, we
       <div className="px-6 pt-5 pb-2">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div>
-            <h3 className="text-base font-semibold leading-none tracking-tight">Weekly Dispatcher Commissions</h3>
+            <h3 className="text-base font-medium text-[#1f1f1f] dark:text-foreground">Weekly Dispatcher Commissions</h3>
             <p className="text-xs text-muted-foreground mt-0.5">
               Total: <span className="font-semibold text-foreground">${totalGeneral.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
             </p>
@@ -137,7 +137,7 @@ export function DispatcherCommissionsChart({ loads, dispatchers, year, month, we
           <select
             value={selectedDispatcher}
             onChange={e => setSelectedDispatcher(e.target.value)}
-            className="h-8 text-xs border rounded-md px-2 bg-background text-foreground"
+            className="h-8 text-xs px-3 rounded-full border border-[#747775] dark:border-border bg-white dark:bg-card shadow-none text-[#1f1f1f] dark:text-foreground"
           >
             <option value="all">Todos</option>
             {dispatchers.map(d => (

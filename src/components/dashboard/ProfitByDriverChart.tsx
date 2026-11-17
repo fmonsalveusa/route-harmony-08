@@ -74,7 +74,7 @@ export function ProfitByDriverChart({ loads, drivers, trucks, dispatchers, servi
   return (
     <div className="glass-card p-0 overflow-hidden">
       <div className="px-6 pt-5 pb-2 flex items-baseline justify-between gap-2">
-        <h3 className="text-base font-semibold leading-none tracking-tight">Drivers Net Profit</h3>
+        <h3 className="text-base font-medium text-[#1f1f1f] dark:text-foreground">Drivers Net Profit</h3>
         {data.length > 0 && (
           <span className={`text-sm font-bold ${total >= 0 ? 'text-[#16a34a]' : 'text-destructive'}`}>
             Total {money(total)}

@@ -34,9 +34,9 @@ export function DashboardFilters({
 }: DashboardFiltersProps) {
   return (
     <div className="flex flex-wrap gap-2 items-center">
-      <Filter className="h-4 w-4 text-muted-foreground" />
+      <Filter className="h-4 w-4 text-[#444746] dark:text-muted-foreground" />
       <Select value={year} onValueChange={onYearChange}>
-        <SelectTrigger className="w-[120px] h-9 text-xs rounded-full bg-card shadow-sm">
+        <SelectTrigger className="w-[120px] h-9 text-xs rounded-full bg-white dark:bg-card shadow-none border-[#747775] dark:border-border">
           <SelectValue placeholder="Year" />
         </SelectTrigger>
         <SelectContent>
@@ -45,7 +45,7 @@ export function DashboardFilters({
         </SelectContent>
       </Select>
       <Select value={month} onValueChange={onMonthChange}>
-        <SelectTrigger className="w-[130px] h-9 text-xs rounded-full bg-card shadow-sm">
+        <SelectTrigger className="w-[130px] h-9 text-xs rounded-full bg-white dark:bg-card shadow-none border-[#747775] dark:border-border">
           <SelectValue placeholder="Month" />
         </SelectTrigger>
         <SelectContent>
@@ -56,7 +56,7 @@ export function DashboardFilters({
         </SelectContent>
       </Select>
       <Select value={week} onValueChange={onWeekChange}>
-        <SelectTrigger className="w-[220px] h-9 text-xs rounded-full bg-card shadow-sm">
+        <SelectTrigger className="w-[220px] h-9 text-xs rounded-full bg-white dark:bg-card shadow-none border-[#747775] dark:border-border">
           <SelectValue placeholder="Week" />
         </SelectTrigger>
         <SelectContent className="max-h-[300px]">
@@ -82,7 +82,7 @@ export function DashboardFilters({
       </Select>
       {!hideDispatcherFilter && (
         <Select value={dispatcher} onValueChange={onDispatcherChange}>
-          <SelectTrigger className="w-[160px] h-9 text-xs rounded-full bg-card shadow-sm">
+          <SelectTrigger className="w-[160px] h-9 text-xs rounded-full bg-white dark:bg-card shadow-none border-[#747775] dark:border-border">
             <SelectValue placeholder="Dispatcher" />
           </SelectTrigger>
           <SelectContent>
@@ -92,7 +92,7 @@ export function DashboardFilters({
         </Select>
       )}
       <Select value={driver} onValueChange={onDriverChange}>
-        <SelectTrigger className="w-[160px] h-9 text-xs rounded-full bg-card shadow-sm">
+        <SelectTrigger className="w-[160px] h-9 text-xs rounded-full bg-white dark:bg-card shadow-none border-[#747775] dark:border-border">
           <SelectValue placeholder="Driver" />
         </SelectTrigger>
         <SelectContent>

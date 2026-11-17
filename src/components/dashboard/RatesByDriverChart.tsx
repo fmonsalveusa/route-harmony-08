@@ -63,7 +63,7 @@ export function RatesByDriverChart({ loads, drivers, year, month, week, serviceT
   return (
     <div className="glass-card p-0 overflow-hidden">
       <div className="px-6 pt-5 pb-2">
-        <h3 className="text-base font-semibold leading-none tracking-tight">Drivers Performance</h3>
+        <h3 className="text-base font-medium text-[#1f1f1f] dark:text-foreground">Drivers Performance</h3>
       </div>
       <div className="px-6 pb-6">
         {data.length === 0 ? (

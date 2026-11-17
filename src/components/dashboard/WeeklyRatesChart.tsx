@@ -104,7 +104,7 @@ export function WeeklyRatesChart({ driverIds }: { driverIds?: Set<string> }) {
     <div className="glass-card p-0 overflow-hidden">
       <div className="px-6 pt-5 pb-2">
         <div className="flex items-center justify-between">
-          <h3 className="text-base font-semibold leading-none tracking-tight">Weekly Production</h3>
+          <h3 className="text-base font-medium text-[#1f1f1f] dark:text-foreground">Weekly Production</h3>
           <div className="flex gap-1">
             {(Object.keys(periodLabels) as PeriodFilter[]).map((key) => (
               <button
