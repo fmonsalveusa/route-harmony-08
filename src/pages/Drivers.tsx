@@ -297,7 +297,7 @@ const Drivers = () => {
                       </td>
                       <td className="px-3 py-3">
                         <div className="flex items-center gap-3">
-                          <div className="h-11 w-11 rounded-full flex items-center justify-center text-white text-[15px] font-medium flex-shrink-0" style={{ background: dispatcher?.color || '#9aa0a6' }} title={dispatcher ? `Dispatcher: ${dispatcher.name}` : 'Sin dispatcher'}>
+                          <div className="h-9 w-9 rounded-full flex items-center justify-center text-white text-sm font-medium flex-shrink-0" style={{ background: dispatcher?.color || '#9aa0a6' }} title={dispatcher ? `Dispatcher: ${dispatcher.name}` : 'Sin dispatcher'}>
                             {(() => { const w = driver.name.trim().split(/\s+/); return ((w[0]?.[0] ?? '') + (w[1]?.[0] ?? '')).toUpperCase(); })()}
                           </div>
                           <div className="flex flex-col items-start min-w-0">
@@ -341,7 +341,6 @@ const Drivers = () => {
                             <TruckIcon className="h-4 w-4" />
                           </span>
                           <span className="leading-tight">
-                            <span className="block text-[10.5px] uppercase tracking-wide text-[#444746] dark:text-muted-foreground">Truck</span>
                             <span className="block text-sm text-[#1f1f1f] dark:text-foreground">{truckLabel || 'Sin asignar'}</span>
                           </span>
                         </div>
