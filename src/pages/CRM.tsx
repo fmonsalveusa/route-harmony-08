@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { SEARCH_PILL } from '@/components/FilterChip';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Contact, Plus, Search, Phone, MessageCircle, Globe, UserCheck, PenLine, CalendarClock, AlertCircle,
@@ -1312,7 +1313,7 @@ export default function CRM() {
             placeholder="Buscar nombre, teléfono, vehículo..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full h-12 rounded-full bg-white dark:bg-card border border-[#e3e3e3] dark:border-border pl-12 pr-10 text-[15px] text-[#1f1f1f] dark:text-foreground placeholder:text-[#444746] outline-none focus:bg-white dark:focus:bg-card focus:shadow-[0_1px_1px_rgba(65,69,73,.3),0_1px_3px_1px_rgba(65,69,73,.15)] transition"
+            className={`w-full pl-12 pr-10 ${SEARCH_PILL} !h-12 !text-[15px]`}
           />
           {search && (
             <button type="button" onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 h-7 w-7 rounded-full hover:bg-black/5 flex items-center justify-center">

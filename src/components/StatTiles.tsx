@@ -50,7 +50,7 @@ export function SolidStatusPill({ label, color }: { label: string; color: string
 }
 
 /** Clases compartidas: buscador/filtros en píldora y contenedor de tabla */
-export const PILL_INPUT = 'h-10 rounded-full bg-white dark:bg-card border-[#e3e3e3] dark:border-border shadow-none';
+export { SEARCH_PILL as PILL_INPUT } from '@/components/FilterChip';
 export const TABLE_CARD = 'rounded-3xl border border-[#e3e3e3] dark:border-border bg-white dark:bg-card overflow-hidden';
 export const TABLE_HEAD_ROW = 'border-b border-[#e3e3e3] dark:border-border bg-[#f8fafd] dark:bg-muted/30';
 export const TABLE_ROW = 'border-b border-[#f0f0f0] dark:border-border transition-colors hover:bg-[#f8fafd] dark:hover:bg-muted/30';

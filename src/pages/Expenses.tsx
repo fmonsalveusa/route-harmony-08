@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { FilterChip, ClearFiltersButton, SEARCH_PILL } from '@/components/FilterChip';
 import { useExpenses } from '@/hooks/useExpenses';
 import { useTrucks } from '@/hooks/useTrucks';
 import { useDrivers } from '@/hooks/useDrivers';
@@ -212,28 +213,20 @@ const Expenses = () => {
             onChange={e => { setSearch(e.target.value); setPage(1); }} className={`pl-10 ${PILL_INPUT}`} />
         </div>
         <Filter className="h-4 w-4 text-muted-foreground" />
-          <Select value={filterDateQuick} onValueChange={v => { setFilterDateQuick(v); setPage(1); }}>
-            <SelectTrigger className="w-[130px] h-10 text-xs rounded-full bg-card shadow-sm"><SelectValue placeholder="Date" /></SelectTrigger>
-            <SelectContent>
+          <FilterChip value={filterDateQuick} onValueChange={v => { setFilterDateQuick(v); setPage(1); }} label="Date">
               <SelectItem value="all">All Dates</SelectItem>
               <SelectItem value="this_week">This Week</SelectItem>
               <SelectItem value="this_month">This Month</SelectItem>
               <SelectItem value="this_year">This Year</SelectItem>
               <SelectItem value="last_30">Last 30 Days</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={filterType} onValueChange={v => { setFilterType(v); setPage(1); }}>
-            <SelectTrigger className="w-[140px] h-10 text-xs rounded-full bg-card shadow-sm"><SelectValue placeholder="Type" /></SelectTrigger>
-            <SelectContent>
+          </FilterChip>
+          <FilterChip value={filterType} onValueChange={v => { setFilterType(v); setPage(1); }} label="Type">
               <SelectItem value="all">All Types</SelectItem>
               {Object.entries(EXPENSE_TYPE_LABELS).map(([k, v]) => (
                 <SelectItem key={k} value={k}>{v}</SelectItem>
               ))}
-            </SelectContent>
-          </Select>
-          <Select value={filterTruck} onValueChange={v => { setFilterTruck(v); setPage(1); }}>
-            <SelectTrigger className="w-[180px] h-10 text-xs rounded-full bg-card shadow-sm"><SelectValue placeholder="Truck" /></SelectTrigger>
-            <SelectContent>
+          </FilterChip>
+          <FilterChip value={filterTruck} onValueChange={v => { setFilterTruck(v); setPage(1); }} label="Truck">
               <SelectItem value="all">All Trucks</SelectItem>
               {trucks
                 .filter(t => {
@@ -246,29 +239,22 @@ const Expenses = () => {
                     <SelectItem key={t.id} value={t.id}>#{t.unit_number} - {driver?.name || 'No Driver'}</SelectItem>
                   );
                 })}
-            </SelectContent>
-          </Select>
-          <Select value={filterPayment} onValueChange={v => { setFilterPayment(v); setPage(1); }}>
-            <SelectTrigger className="w-[140px] h-10 text-xs rounded-full bg-card shadow-sm"><SelectValue placeholder="Payment" /></SelectTrigger>
-            <SelectContent>
+          </FilterChip>
+          <FilterChip value={filterPayment} onValueChange={v => { setFilterPayment(v); setPage(1); }} label="Payment">
               <SelectItem value="all">All Methods</SelectItem>
               {Object.entries(PAYMENT_METHOD_LABELS).map(([k, v]) => (
                 <SelectItem key={k} value={k}>{v}</SelectItem>
               ))}
-            </SelectContent>
-          </Select>
-          <Select value={filterSource} onValueChange={v => { setFilterSource(v); setPage(1); }}>
-            <SelectTrigger className="w-[120px] h-10 text-xs rounded-full bg-card shadow-sm"><SelectValue placeholder="Source" /></SelectTrigger>
-            <SelectContent>
+          </FilterChip>
+          <FilterChip value={filterSource} onValueChange={v => { setFilterSource(v); setPage(1); }} label="Source">
               <SelectItem value="all">All Sources</SelectItem>
               <SelectItem value="manual">Manual</SelectItem>
               <SelectItem value="csv_import">CSV Import</SelectItem>
-            </SelectContent>
-          </Select>
+          </FilterChip>
           {hasActiveFilters && (
             <Button variant="ghost" size="sm" className="h-8 text-xs rounded-full text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium" onClick={() => {
               setFilterType('all'); setFilterTruck('all'); setFilterPayment('all'); setFilterSource('all'); setFilterDateQuick('all'); setPage(1);
-            }}>Clear filters</Button>
+            }}>Limpiar filtros</Button>
           )}
       </div>
 

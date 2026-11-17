@@ -1,4 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
+import { FilterChip, ClearFiltersButton, SEARCH_PILL } from '@/components/FilterChip';
+import { cn } from '@/lib/utils';
 import { StatusChipSelect, PAYMENT_STATUS_CHIPS } from '@/components/StatusChipSelect';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, isWithinInterval, parseISO } from 'date-fns';
 import { formatDate } from '@/lib/dateUtils';
@@ -425,91 +427,61 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
       </Tabs>
 
       {/* Search & Filters */}
-      <div className="flex flex-wrap items-end gap-3">
+      <div className="flex flex-wrap items-center gap-2">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#444746] dark:text-muted-foreground" />
           <Input
             placeholder="Search..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="pl-9 h-9 w-[220px] text-sm rounded-full bg-white dark:bg-card border-[#e3e3e3] dark:border-border shadow-none"
+            className={`pl-10 w-[240px] ${SEARCH_PILL}`}
           />
         </div>
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-[#444746] dark:text-muted-foreground">Beneficiary</label>
-          <Select value={beneficiaryFilter} onValueChange={setBeneficiaryFilter}>
-            <SelectTrigger className="rounded-lg shadow-none font-medium bg-white dark:bg-card border-[#c4c7c5] dark:border-border text-[#444746] dark:text-muted-foreground h-8 w-[180px] text-xs">
-              <SelectValue placeholder="All" />
-            </SelectTrigger>
-            <SelectContent className="bg-popover z-50">
+        <FilterChip value={beneficiaryFilter} onValueChange={setBeneficiaryFilter} label="Beneficiary">
               <SelectItem value="all">All</SelectItem>
               {uniqueBeneficiaries.map(name => (
                 <SelectItem key={name} value={name}>{name}</SelectItem>
               ))}
-            </SelectContent>
-          </Select>
-        </div>
+          </FilterChip>
 
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-[#444746] dark:text-muted-foreground">Week</label>
-          <Select value={weekFilter} onValueChange={setWeekFilter}>
-            <SelectTrigger className="rounded-lg shadow-none font-medium bg-white dark:bg-card border-[#c4c7c5] dark:border-border text-[#444746] dark:text-muted-foreground h-8 w-[140px] text-xs">
-              <SelectValue placeholder="All" />
-            </SelectTrigger>
-            <SelectContent className="bg-popover z-50">
+        <FilterChip value={weekFilter} onValueChange={setWeekFilter} label="Week">
               <SelectItem value="all">All</SelectItem>
               {dateOptions.weeks.map(w => (
                 <SelectItem key={w} value={w}>{w}</SelectItem>
               ))}
-            </SelectContent>
-          </Select>
-        </div>
+          </FilterChip>
 
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-[#444746] dark:text-muted-foreground">Month</label>
-          <Select value={monthFilter} onValueChange={setMonthFilter}>
-            <SelectTrigger className="rounded-lg shadow-none font-medium bg-white dark:bg-card border-[#c4c7c5] dark:border-border text-[#444746] dark:text-muted-foreground h-8 w-[140px] text-xs">
-              <SelectValue placeholder="All" />
-            </SelectTrigger>
-            <SelectContent className="bg-popover z-50">
+        <FilterChip value={monthFilter} onValueChange={setMonthFilter} label="Month">
               <SelectItem value="all">All</SelectItem>
               {dateOptions.months.map(m => {
                 const [y, mo] = m.split('-');
                 return <SelectItem key={m} value={m}>{monthNames[parseInt(mo) - 1]} {y}</SelectItem>;
               })}
-            </SelectContent>
-          </Select>
-        </div>
+          </FilterChip>
 
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-[#444746] dark:text-muted-foreground">Year</label>
-          <Select value={yearFilter} onValueChange={setYearFilter}>
-            <SelectTrigger className="rounded-lg shadow-none font-medium bg-white dark:bg-card border-[#c4c7c5] dark:border-border text-[#444746] dark:text-muted-foreground h-8 w-[100px] text-xs">
-              <SelectValue placeholder="All" />
-            </SelectTrigger>
-            <SelectContent className="bg-popover z-50">
+        <FilterChip value={yearFilter} onValueChange={setYearFilter} label="Year">
               <SelectItem value="all">All</SelectItem>
               {dateOptions.years.map(y => (
                 <SelectItem key={y} value={y}>{y}</SelectItem>
               ))}
-            </SelectContent>
-          </Select>
-        </div>
+          </FilterChip>
 
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-[#444746] dark:text-muted-foreground">From</label>
-          <Input type="date" className="rounded-lg shadow-none font-medium bg-white dark:bg-card border-[#c4c7c5] dark:border-border text-[#444746] dark:text-muted-foreground h-8 w-[150px] text-xs" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
-        </div>
+        <label className={cn('inline-flex items-center gap-1.5 h-8 rounded-lg border px-3 text-xs font-medium cursor-pointer', dateFrom
+          ? 'bg-[#c2e7ff] border-[#c2e7ff] text-[#001d35] dark:bg-blue-900/50 dark:border-blue-900/50 dark:text-blue-100'
+          : 'bg-white dark:bg-card border-[#747775] dark:border-border text-[#444746] dark:text-muted-foreground hover:bg-[#f0f4f9] dark:hover:bg-muted')}>
+          From
+          <input type="date" className="bg-transparent outline-none text-xs" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
+        </label>
 
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-[#444746] dark:text-muted-foreground">To</label>
-          <Input type="date" className="rounded-lg shadow-none font-medium bg-white dark:bg-card border-[#c4c7c5] dark:border-border text-[#444746] dark:text-muted-foreground h-8 w-[150px] text-xs" value={dateTo} onChange={e => setDateTo(e.target.value)} />
-        </div>
+        <label className={cn('inline-flex items-center gap-1.5 h-8 rounded-lg border px-3 text-xs font-medium cursor-pointer', dateTo
+          ? 'bg-[#c2e7ff] border-[#c2e7ff] text-[#001d35] dark:bg-blue-900/50 dark:border-blue-900/50 dark:text-blue-100'
+          : 'bg-white dark:bg-card border-[#747775] dark:border-border text-[#444746] dark:text-muted-foreground hover:bg-[#f0f4f9] dark:hover:bg-muted')}>
+          To
+          <input type="date" className="bg-transparent outline-none text-xs" value={dateTo} onChange={e => setDateTo(e.target.value)} />
+        </label>
 
         {hasActiveFilters && (
-          <Button variant="ghost" size="sm" className="h-8 rounded-full px-3 gap-1 text-xs text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe] dark:text-blue-300 font-medium" onClick={clearFilters}>
-            <X className="h-3.5 w-3.5" /> Clear
-          </Button>
+          <ClearFiltersButton onClick={clearFilters} />
         )}
         <Button variant="outline" size="sm" className="h-9 rounded-full px-4 gap-1.5 text-xs ml-auto shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium" onClick={() => {
           if (payments.length === 0) {

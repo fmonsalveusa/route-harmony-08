@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { SEARCH_PILL } from '@/components/FilterChip';
 import { MessageCircle, RefreshCw, Search, CheckCircle2, XCircle, Loader2, Smartphone } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
@@ -70,8 +71,8 @@ function GroupsTable({ rows, groups, memberIds, onAssign }: {
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar..." className="h-9 w-56 pl-8 text-xs rounded-full bg-card shadow-sm" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#444746] dark:text-muted-foreground" />
+          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar..." className={`w-56 pl-9 ${SEARCH_PILL} !h-9 !text-xs`} />
         </div>
         <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
           <Switch checked={onlyMissing} onCheckedChange={setOnlyMissing} className="scale-75" /> Solo con problemas

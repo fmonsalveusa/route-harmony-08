@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { FilterChip, ClearFiltersButton, SEARCH_PILL } from '@/components/FilterChip';
 import { StatusChipSelect } from '@/components/StatusChipSelect';
 import { ServiceTypeBadge } from '@/components/ServiceTypeBadge';
 import { cn } from '@/lib/utils';
@@ -519,32 +520,25 @@ const Drivers = () => {
         <div className="relative flex-1 min-w-[200px] max-w-sm">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#444746] dark:text-muted-foreground" />
           <input placeholder="Buscar por nombre o email..." value={search} onChange={e => setSearch(e.target.value)}
-            className="w-full h-10 rounded-full bg-white dark:bg-card border border-[#e3e3e3] dark:border-border pl-10 pr-4 text-sm text-[#1f1f1f] dark:text-foreground placeholder:text-[#444746] outline-none focus:shadow-[0_1px_1px_rgba(65,69,73,.3),0_1px_3px_1px_rgba(65,69,73,.15)] transition" />
+            className={`w-full pl-10 pr-4 ${SEARCH_PILL}`} />
         </div>
         {!isDispatcher && (
-          <Select value={dispatcherFilter} onValueChange={v => { setDispatcherFilter(v); setPage(1); }}>
-            <SelectTrigger className={cn('w-[190px] h-8 text-xs rounded-lg shadow-none font-medium', dispatcherFilter !== 'all' ? 'bg-[#c2e7ff] border-[#c2e7ff] text-[#001d35] dark:bg-blue-900/50 dark:border-blue-900/50 dark:text-blue-100' : 'bg-white dark:bg-card border-[#c4c7c5] dark:border-border text-[#444746] dark:text-muted-foreground')}>
-              <SelectValue placeholder="All Dispatchers" />
-            </SelectTrigger>
-            <SelectContent>
+          <FilterChip value={dispatcherFilter} onValueChange={v => { setDispatcherFilter(v); setPage(1); }} label="Dispatcher">
               <SelectItem value="all">All Dispatchers</SelectItem>
               {dispatchers.map(d => (
                 <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
               ))}
-            </SelectContent>
-          </Select>
+          </FilterChip>
         )}
-        <Select value={serviceFilter} onValueChange={v => { setServiceFilter(v); setPage(1); }}>
-          <SelectTrigger className={cn('w-[190px] h-8 text-xs rounded-lg shadow-none font-medium', serviceFilter !== 'all' ? 'bg-[#c2e7ff] border-[#c2e7ff] text-[#001d35] dark:bg-blue-900/50 dark:border-blue-900/50 dark:text-blue-100' : 'bg-white dark:bg-card border-[#c4c7c5] dark:border-border text-[#444746] dark:text-muted-foreground')}>
-            <SelectValue placeholder="All Service Types" />
-          </SelectTrigger>
-          <SelectContent>
+        <FilterChip value={serviceFilter} onValueChange={v => { setServiceFilter(v); setPage(1); }} label="Service Type">
             <SelectItem value="all">All Service Types</SelectItem>
             <SelectItem value="owner_operator">Owner Operator</SelectItem>
             <SelectItem value="company_driver">Company Driver</SelectItem>
             <SelectItem value="dispatch_service">Dispatch Service</SelectItem>
-          </SelectContent>
-        </Select>
+        </FilterChip>
+        {(dispatcherFilter !== 'all' || serviceFilter !== 'all') && (
+          <ClearFiltersButton onClick={() => { setDispatcherFilter('all'); setServiceFilter('all'); setPage(1); }} />
+        )}
       </div>
 
       {loading ? (

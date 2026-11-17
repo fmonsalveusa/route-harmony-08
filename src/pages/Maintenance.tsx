@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { FilterChip, ClearFiltersButton, SEARCH_PILL } from '@/components/FilterChip';
 import { motion } from 'framer-motion';
 import { Wrench, Plus, RefreshCw, List, Truck, Gauge, Check, X, User, AlertTriangle, AlertCircle, CheckCircle2, Send } from 'lucide-react';
 import { StatTiles, PILL_INPUT } from '@/components/StatTiles';
@@ -222,25 +223,22 @@ const Maintenance = () => {
         </TabsList>
 
         {/* Filters (shared) */}
-        <div className="flex gap-3 mt-4">
-          <Select value={filterTruck} onValueChange={setFilterTruck}>
-            <SelectTrigger className={`w-48 ${PILL_INPUT}`}><SelectValue placeholder="All Trucks" /></SelectTrigger>
-            <SelectContent>
+        <div className="flex flex-wrap items-center gap-2 mt-4">
+          <FilterChip value={filterTruck} onValueChange={setFilterTruck} label="Truck">
               <SelectItem value="all">All Trucks</SelectItem>
               {trucks.map(t => (
                 <SelectItem key={t.id} value={t.id}>{t.unit_number}</SelectItem>
               ))}
-            </SelectContent>
-          </Select>
-          <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className={`w-36 ${PILL_INPUT}`}><SelectValue placeholder="All Status" /></SelectTrigger>
-            <SelectContent>
+          </FilterChip>
+          <FilterChip value={filterStatus} onValueChange={setFilterStatus} label="Status">
               <SelectItem value="all">All Status</SelectItem>
               <SelectItem value="ok">OK</SelectItem>
               <SelectItem value="warning">Warning</SelectItem>
               <SelectItem value="due">Due</SelectItem>
-            </SelectContent>
-          </Select>
+          </FilterChip>
+          {(filterTruck !== 'all' || filterStatus !== 'all') && (
+            <ClearFiltersButton onClick={() => { setFilterTruck('all'); setFilterStatus('all'); }} />
+          )}
         </div>
 
         {/* Tab: By Truck */}

@@ -1,5 +1,6 @@
 ﻿import { useState, useMemo, useEffect, useRef } from 'react';
 import { StatusChipSelect, LOAD_STATUS_CHIPS, ALL_CHIP } from '@/components/StatusChipSelect';
+import { SEARCH_PILL } from '@/components/FilterChip';
 import { ServiceTypeBadge } from '@/components/ServiceTypeBadge';
 import { getLoadRoutes, saveLoadRoute } from '@/lib/loadRoute';
 import { HosClocks, type HosClockRow } from '@/components/HosClocks';
@@ -1111,7 +1112,7 @@ const Tracking = () => {
             placeholder="Buscar cargas..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full h-10 rounded-full bg-white dark:bg-card border border-[#e3e3e3] dark:border-border pl-10 pr-4 text-sm text-[#1f1f1f] dark:text-foreground placeholder:text-[#444746] outline-none focus:shadow-[0_1px_1px_rgba(65,69,73,.3),0_1px_3px_1px_rgba(65,69,73,.15)] transition"
+            className={`w-full pl-10 pr-4 ${SEARCH_PILL}`}
           />
         </div>
         <StatusChipSelect

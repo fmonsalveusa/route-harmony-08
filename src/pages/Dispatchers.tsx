@@ -1,4 +1,5 @@
 import { useState, useMemo, Fragment } from 'react';
+import { SEARCH_PILL } from '@/components/FilterChip';
 import { useDispatchers, DbDispatcher, DispatcherInput } from '@/hooks/useDispatchers';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
@@ -184,7 +185,7 @@ const Dispatchers = () => {
       <div className="relative w-full max-w-sm">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#444746] dark:text-muted-foreground" />
         <input placeholder="Buscar por nombre o email..." value={search} onChange={e => setSearch(e.target.value)}
-          className="w-full h-10 rounded-full bg-white dark:bg-card border border-[#e3e3e3] dark:border-border pl-10 pr-4 text-sm text-[#1f1f1f] dark:text-foreground placeholder:text-[#444746] outline-none focus:shadow-[0_1px_1px_rgba(65,69,73,.3),0_1px_3px_1px_rgba(65,69,73,.15)] transition" />
+          className={`w-full pl-10 pr-4 ${SEARCH_PILL}`} />
       </div>
 
       {loading ? (

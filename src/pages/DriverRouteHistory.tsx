@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { getLoadRoutes } from '@/lib/loadRoute';
 import { StatTiles, PILL_INPUT } from '@/components/StatTiles';
+import { FILTER_CHIP } from '@/components/FilterChip';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DollarSign, TrendingUp, MapPin, Route } from 'lucide-react';
 import {
@@ -306,7 +307,7 @@ const DriverRouteHistory = () => {
         </div>
         <div className="flex gap-2">
           <Select value={selectedDriverId} onValueChange={setSelectedDriverId}>
-            <SelectTrigger className={`w-[220px] ${PILL_INPUT}`}>
+            <SelectTrigger className={`max-w-[240px] ${FILTER_CHIP}`}>
               <SelectValue placeholder="Select Driver" />
             </SelectTrigger>
             <SelectContent>
@@ -316,7 +317,7 @@ const DriverRouteHistory = () => {
             </SelectContent>
           </Select>
           <Select value={period} onValueChange={setPeriod}>
-            <SelectTrigger className={`w-[170px] ${PILL_INPUT}`}>
+            <SelectTrigger className={`max-w-[200px] ${FILTER_CHIP}`}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

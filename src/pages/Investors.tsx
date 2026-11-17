@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, Fragment } from 'react';
+import { SEARCH_PILL } from '@/components/FilterChip';
 import { WhatsAppGroupSelect } from '@/components/WhatsAppGroupSelect';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -412,7 +413,7 @@ const Investors = () => {
           placeholder="Buscar investors..."
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="w-full h-10 rounded-full bg-white dark:bg-card border border-[#e3e3e3] dark:border-border pl-10 pr-8 text-sm text-[#1f1f1f] dark:text-foreground placeholder:text-[#444746] outline-none focus:shadow-[0_1px_1px_rgba(65,69,73,.3),0_1px_3px_1px_rgba(65,69,73,.15)] transition"
+          className={`w-full pl-10 pr-8 ${SEARCH_PILL}`}
         />
         {search && (
           <button

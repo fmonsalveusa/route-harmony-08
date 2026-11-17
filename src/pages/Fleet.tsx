@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
+import { FilterChip, ClearFiltersButton, SEARCH_PILL } from '@/components/FilterChip';
 import { useTrucks, DbTruck, TruckInput } from '@/hooks/useTrucks';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useDispatchers } from '@/hooks/useDispatchers';
@@ -338,8 +339,8 @@ const Fleet = () => {
       })()}
 
       {/* Search & Filters */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-        <div className="relative flex-1 max-w-sm">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative flex-1 min-w-[200px] max-w-sm">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#444746] dark:text-muted-foreground" />
           <Input
             placeholder="Search unit, make, model, VIN..."
@@ -348,41 +349,29 @@ const Fleet = () => {
             className={`pl-10 ${PILL_INPUT}`}
           />
         </div>
-        <Select value={dispatcherFilter} onValueChange={v => { setDispatcherFilter(v); setPage(1); }}>
-          <SelectTrigger className={cn('w-full sm:w-52 h-8 text-xs rounded-lg shadow-none font-medium', dispatcherFilter !== 'all' ? 'bg-[#c2e7ff] border-[#c2e7ff] text-[#001d35] dark:bg-blue-900/50 dark:border-blue-900/50 dark:text-blue-100' : 'bg-white dark:bg-card border-[#c4c7c5] dark:border-border text-[#444746] dark:text-muted-foreground')}>
-            <SelectValue placeholder="Filter by Dispatcher" />
-          </SelectTrigger>
-          <SelectContent className="max-h-60">
+        <FilterChip value={dispatcherFilter} onValueChange={v => { setDispatcherFilter(v); setPage(1); }} label="Dispatcher">
             <SelectItem value="all">All Dispatchers</SelectItem>
             {dispatchers.filter(d => d.status !== 'inactive').map(d => (
               <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
             ))}
-          </SelectContent>
-        </Select>
-        <Select value={vinFilter} onValueChange={v => { setVinFilter(v); setPage(1); }}>
-          <SelectTrigger className={cn('w-full sm:w-52 h-8 text-xs rounded-lg shadow-none font-medium', vinFilter !== 'all' ? 'bg-[#c2e7ff] border-[#c2e7ff] text-[#001d35] dark:bg-blue-900/50 dark:border-blue-900/50 dark:text-blue-100' : 'bg-white dark:bg-card border-[#c4c7c5] dark:border-border text-[#444746] dark:text-muted-foreground')}>
-            <SelectValue placeholder="Filter by VIN" />
-          </SelectTrigger>
-          <SelectContent className="max-h-60">
+        </FilterChip>
+        <FilterChip value={vinFilter} onValueChange={v => { setVinFilter(v); setPage(1); }} label="VIN">
             <SelectItem value="all">All VINs</SelectItem>
             {uniqueVins.map(vin => (
               <SelectItem key={vin} value={vin}>
                 <span className="font-mono text-xs">{vin}</span>
               </SelectItem>
             ))}
-          </SelectContent>
-        </Select>
-        <Select value={plateFilter} onValueChange={v => { setPlateFilter(v); setPage(1); }}>
-          <SelectTrigger className={cn('w-full sm:w-44 h-8 text-xs rounded-lg shadow-none font-medium', plateFilter !== 'all' ? 'bg-[#c2e7ff] border-[#c2e7ff] text-[#001d35] dark:bg-blue-900/50 dark:border-blue-900/50 dark:text-blue-100' : 'bg-white dark:bg-card border-[#c4c7c5] dark:border-border text-[#444746] dark:text-muted-foreground')}>
-            <SelectValue placeholder="Filter by Plate" />
-          </SelectTrigger>
-          <SelectContent className="max-h-60">
+        </FilterChip>
+        <FilterChip value={plateFilter} onValueChange={v => { setPlateFilter(v); setPage(1); }} label="Plate">
             <SelectItem value="all">All Plates</SelectItem>
             {uniquePlates.map(plate => (
               <SelectItem key={plate} value={plate}>{plate}</SelectItem>
             ))}
-          </SelectContent>
-        </Select>
+        </FilterChip>
+        {(dispatcherFilter !== 'all' || vinFilter !== 'all' || plateFilter !== 'all') && (
+          <ClearFiltersButton onClick={() => { setDispatcherFilter('all'); setVinFilter('all'); setPlateFilter('all'); setPage(1); }} />
+        )}
       </div>
 
       {loading ? (
