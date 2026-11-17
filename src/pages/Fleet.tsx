@@ -6,12 +6,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { StatTiles, SolidStatusPill, PILL_INPUT, TABLE_CARD, TABLE_HEAD_ROW, TABLE_ROW } from '@/components/StatTiles';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
+import { StatusChipSelect, CHIP_TONE, initialsOf, type StatusChipOption } from '@/components/StatusChipSelect';
 import { TruckFormDialog } from '@/components/TruckFormDialog';
 import { TruckDetailDialog } from '@/components/TruckDetailDialog';
 import { TruckDetailPanel } from '@/components/TruckDetailPanel';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Truck as TruckIcon, Pencil, Trash2, Eye, User, ChevronDown, ChevronUp, Search, CheckCircle2, Wrench, XCircle, UserX, AlertTriangle } from 'lucide-react';
+import { Plus, Truck as TruckIcon, Pencil, Trash2, Eye, User, ChevronDown, ChevronUp, Search, CheckCircle2, Wrench, XCircle, UserX, AlertTriangle, Truck } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ExpiryIndicators } from '@/components/ExpiryIndicators';
 import { useSearchParams } from 'react-router-dom';
@@ -29,6 +30,12 @@ const statusPill = (status: string) => {
 
 // VIN válido: 17 caracteres, sin I, O ni Q
 const isValidVin = (vin: string | null | undefined) => !!vin && /^[A-HJ-NPR-Z0-9]{17}$/.test(vin.toUpperCase());
+
+const TRUCK_STATUS_CHIPS: StatusChipOption[] = [
+  { value: 'active', label: 'Active', hint: 'Trabajando', icon: CheckCircle2, ...CHIP_TONE.green },
+  { value: 'maintenance', label: 'Maintenance', hint: 'En el taller', icon: Wrench, ...CHIP_TONE.amber },
+  { value: 'inactive', label: 'Inactive', hint: 'Fuera de servicio', icon: XCircle, ...CHIP_TONE.red },
+];
 
 const PAGE_SIZES = [25, 50, 100];
 
@@ -157,7 +164,7 @@ const Fleet = () => {
     const filtered = applyFilters(trucksList);
     const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
     const paged = filtered.slice((page - 1) * pageSize, page * pageSize);
-    const colSpan = 9;
+    const colSpan = 8;
     return (
     <div className={cn(TABLE_CARD, 'mt-3')}>
       <div className="p-0">
@@ -168,7 +175,6 @@ const Fleet = () => {
                 <th className="w-8 p-3"></th>
                 <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Unit #</th>
                 <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground hidden md:table-cell">Driver</th>
-                <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Type</th>
                 <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground hidden lg:table-cell">Make / Model</th>
                 <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground hidden lg:table-cell">VIN</th>
                 <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground hidden md:table-cell">License Plate</th>
@@ -203,11 +209,14 @@ const Fleet = () => {
                       </td>
                       <td className="px-3 py-2">
                         <div className="flex items-center gap-2">
-                          <div className={`w-9 h-9 rounded-full flex items-center justify-center ${iconBg}`}>
+                          <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${iconBg}`}>
                             <TruckIcon className="h-4 w-4" />
                           </div>
-                          <div className="flex flex-col">
-                            <span className="font-medium text-[15px] text-[#1f1f1f] dark:text-foreground">#{truck.unit_number}</span>
+                          <div className="flex flex-col items-start">
+                            <span className="flex flex-wrap items-center gap-1.5">
+                              <span className="text-[15px] leading-6 font-normal text-[#1f1f1f] dark:text-foreground whitespace-nowrap">Unit #{truck.unit_number}</span>
+                              {truck.truck_type && <span className="rounded-full bg-[#e8f0fe] dark:bg-blue-950/40 text-[#0b57d0] dark:text-blue-300 px-2.5 py-0.5 text-xs font-medium">{truck.truck_type}</span>}
+                            </span>
                             <ExpiryIndicators items={[
                               { date: truck.registration_expiry, label: 'Registration' },
                               { date: truck.insurance_expiry, label: 'Insurance' },
@@ -217,15 +226,19 @@ const Fleet = () => {
                         </div>
                       </td>
                       <td className="px-3 py-2 hidden md:table-cell">
-                        <span className="flex items-center gap-1">
-                          {driverName ? (
-                            <><User className="h-3 w-3 text-[#0b57d0] dark:text-blue-300" /><span className="whitespace-nowrap">{driverName}</span></>
-                          ) : (
-                            <span className="text-[#b3261e] font-medium">Unassigned</span>
-                          )}
-                        </span>
+                        {(() => {
+                          const drv = drivers.find(x => x.truck_id === truck.id);
+                          const disp = drv ? dispatchers.find(x => x.id === drv.dispatcher_id) : null;
+                          return (
+                            <span className="inline-flex items-center gap-2 rounded-full bg-[#f0f4f9] dark:bg-muted/60 pl-1.5 pr-3 py-1.5 whitespace-nowrap">
+                              <span className="h-9 w-9 rounded-full flex items-center justify-center shrink-0 text-sm font-medium text-white" style={{ background: drv ? (disp?.color || '#0b57d0') : '#9aa0a6' }}>
+                                {drv ? initialsOf(drv.name) : <User className="h-4 w-4" />}
+                              </span>
+                              <span className={cn('text-sm', drv ? 'text-[#1f1f1f] dark:text-foreground' : 'text-[#b3261e]')}>{drv?.name || 'Sin asignar'}</span>
+                            </span>
+                          );
+                        })()}
                       </td>
-                      <td className="px-3 py-2">{truck.truck_type}</td>
                       <td className="px-3 py-2 hidden lg:table-cell">
                         <span className="text-sm">{[truck.make, truck.model].filter(Boolean).join(' ') || '—'}</span>
                         {truck.year && <span className="text-xs text-muted-foreground ml-1">({truck.year})</span>}
@@ -237,21 +250,7 @@ const Fleet = () => {
                         <span className="text-sm">{truck.license_plate || '—'}</span>
                       </td>
                       <td className="px-3 py-2" onClick={e => e.stopPropagation()}>
-                        <Select value={truck.status} onValueChange={v => updateTruck(truck.id, { status: v })}>
-                          <SelectTrigger className="h-8 w-[155px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:hidden bg-transparent">
-                            <span className="flex items-center justify-between w-full gap-1">
-                              {statusPill(truck.status)}
-                              <span className="inline-flex h-5 w-5 items-center justify-center rounded border border-border bg-muted/40 text-muted-foreground ml-auto">
-                                <ChevronDown className="h-3 w-3 shrink-0" />
-                              </span>
-                            </span>
-                          </SelectTrigger>
-                          <SelectContent className="bg-popover z-50">
-                            {STATUS_OPTIONS.map(s => (
-                              <SelectItem key={s.value} value={s.value}>{statusPill(s.value)}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <StatusChipSelect value={truck.status} options={TRUCK_STATUS_CHIPS} onChange={v => updateTruck(truck.id, { status: v })} />
                       </td>
                       <td className="px-3 py-2" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-1">

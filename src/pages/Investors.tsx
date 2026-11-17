@@ -16,9 +16,16 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { StatTiles, SolidStatusPill, PILL_INPUT, TABLE_CARD, TABLE_HEAD_ROW, TABLE_ROW } from '@/components/StatTiles';
 import { CreateAccessButton } from '@/components/CreateAccessButton';
 import { DriverTaxSection } from '@/components/DriverTaxSection';
-import { ChevronDown, ChevronUp, Landmark, Pencil, Trash2, PlusCircle, Search, Phone, Mail, Users, DollarSign, X, Percent, UserX } from 'lucide-react';
+import { ChevronDown, ChevronUp, Landmark, Pencil, Trash2, PlusCircle, Search, Phone, Mail, Users, DollarSign, X, Percent, UserX, UserCheck } from 'lucide-react';
+
+const ACTIVE_CHIPS: StatusChipOption[] = [
+  { value: 'active', label: 'Active', hint: 'Recibe pagos', icon: UserCheck, ...CHIP_TONE.green },
+  { value: 'inactive', label: 'Inactive', hint: 'Ya no participa', icon: UserX, ...CHIP_TONE.red },
+];
 import { useToast } from '@/hooks/use-toast';
 import { formatPhone } from '@/lib/phoneUtils';
+import { StatusChipSelect, CHIP_TONE, initialsOf, type StatusChipOption } from '@/components/StatusChipSelect';
+import { Tile } from '@/components/detail/DetailTiles';
 import { InvestorDetailPanel, InvestorLink } from '@/components/InvestorDetailPanel';
 
 // ─── Create / Edit Dialog ────────────────────────────────────
@@ -438,8 +445,6 @@ const Investors = () => {
             <tr className={TABLE_HEAD_ROW}>
               <th className="w-8 px-2 py-2.5"></th>
               <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Name</th>
-              <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Email</th>
-              <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Phone</th>
               <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground hidden md:table-cell">Location</th>
               <th className="text-center px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Pay %</th>
               <th className="text-center px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Drivers</th>
@@ -450,11 +455,11 @@ const Investors = () => {
           </thead>
           <tbody>
             {loading && (
-              <tr><td colSpan={10} className="text-center p-8 text-muted-foreground">Loading...</td></tr>
+              <tr><td colSpan={8} className="text-center p-8 text-muted-foreground">Loading...</td></tr>
             )}
             {!loading && filtered.length === 0 && (
               <tr>
-                <td colSpan={10} className="text-center p-8 text-muted-foreground">
+                <td colSpan={8} className="text-center p-8 text-muted-foreground">
                   {search ? 'No investors match your search.' : 'No investors yet — click "New Investor" to add one.'}
                 </td>
               </tr>
@@ -466,26 +471,14 @@ const Investors = () => {
                 <td className="pl-3 pr-1 py-2 text-[#444746]">
                   {expandedId === inv.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                 </td>
-                <td className="px-3 py-2 font-medium text-[#1f1f1f] dark:text-foreground whitespace-nowrap">
-                  <div className="flex items-center gap-2">
-                    <div className="h-8 w-8 rounded-full bg-[#d3e3fd] dark:bg-blue-900/40 flex items-center justify-center shrink-0">
-                      <Landmark className="h-4 w-4 text-[#041e49] dark:text-blue-200" />
-                    </div>
-                    {inv.name}
-                    {inv.business_name && (
-                      <span className="text-xs text-muted-foreground font-normal">{inv.business_name}</span>
-                    )}
+                <td className="px-3 py-3">
+                  <div className="flex items-center gap-3">
+                    <div className="h-9 w-9 rounded-full flex items-center justify-center shrink-0 text-sm font-medium text-white bg-[#8e24aa]">{initialsOf(inv.name)}</div>
+                    <span className="flex flex-wrap items-center gap-1.5">
+                      <span className="text-[15px] leading-6 font-normal text-[#1f1f1f] dark:text-foreground whitespace-nowrap">{inv.name}</span>
+                      {inv.business_name && <span className="rounded-full bg-[#f3e8fd] dark:bg-violet-900/40 text-[#4a148c] dark:text-violet-200 px-2.5 py-0.5 text-xs font-medium whitespace-nowrap">{inv.business_name}</span>}
+                    </span>
                   </div>
-                </td>
-                <td className="px-3 py-2 text-muted-foreground">
-                  {inv.email
-                    ? <a href={`mailto:${inv.email}`} className="flex items-center gap-1 hover:text-[#0b57d0] whitespace-nowrap"><Mail className="h-3.5 w-3.5" />{inv.email}</a>
-                    : '—'}
-                </td>
-                <td className="px-3 py-2 text-muted-foreground">
-                  {inv.phone
-                    ? <span className="flex items-center gap-1 whitespace-nowrap"><Phone className="h-3.5 w-3.5" />{formatPhone(inv.phone)}</span>
-                    : '—'}
                 </td>
                 <td className="px-3 py-2 text-muted-foreground text-xs hidden md:table-cell">
                   {inv.city && inv.state ? `${inv.city}, ${inv.state}` : inv.city || inv.state || '—'}
@@ -521,22 +514,7 @@ const Investors = () => {
                     : <span className="text-muted-foreground text-xs">—</span>}
                 </td>
                 <td className="px-3 py-2" onClick={e => e.stopPropagation()}>
-                  <Select value={inv.status || 'active'} onValueChange={v => updateInvestor(inv.id, { status: v })}>
-                    <SelectTrigger className="h-8 w-[140px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:hidden bg-transparent">
-                      <span className="flex items-center justify-between w-full gap-1">
-                        {inv.status === 'inactive'
-                          ? <SolidStatusPill label="Inactive" color="bg-red-600" />
-                          : <SolidStatusPill label="Active" color="bg-green-600" />}
-                        <span className="inline-flex h-5 w-5 items-center justify-center rounded border border-border bg-muted/40 text-muted-foreground ml-auto">
-                          <ChevronDown className="h-3 w-3 shrink-0" />
-                        </span>
-                      </span>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="active"><SolidStatusPill label="Active" color="bg-green-600" /></SelectItem>
-                      <SelectItem value="inactive"><SolidStatusPill label="Inactive" color="bg-red-600" /></SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <StatusChipSelect value={inv.status || 'active'} options={ACTIVE_CHIPS} onChange={v => updateInvestor(inv.id, { status: v })} />
                 </td>
                 <td className="px-3 py-2 text-right" onClick={e => e.stopPropagation()}>
                   <div className="flex items-center justify-end gap-1">
@@ -554,7 +532,11 @@ const Investors = () => {
               </tr>
               {expandedId === inv.id && (
                 <tr>
-                  <td colSpan={10} className="p-0">
+                  <td colSpan={8} className="p-0">
+                    <div className="px-4 pt-3 bg-[#f8fafd] dark:bg-background/60 border-t border-[#e3e3e3] dark:border-border grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5">
+                      <Tile icon={Mail} tone="blue" label="Email" value={inv.email || '—'} copy={inv.email} />
+                      <Tile icon={Phone} tone="green" label="Phone" value={formatPhone(inv.phone) || '—'} copy={inv.phone} />
+                    </div>
                     <InvestorDetailPanel investor={inv} links={driverInvestorLinks} drivers={drivers} />
                   </td>
                 </tr>

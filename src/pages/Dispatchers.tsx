@@ -8,9 +8,16 @@ import { useDrivers } from '@/hooks/useDrivers';
 import { Input } from '@/components/ui/input';
 import { CreateAccessButton } from '@/components/CreateAccessButton';
 import { Button } from '@/components/ui/button';
-import { Plus, Phone, Mail, Percent, Pencil, Trash2, ChevronDown, ChevronUp, Headset, UserX, Users, UserMinus, Search } from 'lucide-react';
+import { Plus, Phone, Mail, Percent, Pencil, Trash2, ChevronDown, ChevronUp, Headset, UserX, Users, UserMinus, Search, UserCheck } from 'lucide-react';
+
+const ACTIVE_CHIPS: StatusChipOption[] = [
+  { value: 'active', label: 'Active', hint: 'Despachando', icon: UserCheck, ...CHIP_TONE.green },
+  { value: 'inactive', label: 'Inactive', hint: 'Ya no trabaja', icon: UserX, ...CHIP_TONE.red },
+];
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatPhone } from '@/lib/phoneUtils';
+import { StatusChipSelect, CHIP_TONE, initialsOf, type StatusChipOption } from '@/components/StatusChipSelect';
+import { Tile } from '@/components/detail/DetailTiles';
 import { DispatcherDetailPanel } from '@/components/DispatcherDetailPanel';
 
 const Dispatchers = () => {
@@ -56,8 +63,6 @@ const Dispatchers = () => {
           <tr className={TABLE_HEAD_ROW}>
             <th className="w-8 px-2 py-2.5"></th>
             <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Dispatcher</th>
-            <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground hidden md:table-cell">Email</th>
-            <th className="text-left px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground hidden md:table-cell">Phone</th>
             <th className="text-center px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Drivers</th>
             <th className="text-center px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground">Commission 1</th>
             <th className="text-center px-3 py-2.5 text-xs font-medium text-[#444746] dark:text-muted-foreground hidden lg:table-cell">Commission 2</th>
@@ -68,7 +73,7 @@ const Dispatchers = () => {
         </thead>
         <tbody>
           {list.length === 0 ? (
-            <tr><td colSpan={10} className="text-center p-8 text-muted-foreground">No dispatchers found.</td></tr>
+            <tr><td colSpan={8} className="text-center p-8 text-muted-foreground">No dispatchers found.</td></tr>
           ) : list.map(d => {
             const initials = d.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
             const statusBorder = d.status === 'active'
@@ -82,23 +87,13 @@ const Dispatchers = () => {
                 <td className="pl-3 pr-1 py-2 text-[#444746]">
                   {expandedId === d.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                 </td>
-                <td className="px-3 py-2">
+                <td className="px-3 py-3">
                   <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0" style={{ backgroundColor: avatarColor }}>
-                      {initials}
+                    <div className="h-9 w-9 rounded-full flex items-center justify-center shrink-0 text-sm font-medium text-white" style={{ backgroundColor: avatarColor }}>
+                      {initialsOf(d.name)}
                     </div>
-                    <span className="font-medium text-[#1f1f1f] dark:text-foreground whitespace-nowrap">{d.name}</span>
+                    <span className="text-[15px] leading-6 font-normal text-[#1f1f1f] dark:text-foreground whitespace-nowrap">{d.name}</span>
                   </div>
-                </td>
-                <td className="px-3 py-2 text-muted-foreground hidden md:table-cell">
-                  {d.email
-                    ? <a href={`mailto:${d.email}`} className="flex items-center gap-1 hover:text-[#0b57d0] text-sm whitespace-nowrap"><Mail className="h-3.5 w-3.5" />{d.email}</a>
-                    : '—'}
-                </td>
-                <td className="px-3 py-2 text-muted-foreground hidden md:table-cell">
-                  {d.phone
-                    ? <span className="flex items-center gap-1 text-sm whitespace-nowrap"><Phone className="h-3.5 w-3.5" />{formatPhone(d.phone)}</span>
-                    : '—'}
                 </td>
                 <td className="px-3 py-2 text-center">
                   {driversPerDispatcher[d.id]
@@ -121,22 +116,7 @@ const Dispatchers = () => {
                   </span>
                 </td>
                 <td className="px-3 py-2" onClick={e => e.stopPropagation()}>
-                  <Select value={d.status} onValueChange={v => updateDispatcher(d.id, { status: v })}>
-                    <SelectTrigger className="h-8 w-[140px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:hidden bg-transparent">
-                      <span className="flex items-center justify-between w-full gap-1">
-                        {d.status === 'inactive'
-                          ? <SolidStatusPill label="Inactive" color="bg-red-600" />
-                          : <SolidStatusPill label="Active" color="bg-green-600" />}
-                        <span className="inline-flex h-5 w-5 items-center justify-center rounded border border-border bg-muted/40 text-muted-foreground ml-auto">
-                          <ChevronDown className="h-3 w-3 shrink-0" />
-                        </span>
-                      </span>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="active"><SolidStatusPill label="Active" color="bg-green-600" /></SelectItem>
-                      <SelectItem value="inactive"><SolidStatusPill label="Inactive" color="bg-red-600" /></SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <StatusChipSelect value={d.status} options={ACTIVE_CHIPS} onChange={v => updateDispatcher(d.id, { status: v })} />
                 </td>
                 <td className="px-3 py-2 text-right" onClick={e => e.stopPropagation()}>
                   <div className="flex items-center justify-end gap-1">
@@ -154,7 +134,11 @@ const Dispatchers = () => {
               </tr>
               {expandedId === d.id && (
                 <tr>
-                  <td colSpan={10} className="p-0">
+                  <td colSpan={8} className="p-0">
+                    <div className="px-4 pt-3 bg-[#f8fafd] dark:bg-background/60 border-t border-[#e3e3e3] dark:border-border grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5">
+                      <Tile icon={Mail} tone="blue" label="Email" value={d.email || '—'} copy={d.email} />
+                      <Tile icon={Phone} tone="green" label="Phone" value={formatPhone(d.phone) || '—'} copy={d.phone} />
+                    </div>
                     <DispatcherDetailPanel dispatcher={d} drivers={drivers} />
                   </td>
                 </tr>
