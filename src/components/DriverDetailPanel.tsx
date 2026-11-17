@@ -292,43 +292,6 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
 
   return (
     <div className="px-4 py-3 bg-[#f8fafd] dark:bg-background/60 border-t border-[#e3e3e3] dark:border-border animate-fade-in space-y-3">
-      {/* ═══ Encabezado del driver ═══ */}
-      <div className="rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-3">
-        <span className="h-12 w-12 shrink-0 rounded-full bg-[#0b57d0] text-white flex items-center justify-center text-xl font-medium">
-          {(driver.name || '?').trim().charAt(0).toUpperCase()}
-        </span>
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-[26px] leading-8 font-normal text-[#1f1f1f] dark:text-foreground">{driver.name}</h2>
-            <ServiceTypeBadge serviceType={driver.service_type} />
-            <span className={cn('rounded-md px-2.5 py-0.5 text-[11px] font-bold tracking-wide text-white', status.cls)}>{status.label}</span>
-          </div>
-          <p className="text-sm text-[#444746] dark:text-muted-foreground">
-            {[formatPhone(driver.phone), driver.email].filter(Boolean).join(' · ')}
-          </p>
-        </div>
-        <div className="ml-auto flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-2.5 rounded-full bg-[#f0f4f9] dark:bg-muted/60 pl-1.5 pr-4 py-1.5">
-            <span className={cn('h-9 w-9 rounded-full flex items-center justify-center', truckLabel ? 'bg-[#d3e3fd] text-[#041e49] dark:bg-blue-900/40 dark:text-blue-200' : 'bg-[#e3e3e3] text-[#444746]')}>
-              <TruckIcon className="h-4 w-4" />
-            </span>
-            <div className="leading-tight">
-              <p className="text-[10.5px] uppercase tracking-wide text-[#444746] dark:text-muted-foreground">Truck</p>
-              <p className="text-sm text-[#1f1f1f] dark:text-foreground">{truckLabel || 'Sin asignar'}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2.5 rounded-full bg-[#f0f4f9] dark:bg-muted/60 pl-1.5 pr-4 py-1.5">
-            <span className={cn('h-9 w-9 rounded-full flex items-center justify-center text-sm font-medium text-white', dispatcherName ? 'bg-[#188038]' : 'bg-[#9aa0a6]')}>
-              {dispatcherName ? dispatcherName.trim().charAt(0).toUpperCase() : <Headset className="h-4 w-4" />}
-            </span>
-            <div className="leading-tight">
-              <p className="text-[10.5px] uppercase tracking-wide text-[#444746] dark:text-muted-foreground">Dispatcher</p>
-              <p className="text-sm text-[#1f1f1f] dark:text-foreground">{dispatcherName || 'Sin asignar'}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 items-start">
         {/* ═══ General Information ═══ */}
         <div className={DETAIL_CARD}>
