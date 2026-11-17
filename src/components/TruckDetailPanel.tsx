@@ -83,7 +83,8 @@ export function TruckDetailPanel({ truck, driverName, getDocSignedUrl, onUpdateT
           </div>
         </div>
 
-        {/* Columna derecha: Documents */}
+        {/* Columna derecha: Documents y debajo Costs & Expenses */}
+        <div className="space-y-3">
         <div className={CARD}>
           <div className="flex items-center justify-between gap-2">
             <h3 className={TITLE}>Documents</h3>
@@ -100,9 +101,9 @@ export function TruckDetailPanel({ truck, driverName, getDocSignedUrl, onUpdateT
             } : undefined}
           />
         </div>
+        <TruckCostsSection truck={truck} />
+        </div>
       </div>
-
-      <TruckCostsSection truck={truck} />
     </div>
   );
 }
