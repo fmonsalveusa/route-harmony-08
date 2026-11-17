@@ -14,8 +14,8 @@ import { TruckCostsSection } from '@/components/TruckCostsSection';
 function Info({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="text-xs text-[#444746] dark:text-muted-foreground">{label}</p>
-      <div className="font-medium text-sm mt-0.5 text-[#1f1f1f] dark:text-foreground [overflow-wrap:anywhere]">{children}</div>
+      <p className="text-xs font-bold text-[#1f1f1f] dark:text-foreground">{label}</p>
+      <div className="font-normal text-sm mt-0.5 text-[#1f1f1f] dark:text-foreground [overflow-wrap:anywhere]">{children}</div>
     </div>
   );
 }
@@ -75,7 +75,7 @@ export function TruckDetailPanel({ truck, driverName, getDocSignedUrl, onUpdateT
 
         {/* ═══ COLUMNA 1 — General Information ═══ */}
         <div className="rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border p-4 space-y-3">
-          <h3 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground">
+          <h3 className="text-[15px] font-medium uppercase tracking-wide text-[#1f1f1f] dark:text-foreground">
             General Information
           </h3>
 
@@ -104,7 +104,7 @@ export function TruckDetailPanel({ truck, driverName, getDocSignedUrl, onUpdateT
 
         {/* ═══ COLUMNA 2 — Trailer Information ═══ */}
         <div className="rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border p-4 space-y-3">
-          <h3 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground">
+          <h3 className="text-[15px] font-medium uppercase tracking-wide text-[#1f1f1f] dark:text-foreground">
             Trailer Information
           </h3>
 
@@ -143,7 +143,7 @@ export function TruckDetailPanel({ truck, driverName, getDocSignedUrl, onUpdateT
 
         {/* ═══ COLUMNA 3 — Documents ═══ */}
         <div className="rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border p-4 space-y-3">
-          <h3 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground">
+          <h3 className="text-[15px] font-medium uppercase tracking-wide text-[#1f1f1f] dark:text-foreground">
             Documents
           </h3>
 
