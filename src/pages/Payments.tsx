@@ -632,8 +632,8 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
                         <button className="h-8 px-2.5 gap-1 rounded-full inline-flex items-center text-xs font-medium text-[#0b57d0] hover:bg-[#e8f0fe] dark:text-blue-300" onClick={(e) => { e.stopPropagation(); setEditPayment(p); }} title="Edit">
                           <Pencil className="h-4 w-4" /> Editar
                         </button>
-                        <button className="h-8 w-8 rounded-full inline-flex items-center justify-center text-[#188038] hover:bg-[#e6f4ea] dark:text-emerald-400" onClick={(e) => { e.stopPropagation(); handleGenerateReceipt(p); }} title="Receipt">
-                          <FileText className="h-4 w-4" />
+                        <button className="h-8 px-2.5 gap-1 rounded-full inline-flex items-center text-xs font-medium text-[#188038] hover:bg-[#e6f4ea] dark:text-emerald-400" onClick={(e) => { e.stopPropagation(); handleGenerateReceipt(p); }} title="Receipt">
+                          <FileText className="h-4 w-4" /> Receipt
                         </button>
                         <button className="h-8 w-8 rounded-full inline-flex items-center justify-center text-[#b3261e] hover:bg-[#fce8e6]" onClick={(e) => { e.stopPropagation(); setDeletePaymentId(p.id); }} title="Delete">
                           <Trash2 className="h-4 w-4" />
