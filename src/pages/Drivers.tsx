@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { StatusChipSelect } from '@/components/StatusChipSelect';
 import { ServiceTypeBadge } from '@/components/ServiceTypeBadge';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -387,39 +388,11 @@ const Drivers = () => {
                         </Select>
                       </td>
                       <td className="px-3 py-2" onClick={e => e.stopPropagation()}>
-                        {(() => {
-                          const st = statusChip(driver.status);
-                          return (
-                            <Select value={driver.status} onValueChange={v => updateDriver(driver.id, { status: v })}>
-                              <SelectTrigger className={cn('h-auto w-auto gap-2 rounded-full border-0 pl-1 pr-3 py-1 shadow-none focus:ring-0 whitespace-nowrap disabled:opacity-100 disabled:cursor-default [&>span]:!flex [&>span]:items-center [&>span]:line-clamp-none [&>svg]:text-white [&>svg]:opacity-90', st.chip)}>
-                                <span className="flex items-center gap-2">
-                                  <span className="h-7 w-7 rounded-full flex items-center justify-center text-white shrink-0 bg-white/20">
-                                    <st.icon className="h-3.5 w-3.5" />
-                                  </span>
-                                  <span className="text-sm font-medium">{DRIVER_STATUS_LABEL[driver.status] ?? driver.status}</span>
-                                </span>
-                              </SelectTrigger>
-                              <SelectContent>
-                                {(['available', 'pending', 'inactive'] as const).map(v => {
-                                  const o = STATUS_CHIP[v];
-                                  return (
-                                    <SelectItem key={v} value={v}>
-                                      <span className="flex items-center gap-2.5 py-0.5">
-                                        <span className={cn('h-6 w-6 rounded-full flex items-center justify-center text-white shrink-0', o.dot)}>
-                                          <o.icon className="h-3 w-3" />
-                                        </span>
-                                        <span className="leading-tight">
-                                          <span className="block text-sm text-[#1f1f1f] dark:text-foreground">{DRIVER_STATUS_LABEL[v]}</span>
-                                          <span className="block text-[11px] text-[#444746] dark:text-muted-foreground">{o.hint}</span>
-                                        </span>
-                                      </span>
-                                    </SelectItem>
-                                  );
-                                })}
-                              </SelectContent>
-                            </Select>
-                          );
-                        })()}
+                        <StatusChipSelect
+                          value={driver.status}
+                          options={(['available', 'pending', 'inactive'] as const).map(v => ({ value: v, label: DRIVER_STATUS_LABEL[v], hint: STATUS_CHIP[v].hint, icon: STATUS_CHIP[v].icon, dot: STATUS_CHIP[v].dot, chip: STATUS_CHIP[v].chip }))}
+                          onChange={v => updateDriver(driver.id, { status: v })}
+                        />
                       </td>
                       <td className="px-3 py-2" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-1">

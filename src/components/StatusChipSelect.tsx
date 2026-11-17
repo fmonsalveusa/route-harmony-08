@@ -23,7 +23,7 @@ export const CHIP_TONE = {
 };
 
 /** Status como pastilla tonal con círculo de color e ícono; al abrir muestra cada opción con su explicación */
-export function StatusChipSelect({ value, options, onChange, disabled, placeholder, size = 'md', upper = false }: {
+export function StatusChipSelect({ value, options, onChange, disabled, placeholder, size = 'sm', upper = true }: {
   /** Etiquetas en mayúscula (botón y opciones) */
   upper?: boolean;
   /** 'sm': pastilla más chica para tablas con muchas columnas */
