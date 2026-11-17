@@ -353,7 +353,7 @@ const Drivers = () => {
                           onValueChange={v => updateDriver(driver.id, { dispatcher_id: v === 'none' ? null : v })}
                           disabled={isDispatcher}
                         >
-                          <SelectTrigger className="h-auto w-auto gap-2 rounded-full border-0 bg-[#f0f4f9] dark:bg-muted/60 pl-1.5 pr-3 py-1.5 shadow-none focus:ring-0 hover:bg-[#e3e8ef] dark:hover:bg-muted whitespace-nowrap disabled:opacity-100 disabled:cursor-default">
+                          <SelectTrigger className="h-auto w-auto gap-2 rounded-full border-0 bg-[#f0f4f9] dark:bg-muted/60 pl-1.5 pr-3 py-1.5 shadow-none focus:ring-0 hover:bg-[#e3e8ef] dark:hover:bg-muted whitespace-nowrap disabled:opacity-100 disabled:cursor-default [&>span]:!flex [&>span]:items-center [&>span]:line-clamp-none">
                             <span className="flex items-center gap-2.5">
                               <span className="h-9 w-9 rounded-full flex items-center justify-center shrink-0 text-sm font-medium text-white" style={{ background: dispatcher?.color || '#9aa0a6' }}>
                                 {dispatcher ? dispatcher.name.trim().charAt(0).toUpperCase() : '?'}
