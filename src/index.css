@@ -136,6 +136,13 @@ html, body {
   .dark .dashboard-charts .glass-card,
   .dark .dashboard-charts .rounded-3xl,
   .dark .dashboard-charts .rounded-xl.shadow-sm { box-shadow: 0 4px 16px rgba(0,0,0,.55) !important; }
+  /* Cuadros con sombra (3D) y sombra marcada (mapa, timeline) */
+  .card-3d { box-shadow: 0 1px 2px rgba(60,64,67,.3), 0 2px 6px 2px rgba(60,64,67,.15) !important; }
+  .card-3d-strong, .card-3d-strong-wrap > .rounded-3xl {
+    box-shadow: 0 2px 4px rgba(60,64,67,.25), 0 6px 18px 4px rgba(60,64,67,.16) !important;
+  }
+  .dark .card-3d { box-shadow: 0 2px 8px rgba(0,0,0,.5) !important; }
+  .dark .card-3d-strong, .dark .card-3d-strong-wrap > .rounded-3xl { box-shadow: 0 4px 16px rgba(0,0,0,.55) !important; }
   /* Títulos de página estilo Google */
   .page-header {
     @apply text-[24px] leading-8 font-normal text-[#1f1f1f] dark:text-foreground;

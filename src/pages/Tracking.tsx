@@ -1090,7 +1090,7 @@ const Tracking = () => {
       {/* Resumen */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
         {summaryTiles.map(t => (
-          <div key={t.label} className="flex items-center gap-3 rounded-2xl border border-[#e3e3e3] dark:border-border bg-white dark:bg-card px-4 py-2.5">
+          <div key={t.label} className="stat-tile-3d flex items-center gap-3 rounded-2xl border border-[#e3e3e3] dark:border-border bg-white dark:bg-card px-4 py-2.5">
             <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${t.tint}`}>
               <t.icon className="h-[18px] w-[18px]" />
             </div>
@@ -1134,7 +1134,7 @@ const Tracking = () => {
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-3">
         {/* Side Panel - Next Plan */}
         {/* Mismo formato que la tarjeta Drivers Load Timeline: fondo blanco, borde y título text-base */}
-        <Card className="flex flex-col overflow-hidden h-[1040px] lg:col-span-2 lg:row-span-2 lg:col-start-1 rounded-3xl border-[#e3e3e3] dark:border-border shadow-none bg-white dark:bg-card">
+        <Card className="card-3d flex flex-col overflow-hidden h-[1040px] lg:col-span-2 lg:row-span-2 lg:col-start-1 rounded-3xl border-[#e3e3e3] dark:border-border shadow-none bg-white dark:bg-card">
           <CardHeader className="pb-2 px-4 pt-3.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -1411,7 +1411,7 @@ const Tracking = () => {
         </Card>
 
         {/* Map */}
-        <Card className="lg:col-span-3 lg:col-start-3 overflow-hidden self-start rounded-3xl border-[#e3e3e3] dark:border-border shadow-none">
+        <Card className="card-3d-strong lg:col-span-3 lg:col-start-3 overflow-hidden self-start rounded-3xl border-[#e3e3e3] dark:border-border shadow-none">
           {/* isolate: la leyenda y las capas del mapa (z-index altos) quedan dentro del mapa y no por encima de las ventanas */}
           <div className="relative isolate h-[600px]">
             {/* Leyenda del mapa */}
@@ -1605,7 +1605,7 @@ const Tracking = () => {
         </Card>
 
         {/* Drivers Load Timeline — debajo del mapa, misma columna */}
-        <div className="lg:col-span-3 lg:col-start-3">
+        <div className="card-3d-strong-wrap lg:col-span-3 lg:col-start-3">
           <DriversTimelineCard
             loads={scopedAllLoads}
             drivers={scopedDriverIds ? drivers.filter(d => scopedDriverIds.has(d.id)) : drivers}
@@ -1616,7 +1616,7 @@ const Tracking = () => {
 
       {/* Selected Load Detail */}
       {selectedLoad && (
-        <Card className="animate-fade-in rounded-3xl border-[#e3e3e3] dark:border-border shadow-none">
+        <Card className="card-3d animate-fade-in rounded-3xl border-[#e3e3e3] dark:border-border shadow-none">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground flex items-center gap-2">
