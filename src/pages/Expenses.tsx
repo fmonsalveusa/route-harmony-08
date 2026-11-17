@@ -168,10 +168,10 @@ const Expenses = () => {
             <h2 className="text-xl font-semibold mb-2">No expenses recorded yet</h2>
             <p className="text-muted-foreground mb-6">Start by importing fuel data or adding expenses manually</p>
             <div className="flex gap-3 justify-center">
-              <Button onClick={() => setImportOpen(true)} className="bg-green-600 hover:bg-green-700 gap-2">
+              <Button onClick={() => setImportOpen(true)} className="gap-2 rounded-full px-5 bg-[#188038] hover:bg-[#137333] text-white font-medium shadow-none">
                 <Upload className="h-4 w-4" /> Import Fuel Data
               </Button>
-              <Button variant="outline" onClick={() => { setEditExpense(null); setFormOpen(true); }} className="gap-2">
+              <Button variant="outline" onClick={() => { setEditExpense(null); setFormOpen(true); }} className="gap-2 rounded-full px-4 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent">
                 <Plus className="h-4 w-4" /> Add Expense
               </Button>
             </div>
@@ -192,13 +192,13 @@ const Expenses = () => {
           <p className="page-description pl-[52px]">Track and manage all truck expenses</p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={() => { setEditExpense(null); setFormOpen(true); }} className="gap-2" size="sm">
+          <Button onClick={() => { setEditExpense(null); setFormOpen(true); }} className="gap-2 rounded-full px-5 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium shadow-none" size="sm">
             <Plus className="h-4 w-4" /> Add Expense
           </Button>
-          <Button onClick={() => setImportOpen(true)} className="bg-green-600 hover:bg-green-700 gap-2" size="sm">
+          <Button onClick={() => setImportOpen(true)} className="gap-2 rounded-full px-5 bg-[#188038] hover:bg-[#137333] text-white font-medium shadow-none" size="sm">
             <Upload className="h-4 w-4" /> Import Fuel Data
           </Button>
-          <Button onClick={() => setBankImportOpen(true)} variant="outline" className="gap-2" size="sm">
+          <Button onClick={() => setBankImportOpen(true)} variant="outline" className="gap-2 rounded-full px-4 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent" size="sm">
             <Upload className="h-4 w-4" /> Import Bank Statement
           </Button>
         </div>
@@ -266,7 +266,7 @@ const Expenses = () => {
             </SelectContent>
           </Select>
           {hasActiveFilters && (
-            <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => {
+            <Button variant="ghost" size="sm" className="h-8 text-xs rounded-full text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium" onClick={() => {
               setFilterType('all'); setFilterTruck('all'); setFilterPayment('all'); setFilterSource('all'); setFilterDateQuick('all'); setPage(1);
             }}>Clear filters</Button>
           )}
@@ -283,10 +283,10 @@ const Expenses = () => {
       {selectedIds.size > 0 && (
         <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
           <span className="text-sm font-medium">{selectedIds.size} selected</span>
-          <Button variant="destructive" size="sm" onClick={handleBulkDelete} className="gap-1">
+          <Button variant="destructive" size="sm" onClick={handleBulkDelete} className="gap-1 rounded-full px-5 bg-[#b3261e] hover:bg-[#8c1d18] text-white font-medium shadow-none">
             <Trash2 className="h-3.5 w-3.5" /> Delete Selected
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => setSelectedIds(new Set())}>Cancel</Button>
+          <Button className="rounded-full text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium" variant="ghost" size="sm" onClick={() => setSelectedIds(new Set())}>Cancel</Button>
         </div>
       )}
 
@@ -400,9 +400,9 @@ const Expenses = () => {
                 </SelectContent>
               </Select>
               <div className="flex items-center gap-1">
-                <Button variant="outline" size="sm" className="h-8" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>Prev</Button>
+                <Button variant="outline" size="sm" className="h-8 rounded-full px-4 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>Prev</Button>
                 <span className="text-sm px-2">{page}/{totalPages}</span>
-                <Button variant="outline" size="sm" className="h-8" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>Next</Button>
+                <Button variant="outline" size="sm" className="h-8 rounded-full px-4 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>Next</Button>
               </div>
             </div>
           </div>

@@ -101,7 +101,7 @@ const Companies = () => {
             Para comenzar a usar el sistema, completa la información de tu empresa. Esta información se usará en tus facturas y documentos.
           </p>
         </div>
-        <Button size="lg" className="gap-2" onClick={() => { setEditId(null); setForm(emptyForm); setShowForm(true); }}>
+        <Button size="lg" className="gap-2 rounded-full px-5 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium shadow-none" onClick={() => { setEditId(null); setForm(emptyForm); setShowForm(true); }}>
           <Building2 className="h-5 w-5" /> Configurar mi Empresa
         </Button>
         <CompanyFormDialog open={showForm} onOpenChange={setShowForm} editId={editId} form={form} set={set} setForm={setForm} onSave={handleSave} />
@@ -187,11 +187,11 @@ const Companies = () => {
         </div>
         <div className="flex gap-2 self-start sm:self-auto">
           {isAdmin && (
-            <Button variant="outline" className="gap-2" onClick={() => setRtsOpen(true)}>
+            <Button variant="outline" className="gap-2 rounded-full px-4 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent" onClick={() => setRtsOpen(true)}>
               <FileSignature className="h-4 w-4" /> Asistente RTS
             </Button>
           )}
-          <Button className="gap-2" onClick={openNew}>
+          <Button className="gap-2 rounded-full px-5 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium shadow-none" onClick={openNew}>
             <Plus className="h-4 w-4" /> Add New Company
           </Button>
         </div>

@@ -156,7 +156,7 @@ const UsersPage = () => {
           <p className="page-description pl-[52px]">Account and permission administration</p>
         </div>
         {!isDispatcherView && (
-          <Button size="sm" className="gap-2" onClick={handleCreate}>
+          <Button size="sm" className="gap-2 rounded-full px-5 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium shadow-none" onClick={handleCreate}>
             <Plus className="h-4 w-4" /> New User
           </Button>
         )}

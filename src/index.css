@@ -212,25 +212,27 @@ html, body {
     background: hsla(var(--muted), 0.18);
   }
 
+  /* Botones de acción de las filas: estilo Google (píldora, sin borde, color por acción) */
   .glass-action-btn {
-    @apply h-8 px-2 text-xs gap-1 font-medium rounded-md transition-all duration-200 bg-card border;
+    @apply h-8 px-2.5 text-xs gap-1 font-medium rounded-full transition-colors duration-200 bg-transparent border-0 text-[#444746] justify-center;
   }
-  .glass-action-btn:hover {
-    @apply bg-muted shadow-sm;
-  }
-  .dark .glass-action-btn {
-    @apply bg-secondary border-border;
-  }
-  .dark .glass-action-btn:hover {
-    @apply bg-secondary/80;
-  }
-
-  /* Semantic tints for glass action buttons */
-  .glass-action-btn.tint-blue { @apply text-[#266aad]; }
-  .glass-action-btn.tint-green { @apply text-[hsl(152,60%,40%)]; }
-  .glass-action-btn.tint-amber { @apply text-[hsl(38,92%,50%)]; }
-  .glass-action-btn.tint-red { @apply text-[hsl(0,72%,51%)]; }
-  .glass-action-btn.tint-purple { @apply text-[hsl(270,55%,50%)]; }
+  .glass-action-btn:hover { @apply bg-[#f0f4f9]; }
+  .dark .glass-action-btn { @apply text-muted-foreground; }
+  .dark .glass-action-btn:hover { @apply bg-muted; }
+  .glass-action-btn.tint-blue { @apply text-[#0b57d0]; }
+  .glass-action-btn.tint-blue:hover { @apply bg-[#e8f0fe]; }
+  .glass-action-btn.tint-green { @apply text-[#188038]; }
+  .glass-action-btn.tint-green:hover { @apply bg-[#e6f4ea]; }
+  .glass-action-btn.tint-amber { @apply text-[#0b57d0]; }
+  .glass-action-btn.tint-amber:hover { @apply bg-[#e8f0fe]; }
+  .glass-action-btn.tint-red { @apply text-[#b3261e]; }
+  .glass-action-btn.tint-red:hover { @apply bg-[#fce8e6]; }
+  .glass-action-btn.tint-purple { @apply text-[#8e24aa]; }
+  .glass-action-btn.tint-purple:hover { @apply bg-[#f3e8fd]; }
+  .glass-action-btn.tint-slate { @apply text-[#444746]; }
+  .dark .glass-action-btn.tint-blue, .dark .glass-action-btn.tint-amber { @apply text-blue-300; }
+  .dark .glass-action-btn.tint-green { @apply text-emerald-400; }
+  .dark .glass-action-btn.tint-red { @apply text-red-300; }
 
   /* ── Sidebar & Header glassmorphism ── */
   .glass-sidebar {

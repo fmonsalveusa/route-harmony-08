@@ -317,15 +317,15 @@ const Documents = () => {
             {selectedDocs.size > 0 && (
               <>
                 <span className="text-sm text-muted-foreground">{selectedDocs.size} seleccionado(s)</span>
-                <Button variant="ghost" size="sm" className="gap-1" onClick={() => setSelectedDocs(new Set())}>
+                <Button variant="ghost" size="sm" className="gap-1 rounded-full text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium" onClick={() => setSelectedDocs(new Set())}>
                   <X className="h-4 w-4" /> Quitar selección
                 </Button>
-                <Button variant="destructive" className="gap-2" onClick={() => setBulkConfirm(true)}>
+                <Button variant="destructive" className="gap-2 rounded-full px-5 bg-[#b3261e] hover:bg-[#8c1d18] text-white font-medium shadow-none" onClick={() => setBulkConfirm(true)}>
                   <Trash2 className="h-4 w-4" /> Eliminar seleccionados
                 </Button>
               </>
             )}
-            <Button onClick={() => navigate('/documents/upload')} className="gap-2">
+            <Button onClick={() => navigate('/documents/upload')} className="gap-2 rounded-full px-5 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium shadow-none">
               <Plus className="h-4 w-4" /> Nuevo Documento
             </Button>
           </div>
@@ -379,7 +379,7 @@ const Documents = () => {
                               autoFocus
                               placeholder="Nombre del destinatario"
                             />
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={saveRecipientName}>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full text-[#444746] dark:text-muted-foreground hover:bg-[#f0f4f9] dark:hover:bg-muted" onClick={saveRecipientName}>
                               <Pencil className="h-3 w-3" />
                             </Button>
                           </div>
@@ -441,7 +441,7 @@ const Documents = () => {
                         <div className="flex items-center justify-end gap-1">
                           {doc.status === 'pending' && (
                             <>
-                              <Button variant="ghost" size="icon" onClick={() => copySignLink(doc.id)} title="Copiar enlace">
+                              <Button className="rounded-full text-[#444746] dark:text-muted-foreground hover:bg-[#f0f4f9] dark:hover:bg-muted" variant="ghost" size="icon" onClick={() => copySignLink(doc.id)} title="Copiar enlace">
                                 <Copy className="h-4 w-4" />
                               </Button>
                               <Button className="h-8 px-2.5 gap-1 rounded-full text-xs font-medium text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe]" variant="ghost" size="sm" onClick={() => navigate(`/documents/upload?edit=${doc.id}`)} title="Editar">
@@ -451,18 +451,18 @@ const Documents = () => {
                           )}
                           {doc.status === 'signed' && (
                             <>
-                              <Button variant="ghost" size="icon" onClick={() => openPdfPreview(doc)} title="Ver PDF" disabled={previewLoading}>
+                              <Button className="rounded-full text-[#444746] dark:text-muted-foreground hover:bg-[#f0f4f9] dark:hover:bg-muted" variant="ghost" size="icon" onClick={() => openPdfPreview(doc)} title="Ver PDF" disabled={previewLoading}>
                                 <Eye className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="icon" onClick={() => navigate(`/documents/complete/${doc.id}`)} title="Ver detalles">
+                              <Button className="rounded-full text-[#444746] dark:text-muted-foreground hover:bg-[#f0f4f9] dark:hover:bg-muted" variant="ghost" size="icon" onClick={() => navigate(`/documents/complete/${doc.id}`)} title="Ver detalles">
                                 <FileText className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="icon" onClick={() => downloadPdf(doc)} title="Descargar PDF">
+                              <Button className="rounded-full text-[#444746] dark:text-muted-foreground hover:bg-[#f0f4f9] dark:hover:bg-muted" variant="ghost" size="icon" onClick={() => downloadPdf(doc)} title="Descargar PDF">
                                 <Download className="h-4 w-4" />
                               </Button>
                             </>
                           )}
-                          <Button variant="ghost" size="icon" onClick={() => setDeleteTarget({ type: 'doc', id: doc.id, name: doc.fileName })} title="Eliminar" className="text-destructive hover:text-destructive">
+                          <Button variant="ghost" size="icon" onClick={() => setDeleteTarget({ type: 'doc', id: doc.id, name: doc.fileName })} title="Eliminar" className="text-destructive hover:text-destructive rounded-full text-[#b3261e] hover:text-[#b3261e] hover:bg-[#fce8e6]">
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
@@ -477,7 +477,7 @@ const Documents = () => {
 
         <TabsContent value="templates">
           <div className="flex justify-end mb-4">
-            <Button onClick={() => navigate('/documents/upload?mode=template')} className="gap-2">
+            <Button onClick={() => navigate('/documents/upload?mode=template')} className="gap-2 rounded-full px-5 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium shadow-none">
               <Plus className="h-4 w-4" /> Crear Plantilla
             </Button>
           </div>
@@ -515,13 +515,13 @@ const Documents = () => {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center justify-end gap-1">
-                          <Button variant="ghost" size="icon" onClick={() => { navigator.clipboard.writeText(getTemplateSigningUrl(tpl.id)); toast.success('Enlace de plantilla copiado'); }} title="Copiar enlace">
+                          <Button className="rounded-full text-[#444746] dark:text-muted-foreground hover:bg-[#f0f4f9] dark:hover:bg-muted" variant="ghost" size="icon" onClick={() => { navigator.clipboard.writeText(getTemplateSigningUrl(tpl.id)); toast.success('Enlace de plantilla copiado'); }} title="Copiar enlace">
                             <Copy className="h-4 w-4" />
                           </Button>
                           <Button className="h-8 px-2.5 gap-1 rounded-full text-xs font-medium text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe]" variant="ghost" size="sm" onClick={() => navigate(`/documents/upload?mode=template&edit=${tpl.id}`)} title="Editar plantilla">
                             <Pencil className="h-4 w-4" /> Editar
                           </Button>
-                          <Button variant="ghost" size="icon" onClick={() => setDeleteTarget({ type: 'tpl', id: tpl.id, name: tpl.name })} title="Eliminar" className="text-destructive hover:text-destructive">
+                          <Button variant="ghost" size="icon" onClick={() => setDeleteTarget({ type: 'tpl', id: tpl.id, name: tpl.name })} title="Eliminar" className="text-destructive hover:text-destructive rounded-full text-[#b3261e] hover:text-[#b3261e] hover:bg-[#fce8e6]">
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>

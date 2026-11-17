@@ -171,24 +171,24 @@ const Maintenance = () => {
           <p className="page-description pl-[52px]">Fleet maintenance tracker</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={sendReminders} disabled={sendingReminders}
+          <Button className="rounded-full px-4 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent" variant="outline" size="sm" onClick={sendReminders} disabled={sendingReminders}
             title="Envía por WhatsApp el recordatorio a los Company Drivers con mantenimiento por vencer o vencido">
             <Send className={`h-3.5 w-3.5 mr-1.5 ${sendingReminders ? 'animate-pulse' : ''}`} />
             Send Reminders
           </Button>
-          <Button variant="outline" size="sm" onClick={syncFromEld} disabled={syncingEld} title="Lee el odómetro de HOS247 y RouteOne (también se actualiza solo una vez al día)">
+          <Button className="rounded-full px-4 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent" variant="outline" size="sm" onClick={syncFromEld} disabled={syncingEld} title="Lee el odómetro de HOS247 y RouteOne (también se actualiza solo una vez al día)">
             <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${syncingEld ? 'animate-spin' : ''}`} />
             Sync from ELD
           </Button>
-          <Button variant="outline" size="sm" onClick={() => { setOdoDrafts({}); setOdoModalOpen(true); }}>
+          <Button className="rounded-full px-4 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent" variant="outline" size="sm" onClick={() => { setOdoDrafts({}); setOdoModalOpen(true); }}>
             <Gauge className="h-3.5 w-3.5 mr-1.5" />
             Update Odometers
           </Button>
-          <Button variant="outline" size="sm" onClick={handleRecalcAll} disabled={recalculating}>
+          <Button className="rounded-full px-4 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent" variant="outline" size="sm" onClick={handleRecalcAll} disabled={recalculating}>
             <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${recalculating ? 'animate-spin' : ''}`} />
             Recalculate
           </Button>
-          <Button size="sm" onClick={() => { setEditItem(null); setFormOpen(true); }}>
+          <Button className="rounded-full px-5 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium shadow-none" size="sm" onClick={() => { setEditItem(null); setFormOpen(true); }}>
             <Plus className="h-3.5 w-3.5 mr-1.5" /> Add Maintenance
           </Button>
         </div>
@@ -302,10 +302,10 @@ const Maintenance = () => {
                               placeholder="Odometer"
                               className="h-6 w-28 text-xs"
                             />
-                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => saveIndividualOdo(truckId)}>
+                            <Button size="icon" variant="ghost" className="h-6 w-6 rounded-full text-[#444746] dark:text-muted-foreground hover:bg-[#f0f4f9] dark:hover:bg-muted" onClick={() => saveIndividualOdo(truckId)}>
                               <Check className="h-3.5 w-3.5 text-[#3B6D11]" />
                             </Button>
-                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setEditingOdoTruck(null)}>
+                            <Button size="icon" variant="ghost" className="h-6 w-6 rounded-full text-[#444746] dark:text-muted-foreground hover:bg-[#f0f4f9] dark:hover:bg-muted" onClick={() => setEditingOdoTruck(null)}>
                               <X className="h-3.5 w-3.5 text-muted-foreground" />
                             </Button>
                           </span>

@@ -225,7 +225,7 @@ export default function WhatsAppPage() {
           </h1>
           <p className="page-description pl-[52px]">Grupos, avisos automáticos y conexión del número</p>
         </div>
-        <Button variant="outline" size="sm" className="gap-2" onClick={loadGroups} disabled={loadingGroups}>
+        <Button variant="outline" size="sm" className="gap-2 rounded-full px-4 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent" onClick={loadGroups} disabled={loadingGroups}>
           <RefreshCw className={`h-4 w-4 ${loadingGroups ? 'animate-spin' : ''}`} /> Recargar grupos
         </Button>
       </div>
@@ -266,7 +266,7 @@ export default function WhatsAppPage() {
             </>
           )}
         </div>
-        <Button variant="outline" size="sm" className="gap-2" onClick={checkConnection} disabled={checking}>
+        <Button variant="outline" size="sm" className="gap-2 rounded-full px-4 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent" onClick={checkConnection} disabled={checking}>
           {checking ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />} Verificar
         </Button>
       </div>
