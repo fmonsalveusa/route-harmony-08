@@ -1348,21 +1348,15 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
         </div>
 
         <div className="flex flex-wrap items-center justify-end gap-2 px-6 py-3 border-t border-[#e3e3e3] dark:border-border bg-white dark:bg-card shrink-0">
-          <Button variant="ghost" className="h-10 rounded-full px-5 text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe] dark:text-blue-300 font-medium" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button
-            variant="outline"
-            className={cn('h-10 rounded-full px-5 font-medium', canSignRc
-              ? 'border-[#747775] text-[#0b57d0] hover:bg-[#e8f0fe] hover:text-[#0b57d0] dark:text-blue-300'
-              : 'border-0 bg-[#0b57d0] hover:bg-[#0842a0] text-white hover:text-white')}
-            onClick={() => handleSubmit(false)}
-          >
-            {editLoad ? 'Guardar cambios' : 'Crear carga'}
-          </Button>
+          <Button className="h-10 rounded-full px-5 bg-[#d93025] hover:bg-[#b3261e] text-white font-medium shadow-none" onClick={() => onOpenChange(false)}>Cancelar</Button>
           {canSignRc && (
-            <Button onClick={() => handleSubmit(true)} className="h-10 rounded-full px-5 gap-2 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium" title="Guarda la carga, firma el RC con los datos del driver y lo abre para enviarlo al broker">
+            <Button onClick={() => handleSubmit(true)} className="h-10 rounded-full px-5 gap-2 bg-[#e37400] hover:bg-[#c56200] text-white font-medium shadow-none" title="Guarda la carga, firma el RC con los datos del driver y lo abre para enviarlo al broker">
               <FileSignature className="h-4 w-4" /> {editLoad ? 'Guardar y firmar RC' : 'Crear y firmar RC'}
             </Button>
           )}
+          <Button className="h-10 rounded-full px-5 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium shadow-none" onClick={() => handleSubmit(false)}>
+            {editLoad ? 'Guardar cambios' : 'Crear Carga'}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
