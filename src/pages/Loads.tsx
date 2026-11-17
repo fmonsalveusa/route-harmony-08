@@ -282,7 +282,7 @@ const Loads = () => {
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" className="h-10 rounded-full px-4 gap-2 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium" onClick={() => {
+          <Button className="h-10 rounded-full px-4 gap-2 shadow-none border-0 bg-[#e37400] hover:bg-[#c56200] text-white font-medium" onClick={() => {
             const data = activeTab === 'all' ? baseLoads : activeTab === 'active' ? activeLoads : activeTab === 'delivered' ? deliveredLoads : cancelledLoads;
             if (data.length === 0) { toast.error('No data to export'); return; }
             const headers = ['Reference', 'Driver', 'Truck', 'Broker', 'Origin', 'Destination', 'Pickup Date', 'Delivery Date', 'Rate', 'DH-O', 'Miles', 'RPM', 'Dispatcher', 'Status', 'Factoring', 'Notes'];
@@ -667,7 +667,7 @@ const Loads = () => {
                           </td>
                           <td className="px-2 pl-4 py-3.5 hidden lg:table-cell"><div className="whitespace-nowrap max-w-[180px] truncate" title={dispatcher?.name}>{dispatcher?.name || '—'}</div></td>
                           <td className="px-2 py-3.5" onClick={e => e.stopPropagation()}>
-                            <StatusChipSelect size="sm" value={load.status} options={LOAD_STATUS_CHIPS} onChange={async (val) => {
+                            <StatusChipSelect size="sm" upper value={load.status} options={LOAD_STATUS_CHIPS} onChange={async (val) => {
                               const prevStatus = load.status;
                               const updates: any = { status: val };
                               if (val === 'delivered') {
@@ -693,6 +693,7 @@ const Loads = () => {
                             <StatusChipSelect
                               value={load.factoring || ''}
                               size="sm"
+                              upper
                               options={FACTORING_CHIPS}
                               placeholder="—"
                               disabled={generatingPaymentIds.has(load.id)}

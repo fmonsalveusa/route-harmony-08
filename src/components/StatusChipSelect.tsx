@@ -23,7 +23,9 @@ export const CHIP_TONE = {
 };
 
 /** Status como pastilla tonal con círculo de color e ícono; al abrir muestra cada opción con su explicación */
-export function StatusChipSelect({ value, options, onChange, disabled, placeholder, size = 'md' }: {
+export function StatusChipSelect({ value, options, onChange, disabled, placeholder, size = 'md', upper = false }: {
+  /** Etiquetas en mayúscula (botón y opciones) */
+  upper?: boolean;
   /** 'sm': pastilla más chica para tablas con muchas columnas */
   size?: 'sm' | 'md';
   value: string;
@@ -45,7 +47,7 @@ export function StatusChipSelect({ value, options, onChange, disabled, placehold
           <span className={cn('rounded-full flex items-center justify-center text-white shrink-0 bg-white/20', size === 'sm' ? 'h-6 w-6' : 'h-7 w-7')}>
             <current.icon className={size === 'sm' ? 'h-3 w-3' : 'h-3.5 w-3.5'} />
           </span>
-          <span className={cn('font-medium', size === 'sm' ? 'text-xs' : 'text-sm')}>{current.label}</span>
+          <span className={cn('font-medium', size === 'sm' ? 'text-xs' : 'text-sm', upper && 'uppercase tracking-wide')}>{current.label}</span>
         </span>
       </SelectTrigger>
       <SelectContent>
@@ -56,7 +58,7 @@ export function StatusChipSelect({ value, options, onChange, disabled, placehold
                 <o.icon className="h-3 w-3" />
               </span>
               <span className="leading-tight">
-                <span className="block text-sm text-[#1f1f1f] dark:text-foreground">{o.label}</span>
+                <span className={cn('block text-sm text-[#1f1f1f] dark:text-foreground', upper && 'uppercase tracking-wide')}>{o.label}</span>
                 {o.hint && <span className="block text-[11px] text-[#444746] dark:text-muted-foreground">{o.hint}</span>}
               </span>
             </span>
