@@ -346,16 +346,38 @@ const Drivers = () => {
                           </span>
                         </div>
                       </td>
-                      <td className="px-3 py-3 hidden lg:table-cell">
-                        <div className="inline-flex items-center gap-2.5 rounded-full bg-[#f0f4f9] dark:bg-muted/60 pl-1.5 pr-4 py-1.5 whitespace-nowrap">
-                          <span className="h-9 w-9 rounded-full flex items-center justify-center shrink-0 text-sm font-medium text-white" style={{ background: dispatcher?.color || '#9aa0a6' }}>
-                            {dispatcher ? dispatcher.name.trim().charAt(0).toUpperCase() : '?'}
-                          </span>
-                          <span className="leading-tight">
-                            <span className="block text-[10.5px] uppercase tracking-wide text-[#444746] dark:text-muted-foreground">Dispatcher</span>
-                            <span className="block text-sm text-[#1f1f1f] dark:text-foreground">{dispatcher?.name || 'Sin asignar'}</span>
-                          </span>
-                        </div>
+                      <td className="px-3 py-3 hidden lg:table-cell" onClick={e => e.stopPropagation()}>
+                        {/* Reasignar dispatcher desde la lista (solo dispatchers activos) */}
+                        <Select
+                          value={driver.dispatcher_id ?? 'none'}
+                          onValueChange={v => updateDriver(driver.id, { dispatcher_id: v === 'none' ? null : v })}
+                          disabled={isDispatcher}
+                        >
+                          <SelectTrigger className="h-auto w-auto gap-2 rounded-full border-0 bg-[#f0f4f9] dark:bg-muted/60 pl-1.5 pr-3 py-1.5 shadow-none focus:ring-0 hover:bg-[#e3e8ef] dark:hover:bg-muted whitespace-nowrap disabled:opacity-100 disabled:cursor-default">
+                            <span className="flex items-center gap-2.5">
+                              <span className="h-9 w-9 rounded-full flex items-center justify-center shrink-0 text-sm font-medium text-white" style={{ background: dispatcher?.color || '#9aa0a6' }}>
+                                {dispatcher ? dispatcher.name.trim().charAt(0).toUpperCase() : '?'}
+                              </span>
+                              <span className="text-sm text-[#1f1f1f] dark:text-foreground">{dispatcher?.name || 'Sin asignar'}</span>
+                            </span>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">Sin asignar</SelectItem>
+                            {dispatchers
+                              .filter(x => x.status === 'active' || x.id === driver.dispatcher_id)
+                              .sort((a, b) => a.name.localeCompare(b.name))
+                              .map(x => (
+                                <SelectItem key={x.id} value={x.id}>
+                                  <span className="flex items-center gap-2">
+                                    <span className="h-5 w-5 rounded-full flex items-center justify-center text-[10px] font-medium text-white" style={{ background: x.color || '#9aa0a6' }}>
+                                      {x.name.trim().charAt(0).toUpperCase()}
+                                    </span>
+                                    {x.name}
+                                  </span>
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
                       </td>
                       <td className="px-3 py-2" onClick={e => e.stopPropagation()}>
                         <Select value={driver.status} onValueChange={v => updateDriver(driver.id, { status: v })}>
