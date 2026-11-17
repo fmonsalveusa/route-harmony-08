@@ -388,49 +388,29 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
           {/* ═══ Payments ═══ */}
           <div className={DETAIL_CARD}>
             <h3 className={DETAIL_TITLE}>Payments</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {/* Todo en una sola línea: % de pago, investors y datos bancarios */}
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(125px,1fr))] gap-1.5">
               <Tile icon={Percent} tone="green" label="% Driver Pay" value={`${driver.pay_percentage ?? 0}%`} />
               {driver.service_type === 'dispatch_service' && (
-                <Tile icon={Percent} tone="sky" label="% Dispatch Service" value={`${d.dispatch_service_percentage ?? 0}%`} />
+                <Tile icon={Percent} tone="sky" label="% Dispatch" value={`${d.dispatch_service_percentage ?? 0}%`} />
               )}
-            </div>
-
-            <p className="text-[11px] uppercase tracking-wide text-[#444746] dark:text-muted-foreground pt-1">Investors</p>
-            {investorsLoading ? (
-              <p className="text-sm text-muted-foreground">Loading...</p>
-            ) : investors.length === 0 ? (
-              <p className="text-sm text-[#444746] dark:text-muted-foreground">Sin investors asignados</p>
-            ) : (
-              <div className="space-y-2">
-                {investors.map((inv, i) => (
-                  <div key={i} className="flex items-center gap-2.5 rounded-2xl bg-[#f8fafd] dark:bg-muted/40 px-3 py-2">
-                    <span className="h-8 w-8 shrink-0 rounded-full bg-[#e9ddff] text-[#22005d] dark:bg-violet-900/40 dark:text-violet-200 flex items-center justify-center text-sm font-medium">
-                      {(inv.investor_name || '?').trim().charAt(0).toUpperCase()}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm text-[#1f1f1f] dark:text-foreground truncate">{inv.investor_name || '—'}</p>
-                      {inv.investor_email && <p className="text-[11px] text-[#444746] dark:text-muted-foreground truncate">{inv.investor_email}</p>}
-                    </div>
-                    <span className="shrink-0 text-xs font-medium text-[#041e49] bg-[#d3e3fd] dark:bg-blue-900/40 dark:text-blue-200 px-2.5 py-0.5 rounded-full">
-                      {inv.pay_percentage ?? 0}%
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {(d.bank_name || d.routing_number || d.account_number) && (
-              <>
-                <p className="text-[11px] uppercase tracking-wide text-[#444746] dark:text-muted-foreground pt-1">Banking (ACH)</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <div className="sm:col-span-2"><Tile icon={UserRound} tone="blue" label="Account Holder" value={d.account_holder_name || '—'} /></div>
+              {investorsLoading ? (
+                <Tile icon={UserRound} tone="violet" label="Investor" value="…" />
+              ) : investors.length === 0 ? (
+                <Tile icon={UserRound} tone="violet" label="Investor" value="Sin investor" />
+              ) : investors.map((inv, i) => (
+                <Tile key={i} icon={UserRound} tone="violet" label={`Investor · ${inv.pay_percentage ?? 0}%`} value={<span title={inv.investor_email ?? ''}>{inv.investor_name || '—'}</span>} />
+              ))}
+              {(d.bank_name || d.routing_number || d.account_number) && (
+                <>
+                  <Tile icon={UserRound} tone="blue" label="Account Holder" value={d.account_holder_name || '—'} />
                   <Tile icon={Landmark} tone="sky" label="Bank" value={d.bank_name || '—'} />
-                  <Tile icon={Wallet} tone="violet" label="Account Type" value={d.account_type ? d.account_type.charAt(0).toUpperCase() + d.account_type.slice(1) : '—'} />
+                  <Tile icon={Wallet} tone="violet" label="Type" value={d.account_type ? d.account_type.charAt(0).toUpperCase() + d.account_type.slice(1) : '—'} />
                   <Tile icon={Hash} tone="gray" label="Routing #" value={<span className="font-mono text-[13px]">{mask(d.routing_number)}</span>} copy={canSeeTax && d.routing_number ? String(d.routing_number) : null} />
                   <Tile icon={Hash} tone="gray" label="Account #" value={<span className="font-mono text-[13px]">{mask(d.account_number)}</span>} copy={canSeeTax && d.account_number ? String(d.account_number) : null} />
-                </div>
-              </>
-            )}
+                </>
+              )}
+            </div>
 
             {/* Datos fiscales del 1099 (solo admin y accounting) */}
             {canSeeTax && <DriverTaxInfo driverId={driver.id} />}
