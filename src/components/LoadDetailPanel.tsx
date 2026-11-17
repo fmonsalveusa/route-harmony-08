@@ -1557,7 +1557,7 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
       {/* Tres columnas: datos de la carga | ruta y paradas | mapa */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-12 gap-3 items-start">
         {/* Columna 1: datos de la carga, ajustes y rentabilidad */}
-        <div className="xl:col-span-3 space-y-3">
+        <div className="xl:col-span-3 space-y-3 min-w-0">
           <div className="rounded-3xl border border-[#e3e3e3] dark:border-border bg-white dark:bg-card overflow-hidden text-sm">
             <div className="px-4 pt-3 pb-1.5 text-[15px] font-medium text-[#1f1f1f] dark:text-foreground">Carga</div>
               <div className="flex items-start justify-between gap-3 px-4 py-1.5 border-b border-[#f0f0f0] dark:border-border last:border-b-0">
@@ -1675,7 +1675,7 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
         </div>
 
         {/* Columna 2: ruta y paradas, email al broker y RC firmado */}
-        <div className="xl:col-span-5 space-y-3">
+        <div className="xl:col-span-5 space-y-3 min-w-0">
           {/* Stops / Route breakdown */}
           <div className="px-4 py-3 rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border text-sm">
             <h5 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground mb-2 flex items-center gap-1.5">
@@ -1765,7 +1765,7 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
         </div>
 
         {/* Columna 3: mapa */}
-        <div className="lg:col-span-2 xl:col-span-4 space-y-3">
+        <div className="lg:col-span-2 xl:col-span-4 space-y-3 min-w-0">
         {/* Map */}
         <div className="rounded-3xl overflow-hidden border border-[#e3e3e3] dark:border-border bg-white dark:bg-card relative" style={{ height: 640, zIndex: 0 }}>
           <div ref={mapRef} style={{ height: '100%', zIndex: 0 }} />
@@ -1790,7 +1790,7 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
             </div>
           )}
         </div>
-        {/* RC firmado: debajo del mapa */}
+        {/* Debajo del mapa, mismo ancho: Email Al Broker y RC firmado */}
         {!isDispatchService && <BrokerEmailSection loadId={load.id} />}
         {!isDispatchService && <RcSignedSection loadId={load.id} hasDriver={!!load.driver_id} />}
         </div>
