@@ -1217,7 +1217,7 @@ const Tracking = () => {
                     <div className="flex-1 min-w-0">
                     {/* Línea 1: nombre, teléfono, carga y tipo de servicio */}
                     <div className="flex items-center gap-1.5 px-3 pt-2">
-                      <p className="text-sm font-medium text-[#1f1f1f] dark:text-foreground truncate">{driver.name}</p>
+                      <p className="text-base font-semibold text-[#1f1f1f] dark:text-foreground truncate">{driver.name}</p>
                       <button
                         onClick={(e) => copyField(driver.id, 'name', driver.name, e)}
                         className="shrink-0 p-0.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
