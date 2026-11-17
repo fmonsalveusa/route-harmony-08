@@ -297,8 +297,8 @@ const Drivers = () => {
                       </td>
                       <td className="px-3 py-3">
                         <div className="flex items-center gap-3">
-                          <div className="h-11 w-11 rounded-full flex items-center justify-center text-white text-lg font-medium flex-shrink-0 bg-[#0b57d0]">
-                            {initials.slice(0, 1).toUpperCase()}
+                          <div className="h-11 w-11 rounded-full flex items-center justify-center text-white text-[15px] font-medium flex-shrink-0" style={{ background: dispatcher?.color || '#9aa0a6' }} title={dispatcher ? `Dispatcher: ${dispatcher.name}` : 'Sin dispatcher'}>
+                            {(() => { const w = driver.name.trim().split(/\s+/); return ((w[0]?.[0] ?? '') + (w[1]?.[0] ?? '')).toUpperCase(); })()}
                           </div>
                           <div className="flex flex-col items-start min-w-0">
                             <span className="flex flex-wrap items-center gap-1.5">
@@ -348,7 +348,7 @@ const Drivers = () => {
                       </td>
                       <td className="px-3 py-3 hidden lg:table-cell">
                         <div className="inline-flex items-center gap-2.5 rounded-full bg-[#f0f4f9] dark:bg-muted/60 pl-1.5 pr-4 py-1.5 whitespace-nowrap">
-                          <span className={cn('h-9 w-9 rounded-full flex items-center justify-center shrink-0 text-sm font-medium text-white', dispatcher ? 'bg-[#188038]' : 'bg-[#9aa0a6]')}>
+                          <span className="h-9 w-9 rounded-full flex items-center justify-center shrink-0 text-sm font-medium text-white" style={{ background: dispatcher?.color || '#9aa0a6' }}>
                             {dispatcher ? dispatcher.name.trim().charAt(0).toUpperCase() : '?'}
                           </span>
                           <span className="leading-tight">
