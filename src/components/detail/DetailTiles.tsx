@@ -30,7 +30,7 @@ export function Tile({ icon: Icon, tone = 'blue', label, value, copy }: {
     navigator.clipboard.writeText(copy).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500); });
   };
   return (
-    <div className="group relative flex items-center gap-2.5 rounded-2xl bg-[#f8fafd] dark:bg-muted/40 px-3 py-2 min-w-0">
+    <div className="group relative flex items-center gap-2.5 rounded-2xl bg-[#f8fafd] dark:bg-muted/40 px-3 py-1.5 min-w-0">
       <span className={cn('h-8 w-8 shrink-0 rounded-full flex items-center justify-center', TONE[tone])}>
         <Icon className="h-4 w-4" />
       </span>
@@ -69,9 +69,9 @@ export function ExpiryRing({ icon: Icon, label, date }: { icon: LucideIcon; labe
   const pct = days === null ? 0 : Math.max(0, Math.min(1, days / 365));
   const R = 17, C = 2 * Math.PI * R;
   return (
-    <div className={cn('flex items-center gap-3 rounded-2xl px-3 py-2', expired ? 'bg-[#d93025] text-white' : 'bg-[#f8fafd] dark:bg-muted/40')}>
-      <div className="relative h-11 w-11 shrink-0">
-        <svg viewBox="0 0 40 40" className="h-11 w-11 -rotate-90">
+    <div className={cn('flex items-center gap-2.5 rounded-2xl px-3 py-1.5 min-w-0', expired ? 'bg-[#d93025] text-white' : 'bg-[#f8fafd] dark:bg-muted/40')}>
+      <div className="relative h-9 w-9 shrink-0">
+        <svg viewBox="0 0 40 40" className="h-9 w-9 -rotate-90">
           <circle cx="20" cy="20" r={R} fill="none" strokeWidth="3.5" className={expired ? 'stroke-white/30' : 'stroke-[#e3e3e3] dark:stroke-border'} />
           {!expired && days !== null && (
             <circle cx="20" cy="20" r={R} fill="none" strokeWidth="3.5" strokeLinecap="round" stroke={color}
