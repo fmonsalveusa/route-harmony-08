@@ -1323,7 +1323,7 @@ const Tracking = () => {
                             {displayInfo.isActive && (() => {
                               const delivery = (activeLoad?.delivery_date || '').slice(0, 10);
                               if (delivery === todayET) {
-                                return <span className="shrink-0 rounded-md bg-[#f9dedc] text-[#410e0b] px-1.5 py-0.5 text-[10px] font-medium" title="Entrega hoy">TODAY</span>;
+                                return <span className="shrink-0 rounded-md bg-[#d93025] text-white px-2 py-0.5 text-xs font-bold tracking-wide" title="Entrega hoy">TODAY</span>;
                               }
                               if (delivery === tomorrowET) {
                                 return <span className="shrink-0 rounded-md bg-[#d3e3fd] text-[#041e49] px-1.5 py-0.5 text-[10px] font-medium" title="Entrega mañana">TOMORROW</span>;
