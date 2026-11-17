@@ -20,7 +20,8 @@ interface Props {
   onUpload?: (key: string, url: string) => void;
   uploadBasePath?: string;
   /** 'tiles': lista de tarjetas con miniatura, estado (cargado / falta) y botones Ver / Subir */
-  variant?: 'thumbs' | 'tiles';
+  /** 'cards': cuadrícula con vista previa grande y botones de ícono (aprovecha el ancho) */
+  variant?: 'thumbs' | 'tiles' | 'cards';
 }
 
 async function resolveUrl(url: string, getDocSignedUrl?: (u: string) => Promise<string | null>): Promise<string> {
@@ -169,8 +170,9 @@ function DocCard({
 
 /** Tarjeta de documento en fila: miniatura, nombre, estado y botones visibles */
 function DocTile({
-  item, getDocSignedUrl, allowUpload, onUpload, uploadBasePath, onPreview,
+  item, getDocSignedUrl, allowUpload, onUpload, uploadBasePath, onPreview, card,
 }: {
+  card?: boolean;
   item: DocItem;
   getDocSignedUrl?: (url: string) => Promise<string | null>;
   allowUpload?: boolean;
@@ -200,6 +202,65 @@ function DocTile({
       if (fileRef.current) fileRef.current.value = '';
     }
   };
+
+  const ICON_BTN = 'h-7 w-7 rounded-full flex items-center justify-center';
+  if (card) {
+    return (
+      <div className="group flex flex-col rounded-2xl bg-[#f8fafd] dark:bg-muted/40 border border-[#e3e3e3] dark:border-border overflow-hidden">
+        <button
+          type="button"
+          disabled={!item.url}
+          onClick={e => { e.stopPropagation(); if (item.url) onPreview(item); }}
+          className="relative h-24 w-full bg-white dark:bg-card flex items-center justify-center overflow-hidden"
+        >
+          {item.url ? (
+            img ? <ImageThumb url={item.url} label={item.label} getDocSignedUrl={getDocSignedUrl} />
+              : <span className="flex flex-col items-center gap-1 text-[#d93025]"><FileText className="h-8 w-8" /><span className="text-[10px] font-bold tracking-wide">PDF</span></span>
+          ) : (
+            <span className="flex flex-col items-center gap-1 text-[#c4c7c5]"><FileText className="h-8 w-8" /><span className="text-[10px] font-medium">Sin archivo</span></span>
+          )}
+          {item.url && (
+            <span className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors flex items-center justify-center">
+              <Eye className="h-5 w-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+            </span>
+          )}
+        </button>
+        <div className="px-2.5 pt-1.5 pb-1.5 border-t border-[#e3e3e3] dark:border-border">
+          <p className="text-[13px] text-[#1f1f1f] dark:text-foreground truncate" title={item.label}>{item.label}</p>
+          <div className="flex items-center gap-0.5">
+            <span className={`flex-1 min-w-0 text-[11px] flex items-center gap-1 ${item.url ? 'text-[#188038] dark:text-emerald-400' : 'text-[#b3261e] dark:text-red-300'}`}>
+              <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${item.url ? 'bg-[#188038]' : 'bg-[#d93025]'}`} />
+              <span className="truncate">{item.url ? (img ? 'Foto' : 'PDF') : 'Falta'}</span>
+            </span>
+            {item.url && (
+              <button type="button" title="Ver" onClick={e => { e.stopPropagation(); onPreview(item); }}
+                className={`${ICON_BTN} text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] dark:hover:bg-muted`}>
+                <Eye className="h-3.5 w-3.5" />
+              </button>
+            )}
+            {allowUpload && (
+              <button type="button" title={item.url ? 'Cambiar' : 'Subir'} disabled={uploading} onClick={e => { e.stopPropagation(); fileRef.current?.click(); }}
+                className={`${ICON_BTN} text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] dark:hover:bg-muted`}>
+                {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+              </button>
+            )}
+            {item.onDelete && (
+              <button type="button" title="Borrar"
+                onClick={async e => {
+                  e.stopPropagation();
+                  if (!confirm(`Borrar ${item.label}?`)) return;
+                  try { await item.onDelete!(); } catch (err) { console.error('Delete error:', err); }
+                }}
+                className={`${ICON_BTN} text-[#b3261e] hover:bg-[#fce8e6] dark:hover:bg-red-950/40`}>
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+        </div>
+        {allowUpload && <input ref={fileRef} type="file" accept="image/*,.pdf" className="hidden" onChange={handleUpload} />}
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center gap-3 rounded-2xl bg-[#f8fafd] dark:bg-muted/40 px-2 py-1.5">
@@ -269,10 +330,11 @@ export function DocCardGrid({ docs, getDocSignedUrl, allowUpload, onUpload, uplo
 
   return (
     <>
-      {variant === 'tiles' ? (
-        <div className="space-y-1.5">
+      {variant === 'tiles' || variant === 'cards' ? (
+        <div className={variant === 'cards' ? 'grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-2' : 'space-y-1.5'}>
           {docs.map(item => (
             <DocTile
+              card={variant === 'cards'}
               key={item.key}
               item={item}
               getDocSignedUrl={getDocSignedUrl}

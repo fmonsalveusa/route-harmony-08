@@ -292,20 +292,20 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
 
   return (
     <div className="px-4 py-3 bg-[#f8fafd] dark:bg-background/60 border-t border-[#e3e3e3] dark:border-border animate-fade-in space-y-3">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[3fr_7fr] gap-3 items-start">
         {/* ═══ General Information ═══ */}
         <div className={DETAIL_CARD}>
           <h3 className={DETAIL_TITLE}>General Information</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <div className="sm:col-span-2"><Tile icon={Mail} tone="blue" label="Email" value={driver.email || '—'} copy={driver.email} /></div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 2xl:grid-cols-2 gap-2">
+            <div className="sm:col-span-2 lg:col-span-1 2xl:col-span-2"><Tile icon={Mail} tone="blue" label="Email" value={driver.email || '—'} copy={driver.email} /></div>
             <Tile icon={Phone} tone="green" label="Phone" value={formatPhone(driver.phone) || '—'} copy={driver.phone} />
             <Tile icon={Cake} tone="violet" label="Birthday" value={formatDate(d.birthday) || '—'} />
             <Tile icon={CalendarDays} tone="sky" label="Hire Date" value={formatDate(driver.hire_date) || '—'} />
             <Tile icon={Percent} tone="amber" label="Driver Pay" value={`${driver.pay_percentage ?? 0}%`} />
-            <div className="sm:col-span-2"><Tile icon={MapPin} tone="red" label="Address" value={address || '—'} copy={address || null} /></div>
+            <div className="sm:col-span-2 lg:col-span-1 2xl:col-span-2"><Tile icon={MapPin} tone="red" label="Address" value={address || '—'} copy={address || null} /></div>
           </div>
           <p className="text-[11px] uppercase tracking-wide text-[#444746] dark:text-muted-foreground pt-1">Emergency Contact</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 2xl:grid-cols-2 gap-2">
             <Tile icon={UserRound} tone="gray" label="Name" value={d.emergency_contact_name || '—'} />
             <Tile icon={PhoneCall} tone="gray" label="Phone" value={formatPhone(d.emergency_phone) || '—'} copy={d.emergency_phone} />
           </div>
@@ -372,7 +372,7 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
             )}
 
             <DocCardGrid
-              variant="tiles"
+              variant="cards"
               docs={docs}
               getDocSignedUrl={getDocSignedUrl}
               allowUpload={!!onUpdateDriver}
