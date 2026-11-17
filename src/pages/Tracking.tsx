@@ -1209,8 +1209,10 @@ const Tracking = () => {
                   >
                     {/* Franja vertical izquierda: LOADED / EMPTY, letra por letra */}
                     {/* Franja fina de color: verde cargado, naranja vacío */}
-                    <div className={`w-6 shrink-0 flex items-center justify-center ${activeLoad ? 'bg-[#188038]' : 'bg-[#e37400]'}`}>
-                      <span className="[writing-mode:vertical-rl] rotate-180 text-[10px] font-bold tracking-[0.2em] text-white select-none">{activeLoad ? 'LOADED' : 'EMPTY'}</span>
+                    <div className={`w-7 shrink-0 flex items-center justify-center py-1 ${activeLoad ? 'bg-[#188038]' : 'bg-[#e37400]'}`}>
+                      <span className="flex flex-col items-center text-[13px] leading-[15px] font-bold text-white select-none">
+                        {(activeLoad ? 'LOADED' : 'EMPTY').split('').map((ch, i) => <span key={i}>{ch}</span>)}
+                      </span>
                     </div>
                     <div className="flex-1 min-w-0">
                     {/* Línea 1: nombre, teléfono, carga y tipo de servicio */}
