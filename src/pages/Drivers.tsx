@@ -302,7 +302,7 @@ const Drivers = () => {
                           </div>
                           <div className="flex flex-col items-start min-w-0">
                             <span className="flex flex-wrap items-center gap-1.5">
-                              <span className="text-[18px] leading-6 font-normal text-[#1f1f1f] dark:text-foreground whitespace-nowrap">{driver.name}</span>
+                              <span className="text-[15px] leading-6 font-normal text-[#1f1f1f] dark:text-foreground whitespace-nowrap">{driver.name}</span>
                               <ServiceTypeBadge serviceType={driver.service_type} />
                               {activeDriverIds.has(driver.id) && (
                                 <span className="inline-flex items-center gap-1 rounded-md bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700" title="GPS reportando en los últimos 5 minutos">
@@ -322,17 +322,6 @@ const Drivers = () => {
                               >
                                 <Copy className="h-3 w-3" />
                               </button>
-                            </span>
-                            <span className="flex items-center gap-1 text-sm text-[#444746] dark:text-muted-foreground whitespace-nowrap">
-                              {formatPhone(driver.phone)}
-                              <button
-                                onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(driver.phone); }}
-                                className="text-muted-foreground hover:text-foreground transition-colors"
-                                title="Copiar teléfono"
-                              >
-                                <Copy className="h-3 w-3" />
-                              </button>
-                              {driver.email && <span className="hidden xl:inline">· {driver.email}</span>}
                             </span>
                             <ExpiryIndicators items={[
                               { date: driver.license_expiry, label: 'License' },
