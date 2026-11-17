@@ -218,7 +218,7 @@ async function syncThreadLabels(supabase: any, load: any, accounts: GmailAccount
   try {
     if (await isDispatchService(supabase, load)) return { skipped: "carga de Dispatch Service" };
     const { data: thread } = await supabase
-      .from("load_email_threads").select("account, thread_id, status, labels").eq("load_id", load.id).maybeSingle();
+      .from("load_email_threads").select("account, thread_id, status, labels, extra_threads").eq("load_id", load.id).maybeSingle();
     if (!thread || thread.status !== "linked" || !thread.thread_id) return { skipped: "sin hilo enlazado" };
     const account = accounts.find((a) => a.user === String(thread.account).toLowerCase());
     if (!account) return { skipped: "cuenta no configurada" };
@@ -240,6 +240,16 @@ async function syncThreadLabels(supabase: any, load: any, accounts: GmailAccount
     }
 
     await setThreadLabels(account, String(thread.thread_id), add, [...new Set(remove)]);
+    // Hilos adicionales enlazados a mano: mismas etiquetas
+    for (const extra of (thread.extra_threads as any[]) ?? []) {
+      const acc = accounts.find((a) => a.user === String(extra.account).toLowerCase());
+      if (!acc || !extra.thread_id) continue;
+      try {
+        await setThreadLabels(acc, String(extra.thread_id), add, [...new Set(remove)]);
+      } catch (e) {
+        console.error("syncThreadLabels extra failed:", errMsg(e));
+      }
+    }
     await supabase.from("load_email_threads").update({ labels: add }).eq("load_id", load.id);
     return { labels: add };
   } catch (e) {
@@ -585,19 +595,48 @@ async function processRow(supabase: any, row: any): Promise<Record<string, unkno
       attachments: attachments.map((a) => ({ filename: a.filename, content: a.content, contentType: a.contentType })),
     });
 
+    // Hilos adicionales de la carga (enlazados a mano): la misma respuesta en cada uno
+    const extraSent: string[] = [];
+    const extraErrors: string[] = [];
+    for (const extra of (thread.extra_threads as any[]) ?? []) {
+      const acc = accounts.find((a) => a.user === String(extra.account).toLowerCase());
+      if (!acc || !extra.thread_id) { extraErrors.push(`${extra.subject ?? extra.thread_id}: cuenta no configurada`); continue; }
+      try {
+        await step(`respondiendo en el hilo adicional: ${extra.subject ?? extra.thread_id}`);
+        const t2 = await replyTarget(acc, String(extra.thread_id), accounts.map((a) => a.user));
+        await sendMail(acc, {
+          to: t2.to,
+          cc: t2.cc,
+          subject: t2.subject,
+          inReplyTo: t2.inReplyTo || undefined,
+          references: t2.references || undefined,
+          text: body,
+          html: `<div style="font-family:Arial,sans-serif;font-size:14px">${escapeHtml(body).replace(/\n/g, "<br>")}</div>`,
+          attachments: attachments.map((a) => ({ filename: a.filename, content: a.content, contentType: a.contentType })),
+        });
+        extraSent.push([...t2.to, ...t2.cc.map((c) => `cc: ${c}`)].join(", "));
+      } catch (e) {
+        extraErrors.push(`${extra.subject ?? extra.thread_id}: ${errMsg(e).slice(0, 150)}`);
+      }
+    }
+
     await syncThreadLabels(supabase, load, accounts);
     await notifyStopEmail(
       supabase, load, row, true,
-      `${attachments.length} archivo(s) adjunto(s).`,
+      `${attachments.length} archivo(s) adjunto(s).${extraSent.length ? ` También en ${extraSent.length} hilo(s) adicional(es).` : ""}`,
       driver?.name,
     );
+    const problems = [
+      skippedNames.length > 0 ? `No se adjuntaron (tamaño o error): ${skippedNames.join(", ")}` : "",
+      extraErrors.length > 0 ? `Hilos adicionales con error: ${extraErrors.join(" | ")}` : "",
+    ].filter(Boolean).join(" · ");
     return await finish({
       status: "sent",
       sent_at: new Date().toISOString(),
       body,
-      recipients: [...target.to, ...target.cc.map((c) => `cc: ${c}`)].join(", "),
+      recipients: [[...target.to, ...target.cc.map((c) => `cc: ${c}`)].join(", "), ...extraSent].join(" | "),
       attachments: attachments.map((a) => a.filename).join(", ") || null,
-      error: skippedNames.length > 0 ? `No se adjuntaron (tamaño o error): ${skippedNames.join(", ")}` : null,
+      error: problems || null,
     });
   } catch (e) {
     const attempts = attemptsNow + 1;
@@ -876,6 +915,12 @@ async function handleUserAction(req: Request, supabase: any, body: any) {
       searched_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }, { onConflict: "load_id" });
+    // Si el hilo nuevo estaba como adicional, ya no lo es (es el principal)
+    const { data: afterLink } = await supabase.from("load_email_threads").select("extra_threads").eq("load_id", load.id).maybeSingle();
+    const extrasLeft = ((afterLink?.extra_threads as any[]) ?? []).filter((x) => String(x.thread_id) !== String(body.thread_id));
+    if (extrasLeft.length !== ((afterLink?.extra_threads as any[]) ?? []).length) {
+      await supabase.from("load_email_threads").update({ extra_threads: extrasLeft }).eq("load_id", load.id);
+    }
     const { data: full } = await supabase
       .from("loads").select("id, tenant_id, reference_number, status, driver_id, has_detention, service_type").eq("id", load.id).maybeSingle();
     const labels = full ? await syncThreadLabels(supabase, full, accounts) : null;
@@ -885,6 +930,44 @@ async function handleUserAction(req: Request, supabase: any, body: any) {
       .update({ send_after: new Date().toISOString() })
       .eq("load_id", load.id).eq("status", "waiting_thread");
     return json({ linked: true, labels, previous: previousCleanup, sent: await processDue(supabase, load.id) });
+  }
+
+  // Hilo adicional (además del principal): los avisos se responden también ahí
+  if (action === "add_thread") {
+    const account = accounts.find((a) => a.user === String(body.account ?? "").toLowerCase());
+    if (!account || !body.thread_id) return json({ error: "Hilo inválido" }, 400);
+    const { data: cur } = await supabase.from("load_email_threads").select("*").eq("load_id", load.id).maybeSingle();
+    if (!cur || cur.status !== "linked") return json({ error: "Primero enlaza el hilo principal" }, 400);
+    const tid = String(body.thread_id);
+    if (String(cur.thread_id) === tid) return json({ error: "Ese ya es el hilo principal" }, 400);
+    const extras = ((cur.extra_threads as any[]) ?? []).filter((x) => String(x.thread_id) !== tid);
+    extras.push({ account: account.user, thread_id: tid, subject: body.subject ?? null, added_at: new Date().toISOString() });
+    await supabase.from("load_email_threads").update({ extra_threads: extras, updated_at: new Date().toISOString() }).eq("load_id", load.id);
+    // Que el hilo nuevo reciba las etiquetas de la carga
+    await supabase.from("load_email_threads").update({ labels: [] }).eq("load_id", load.id);
+    const { data: full } = await supabase
+      .from("loads").select("id, tenant_id, reference_number, status, driver_id, has_detention, service_type").eq("id", load.id).maybeSingle();
+    const labels = full ? await syncThreadLabels(supabase, full, accounts) : null;
+    return json({ added: true, extra_threads: extras, labels });
+  }
+
+  if (action === "remove_thread") {
+    const tid = String(body.thread_id ?? "");
+    const { data: cur } = await supabase.from("load_email_threads").select("*").eq("load_id", load.id).maybeSingle();
+    if (!cur) return json({ error: "La carga no tiene hilos" }, 400);
+    const all = (cur.extra_threads as any[]) ?? [];
+    const gone = all.find((x) => String(x.thread_id) === tid);
+    const extras = all.filter((x) => String(x.thread_id) !== tid);
+    await supabase.from("load_email_threads").update({ extra_threads: extras, updated_at: new Date().toISOString() }).eq("load_id", load.id);
+    // Quitarle al hilo las etiquetas que le puso el sistema
+    let cleanup: unknown = null;
+    const acc = gone ? accounts.find((a) => a.user === String(gone.account).toLowerCase()) : null;
+    const sysLabels = ((cur.labels as string[]) ?? []).filter(Boolean);
+    if (acc && sysLabels.length > 0) {
+      try { await setThreadLabels(acc, tid, [], sysLabels); cleanup = { removed: sysLabels }; }
+      catch (e) { cleanup = { error: errMsg(e) }; }
+    }
+    return json({ removed: true, extra_threads: extras, cleanup });
   }
 
   // Botón "Pickup/Delivery Completed" del driver y "Enviar al broker" del TMS

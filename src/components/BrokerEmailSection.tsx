@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Mail, Search, Loader2, CheckCircle2, AlertTriangle, RotateCw, Send, CircleDashed } from 'lucide-react';
+import { Mail, Search, Loader2, CheckCircle2, AlertTriangle, RotateCw, Send, CircleDashed, Plus, X, Link2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
@@ -22,6 +22,8 @@ interface ThreadLink {
   thread_id: string | null;
   subject: string | null;
   candidates: Candidate[];
+  /** Hilos adicionales enlazados a mano: los avisos se responden también ahí */
+  extra_threads?: { account: string; thread_id: string; subject: string | null }[];
 }
 
 async function callBrokerEmail(body: Record<string, unknown>) {
@@ -35,6 +37,8 @@ export function BrokerEmailSection({ loadId }: { loadId: string }) {
   const [link, setLink] = useState<ThreadLink | null>(null);
   const [emails, setEmails] = useState<BrokerEmailRow[]>([]);
   const [picking, setPicking] = useState(false);
+  // 'main' = elegir/cambiar el hilo principal · 'extra' = agregar otro hilo
+  const [pickMode, setPickMode] = useState<'main' | 'extra'>('main');
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Candidate[] | null>(null);
   const [searchInfo, setSearchInfo] = useState<{ accounts: string[]; errors: string[] } | null>(null);
@@ -75,6 +79,7 @@ export function BrokerEmailSection({ loadId }: { loadId: string }) {
   };
 
   const choose = async (c: Candidate) => {
+    if (pickMode === 'extra') return addExtra(c);
     setBusy(c.threadId);
     try {
       const data = await callBrokerEmail({ action: 'link', load_id: loadId, account: c.account, thread_id: c.threadId, subject: c.subject });
@@ -85,6 +90,35 @@ export function BrokerEmailSection({ loadId }: { loadId: string }) {
       await load();
     } catch (e: any) {
       toast.error(`No se pudo enlazar: ${e.message}`);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const addExtra = async (c: Candidate) => {
+    setBusy(c.threadId);
+    try {
+      await callBrokerEmail({ action: 'add_thread', load_id: loadId, account: c.account, thread_id: c.threadId, subject: c.subject });
+      toast.success('Hilo agregado. Los próximos avisos también se responden ahí.');
+      setPicking(false);
+      setResults(null);
+      await load();
+    } catch (e: any) {
+      toast.error(`No se pudo agregar: ${e.message}`);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const removeExtra = async (threadId: string, subject: string | null) => {
+    if (!window.confirm(`¿Quitar el hilo "${subject || '(sin asunto)'}" de esta carga?`)) return;
+    setBusy(threadId);
+    try {
+      await callBrokerEmail({ action: 'remove_thread', load_id: loadId, thread_id: threadId });
+      toast.success('Hilo quitado');
+      await load();
+    } catch (e: any) {
+      toast.error(e.message);
     } finally {
       setBusy(null);
     }
@@ -105,10 +139,12 @@ export function BrokerEmailSection({ loadId }: { loadId: string }) {
     }
   };
 
-  const openPicker = () => {
+  const openPicker = (mode: 'main' | 'extra' = 'main') => {
+    setPickMode(mode);
     setPicking(true);
-    setResults(link?.status === 'ambiguous' ? link.candidates : null);
+    setResults(mode === 'main' && link?.status === 'ambiguous' ? link.candidates : null);
   };
+  const extras = link?.extra_threads ?? [];
 
   const candidates = picking ? results : null;
 
@@ -117,9 +153,16 @@ export function BrokerEmailSection({ loadId }: { loadId: string }) {
       <div className="flex items-center justify-between gap-2">
         <h5 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground flex items-center gap-1.5"><Mail className="h-4 w-4 text-[#0b57d0] dark:text-blue-300" /> Email al broker</h5>
         {!picking && (
-          <Button variant="outline" size="sm" className="h-7 text-xs" onClick={openPicker}>
-            {link?.status === 'linked' ? 'Cambiar hilo' : 'Elegir hilo'}
-          </Button>
+          <div className="flex items-center gap-1.5">
+            {link?.status === 'linked' && (
+              <Button variant="outline" size="sm" className="h-7 rounded-full px-3 text-xs gap-1 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium" onClick={() => openPicker('extra')} title="Los avisos al broker también se responden en este hilo">
+                <Plus className="h-3.5 w-3.5" /> Agregar hilo
+              </Button>
+            )}
+            <Button variant="outline" size="sm" className="h-7 rounded-full px-3 text-xs shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium" onClick={() => openPicker('main')}>
+              {link?.status === 'linked' ? 'Cambiar hilo' : 'Elegir hilo'}
+            </Button>
+          </div>
         )}
       </div>
 
@@ -139,7 +182,30 @@ export function BrokerEmailSection({ loadId }: { loadId: string }) {
               </p>
             </div>
           </div>
-        ) : link?.status === 'ambiguous' ? (
+        ) : null
+      )}
+
+      {/* Hilos adicionales (agregados a mano) */}
+      {!picking && !linkError && link?.status === 'linked' && extras.length > 0 && (
+        <div className="space-y-1">
+          {extras.map(x => (
+            <div key={x.thread_id} className="flex items-center gap-1.5 text-xs bg-[#e8f0fe] dark:bg-blue-950/40 rounded-md px-2 py-1.5">
+              <Link2 className="h-3.5 w-3.5 text-[#0b57d0] dark:text-blue-300 flex-shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="font-medium text-[#041e49] dark:text-blue-100 truncate">Hilo adicional: {x.subject || '(sin asunto)'}</p>
+                <p className="text-[#0b57d0] dark:text-blue-300 truncate">Agregado a mano · {x.account}</p>
+              </div>
+              <button type="button" title="Quitar este hilo" disabled={busy !== null} onClick={() => removeExtra(x.thread_id, x.subject)}
+                className="h-6 w-6 shrink-0 rounded-full flex items-center justify-center text-[#b3261e] hover:bg-[#fce8e6] disabled:opacity-50">
+                {busy === x.thread_id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <X className="h-3.5 w-3.5" />}
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {!picking && (
+        linkError || link?.status === 'linked' ? null : link?.status === 'ambiguous' ? (
           <p className="flex items-center gap-1.5 text-xs text-amber-700">
             <AlertTriangle className="h-3.5 w-3.5" /> Hay {link.candidates.length} hilos con este número de carga. Elige el correcto.
           </p>
@@ -157,6 +223,9 @@ export function BrokerEmailSection({ loadId }: { loadId: string }) {
       {/* Buscar y elegir hilo */}
       {picking && (
         <div className="space-y-2">
+          <p className="text-xs font-medium text-[#444746] dark:text-muted-foreground">
+            {pickMode === 'extra' ? 'Agregar otro hilo: los avisos al broker también se responderán ahí' : 'Elegir el hilo principal de la carga'}
+          </p>
           <form
             className="flex gap-2"
             onSubmit={e => { e.preventDefault(); void search(query); }}
