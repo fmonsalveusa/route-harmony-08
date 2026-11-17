@@ -92,7 +92,7 @@ export function RcSignedSection({ loadId, hasDriver }: { loadId: string; hasDriv
   const placed = (rc?.placement?.placed ?? []).map(p => FIELD_LABELS[p.field] ?? p.field);
 
   return (
-    <div className="px-4 py-3 rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border text-sm space-y-2">
+    <div className="w-full min-w-0 overflow-hidden px-4 py-3 rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border text-sm space-y-2">
       <div className="flex items-center justify-between gap-2">
         <h5 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground flex items-center gap-1.5">
           <FileSignature className="h-3.5 w-3.5 text-primary" /> Rate Confirmation Firmado

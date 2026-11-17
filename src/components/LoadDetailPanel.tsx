@@ -1672,6 +1672,9 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
             driver={driver}
             dispatcher={dispatcher}
           />
+
+          {/* RC firmado: debajo de Rentabilidad, mismo ancho */}
+          {!isDispatchService && <RcSignedSection loadId={load.id} hasDriver={!!load.driver_id} />}
         </div>
 
         {/* Columna 2: ruta y paradas, email al broker y RC firmado */}
@@ -1790,9 +1793,8 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
             </div>
           )}
         </div>
-        {/* Debajo del mapa, mismo ancho: Email Al Broker y RC firmado */}
+        {/* Debajo del mapa, mismo ancho: Email Al Broker */}
         {!isDispatchService && <BrokerEmailSection loadId={load.id} />}
-        {!isDispatchService && <RcSignedSection loadId={load.id} hasDriver={!!load.driver_id} />}
         </div>
       </div>
     </div>
