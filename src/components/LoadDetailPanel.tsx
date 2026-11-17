@@ -1752,11 +1752,6 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
             )}
           </div>
 
-          {!isDispatchService && (
-            <>
-              <BrokerEmailSection loadId={load.id} />
-            </>
-          )}
           <PdfViewerDialog url={pdfViewer?.url ?? null} title={pdfViewer?.title ?? ''} onClose={() => setPdfViewer(null)} />
 
           <BolFormDialog
@@ -1796,6 +1791,7 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
           )}
         </div>
         {/* RC firmado: debajo del mapa */}
+        {!isDispatchService && <BrokerEmailSection loadId={load.id} />}
         {!isDispatchService && <RcSignedSection loadId={load.id} hasDriver={!!load.driver_id} />}
         </div>
       </div>

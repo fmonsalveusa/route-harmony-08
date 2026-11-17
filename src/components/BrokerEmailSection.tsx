@@ -151,16 +151,16 @@ export function BrokerEmailSection({ loadId }: { loadId: string }) {
   return (
     <div className="px-4 py-3 rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border text-sm space-y-2">
       <div className="flex items-center justify-between gap-2">
-        <h5 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground flex items-center gap-1.5"><Mail className="h-4 w-4 text-[#0b57d0] dark:text-blue-300" /> Email al broker</h5>
+        <h5 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground flex items-center gap-1.5"><Mail className="h-4 w-4 text-[#0b57d0] dark:text-blue-300" /> Email Al Broker</h5>
         {!picking && (
           <div className="flex items-center gap-1.5">
             {link?.status === 'linked' && (
               <Button variant="outline" size="sm" className="h-7 rounded-full px-3 text-xs gap-1 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium" onClick={() => openPicker('extra')} title="Los avisos al broker también se responden en este hilo">
-                <Plus className="h-3.5 w-3.5" /> Agregar hilo
+                <Plus className="h-3.5 w-3.5" /> Agregar Hilo
               </Button>
             )}
             <Button variant="outline" size="sm" className="h-7 rounded-full px-3 text-xs shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium" onClick={() => openPicker('main')}>
-              {link?.status === 'linked' ? 'Cambiar hilo' : 'Elegir hilo'}
+              {link?.status === 'linked' ? 'Cambiar Hilo' : 'Elegir Hilo'}
             </Button>
           </div>
         )}
@@ -176,9 +176,9 @@ export function BrokerEmailSection({ loadId }: { loadId: string }) {
           <div className="flex items-start gap-1.5 text-xs bg-green-50 border border-green-200 rounded-md px-2 py-1.5">
             <CheckCircle2 className="h-3.5 w-3.5 text-green-600 mt-0.5 flex-shrink-0" />
             <div className="min-w-0">
-              <p className="font-medium text-green-900 truncate">Hilo asignado: {link.subject || '(sin asunto)'}</p>
+              <p className="font-medium text-green-900 truncate">Hilo Asignado: {link.subject || '(sin asunto)'}</p>
               <p className="text-green-700">
-                {link.link_mode === 'auto' ? 'Enlazado automáticamente' : 'Enlazado a mano'} · {link.account}
+                {link.link_mode === 'auto' ? 'Enlazado Automáticamente' : 'Enlazado A Mano'} · {link.account}
               </p>
             </div>
           </div>
@@ -192,8 +192,8 @@ export function BrokerEmailSection({ loadId }: { loadId: string }) {
             <div key={x.thread_id} className="flex items-center gap-1.5 text-xs bg-[#e8f0fe] dark:bg-blue-950/40 rounded-md px-2 py-1.5">
               <Link2 className="h-3.5 w-3.5 text-[#0b57d0] dark:text-blue-300 flex-shrink-0" />
               <div className="min-w-0 flex-1">
-                <p className="font-medium text-[#041e49] dark:text-blue-100 truncate">Hilo adicional: {x.subject || '(sin asunto)'}</p>
-                <p className="text-[#0b57d0] dark:text-blue-300 truncate">Agregado a mano · {x.account}</p>
+                <p className="font-medium text-[#041e49] dark:text-blue-100 truncate">Hilo Adicional: {x.subject || '(sin asunto)'}</p>
+                <p className="text-[#0b57d0] dark:text-blue-300 truncate">Agregado A Mano · {x.account}</p>
               </div>
               <button type="button" title="Quitar este hilo" disabled={busy !== null} onClick={() => removeExtra(x.thread_id, x.subject)}
                 className="h-6 w-6 shrink-0 rounded-full flex items-center justify-center text-[#b3261e] hover:bg-[#fce8e6] disabled:opacity-50">
@@ -281,7 +281,7 @@ export function BrokerEmailSection({ loadId }: { loadId: string }) {
               row={r}
               action={['pending', 'waiting_thread'].includes(r.status) ? (
                 <Button variant="ghost" size="sm" className="h-6 px-2 text-[11px] gap-1" disabled={busy !== null} onClick={() => run('send_now', r.id)}>
-                  {busy === r.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />} Enviar ahora
+                  {busy === r.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />} Enviar Ahora
                 </Button>
               ) : ['failed', 'skipped'].includes(r.status) ? (
                 <Button variant="ghost" size="sm" className="h-6 px-2 text-[11px] gap-1" disabled={busy !== null} onClick={() => run('retry', r.id)}>

@@ -95,10 +95,10 @@ export function RcSignedSection({ loadId, hasDriver }: { loadId: string; hasDriv
     <div className="px-4 py-3 rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border text-sm space-y-2">
       <div className="flex items-center justify-between gap-2">
         <h5 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground flex items-center gap-1.5">
-          <FileSignature className="h-3.5 w-3.5 text-primary" /> Rate confirmation firmado
+          <FileSignature className="h-3.5 w-3.5 text-primary" /> Rate Confirmation Firmado
         </h5>
         {rc?.status === 'sent' && <span className="text-xs text-green-600 flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5" /> Enviado</span>}
-        {rc?.status === 'draft' && <span className="text-xs text-amber-600">Pendiente de revisar</span>}
+        {rc?.status === 'draft' && <span className="text-xs text-amber-600">Pendiente De Revisar</span>}
       </div>
 
       {!rc && <p className="text-xs text-muted-foreground">
@@ -131,12 +131,12 @@ export function RcSignedSection({ loadId, hasDriver }: { loadId: string; hasDriv
         {hasDriver && (
           <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={prepare} disabled={busy !== null}>
             {busy === 'prepare' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RotateCw className="h-3.5 w-3.5" />}
-            {rc ? 'Volver a preparar' : 'Preparar'}
+            {rc ? 'Volver A Preparar' : 'Preparar'}
           </Button>
         )}
         {rc?.status === 'draft' && rc.file_path && (
           <Button size="sm" className="h-7 gap-1 text-xs" onClick={send} disabled={busy !== null}>
-            {busy === 'send' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />} Enviar al broker
+            {busy === 'send' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />} Enviar Al Broker
           </Button>
         )}
       </div>
@@ -201,7 +201,7 @@ export function RcReviewDialog({ loadId, reference, preparing, onClose }: {
       <DialogContent className="max-w-4xl w-[95vw] h-[92vh] flex flex-col gap-3">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <FileSignature className="h-5 w-5 text-primary" /> Rate confirmation firmado{reference ? ` · #${reference}` : ''}
+            <FileSignature className="h-5 w-5 text-primary" /> Rate Confirmation Firmado{reference ? ` · #${reference}` : ''}
           </DialogTitle>
         </DialogHeader>
 
