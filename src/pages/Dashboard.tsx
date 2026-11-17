@@ -119,7 +119,7 @@ const AdminDashboard = () => {
     : new Set(drivers.filter(d => d.service_type === serviceTypeFilter).map(d => d.id));
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 dashboard-charts">
       <div>
         <h1 className="page-header flex items-center gap-3"><span className="page-icon"><LayoutDashboard className="h-5 w-5" /></span>Dashboard</h1>
         <p className="page-description pl-[52px]">General overview of the transportation system</p>
@@ -281,7 +281,7 @@ const DispatcherDashboard = () => {
   const driverOptions = drivers.map(d => ({ id: d.id, name: d.name }));
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 dashboard-charts">
       <div>
         <h1 className="page-header flex items-center gap-3"><span className="page-icon"><LayoutDashboard className="h-5 w-5" /></span>My Dashboard</h1>
         <p className="page-description pl-[52px]">Overview of your loads, drivers, and commissions</p>
