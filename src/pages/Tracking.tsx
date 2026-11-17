@@ -1131,7 +1131,7 @@ const Tracking = () => {
       </div>
 
       {/* Main layout: Map + Side Panel */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-1 lg:grid-cols-5 lg:grid-rows-[auto_1fr] gap-3">
         {/* Side Panel - Next Plan */}
         {/* Mismo formato que la tarjeta Drivers Load Timeline: fondo blanco, borde y título text-base */}
         <Card className="card-3d flex flex-col overflow-hidden h-[1040px] lg:col-span-2 lg:row-span-2 lg:col-start-1 rounded-3xl border-[#e3e3e3] dark:border-border shadow-none bg-white dark:bg-card">
@@ -1608,7 +1608,7 @@ const Tracking = () => {
         </Card>
 
         {/* Drivers Load Timeline — debajo del mapa, misma columna */}
-        <div className="card-3d-strong-wrap lg:col-span-3 lg:col-start-3">
+        <div className="card-3d-strong-wrap lg:col-span-3 lg:col-start-3 self-start">
           <DriversTimelineCard
             loads={scopedAllLoads}
             drivers={scopedDriverIds ? drivers.filter(d => scopedDriverIds.has(d.id)) : drivers}
