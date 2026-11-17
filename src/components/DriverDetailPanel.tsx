@@ -4,10 +4,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useState, useEffect, useRef, Fragment } from 'react';
 import { ServiceTypeBadge } from '@/components/ServiceTypeBadge';
 import { DbDriver } from '@/hooks/useDrivers';
-import { FileText, ExternalLink, Loader2, Download, Plus } from 'lucide-react';
+import { Loader2, Download, Plus, Mail, Phone, Cake, CalendarDays, Percent, MapPin, UserRound, PhoneCall, Landmark, Wallet, Hash, IdCard, HeartPulse, Truck as TruckIcon, Headset } from 'lucide-react';
 import { formatDate } from '@/lib/dateUtils';
 import { formatPhone } from '@/lib/phoneUtils';
-import { ExpiryBadge } from '@/components/ExpiryBadge';
+import { Tile, ExpiryRing, DETAIL_CARD, DETAIL_TITLE } from '@/components/detail/DetailTiles';
+import { cn } from '@/lib/utils';
 import { generateOnboardingSummaryPdf } from '@/lib/onboardingDocPdf';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,14 +18,13 @@ import { format } from 'date-fns';
 import { DocCardGrid } from '@/components/DocCardGrid';
 import { getTenantId } from '@/hooks/useTenantId';
 
-function Info({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <p className="text-xs text-[#444746] dark:text-muted-foreground">{label}</p>
-      <p className="font-medium text-sm text-[#1f1f1f] dark:text-foreground [overflow-wrap:anywhere]">{children}</p>
-    </div>
-  );
-}
+const DRIVER_STATUS: Record<string, { label: string; cls: string }> = {
+  available: { label: 'AVAILABLE', cls: 'bg-[#188038]' },
+  active: { label: 'ACTIVE', cls: 'bg-[#188038]' },
+  on_load: { label: 'ON LOAD', cls: 'bg-[#0b57d0]' },
+  pending: { label: 'PENDING', cls: 'bg-[#e37400]' },
+  inactive: { label: 'INACTIVE', cls: 'bg-[#d93025]' },
+};
 
 const docFields = [
   { key: 'license_photo_url', label: 'License Photo' },
@@ -238,238 +238,241 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
     }
   };
 
+  const d = driver as any;
+  const status = DRIVER_STATUS[driver.status] ?? { label: String(driver.status ?? '').toUpperCase(), cls: 'bg-[#5f6368]' };
+  const mask = (v: any) => (v ? (canSeeTax ? String(v) : `****${String(v).slice(-4)}`) : '—');
+  const docs = [
+    ...docFields.map(doc => {
+      const isTermination = doc.key === 'termination_letter_url';
+      const url = isTermination && termLetterDeleted ? null : d[doc.key];
+      return {
+        key: doc.key,
+        label: doc.label,
+        url,
+        ...(isTermination && url ? { onDelete: handleDeleteTerminationLetter } : {}),
+      };
+    }),
+    ...(d.leasing_agreement_url ? [{ key: 'leasing_agreement_url', label: 'Leasing Agreement', url: d.leasing_agreement_url }] : []),
+    ...(d.leasing_agreement_venco_url ? [{ key: 'leasing_agreement_venco_url', label: 'Leasing (VENCO)', url: d.leasing_agreement_venco_url }] : []),
+    ...(d.leasing_agreement_58_url ? [{ key: 'leasing_agreement_58_url', label: 'Leasing (58 Log)', url: d.leasing_agreement_58_url }] : []),
+    ...leasingDocs.map(doc => ({
+      key: doc.id,
+      label: `Leasing (${doc.company_name})`,
+      url: doc.file_url,
+      onDelete: async () => {
+        // Borrar archivo del storage (si existe) y luego la fila.
+        if (doc.file_url && !doc.file_url.startsWith('http')) {
+          await supabase.storage.from('driver-documents').remove([doc.file_url]);
+        }
+        const { data: deleted, error } = await supabase
+          .from('driver_leasing_agreements' as any)
+          .delete()
+          .eq('id', doc.id)
+          .select();
+        if (error) {
+          toast({ title: 'Error borrando leasing', description: error.message, variant: 'destructive' });
+          return;
+        }
+        if (!deleted || (deleted as any[]).length === 0) {
+          toast({
+            title: 'No se pudo borrar',
+            description: 'RLS bloqueo la operacion. Revisar politicas de driver_leasing_agreements.',
+            variant: 'destructive',
+          });
+          return;
+        }
+        toast({ title: `Leasing (${doc.company_name}) borrado` });
+        refreshLeasingDocs();
+      },
+    })),
+  ];
+  const docsLoaded = docs.filter(x => !!x.url).length;
+  const address = [d.address, d.city, [driver.state, d.zip].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+  const PILL_BTN = 'h-8 rounded-full px-3 text-xs gap-1.5 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium';
+
   return (
-    <div className="px-4 py-3 bg-[#f8fafd] dark:bg-background/60 border-t border-[#e3e3e3] dark:border-border animate-fade-in">
-      {/* Document Expiry Alerts — arriba, span completo */}
-      {(driver.license_expiry || driver.medical_card_expiry) && (
-        <div className="flex flex-wrap gap-2 mb-3">
-          <ExpiryBadge date={driver.license_expiry} label="Driver License" />
-          <ExpiryBadge date={driver.medical_card_expiry} label="Medical Card" />
+    <div className="px-4 py-3 bg-[#f8fafd] dark:bg-background/60 border-t border-[#e3e3e3] dark:border-border animate-fade-in space-y-3">
+      {/* ═══ Encabezado del driver ═══ */}
+      <div className="rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-3">
+        <span className="h-12 w-12 shrink-0 rounded-full bg-[#0b57d0] text-white flex items-center justify-center text-xl font-medium">
+          {(driver.name || '?').trim().charAt(0).toUpperCase()}
+        </span>
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-[26px] leading-8 font-normal text-[#1f1f1f] dark:text-foreground">{driver.name}</h2>
+            <ServiceTypeBadge serviceType={driver.service_type} />
+            <span className={cn('rounded-md px-2.5 py-0.5 text-[11px] font-bold tracking-wide text-white', status.cls)}>{status.label}</span>
+          </div>
+          <p className="text-sm text-[#444746] dark:text-muted-foreground">
+            {[formatPhone(driver.phone), driver.email].filter(Boolean).join(' · ')}
+          </p>
         </div>
-      )}
-
-      {/* Grid de 3 columnas con separadores verticales */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 items-start">
-
-        {/* ═══ COLUMNA 1 — Informacion General ═══ */}
-        <div className="rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border p-4 space-y-3">
-          <h3 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground">
-            General Information
-          </h3>
-
-          <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-            <Info label="Email">{driver.email}</Info>
-            <Info label="Phone">{formatPhone(driver.phone)}</Info>
-            <Info label="Birthday">{formatDate((driver as any).birthday) || '—'}</Info>
-            <Info label="Hire Date">{formatDate(driver.hire_date)}</Info>
-            <Info label="Service Type"><ServiceTypeBadge serviceType={driver.service_type} /></Info>
-          </div>
-
-          <div className="grid grid-cols-2 gap-x-4 gap-y-3 border-t border-[#f0f0f0] dark:border-border pt-3">
-            <Info label="Address">{(driver as any).address || '—'}</Info>
-            <Info label="City">{(driver as any).city || '—'}</Info>
-            <Info label="State">{driver.state || '—'}</Info>
-            <Info label="Zip">{(driver as any).zip || '—'}</Info>
-          </div>
-
-          <div className="grid grid-cols-2 gap-x-4 gap-y-3 border-t border-[#f0f0f0] dark:border-border pt-3">
-            <Info label="Emergency Contact">{(driver as any).emergency_contact_name || '—'}</Info>
-            <Info label="Emergency Phone">{formatPhone((driver as any).emergency_phone)}</Info>
-          </div>
-
-          <div className="grid grid-cols-2 gap-x-4 gap-y-3 border-t border-[#f0f0f0] dark:border-border pt-3">
-            <Info label="Dispatcher">{dispatcherName || 'Unassigned'}</Info>
-            <Info label="Truck">{truckLabel || 'Unassigned'}</Info>
-          </div>
-
-          <EldInfo status={eldStatus[driver.id]} />
-        </div>
-
-        {/* ═══ COLUMNA 2 — Pagos ═══ */}
-        <div className="rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border p-4 space-y-3">
-          <h3 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground">
-            Payments
-          </h3>
-
-          <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-            <Info label="% Driver Pay">{driver.pay_percentage}%</Info>
-            {driver.service_type === 'dispatch_service' && (
-              <Info label="% Dispatch Service">{(driver as any).dispatch_service_percentage ?? 0}%</Info>
-            )}
-          </div>
-
-          {/* Investors */}
-          <div className="pt-2">
-            <h3 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground mb-2">Investors</h3>
-            {investorsLoading ? (
-              <p className="text-sm text-muted-foreground">Loading...</p>
-            ) : investors.length === 0 ? (
-              <p className="text-sm text-muted-foreground italic">Sin investors asignados</p>
-            ) : (
-              <div className="space-y-3">
-                {investors.map((inv, i) => (
-                  <div key={i} className="px-3 py-2 rounded-2xl bg-[#f0f4f9] dark:bg-muted/60 space-y-1">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-semibold text-foreground">
-                        {inv.investor_name || '—'}
-                      </p>
-                      <span className="text-xs font-medium text-[#041e49] bg-[#d3e3fd] dark:bg-blue-900/40 dark:text-blue-200 px-2 py-0.5 rounded-full">
-                        {inv.pay_percentage ?? 0}%
-                      </span>
-                    </div>
-                    {inv.investor_email && (
-                      <p className="text-xs text-muted-foreground truncate">{inv.investor_email}</p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Banking */}
-          {((driver as any).bank_name || (driver as any).routing_number || (driver as any).account_number) && (
-            <div className="pt-2">
-              <h3 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground mb-2">Banking (ACH)</h3>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-                <Info label="Account Holder">{(driver as any).account_holder_name || '—'}</Info>
-                <Info label="Bank Name">{(driver as any).bank_name || '—'}</Info>
-                <Info label="Account Type">
-                  {(driver as any).account_type
-                    ? (driver as any).account_type.charAt(0).toUpperCase() + (driver as any).account_type.slice(1)
-                    : '—'}
-                </Info>
-                <Info label="Routing Number">
-                  {(driver as any).routing_number ? (canSeeTax ? String((driver as any).routing_number) : `****${String((driver as any).routing_number).slice(-4)}`) : "—"}
-                </Info>
-                <Info label="Account Number">
-                  {(driver as any).account_number ? (canSeeTax ? String((driver as any).account_number) : `****${String((driver as any).account_number).slice(-4)}`) : "—"}
-                </Info>
-              </div>
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2.5 rounded-full bg-[#f0f4f9] dark:bg-muted/60 pl-1.5 pr-4 py-1.5">
+            <span className={cn('h-9 w-9 rounded-full flex items-center justify-center', truckLabel ? 'bg-[#d3e3fd] text-[#041e49] dark:bg-blue-900/40 dark:text-blue-200' : 'bg-[#e3e3e3] text-[#444746]')}>
+              <TruckIcon className="h-4 w-4" />
+            </span>
+            <div className="leading-tight">
+              <p className="text-[10.5px] uppercase tracking-wide text-[#444746] dark:text-muted-foreground">Truck</p>
+              <p className="text-sm text-[#1f1f1f] dark:text-foreground">{truckLabel || 'Sin asignar'}</p>
             </div>
+          </div>
+          <div className="flex items-center gap-2.5 rounded-full bg-[#f0f4f9] dark:bg-muted/60 pl-1.5 pr-4 py-1.5">
+            <span className={cn('h-9 w-9 rounded-full flex items-center justify-center text-sm font-medium text-white', dispatcherName ? 'bg-[#188038]' : 'bg-[#9aa0a6]')}>
+              {dispatcherName ? dispatcherName.trim().charAt(0).toUpperCase() : <Headset className="h-4 w-4" />}
+            </span>
+            <div className="leading-tight">
+              <p className="text-[10.5px] uppercase tracking-wide text-[#444746] dark:text-muted-foreground">Dispatcher</p>
+              <p className="text-sm text-[#1f1f1f] dark:text-foreground">{dispatcherName || 'Sin asignar'}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 items-start">
+        {/* ═══ General Information ═══ */}
+        <div className={DETAIL_CARD}>
+          <h3 className={DETAIL_TITLE}>General Information</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="sm:col-span-2"><Tile icon={Mail} tone="blue" label="Email" value={driver.email || '—'} copy={driver.email} /></div>
+            <Tile icon={Phone} tone="green" label="Phone" value={formatPhone(driver.phone) || '—'} copy={driver.phone} />
+            <Tile icon={Cake} tone="violet" label="Birthday" value={formatDate(d.birthday) || '—'} />
+            <Tile icon={CalendarDays} tone="sky" label="Hire Date" value={formatDate(driver.hire_date) || '—'} />
+            <Tile icon={Percent} tone="amber" label="Driver Pay" value={`${driver.pay_percentage ?? 0}%`} />
+            <div className="sm:col-span-2"><Tile icon={MapPin} tone="red" label="Address" value={address || '—'} copy={address || null} /></div>
+          </div>
+          <p className="text-[11px] uppercase tracking-wide text-[#444746] dark:text-muted-foreground pt-1">Emergency Contact</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <Tile icon={UserRound} tone="gray" label="Name" value={d.emergency_contact_name || '—'} />
+            <Tile icon={PhoneCall} tone="gray" label="Phone" value={formatPhone(d.emergency_phone) || '—'} copy={d.emergency_phone} />
+          </div>
+          <div className="rounded-2xl bg-[#f8fafd] dark:bg-muted/40 px-3 pb-2 [&>div]:border-t-0">
+            <EldInfo status={eldStatus[driver.id]} />
+          </div>
+        </div>
+
+        {/* ═══ Payments ═══ */}
+        <div className={DETAIL_CARD}>
+          <h3 className={DETAIL_TITLE}>Payments</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <Tile icon={Percent} tone="green" label="% Driver Pay" value={`${driver.pay_percentage ?? 0}%`} />
+            {driver.service_type === 'dispatch_service' && (
+              <Tile icon={Percent} tone="sky" label="% Dispatch Service" value={`${d.dispatch_service_percentage ?? 0}%`} />
+            )}
+          </div>
+
+          <p className="text-[11px] uppercase tracking-wide text-[#444746] dark:text-muted-foreground pt-1">Investors</p>
+          {investorsLoading ? (
+            <p className="text-sm text-muted-foreground">Loading...</p>
+          ) : investors.length === 0 ? (
+            <p className="text-sm text-[#444746] dark:text-muted-foreground">Sin investors asignados</p>
+          ) : (
+            <div className="space-y-2">
+              {investors.map((inv, i) => (
+                <div key={i} className="flex items-center gap-2.5 rounded-2xl bg-[#f8fafd] dark:bg-muted/40 px-3 py-2">
+                  <span className="h-8 w-8 shrink-0 rounded-full bg-[#e9ddff] text-[#22005d] dark:bg-violet-900/40 dark:text-violet-200 flex items-center justify-center text-sm font-medium">
+                    {(inv.investor_name || '?').trim().charAt(0).toUpperCase()}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm text-[#1f1f1f] dark:text-foreground truncate">{inv.investor_name || '—'}</p>
+                    {inv.investor_email && <p className="text-[11px] text-[#444746] dark:text-muted-foreground truncate">{inv.investor_email}</p>}
+                  </div>
+                  <span className="shrink-0 text-xs font-medium text-[#041e49] bg-[#d3e3fd] dark:bg-blue-900/40 dark:text-blue-200 px-2.5 py-0.5 rounded-full">
+                    {inv.pay_percentage ?? 0}%
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {(d.bank_name || d.routing_number || d.account_number) && (
+            <>
+              <p className="text-[11px] uppercase tracking-wide text-[#444746] dark:text-muted-foreground pt-1">Banking (ACH)</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div className="sm:col-span-2"><Tile icon={UserRound} tone="blue" label="Account Holder" value={d.account_holder_name || '—'} /></div>
+                <Tile icon={Landmark} tone="sky" label="Bank" value={d.bank_name || '—'} />
+                <Tile icon={Wallet} tone="violet" label="Account Type" value={d.account_type ? d.account_type.charAt(0).toUpperCase() + d.account_type.slice(1) : '—'} />
+                <Tile icon={Hash} tone="gray" label="Routing #" value={<span className="font-mono text-[13px]">{mask(d.routing_number)}</span>} copy={canSeeTax && d.routing_number ? String(d.routing_number) : null} />
+                <Tile icon={Hash} tone="gray" label="Account #" value={<span className="font-mono text-[13px]">{mask(d.account_number)}</span>} copy={canSeeTax && d.account_number ? String(d.account_number) : null} />
+              </div>
+            </>
           )}
 
           {/* Datos fiscales del 1099 (solo admin y accounting) */}
           {canSeeTax && <DriverTaxInfo driverId={driver.id} />}
         </div>
 
-        {/* ═══ COLUMNA 3 — Documentos ═══ */}
-        <div className="rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground">
-              Documents
-            </h3>
+        {/* ═══ Documents ═══ */}
+        <div className={DETAIL_CARD}>
+          <div className="flex items-center justify-between gap-2">
+            <h3 className={DETAIL_TITLE}>Documents</h3>
+            <span className="text-xs text-[#444746] dark:text-muted-foreground">{docsLoaded} de {docs.length} cargados</span>
+          </div>
+          <Tile icon={IdCard} tone="blue" label="Driver License #" value={<span className="font-mono text-[13px]">{driver.license || '—'}{driver.state ? ` (${driver.state})` : ''}</span>} copy={driver.license} />
+          <div className="space-y-2">
+            <ExpiryRing icon={IdCard} label="Driver License" date={driver.license_expiry} />
+            <ExpiryRing icon={HeartPulse} label="Medical Card" date={driver.medical_card_expiry} />
           </div>
 
-          {/* License & Medical Card info arriba de los documentos */}
-          <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-            <Info label="Driver License #">{driver.license}{driver.state ? ` (${driver.state})` : ''}</Info>
-            <Info label="License Expiry">{formatDate(driver.license_expiry)}</Info>
-            <Info label="Medical Card Expiry">{formatDate(driver.medical_card_expiry)}</Info>
-          </div>
-
-          <div className="flex gap-2 border-t border-[#f0f0f0] dark:border-border pt-3">
-            <Button variant="outline" size="sm" className="h-8 rounded-full px-3 text-xs gap-1.5 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium" onClick={() => setAddingLeasing(v => !v)}>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" className={PILL_BTN} onClick={() => setAddingLeasing(v => !v)}>
               <Plus className="h-3 w-3" /> Add Leasing
             </Button>
-            <Button variant="outline" size="sm" className="h-8 rounded-full px-3 text-xs gap-1.5 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium" onClick={e => { e.stopPropagation(); handleDownloadPdf(); }}>
+            <Button variant="outline" size="sm" className={PILL_BTN} onClick={e => { e.stopPropagation(); handleDownloadPdf(); }}>
               <Download className="h-3.5 w-3.5" /> Download PDF
             </Button>
           </div>
 
           {/* Formulario para agregar nuevo leasing */}
-        {addingLeasing && (
-          <div className="mb-3 p-3 rounded-2xl bg-[#e8f0fe] dark:bg-blue-950/40 space-y-2">
-            <p className="text-xs font-medium text-muted-foreground">Nuevo Leasing Agreement</p>
-            <Input
-              placeholder="Nombre de la empresa (ej: AG AR Transportation)"
-              value={newLeasingCompany}
-              onChange={e => setNewLeasingCompany(e.target.value)}
-              className="h-8 text-xs"
-            />
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                className="h-7 text-xs gap-1"
-                disabled={!newLeasingCompany.trim() || uploadingLeasing}
-                onClick={() => leasingFileRef.current?.click()}
-              >
-                {uploadingLeasing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
-                {uploadingLeasing ? 'Subiendo...' : 'Seleccionar PDF'}
-              </Button>
-              <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => { setAddingLeasing(false); setNewLeasingCompany(''); }}>
-                Cancelar
-              </Button>
+          {addingLeasing && (
+            <div className="p-3 rounded-2xl bg-[#e8f0fe] dark:bg-blue-950/40 space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">Nuevo Leasing Agreement</p>
+              <Input
+                placeholder="Nombre de la empresa (ej: AG AR Transportation)"
+                value={newLeasingCompany}
+                onChange={e => setNewLeasingCompany(e.target.value)}
+                className="h-8 text-xs"
+              />
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  className="h-7 text-xs gap-1"
+                  disabled={!newLeasingCompany.trim() || uploadingLeasing}
+                  onClick={() => leasingFileRef.current?.click()}
+                >
+                  {uploadingLeasing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
+                  {uploadingLeasing ? 'Subiendo...' : 'Seleccionar PDF'}
+                </Button>
+                <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => { setAddingLeasing(false); setNewLeasingCompany(''); }}>
+                  Cancelar
+                </Button>
+              </div>
+              <input
+                ref={leasingFileRef}
+                type="file"
+                accept=".pdf,image/*"
+                className="hidden"
+                onChange={e => { const f = e.target.files?.[0]; if (f) handleAddLeasing(f); }}
+              />
             </div>
-            <input
-              ref={leasingFileRef}
-              type="file"
-              accept=".pdf,image/*"
-              className="hidden"
-              onChange={e => { const f = e.target.files?.[0]; if (f) handleAddLeasing(f); }}
-            />
-          </div>
-        )}
-        <DocCardGrid
-          docs={[
-            ...docFields.map(doc => {
-              const isTermination = doc.key === 'termination_letter_url';
-              const url = isTermination && termLetterDeleted ? null : (driver as any)[doc.key];
-              return {
-                key: doc.key,
-                label: doc.label,
-                url,
-                ...(isTermination && url ? { onDelete: handleDeleteTerminationLetter } : {}),
-              };
-            }),
-            ...((driver as any).leasing_agreement_url ? [{ key: 'leasing_agreement_url', label: 'Leasing Agreement', url: (driver as any).leasing_agreement_url }] : []),
-            ...((driver as any).leasing_agreement_venco_url ? [{ key: 'leasing_agreement_venco_url', label: 'Leasing (VENCO)', url: (driver as any).leasing_agreement_venco_url }] : []),
-            ...((driver as any).leasing_agreement_58_url ? [{ key: 'leasing_agreement_58_url', label: 'Leasing (58 Log)', url: (driver as any).leasing_agreement_58_url }] : []),
-            ...leasingDocs.map(doc => ({
-              key: doc.id,
-              label: `Leasing (${doc.company_name})`,
-              url: doc.file_url,
-              onDelete: async () => {
-                // Borrar archivo del storage (si existe) y luego la fila.
-                if (doc.file_url && !doc.file_url.startsWith('http')) {
-                  await supabase.storage.from('driver-documents').remove([doc.file_url]);
-                }
-                const { data: deleted, error } = await supabase
-                  .from('driver_leasing_agreements' as any)
-                  .delete()
-                  .eq('id', doc.id)
-                  .select();
-                if (error) {
-                  toast({ title: 'Error borrando leasing', description: error.message, variant: 'destructive' });
-                  return;
-                }
-                if (!deleted || (deleted as any[]).length === 0) {
-                  toast({
-                    title: 'No se pudo borrar',
-                    description: 'RLS bloqueo la operacion. Revisar politicas de driver_leasing_agreements.',
-                    variant: 'destructive',
-                  });
-                  return;
-                }
-                toast({ title: `Leasing (${doc.company_name}) borrado` });
-                refreshLeasingDocs();
-              },
-            })),
-          ]}
-          getDocSignedUrl={getDocSignedUrl}
-          allowUpload={!!onUpdateDriver}
-          uploadBasePath={driver.id}
-          onUpload={onUpdateDriver ? async (key, newUrl) => {
-            await onUpdateDriver(driver.id, { [key + (key.endsWith('_url') ? '' : '_url')]: newUrl });
-          } : undefined}
-        />
+          )}
+
+          <DocCardGrid
+            variant="tiles"
+            docs={docs}
+            getDocSignedUrl={getDocSignedUrl}
+            allowUpload={!!onUpdateDriver}
+            uploadBasePath={driver.id}
+            onUpload={onUpdateDriver ? async (key, newUrl) => {
+              await onUpdateDriver(driver.id, { [key + (key.endsWith('_url') ? '' : '_url')]: newUrl });
+            } : undefined}
+          />
           {leasingLoading && (
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <Loader2 className="h-3 w-3 animate-spin" /> Loading leasing agreements...
             </div>
           )}
         </div>
-        {/* ═══ FIN COLUMNA 3 ═══ */}
-
       </div>
     </div>
   );

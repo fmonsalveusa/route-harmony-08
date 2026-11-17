@@ -270,7 +270,7 @@ const Fleet = () => {
                     {isExpanded && (
                       <tr key={`${truck.id}-detail`}>
                         <td colSpan={colSpan} className="p-0">
-                          <TruckDetailPanel truck={truck} driverName={driverName} getDocSignedUrl={getDocSignedUrl} />
+                          <TruckDetailPanel truck={truck} driverName={driverName} getDocSignedUrl={getDocSignedUrl} onUpdateTruck={updateTruck} />
                         </td>
                       </tr>
                     )}

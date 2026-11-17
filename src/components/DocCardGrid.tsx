@@ -229,6 +229,17 @@ function DocTile({
           <Eye className="h-3.5 w-3.5" /> Ver
         </button>
       )}
+      {item.onDelete && (
+        <button type="button" title="Borrar"
+          onClick={async e => {
+            e.stopPropagation();
+            if (!confirm(`Borrar ${item.label}?`)) return;
+            try { await item.onDelete!(); } catch (err) { console.error('Delete error:', err); }
+          }}
+          className="h-8 w-8 rounded-full flex items-center justify-center text-[#b3261e] hover:bg-[#fce8e6] dark:hover:bg-red-950/40">
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
+      )}
       {allowUpload && (
         <>
           <button type="button" disabled={uploading} onClick={e => { e.stopPropagation(); fileRef.current?.click(); }}
