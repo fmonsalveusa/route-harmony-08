@@ -77,16 +77,17 @@ async function readHos247(now: number, creds?: EldCreds): Promise<Clocks[]> {
 const LEVEL_DUTY: Record<string, Duty> = { dr: "driving", on: "on_duty", off: "off_duty", sb: "sleeper", pc: "personal_conveyance", ym: "yard_move" };
 const levelMin = (c: any) => (c && typeof c.total_seconds === "number" ? (c.negative ? 0 : Math.round(c.total_seconds / 60)) : 0);
 
-async function readLevelEld(now: number, token: string): Promise<Clocks[]> {
+async function readLevelEld(now: number, token: string, why?: string[]): Promise<Clocks[]> {
   const api = levelEld(token);
   const units = await levelEldUnits(token);
+  if (!units.length) why?.push("Level ELD no devuelve ninguna unidad activa (ELD apagado o sin conexión)");
   const from = new Date(now - 2 * 24 * HOUR).toISOString(), to = new Date(now + 24 * HOUR).toISOString();
   const out: Clocks[] = [];
   for (const u of units) {
-    if (!u.driver_id) continue;
+    if (!u.driver_id) { why?.push(`unidad ${u.unit_number ?? "?"} sin driver conectado en Level ELD`); continue; }
     const logs = await api.get(`/logger/support/logs-by-driver/list?page=0&size=20&total=0&driver_id=${u.driver_id}&date_from=${from}&date_to=${to}`);
     const day = (Array.isArray(logs) ? logs : []).filter((l: any) => l.date).sort((a: any, b: any) => String(b.date).localeCompare(String(a.date)))[0];
-    if (!day) continue;
+    if (!day) { why?.push(`unidad ${u.unit_number ?? "?"} sin logs en 2 días`); continue; }
     out.push({
       name: u.driver_name ?? day.driver?.name ?? "", unit: u.unit_number ?? null, vin: u.truck?.vin ?? null, source: "Level ELD",
       duty: LEVEL_DUTY[String(day.status ?? u.status ?? "").toLowerCase()] ?? null, since: null,
@@ -243,15 +244,17 @@ async function sync(supabase: any) {
     const d = ((allDrivers as any[]) || []).find((x) => x.id === c.driver_id);
     if (!d) continue;
     try {
+      const why: string[] = [];
       const list = c.provider === "hos247" ? await readHos247(now, c.creds)
-        : c.provider === "leveleld" ? await readLevelEld(now, c.creds.password) : await readRouteOne(now, c.creds);
+        : c.provider === "leveleld" ? await readLevelEld(now, c.creds.password, why) : await readRouteOne(now, c.creds);
       const truck = truckOf(d);
       const pick = list.filter((x) => normName(x.name) === normName(d.name))
         .concat(list.filter((x) => truck && ((x.unit && String(x.unit) === String(truck.unit_number)) || (x.vin && truck.vin && x.vin === truck.vin))));
       const best = (pick.length ? pick : list.length === 1 ? list : [])
         .reduce<Clocks | null>((a, b) => (!a || Date.parse(b.reportedAt ?? "0") > Date.parse(a.reportedAt ?? "0") ? b : a), null);
       await markConnection(supabase, d.id, true);
-      if (best) await save(d, best); else unmatched.push(`${d.name} (cuenta propia sin datos)`);
+      if (best) await save(d, best);
+      else unmatched.push(`${d.name} (cuenta propia sin datos${why.length ? `: ${why.join("; ")}` : list.length ? `: ${list.length} lecturas sin coincidir (${list.map((x) => `${x.name} · ${x.unit ?? "?"}`).join(", ")})` : ""})`);
     } catch (e) {
       await markConnection(supabase, d.id, false, errMsg(e));
       errors.push(`${d.name}: ${errMsg(e)}`);
