@@ -292,7 +292,7 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
 
   return (
     <div className="px-4 py-3 bg-[#f8fafd] dark:bg-background/60 border-t border-[#e3e3e3] dark:border-border animate-fade-in space-y-3">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 items-start">
         {/* ═══ General Information ═══ */}
         <div className={DETAIL_CARD}>
           <h3 className={DETAIL_TITLE}>General Information</h3>
@@ -314,127 +314,130 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
           </div>
         </div>
 
-        {/* ═══ Payments ═══ */}
-        <div className={DETAIL_CARD}>
-          <h3 className={DETAIL_TITLE}>Payments</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <Tile icon={Percent} tone="green" label="% Driver Pay" value={`${driver.pay_percentage ?? 0}%`} />
-            {driver.service_type === 'dispatch_service' && (
-              <Tile icon={Percent} tone="sky" label="% Dispatch Service" value={`${d.dispatch_service_percentage ?? 0}%`} />
+        {/* Columna derecha: Documents arriba, Payments debajo */}
+        <div className="space-y-3">
+          {/* ═══ Documents ═══ */}
+          <div className={DETAIL_CARD}>
+            <div className="flex items-center justify-between gap-2">
+              <h3 className={DETAIL_TITLE}>Documents</h3>
+              <span className="text-xs text-[#444746] dark:text-muted-foreground">{docsLoaded} de {docs.length} cargados</span>
+            </div>
+            <Tile icon={IdCard} tone="blue" label="Driver License #" value={<span className="font-mono text-[13px]">{driver.license || '—'}{driver.state ? ` (${driver.state})` : ''}</span>} copy={driver.license} />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <ExpiryRing icon={IdCard} label="Driver License" date={driver.license_expiry} />
+              <ExpiryRing icon={HeartPulse} label="Medical Card" date={driver.medical_card_expiry} />
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" className={PILL_BTN} onClick={() => setAddingLeasing(v => !v)}>
+                <Plus className="h-3 w-3" /> Add Leasing
+              </Button>
+              <Button variant="outline" size="sm" className={PILL_BTN} onClick={e => { e.stopPropagation(); handleDownloadPdf(); }}>
+                <Download className="h-3.5 w-3.5" /> Download PDF
+              </Button>
+            </div>
+
+            {/* Formulario para agregar nuevo leasing */}
+            {addingLeasing && (
+              <div className="p-3 rounded-2xl bg-[#e8f0fe] dark:bg-blue-950/40 space-y-2">
+                <p className="text-xs font-medium text-muted-foreground">Nuevo Leasing Agreement</p>
+                <Input
+                  placeholder="Nombre de la empresa (ej: AG AR Transportation)"
+                  value={newLeasingCompany}
+                  onChange={e => setNewLeasingCompany(e.target.value)}
+                  className="h-8 text-xs"
+                />
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    className="h-7 text-xs gap-1"
+                    disabled={!newLeasingCompany.trim() || uploadingLeasing}
+                    onClick={() => leasingFileRef.current?.click()}
+                  >
+                    {uploadingLeasing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
+                    {uploadingLeasing ? 'Subiendo...' : 'Seleccionar PDF'}
+                  </Button>
+                  <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => { setAddingLeasing(false); setNewLeasingCompany(''); }}>
+                    Cancelar
+                  </Button>
+                </div>
+                <input
+                  ref={leasingFileRef}
+                  type="file"
+                  accept=".pdf,image/*"
+                  className="hidden"
+                  onChange={e => { const f = e.target.files?.[0]; if (f) handleAddLeasing(f); }}
+                />
+              </div>
+            )}
+
+            <DocCardGrid
+              variant="tiles"
+              docs={docs}
+              getDocSignedUrl={getDocSignedUrl}
+              allowUpload={!!onUpdateDriver}
+              uploadBasePath={driver.id}
+              onUpload={onUpdateDriver ? async (key, newUrl) => {
+                await onUpdateDriver(driver.id, { [key + (key.endsWith('_url') ? '' : '_url')]: newUrl });
+              } : undefined}
+            />
+            {leasingLoading && (
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Loader2 className="h-3 w-3 animate-spin" /> Loading leasing agreements...
+              </div>
             )}
           </div>
 
-          <p className="text-[11px] uppercase tracking-wide text-[#444746] dark:text-muted-foreground pt-1">Investors</p>
-          {investorsLoading ? (
-            <p className="text-sm text-muted-foreground">Loading...</p>
-          ) : investors.length === 0 ? (
-            <p className="text-sm text-[#444746] dark:text-muted-foreground">Sin investors asignados</p>
-          ) : (
-            <div className="space-y-2">
-              {investors.map((inv, i) => (
-                <div key={i} className="flex items-center gap-2.5 rounded-2xl bg-[#f8fafd] dark:bg-muted/40 px-3 py-2">
-                  <span className="h-8 w-8 shrink-0 rounded-full bg-[#e9ddff] text-[#22005d] dark:bg-violet-900/40 dark:text-violet-200 flex items-center justify-center text-sm font-medium">
-                    {(inv.investor_name || '?').trim().charAt(0).toUpperCase()}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm text-[#1f1f1f] dark:text-foreground truncate">{inv.investor_name || '—'}</p>
-                    {inv.investor_email && <p className="text-[11px] text-[#444746] dark:text-muted-foreground truncate">{inv.investor_email}</p>}
+          {/* ═══ Payments ═══ */}
+          <div className={DETAIL_CARD}>
+            <h3 className={DETAIL_TITLE}>Payments</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <Tile icon={Percent} tone="green" label="% Driver Pay" value={`${driver.pay_percentage ?? 0}%`} />
+              {driver.service_type === 'dispatch_service' && (
+                <Tile icon={Percent} tone="sky" label="% Dispatch Service" value={`${d.dispatch_service_percentage ?? 0}%`} />
+              )}
+            </div>
+
+            <p className="text-[11px] uppercase tracking-wide text-[#444746] dark:text-muted-foreground pt-1">Investors</p>
+            {investorsLoading ? (
+              <p className="text-sm text-muted-foreground">Loading...</p>
+            ) : investors.length === 0 ? (
+              <p className="text-sm text-[#444746] dark:text-muted-foreground">Sin investors asignados</p>
+            ) : (
+              <div className="space-y-2">
+                {investors.map((inv, i) => (
+                  <div key={i} className="flex items-center gap-2.5 rounded-2xl bg-[#f8fafd] dark:bg-muted/40 px-3 py-2">
+                    <span className="h-8 w-8 shrink-0 rounded-full bg-[#e9ddff] text-[#22005d] dark:bg-violet-900/40 dark:text-violet-200 flex items-center justify-center text-sm font-medium">
+                      {(inv.investor_name || '?').trim().charAt(0).toUpperCase()}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm text-[#1f1f1f] dark:text-foreground truncate">{inv.investor_name || '—'}</p>
+                      {inv.investor_email && <p className="text-[11px] text-[#444746] dark:text-muted-foreground truncate">{inv.investor_email}</p>}
+                    </div>
+                    <span className="shrink-0 text-xs font-medium text-[#041e49] bg-[#d3e3fd] dark:bg-blue-900/40 dark:text-blue-200 px-2.5 py-0.5 rounded-full">
+                      {inv.pay_percentage ?? 0}%
+                    </span>
                   </div>
-                  <span className="shrink-0 text-xs font-medium text-[#041e49] bg-[#d3e3fd] dark:bg-blue-900/40 dark:text-blue-200 px-2.5 py-0.5 rounded-full">
-                    {inv.pay_percentage ?? 0}%
-                  </span>
+                ))}
+              </div>
+            )}
+
+            {(d.bank_name || d.routing_number || d.account_number) && (
+              <>
+                <p className="text-[11px] uppercase tracking-wide text-[#444746] dark:text-muted-foreground pt-1">Banking (ACH)</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div className="sm:col-span-2"><Tile icon={UserRound} tone="blue" label="Account Holder" value={d.account_holder_name || '—'} /></div>
+                  <Tile icon={Landmark} tone="sky" label="Bank" value={d.bank_name || '—'} />
+                  <Tile icon={Wallet} tone="violet" label="Account Type" value={d.account_type ? d.account_type.charAt(0).toUpperCase() + d.account_type.slice(1) : '—'} />
+                  <Tile icon={Hash} tone="gray" label="Routing #" value={<span className="font-mono text-[13px]">{mask(d.routing_number)}</span>} copy={canSeeTax && d.routing_number ? String(d.routing_number) : null} />
+                  <Tile icon={Hash} tone="gray" label="Account #" value={<span className="font-mono text-[13px]">{mask(d.account_number)}</span>} copy={canSeeTax && d.account_number ? String(d.account_number) : null} />
                 </div>
-              ))}
-            </div>
-          )}
+              </>
+            )}
 
-          {(d.bank_name || d.routing_number || d.account_number) && (
-            <>
-              <p className="text-[11px] uppercase tracking-wide text-[#444746] dark:text-muted-foreground pt-1">Banking (ACH)</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <div className="sm:col-span-2"><Tile icon={UserRound} tone="blue" label="Account Holder" value={d.account_holder_name || '—'} /></div>
-                <Tile icon={Landmark} tone="sky" label="Bank" value={d.bank_name || '—'} />
-                <Tile icon={Wallet} tone="violet" label="Account Type" value={d.account_type ? d.account_type.charAt(0).toUpperCase() + d.account_type.slice(1) : '—'} />
-                <Tile icon={Hash} tone="gray" label="Routing #" value={<span className="font-mono text-[13px]">{mask(d.routing_number)}</span>} copy={canSeeTax && d.routing_number ? String(d.routing_number) : null} />
-                <Tile icon={Hash} tone="gray" label="Account #" value={<span className="font-mono text-[13px]">{mask(d.account_number)}</span>} copy={canSeeTax && d.account_number ? String(d.account_number) : null} />
-              </div>
-            </>
-          )}
-
-          {/* Datos fiscales del 1099 (solo admin y accounting) */}
-          {canSeeTax && <DriverTaxInfo driverId={driver.id} />}
-        </div>
-
-        {/* ═══ Documents ═══ */}
-        <div className={DETAIL_CARD}>
-          <div className="flex items-center justify-between gap-2">
-            <h3 className={DETAIL_TITLE}>Documents</h3>
-            <span className="text-xs text-[#444746] dark:text-muted-foreground">{docsLoaded} de {docs.length} cargados</span>
+            {/* Datos fiscales del 1099 (solo admin y accounting) */}
+            {canSeeTax && <DriverTaxInfo driverId={driver.id} />}
           </div>
-          <Tile icon={IdCard} tone="blue" label="Driver License #" value={<span className="font-mono text-[13px]">{driver.license || '—'}{driver.state ? ` (${driver.state})` : ''}</span>} copy={driver.license} />
-          <div className="space-y-2">
-            <ExpiryRing icon={IdCard} label="Driver License" date={driver.license_expiry} />
-            <ExpiryRing icon={HeartPulse} label="Medical Card" date={driver.medical_card_expiry} />
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" className={PILL_BTN} onClick={() => setAddingLeasing(v => !v)}>
-              <Plus className="h-3 w-3" /> Add Leasing
-            </Button>
-            <Button variant="outline" size="sm" className={PILL_BTN} onClick={e => { e.stopPropagation(); handleDownloadPdf(); }}>
-              <Download className="h-3.5 w-3.5" /> Download PDF
-            </Button>
-          </div>
-
-          {/* Formulario para agregar nuevo leasing */}
-          {addingLeasing && (
-            <div className="p-3 rounded-2xl bg-[#e8f0fe] dark:bg-blue-950/40 space-y-2">
-              <p className="text-xs font-medium text-muted-foreground">Nuevo Leasing Agreement</p>
-              <Input
-                placeholder="Nombre de la empresa (ej: AG AR Transportation)"
-                value={newLeasingCompany}
-                onChange={e => setNewLeasingCompany(e.target.value)}
-                className="h-8 text-xs"
-              />
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  className="h-7 text-xs gap-1"
-                  disabled={!newLeasingCompany.trim() || uploadingLeasing}
-                  onClick={() => leasingFileRef.current?.click()}
-                >
-                  {uploadingLeasing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
-                  {uploadingLeasing ? 'Subiendo...' : 'Seleccionar PDF'}
-                </Button>
-                <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => { setAddingLeasing(false); setNewLeasingCompany(''); }}>
-                  Cancelar
-                </Button>
-              </div>
-              <input
-                ref={leasingFileRef}
-                type="file"
-                accept=".pdf,image/*"
-                className="hidden"
-                onChange={e => { const f = e.target.files?.[0]; if (f) handleAddLeasing(f); }}
-              />
-            </div>
-          )}
-
-          <DocCardGrid
-            variant="tiles"
-            docs={docs}
-            getDocSignedUrl={getDocSignedUrl}
-            allowUpload={!!onUpdateDriver}
-            uploadBasePath={driver.id}
-            onUpload={onUpdateDriver ? async (key, newUrl) => {
-              await onUpdateDriver(driver.id, { [key + (key.endsWith('_url') ? '' : '_url')]: newUrl });
-            } : undefined}
-          />
-          {leasingLoading && (
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Loader2 className="h-3 w-3 animate-spin" /> Loading leasing agreements...
-            </div>
-          )}
         </div>
       </div>
     </div>
