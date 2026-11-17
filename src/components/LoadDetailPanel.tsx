@@ -1496,7 +1496,7 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
   return (
     <div className="px-4 py-3 bg-[#f8fafd] dark:bg-background/60 border-t border-[#e3e3e3] dark:border-border animate-in slide-in-from-top-2 duration-200 space-y-3">
       {/* Encabezado: empresa, título y documentos de la carga */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] items-center gap-3">
         <div className="flex items-center gap-4 min-w-0">
           {(() => {
             const company = companies.find(c => c.id === (load as any).company_id);
@@ -1519,7 +1519,7 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
             <CopyLoadInfoButton load={load} totalMiles={totalMiles} emptyMiles={emptyMiles} rpm={rpm} driver={driver} dispatcher={dispatcher} />
           </div>
         </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center justify-center gap-2 lg:justify-self-center">
               {load.pdf_url && (
                 <div className="flex items-center gap-1 pl-3 pr-1 h-9 rounded-full text-xs font-medium bg-[#c4eed0] text-[#072711] dark:bg-emerald-900/40 dark:text-emerald-200">
                   <FileText className="h-3 w-3 flex-shrink-0" />
@@ -1704,7 +1704,7 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
                       <div className="flex-1">
                         {/* Fila 1: nombre + fecha */}
                         <div className="flex items-start justify-between gap-2">
-                          <div className="font-medium text-sm text-[#1f1f1f] dark:text-foreground">{nameLabel || stopTypeLabel}</div>
+                          <div className="font-normal text-sm text-[#1f1f1f] dark:text-foreground">{nameLabel || stopTypeLabel}</div>
                           {stopDate && (
                             <div className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0 text-right">
                               <div>
@@ -1719,7 +1719,7 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
                         </div>
                         {/* Fila 2: direccion + boton copiar pegado */}
                         <div className="flex items-center gap-3">
-                          <div className="font-medium text-sm">{stop.address}</div>
+                          <div className="font-normal text-sm">{stop.address}</div>
                           <CopyStopButton text={copyText} />
                           {i === 0 && stop.type === 'pickup' && (load.notes || '').toUpperCase().includes('TARP') && !truckType.includes('box') && (
                             <span className="inline-flex items-center ml-8 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide text-white bg-[hsl(25,95%,53%)] animate-pulse whitespace-nowrap">
@@ -1755,7 +1755,6 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
           {!isDispatchService && (
             <>
               <BrokerEmailSection loadId={load.id} />
-              <RcSignedSection loadId={load.id} hasDriver={!!load.driver_id} />
             </>
           )}
           <PdfViewerDialog url={pdfViewer?.url ?? null} title={pdfViewer?.title ?? ''} onClose={() => setPdfViewer(null)} />
@@ -1771,9 +1770,9 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
         </div>
 
         {/* Columna 3: mapa */}
-        <div className="lg:col-span-2 xl:col-span-4">
+        <div className="lg:col-span-2 xl:col-span-4 space-y-3">
         {/* Map */}
-        <div className="sticky top-4 rounded-3xl overflow-hidden border border-[#e3e3e3] dark:border-border bg-white dark:bg-card relative" style={{ height: 640, zIndex: 0 }}>
+        <div className="rounded-3xl overflow-hidden border border-[#e3e3e3] dark:border-border bg-white dark:bg-card relative" style={{ height: 640, zIndex: 0 }}>
           <div ref={mapRef} style={{ height: '100%', zIndex: 0 }} />
           {gpsStatus !== 'none' && (
             <div className="absolute top-2 right-2 z-[1000] pointer-events-none">
@@ -1796,6 +1795,8 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
             </div>
           )}
         </div>
+        {/* RC firmado: debajo del mapa */}
+        {!isDispatchService && <RcSignedSection loadId={load.id} hasDriver={!!load.driver_id} />}
         </div>
       </div>
     </div>
