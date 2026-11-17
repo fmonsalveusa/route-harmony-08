@@ -23,7 +23,9 @@ export const CHIP_TONE = {
 };
 
 /** Status como pastilla tonal con círculo de color e ícono; al abrir muestra cada opción con su explicación */
-export function StatusChipSelect({ value, options, onChange, disabled, placeholder }: {
+export function StatusChipSelect({ value, options, onChange, disabled, placeholder, size = 'md' }: {
+  /** 'sm': pastilla más chica para tablas con muchas columnas */
+  size?: 'sm' | 'md';
   value: string;
   options: StatusChipOption[];
   onChange: (v: string) => void;
@@ -37,13 +39,13 @@ export function StatusChipSelect({ value, options, onChange, disabled, placehold
     <Select value={value} onValueChange={onChange} disabled={disabled}>
       <SelectTrigger
         onClick={e => e.stopPropagation()}
-        className={cn('h-auto w-auto gap-2 rounded-full border-0 pl-1 pr-3 py-1 shadow-none focus:ring-0 whitespace-nowrap disabled:opacity-100 disabled:cursor-default [&>span]:!flex [&>span]:items-center [&>span]:line-clamp-none [&>svg]:text-white [&>svg]:opacity-90', current.chip)}
+        className={cn('h-auto w-auto rounded-full border-0 shadow-none', size === 'sm' ? 'gap-1 pl-0.5 pr-2 py-0.5 [&>svg]:h-3.5 [&>svg]:w-3.5' : 'gap-2 pl-1 pr-3 py-1', ' focus:ring-0 whitespace-nowrap disabled:opacity-100 disabled:cursor-default [&>span]:!flex [&>span]:items-center [&>span]:line-clamp-none [&>svg]:text-white [&>svg]:opacity-90', current.chip)}
       >
-        <span className="flex items-center gap-2">
-          <span className="h-7 w-7 rounded-full flex items-center justify-center text-white shrink-0 bg-white/20">
-            <current.icon className="h-3.5 w-3.5" />
+        <span className={cn('flex items-center', size === 'sm' ? 'gap-1.5' : 'gap-2')}>
+          <span className={cn('rounded-full flex items-center justify-center text-white shrink-0 bg-white/20', size === 'sm' ? 'h-6 w-6' : 'h-7 w-7')}>
+            <current.icon className={size === 'sm' ? 'h-3 w-3' : 'h-3.5 w-3.5'} />
           </span>
-          <span className="text-sm font-medium">{current.label}</span>
+          <span className={cn('font-medium', size === 'sm' ? 'text-xs' : 'text-sm')}>{current.label}</span>
         </span>
       </SelectTrigger>
       <SelectContent>

@@ -524,10 +524,10 @@ const Loads = () => {
                 <th className={cn(G_TH, 'hidden md:table-cell')}>Ruta</th>
                 <th className={cn(G_TH, 'hidden lg:table-cell')}>Pickup</th>
                 <th className={cn(G_TH, 'hidden lg:table-cell')}>Delivery</th>
-                <th className={cn(G_TH, 'text-right hidden md:table-cell whitespace-nowrap')}>DH-O</th>
-                <th className={cn(G_TH, 'text-right hidden md:table-cell')}>Miles</th>
+                <th className={cn(G_TH, 'text-right hidden md:table-cell whitespace-nowrap w-[52px] !px-1')}>DH-O</th>
+                <th className={cn(G_TH, 'text-right hidden md:table-cell w-[56px] !px-1')}>Miles</th>
                 <th className={cn(G_TH, 'text-right')}>Rate</th>
-                <th className={cn(G_TH, 'hidden lg:table-cell')}>Dispatcher</th>
+                <th className={cn(G_TH, 'hidden lg:table-cell !pl-4')}>Dispatcher</th>
                 <th className={cn(G_TH)}>Status</th>
                 <th className={cn(G_TH, ['delivered', 'all'].includes(activeTab) ? 'hidden lg:table-cell' : 'hidden')}>Delivered</th>
                 <th className={cn(G_TH, 'hidden lg:table-cell')}>Factoring</th>
@@ -587,11 +587,11 @@ const Loads = () => {
                           <td className="px-2 py-3.5">
                             <div className="flex items-center gap-2">
                               {driver ? (
-                                <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 text-white" style={{ backgroundColor: dispatcherColor }}>
+                                <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0 text-white" style={{ backgroundColor: dispatcherColor }}>
                                   {driver.name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()}
                                 </div>
                               ) : (
-                                <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                                <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
                                   <span className="text-xs text-muted-foreground">—</span>
                                 </div>
                               )}
@@ -646,8 +646,8 @@ const Loads = () => {
                             )}
                             {(load as any).has_detention_delivery && <DetentionBadge />}
                           </td>
-                          <td className="px-2 py-3.5 text-right hidden md:table-cell text-muted-foreground">{load.empty_miles && Number(load.empty_miles) > 0 ? Number(load.empty_miles).toLocaleString() : '—'}</td>
-                          <td className="px-2 py-3.5 text-right hidden md:table-cell text-muted-foreground">{load.miles && Number(load.miles) > 0 ? Number(load.miles).toLocaleString() : '—'}</td>
+                          <td className="px-1 py-3.5 text-right hidden md:table-cell text-muted-foreground">{load.empty_miles && Number(load.empty_miles) > 0 ? Number(load.empty_miles).toLocaleString() : '—'}</td>
+                          <td className="px-1 py-3.5 text-right hidden md:table-cell text-muted-foreground">{load.miles && Number(load.miles) > 0 ? Number(load.miles).toLocaleString() : '—'}</td>
                           <td className="px-2 py-3.5 text-right">
                             <div className="text-base font-medium text-[#188038] dark:text-emerald-400">${Number(load.total_rate).toLocaleString()}</div>
                             {load.miles && Number(load.miles) > 0 && (() => {
@@ -665,9 +665,9 @@ const Loads = () => {
                               return <div className="text-xs font-medium text-muted-foreground">${rpm.toFixed(2)}/mi</div>;
                             })()}
                           </td>
-                          <td className="px-2 py-3.5 hidden lg:table-cell"><div className="whitespace-nowrap max-w-[120px] truncate" title={dispatcher?.name}>{dispatcher?.name || '—'}</div></td>
+                          <td className="px-2 pl-4 py-3.5 hidden lg:table-cell"><div className="whitespace-nowrap max-w-[180px] truncate" title={dispatcher?.name}>{dispatcher?.name || '—'}</div></td>
                           <td className="px-2 py-3.5" onClick={e => e.stopPropagation()}>
-                            <StatusChipSelect value={load.status} options={LOAD_STATUS_CHIPS} onChange={async (val) => {
+                            <StatusChipSelect size="sm" value={load.status} options={LOAD_STATUS_CHIPS} onChange={async (val) => {
                               const prevStatus = load.status;
                               const updates: any = { status: val };
                               if (val === 'delivered') {
@@ -692,6 +692,7 @@ const Loads = () => {
                           <td className="px-2 py-3.5 hidden lg:table-cell" onClick={e => e.stopPropagation()}>
                             <StatusChipSelect
                               value={load.factoring || ''}
+                              size="sm"
                               options={FACTORING_CHIPS}
                               placeholder="—"
                               disabled={generatingPaymentIds.has(load.id)}
