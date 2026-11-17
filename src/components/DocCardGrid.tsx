@@ -19,6 +19,8 @@ interface Props {
   allowUpload?: boolean;
   onUpload?: (key: string, url: string) => void;
   uploadBasePath?: string;
+  /** 'tiles': lista de tarjetas con miniatura, estado (cargado / falta) y botones Ver / Subir */
+  variant?: 'thumbs' | 'tiles';
 }
 
 async function resolveUrl(url: string, getDocSignedUrl?: (u: string) => Promise<string | null>): Promise<string> {
@@ -165,7 +167,82 @@ function DocCard({
   );
 }
 
-export function DocCardGrid({ docs, getDocSignedUrl, allowUpload, onUpload, uploadBasePath }: Props) {
+/** Tarjeta de documento en fila: miniatura, nombre, estado y botones visibles */
+function DocTile({
+  item, getDocSignedUrl, allowUpload, onUpload, uploadBasePath, onPreview,
+}: {
+  item: DocItem;
+  getDocSignedUrl?: (url: string) => Promise<string | null>;
+  allowUpload?: boolean;
+  onUpload?: (key: string, url: string) => void;
+  uploadBasePath?: string;
+  onPreview: (item: DocItem) => void;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const img = item.url ? isImageUrl(item.url) : false;
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !onUpload) return;
+    setUploading(true);
+    try {
+      const ext = file.name.split('.').pop();
+      const path = `${uploadBasePath}/${item.key}_${Date.now()}.${ext}`;
+      const { error } = await supabase.storage.from('driver-documents').upload(path, file);
+      if (error) throw error;
+      const { data } = await supabase.storage.from('driver-documents').createSignedUrl(path, 31536000);
+      if (data?.signedUrl) onUpload(item.key, data.signedUrl);
+    } catch (err) {
+      console.error('Upload error:', err);
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-3 rounded-2xl bg-[#f8fafd] dark:bg-muted/40 px-2 py-1.5">
+      <button
+        type="button"
+        disabled={!item.url}
+        onClick={e => { e.stopPropagation(); if (item.url) onPreview(item); }}
+        className="h-11 w-11 shrink-0 rounded-xl overflow-hidden bg-white dark:bg-card border border-[#e3e3e3] dark:border-border flex items-center justify-center"
+      >
+        {item.url ? (
+          img ? <ImageThumb url={item.url} label={item.label} getDocSignedUrl={getDocSignedUrl} />
+            : <FileText className="h-5 w-5 text-[#d93025]" />
+        ) : (
+          <FileText className="h-5 w-5 text-[#c4c7c5]" />
+        )}
+      </button>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm text-[#1f1f1f] dark:text-foreground truncate">{item.label}</p>
+        <p className={`text-[11px] flex items-center gap-1 ${item.url ? 'text-[#188038] dark:text-emerald-400' : 'text-[#b3261e] dark:text-red-300'}`}>
+          <span className={`h-1.5 w-1.5 rounded-full ${item.url ? 'bg-[#188038]' : 'bg-[#d93025]'}`} />
+          {item.url ? (img ? 'Cargado · Foto' : 'Cargado · PDF') : 'Falta'}
+        </p>
+      </div>
+      {item.url && (
+        <button type="button" onClick={e => { e.stopPropagation(); onPreview(item); }}
+          className="h-8 px-3 rounded-full text-xs font-medium text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] dark:hover:bg-muted inline-flex items-center gap-1">
+          <Eye className="h-3.5 w-3.5" /> Ver
+        </button>
+      )}
+      {allowUpload && (
+        <>
+          <button type="button" disabled={uploading} onClick={e => { e.stopPropagation(); fileRef.current?.click(); }}
+            className="h-8 px-3 rounded-full text-xs font-medium border border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] dark:hover:bg-muted inline-flex items-center gap-1">
+            {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />} {item.url ? 'Cambiar' : 'Subir'}
+          </button>
+          <input ref={fileRef} type="file" accept="image/*,.pdf" className="hidden" onChange={handleUpload} />
+        </>
+      )}
+    </div>
+  );
+}
+
+export function DocCardGrid({ docs, getDocSignedUrl, allowUpload, onUpload, uploadBasePath, variant = 'thumbs' }: Props) {
   const [preview, setPreview] = useState<{ item: DocItem; resolvedUrl: string } | null>(null);
   const [loadingPreview, setLoadingPreview] = useState(false);
 
@@ -181,6 +258,21 @@ export function DocCardGrid({ docs, getDocSignedUrl, allowUpload, onUpload, uplo
 
   return (
     <>
+      {variant === 'tiles' ? (
+        <div className="space-y-1.5">
+          {docs.map(item => (
+            <DocTile
+              key={item.key}
+              item={item}
+              getDocSignedUrl={getDocSignedUrl}
+              allowUpload={allowUpload}
+              onUpload={onUpload}
+              uploadBasePath={uploadBasePath}
+              onPreview={handlePreview}
+            />
+          ))}
+        </div>
+      ) : (
       <div className="flex flex-wrap gap-2">
         {docs.map(item => (
           <DocCard
@@ -194,6 +286,7 @@ export function DocCardGrid({ docs, getDocSignedUrl, allowUpload, onUpload, uplo
           />
         ))}
       </div>
+      )}
 
       {/* Preview Dialog */}
       <Dialog open={!!preview || loadingPreview} onOpenChange={(open) => { if (!open) setPreview(null); }}>
