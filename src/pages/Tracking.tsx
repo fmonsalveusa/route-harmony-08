@@ -1209,11 +1209,12 @@ const Tracking = () => {
                   >
                     {/* Franja vertical izquierda: LOADED / EMPTY, letra por letra */}
                     {/* Franja fina de color: verde cargado, naranja vacío */}
-                    <div className={`w-1.5 shrink-0 ${activeLoad ? 'bg-[#188038]' : 'bg-[#e37400]'}`} />
+                    <div className={`w-6 shrink-0 flex items-center justify-center ${activeLoad ? 'bg-[#188038]' : 'bg-[#e37400]'}`}>
+                      <span className="[writing-mode:vertical-rl] rotate-180 text-[10px] font-bold tracking-[0.2em] text-white select-none">{activeLoad ? 'LOADED' : 'EMPTY'}</span>
+                    </div>
                     <div className="flex-1 min-w-0">
                     {/* Línea 1: nombre, teléfono, carga y tipo de servicio */}
                     <div className="flex items-center gap-1.5 px-3 pt-2">
-                      <span className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-medium ${activeLoad ? 'bg-[#c4eed0] text-[#072711] dark:bg-emerald-900/40 dark:text-emerald-200' : 'bg-[#ffdcc1] text-[#2f1500] dark:bg-orange-900/40 dark:text-orange-200'}`}>{activeLoad ? 'LOADED' : 'EMPTY'}</span>
                       <p className="text-sm font-medium text-[#1f1f1f] dark:text-foreground truncate">{driver.name}</p>
                       <button
                         onClick={(e) => copyField(driver.id, 'name', driver.name, e)}
