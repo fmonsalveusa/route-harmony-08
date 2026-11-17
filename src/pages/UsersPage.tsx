@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { StatusChipSelect, ACTIVE_STATUS_CHIPS } from '@/components/StatusChipSelect';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { StatTiles, SolidStatusPill, TABLE_CARD, TABLE_HEAD_ROW, TABLE_ROW } from '@/components/StatTiles';
@@ -225,28 +226,11 @@ const UsersPage = () => {
                           </Badge>
                         </td>
                         <td className="p-3" onClick={e => e.stopPropagation()}>
-                          {isDispatcherView ? (
-                            activePill(u.is_active)
-                          ) : (
-                          <Select value={u.is_active ? 'active' : 'inactive'} onValueChange={async (val) => {
+                          <StatusChipSelect value={u.is_active ? 'active' : 'inactive'} options={ACTIVE_STATUS_CHIPS} disabled={isDispatcherView} onChange={async (val) => {
                             const newActive = val === 'active';
                             await supabase.from('profiles').update({ is_active: newActive }).eq('id', u.id);
                             fetchUsers();
-                          }}>
-                            <SelectTrigger className="h-8 w-[140px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:hidden bg-transparent">
-                              <span className="flex items-center justify-between w-full gap-1">
-                                {activePill(u.is_active)}
-                                <span className="inline-flex h-5 w-5 items-center justify-center rounded border border-border bg-muted/40 text-muted-foreground ml-auto">
-                                  <ChevronDown className="h-3 w-3 shrink-0" />
-                                </span>
-                              </span>
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="active">{activePill(true)}</SelectItem>
-                              <SelectItem value="inactive">{activePill(false)}</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          )}
+                          }} />
                         </td>
                         <td className="p-3 text-right">
                           <div className="flex items-center justify-end gap-1">

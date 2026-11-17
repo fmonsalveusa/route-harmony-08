@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { StatusChipSelect, PAYMENT_STATUS_CHIPS } from '@/components/StatusChipSelect';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, isWithinInterval, parseISO } from 'date-fns';
 import { formatDate } from '@/lib/dateUtils';
 import { usePayments, type DbPayment } from '@/hooks/usePayments';
@@ -623,21 +624,7 @@ const PaymentsSection = ({ type, refreshKey, onCreateManual, createLabel = 'Crea
                     </td>
                     <td className="px-3 py-2 text-right font-semibold">${(Number(p.amount) + (adjMap[p.id] || 0)).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
                     <td className="px-3 py-2" onClick={e => e.stopPropagation()}>
-                      <Select value={p.status} onValueChange={(val) => handleStatusChange(p, val)}>
-                        <SelectTrigger className="h-8 w-[155px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:hidden bg-transparent">
-                          <span className="flex items-center justify-between w-full gap-1">
-                            {paymentPill(p.status)}
-                            <span className="inline-flex h-5 w-5 items-center justify-center rounded border border-border bg-muted/40 text-muted-foreground ml-auto">
-                              <ChevronDown className="h-3 w-3 shrink-0" />
-                            </span>
-                          </span>
-                        </SelectTrigger>
-                        <SelectContent className="bg-popover z-50">
-                          <SelectItem value="pending">{paymentPill('pending')}</SelectItem>
-                          <SelectItem value="in_process">{paymentPill('in_process')}</SelectItem>
-                          <SelectItem value="paid">{paymentPill('paid')}</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <StatusChipSelect value={p.status} options={PAYMENT_STATUS_CHIPS} onChange={(val) => handleStatusChange(p, val)} />
                     </td>
                     <td className="px-3 py-2 text-muted-foreground">{p.payment_date ? formatDate(p.payment_date) : formatDate(p.created_at)}</td>
                     <td className="px-3 py-2 text-right">

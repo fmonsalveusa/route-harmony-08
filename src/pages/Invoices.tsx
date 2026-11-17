@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { StatusChipSelect, INVOICE_STATUS_CHIPS } from '@/components/StatusChipSelect';
 import { useInvoices, Invoice } from '@/hooks/useInvoices';
 import { useCompanies } from '@/hooks/useCompanies';
 import { formatDate } from '@/lib/dateUtils';
@@ -218,21 +219,7 @@ const Invoices = () => {
                     <td className="p-3 hidden md:table-cell text-muted-foreground">{inv.company_name || '—'}</td>
                     <td className="p-3 text-right font-semibold">${Number(inv.amount).toLocaleString()}</td>
                     <td className="p-3">
-                      <Select value={inv.status} onValueChange={val => updateInvoice(inv.id, { status: val })}>
-                        <SelectTrigger className="h-8 w-[155px] border-0 p-0 shadow-none focus:ring-0 [&>svg]:hidden bg-transparent">
-                          <span className="flex items-center justify-between w-full gap-1">
-                            {invoicePill(inv.status)}
-                            <span className="inline-flex h-5 w-5 items-center justify-center rounded border border-border bg-muted/40 text-muted-foreground ml-auto">
-                              <ChevronDown className="h-3 w-3 shrink-0" />
-                            </span>
-                          </span>
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="pending">{invoicePill('pending')}</SelectItem>
-                          <SelectItem value="sent">{invoicePill('sent')}</SelectItem>
-                          <SelectItem value="paid">{invoicePill('paid')}</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <StatusChipSelect value={inv.status} options={INVOICE_STATUS_CHIPS} onChange={val => updateInvoice(inv.id, { status: val })} />
                     </td>
                     <td className="p-3 hidden lg:table-cell text-muted-foreground">{formatDate(inv.created_at)}</td>
                     <td className="p-3 text-right">

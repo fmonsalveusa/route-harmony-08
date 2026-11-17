@@ -1,4 +1,5 @@
 ﻿import { useState, useMemo, useEffect, useRef } from 'react';
+import { StatusChipSelect, LOAD_STATUS_CHIPS, ALL_CHIP } from '@/components/StatusChipSelect';
 import { ServiceTypeBadge } from '@/components/ServiceTypeBadge';
 import { getLoadRoutes, saveLoadRoute } from '@/lib/loadRoute';
 import { HosClocks, type HosClockRow } from '@/components/HosClocks';
@@ -1113,21 +1114,11 @@ const Tracking = () => {
             className="w-full h-10 rounded-full bg-white dark:bg-card border border-[#e3e3e3] dark:border-border pl-10 pr-4 text-sm text-[#1f1f1f] dark:text-foreground placeholder:text-[#444746] outline-none focus:shadow-[0_1px_1px_rgba(65,69,73,.3),0_1px_3px_1px_rgba(65,69,73,.15)] transition"
           />
         </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className={cn('w-[170px] h-8 text-xs rounded-lg shadow-none font-medium', statusFilter !== 'all'
-            ? 'bg-[#c2e7ff] border-[#c2e7ff] text-[#001d35] dark:bg-blue-900/50 dark:border-blue-900/50 dark:text-blue-100'
-            : 'bg-white dark:bg-card border-[#c4c7c5] dark:border-border text-[#444746] dark:text-muted-foreground')}>
-            <SelectValue placeholder="All Statuses" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value="dispatched">Dispatched</SelectItem>
-            <SelectItem value="in_transit">In Transit</SelectItem>
-            <SelectItem value="on_site_pickup">On Site Pickup</SelectItem>
-            <SelectItem value="picked_up">Picked Up</SelectItem>
-            <SelectItem value="on_site_delivery">On Site Delivery</SelectItem>
-          </SelectContent>
-        </Select>
+        <StatusChipSelect
+          value={statusFilter}
+          onChange={setStatusFilter}
+          options={[ALL_CHIP('All Statuses'), ...LOAD_STATUS_CHIPS.filter(o => ['dispatched', 'in_transit', 'on_site_pickup', 'picked_up', 'on_site_delivery'].includes(o.value))]}
+        />
       </div>
 
       {/* Main layout: Map + Side Panel */}
@@ -1161,15 +1152,35 @@ const Tracking = () => {
             </div>
             {!isDispatcher && (
               <Select value={dispatcherFilter} onValueChange={setDispatcherFilter}>
-                <SelectTrigger className={cn('w-full h-8 text-xs mt-2 rounded-lg shadow-none font-medium', dispatcherFilter !== 'all'
-                  ? 'bg-[#c2e7ff] border-[#c2e7ff] text-[#001d35] dark:bg-blue-900/50 dark:border-blue-900/50 dark:text-blue-100'
-                  : 'border-[#c4c7c5] dark:border-border text-[#444746] dark:text-muted-foreground')}>
-                  <SelectValue placeholder="All Dispatchers" />
+                <SelectTrigger className="mt-2 h-auto w-full gap-2 rounded-full border-0 bg-[#f0f4f9] dark:bg-muted/60 pl-1.5 pr-3 py-1.5 shadow-none focus:ring-0 hover:bg-[#e3e8ef] dark:hover:bg-muted [&>span]:!flex [&>span]:items-center [&>span]:line-clamp-none">
+                  {(() => {
+                    const sel = dispatchers.find(d => d.id === dispatcherFilter);
+                    return (
+                      <span className="flex items-center gap-2.5 min-w-0">
+                        <span className="h-8 w-8 rounded-full flex items-center justify-center shrink-0 text-sm font-medium text-white" style={{ background: sel?.color || '#5f6368' }}>
+                          {sel ? sel.name.trim().charAt(0).toUpperCase() : <Users className="h-4 w-4" />}
+                        </span>
+                        <span className="text-sm text-[#1f1f1f] dark:text-foreground truncate">{sel?.name || 'All Dispatchers'}</span>
+                      </span>
+                    );
+                  })()}
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Dispatchers</SelectItem>
+                  <SelectItem value="all">
+                    <span className="flex items-center gap-2">
+                      <span className="h-5 w-5 rounded-full flex items-center justify-center bg-[#5f6368] text-white"><Users className="h-3 w-3" /></span>
+                      All Dispatchers
+                    </span>
+                  </SelectItem>
                   {dispatchers.filter(d => d.status === 'active').map(d => (
-                    <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                    <SelectItem key={d.id} value={d.id}>
+                      <span className="flex items-center gap-2">
+                        <span className="h-5 w-5 rounded-full flex items-center justify-center text-[10px] font-medium text-white" style={{ background: d.color || '#9aa0a6' }}>
+                          {d.name.trim().charAt(0).toUpperCase()}
+                        </span>
+                        {d.name}
+                      </span>
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
