@@ -424,19 +424,17 @@ html, body {
 
 /* Botones de acción sólidos (píldoras de color con texto blanco): sombra para efecto 3D.
    Excluye los desplegables de status (role=combobox). */
-@layer utilities {
-  button.rounded-full.text-white:not([role="combobox"]):not(:disabled),
-  a.rounded-full.text-white {
+  button[class~="rounded-full"][class~="text-white"]:not([role="combobox"]):not(:disabled),
+  a[class~="rounded-full"][class~="text-white"] {
     box-shadow: 0 1px 2px rgba(60, 64, 67, .3), 0 2px 6px 2px rgba(60, 64, 67, .15) !important;
     transition: box-shadow .2s, transform .2s, background-color .2s;
   }
-  button.rounded-full.text-white:not([role="combobox"]):not(:disabled):hover,
-  a.rounded-full.text-white:hover {
+  button[class~="rounded-full"][class~="text-white"]:not([role="combobox"]):not(:disabled):hover,
+  a[class~="rounded-full"][class~="text-white"]:hover {
     box-shadow: 0 2px 4px rgba(60, 64, 67, .3), 0 6px 12px 4px rgba(60, 64, 67, .18) !important;
     transform: translateY(-1px);
   }
-  button.rounded-full.text-white:not([role="combobox"]):not(:disabled):active {
+  button[class~="rounded-full"][class~="text-white"]:not([role="combobox"]):not(:disabled):active {
     box-shadow: 0 1px 2px rgba(60, 64, 67, .3) !important;
     transform: translateY(0);
   }
-}
