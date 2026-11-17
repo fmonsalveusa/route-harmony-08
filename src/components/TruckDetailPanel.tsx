@@ -14,7 +14,7 @@ import { TruckCostsSection } from '@/components/TruckCostsSection';
 function Info({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="text-xs font-bold text-[#1f1f1f] dark:text-foreground">{label}</p>
+      <p className="text-xs font-normal uppercase tracking-wide text-[#444746] dark:text-muted-foreground">{label}</p>
       <div className="font-normal text-sm mt-0.5 text-[#1f1f1f] dark:text-foreground [overflow-wrap:anywhere]">{children}</div>
     </div>
   );
