@@ -1228,7 +1228,8 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
                 ))}
               </div>
             </div>
-            <div className="col-span-2 space-y-1">
+            {/* Estado justo debajo del Driver (columna 1, fila 2) */}
+            <div className="col-start-1 row-start-2 space-y-1">
               <Label className={G_LABEL}>Estado de la carga</Label>
               <Select value={selectedStatus} onValueChange={setSelectedStatus}>
                 <SelectTrigger className={G_INPUT}><SelectValue /></SelectTrigger>
