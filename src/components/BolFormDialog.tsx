@@ -86,9 +86,9 @@ export const BolFormDialog = ({ open, onOpenChange, load, stops, company, driver
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto rounded-[28px] border-0 bg-[#f8fafd] dark:bg-background [&_label]:text-xs [&_label]:font-medium [&_label]:text-[#444746] dark:[&_label]:text-muted-foreground [&_input:not([type=checkbox]):not([type=radio]):not([type=file])]:rounded-lg [&_input]:shadow-none [&_input:not([type=checkbox]):not([type=radio])]:bg-white dark:[&_input]:bg-card [&_input]:border-[#c4c7c5] dark:[&_input]:border-border [&_input:focus-visible]:ring-1 [&_input:focus-visible]:ring-[#0b57d0] [&_input:focus-visible]:border-[#0b57d0] [&_button[role=combobox]]:rounded-lg [&_button[role=combobox]]:shadow-none [&_button[role=combobox]]:bg-white dark:[&_button[role=combobox]]:bg-card [&_button[role=combobox]]:border-[#c4c7c5] dark:[&_button[role=combobox]]:border-border [&_textarea]:rounded-lg [&_textarea]:shadow-none [&_textarea]:bg-white dark:[&_textarea]:bg-card [&_textarea]:border-[#c4c7c5]">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2 text-[22px] leading-7 font-normal text-[#1f1f1f] dark:text-foreground">
             <Download className="h-5 w-5" /> Generar Bill of Lading — {load.reference_number}
           </DialogTitle>
         </DialogHeader>
@@ -148,7 +148,7 @@ export const BolFormDialog = ({ open, onOpenChange, load, stops, company, driver
           <div>
             <div className="flex items-center justify-between mb-2">
               <Label className="text-sm font-semibold">Artículos / Productos</Label>
-              <Button variant="outline" size="sm" className="gap-1 h-7 text-xs" onClick={addItem}>
+              <Button variant="outline" size="sm" className="gap-1 h-7 text-xs rounded-full px-4 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent" onClick={addItem}>
                 <Plus className="h-3 w-3" /> Agregar línea
               </Button>
             </div>
@@ -192,7 +192,7 @@ export const BolFormDialog = ({ open, onOpenChange, load, stops, company, driver
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                    className="h-8 w-8 p-0 text-destructive hover:text-destructive rounded-full text-[#b3261e] hover:text-[#b3261e] hover:bg-[#fce8e6]"
                     onClick={() => removeItem(idx)}
                     disabled={items.length === 1}
                   >
@@ -205,8 +205,8 @@ export const BolFormDialog = ({ open, onOpenChange, load, stops, company, driver
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={handleGenerate} className="gap-1.5">
+          <Button className="rounded-full px-4 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button onClick={handleGenerate} className="gap-1.5 rounded-full px-5 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium shadow-none">
             <Download className="h-4 w-4" /> Generar BOL PDF
           </Button>
         </DialogFooter>

@@ -100,9 +100,9 @@ export default function LeasingAgreementDialog({ open, onOpenChange, driverName,
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-[28px] border-0 bg-[#f8fafd] dark:bg-background [&_label]:text-xs [&_label]:font-medium [&_label]:text-[#444746] dark:[&_label]:text-muted-foreground [&_input:not([type=checkbox]):not([type=radio]):not([type=file])]:rounded-lg [&_input]:shadow-none [&_input:not([type=checkbox]):not([type=radio])]:bg-white dark:[&_input]:bg-card [&_input]:border-[#c4c7c5] dark:[&_input]:border-border [&_input:focus-visible]:ring-1 [&_input:focus-visible]:ring-[#0b57d0] [&_input:focus-visible]:border-[#0b57d0] [&_button[role=combobox]]:rounded-lg [&_button[role=combobox]]:shadow-none [&_button[role=combobox]]:bg-white dark:[&_button[role=combobox]]:bg-card [&_button[role=combobox]]:border-[#c4c7c5] dark:[&_button[role=combobox]]:border-border [&_textarea]:rounded-lg [&_textarea]:shadow-none [&_textarea]:bg-white dark:[&_textarea]:bg-card [&_textarea]:border-[#c4c7c5]">
         <DialogHeader>
-          <DialogTitle>Owner Operator Lease Agreement</DialogTitle>
+          <DialogTitle className="text-[22px] leading-7 font-normal text-[#1f1f1f] dark:text-foreground">Owner Operator Lease Agreement</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 text-sm">
           {/* Pre-filled info */}
@@ -364,7 +364,7 @@ export default function LeasingAgreementDialog({ open, onOpenChange, driverName,
             <SignaturePad onSignatureChange={s => setSignatures(prev => ({ ...prev, hos: s }))} />
           </div>
 
-          <Button onClick={handleSubmit} className="w-full">Confirm & Sign Leasing Agreement</Button>
+          <Button onClick={handleSubmit} className="w-full rounded-full px-5 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium shadow-none">Confirm & Sign Leasing Agreement</Button>
         </div>
       </DialogContent>
     </Dialog>

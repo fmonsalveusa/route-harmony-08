@@ -111,7 +111,7 @@ export function CreateAccessButton({ name, email, phone, role, variant = 'row' }
       <Button
         variant="outline"
         size="sm"
-        className={variant === 'row' ? 'h-7 px-2 text-xs gap-1 text-violet-600 hover:text-violet-700 hover:bg-violet-50' : 'gap-1.5'}
+        className={variant === 'row' ? 'h-8 px-2.5 gap-1 rounded-full border-0 bg-transparent shadow-none text-xs font-medium text-[#8e24aa] hover:text-[#8e24aa] hover:bg-[#f3e8fd]' : 'gap-1.5 rounded-full px-4 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent'}
         onClick={handleCreate}
         disabled={creating || !email}
         title={!email ? 'Requiere email' : 'Crear acceso a la app móvil'}
@@ -122,12 +122,12 @@ export function CreateAccessButton({ name, email, phone, role, variant = 'row' }
 
       {/* Resultado con credenciales */}
       <Dialog open={showResult} onOpenChange={setShowResult}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-sm rounded-[28px] border-0 bg-[#f8fafd] dark:bg-background [&_label]:text-xs [&_label]:font-medium [&_label]:text-[#444746] dark:[&_label]:text-muted-foreground [&_input:not([type=checkbox]):not([type=radio]):not([type=file])]:rounded-lg [&_input]:shadow-none [&_input:not([type=checkbox]):not([type=radio])]:bg-white dark:[&_input]:bg-card [&_input]:border-[#c4c7c5] dark:[&_input]:border-border [&_input:focus-visible]:ring-1 [&_input:focus-visible]:ring-[#0b57d0] [&_input:focus-visible]:border-[#0b57d0] [&_button[role=combobox]]:rounded-lg [&_button[role=combobox]]:shadow-none [&_button[role=combobox]]:bg-white dark:[&_button[role=combobox]]:bg-card [&_button[role=combobox]]:border-[#c4c7c5] dark:[&_button[role=combobox]]:border-border [&_textarea]:rounded-lg [&_textarea]:shadow-none [&_textarea]:bg-white dark:[&_textarea]:bg-card [&_textarea]:border-[#c4c7c5]">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+            <DialogTitle className="flex items-center gap-2 text-[22px] leading-7 font-normal text-[#1f1f1f] dark:text-foreground">
               <ShieldCheck className="h-5 w-5 text-green-600" /> Acceso creado
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-sm text-[#444746] dark:text-muted-foreground">
               Comparte estas credenciales con {name.split(' ')[0]}.
             </DialogDescription>
           </DialogHeader>
@@ -143,14 +143,14 @@ export function CreateAccessButton({ name, email, phone, role, variant = 'row' }
                 <p className="font-mono font-bold text-base">{password}</p>
               </div>
             </div>
-            <Button variant="outline" size="sm" className="w-full gap-1.5" onClick={copyCredentials}>
+            <Button variant="outline" size="sm" className="w-full gap-1.5 rounded-full px-4 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent" onClick={copyCredentials}>
               {copied ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
               {copied ? 'Copiado' : 'Copiar credenciales'}
             </Button>
           </div>
 
           <DialogFooter>
-            <Button onClick={() => setShowResult(false)}>Listo</Button>
+            <Button className="rounded-full px-5 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium shadow-none" onClick={() => setShowResult(false)}>Listo</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

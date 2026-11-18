@@ -130,9 +130,9 @@ function ClientFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl w-[95vw] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl w-[95vw] max-h-[90vh] overflow-y-auto rounded-[28px] border-0 bg-[#f8fafd] dark:bg-background [&_label]:text-xs [&_label]:font-medium [&_label]:text-[#444746] dark:[&_label]:text-muted-foreground [&_input:not([type=checkbox]):not([type=radio]):not([type=file])]:rounded-lg [&_input]:shadow-none [&_input:not([type=checkbox]):not([type=radio])]:bg-white dark:[&_input]:bg-card [&_input]:border-[#c4c7c5] dark:[&_input]:border-border [&_input:focus-visible]:ring-1 [&_input:focus-visible]:ring-[#0b57d0] [&_input:focus-visible]:border-[#0b57d0] [&_button[role=combobox]]:rounded-lg [&_button[role=combobox]]:shadow-none [&_button[role=combobox]]:bg-white dark:[&_button[role=combobox]]:bg-card [&_button[role=combobox]]:border-[#c4c7c5] dark:[&_button[role=combobox]]:border-border [&_textarea]:rounded-lg [&_textarea]:shadow-none [&_textarea]:bg-white dark:[&_textarea]:bg-card [&_textarea]:border-[#c4c7c5]">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2 text-[22px] leading-7 font-normal text-[#1f1f1f] dark:text-foreground">
             <Building2 className="h-5 w-5" />
             {editing ? 'Edit Dispatch Service Client' : 'New Dispatch Service Client'}
           </DialogTitle>
@@ -208,8 +208,8 @@ function ClientFormDialog({
         </div>
 
         <DialogFooter className="mt-4">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button>
-          <Button onClick={handleSubmit} disabled={saving}>
+          <Button className="rounded-full px-4 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent" variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button>
+          <Button className="rounded-full px-5 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium shadow-none" onClick={handleSubmit} disabled={saving}>
             {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Saving...</> : editing ? 'Update' : 'Create'}
           </Button>
         </DialogFooter>
@@ -465,9 +465,9 @@ function AddDriverToClientDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md rounded-[28px] border-0 bg-[#f8fafd] dark:bg-background [&_label]:text-xs [&_label]:font-medium [&_label]:text-[#444746] dark:[&_label]:text-muted-foreground [&_input:not([type=checkbox]):not([type=radio]):not([type=file])]:rounded-lg [&_input]:shadow-none [&_input:not([type=checkbox]):not([type=radio])]:bg-white dark:[&_input]:bg-card [&_input]:border-[#c4c7c5] dark:[&_input]:border-border [&_input:focus-visible]:ring-1 [&_input:focus-visible]:ring-[#0b57d0] [&_input:focus-visible]:border-[#0b57d0] [&_button[role=combobox]]:rounded-lg [&_button[role=combobox]]:shadow-none [&_button[role=combobox]]:bg-white dark:[&_button[role=combobox]]:bg-card [&_button[role=combobox]]:border-[#c4c7c5] dark:[&_button[role=combobox]]:border-border [&_textarea]:rounded-lg [&_textarea]:shadow-none [&_textarea]:bg-white dark:[&_textarea]:bg-card [&_textarea]:border-[#c4c7c5]">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2 text-[22px] leading-7 font-normal text-[#1f1f1f] dark:text-foreground">
             <UserPlus className="h-5 w-5" />
             Agregar Driver a {clientName}
           </DialogTitle>
@@ -478,10 +478,10 @@ function AddDriverToClientDialog({
             <div className="space-y-2">
               <Label>Modo</Label>
               <div className="flex gap-2">
-                <Button variant={mode === 'link' ? 'default' : 'outline'} size="sm" onClick={() => setMode('link')} className="flex-1 gap-1">
+                <Button variant={mode === 'link' ? 'default' : 'outline'} size="sm" onClick={() => setMode('link')} className="flex-1 gap-1 rounded-full px-5 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium shadow-none">
                   <Link2 className="h-3.5 w-3.5" /> Vincular existente
                 </Button>
-                <Button variant={mode === 'onboard' ? 'default' : 'outline'} size="sm" onClick={() => setMode('onboard')} className="flex-1 gap-1">
+                <Button variant={mode === 'onboard' ? 'default' : 'outline'} size="sm" onClick={() => setMode('onboard')} className="flex-1 gap-1 rounded-full px-5 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium shadow-none">
                   <UserPlus className="h-3.5 w-3.5" /> Generar link
                 </Button>
               </div>
@@ -506,8 +506,8 @@ function AddDriverToClientDialog({
                   </p>
                 </div>
                 <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => handleClose(false)}>Cancel</Button>
-                  <Button onClick={handleLink} disabled={loading || !selectedDriverId}>
+                  <Button className="rounded-full px-4 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent" variant="outline" onClick={() => handleClose(false)}>Cancel</Button>
+                  <Button className="rounded-full px-5 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium shadow-none" onClick={handleLink} disabled={loading || !selectedDriverId}>
                     {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Vincular'}
                   </Button>
                 </div>
@@ -522,8 +522,8 @@ function AddDriverToClientDialog({
                   </p>
                 </div>
                 <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => handleClose(false)}>Cancel</Button>
-                  <Button onClick={handleGenerateLink} disabled={loading}>
+                  <Button className="rounded-full px-4 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent" variant="outline" onClick={() => handleClose(false)}>Cancel</Button>
+                  <Button className="rounded-full px-5 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium shadow-none" onClick={handleGenerateLink} disabled={loading}>
                     {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Generar Link'}
                   </Button>
                 </div>
@@ -535,12 +535,12 @@ function AddDriverToClientDialog({
             <p className="text-sm text-muted-foreground">Comparte este link con el driver (expira en 7 días):</p>
             <div className="flex items-center gap-2">
               <Input readOnly value={generatedLink} className="text-xs" />
-              <Button size="icon" variant="outline" onClick={handleCopy}>
+              <Button className="rounded-full px-4 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent" size="icon" variant="outline" onClick={handleCopy}>
                 {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
               </Button>
             </div>
             <div className="flex justify-end">
-              <Button variant="outline" onClick={() => handleClose(false)}>Cerrar</Button>
+              <Button className="rounded-full px-4 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent" variant="outline" onClick={() => handleClose(false)}>Cerrar</Button>
             </div>
           </div>
         )}
@@ -600,10 +600,10 @@ function ClientCard({
             </div>
           </div>
           <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
-            <Button variant="outline" size="sm" onClick={onEdit} className="h-7 gap-1 text-xs">
+            <Button variant="outline" size="sm" onClick={onEdit} className="h-7 gap-1 text-xs rounded-full px-4 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent">
               <Pencil className="h-3 w-3" /> Editar
             </Button>
-            <Button variant="outline" size="sm" onClick={onDelete} className="h-7 gap-1 text-xs text-destructive hover:text-destructive">
+            <Button variant="outline" size="sm" onClick={onDelete} className="h-7 gap-1 text-xs text-destructive hover:text-destructive rounded-full px-4 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent">
               <Trash2 className="h-3 w-3" />
             </Button>
           </div>
@@ -720,7 +720,7 @@ function ClientCard({
                 <Button
                   size="sm"
                   variant="outline"
-                  className="h-7 gap-1 text-xs"
+                  className="h-7 gap-1 text-xs rounded-full px-4 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent"
                   onClick={(e) => { e.stopPropagation(); setAddDriverOpen(true); }}
                 >
                   <UserPlus className="h-3.5 w-3.5" /> Agregar Driver
@@ -847,7 +847,7 @@ export function DispatchServiceClientsSection() {
         <div className="relative flex-1 max-w-sm">
           <Input placeholder="Buscar por nombre, MC#, DOT#..." value={search} onChange={e => setSearch(e.target.value)} className="pl-3" />
         </div>
-        <Button size="sm" className="gap-1.5" onClick={() => { setEditing(null); setFormOpen(true); }}>
+        <Button size="sm" className="gap-1.5 rounded-full px-5 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium shadow-none" onClick={() => { setEditing(null); setFormOpen(true); }}>
           <Plus className="h-4 w-4" /> New Client
         </Button>
       </div>

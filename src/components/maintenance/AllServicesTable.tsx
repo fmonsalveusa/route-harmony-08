@@ -112,9 +112,9 @@ function ServiceHistoryRow({ maintenanceId, onViewPhoto }: { maintenanceId: stri
     <>
       {/* Edit Dialog */}
       <Dialog open={!!editingLog} onOpenChange={(open) => !open && setEditingLog(null)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md rounded-[28px] border-0 bg-[#f8fafd] dark:bg-background [&_label]:text-xs [&_label]:font-medium [&_label]:text-[#444746] dark:[&_label]:text-muted-foreground [&_input:not([type=checkbox]):not([type=radio]):not([type=file])]:rounded-lg [&_input]:shadow-none [&_input:not([type=checkbox]):not([type=radio])]:bg-white dark:[&_input]:bg-card [&_input]:border-[#c4c7c5] dark:[&_input]:border-border [&_input:focus-visible]:ring-1 [&_input:focus-visible]:ring-[#0b57d0] [&_input:focus-visible]:border-[#0b57d0] [&_button[role=combobox]]:rounded-lg [&_button[role=combobox]]:shadow-none [&_button[role=combobox]]:bg-white dark:[&_button[role=combobox]]:bg-card [&_button[role=combobox]]:border-[#c4c7c5] dark:[&_button[role=combobox]]:border-border [&_textarea]:rounded-lg [&_textarea]:shadow-none [&_textarea]:bg-white dark:[&_textarea]:bg-card [&_textarea]:border-[#c4c7c5]">
           <DialogHeader>
-            <DialogTitle>Edit Service Log</DialogTitle>
+            <DialogTitle className="text-[22px] leading-7 font-normal text-[#1f1f1f] dark:text-foreground">Edit Service Log</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <div>
@@ -356,9 +356,9 @@ export function AllServicesTable({ items, getTruckLabel, onEdit, onDelete, onLog
 
     {/* Dialog para ver foto de factura */}
     <Dialog open={!!photoUrl} onOpenChange={(open) => !open && setPhotoUrl(null)}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl rounded-[28px] border-0 bg-[#f8fafd] dark:bg-background [&_label]:text-xs [&_label]:font-medium [&_label]:text-[#444746] dark:[&_label]:text-muted-foreground [&_input:not([type=checkbox]):not([type=radio]):not([type=file])]:rounded-lg [&_input]:shadow-none [&_input:not([type=checkbox]):not([type=radio])]:bg-white dark:[&_input]:bg-card [&_input]:border-[#c4c7c5] dark:[&_input]:border-border [&_input:focus-visible]:ring-1 [&_input:focus-visible]:ring-[#0b57d0] [&_input:focus-visible]:border-[#0b57d0] [&_button[role=combobox]]:rounded-lg [&_button[role=combobox]]:shadow-none [&_button[role=combobox]]:bg-white dark:[&_button[role=combobox]]:bg-card [&_button[role=combobox]]:border-[#c4c7c5] dark:[&_button[role=combobox]]:border-border [&_textarea]:rounded-lg [&_textarea]:shadow-none [&_textarea]:bg-white dark:[&_textarea]:bg-card [&_textarea]:border-[#c4c7c5]">
         <DialogHeader>
-          <DialogTitle>Invoice Photo</DialogTitle>
+          <DialogTitle className="text-[22px] leading-7 font-normal text-[#1f1f1f] dark:text-foreground">Invoice Photo</DialogTitle>
         </DialogHeader>
         {photoUrl && (
           <div className="flex justify-center">

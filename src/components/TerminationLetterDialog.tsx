@@ -88,10 +88,10 @@ export function TerminationLetterDialog({ open, onOpenChange, driver, truck: tru
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md rounded-[28px] border-0 bg-[#f8fafd] dark:bg-background [&_label]:text-xs [&_label]:font-medium [&_label]:text-[#444746] dark:[&_label]:text-muted-foreground [&_input:not([type=checkbox]):not([type=radio]):not([type=file])]:rounded-lg [&_input]:shadow-none [&_input:not([type=checkbox]):not([type=radio])]:bg-white dark:[&_input]:bg-card [&_input]:border-[#c4c7c5] dark:[&_input]:border-border [&_input:focus-visible]:ring-1 [&_input:focus-visible]:ring-[#0b57d0] [&_input:focus-visible]:border-[#0b57d0] [&_button[role=combobox]]:rounded-lg [&_button[role=combobox]]:shadow-none [&_button[role=combobox]]:bg-white dark:[&_button[role=combobox]]:bg-card [&_button[role=combobox]]:border-[#c4c7c5] dark:[&_button[role=combobox]]:border-border [&_textarea]:rounded-lg [&_textarea]:shadow-none [&_textarea]:bg-white dark:[&_textarea]:bg-card [&_textarea]:border-[#c4c7c5]">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2"><FileText className="h-5 w-5" /> Termination Letter</DialogTitle>
-          <DialogDescription>Generate a lease termination letter for {driver.name}</DialogDescription>
+          <DialogTitle className="flex items-center gap-2 text-[22px] leading-7 font-normal text-[#1f1f1f] dark:text-foreground"><FileText className="h-5 w-5" /> Termination Letter</DialogTitle>
+          <DialogDescription className="text-sm text-[#444746] dark:text-muted-foreground">Generate a lease termination letter for {driver.name}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3">
@@ -124,8 +124,8 @@ export function TerminationLetterDialog({ open, onOpenChange, driver, truck: tru
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>Cancel</Button>
-          <Button onClick={handleGenerate} disabled={loading}>
+          <Button className="rounded-full px-4 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent" variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>Cancel</Button>
+          <Button className="rounded-full px-5 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium shadow-none" onClick={handleGenerate} disabled={loading}>
             {loading ? <><Loader2 className="h-4 w-4 animate-spin mr-1" /> Generating...</> : 'Generate & Save'}
           </Button>
         </DialogFooter>

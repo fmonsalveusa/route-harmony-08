@@ -50,10 +50,10 @@ export function RtsAssistantDialog({ open, onOpenChange }: { open: boolean; onOp
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg rounded-[28px] border-0 bg-[#f8fafd] dark:bg-background [&_label]:text-xs [&_label]:font-medium [&_label]:text-[#444746] dark:[&_label]:text-muted-foreground [&_input:not([type=checkbox]):not([type=radio]):not([type=file])]:rounded-lg [&_input]:shadow-none [&_input:not([type=checkbox]):not([type=radio])]:bg-white dark:[&_input]:bg-card [&_input]:border-[#c4c7c5] dark:[&_input]:border-border [&_input:focus-visible]:ring-1 [&_input:focus-visible]:ring-[#0b57d0] [&_input:focus-visible]:border-[#0b57d0] [&_button[role=combobox]]:rounded-lg [&_button[role=combobox]]:shadow-none [&_button[role=combobox]]:bg-white dark:[&_button[role=combobox]]:bg-card [&_button[role=combobox]]:border-[#c4c7c5] dark:[&_button[role=combobox]]:border-border [&_textarea]:rounded-lg [&_textarea]:shadow-none [&_textarea]:bg-white dark:[&_textarea]:bg-card [&_textarea]:border-[#c4c7c5]">
         <DialogHeader>
-          <DialogTitle>Asistente de factoring RTS</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-[22px] leading-7 font-normal text-[#1f1f1f] dark:text-foreground">Asistente de factoring RTS</DialogTitle>
+          <DialogDescription className="text-sm text-[#444746] dark:text-muted-foreground">
             Extensión de Chrome que llena las facturas en el portal de RTS con las cargas entregadas en Factoring "Pending":
             número de carga, broker, monto, RC y el POD de cada entrega.
           </DialogDescription>
@@ -70,10 +70,10 @@ export function RtsAssistantDialog({ open, onOpenChange }: { open: boolean; onOp
         </ol>
         <div className="flex items-center gap-2">
           <code className="flex-1 truncate rounded border bg-muted px-2 py-1.5 text-xs">{key ?? '…'}</code>
-          <Button size="sm" variant="outline" onClick={copy} disabled={!key}>
+          <Button className="rounded-full px-4 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent" size="sm" variant="outline" onClick={copy} disabled={!key}>
             {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
           </Button>
-          <Button size="sm" variant="ghost" onClick={regenerate} disabled={busy} title="Crear una clave nueva (la actual deja de funcionar)">
+          <Button className="rounded-full text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium" size="sm" variant="ghost" onClick={regenerate} disabled={busy} title="Crear una clave nueva (la actual deja de funcionar)">
             {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
           </Button>
         </div>

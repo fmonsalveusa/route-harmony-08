@@ -363,9 +363,9 @@ export function DocCardGrid({ docs, getDocSignedUrl, allowUpload, onUpload, uplo
 
       {/* Preview Dialog */}
       <Dialog open={!!preview || loadingPreview} onOpenChange={(open) => { if (!open) setPreview(null); }}>
-        <DialogContent className="max-w-3xl" onClick={e => e.stopPropagation()}>
+        <DialogContent className="max-w-3xl rounded-[28px] border-0 bg-[#f8fafd] dark:bg-background [&_label]:text-xs [&_label]:font-medium [&_label]:text-[#444746] dark:[&_label]:text-muted-foreground [&_input:not([type=checkbox]):not([type=radio]):not([type=file])]:rounded-lg [&_input]:shadow-none [&_input:not([type=checkbox]):not([type=radio])]:bg-white dark:[&_input]:bg-card [&_input]:border-[#c4c7c5] dark:[&_input]:border-border [&_input:focus-visible]:ring-1 [&_input:focus-visible]:ring-[#0b57d0] [&_input:focus-visible]:border-[#0b57d0] [&_button[role=combobox]]:rounded-lg [&_button[role=combobox]]:shadow-none [&_button[role=combobox]]:bg-white dark:[&_button[role=combobox]]:bg-card [&_button[role=combobox]]:border-[#c4c7c5] dark:[&_button[role=combobox]]:border-border [&_textarea]:rounded-lg [&_textarea]:shadow-none [&_textarea]:bg-white dark:[&_textarea]:bg-card [&_textarea]:border-[#c4c7c5]" onClick={e => e.stopPropagation()}>
           <DialogHeader>
-            <DialogTitle>{preview?.item.label}</DialogTitle>
+            <DialogTitle className="text-[22px] leading-7 font-normal text-[#1f1f1f] dark:text-foreground">{preview?.item.label}</DialogTitle>
           </DialogHeader>
           {loadingPreview ? (
             <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
@@ -379,9 +379,9 @@ export function DocCardGrid({ docs, getDocSignedUrl, allowUpload, onUpload, uplo
             </div>
           )}
           <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={() => setPreview(null)}>Cerrar</Button>
+            <Button className="rounded-full px-4 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent" variant="outline" onClick={() => setPreview(null)}>Cerrar</Button>
             {preview && (
-              <Button asChild>
+              <Button className="rounded-full px-5 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium shadow-none" asChild>
                 <a href={preview.resolvedUrl} target="_blank" rel="noopener noreferrer">
                   <ExternalLink className="h-4 w-4 mr-2" /> Abrir en nueva pestaña
                 </a>

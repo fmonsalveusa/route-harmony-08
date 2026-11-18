@@ -75,8 +75,8 @@ export default function FieldSettingsDialog({ open, field, onClose, onSave }: Fi
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader><DialogTitle>Configuración del campo</DialogTitle></DialogHeader>
+      <DialogContent className="sm:max-w-md rounded-[28px] border-0 bg-[#f8fafd] dark:bg-background [&_label]:text-xs [&_label]:font-medium [&_label]:text-[#444746] dark:[&_label]:text-muted-foreground [&_input:not([type=checkbox]):not([type=radio]):not([type=file])]:rounded-lg [&_input]:shadow-none [&_input:not([type=checkbox]):not([type=radio])]:bg-white dark:[&_input]:bg-card [&_input]:border-[#c4c7c5] dark:[&_input]:border-border [&_input:focus-visible]:ring-1 [&_input:focus-visible]:ring-[#0b57d0] [&_input:focus-visible]:border-[#0b57d0] [&_button[role=combobox]]:rounded-lg [&_button[role=combobox]]:shadow-none [&_button[role=combobox]]:bg-white dark:[&_button[role=combobox]]:bg-card [&_button[role=combobox]]:border-[#c4c7c5] dark:[&_button[role=combobox]]:border-border [&_textarea]:rounded-lg [&_textarea]:shadow-none [&_textarea]:bg-white dark:[&_textarea]:bg-card [&_textarea]:border-[#c4c7c5]">
+        <DialogHeader><DialogTitle className="text-[22px] leading-7 font-normal text-[#1f1f1f] dark:text-foreground">Configuración del campo</DialogTitle></DialogHeader>
         <div className="space-y-4 py-2">
           <div className="space-y-2">
             <Label htmlFor="field-label">Nombre / Etiqueta</Label>
@@ -94,8 +94,8 @@ export default function FieldSettingsDialog({ open, field, onClose, onSave }: Fi
             <div className="space-y-2">
               <Label>Disposición</Label>
               <div className="flex gap-2">
-                <Button type="button" variant={addressRows === 1 ? "default" : "outline"} size="sm" className="flex-1" onClick={() => setAddressRows(1)}>1 fila</Button>
-                <Button type="button" variant={addressRows === 2 ? "default" : "outline"} size="sm" className="flex-1" onClick={() => setAddressRows(2)}>2 filas</Button>
+                <Button type="button" variant={addressRows === 1 ? "default" : "outline"} size="sm" className="flex-1 rounded-full px-5 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium shadow-none" onClick={() => setAddressRows(1)}>1 fila</Button>
+                <Button type="button" variant={addressRows === 2 ? "default" : "outline"} size="sm" className="flex-1 rounded-full px-5 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium shadow-none" onClick={() => setAddressRows(2)}>2 filas</Button>
               </div>
             </div>
           )}
@@ -112,7 +112,7 @@ export default function FieldSettingsDialog({ open, field, onClose, onSave }: Fi
               </div>
               <div className="flex gap-2">
                 <Input value={newOption} onChange={(e) => setNewOption(e.target.value)} onKeyDown={handleKeyDown} placeholder="Escribe una opción..." style={{ fontSize: "16px" }} />
-                <Button type="button" variant="outline" size="icon" onClick={addOption} disabled={!newOption.trim()}><Plus className="h-4 w-4" /></Button>
+                <Button className="rounded-full px-4 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent" type="button" variant="outline" size="icon" onClick={addOption} disabled={!newOption.trim()}><Plus className="h-4 w-4" /></Button>
               </div>
             </div>
           )}
@@ -128,8 +128,8 @@ export default function FieldSettingsDialog({ open, field, onClose, onSave }: Fi
           )}
         </div>
         <DialogFooter className="gap-2 sm:gap-0">
-          <Button variant="outline" onClick={onClose}>Cancelar</Button>
-          <Button onClick={handleSave}>Guardar</Button>
+          <Button className="rounded-full px-4 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent" variant="outline" onClick={onClose}>Cancelar</Button>
+          <Button className="rounded-full px-5 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium shadow-none" onClick={handleSave}>Guardar</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

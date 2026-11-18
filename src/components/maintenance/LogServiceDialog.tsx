@@ -143,9 +143,9 @@ export function LogServiceDialog({ open, onOpenChange, maintenanceType, onSubmit
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-[28px] border-0 bg-[#f8fafd] dark:bg-background [&_label]:text-xs [&_label]:font-medium [&_label]:text-[#444746] dark:[&_label]:text-muted-foreground [&_input:not([type=checkbox]):not([type=radio]):not([type=file])]:rounded-lg [&_input]:shadow-none [&_input:not([type=checkbox]):not([type=radio])]:bg-white dark:[&_input]:bg-card [&_input]:border-[#c4c7c5] dark:[&_input]:border-border [&_input:focus-visible]:ring-1 [&_input:focus-visible]:ring-[#0b57d0] [&_input:focus-visible]:border-[#0b57d0] [&_button[role=combobox]]:rounded-lg [&_button[role=combobox]]:shadow-none [&_button[role=combobox]]:bg-white dark:[&_button[role=combobox]]:bg-card [&_button[role=combobox]]:border-[#c4c7c5] dark:[&_button[role=combobox]]:border-border [&_textarea]:rounded-lg [&_textarea]:shadow-none [&_textarea]:bg-white dark:[&_textarea]:bg-card [&_textarea]:border-[#c4c7c5]">
         <DialogHeader>
-          <DialogTitle>Log Service — {maintenanceType}</DialogTitle>
+          <DialogTitle className="text-[22px] leading-7 font-normal text-[#1f1f1f] dark:text-foreground">Log Service — {maintenanceType}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6">
@@ -257,12 +257,12 @@ export function LogServiceDialog({ open, onOpenChange, maintenanceType, onSubmit
                       <a href={invoicePhotoUrl} target="_blank" rel="noopener noreferrer">
                         <img src={invoicePhotoUrl} alt="Invoice" className="h-20 w-auto rounded border object-cover cursor-pointer hover:opacity-80" />
                       </a>
-                      <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setInvoicePhotoUrl(null)}>
+                      <Button variant="ghost" size="icon" className="text-destructive rounded-full text-[#b3261e] hover:text-[#b3261e] hover:bg-[#fce8e6]" onClick={() => setInvoicePhotoUrl(null)}>
                         <X className="h-4 w-4" />
                       </Button>
                     </div>
                   ) : (
-                    <Button variant="outline" className="gap-2" onClick={() => photoInputRef.current?.click()} disabled={uploadingPhoto}>
+                    <Button variant="outline" className="gap-2 rounded-full px-4 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent" onClick={() => photoInputRef.current?.click()} disabled={uploadingPhoto}>
                       {uploadingPhoto ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
                       {uploadingPhoto ? 'Uploading...' : 'Upload Invoice Photo'}
                     </Button>
@@ -281,8 +281,8 @@ export function LogServiceDialog({ open, onOpenChange, maintenanceType, onSubmit
         </div>
 
         <div className="flex justify-end gap-2 mt-4">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleSubmit} disabled={saving}>
+          <Button className="rounded-full px-4 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button className="rounded-full px-5 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium shadow-none" onClick={handleSubmit} disabled={saving}>
             {saving ? 'Saving...' : 'Log Service'}
           </Button>
         </div>

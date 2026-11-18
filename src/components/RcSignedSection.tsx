@@ -124,18 +124,18 @@ export function RcSignedSection({ loadId, hasDriver }: { loadId: string; hasDriv
 
       <div className="flex flex-wrap gap-2">
         {rc?.file_path && rc.status !== 'failed' && (
-          <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={view} disabled={busy !== null}>
+          <Button size="sm" variant="outline" className="h-7 gap-1 text-xs rounded-full px-4 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent" onClick={view} disabled={busy !== null}>
             {busy === 'view' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Eye className="h-3.5 w-3.5" />} Ver
           </Button>
         )}
         {hasDriver && (
-          <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={prepare} disabled={busy !== null}>
+          <Button size="sm" variant="outline" className="h-7 gap-1 text-xs rounded-full px-4 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent" onClick={prepare} disabled={busy !== null}>
             {busy === 'prepare' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RotateCw className="h-3.5 w-3.5" />}
             {rc ? 'Volver A Preparar' : 'Preparar'}
           </Button>
         )}
         {rc?.status === 'draft' && rc.file_path && (
-          <Button size="sm" className="h-7 gap-1 text-xs" onClick={send} disabled={busy !== null}>
+          <Button size="sm" className="h-7 gap-1 text-xs rounded-full px-5 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium shadow-none" onClick={send} disabled={busy !== null}>
             {busy === 'send' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />} Enviar Al Broker
           </Button>
         )}
@@ -198,9 +198,9 @@ export function RcReviewDialog({ loadId, reference, preparing, onClose }: {
 
   return (
     <Dialog open onOpenChange={v => !v && onClose()}>
-      <DialogContent className="max-w-4xl w-[95vw] h-[92vh] flex flex-col gap-3">
+      <DialogContent className="max-w-4xl w-[95vw] h-[92vh] flex flex-col gap-3 rounded-[28px] border-0 bg-[#f8fafd] dark:bg-background [&_label]:text-xs [&_label]:font-medium [&_label]:text-[#444746] dark:[&_label]:text-muted-foreground [&_input:not([type=checkbox]):not([type=radio]):not([type=file])]:rounded-lg [&_input]:shadow-none [&_input:not([type=checkbox]):not([type=radio])]:bg-white dark:[&_input]:bg-card [&_input]:border-[#c4c7c5] dark:[&_input]:border-border [&_input:focus-visible]:ring-1 [&_input:focus-visible]:ring-[#0b57d0] [&_input:focus-visible]:border-[#0b57d0] [&_button[role=combobox]]:rounded-lg [&_button[role=combobox]]:shadow-none [&_button[role=combobox]]:bg-white dark:[&_button[role=combobox]]:bg-card [&_button[role=combobox]]:border-[#c4c7c5] dark:[&_button[role=combobox]]:border-border [&_textarea]:rounded-lg [&_textarea]:shadow-none [&_textarea]:bg-white dark:[&_textarea]:bg-card [&_textarea]:border-[#c4c7c5]">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2 text-[22px] leading-7 font-normal text-[#1f1f1f] dark:text-foreground">
             <FileSignature className="h-5 w-5 text-primary" /> Rate Confirmation Firmado{reference ? ` · #${reference}` : ''}
           </DialogTitle>
         </DialogHeader>
@@ -228,9 +228,9 @@ export function RcReviewDialog({ loadId, reference, preparing, onClose }: {
             {state === 'ready' ? 'Revisa que la firma y los datos del driver estén en su lugar.' : 'Si lo cierras, lo encuentras en el detalle de la carga.'}
           </p>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={onClose}>{state === 'ready' ? 'Enviar después' : 'Cerrar'}</Button>
+            <Button className="rounded-full px-4 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent" variant="outline" onClick={onClose}>{state === 'ready' ? 'Enviar después' : 'Cerrar'}</Button>
             {state === 'ready' && (
-              <Button onClick={send} disabled={sending} className="gap-1.5">
+              <Button onClick={send} disabled={sending} className="gap-1.5 rounded-full px-5 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium shadow-none">
                 {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} Enviar al broker
               </Button>
             )}

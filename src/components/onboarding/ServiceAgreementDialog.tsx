@@ -37,9 +37,9 @@ export default function ServiceAgreementDialog({ open, onOpenChange, driverName,
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-[28px] border-0 bg-[#f8fafd] dark:bg-background [&_label]:text-xs [&_label]:font-medium [&_label]:text-[#444746] dark:[&_label]:text-muted-foreground [&_input:not([type=checkbox]):not([type=radio]):not([type=file])]:rounded-lg [&_input]:shadow-none [&_input:not([type=checkbox]):not([type=radio])]:bg-white dark:[&_input]:bg-card [&_input]:border-[#c4c7c5] dark:[&_input]:border-border [&_input:focus-visible]:ring-1 [&_input:focus-visible]:ring-[#0b57d0] [&_input:focus-visible]:border-[#0b57d0] [&_button[role=combobox]]:rounded-lg [&_button[role=combobox]]:shadow-none [&_button[role=combobox]]:bg-white dark:[&_button[role=combobox]]:bg-card [&_button[role=combobox]]:border-[#c4c7c5] dark:[&_button[role=combobox]]:border-border [&_textarea]:rounded-lg [&_textarea]:shadow-none [&_textarea]:bg-white dark:[&_textarea]:bg-card [&_textarea]:border-[#c4c7c5]">
         <DialogHeader>
-          <DialogTitle>Contrato de Servicios de Dispatch / Dispatch Services Contract</DialogTitle>
+          <DialogTitle className="text-[22px] leading-7 font-normal text-[#1f1f1f] dark:text-foreground">Contrato de Servicios de Dispatch / Dispatch Services Contract</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 text-sm">
           <div className="bg-muted/50 p-3 rounded-lg text-xs">
@@ -194,7 +194,7 @@ export default function ServiceAgreementDialog({ open, onOpenChange, driverName,
             <p className="text-xs text-muted-foreground">Fecha / Date: {today}</p>
           </div>
 
-          <Button onClick={handleSubmit} className="w-full">Confirmar y Firmar / Confirm & Sign</Button>
+          <Button onClick={handleSubmit} className="w-full rounded-full px-5 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium shadow-none">Confirmar y Firmar / Confirm & Sign</Button>
         </div>
       </DialogContent>
     </Dialog>

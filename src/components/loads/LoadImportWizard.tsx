@@ -339,9 +339,9 @@ export function LoadImportWizard({ open, onOpenChange, onImport, drivers, trucks
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) reset(); onOpenChange(o); }}>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto rounded-[28px] border-0 bg-[#f8fafd] dark:bg-background [&_label]:text-xs [&_label]:font-medium [&_label]:text-[#444746] dark:[&_label]:text-muted-foreground [&_input:not([type=checkbox]):not([type=radio]):not([type=file])]:rounded-lg [&_input]:shadow-none [&_input:not([type=checkbox]):not([type=radio])]:bg-white dark:[&_input]:bg-card [&_input]:border-[#c4c7c5] dark:[&_input]:border-border [&_input:focus-visible]:ring-1 [&_input:focus-visible]:ring-[#0b57d0] [&_input:focus-visible]:border-[#0b57d0] [&_button[role=combobox]]:rounded-lg [&_button[role=combobox]]:shadow-none [&_button[role=combobox]]:bg-white dark:[&_button[role=combobox]]:bg-card [&_button[role=combobox]]:border-[#c4c7c5] dark:[&_button[role=combobox]]:border-border [&_textarea]:rounded-lg [&_textarea]:shadow-none [&_textarea]:bg-white dark:[&_textarea]:bg-card [&_textarea]:border-[#c4c7c5]">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2 text-[22px] leading-7 font-normal text-[#1f1f1f] dark:text-foreground">
             <FileText className="h-5 w-5" />
             Import Loads from CSV
           </DialogTitle>
@@ -388,16 +388,16 @@ export function LoadImportWizard({ open, onOpenChange, onImport, drivers, trucks
                       </p>
                     </div>
                   </div>
-                  <Button onClick={() => { setFile(null); setRawRows([]); setHeaders([]); }} variant="ghost" size="sm">Remove</Button>
+                  <Button className="rounded-full text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium" onClick={() => { setFile(null); setRawRows([]); setHeaders([]); }} variant="ghost" size="sm">Remove</Button>
                 </CardContent>
               </Card>
             )}
 
             <div className="flex justify-between">
-              <Button variant="outline" size="sm" onClick={downloadTemplate}>
+              <Button className="rounded-full px-4 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent" variant="outline" size="sm" onClick={downloadTemplate}>
                 <Download className="h-4 w-4 mr-1" /> Download Template
               </Button>
-              <Button onClick={() => setStep('map')} disabled={!file || rawRows.length === 0}>
+              <Button className="rounded-full px-5 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium shadow-none" onClick={() => setStep('map')} disabled={!file || rawRows.length === 0}>
                 Next — Map Columns <ArrowRight className="h-4 w-4 ml-1" />
               </Button>
             </div>
@@ -447,10 +447,10 @@ export function LoadImportWizard({ open, onOpenChange, onImport, drivers, trucks
             </div>
 
             <div className="flex justify-between">
-              <Button variant="outline" onClick={() => setStep('upload')}>
+              <Button className="rounded-full px-4 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent" variant="outline" onClick={() => setStep('upload')}>
                 <ArrowLeft className="h-4 w-4 mr-1" /> Back
               </Button>
-              <Button onClick={() => { runValidation(); setStep('validate'); }} disabled={!requiredMapped}>
+              <Button className="rounded-full px-5 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium shadow-none" onClick={() => { runValidation(); setStep('validate'); }} disabled={!requiredMapped}>
                 Next — Validate Data <ArrowRight className="h-4 w-4 ml-1" />
               </Button>
             </div>
@@ -527,10 +527,10 @@ export function LoadImportWizard({ open, onOpenChange, onImport, drivers, trucks
             </div>
 
             <div className="flex justify-between">
-              <Button variant="outline" onClick={() => setStep('map')}>
+              <Button className="rounded-full px-4 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent" variant="outline" onClick={() => setStep('map')}>
                 <ArrowLeft className="h-4 w-4 mr-1" /> Back
               </Button>
-              <Button onClick={() => setStep('confirm')} disabled={rowsToImport.length === 0}>
+              <Button className="rounded-full px-5 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium shadow-none" onClick={() => setStep('confirm')} disabled={rowsToImport.length === 0}>
                 Next — Confirm Import ({rowsToImport.length} rows) <ArrowRight className="h-4 w-4 ml-1" />
               </Button>
             </div>
@@ -559,10 +559,10 @@ export function LoadImportWizard({ open, onOpenChange, onImport, drivers, trucks
                 )}
 
                 <div className="flex justify-between">
-                  <Button variant="outline" onClick={() => setStep('validate')} disabled={importing}>
+                  <Button className="rounded-full px-4 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent" variant="outline" onClick={() => setStep('validate')} disabled={importing}>
                     <ArrowLeft className="h-4 w-4 mr-1" /> Back
                   </Button>
-                  <Button onClick={handleImport} disabled={importing} className="bg-green-600 hover:bg-green-700">
+                  <Button onClick={handleImport} disabled={importing} className=" rounded-full px-5 bg-[#188038] hover:bg-[#137333] text-white font-medium shadow-none">
                     {importing ? 'Importing...' : `Import ${rowsToImport.length} Loads`}
                   </Button>
                 </div>
@@ -575,7 +575,7 @@ export function LoadImportWizard({ open, onOpenChange, onImport, drivers, trucks
                   {importResult.success} loads imported successfully.
                   {importResult.errors > 0 && ` ${importResult.errors} failed.`}
                 </p>
-                <Button onClick={() => { reset(); onOpenChange(false); }}>
+                <Button className="rounded-full px-5 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium shadow-none" onClick={() => { reset(); onOpenChange(false); }}>
                   Close
                 </Button>
               </div>
