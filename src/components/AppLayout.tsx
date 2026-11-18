@@ -79,10 +79,10 @@ const SIDEBAR_LINK = 'text-[#1f1f1f] hover:bg-[#e1e6ee] dark:text-slate-300 dark
 const SIDEBAR_ACTIVE = 'bg-[#d3e3fd] text-[#041e49] font-semibold dark:bg-blue-900/50 dark:text-blue-100';
 
 const roleBadgeStyles: Record<string, string> = {
-  admin: 'bg-destructive text-destructive-foreground',
-  accounting: 'bg-warning text-warning-foreground',
-  dispatcher: 'bg-info text-info-foreground',
-  driver: 'bg-success text-success-foreground',
+  admin: 'bg-[#d3e3fd] text-[#041e49] hover:bg-[#d3e3fd] dark:bg-blue-900/50 dark:text-blue-100',
+  accounting: 'bg-[#feefc3] text-[#3d2a00] hover:bg-[#feefc3] dark:bg-amber-900/50 dark:text-amber-100',
+  dispatcher: 'bg-[#c4eed0] text-[#072711] hover:bg-[#c4eed0] dark:bg-emerald-900/50 dark:text-emerald-100',
+  driver: 'bg-[#e9ddff] text-[#22005d] hover:bg-[#e9ddff] dark:bg-violet-900/50 dark:text-violet-100',
 };
 
 const roleLabels: Record<string, string> = {
@@ -205,12 +205,12 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
         <item.icon className="h-[18px] w-[18px] flex-shrink-0" />
         <span className="flex-1 truncate">{item.label}</span>
         {item.path === '/drivers' && pendingDrivers > 0 && (
-          <span className="inline-flex items-center justify-center h-4 min-w-[16px] px-1 rounded-full bg-orange-500 text-white text-[10px] font-bold leading-none">
+          <span className="inline-flex items-center justify-center h-4 min-w-[16px] px-1 rounded-full bg-[#d93025] text-white text-[10px] font-medium leading-none">
             {pendingDrivers}
           </span>
         )}
         {item.path === '/payments' && pendingPaymentsCount > 0 && (
-          <span className="inline-flex items-center justify-center h-4 min-w-[16px] px-1 rounded-full bg-orange-500 text-white text-[10px] font-bold leading-none">
+          <span className="inline-flex items-center justify-center h-4 min-w-[16px] px-1 rounded-full bg-[#d93025] text-white text-[10px] font-medium leading-none">
             {pendingPaymentsCount}
           </span>
         )}
@@ -384,7 +384,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
             )}
             <ThemeToggle />
             <NotificationBell />
-            <Badge className={`text-[10px] hidden sm:inline-flex ${roleBadgeStyles[role || 'admin']}`}>
+            <Badge className={`h-8 rounded-full px-3 text-[11px] font-medium tracking-wide border-0 shadow-none hidden sm:inline-flex ${roleBadgeStyles[role || 'admin']}`}>
               {roleLabels[role || 'admin']}
             </Badge>
           </div>
@@ -399,9 +399,9 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
       {/* ── Mobile overlay menu ── */}
       {mobileMenuOpen && (
         <>
-          <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setMobileMenuOpen(false)} />
-          <div className={`fixed inset-y-0 left-0 z-50 w-72 ${SIDEBAR_BG} shadow-xl lg:hidden flex flex-col animate-in slide-in-from-left duration-200`}>
-            <div className="flex items-center justify-between h-14 px-4 border-b border-[#e3e3e3] dark:border-white/10">
+          <div className="fixed inset-0 z-40 bg-black/30 lg:hidden" onClick={() => setMobileMenuOpen(false)} />
+          <div className={`fixed inset-y-0 left-0 z-50 w-72 ${SIDEBAR_BG} rounded-r-[28px] shadow-xl lg:hidden flex flex-col animate-in slide-in-from-left duration-200`}>
+            <div className="flex items-center justify-between h-16 px-5">
               <div className="flex items-center gap-2">
                 <img src={logoImg} alt="" className="h-6 w-6 rounded" />
                 <span className="text-sm font-medium text-[#1f1f1f] dark:text-white">{tenant?.name || 'Dispatch Up TMS'}</span>
@@ -425,12 +425,12 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
                     <item.icon className="h-4 w-4 flex-shrink-0" />
                     <span>{item.label}</span>
                     {item.path === '/drivers' && pendingDrivers > 0 && (
-                      <span className="ml-auto inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-orange-500 text-white text-[11px] font-bold leading-none">
+                      <span className="ml-auto inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-[#d93025] text-white text-[11px] font-medium leading-none">
                         {pendingDrivers}
                       </span>
                     )}
                     {item.path === '/payments' && pendingPaymentsCount > 0 && (
-                      <span className="ml-auto inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-orange-500 text-white text-[11px] font-bold leading-none">
+                      <span className="ml-auto inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-[#d93025] text-white text-[11px] font-medium leading-none">
                         {pendingPaymentsCount}
                       </span>
                     )}
@@ -460,7 +460,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
 
       {/* ── Mobile bottom tab bar ── */}
       <nav
-        className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-card border-t border-border flex items-end justify-around"
+        className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-[#f3f6fc] dark:bg-card border-t border-[#e3e3e3] dark:border-border flex items-end justify-around"
         style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom, 0.5rem))' }}
       >
         {[
@@ -476,22 +476,24 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
               <Link
                 key={tab.path}
                 to={tab.path}
-                className={`flex flex-col items-center gap-0.5 pt-2 px-3 min-w-[56px] transition-colors ${
-                  active ? 'text-primary' : 'text-muted-foreground'
+                className={`flex flex-col items-center gap-1 pt-2 px-2 min-w-[64px] transition-colors ${
+                  active ? 'text-[#001d35] dark:text-blue-100' : 'text-[#444746] dark:text-muted-foreground'
                 }`}
               >
-                <tab.icon className="h-5 w-5" />
-                <span className="text-[10px] font-medium leading-tight">{tab.label}</span>
-                {active && <span className="block h-0.5 w-5 rounded-full bg-primary mt-0.5" />}
+                {/* Indicador en píldora alrededor del ícono (Material 3) */}
+                <span className={`flex h-8 w-14 items-center justify-center rounded-full transition-colors ${active ? 'bg-[#c2e7ff] dark:bg-blue-900/60' : ''}`}>
+                  <tab.icon className="h-5 w-5" />
+                </span>
+                <span className={`text-[11px] leading-tight ${active ? 'font-semibold' : 'font-medium'}`}>{tab.label}</span>
               </Link>
             );
           })}
         <button
           onClick={() => setMobileMenuOpen(true)}
-          className="flex flex-col items-center gap-0.5 pt-2 px-3 min-w-[56px] text-muted-foreground"
+          className="flex flex-col items-center gap-1 pt-2 px-2 min-w-[64px] text-[#444746] dark:text-muted-foreground"
         >
-          <MoreHorizontal className="h-5 w-5" />
-          <span className="text-[10px] font-medium leading-tight">More</span>
+          <span className="flex h-8 w-14 items-center justify-center rounded-full"><MoreHorizontal className="h-5 w-5" /></span>
+          <span className="text-[11px] font-medium leading-tight">More</span>
         </button>
       </nav>
 

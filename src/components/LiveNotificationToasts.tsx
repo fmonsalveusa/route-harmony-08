@@ -195,15 +195,15 @@ export function LiveNotificationToasts() {
               animate={{ opacity: 1, x: 0, scale: 1 }}
               exit={{ opacity: 0, x: 120, scale: 0.95 }}
               transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-              className="pointer-events-auto cursor-pointer rounded-lg border bg-card shadow-lg hover:shadow-xl transition-shadow"
+              className="pointer-events-auto cursor-pointer rounded-2xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border shadow-[0_1px_3px_rgba(60,64,67,.3),0_4px_8px_3px_rgba(60,64,67,.15)] hover:shadow-[0_2px_6px_rgba(60,64,67,.3),0_8px_16px_6px_rgba(60,64,67,.15)] transition-shadow"
               onClick={() => handleClick(toast)}
             >
-              <div className="flex items-start gap-3 p-3">
+              <div className="flex items-start gap-3 px-4 py-3">
                 <div className={`mt-0.5 flex-shrink-0 ${color}`}>
                   <Icon className="h-5 w-5" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-foreground leading-tight">{toast.title}</p>
+                  <p className="text-sm font-medium text-[#1f1f1f] dark:text-foreground leading-tight">{toast.title}</p>
                   <p className="text-xs text-muted-foreground mt-0.5 line-clamp-3">{toast.message}</p>
                   <p className="text-[10px] text-muted-foreground/60 mt-1">
                     {formatDistanceToNow(new Date(toast.created_at), { addSuffix: true })}
@@ -214,7 +214,7 @@ export function LiveNotificationToasts() {
                     e.stopPropagation();
                     dismiss(toast.id);
                   }}
-                  className="flex-shrink-0 p-1 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                  className="flex-shrink-0 h-7 w-7 flex items-center justify-center rounded-full text-[#444746] hover:bg-[#f0f4f9] dark:hover:bg-muted transition-colors"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
