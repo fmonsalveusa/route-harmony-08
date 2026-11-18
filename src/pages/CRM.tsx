@@ -3,7 +3,7 @@ import { SEARCH_PILL } from '@/components/FilterChip';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Contact, Plus, Search, Phone, MessageCircle, Globe, UserCheck, PenLine, CalendarClock, AlertCircle,
-  Users as UsersIcon, CalendarCheck, Trophy, Bell, Trash2, Loader2, Send, Check, X, UserX, Undo2,
+  Users as UsersIcon, CalendarCheck, Trophy, Bell, Trash2, Loader2, Send, Check, X, UserX, Undo2, ChevronRight,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -1520,12 +1520,23 @@ export default function CRM() {
           { label: 'No calificados', value: notQualifiedCount, icon: UserX, tone: 'bg-[#f9dedc] text-[#410e0b] dark:bg-red-900/40 dark:text-red-200', onClick: () => setNqListOpen(true) },
         ].map((t: any) => (
           <div key={t.label} onClick={t.onClick} title={t.onClick ? 'Ver la lista' : undefined}
-            className={cn('rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border px-5 py-4 flex items-center gap-4', t.onClick && 'cursor-pointer hover:bg-[#f8fafd] dark:hover:bg-muted/40')}>
+            role={t.onClick ? 'button' : undefined}
+            className={cn('rounded-3xl px-5 py-4 flex items-center gap-4',
+              t.onClick
+                // Se puede pulsar: borde rojo, fondo rosado, sombra que sube al pasar el mouse y "Ver lista"
+                ? 'group cursor-pointer bg-[#fff8f7] dark:bg-red-950/20 border-2 border-[#f2b8b5] dark:border-red-900/60 stat-tile-3d hover:border-[#d93025]'
+                : 'bg-white dark:bg-card border border-[#e3e3e3] dark:border-border')}>
             <span className={cn('h-11 w-11 rounded-full flex items-center justify-center shrink-0', t.tone)}><t.icon className="h-5 w-5" /></span>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <p className="text-[28px] leading-8 font-normal text-[#1f1f1f] dark:text-foreground">{t.value}</p>
               <p className="text-xs font-medium text-[#444746] dark:text-muted-foreground truncate">{t.label}</p>
+              {t.onClick && (
+                <p className="mt-1 inline-flex items-center gap-0.5 text-xs font-medium text-[#b3261e] dark:text-red-300 group-hover:underline">
+                  Ver lista <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                </p>
+              )}
             </div>
+            {t.onClick && <ChevronRight className="h-5 w-5 shrink-0 text-[#b3261e] dark:text-red-300 transition-transform group-hover:translate-x-1" />}
           </div>
         ))}
       </div>
