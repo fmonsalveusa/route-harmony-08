@@ -170,6 +170,14 @@
 
 5. **VIN problemáticos** — Unit 222 con 19 caracteres, units 210/224 con VIN duplicado, 7 sin VIN.
 
+6. **Rediseño de la app móvil (driver e investor) al estilo Material 3 / Google** — En pausa desde 2026-11-17. Todo el TMS web ya está en estilo Google; falta `src/pages/driver-app/*` y `src/components/driver-app/*`. Propuesta acordada:
+   - Estructura: barra superior con avatar + empresa, barra inferior Android con pastilla en la pestaña activa (Inicio, Cargas, Pagos, Perfil).
+   - Inicio: tarjeta grande de la carga actual (status, próxima parada, progreso) con UN botón grande de la siguiente acción.
+   - Detalle de carga / `StopCard`: paradas en línea de tiempo, botones grandes, fotos/BOL en cuadrícula marcando lo que falta.
+   - Mis Cargas (tarjetas + chips Activas/Entregadas), Pagos (total semanal grande + lista por semana), Perfil (anillos de vencimiento reutilizando `ExpiryRing` de `src/components/detail/DetailTiles.tsx`), GPS (estado grande verde/rojo).
+   - Investor: resumen de ganancias, gráfico semanal, lista de cargas.
+   - Orden: Inicio + detalle/paradas → Pagos/Perfil/GPS → investor. Solo diseño (no tocar lógica de GPS, fotos, escáner ni firmas). Es solo JS: no requiere versión nueva en las tiendas; si un driver no lo ve, borrar caché de la app.
+
 ## Comandos frecuentes
 
 ```powershell
