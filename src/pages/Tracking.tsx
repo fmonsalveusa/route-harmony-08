@@ -19,7 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { StatusBadge } from '@/components/StatusBadge';
-import { MapPin, MapPinOff, Package, Navigation, Clock, Search, ChevronRight, AlertTriangle, Eye, User, Users, Pencil, Loader2, Copy, Check, Download, ExternalLink, X, Pause, Play } from 'lucide-react';
+import { MapPin, MapPinOff, Package, Navigation, Clock, Search, ChevronRight, AlertTriangle, Eye, User, Users, Pencil, Loader2, Copy, Check, Download, ExternalLink, X, Pause, Play, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { DriversTimelineCard } from '@/components/dashboard/DriversTimelineCard';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, Tooltip as LeafletTooltip, useMap } from 'react-leaflet';
@@ -1382,6 +1382,17 @@ const Tracking = () => {
                       >
                         <Pencil className="h-3 w-3" />
                         Location
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.dispatchEvent(new CustomEvent('open-new-load', { detail: { driverId: driver.id } }));
+                        }}
+                        className="shrink-0 h-7 px-2.5 rounded-full text-xs font-medium bg-[#0b57d0] hover:bg-[#0842a0] text-white transition-colors whitespace-nowrap flex items-center gap-1"
+                        title="Crear carga para este driver"
+                      >
+                        <Plus className="h-3 w-3" />
+                        New Load
                       </button>
                       <button
                         onClick={(e) => togglePauseDriver(driver.id, e)}

@@ -51,6 +51,8 @@ interface LoadFormDialogProps {
   onSubmit: (input: CreateLoadInput & { status?: string }) => Promise<any>;
   editLoad?: DbLoad | null;
   dispatcherId?: string;
+  /** Driver precargado al crear una carga (desde Tracking) */
+  presetDriverId?: string | null;
 }
 
 const emptyForm: LoadFormData = {
@@ -141,7 +143,7 @@ function fixExtractedYears(x: any) {
   };
 }
 
-export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatcherId }: LoadFormDialogProps) => {
+export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatcherId, presetDriverId }: LoadFormDialogProps) => {
   const { toast } = useToast();
   const { role, isMasterAdmin } = useAuth();
   const canSeeGrossRate = role === 'admin' || role === 'accounting' || isMasterAdmin;
@@ -314,6 +316,19 @@ export const LoadFormDialog = ({ open, onOpenChange, onSubmit, editLoad, dispatc
       ]);
     }
   }, [editLoad?.id, open, companies]);
+
+  // Nueva carga con driver precargado: truck, dispatcher y tipo de servicio del driver
+  useEffect(() => {
+    if (!open || editLoad || !presetDriverId) return;
+    const driver = drivers.find(d => d.id === presetDriverId);
+    if (!driver) return;
+    setSelectedDriver(driver.id);
+    setSelectedTruck(driver.truck_id || '');
+    setSelectedDispatcher(driver.dispatcher_id || '');
+    if (driver.service_type) setSelectedServiceType(driver.service_type);
+    // Si el driver ya está ocupado, la nueva carga queda como Planned
+    if (driver.status !== 'available') setSelectedStatus('planned');
+  }, [open, editLoad?.id, presetDriverId, drivers.length, companies]);
 
   // Sync stop entries separately when existingStops load
   useEffect(() => {

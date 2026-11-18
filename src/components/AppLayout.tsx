@@ -101,6 +101,16 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
   useEffect(() => { mainRef.current?.scrollTo({ top: 0 }); }, [location.pathname]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loadDialogOpen, setLoadDialogOpen] = useState(false);
+  const [presetDriverId, setPresetDriverId] = useState<string | null>(null);
+  // Otras páginas (ej. Tracking) abren "Nueva carga" con un driver precargado
+  useEffect(() => {
+    const onOpen = (e: Event) => {
+      setPresetDriverId((e as CustomEvent).detail?.driverId ?? null);
+      setLoadDialogOpen(true);
+    };
+    window.addEventListener('open-new-load', onOpen);
+    return () => window.removeEventListener('open-new-load', onOpen);
+  }, []);
   const [collapsed, setCollapsed] = useState(false);
   const [pendingDrivers, setPendingDrivers] = useState(0);
   const [pendingPaymentsCount, setPendingPaymentsCount] = useState(0);
@@ -361,7 +371,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
             {hasPermission('loads') && (
               <Button
                 size="sm"
-                onClick={() => setLoadDialogOpen(true)}
+                onClick={() => { setPresetDriverId(null); setLoadDialogOpen(true); }}
                 className="gap-2 h-10 rounded-full px-4 text-sm font-medium bg-[#0b57d0] hover:bg-[#0842a0] text-white hover:text-white border-0 shadow-[0_1px_2px_rgba(60,64,67,.3),0_1px_3px_1px_rgba(60,64,67,.15)]"
                 variant="outline"
               >
@@ -499,8 +509,9 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
 
       <LoadFormDialog
         open={loadDialogOpen}
-        onOpenChange={setLoadDialogOpen}
+        onOpenChange={(o) => { setLoadDialogOpen(o); if (!o) setPresetDriverId(null); }}
         onSubmit={handleCreateLoad}
+        presetDriverId={presetDriverId}
       />
 
       {(role === 'admin' || role === 'dispatcher' || role === 'accounting') && (
