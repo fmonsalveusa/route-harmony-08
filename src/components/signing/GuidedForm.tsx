@@ -130,10 +130,10 @@ export default function GuidedForm({ fields, onComplete }: GuidedFormProps) {
     return (
       <div key={uf.key} className={`bg-card border rounded-lg p-4 ${borderColor ? `border-l-4 ${borderColor}` : ""}`}>
         <div className="flex items-center gap-2 mb-2">
-          <Icon className="h-4 w-4 text-primary shrink-0" />
+          <Icon className="h-4 w-4 text-[#0b57d0] dark:text-blue-300 shrink-0" />
           <span className="font-medium text-sm">
             {label}
-            {isRequired && <span className="text-destructive ml-0.5">*</span>}
+            {isRequired && <span className="text-[#b3261e] ml-0.5">*</span>}
           </span>
           {count > 1 && <span className="text-xs text-muted-foreground ml-auto">×{count} campos</span>}
         </div>
@@ -153,10 +153,10 @@ export default function GuidedForm({ fields, onComplete }: GuidedFormProps) {
                 <div className="border rounded-md p-2 bg-muted flex items-center justify-center">
                   <img src={val} alt={label} className="max-h-16 object-contain" />
                 </div>
-                <Button variant="outline" size="sm" className="w-full" onClick={() => handleSigClick(uf.key, uf.type)}>Cambiar {label.toLowerCase()}</Button>
+                <Button variant="outline" size="sm" className="w-full rounded-full shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent" onClick={() => handleSigClick(uf.key, uf.type)}>Cambiar {label.toLowerCase()}</Button>
               </div>
             ) : (
-              <Button variant="outline" className="w-full h-16 border-dashed border-2 text-muted-foreground hover:text-foreground hover:border-primary" onClick={() => handleSigClick(uf.key, uf.type)}>
+              <Button variant="outline" className="w-full h-16 border-dashed border-2 text-muted-foreground hover:text-foreground hover:border-[#0b57d0] rounded-full shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent" onClick={() => handleSigClick(uf.key, uf.type)}>
                 <Pen className="h-4 w-4 mr-2" />
                 Toca para {uf.type === "initials" ? "escribir iniciales" : "firmar"}
               </Button>
@@ -219,7 +219,7 @@ export default function GuidedForm({ fields, onComplete }: GuidedFormProps) {
       <div className="flex-1 overflow-y-auto px-4 py-4">
         <div className="max-w-lg mx-auto space-y-3">
           <div className="text-center mb-4">
-            <h2 className="text-lg font-semibold">Completa tus datos</h2>
+            <h2 className="text-lg font-normal text-[#1f1f1f] dark:text-foreground">Completa tus datos</h2>
             <p className="text-sm text-muted-foreground">Llena todos los campos y luego revisa el documento</p>
           </div>
           {uniqueFields.map(renderField)}
@@ -227,7 +227,7 @@ export default function GuidedForm({ fields, onComplete }: GuidedFormProps) {
       </div>
       <div className="sticky bottom-0 bg-card border-t p-4">
         <div className="max-w-lg mx-auto">
-          <Button className="w-full h-12 text-base" disabled={!allComplete} onClick={handleComplete}>
+          <Button className="w-full h-12 text-base rounded-full px-5 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium shadow-none" disabled={!allComplete} onClick={handleComplete}>
             {allComplete ? "Completar y ver documento" : "Completa los campos obligatorios"}
           </Button>
         </div>

@@ -113,7 +113,7 @@ export function StopPhotoGrid({
                   exitSelecting();
                 }}
                 disabled={selectedIds.length === 0}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-primary text-primary-foreground text-xs font-semibold disabled:opacity-50"
+                className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-[#0b57d0] text-white text-xs font-semibold disabled:opacity-50"
               >
                 <ScanLine className="h-3.5 w-3.5" />
                 Escanear {selectedIds.length || ''} a un PDF
@@ -125,7 +125,7 @@ export function StopPhotoGrid({
           ) : (
             <button
               onClick={() => setSelecting(true)}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-md border text-xs font-medium text-primary hover:bg-primary/5"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-md border text-xs font-medium text-[#0b57d0] dark:text-blue-300 hover:bg-[#f3f6fc]"
             >
               <Files className="h-3.5 w-3.5" />
               Unir fotos en PDF
@@ -147,7 +147,7 @@ export function StopPhotoGrid({
               <div
                 className={`aspect-[2/1] rounded-lg overflow-hidden bg-muted cursor-pointer border transition-colors ${
                   selecting && selectedIds.includes(photo.id)
-                    ? 'border-primary ring-2 ring-primary'
+                    ? 'border-[#0b57d0] ring-2 ring-primary'
                     : 'border-border hover:border-primary/50'
                 }`}
                 onClick={() => {
@@ -168,8 +168,8 @@ export function StopPhotoGrid({
               {/* ✓ verde arriba izquierda */}
               {selecting ? (
                 <div
-                  className={`absolute top-1.5 left-1.5 w-5 h-5 rounded-full flex items-center justify-center shadow text-[10px] font-bold pointer-events-none ${
-                    selectedIds.includes(photo.id) ? 'bg-primary text-primary-foreground' : 'bg-white/90 border border-border'
+                  className={`absolute top-1.5 left-1.5 w-5 h-5 rounded-full flex items-center justify-center shadow text-[10px] font-semibold pointer-events-none ${
+                    selectedIds.includes(photo.id) ? 'bg-[#0b57d0] text-white' : 'bg-white/90 border border-border'
                   }`}
                 >
                   {selectedIds.includes(photo.id) ? selectedIds.indexOf(photo.id) + 1 : ''}
@@ -236,7 +236,7 @@ export function StopPhotoGrid({
 
         {/* Tile vacío para agregar */}
         <div
-          className="aspect-[2/1] rounded-lg border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-primary/50 hover:bg-muted/50 transition-colors"
+          className="aspect-[2/1] rounded-lg border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-primary/50 hover:bg-[#f8fafd] dark:bg-muted/40 transition-colors"
           onClick={() => fileInputRef.current?.click()}
         >
           {uploading ? (
@@ -302,7 +302,7 @@ export function StopPhotoGrid({
 
             {onSavePdf && currentUrl && (
               <button
-                className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[61] flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm font-semibold shadow-lg hover:bg-primary/90 transition-colors"
+                className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[61] flex items-center gap-2 px-4 py-2 rounded-full bg-[#0b57d0] text-white text-sm font-semibold shadow-lg hover:bg-primary/90 transition-colors"
                 onClick={(e) => {
                   e.stopPropagation();
                   setScanUrls([currentUrl]);

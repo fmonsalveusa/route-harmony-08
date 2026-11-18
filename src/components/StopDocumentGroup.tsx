@@ -47,7 +47,7 @@ function ImageThumb({ doc, onClick }: { doc: PodDocument; onClick: () => void })
   return (
     <button
       onClick={onClick}
-      className="relative w-full h-full flex items-center justify-center bg-muted/40 rounded overflow-hidden group"
+      className="relative w-full h-full flex items-center justify-center bg-[#f8fafd] dark:bg-muted/40 rounded overflow-hidden group"
       type="button"
       title={doc.file_name}
     >
@@ -89,18 +89,18 @@ function DocCard({
   return (
     <div className={`relative flex flex-col rounded-lg border overflow-hidden transition-all ${
       selected
-        ? 'border-primary ring-2 ring-primary/30 shadow-md'
-        : 'border-border hover:border-primary/50 hover:shadow-sm'
+        ? 'border-[#0b57d0] ring-2 ring-primary/30 shadow-none'
+        : 'border-border hover:border-primary/50 hover:shadow-none'
     }`} style={{ width: 96 }}>
 
       {/* Thumbnail area */}
-      <div className="h-16 bg-muted/30 relative">
+      <div className="h-16 bg-[#f8fafd] dark:bg-muted/40 relative">
         {isImage ? (
           <ImageThumb doc={doc} onClick={onOpen} />
         ) : (
           <button
             onClick={onOpen}
-            className="w-full h-full flex flex-col items-center justify-center gap-1 text-primary hover:bg-muted/50 transition-colors"
+            className="w-full h-full flex flex-col items-center justify-center gap-1 text-[#0b57d0] dark:text-blue-300 hover:bg-[#f8fafd] dark:bg-muted/40 transition-colors"
             type="button"
           >
             <FileText className="h-6 w-6" />
@@ -137,7 +137,7 @@ function DocCard({
           <button onClick={onDownload} className="text-muted-foreground hover:text-foreground" type="button" title="Descargar">
             <Download className="h-3 w-3" />
           </button>
-          <button onClick={onDelete} className="text-destructive/70 hover:text-destructive" type="button" title="Eliminar">
+          <button onClick={onDelete} className="text-[#b3261e]/70 hover:text-[#b3261e]" type="button" title="Eliminar">
             <Trash2 className="h-3 w-3" />
           </button>
         </div>
@@ -224,7 +224,7 @@ export const StopDocumentGroup = ({ label, docs, onOpen, onDownload, onDelete, o
                 <button
                   onClick={() => document.getElementById(inputId)?.click()}
                   disabled={uploading}
-                  className="text-xs text-primary hover:text-primary/80 flex items-center gap-1 border border-border rounded px-1.5 py-0.5"
+                  className="text-xs text-[#0b57d0] dark:text-blue-300 hover:text-[#0b57d0] dark:text-blue-300/80 flex items-center gap-1 border border-border rounded px-1.5 py-0.5"
                   type="button"
                 >
                   {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
@@ -269,7 +269,7 @@ export const StopDocumentGroup = ({ label, docs, onOpen, onDownload, onDelete, o
       {/* Copiar al clipboard */}
       {selectedIds.size > 0 && (
         <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" className="gap-1.5 text-xs h-7" onClick={handleCopy} disabled={copying}>
+          <Button size="sm" variant="outline" className="gap-1.5 text-xs h-7 rounded-full shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent" onClick={handleCopy} disabled={copying}>
             {copying ? <Loader2 className="h-3 w-3 animate-spin" /> : <Copy className="h-3 w-3" />}
             {selectedIds.size === 1
               ? 'Copiar al Clipboard'

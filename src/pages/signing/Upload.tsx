@@ -229,11 +229,11 @@ export default function Upload() {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/documents')}>
+          <Button className="rounded-full text-[#444746] dark:text-muted-foreground hover:bg-[#f0f4f9] dark:hover:bg-muted" variant="ghost" size="icon" onClick={() => navigate('/documents')}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-foreground">
+            <h1 className="text-2xl font-normal text-foreground text-[#1f1f1f] dark:text-foreground">
               {isTemplate ? 'Crear Plantilla' : 'Nuevo Documento'}
             </h1>
             <p className="text-sm text-muted-foreground">Sube un archivo PDF para comenzar</p>
@@ -251,11 +251,11 @@ export default function Upload() {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/documents')}>
+          <Button className="rounded-full text-[#444746] dark:text-muted-foreground hover:bg-[#f0f4f9] dark:hover:bg-muted" variant="ghost" size="icon" onClick={() => navigate('/documents')}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="text-lg font-bold text-foreground">{fileName}</h1>
+            <h1 className="text-lg font-normal text-foreground text-[#1f1f1f] dark:text-foreground">{fileName}</h1>
             <p className="text-xs text-muted-foreground">
               Página {currentPage} de {totalPages} · {fields.length} campos
             </p>
@@ -286,11 +286,11 @@ export default function Upload() {
               <LoadStopPicker value={podLink} onChange={setPodLink} />
             </div>
           )}
-          <Button variant="outline" onClick={handleDetectFields} disabled={detecting} className="gap-2">
+          <Button variant="outline" onClick={handleDetectFields} disabled={detecting} className="gap-2 rounded-full shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent">
             {detecting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
             Detectar campos
           </Button>
-          <Button onClick={handleSave} disabled={saving} className="gap-2">
+          <Button onClick={handleSave} disabled={saving} className="gap-2 rounded-full px-5 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium shadow-none">
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             Guardar
           </Button>
@@ -306,7 +306,7 @@ export default function Upload() {
             fieldCount={fields.length}
           />
         )}
-        <div className="flex-1 relative border rounded-lg overflow-hidden bg-muted/30">
+        <div className="flex-1 relative border rounded-lg overflow-hidden bg-[#f8fafd] dark:bg-muted/40">
           <PdfViewer
             fileData={fileData}
             currentPage={currentPage}
@@ -337,7 +337,7 @@ export default function Upload() {
       {!sidebarOpen && (
         <Button
           variant="outline"
-          className="fixed bottom-6 left-6 z-50"
+          className="fixed bottom-6 left-6 z-50 rounded-full shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent"
           onClick={() => setSidebarOpen(true)}
         >
           + Agregar campo
@@ -377,7 +377,7 @@ export default function Upload() {
                   <Button
                     key={page}
                     variant="outline"
-                    className="h-12 text-base font-semibold"
+                    className="h-12 text-base font-semibold rounded-full shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent"
                     onClick={() => copyFieldToPage(page)}
                   >
                     {page}

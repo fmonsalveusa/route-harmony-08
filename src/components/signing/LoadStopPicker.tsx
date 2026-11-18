@@ -60,7 +60,7 @@ export function LoadStopPicker({ value, onChange }: { value: LoadStopValue; onCh
           className="w-40"
         />
         {open && options.length > 0 && (
-          <div className="absolute z-50 mt-1 w-72 max-h-64 overflow-auto rounded-md border bg-popover shadow-md">
+          <div className="absolute z-50 mt-1 w-72 max-h-64 overflow-auto rounded-md border bg-popover shadow-none">
             {options.map((l) => (
               <button key={l.id} type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => pick(l)}
                 className="w-full text-left px-3 py-2 text-sm hover:bg-muted">

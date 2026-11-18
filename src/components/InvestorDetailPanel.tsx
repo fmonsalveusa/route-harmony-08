@@ -175,7 +175,7 @@ export function InvestorDetailPanel({ investor, links, drivers }: { investor: Db
                       ))}
                     </tbody>
                     <tfoot>
-                      <tr className="bg-[#f8fafd] dark:bg-muted/30 text-xs font-medium">
+                      <tr className="bg-[#f8fafd] dark:bg-[#f8fafd] dark:bg-muted/40 text-xs font-medium">
                         <td className="px-4 py-2 text-[#444746] dark:text-muted-foreground">Subtotal</td>
                         <td className="px-2 py-2 text-right">{sub.loads}</td>
                         <td className="px-2 py-2 text-right whitespace-nowrap">{money(sub.revenue)}</td>

@@ -82,7 +82,7 @@ function GroupsTable({ rows, groups, memberIds, onAssign }: {
         </label>
       </div>
 
-      <div className="rounded-xl border bg-card shadow-sm divide-y overflow-hidden">
+      <div className="rounded-3xl border border-[#e3e3e3] dark:border-border bg-white dark:bg-card shadow-none divide-y overflow-hidden">
         {visible.length === 0 && (
           <p className="text-sm text-muted-foreground text-center py-8">Sin resultados</p>
         )}
@@ -221,7 +221,7 @@ export default function WhatsAppPage() {
     <div className="space-y-3">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="page-header flex items-center gap-3">
+          <h1 className="page-header flex items-center gap-3 text-[#1f1f1f] dark:text-foreground">
             <span className="page-icon"><MessageCircle className="h-5 w-5" /></span> WhatsApp
           </h1>
           <p className="page-description pl-[52px]">Grupos, avisos automáticos y conexión del número</p>
@@ -232,7 +232,7 @@ export default function WhatsAppPage() {
       </div>
 
       {/* Conexión */}
-      <div className={`rounded-xl border bg-card shadow-sm p-4 flex flex-col sm:flex-row sm:items-center gap-3 border-l-4 ${
+      <div className={`rounded-3xl border border-[#e3e3e3] dark:border-border bg-white dark:bg-card shadow-none p-4 flex flex-col sm:flex-row sm:items-center gap-3 border-l-4 ${
         !connection ? 'border-l-muted' : connection.connected ? 'border-l-green-600' : 'border-l-destructive'
       }`}>
         <Smartphone className="h-8 w-8 text-muted-foreground flex-shrink-0" />
@@ -249,7 +249,7 @@ export default function WhatsAppPage() {
             </>
           ) : connection.blocked ? (
             <>
-              <p className="text-sm font-semibold text-destructive">Whapi está rechazando los mensajes — no se están enviando avisos</p>
+              <p className="text-sm font-semibold text-[#b3261e]">Whapi está rechazando los mensajes — no se están enviando avisos</p>
               <p className="text-xs text-muted-foreground">
                 {/402|limit|trial|payment|subscription/i.test(connection.blocked.error)
                   ? 'Límite de mensajes o falta de pago. Revisa el plan en whapi.cloud.'
@@ -260,7 +260,7 @@ export default function WhatsAppPage() {
             </>
           ) : (
             <>
-              <p className="text-sm font-semibold text-destructive">Número desconectado — no se están enviando avisos</p>
+              <p className="text-sm font-semibold text-[#b3261e]">Número desconectado — no se están enviando avisos</p>
               <p className="text-xs text-muted-foreground">
                 Estado: {connection.status}. Entra a whapi.cloud y vuelve a escanear el QR con el teléfono del número dedicado.
               </p>
@@ -302,7 +302,7 @@ export default function WhatsAppPage() {
         </TabsList>
 
         <TabsContent value="groups" className="mt-4">
-          <div className="rounded-xl border bg-card shadow-sm p-4">
+          <div className="rounded-3xl border border-[#e3e3e3] dark:border-border bg-white dark:bg-card shadow-none p-4">
             <Tabs defaultValue="drivers">
               <TabsList className="w-full justify-start rounded-none sm:rounded-none border-x-0 border-t-0 flex-nowrap border-b border-[#e3e3e3] dark:border-border bg-transparent h-12 p-0 px-1 overflow-x-auto overflow-y-hidden">
                 <TabsTrigger className="h-12 rounded-none border-b-[3px] border-transparent px-4 gap-2 text-sm font-medium text-[#444746] dark:text-muted-foreground data-[state=active]:border-[#0b57d0] data-[state=active]:text-[#0b57d0] dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none data-[state=active]:bg-transparent" value="drivers">Drivers ({counter(rows.drivers)})</TabsTrigger>
@@ -319,7 +319,7 @@ export default function WhatsAppPage() {
         </TabsContent>
 
         <TabsContent value="automations" className="mt-4">
-          <div className="rounded-xl border bg-card shadow-sm p-4 max-w-4xl">
+          <div className="rounded-3xl border border-[#e3e3e3] dark:border-border bg-white dark:bg-card shadow-none p-4 max-w-4xl">
             <p className="text-sm text-muted-foreground mb-3">
               Prende o apaga cada aviso y edita sus mensajes. Haz clic en un aviso para ver sus textos; las variables entre llaves se reemplazan con los datos reales.
             </p>
@@ -328,32 +328,32 @@ export default function WhatsAppPage() {
         </TabsContent>
 
         <TabsContent value="broadcast" className="mt-4">
-          <div className="rounded-xl border bg-card shadow-sm p-4">
+          <div className="rounded-3xl border border-[#e3e3e3] dark:border-border bg-white dark:bg-card shadow-none p-4">
             <BroadcastPanel groups={groups} assigned={assignedGroups} />
           </div>
         </TabsContent>
 
         <TabsContent value="history" className="mt-4">
-          <div className="rounded-xl border bg-card shadow-sm p-4">
+          <div className="rounded-3xl border border-[#e3e3e3] dark:border-border bg-white dark:bg-card shadow-none p-4">
             <MessageHistory />
           </div>
         </TabsContent>
 
         <TabsContent value="broker_email" className="mt-4 space-y-4">
-          <div className="rounded-xl border bg-card shadow-sm p-4 space-y-3">
+          <div className="rounded-3xl border border-[#e3e3e3] dark:border-border bg-white dark:bg-card shadow-none p-4 space-y-3">
             <p className="text-xs text-muted-foreground">
               Respuestas automáticas dentro del hilo de Gmail de cada carga (el del Rate Confirmation), a todos los del broker.
               El hilo se busca solo por el número de carga; si no aparece o hay más de uno, se elige en el detalle de la carga.
             </p>
             <AutomationsPanel groups={groups} channel="email" />
           </div>
-          <div className="rounded-xl border bg-card shadow-sm p-4">
+          <div className="rounded-3xl border border-[#e3e3e3] dark:border-border bg-white dark:bg-card shadow-none p-4">
             <BrokerEmailHistory />
           </div>
         </TabsContent>
 
         <TabsContent value="health" className="mt-4">
-          <div className="rounded-xl border bg-card shadow-sm p-4 max-w-4xl">
+          <div className="rounded-3xl border border-[#e3e3e3] dark:border-border bg-white dark:bg-card shadow-none p-4 max-w-4xl">
             <p className="text-sm text-muted-foreground mb-3">
               Todo lo que corre solo, en un solo lugar. Verde es que funciona, ámbar que hay algo que mirar,
               rojo que algo se cayó. Esta pantalla solo lee: no manda ni cambia nada.

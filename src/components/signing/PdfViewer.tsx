@@ -53,17 +53,17 @@ export default function PdfViewer({
 
   return (
     <div className="flex flex-col items-center">
-      <div ref={containerRef} data-field-container className="relative w-full max-w-[800px] bg-muted/30 rounded-xl overflow-hidden border" onClick={(e) => { if (e.target === e.currentTarget || e.target === canvasRef.current) onBackgroundClick?.(); }}>
+      <div ref={containerRef} data-field-container className="relative w-full max-w-[800px] bg-[#f8fafd] dark:bg-muted/40 rounded-xl overflow-hidden border" onClick={(e) => { if (e.target === e.currentTarget || e.target === canvasRef.current) onBackgroundClick?.(); }}>
         <canvas ref={canvasRef} className="block mx-auto" />
         {children}
       </div>
       {totalPages > 1 && (
         <div className="flex items-center gap-3 mt-4">
-          <Button variant="outline" size="icon" disabled={currentPage <= 1} onClick={() => onPageChange(currentPage - 1)}>
+          <Button className="rounded-full shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent" variant="outline" size="icon" disabled={currentPage <= 1} onClick={() => onPageChange(currentPage - 1)}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <span className="text-sm text-muted-foreground">Página {currentPage} de {totalPages}</span>
-          <Button variant="outline" size="icon" disabled={currentPage >= totalPages} onClick={() => onPageChange(currentPage + 1)}>
+          <Button className="rounded-full shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent" variant="outline" size="icon" disabled={currentPage >= totalPages} onClick={() => onPageChange(currentPage + 1)}>
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>

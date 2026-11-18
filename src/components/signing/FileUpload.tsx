@@ -38,19 +38,19 @@ export default function FileUpload({ onFileSelected }: FileUploadProps) {
 
   return (
     <div
-      className={`border-2 border-dashed rounded-lg p-12 text-center transition-all duration-150 ${dragging ? "border-primary bg-accent" : "border-border hover:border-primary/50"}`}
+      className={`border-2 border-dashed rounded-lg p-12 text-center transition-all duration-150 ${dragging ? "border-[#0b57d0] bg-accent" : "border-border hover:border-primary/50"}`}
       onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
       onDragLeave={() => setDragging(false)}
       onDrop={handleDrop}
     >
       {fileName ? (
         <div className="flex items-center justify-center gap-3">
-          <FileText className="h-8 w-8 text-primary" />
+          <FileText className="h-8 w-8 text-[#0b57d0] dark:text-blue-300" />
           <div className="text-left">
             <p className="font-medium text-foreground">{fileName}</p>
             <p className="text-sm text-muted-foreground">{loading ? "Cargando..." : fileSize}</p>
           </div>
-          <Button variant="ghost" size="icon" className="ml-2" onClick={() => { setFileName(null); setFileSize(null); }}>
+          <Button variant="ghost" size="icon" className="ml-2 rounded-full text-[#444746] dark:text-muted-foreground hover:bg-[#f0f4f9] dark:hover:bg-muted" onClick={() => { setFileName(null); setFileSize(null); }}>
             <X className="h-4 w-4" />
           </Button>
         </div>
@@ -59,7 +59,7 @@ export default function FileUpload({ onFileSelected }: FileUploadProps) {
           <Upload className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <p className="text-foreground font-medium mb-1">Arrastra tu PDF aquí</p>
           <p className="text-sm text-muted-foreground mb-4">o haz clic para seleccionar (máx 10MB)</p>
-          <Button variant="outline" asChild className="rounded-md">
+          <Button variant="outline" asChild className="rounded-md rounded-full shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent">
             <label className="cursor-pointer">
               Seleccionar archivo
               <input type="file" accept=".pdf" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) processFile(file); }} />

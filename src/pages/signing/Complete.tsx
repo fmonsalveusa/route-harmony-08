@@ -40,17 +40,17 @@ export default function Complete() {
 
   return (
     <div className="max-w-lg mx-auto py-12 px-4 space-y-6">
-      <Card>
+      <Card className="rounded-3xl border-[#e3e3e3] dark:border-border shadow-none">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-            <CheckCircle2 className="h-8 w-8 text-primary" />
+          <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-[#e8f0fe]">
+            <CheckCircle2 className="h-8 w-8 text-[#0b57d0] dark:text-blue-300" />
           </div>
-          <CardTitle className="text-xl">
+          <CardTitle className="text-xl text-[#1f1f1f] dark:text-foreground">
             {doc.status === 'signed' ? 'Documento firmado' : 'Detalles del documento'}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+          <div className="flex items-center gap-3 p-3 rounded-lg bg-[#f8fafd] dark:bg-muted/40">
             <FileText className="h-5 w-5 text-muted-foreground" />
             <div className="flex-1 min-w-0">
               <p className="font-medium truncate">{doc.fileName}</p>
@@ -80,12 +80,12 @@ export default function Complete() {
           )}
 
           <div className="flex gap-3 pt-2">
-            <Button variant="outline" className="flex-1 gap-2" onClick={() => navigate('/documents')}>
+            <Button variant="outline" className="flex-1 gap-2 rounded-full shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent" onClick={() => navigate('/documents')}>
               <ArrowLeft className="h-4 w-4" />
               Volver
             </Button>
             {doc.signedFileData && (
-              <Button className="flex-1 gap-2" onClick={() => {
+              <Button className="flex-1 gap-2 rounded-full px-5 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium shadow-none" onClick={() => {
                 const link = document.createElement('a');
                 link.href = doc.signedFileData!;
                 link.download = `signed-${doc.fileName}`;

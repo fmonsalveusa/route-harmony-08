@@ -20,8 +20,8 @@ export default function SignatureModal({ open, onClose, onConfirm, title }: Sign
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/60 backdrop-blur-sm p-4">
       <div className="bg-card rounded-lg w-full max-w-lg shadow-2xl animate-fade-in-up">
         <div className="flex items-center justify-between p-4 border-b">
-          <h3 className="font-semibold text-foreground">{title || "Dibuja tu firma"}</h3>
-          <Button variant="ghost" size="icon" onClick={onClose}><X className="h-5 w-5" /></Button>
+          <h3 className="font-medium text-foreground text-[#1f1f1f] dark:text-foreground">{title || "Dibuja tu firma"}</h3>
+          <Button className="rounded-full text-[#444746] dark:text-muted-foreground hover:bg-[#f0f4f9] dark:hover:bg-muted" variant="ghost" size="icon" onClick={onClose}><X className="h-5 w-5" /></Button>
         </div>
         <div className="p-4">
           <div className="border-2 border-dashed border-border rounded-lg bg-muted/20 overflow-hidden">
@@ -30,10 +30,10 @@ export default function SignatureModal({ open, onClose, onConfirm, title }: Sign
           <p className="text-xs text-muted-foreground text-center mt-2">Dibuja tu firma con el dedo o mouse</p>
         </div>
         <div className="flex gap-3 p-4 border-t">
-          <Button variant="outline" className="flex-1 rounded-md" onClick={() => { sigRef.current?.clear(); setIsEmpty(true); }}>
+          <Button variant="outline" className="flex-1 rounded-md rounded-full shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent" onClick={() => { sigRef.current?.clear(); setIsEmpty(true); }}>
             <Eraser className="mr-2 h-4 w-4" /> Limpiar
           </Button>
-          <Button className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded-md" disabled={isEmpty} onClick={() => { if (sigRef.current) onConfirm(sigRef.current.getTrimmedCanvas().toDataURL("image/png")); }}>
+          <Button className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded-md rounded-full px-5 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium shadow-none" disabled={isEmpty} onClick={() => { if (sigRef.current) onConfirm(sigRef.current.getTrimmedCanvas().toDataURL("image/png")); }}>
             <Check className="mr-2 h-4 w-4" /> Confirmar firma
           </Button>
         </div>

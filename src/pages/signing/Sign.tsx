@@ -92,12 +92,12 @@ export default function Sign() {
   return (
     <div className="max-w-4xl mx-auto space-y-6 py-6 px-4">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Firmar documento</h1>
+        <h1 className="text-2xl font-normal text-foreground text-[#1f1f1f] dark:text-foreground">Firmar documento</h1>
         <p className="text-sm text-muted-foreground">{doc.fileName}</p>
       </div>
 
       {/* PDF Preview */}
-      <div className="border rounded-lg overflow-hidden bg-muted/30" style={{ minHeight: 400 }}>
+      <div className="border rounded-lg overflow-hidden bg-[#f8fafd] dark:bg-muted/40" style={{ minHeight: 400 }}>
         <PdfViewer
           fileData={doc.fileData}
           currentPage={currentPage}

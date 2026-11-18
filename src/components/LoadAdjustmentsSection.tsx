@@ -71,7 +71,7 @@ export function LoadAdjustmentsSection({ loadId, hideIfEmpty = false }: LoadAdju
       <div className="flex items-center justify-between mb-2">
         <h5 className="text-[15px] font-medium text-[#1f1f1f] dark:text-foreground">Load Adjustments</h5>
         {!showForm && (
-          <Button variant="outline" size="sm" className="h-7 gap-1 text-xs" onClick={handleOpenForm}>
+          <Button variant="outline" size="sm" className="h-7 gap-1 text-xs rounded-full shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent" onClick={handleOpenForm}>
             <Plus className="h-3 w-3" /> Add
           </Button>
         )}
@@ -81,7 +81,7 @@ export function LoadAdjustmentsSection({ loadId, hideIfEmpty = false }: LoadAdju
       {adjustments.length > 0 && (
         <div className="space-y-1.5 mb-2">
           {adjustments.map(adj => (
-            <div key={adj.id} className="flex items-center justify-between gap-2 p-2 rounded bg-muted/50">
+            <div key={adj.id} className="flex items-center justify-between gap-2 p-2 rounded bg-[#f8fafd] dark:bg-muted/40">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <Badge variant={adj.adjustment_type === 'addition' ? 'default' : 'destructive'} className="text-[10px] px-1.5 py-0">
@@ -94,7 +94,7 @@ export function LoadAdjustmentsSection({ loadId, hideIfEmpty = false }: LoadAdju
                 </div>
                 {adj.description && <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{adj.description}</p>}
               </div>
-              <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-destructive hover:text-destructive" onClick={() => deleteAdjustment(adj.id)}>
+              <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-[#b3261e] hover:text-[#b3261e] rounded-full text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium" onClick={() => deleteAdjustment(adj.id)}>
                 <Trash2 className="h-3 w-3" />
               </Button>
             </div>
@@ -108,7 +108,7 @@ export function LoadAdjustmentsSection({ loadId, hideIfEmpty = false }: LoadAdju
 
       {/* Add form */}
       {showForm && (
-        <div className="space-y-2 p-2 rounded border bg-muted/30">
+        <div className="space-y-2 p-2 rounded border bg-[#f8fafd] dark:bg-muted/40">
           <div className="grid grid-cols-2 gap-2">
             <Select value={type} onValueChange={setType}>
               <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
@@ -154,12 +154,12 @@ export function LoadAdjustmentsSection({ loadId, hideIfEmpty = false }: LoadAdju
             ))}
           </div>
           <div className="flex gap-2 justify-end">
-            <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={resetForm}>
+            <Button variant="ghost" size="sm" className="h-7 text-xs rounded-full text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium" onClick={resetForm}>
               <X className="h-3 w-3 mr-1" /> Cancel
             </Button>
             <Button
               size="sm"
-              className="h-7 text-xs"
+              className="h-7 text-xs rounded-full px-5 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium shadow-none"
               disabled={saving || !amount || parseFloat(amount) <= 0 || applyTo.length === 0}
               onClick={handleSubmit}
             >

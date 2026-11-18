@@ -92,7 +92,7 @@ function IOSStep1Visual() {
       </div>
       <div className="mt-2 flex justify-center">
         <motion.div animate={{ scale: [1, 1.15, 1] }} transition={{ repeat: Infinity, duration: 2 }} className="bg-primary/20 rounded-full p-1.5">
-          <span className="text-xs text-primary font-semibold">Safari ✓</span>
+          <span className="text-xs text-[#0b57d0] dark:text-blue-300 font-semibold">Safari ✓</span>
         </motion.div>
       </div>
     </div>
@@ -114,7 +114,7 @@ function IOSStep2Visual() {
           <motion.div
             animate={{ scale: [1, 1.3, 1], y: [0, -3, 0] }}
             transition={{ repeat: Infinity, duration: 1.5 }}
-            className="w-7 h-7 rounded-lg bg-primary/80 flex items-center justify-center shadow-md"
+            className="w-7 h-7 rounded-lg bg-primary/80 flex items-center justify-center shadow-none"
           >
             <Share className="w-4 h-4 text-primary-foreground" />
           </motion.div>
@@ -127,7 +127,7 @@ function IOSStep2Visual() {
         transition={{ repeat: Infinity, duration: 3, times: [0, 0.3, 0.7, 1] }}
         className="mt-2 text-center"
       >
-        <span className="text-xs text-primary font-medium">← Toca Compartir aquí</span>
+        <span className="text-xs text-[#0b57d0] dark:text-blue-300 font-medium">← Toca Compartir aquí</span>
       </motion.div>
     </div>
   );
@@ -137,7 +137,7 @@ function IOSStep3Visual() {
   return (
     <div className="w-full max-w-[200px] mx-auto">
       <div className="bg-card border border-border rounded-2xl shadow-xl overflow-hidden">
-        <div className="bg-muted/50 p-2 border-b border-border">
+        <div className="bg-[#f8fafd] dark:bg-muted/40 p-2 border-b border-border">
           <p className="text-[9px] text-center text-muted-foreground font-medium">Menú Compartir</p>
         </div>
         {[
@@ -153,10 +153,10 @@ function IOSStep3Visual() {
         <motion.div
           animate={{ backgroundColor: ['rgba(59,130,246,0)', 'rgba(59,130,246,0.15)', 'rgba(59,130,246,0)'] }}
           transition={{ repeat: Infinity, duration: 2 }}
-          className="flex items-center gap-2 px-3 py-2.5 border-b border-border/50 bg-primary/10"
+          className="flex items-center gap-2 px-3 py-2.5 border-b border-border/50 bg-[#e8f0fe]"
         >
           <span className="text-base">➕</span>
-          <span className="text-[10px] font-semibold text-primary">Agregar a pantalla de inicio</span>
+          <span className="text-[10px] font-semibold text-[#0b57d0] dark:text-blue-300">Agregar a pantalla de inicio</span>
         </motion.div>
         <div className="flex items-center gap-2 px-3 py-2">
           <span className="text-base">🔖</span>
@@ -188,7 +188,7 @@ function AndroidStep1Visual() {
       </div>
       <div className="mt-2 flex justify-center">
         <motion.div animate={{ scale: [1, 1.15, 1] }} transition={{ repeat: Infinity, duration: 2 }} className="bg-primary/20 rounded-full p-1.5">
-          <span className="text-xs text-primary font-semibold">Chrome ✓</span>
+          <span className="text-xs text-[#0b57d0] dark:text-blue-300 font-semibold">Chrome ✓</span>
         </motion.div>
       </div>
     </div>
@@ -209,7 +209,7 @@ function AndroidStep2Visual() {
             <MoreVertical className="w-3 h-3 text-primary-foreground" />
           </motion.div>
         </div>
-        <div className="h-20 bg-muted/50 rounded-lg" />
+        <div className="h-20 bg-[#f8fafd] dark:bg-muted/40 rounded-lg" />
       </div>
       <motion.div
         initial={{ opacity: 0, y: -10 }}
@@ -219,7 +219,7 @@ function AndroidStep2Visual() {
       >
         <div className="space-y-1">
           {['Nueva pestaña', 'Historial', 'Descargas', 'Instalar app'].map((item, i) => (
-            <div key={item} className={`text-[9px] px-2 py-1 rounded ${i === 3 ? 'bg-primary/20 text-primary font-bold' : 'text-foreground'}`}>
+            <div key={item} className={`text-[9px] px-2 py-1 rounded ${i === 3 ? 'bg-primary/20 text-[#0b57d0] dark:text-blue-300 font-semibold' : 'text-foreground'}`}>
               {item}
             </div>
           ))}
@@ -233,7 +233,7 @@ function AndroidStep3Visual() {
   return (
     <div className="w-full max-w-[200px] mx-auto">
       <div className="bg-secondary rounded-2xl p-3 shadow-lg border border-border">
-        <div className="h-16 bg-muted/50 rounded-lg mb-2" />
+        <div className="h-16 bg-[#f8fafd] dark:bg-muted/40 rounded-lg mb-2" />
         <motion.div
           animate={{ y: [0, -2, 0] }}
           transition={{ repeat: Infinity, duration: 2 }}
@@ -242,7 +242,7 @@ function AndroidStep3Visual() {
           <div className="flex items-center gap-2 mb-2">
             <img src={logoImg} className="h-8 w-8 rounded-lg object-contain" alt="Dispatch Up" />
             <div>
-              <p className="text-[9px] font-bold text-foreground">Dispatch Up</p>
+              <p className="text-[9px] font-semibold text-foreground">Dispatch Up</p>
               <p className="text-[8px] text-muted-foreground">dispatch-up.com</p>
             </div>
           </div>
@@ -256,7 +256,7 @@ function AndroidStep3Visual() {
               transition={{ repeat: Infinity, duration: 1.5 }}
               className="flex-1 h-5 bg-primary rounded flex items-center justify-center"
             >
-              <span className="text-[8px] text-primary-foreground font-bold">Instalar</span>
+              <span className="text-[8px] text-primary-foreground font-semibold">Instalar</span>
             </motion.div>
           </div>
         </motion.div>
@@ -277,17 +277,17 @@ function ConfirmVisual({ platform }: { platform: Platform }) {
           <img src={logoImg} className="h-10 w-10 rounded-xl object-contain" alt="Dispatch Up" />
         </motion.div>
         <div className="text-center">
-          <p className="text-[10px] font-bold text-foreground">Dispatch Up</p>
+          <p className="text-[10px] font-semibold text-foreground">Dispatch Up</p>
           <p className="text-[9px] text-muted-foreground mt-0.5">Instalada en tu pantalla</p>
         </div>
         <motion.div
           animate={{ scale: [1, 1.2, 1] }}
           transition={{ repeat: Infinity, duration: 1.5 }}
-          className="w-8 h-8 bg-success rounded-full flex items-center justify-center shadow-md"
+          className="w-8 h-8 bg-success rounded-full flex items-center justify-center shadow-none"
         >
-          <CheckCircle className="w-5 h-5 text-success-foreground" />
+          <CheckCircle className="w-5 h-5 text-[#188038]-foreground" />
         </motion.div>
-        <p className="text-[9px] text-success font-semibold">
+        <p className="text-[9px] text-[#188038] font-semibold">
           {platform === 'ios' ? 'Toca "Agregar" para confirmar' : 'Toca "Instalar" para confirmar'}
         </p>
       </div>
@@ -322,13 +322,13 @@ export default function Install() {
         initial={{ opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="mx-4 mt-4 rounded-xl border border-warning/40 bg-warning/10 p-4 flex gap-3 items-start shadow-sm"
+        className="mx-4 mt-4 rounded-xl border border-warning/40 bg-warning/10 p-4 flex gap-3 items-start shadow-none"
       >
         <div className="flex-shrink-0 w-9 h-9 rounded-full bg-warning/20 flex items-center justify-center mt-0.5">
           <AlertTriangle className="w-5 h-5 text-warning" />
         </div>
         <div>
-          <p className="text-sm font-bold text-foreground">¿Se ve la app pequeña?</p>
+          <p className="text-sm font-semibold text-foreground">¿Se ve la app pequeña?</p>
           <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
             Desde el navegador la barra de URL roba espacio.{' '}
             <span className="font-semibold text-foreground">Instálala siguiendo los pasos de abajo</span> y se verá en pantalla completa.
@@ -356,7 +356,7 @@ export default function Install() {
           transition={{ duration: 0.4 }}
         />
         <motion.h1
-          className="text-2xl font-bold text-foreground text-center"
+          className="text-2xl font-semibold text-foreground text-center"
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
@@ -375,12 +375,12 @@ export default function Install() {
 
       {/* Platform Selector */}
       <div className="flex justify-center px-4 mb-6">
-        <div className="bg-card border border-border rounded-xl p-1 flex gap-1 shadow-sm">
+        <div className="bg-card border border-border rounded-xl p-1 flex gap-1 shadow-none">
           <button
             onClick={() => switchPlatform('android')}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
               platform === 'android'
-                ? 'bg-primary text-primary-foreground shadow-sm'
+                ? 'bg-[#0b57d0] text-white shadow-none'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
@@ -390,7 +390,7 @@ export default function Install() {
             onClick={() => switchPlatform('ios')}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
               platform === 'ios'
-                ? 'bg-primary text-primary-foreground shadow-sm'
+                ? 'bg-[#0b57d0] text-white shadow-none'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
@@ -421,15 +421,15 @@ export default function Install() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -30 }}
             transition={{ duration: 0.25 }}
-            className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden max-w-sm mx-auto"
+            className="bg-card border border-border rounded-2xl shadow-none overflow-hidden max-w-sm mx-auto"
           >
-            <div className="bg-primary/5 border-b border-border px-5 py-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center text-primary">
+            <div className="bg-[#f3f6fc] border-b border-border px-5 py-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center text-[#0b57d0] dark:text-blue-300">
                 {step.icon}
               </div>
               <div>
                 <p className="text-xs text-muted-foreground font-medium">Paso {step.step} de {steps.length}</p>
-                <h2 className="text-base font-bold text-foreground">{step.title}</h2>
+                <h2 className="text-base font-normal text-foreground text-[#1f1f1f] dark:text-foreground">{step.title}</h2>
               </div>
             </div>
             <div className="px-5 pt-5 pb-3 flex justify-center min-h-[180px] items-center">
@@ -443,19 +443,19 @@ export default function Install() {
 
         {/* Navigation */}
         <div className="flex gap-3 mt-5 max-w-sm mx-auto">
-          <Button variant="outline" onClick={handlePrev} disabled={currentStep === 0} className="flex-1">
+          <Button variant="outline" onClick={handlePrev} disabled={currentStep === 0} className="flex-1 rounded-full shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent">
             <ChevronLeft className="w-4 h-4" />
             Atrás
           </Button>
           {isLast ? (
             <motion.div animate={{ scale: [1, 1.03, 1] }} transition={{ repeat: Infinity, duration: 2 }} className="flex-1">
-              <Button className="w-full bg-success hover:bg-success/90 text-success-foreground">
+              <Button className="w-full bg-success hover:bg-success/90 text-[#188038]-foreground rounded-full px-5 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium shadow-none">
                 <CheckCircle className="w-4 h-4" />
                 ¡Listo! Abrir la App
               </Button>
             </motion.div>
           ) : (
-            <Button onClick={handleNext} className="flex-1">
+            <Button onClick={handleNext} className="flex-1 rounded-full px-5 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium shadow-none">
               Siguiente
               <ChevronRight className="w-4 h-4" />
             </Button>

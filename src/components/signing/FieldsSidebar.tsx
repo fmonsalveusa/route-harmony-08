@@ -51,7 +51,7 @@ export default function FieldsSidebar({ onAddField, onClose, fieldCount }: Field
   return (
     <div className="w-64 flex-shrink-0 bg-[hsl(220,25%,18%)] text-white rounded-xl overflow-hidden flex flex-col shadow-xl">
       <div className="flex items-center justify-between px-4 pt-4 pb-2">
-        <h3 className="font-semibold text-sm">Elementos del documento</h3>
+        <h3 className="font-medium text-sm text-[#1f1f1f] dark:text-foreground">Elementos del documento</h3>
         <button onClick={onClose} className="p-1 rounded hover:bg-white/10 transition-colors">
           <X className="h-4 w-4" />
         </button>

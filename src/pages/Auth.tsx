@@ -83,77 +83,65 @@ const Auth = () => {
     setIsLoading(false);
   };
 
+  const FIELD = 'h-12 pl-11 rounded-xl bg-white dark:bg-card border-[#747775] dark:border-border shadow-none text-[15px] focus-visible:ring-0 focus-visible:border-2 focus-visible:border-[#0b57d0]';
+
   return (
-    <div className="min-h-screen flex bg-background">
-      {/* Left panel */}
-      <div className="hidden lg:flex lg:w-1/2 bg-primary flex-col justify-center items-center p-12 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary to-accent opacity-90" />
-        <div className="relative z-10 text-center">
-          <img src={logoImg} alt="Dispatch Up TMS" className="h-20 w-20 mb-6 mx-auto rounded-xl object-cover" />
-          <h1 className="text-4xl font-bold text-primary-foreground mb-4">Dispatch Up TMS</h1>
-          <p className="text-primary-foreground/80 text-lg max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-[#f0f4f9] dark:bg-background p-4">
+      {/* Tarjeta de acceso estilo Google */}
+      <div className="w-full max-w-[1040px] rounded-[28px] bg-white dark:bg-card p-8 sm:p-10 grid gap-8 md:grid-cols-2">
+        <div className="flex flex-col">
+          <img src={logoImg} alt="Dispatch Up TMS" className="h-12 w-12 rounded-xl object-cover" />
+          <h1 className="mt-6 text-[36px] leading-[44px] font-normal text-[#1f1f1f] dark:text-foreground">
+            {signUpSuccess ? 'Revisa tu email' : 'Sign in'}
+          </h1>
+          <p className="mt-3 text-base text-[#1f1f1f] dark:text-foreground">
+            {signUpSuccess ? 'Te enviamos un correo de confirmación' : 'to continue to Dispatch Up TMS'}
+          </p>
+          <p className="mt-auto pt-8 hidden md:block text-sm text-[#444746] dark:text-muted-foreground max-w-sm">
             Comprehensive multi-company transportation management platform. Manage your fleet, loads, payments, and team.
           </p>
         </div>
-        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-primary/50 to-transparent" />
-      </div>
 
-      {/* Right panel */}
-      <div className="flex-1 flex items-center justify-center p-6">
-        <div className="w-full max-w-md">
-          <div className="lg:hidden flex items-center justify-center mb-8">
-            <img src={logoImg} alt="Dispatch Up TMS" className="h-10 w-10 rounded-lg mr-3 flex-shrink-0 object-cover" />
-            <h1 className="text-2xl font-bold text-foreground">Dispatch Up TMS</h1>
-          </div>
-
+        <div className="flex flex-col justify-center">
           {signUpSuccess ? (
-            <Card className="border-0 shadow-lg">
-              <CardHeader className="pb-4 text-center">
-                <CardTitle className="text-xl text-success">Registration successful!</CardTitle>
-                <CardDescription>
-                  We have sent a confirmation email to <strong>{email}</strong>. Please confirm your email to sign in.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button className="w-full" onClick={() => { setSignUpSuccess(false); setError(''); }}>
+            <div className="space-y-6">
+              <p className="text-sm text-[#444746] dark:text-muted-foreground">
+                We have sent a confirmation email to <strong className="text-[#1f1f1f] dark:text-foreground">{email}</strong>. Please confirm your email to sign in.
+              </p>
+              <div className="flex justify-end">
+                <Button className="h-10 rounded-full px-6 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium shadow-none" onClick={() => { setSignUpSuccess(false); setError(''); }}>
                   Back to Sign In
                 </Button>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           ) : (
-            <Card className="border-0 shadow-lg">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-xl">Welcome</CardTitle>
-                <CardDescription>Sign in to your account or register</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSignIn} className="space-y-4">
-                  {error && (
-                    <div className="flex items-center gap-2 p-3 rounded-md bg-destructive/10 text-destructive text-sm">
-                      <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                      {error}
-                    </div>
-                  )}
-                  <div className="space-y-2">
-                    <Label htmlFor="login-email">Email</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input id="login-email" type="email" placeholder="you@email.com" value={email} onChange={e => setEmail(e.target.value)} className="pl-10" required />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="login-password">Password</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input id="login-password" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} className="pl-10" required />
-                    </div>
-                  </div>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? 'Signing in...' : 'Sign In'}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
+            <form onSubmit={handleSignIn} className="space-y-5">
+              {error && (
+                <div className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-[#fce8e6] dark:bg-red-950/40 text-[#a50e0e] dark:text-red-300 text-sm">
+                  <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                  {error}
+                </div>
+              )}
+              <div className="space-y-1.5">
+                <Label htmlFor="login-email" className="text-xs font-medium text-[#444746] dark:text-muted-foreground">Email</Label>
+                <div className="relative">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#444746] dark:text-muted-foreground" />
+                  <Input id="login-email" type="email" placeholder="you@email.com" value={email} onChange={e => setEmail(e.target.value)} className={FIELD} required />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="login-password" className="text-xs font-medium text-[#444746] dark:text-muted-foreground">Password</Label>
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#444746] dark:text-muted-foreground" />
+                  <Input id="login-password" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} className={FIELD} required />
+                </div>
+              </div>
+              <div className="flex justify-end pt-2">
+                <Button type="submit" className="h-10 rounded-full px-6 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium shadow-none" disabled={isLoading}>
+                  {isLoading ? 'Signing in...' : 'Sign In'}
+                </Button>
+              </div>
+            </form>
           )}
         </div>
       </div>

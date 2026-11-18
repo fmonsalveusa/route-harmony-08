@@ -74,7 +74,7 @@ export function LoadProfitSection({ load, loadedMiles, emptyMiles, truck, driver
   if (isCompanyDriver && !truck) {
     return (
       <div className="px-4 py-3 rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border text-sm">
-        <Header><TrendingUp className="h-3.5 w-3.5 text-primary" /> Rentabilidad</Header>
+        <Header><TrendingUp className="h-3.5 w-3.5 text-[#0b57d0] dark:text-blue-300" /> Rentabilidad</Header>
         <p className="text-xs text-muted-foreground mt-1">Asigna un camión para calcular el profit de esta carga.</p>
       </div>
     );
@@ -86,7 +86,7 @@ export function LoadProfitSection({ load, loadedMiles, emptyMiles, truck, driver
         <Header>
           {isProfit
             ? <TrendingUp className="h-3.5 w-3.5 text-[hsl(152,60%,40%)]" />
-            : <TrendingDown className="h-3.5 w-3.5 text-destructive" />}
+            : <TrendingDown className="h-3.5 w-3.5 text-[#b3261e]" />}
           Rentabilidad
           <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground uppercase tracking-wide">
             {profit.serviceLabel}
@@ -112,7 +112,7 @@ export function LoadProfitSection({ load, loadedMiles, emptyMiles, truck, driver
               <span className="text-[10px] text-muted-foreground ml-1.5">{profit.revenueDetail}</span>
             )}
           </div>
-          <span className="font-semibold text-primary">{fmt(profit.revenue)}</span>
+          <span className="font-semibold text-[#0b57d0] dark:text-blue-300">{fmt(profit.revenue)}</span>
         </div>
 
         {profit.lines.map(line => (
@@ -123,21 +123,21 @@ export function LoadProfitSection({ load, loadedMiles, emptyMiles, truck, driver
             </div>
             {line.amount === 0
               ? <span className="text-xs text-muted-foreground whitespace-nowrap">{fmt(0)}</span>
-              : <span className="text-xs text-destructive whitespace-nowrap">−{fmt(line.amount)}</span>}
+              : <span className="text-xs text-[#b3261e] whitespace-nowrap">−{fmt(line.amount)}</span>}
           </div>
         ))}
 
         <div className="flex items-center justify-between py-1 border-t">
           <span className="text-xs font-medium text-muted-foreground">Costos totales</span>
-          <span className="text-xs font-semibold text-destructive">−{fmt(profit.totalCosts)}</span>
+          <span className="text-xs font-semibold text-[#b3261e]">−{fmt(profit.totalCosts)}</span>
         </div>
 
         <div className={`flex items-center justify-between px-2 py-2 rounded-md mt-1 ${
           isProfit ? 'bg-[hsl(152,60%,40%)]/10' : 'bg-destructive/10'
         }`}>
-          <span className="font-bold">Profit neto</span>
+          <span className="font-semibold">Profit neto</span>
           <div className="text-right">
-            <div className={`text-base font-bold ${isProfit ? 'text-[hsl(152,60%,40%)]' : 'text-destructive'}`}>
+            <div className={`text-base font-semibold ${isProfit ? 'text-[hsl(152,60%,40%)]' : 'text-[#b3261e]'}`}>
               {isProfit ? '' : '−'}{fmt(profit.netProfit)}
             </div>
             <div className="text-[11px] text-muted-foreground">
