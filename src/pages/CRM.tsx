@@ -3,7 +3,7 @@ import { SEARCH_PILL } from '@/components/FilterChip';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Contact, Plus, Search, Phone, MessageCircle, Globe, UserCheck, PenLine, CalendarClock, AlertCircle,
-  Users as UsersIcon, CalendarCheck, Trophy, Bell, Trash2, Loader2, Send, Check, X,
+  Users as UsersIcon, CalendarCheck, Trophy, Bell, Trash2, Loader2, Send, Check, X, UserX, Undo2,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -22,7 +22,7 @@ import { BookingAgenda } from '@/components/crm/BookingAgenda';
 import { CrmCalendar } from '@/components/crm/CrmCalendar';
 import { useCompanies } from '@/hooks/useCompanies';
 
-type Stage = 'new' | 'meeting_scheduled' | 'meeting_done' | 'client';
+type Stage = 'new' | 'meeting_scheduled' | 'meeting_done' | 'client' | 'not_qualified';
 
 interface CrmContact {
   id: string;
@@ -46,6 +46,11 @@ interface CrmContact {
   whatsapp_group_id: string | null;
   whatsapp_group_name: string | null;
   referred_by: string | null;
+  /** No calificado: motivo, comentario, fecha y etapa en la que estaba */
+  lost_reason?: string | null;
+  lost_note?: string | null;
+  lost_at?: string | null;
+  lost_from_stage?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -387,6 +392,134 @@ const ago = (iso: string) => {
 interface CallSummary { count: number; last: string }
 
 /** Formulario para registrar o editar una llamada */
+/** Motivos por los que no se le puede dar el servicio */
+const LOST_REASONS = [
+  'No tiene MC/DOT', 'Seguro', 'Equipo no compatible', 'Zona que no cubrimos',
+  'Sin experiencia', 'No le interesa el precio', 'No contesta', 'Otro',
+];
+
+function NotQualifiedDialog({ open, name, onClose, onConfirm }: {
+  open: boolean; name: string; onClose: () => void; onConfirm: (reason: string, note: string) => Promise<void>;
+}) {
+  const [reason, setReason] = useState('');
+  const [note, setNote] = useState('');
+  const [saving, setSaving] = useState(false);
+  useEffect(() => { if (open) { setReason(''); setNote(''); } }, [open]);
+  return (
+    <Dialog open={open} onOpenChange={v => !v && onClose()}>
+      <DialogContent className="sm:max-w-md rounded-[28px] border-0 bg-[#f8fafd] dark:bg-background">
+        <DialogHeader className="space-y-0">
+          <div className="flex items-center gap-3">
+            <span className="h-11 w-11 rounded-full bg-[#f9dedc] dark:bg-red-900/40 text-[#410e0b] dark:text-red-200 flex items-center justify-center shrink-0">
+              <UserX className="h-5 w-5" />
+            </span>
+            <div>
+              <DialogTitle className="text-[22px] leading-7 font-normal text-[#1f1f1f] dark:text-foreground">No calificado</DialogTitle>
+              <p className="text-sm text-[#444746] dark:text-muted-foreground">{name} sale del tablero. Lo puedes reactivar cuando quieras.</p>
+            </div>
+          </div>
+        </DialogHeader>
+        <div className="rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border px-4 py-3 space-y-3">
+          <p className="text-xs font-medium text-[#444746] dark:text-muted-foreground">Motivo</p>
+          <div className="flex flex-wrap gap-2">
+            {LOST_REASONS.map(r => (
+              <button key={r} type="button" onClick={() => setReason(r)}
+                className={cn('inline-flex items-center gap-1.5 rounded-lg h-8 px-3 text-sm font-medium border transition-colors',
+                  reason === r ? 'bg-[#c2e7ff] border-[#c2e7ff] text-[#001d35] dark:bg-blue-900/50 dark:border-blue-900/50 dark:text-blue-100'
+                    : 'border-[#c4c7c5] dark:border-border text-[#444746] dark:text-muted-foreground hover:bg-[#f0f4f9] dark:hover:bg-muted')}>
+                {reason === r && <Check className="h-4 w-4" />} {r}
+              </button>
+            ))}
+          </div>
+          <div className="space-y-1">
+            <p className="text-xs font-medium text-[#444746] dark:text-muted-foreground">Comentario (opcional)</p>
+            <Textarea rows={3} value={note} onChange={e => setNote(e.target.value)} placeholder="Ej: tiene el MC con menos de 6 meses"
+              className="rounded-lg shadow-none bg-white dark:bg-card border-[#c4c7c5] dark:border-border focus-visible:ring-1 focus-visible:ring-[#0b57d0]" />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" className="h-10 rounded-full px-5 text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe] dark:text-blue-300 font-medium" onClick={onClose}>Cancelar</Button>
+          <Button className="h-10 rounded-full px-6 bg-[#d93025] hover:bg-[#b3261e] text-white font-medium" disabled={!reason || saving}
+            onClick={async () => { setSaving(true); try { await onConfirm(reason, note.trim()); } finally { setSaving(false); } }}>
+            {saving && <Loader2 className="h-4 w-4 animate-spin mr-1.5" />} Marcar como no calificado
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/** Lista de contactos no calificados: motivo, fecha, abrir y reactivar */
+function NotQualifiedList({ open, contacts, onClose, onOpen }: {
+  open: boolean; contacts: CrmContact[]; onClose: () => void; onOpen: (id: string) => void;
+}) {
+  const qc = useQueryClient();
+  const [filter, setFilter] = useState<string | null>(null);
+  const list = contacts.filter(c => c.stage === 'not_qualified')
+    .sort((a, b) => (b.lost_at ?? b.updated_at).localeCompare(a.lost_at ?? a.updated_at));
+  const counts = list.reduce<Record<string, number>>((m, c) => { const r = c.lost_reason || 'Otro'; m[r] = (m[r] ?? 0) + 1; return m; }, {});
+  const shown = filter ? list.filter(c => (c.lost_reason || 'Otro') === filter) : list;
+  const reactivate = async (c: CrmContact) => {
+    const back = (c.lost_from_stage && c.lost_from_stage !== 'not_qualified' ? c.lost_from_stage : 'meeting_done') as Stage;
+    const { error } = await supabase.from('crm_contacts' as any)
+      .update({ stage: back, lost_reason: null, lost_note: null, lost_at: null, lost_from_stage: null } as any).eq('id', c.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`${c.name} volvió al tablero (${STAGE_LABEL[back] ?? back})`);
+    qc.invalidateQueries({ queryKey: ['crm_contacts'] });
+  };
+  return (
+    <Dialog open={open} onOpenChange={v => !v && onClose()}>
+      <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col rounded-[28px] border-0 bg-[#f8fafd] dark:bg-background">
+        <DialogHeader className="space-y-0">
+          <div className="flex items-center gap-3">
+            <span className="h-11 w-11 rounded-full bg-[#f9dedc] dark:bg-red-900/40 text-[#410e0b] dark:text-red-200 flex items-center justify-center shrink-0">
+              <UserX className="h-5 w-5" />
+            </span>
+            <div>
+              <DialogTitle className="text-[22px] leading-7 font-normal text-[#1f1f1f] dark:text-foreground">No calificados · {list.length}</DialogTitle>
+              <p className="text-sm text-[#444746] dark:text-muted-foreground">Prospectos a los que no se les pudo dar el servicio</p>
+            </div>
+          </div>
+        </DialogHeader>
+        {/* Cuántos por motivo (clic para filtrar) */}
+        {list.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([r, n]) => (
+              <button key={r} type="button" onClick={() => setFilter(f => (f === r ? null : r))}
+                className={cn('inline-flex items-center gap-1.5 rounded-lg h-8 px-3 text-xs font-medium border transition-colors',
+                  filter === r ? 'bg-[#c2e7ff] border-[#c2e7ff] text-[#001d35]' : 'bg-white dark:bg-card border-[#c4c7c5] dark:border-border text-[#444746] dark:text-muted-foreground hover:bg-[#f0f4f9]')}>
+                {filter === r && <Check className="h-3.5 w-3.5" />} {r}
+                <span className="rounded-full bg-[#d93025] text-white px-1.5 text-[10px] leading-4">{n}</span>
+              </button>
+            ))}
+          </div>
+        )}
+        <div className="flex-1 min-h-0 overflow-y-auto space-y-1.5">
+          {shown.length === 0 && <p className="text-sm text-[#444746] dark:text-muted-foreground py-6 text-center">No hay contactos no calificados.</p>}
+          {shown.map(c => (
+            <div key={c.id} className="rounded-2xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border px-4 py-3 flex items-start gap-3">
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <button type="button" onClick={() => onOpen(c.id)} className="text-[15px] text-[#1f1f1f] dark:text-foreground hover:underline text-left">{c.name || c.phone}</button>
+                  <span className="rounded-md bg-[#d93025] text-white px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide">{c.lost_reason || 'Otro'}</span>
+                </div>
+                <p className="text-xs text-[#444746] dark:text-muted-foreground">
+                  {[c.phone, c.vehicle, c.lost_at ? `Descartado ${fmt(c.lost_at)}` : null].filter(Boolean).join(' · ')}
+                </p>
+                {c.lost_note && <p className="text-sm text-[#1f1f1f] dark:text-foreground mt-1">{c.lost_note}</p>}
+              </div>
+              <Button size="sm" variant="outline" onClick={() => reactivate(c)}
+                className="h-8 rounded-full px-3 gap-1.5 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium shrink-0">
+                <Undo2 className="h-3.5 w-3.5" /> Reactivar
+              </Button>
+            </div>
+          ))}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function CallDialog({ open, initial, onClose, onSave }: {
   open: boolean;
   initial?: { call_at: string; call_result: string; body: string };
@@ -880,6 +1013,35 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
     </div>
   );
 
+  // No calificado: sale del tablero, se cancela lo pendiente y queda el motivo
+  const [nqOpen, setNqOpen] = useState(false);
+  const markNotQualified = async (reason: string, note: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    const { error } = await supabase.from('crm_contacts' as any).update({
+      stage: 'not_qualified', lost_reason: reason, lost_note: note || null, lost_at: new Date().toISOString(),
+      lost_from_stage: form.stage, next_action: null, next_action_at: null,
+    } as any).eq('id', contact.id);
+    if (error) { toast.error(error.message); return; }
+    await supabase.from('crm_notes' as any).insert({
+      tenant_id: (contact as any).tenant_id, contact_id: contact.id, kind: 'system',
+      body: `No calificado: ${reason}${note ? ` — ${note}` : ''}`, created_by: user?.id ?? null,
+    } as any);
+    // Sin marcar como "editado": así el guardado automático no regresa la etapa anterior
+    setForm(f => ({ ...f, stage: 'not_qualified', next_action: '', next_action_at: '' }));
+    setNqOpen(false);
+    toast.success('Marcado como no calificado');
+    refresh();
+  };
+  const reactivate = async () => {
+    const back = (contact.lost_from_stage && contact.lost_from_stage !== 'not_qualified' ? contact.lost_from_stage : 'meeting_done') as Stage;
+    const { error } = await supabase.from('crm_contacts' as any)
+      .update({ stage: back, lost_reason: null, lost_note: null, lost_at: null, lost_from_stage: null } as any).eq('id', contact.id);
+    if (error) { toast.error(error.message); return; }
+    setForm(f => ({ ...f, stage: back }));
+    toast.success(`Reactivado (${STAGE_LABEL[back] ?? back})`);
+    refresh();
+  };
+
   // Próxima reunión agendada (para el encabezado)
   const todayEt = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
   const upcoming = (extra?.meetings ?? [])
@@ -943,9 +1105,24 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
           <div className="flex gap-1 sm:gap-2">
             {form.phone && <ActionButton icon={Phone} label="Llamar" onClick={callWithVoice} />}
             <ActionButton icon={PenLine} label="Registrar" onClick={() => setCallOpen(true)} />
+            {form.stage !== 'not_qualified' && <ActionButton icon={UserX} label="No calificado" onClick={() => setNqOpen(true)} danger />}
             <ActionButton icon={Trash2} label="Eliminar" onClick={remove} danger />
           </div>
         </div>
+
+        {form.stage === 'not_qualified' && (
+          <div className="mt-4 flex flex-wrap items-center gap-3 rounded-2xl bg-[#fce8e6] dark:bg-red-950/40 px-4 py-2.5">
+            <UserX className="h-5 w-5 text-[#b3261e] dark:text-red-300" />
+            <div className="flex-1 min-w-0 text-sm text-[#410e0b] dark:text-red-100">
+              <p><span className="font-medium">No calificado</span> · {contact.lost_reason || 'Otro'}{contact.lost_at ? ` · ${fmt(contact.lost_at)}` : ''}</p>
+              {contact.lost_note && <p className="text-[#601410] dark:text-red-200">{contact.lost_note}</p>}
+            </div>
+            <Button size="sm" variant="ghost" onClick={reactivate}
+              className="h-8 rounded-full px-3 text-[#0b57d0] hover:bg-[#e8f0fe] hover:text-[#0b57d0] gap-1.5 font-medium">
+              <Undo2 className="h-4 w-4" /> Reactivar
+            </Button>
+          </div>
+        )}
 
         {upcoming && (
           <div className="mt-4 flex flex-wrap items-center gap-3 rounded-2xl bg-[#e8f0fe] dark:bg-blue-950/40 px-4 py-2.5">
@@ -1126,6 +1303,7 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
         {/* Primera reunión: a todo el ancho */}
   <MeetingSection contact={contact} name={form.name} vehicle={form.vehicle} scheduledAt={scheduledLocal} />
         <CallDialog open={callOpen} onClose={() => setCallOpen(false)} onSave={saveCall} />
+        <NotQualifiedDialog open={nqOpen} name={form.name || form.phone || 'El contacto'} onClose={() => setNqOpen(false)} onConfirm={markNotQualified} />
       </div>
     </div>
   );
@@ -1252,6 +1430,7 @@ export default function CRM() {
   const [search, setSearch] = useState('');
   const [openId, setOpenId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [nqListOpen, setNqListOpen] = useState(false);
   const [dragOver, setDragOver] = useState<Stage | null>(null);
 
   const filtered = useMemo(() => {
@@ -1267,7 +1446,7 @@ export default function CRM() {
 
   const byStage = useMemo(() => {
     const map = Object.fromEntries(STAGES.map(s => [s.id, [] as CrmContact[]])) as Record<Stage, CrmContact[]>;
-    for (const c of filtered) (map[c.stage] ?? map.new).push(c);
+    for (const c of filtered) { if (c.stage === 'not_qualified') continue; (map[c.stage] ?? map.new).push(c); }
     // Primero los vencidos, luego por próxima acción, luego los más recientes
     for (const list of Object.values(map)) {
       list.sort((a, b) => {
@@ -1291,7 +1470,9 @@ export default function CRM() {
   };
 
   const openContact = contacts.find(c => c.id === openId) ?? null;
-  const active = contacts.filter(c => c.stage !== 'client');
+  const active = contacts.filter(c => c.stage !== 'client' && c.stage !== 'not_qualified');
+  const boardContacts = contacts.filter(c => c.stage !== 'not_qualified');
+  const notQualifiedCount = contacts.length - boardContacts.length;
   const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
 
   return (
@@ -1330,14 +1511,16 @@ export default function CRM() {
       </div>
 
       {/* Resumen */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         {[
           { label: 'En proceso', value: active.length, icon: UsersIcon, tone: 'bg-[#d3e3fd] text-[#041e49] dark:bg-blue-900/40 dark:text-blue-200' },
           { label: 'Reuniones agendadas', value: contacts.filter(c => c.stage === 'meeting_scheduled').length, icon: CalendarCheck, tone: 'bg-[#c2e7ff] text-[#001d35] dark:bg-sky-900/40 dark:text-sky-200' },
           { label: 'Seguimientos vencidos', value: contacts.filter(isOverdue).length, icon: AlertCircle, tone: 'bg-[#f9dedc] text-[#410e0b] dark:bg-red-900/40 dark:text-red-200' },
           { label: 'Clientes este mes', value: contacts.filter(c => c.stage === 'client' && new Date(c.updated_at) >= monthStart).length, icon: Trophy, tone: 'bg-[#c4eed0] text-[#072711] dark:bg-emerald-900/40 dark:text-emerald-200' },
-        ].map(t => (
-          <div key={t.label} className="rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border px-5 py-4 flex items-center gap-4">
+          { label: 'No calificados', value: notQualifiedCount, icon: UserX, tone: 'bg-[#f9dedc] text-[#410e0b] dark:bg-red-900/40 dark:text-red-200', onClick: () => setNqListOpen(true) },
+        ].map((t: any) => (
+          <div key={t.label} onClick={t.onClick} title={t.onClick ? 'Ver la lista' : undefined}
+            className={cn('rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border px-5 py-4 flex items-center gap-4', t.onClick && 'cursor-pointer hover:bg-[#f8fafd] dark:hover:bg-muted/40')}>
             <span className={cn('h-11 w-11 rounded-full flex items-center justify-center shrink-0', t.tone)}><t.icon className="h-5 w-5" /></span>
             <div className="min-w-0">
               <p className="text-[28px] leading-8 font-normal text-[#1f1f1f] dark:text-foreground">{t.value}</p>
@@ -1372,12 +1555,14 @@ export default function CRM() {
           ))}
         </div>
         <div className="w-1/4 min-w-[300px] shrink-0 hidden lg:block">
-          <CrmCalendar contacts={contacts} onOpen={setOpenId} />
+          <CrmCalendar contacts={boardContacts} onOpen={setOpenId} />
         </div>
         </div>
       )}
       {/* En pantallas pequeñas el calendario va debajo del tablero */}
-      {!isLoading && <div className="lg:hidden max-w-sm"><CrmCalendar contacts={contacts} onOpen={setOpenId} /></div>}
+      {!isLoading && <div className="lg:hidden max-w-sm"><CrmCalendar contacts={boardContacts} onOpen={setOpenId} /></div>}
+
+      <NotQualifiedList open={nqListOpen} contacts={contacts} onClose={() => setNqListOpen(false)} onOpen={id => { setNqListOpen(false); setOpenId(id); }} />
 
       <Dialog open={!!openContact} onOpenChange={v => !v && setOpenId(null)}>
         <DialogContent className="max-w-6xl w-[96vw] h-[92vh] p-0 gap-0 overflow-hidden flex flex-col rounded-[28px] border-0 bg-white dark:bg-background">
