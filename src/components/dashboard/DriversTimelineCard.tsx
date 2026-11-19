@@ -44,6 +44,8 @@ interface Props {
   locations?: Record<string, DriverLoc>;
   /** Paradas de las cargas activas */
   stops?: TimelineStop[];
+  /** Punto de salida vacío de cada carga (descarga de la carga anterior), por load id */
+  deadheads?: Record<string, { origin: string; coords: [number, number] }>;
 }
 
 interface SelectedTruckInfo {
@@ -64,32 +66,36 @@ const milesBetween = (a: [number, number], b: [number, number]) => {
 const GPS_LIVE_MS = 5 * 60 * 1000;
 
 /**
- * Avance 0..1 de la carga calculado SOLO con la ubicación real (GPS de la app o ELD),
- * sin mirar el status: se proyecta la posición del camión sobre la ruta pickup → entregas
- * y se mide qué fracción del recorrido ya lleva.
+ * Ruta de la carga como puntos [lat, lng]: salida vacía (descarga de la carga anterior, si hay)
+ * → paradas en orden. Devuelve la fracción del recorrido (por distancia) en que cae cada punto
+ * y una función que proyecta la ubicación real del camión (GPS de la app o ELD) sobre la ruta.
+ * No mira el status de la carga.
  */
-function loadProgress(stops: TimelineStop[], loc: DriverLoc | undefined): number | null {
-  const geo = stops.filter(s => s.lat != null && s.lng != null).sort((a, b) => a.stop_order - b.stop_order);
-  if (!loc || geo.length < 2) return null;
-  // Plano local en millas (suficiente para ubicar el camión en la barra)
-  const cosLat = Math.cos((loc.lat * Math.PI) / 180);
+function buildRoute(points: [number, number][]) {
+  if (points.length < 2) return null;
+  const cosLat = Math.cos((points[0][0] * Math.PI) / 180);
   const xy = (lat: number, lng: number): [number, number] => [lng * 69.17 * cosLat, lat * 69.0];
-  const pts = geo.map(s => xy(Number(s.lat), Number(s.lng)));
-  const P = xy(loc.lat, loc.lng);
-  let total = 0;
-  const lens = pts.slice(1).map((b, i) => { const a = pts[i]; const l = Math.hypot(b[0] - a[0], b[1] - a[1]); total += l; return l; });
+  const pts = points.map(p => xy(p[0], p[1]));
+  const lens = pts.slice(1).map((b, i) => Math.hypot(b[0] - pts[i][0], b[1] - pts[i][1]));
+  const total = lens.reduce((a, b) => a + b, 0);
   if (total <= 0) return null;
-  let best = { dist: Infinity, along: 0 };
-  let cum = 0;
-  for (let i = 0; i < lens.length; i++) {
-    const [ax, ay] = pts[i], [bx, by] = pts[i + 1];
-    const l2 = lens[i] ** 2;
-    const t = l2 > 0 ? Math.min(1, Math.max(0, ((P[0] - ax) * (bx - ax) + (P[1] - ay) * (by - ay)) / l2)) : 0;
-    const dist = Math.hypot(P[0] - (ax + t * (bx - ax)), P[1] - (ay + t * (by - ay)));
-    if (dist < best.dist) best = { dist, along: cum + t * lens[i] };
-    cum += lens[i];
-  }
-  return Math.min(1, Math.max(0, best.along / total));
+  const fracs = [0];
+  lens.reduce((cum, l) => { fracs.push((cum + l) / total); return cum + l; }, 0);
+  const project = (lat: number, lng: number) => {
+    const P = xy(lat, lng);
+    let best = { dist: Infinity, along: 0 };
+    let cum = 0;
+    for (let i = 0; i < lens.length; i++) {
+      const [ax, ay] = pts[i], [bx, by] = pts[i + 1];
+      const l2 = lens[i] ** 2;
+      const t = l2 > 0 ? Math.min(1, Math.max(0, ((P[0] - ax) * (bx - ax) + (P[1] - ay) * (by - ay)) / l2)) : 0;
+      const dist = Math.hypot(P[0] - (ax + t * (bx - ax)), P[1] - (ay + t * (by - ay)));
+      if (dist < best.dist) best = { dist, along: cum + t * lens[i] };
+      cum += lens[i];
+    }
+    return Math.min(1, Math.max(0, best.along / total));
+  };
+  return { fracs, project };
 }
 
 const formatAgo = (updatedAt: string) => {
@@ -142,7 +148,7 @@ const VISIBLE_DAYS = 7;
 const DRIVER_COL_WIDTH = 140;
 const MIN_DAY_WIDTH = 120;
 
-export const DriversTimelineCard = ({ loads, drivers, trucks = [], locations = {}, stops = [] }: Props) => {
+export const DriversTimelineCard = ({ loads, drivers, trucks = [], locations = {}, stops = [], deadheads = {} }: Props) => {
   const [selectedTruck, setSelectedTruck] = useState<SelectedTruckInfo | null>(null);
   const [weekOffset, setWeekOffset] = useState(0);
   const [selectedLoad, setSelectedLoad] = useState<SelectedLoadInfo | null>(null);
@@ -527,19 +533,88 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [], locations = {
                             </span>
                           </div>
                         );
-                        // Camión sobre la barra: avance entre pickup y entrega según su GPS
+                        // Solo la carga en curso lleva ruta y camión (no las Planned que vienen después)
+                        if (load.status === 'planned') return bar;
+                        const barTop = 6 + dLoads.indexOf(load) * 30;
+                        // Ruta: salida vacía (descarga anterior) → paradas. La barra se reparte por distancia.
+                        const loadStops = stops
+                          .filter(s => s.load_id === load.id && s.lat != null && s.lng != null)
+                          .sort((a, b) => a.stop_order - b.stop_order);
+                        const dh = deadheads[load.id];
+                        const routePts: [number, number][] = [
+                          ...(dh ? [dh.coords] : []),
+                          ...loadStops.map(s => [Number(s.lat), Number(s.lng)] as [number, number]),
+                        ];
+                        const route = buildRoute(routePts);
+                        const off = dh ? 1 : 0;
+                        // Fracción del recorrido → % horizontal dentro de lo visible de la barra
+                        const pctAt = (frac: number) => {
+                          const ts = pickupTs + frac * (deliveryTs - pickupTs);
+                          return ((Math.min(Math.max(ts, clampedStart), clampedEnd) - weekStartTs) / totalMs) * 100;
+                        };
+                        const inView = (frac: number) => {
+                          const ts = pickupTs + frac * (deliveryTs - pickupTs);
+                          return ts >= clampedStart && ts <= clampedEnd;
+                        };
+                        const overlays = route && (
+                          <>
+                            {/* Tramo vacío: desde la descarga anterior hasta el primer pickup */}
+                            {dh && route.fracs[1] > 0 && (
+                              <div
+                                className="absolute z-[25] h-[26px] rounded-l-md pointer-events-auto"
+                                title={`Vacío desde ${dh.origin}`}
+                                style={{
+                                  left: `${pctAt(0)}%`,
+                                  width: `${Math.max(0, pctAt(route.fracs[1]) - pctAt(0))}%`,
+                                  top: `${barTop}px`,
+                                  backgroundImage: 'repeating-linear-gradient(135deg, rgba(227,116,0,.28) 0 5px, rgba(255,255,255,.55) 5px 10px)',
+                                  borderRight: '2px dashed #e37400',
+                                }}
+                              />
+                            )}
+                            {/* Salida (descarga de la carga anterior) */}
+                            {dh && inView(0) && (
+                              <span
+                                className="absolute z-[26] -translate-x-1/2 h-3 w-3 rounded-full bg-white border-2 border-[#e37400]"
+                                title={`Salida: ${dh.origin}`}
+                                style={{ left: `${pctAt(0)}%`, top: `${barTop + 7}px` }}
+                              />
+                            )}
+                            {/* Paradas: P verde / D roja; rellena si ya llegó */}
+                            {loadStops.map((s, i) => {
+                              const f = route.fracs[i + off];
+                              if (!inView(f)) return null;
+                              const isPick = s.stop_type === 'pickup';
+                              const color = isPick ? '#188038' : '#d93025';
+                              return (
+                                <span
+                                  key={s.id}
+                                  className="absolute z-[26] -translate-x-1/2 h-4 w-4 rounded-full border-2 flex items-center justify-center text-[8px] font-bold leading-none"
+                                  title={`${isPick ? 'Pickup' : 'Delivery'}: ${s.address}${s.arrived_at ? ' (llegó)' : ''}`}
+                                  style={{
+                                    left: `${pctAt(f)}%`,
+                                    top: `${barTop + 5}px`,
+                                    borderColor: color,
+                                    backgroundColor: s.arrived_at ? color : 'white',
+                                    color: s.arrived_at ? 'white' : color,
+                                  }}
+                                >
+                                  {isPick ? 'P' : 'D'}
+                                </span>
+                              );
+                            })}
+                          </>
+                        );
+                        // Camión: avance según la ubicación real (GPS de la app o ELD)
                         const loc = load.driver_id ? locations[load.driver_id] : undefined;
-                        // Solo en la carga en curso (no en las Planned que vienen después)
-                        if (!loc || load.status === 'planned') return bar;
-                        // Sin paradas con coordenadas todavía: el camión se muestra al inicio (camino al pickup)
-                        const progress = loadProgress(stops.filter(s => s.load_id === load.id), loc) ?? 0;
-                        const truckTs = pickupTs + progress * (deliveryTs - pickupTs);
-                        const tsInBar = Math.min(Math.max(truckTs, clampedStart), clampedEnd);
-                        const truckPct = ((tsInBar - weekStartTs) / totalMs) * 100;
+                        if (!loc) return (<div key={load.id} className="contents">{bar}{overlays}</div>);
+                        const progress = route ? route.project(loc.lat, loc.lng) : 0;
+                        const truckPct = pctAt(progress);
                         const live = Date.now() - new Date(loc.updated_at).getTime() < GPS_LIVE_MS;
                         return (
                           <div key={load.id} className="contents">
                             {bar}
+                            {overlays}
                             <button
                               type="button"
                               title={`${Math.round(progress * 100)}% del recorrido — ver ubicación`}
@@ -547,7 +622,7 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [], locations = {
                               className="absolute z-30 -translate-x-1/2 flex items-center justify-center h-[26px] w-[26px] rounded-full border-2 border-white text-white shadow-[0_1px_3px_rgba(60,64,67,.4),0_2px_6px_2px_rgba(60,64,67,.2)] hover:scale-110 transition-transform"
                               style={{
                                 left: `${truckPct}%`,
-                                top: `${6 + dLoads.indexOf(load) * 30}px`,
+                                top: `${barTop}px`,
                                 backgroundColor: live ? '#0b57d0' : '#e37400',
                               }}
                             >

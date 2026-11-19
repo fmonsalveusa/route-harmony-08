@@ -1644,6 +1644,7 @@ const Tracking = () => {
             trucks={trucks}
             locations={locByDriver}
             stops={allStops}
+            deadheads={deadheads}
           />
         </div>
       </div>
