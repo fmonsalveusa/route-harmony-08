@@ -150,6 +150,18 @@ Deno.serve(async (req) => {
   if (!secret || req.headers.get("x-cron-secret") !== secret) return json({ error: "Unauthorized" }, 401);
   const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
   try {
+    // Diagnóstico: {"debug_unit":"263"} devuelve lo que reporta cada ELD de flota para esa unidad
+    const body = await req.json().catch(() => ({}));
+    if (body?.debug_unit) {
+      const out: Record<string, unknown> = {};
+      for (const [name, read] of [["HOS247", readHos247], ["RouteOne", readRouteOne]] as const) {
+        try {
+          const list = await read();
+          out[name] = { total: list.length, units: list.map((p) => p.unit), match: list.filter((p) => norm(p.unit) === norm(body.debug_unit)).map((p) => ({ ...p, at: new Date(p.at).toISOString() })) };
+        } catch (e) { out[name] = { error: errMsg(e) }; }
+      }
+      return json(out);
+    }
     const result = await sync(supabase);
     if ((result.saved as any[]).length || result.errors.length) console.log("eld-location:", JSON.stringify(result));
     return json(result);
