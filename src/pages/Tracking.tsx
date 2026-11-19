@@ -468,14 +468,16 @@ const Tracking = () => {
   //  1. Vacíos
   //  2. Cargados que entregan hoy
   //  3. El resto de los cargados, por fecha de entrega (los que se liberan antes, arriba)
-  //  Pausados siempre al final. Dentro de cada grupo desempata Buscando → Listo → Standby.
+  //  Listos al final y luego los pausados. Dentro de cada grupo desempata Buscando → Listo → Standby.
   const sortedDrivers = useMemo(() => {
     const deliveryOf = (d: any) => {
       const load = activeLoadByDriver[d.id];
       return load ? (load.delivery_date || load.pickup_date || '').slice(0, 10) : null;
     };
     const group = (d: any) => {
-      if (d.is_paused) return 3;
+      if (d.is_paused) return 4;
+      // Listo: ya tiene su próxima carga → al final (antes de los pausados)
+      if (searchStatus[d.id] === 'ready') return 3;
       const delivery = deliveryOf(d);
       if (delivery === null) return 0;
       return delivery === todayET ? 1 : 2;
