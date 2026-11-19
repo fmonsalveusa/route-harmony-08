@@ -33,7 +33,7 @@ interface Driver {
   truck_id: string | null;
 }
 
-interface DriverLoc { lat: number; lng: number; speed: number | null; updated_at: string }
+interface DriverLoc { lat: number; lng: number; speed: number | null; updated_at: string; source?: string | null }
 interface TimelineStop { id: string; load_id: string; stop_type: string; address: string; stop_order: number; lat: number | null; lng: number | null; arrived_at: string | null }
 
 interface Props {
@@ -611,6 +611,7 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [], locations = {
                         const progress = route ? route.project(loc.lat, loc.lng) : 0;
                         const truckPct = pctAt(progress);
                         const live = Date.now() - new Date(loc.updated_at).getTime() < GPS_LIVE_MS;
+                        const fromEld = loc.source === 'eld';
                         return (
                           <div key={load.id} className="contents">
                             {bar}
@@ -623,7 +624,8 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [], locations = {
                               style={{
                                 left: `${truckPct}%`,
                                 top: `${barTop}px`,
-                                backgroundColor: live ? '#0b57d0' : '#e37400',
+                                // Azul: GPS en vivo o posición del ELD (el ELD solo reporta al moverse). Naranja: GPS de la app sin actualizar
+                                backgroundColor: live || fromEld ? '#0b57d0' : '#e37400',
                               }}
                             >
                               {live && <span className="absolute inset-0 rounded-full animate-ping bg-[#0b57d0]/40" />}
@@ -645,6 +647,7 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [], locations = {
         {selectedTruck && (() => {
           const { load, driverName, loc, next, miles, rect } = selectedTruck;
           const live = Date.now() - new Date(loc.updated_at).getTime() < GPS_LIVE_MS;
+          const fromEld = loc.source === 'eld';
           const speedMph = loc.speed != null ? Math.round(loc.speed * 2.237) : null;
           return (
             <div
@@ -655,7 +658,7 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [], locations = {
               <button onClick={() => setSelectedTruck(null)} className="absolute top-2 right-2 h-6 w-6 flex items-center justify-center rounded-full text-[#444746] hover:bg-[#f0f4f9]">
                 <X className="h-3.5 w-3.5" />
               </button>
-              <p className="font-semibold" style={{ color: live ? '#188038' : '#e37400' }}>{live ? '🛰 GPS Live' : '📍 Last Known'}</p>
+              <p className="font-semibold" style={{ color: fromEld ? '#0b57d0' : live ? '#188038' : '#e37400' }}>{fromEld ? `🚚 ELD · ${new Date(loc.updated_at).toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit' })}` : live ? '🛰 GPS Live' : '📍 Last Known'}</p>
               <p className="text-[#1f1f1f] dark:text-foreground">{driverName}</p>
               <p className="text-[11px] text-[#444746] dark:text-muted-foreground">Load #{load.reference_number}</p>
               {live && speedMph != null && <p className="text-[#1f1f1f] dark:text-foreground">{speedMph} mph</p>}
@@ -667,7 +670,7 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [], locations = {
                   <p className="text-[11px] text-[#444746] dark:text-muted-foreground">{stopCity(next.address)}</p>
                 </div>
               )}
-              <p className="text-[11px] text-[#444746] dark:text-muted-foreground">{formatAgo(loc.updated_at)}</p>
+              {!fromEld && <p className="text-[11px] text-[#444746] dark:text-muted-foreground">{formatAgo(loc.updated_at)}</p>}
             </div>
           );
         })()}

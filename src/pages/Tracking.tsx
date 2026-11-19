@@ -1288,7 +1288,7 @@ const Tracking = () => {
                         {loc && locAge != null && locAge <= MAX_LOCATION_AGE_MS && (
                           <span className={`flex items-center gap-1 ${locLive ? 'text-blue-700' : 'text-muted-foreground'}`}>
                             <span className={`h-2 w-2 rounded-full ${locLive ? 'bg-blue-600 animate-pulse' : 'bg-gray-400'}`} />
-                            {(loc as any).source === 'eld' ? 'ELD' : 'GPS'} {formatAge(locAge)}
+                            {(loc as any).source === 'eld' ? `ELD · ${new Date(loc.updated_at).toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit' })}` : `GPS ${formatAge(locAge)}`}
                             {locLive && loc.speed != null && ` · ${(loc.speed * 2.237).toFixed(0)} mph`}
                           </span>
                         )}
@@ -1591,6 +1591,8 @@ const Tracking = () => {
                 const age = nowTick - new Date(loc.updated_at).getTime();
                 if (age > MAX_LOCATION_AGE_MS) return null;
                 const live = age <= LIVE_LOCATION_MS;
+                const fromEld = (loc as any).source === 'eld';
+                const eldTime = new Date(loc.updated_at).toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit' });
                 return (
                   <Marker
                     key={`loc-${loc.driver_id}-${live ? 'live' : 'stale'}`}
@@ -1599,13 +1601,13 @@ const Tracking = () => {
                   >
                     <LeafletTooltip direction="top" offset={[0, -18]} permanent className="driver-name-tooltip">
                       <span style={{ fontSize: '11px', fontWeight: 600, color: live ? undefined : '#6b7280' }}>
-                        {driver.name}{live ? '' : ` · ${formatAge(age)}`}
+                        {driver.name}{fromEld ? ` · ELD ${eldTime}` : live ? '' : ` · ${formatAge(age)}`}
                       </span>
                     </LeafletTooltip>
                     <Popup>
                       <div className="text-xs">
                         <strong>{driver.name}</strong>
-                        <br />{live ? 'GPS en vivo' : `Sin actualizar (${formatAge(age)})`}
+                        <br />{fromEld ? `ELD · ${eldTime}` : live ? 'GPS en vivo' : `Sin actualizar (${formatAge(age)})`}
                         {live && loc.speed != null && <><br />Speed: {(loc.speed * 2.237).toFixed(0)} mph</>}
                         <br /><span className="text-muted-foreground">Updated: {new Date(loc.updated_at).toLocaleTimeString()}</span>
                       </div>

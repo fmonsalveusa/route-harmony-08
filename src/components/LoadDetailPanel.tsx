@@ -1391,7 +1391,7 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
       return miles != null ? `<b>${miles.toLocaleString()} mi</b> to ${label}<br/><small>${city}</small><br/>` : '';
     };
 
-    const createOrUpdateMarker = async (loc: { lat: number; lng: number; speed: number | null; updated_at: string }) => {
+    const createOrUpdateMarker = async (loc: { lat: number; lng: number; speed: number | null; updated_at: string; source?: string | null }) => {
       if (isCancelled || !mapInstanceRef.current) return;
 
       const active = isActive(loc.updated_at);
@@ -1401,8 +1401,11 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
       const speedMph = loc.speed != null ? Math.round(loc.speed * 2.237) : null;
       const agoText = formatAgo(loc.updated_at);
 
-      const statusLabel = active ? '🛰 GPS Live' : '📍 Last Known';
-      const statusColor = active ? 'hsl(142,70%,40%)' : 'hsl(30,80%,50%)';
+      // Posición del ELD: se muestra con su hora (el ELD solo reporta cuando el camión se mueve)
+      const fromEld = loc.source === 'eld';
+      const eldTime = new Date(loc.updated_at).toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit' });
+      const statusLabel = fromEld ? `🚚 ELD · ${eldTime}` : active ? '🛰 GPS Live' : '📍 Last Known';
+      const statusColor = fromEld ? '#0b57d0' : active ? 'hsl(142,70%,40%)' : 'hsl(30,80%,50%)';
       const markerBg = active ? '#266aad' : 'hsl(30,80%,50%)';
       const pulseBg = active ? 'hsl(215,70%,50%,0.25)' : 'hsl(30,80%,50%,0.15)';
       const pulseAnim = active ? 'animation:pulse 2s infinite' : '';
@@ -1445,7 +1448,7 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
     const fetchInitial = async () => {
       const { data } = await supabase
         .from('driver_locations')
-        .select('lat, lng, speed, updated_at')
+        .select('lat, lng, speed, updated_at, source')
         .eq('driver_id', driverId)
         .maybeSingle();
       if (data && !isCancelled) {
@@ -1474,7 +1477,7 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
       if (!isCancelled) {
         const { data } = await supabase
           .from('driver_locations')
-          .select('lat, lng, speed, updated_at')
+          .select('lat, lng, speed, updated_at, source')
           .eq('driver_id', driverId)
           .maybeSingle();
         if (data && !isCancelled) createOrUpdateMarker(data as any);
