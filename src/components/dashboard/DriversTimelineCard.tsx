@@ -531,8 +531,8 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [], locations = {
                         const loc = load.driver_id ? locations[load.driver_id] : undefined;
                         // Solo en la carga en curso (no en las Planned que vienen después)
                         if (!loc || load.status === 'planned') return bar;
-                        const progress = loadProgress(stops.filter(s => s.load_id === load.id), loc);
-                        if (progress == null) return bar;
+                        // Sin paradas con coordenadas todavía: el camión se muestra al inicio (camino al pickup)
+                        const progress = loadProgress(stops.filter(s => s.load_id === load.id), loc) ?? 0;
                         const truckTs = pickupTs + progress * (deliveryTs - pickupTs);
                         const tsInBar = Math.min(Math.max(truckTs, clampedStart), clampedEnd);
                         const truckPct = ((tsInBar - weekStartTs) / totalMs) * 100;

@@ -293,6 +293,9 @@ const Tracking = () => {
   const activeStatuses = ['dispatched', 'in_transit', 'on_site_pickup', 'picked_up', 'on_site_delivery'];
   const activeLoads = useMemo(() => loads.filter(l => activeStatuses.includes(l.status)), [loads]);
 
+  // Se recargan cuando cambia CUÁLES cargas están activas (no solo cuántas): si una carga pasa
+  // de Planned a Dispatched mientras otra se entrega, el número no cambia pero sus paradas sí faltan
+  const activeLoadIdsKey = useMemo(() => activeLoads.map(l => l.id).sort().join(','), [activeLoads]);
   useEffect(() => {
     if (activeLoads.length === 0) return;
     const ids = activeLoads.map(l => l.id);
@@ -304,7 +307,8 @@ const Tracking = () => {
       .then(({ data }) => {
         if (data) setAllStops(data as LoadStop[]);
       });
-  }, [activeLoads.length]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeLoadIdsKey]);
 
   // Rutas guardadas de las cargas activas (viven en su propia tabla)
   useEffect(() => {
