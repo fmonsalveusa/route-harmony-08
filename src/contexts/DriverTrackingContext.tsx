@@ -303,7 +303,15 @@ export const DriverTrackingProvider = ({ children }: { children: ReactNode }) =>
           if (gpAvailable) {
             console.log('[Tracking] Attempting NATIVE background geolocation, silent:', silent);
             try {
-              const cleanup = await startNativeTracking((pos) => sendNativePosition(pos), !silent);
+              // URL para que el plugin envíe la ubicación desde el código nativo (app en segundo plano)
+              let postUrl: string | null = null;
+              try {
+                const { data: gpsToken } = await supabase.rpc('get_my_gps_token' as any);
+                if (gpsToken) postUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/gps-ping?t=${gpsToken}`;
+              } catch (e) {
+                console.warn('[Tracking] gps token unavailable, native delivery off:', e);
+              }
+              const cleanup = await startNativeTracking((pos) => sendNativePosition(pos), !silent, postUrl);
               nativeCleanupRef.current = cleanup;
               setTracking(true);
               localStorage.setItem(TRACKING_STORAGE_KEY, 'true');

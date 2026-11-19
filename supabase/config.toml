@@ -80,3 +80,6 @@ verify_jwt = false
 
 [functions.booking]
 verify_jwt = false
+
+[functions.gps-ping]
+verify_jwt = false

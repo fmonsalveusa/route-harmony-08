@@ -165,7 +165,9 @@ export async function requestBackgroundPermissions(): Promise<BackgroundPermissi
  */
 export async function startNativeTracking(
   onPosition: (pos: PositionCallback) => void,
-  requestPermissions = true
+  requestPermissions = true,
+  /** Endpoint al que el código nativo envía cada ubicación por POST (sigue con la app en segundo plano o cerrada) */
+  postUrl?: string | null
 ): Promise<() => void> {
   if (!isNativePlatform()) {
     console.warn('[NativeTracking] Not a native platform, skipping');
@@ -207,6 +209,9 @@ export async function startNativeTracking(
         requestPermissions,
         stale: false,          // solo ubicaciones actualizadas, no cacheadas
         distanceFilter,
+        // Entrega nativa: en segundo plano el sistema congela el JS y el callback de abajo
+        // no alcanza a guardar nada. Con `url` el plugin hace el POST desde Android/iOS.
+        ...(postUrl ? { url: postUrl } : {}),
       },
       (location, error) => {
         if (error) {
