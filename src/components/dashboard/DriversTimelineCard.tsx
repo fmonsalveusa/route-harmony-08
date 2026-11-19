@@ -62,26 +62,34 @@ const milesBetween = (a: [number, number], b: [number, number]) => {
   return 2 * R * Math.asin(Math.sqrt(h));
 };
 const GPS_LIVE_MS = 5 * 60 * 1000;
-const PRE_PICKUP = ['planned', 'dispatched', 'in_transit', 'on_site_pickup'];
 
-/** Avance 0..1 de la carga según la ubicación del camión respecto a las paradas */
-function loadProgress(load: Load, stops: TimelineStop[], loc: DriverLoc | undefined): number {
-  if (load.status === 'on_site_delivery') return 1;
+/**
+ * Avance 0..1 de la carga calculado SOLO con la ubicación real (GPS de la app o ELD),
+ * sin mirar el status: se proyecta la posición del camión sobre la ruta pickup → entregas
+ * y se mide qué fracción del recorrido ya lleva.
+ */
+function loadProgress(stops: TimelineStop[], loc: DriverLoc | undefined): number | null {
   const geo = stops.filter(s => s.lat != null && s.lng != null).sort((a, b) => a.stop_order - b.stop_order);
-  // Antes del pickup se queda al inicio, salvo que el GPS ya marcó la llegada al pickup
-  // (a veces el driver no actualiza el status y sigue en "On Site - Pickup")
-  if (PRE_PICKUP.includes(load.status) && !geo[0]?.arrived_at) return 0;
-  if (!loc || geo.length < 2) return 0.5;
-  const pt = (s: TimelineStop): [number, number] => [Number(s.lat), Number(s.lng)];
+  if (!loc || geo.length < 2) return null;
+  // Plano local en millas (suficiente para ubicar el camión en la barra)
+  const cosLat = Math.cos((loc.lat * Math.PI) / 180);
+  const xy = (lat: number, lng: number): [number, number] => [lng * 69.17 * cosLat, lat * 69.0];
+  const pts = geo.map(s => xy(Number(s.lat), Number(s.lng)));
+  const P = xy(loc.lat, loc.lng);
   let total = 0;
-  for (let i = 1; i < geo.length; i++) total += milesBetween(pt(geo[i - 1]), pt(geo[i]));
-  if (total <= 0) return 0.5;
-  // Paradas que faltan (después del primer pickup y sin llegada)
-  const pending = geo.slice(1).filter(s => !s.arrived_at);
-  if (pending.length === 0) return 1;
-  let remaining = milesBetween([loc.lat, loc.lng], pt(pending[0]));
-  for (let i = 1; i < pending.length; i++) remaining += milesBetween(pt(pending[i - 1]), pt(pending[i]));
-  return Math.min(1, Math.max(0, 1 - remaining / total));
+  const lens = pts.slice(1).map((b, i) => { const a = pts[i]; const l = Math.hypot(b[0] - a[0], b[1] - a[1]); total += l; return l; });
+  if (total <= 0) return null;
+  let best = { dist: Infinity, along: 0 };
+  let cum = 0;
+  for (let i = 0; i < lens.length; i++) {
+    const [ax, ay] = pts[i], [bx, by] = pts[i + 1];
+    const l2 = lens[i] ** 2;
+    const t = l2 > 0 ? Math.min(1, Math.max(0, ((P[0] - ax) * (bx - ax) + (P[1] - ay) * (by - ay)) / l2)) : 0;
+    const dist = Math.hypot(P[0] - (ax + t * (bx - ax)), P[1] - (ay + t * (by - ay)));
+    if (dist < best.dist) best = { dist, along: cum + t * lens[i] };
+    cum += lens[i];
+  }
+  return Math.min(1, Math.max(0, best.along / total));
 }
 
 const formatAgo = (updatedAt: string) => {
@@ -523,7 +531,8 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [], locations = {
                         const loc = load.driver_id ? locations[load.driver_id] : undefined;
                         // Solo en la carga en curso (no en las Planned que vienen después)
                         if (!loc || load.status === 'planned') return bar;
-                        const progress = loadProgress(load, stops.filter(s => s.load_id === load.id), loc);
+                        const progress = loadProgress(stops.filter(s => s.load_id === load.id), loc);
+                        if (progress == null) return bar;
                         const truckTs = pickupTs + progress * (deliveryTs - pickupTs);
                         const tsInBar = Math.min(Math.max(truckTs, clampedStart), clampedEnd);
                         const truckPct = ((tsInBar - weekStartTs) / totalMs) * 100;
