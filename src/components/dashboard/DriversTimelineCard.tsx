@@ -66,9 +66,11 @@ const PRE_PICKUP = ['planned', 'dispatched', 'in_transit', 'on_site_pickup'];
 
 /** Avance 0..1 de la carga según la ubicación del camión respecto a las paradas */
 function loadProgress(load: Load, stops: TimelineStop[], loc: DriverLoc | undefined): number {
-  if (PRE_PICKUP.includes(load.status)) return 0;
   if (load.status === 'on_site_delivery') return 1;
   const geo = stops.filter(s => s.lat != null && s.lng != null).sort((a, b) => a.stop_order - b.stop_order);
+  // Antes del pickup se queda al inicio, salvo que el GPS ya marcó la llegada al pickup
+  // (a veces el driver no actualiza el status y sigue en "On Site - Pickup")
+  if (PRE_PICKUP.includes(load.status) && !geo[0]?.arrived_at) return 0;
   if (!loc || geo.length < 2) return 0.5;
   const pt = (s: TimelineStop): [number, number] => [Number(s.lat), Number(s.lng)];
   let total = 0;
@@ -519,7 +521,8 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [], locations = {
                         );
                         // Camión sobre la barra: avance entre pickup y entrega según su GPS
                         const loc = load.driver_id ? locations[load.driver_id] : undefined;
-                        if (!loc) return bar;
+                        // Solo en la carga en curso (no en las Planned que vienen después)
+                        if (!loc || load.status === 'planned') return bar;
                         const progress = loadProgress(load, stops.filter(s => s.load_id === load.id), loc);
                         const truckTs = pickupTs + progress * (deliveryTs - pickupTs);
                         const tsInBar = Math.min(Math.max(truckTs, clampedStart), clampedEnd);
