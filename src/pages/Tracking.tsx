@@ -1638,6 +1638,8 @@ const Tracking = () => {
             loads={scopedAllLoads}
             drivers={scopedDriverIds ? drivers.filter(d => scopedDriverIds.has(d.id)) : drivers}
             trucks={trucks}
+            locations={locByDriver}
+            stops={allStops}
           />
         </div>
       </div>

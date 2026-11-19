@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Users, ChevronLeft, ChevronRight, X, Copy, Check } from 'lucide-react';
+import { Users, ChevronLeft, ChevronRight, X, Copy, Check, Truck, Loader2 } from 'lucide-react';
+import { mapboxDrivingDistance } from '@/lib/mapConfig';
 
 interface Load {
   id: string;
@@ -32,11 +33,70 @@ interface Driver {
   truck_id: string | null;
 }
 
+interface DriverLoc { lat: number; lng: number; speed: number | null; updated_at: string }
+interface TimelineStop { id: string; load_id: string; stop_type: string; address: string; stop_order: number; lat: number | null; lng: number | null; arrived_at: string | null }
+
 interface Props {
   loads: Load[];
   drivers: Driver[];
   trucks?: { id: string; unit_number: string; driver_id: string | null }[];
+  /** Última ubicación GPS por driver (para el camión sobre la barra) */
+  locations?: Record<string, DriverLoc>;
+  /** Paradas de las cargas activas */
+  stops?: TimelineStop[];
 }
+
+interface SelectedTruckInfo {
+  load: Load;
+  driverName: string;
+  loc: DriverLoc;
+  next: TimelineStop | null;
+  miles: number | null | 'loading';
+  rect: { top: number; left: number };
+}
+
+const milesBetween = (a: [number, number], b: [number, number]) => {
+  const R = 3958.8, toRad = (x: number) => (x * Math.PI) / 180;
+  const dLat = toRad(b[0] - a[0]), dLng = toRad(b[1] - a[1]);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a[0])) * Math.cos(toRad(b[0])) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+};
+const GPS_LIVE_MS = 5 * 60 * 1000;
+const PRE_PICKUP = ['planned', 'dispatched', 'in_transit', 'on_site_pickup'];
+
+/** Avance 0..1 de la carga según la ubicación del camión respecto a las paradas */
+function loadProgress(load: Load, stops: TimelineStop[], loc: DriverLoc | undefined): number {
+  if (PRE_PICKUP.includes(load.status)) return 0;
+  if (load.status === 'on_site_delivery') return 1;
+  const geo = stops.filter(s => s.lat != null && s.lng != null).sort((a, b) => a.stop_order - b.stop_order);
+  if (!loc || geo.length < 2) return 0.5;
+  const pt = (s: TimelineStop): [number, number] => [Number(s.lat), Number(s.lng)];
+  let total = 0;
+  for (let i = 1; i < geo.length; i++) total += milesBetween(pt(geo[i - 1]), pt(geo[i]));
+  if (total <= 0) return 0.5;
+  // Paradas que faltan (después del primer pickup y sin llegada)
+  const pending = geo.slice(1).filter(s => !s.arrived_at);
+  if (pending.length === 0) return 1;
+  let remaining = milesBetween([loc.lat, loc.lng], pt(pending[0]));
+  for (let i = 1; i < pending.length; i++) remaining += milesBetween(pt(pending[i - 1]), pt(pending[i]));
+  return Math.min(1, Math.max(0, 1 - remaining / total));
+}
+
+const formatAgo = (updatedAt: string) => {
+  const sec = Math.round((Date.now() - new Date(updatedAt).getTime()) / 1000);
+  if (sec < 60) return `${sec}s ago`;
+  const min = Math.round(sec / 60);
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.round(min / 60);
+  return hr < 48 ? `${hr}h ago` : `${Math.round(hr / 24)}d ago`;
+};
+
+const stopCity = (address: string) => {
+  const parts = (address || '').split(',').map(p => p.trim()).filter(Boolean);
+  return parts.length >= 2
+    ? `${parts[parts.length - 2]}, ${parts[parts.length - 1].replace(/\d{5}(-\d{4})?/, '').trim()}`
+    : address;
+};
 
 const ACTIVE_STATUSES = ['planned', 'dispatched', 'in_transit', 'on_site_pickup', 'picked_up', 'on_site_delivery'];
 const LEGEND_STATUSES = ['planned', 'dispatched', 'in_transit', 'on_site_pickup', 'picked_up', 'on_site_delivery'];
@@ -72,7 +132,8 @@ const VISIBLE_DAYS = 7;
 const DRIVER_COL_WIDTH = 140;
 const MIN_DAY_WIDTH = 120;
 
-export const DriversTimelineCard = ({ loads, drivers, trucks = [] }: Props) => {
+export const DriversTimelineCard = ({ loads, drivers, trucks = [], locations = {}, stops = [] }: Props) => {
+  const [selectedTruck, setSelectedTruck] = useState<SelectedTruckInfo | null>(null);
   const [weekOffset, setWeekOffset] = useState(0);
   const [selectedLoad, setSelectedLoad] = useState<SelectedLoadInfo | null>(null);
   const [copiedField, setCopiedField] = useState<'pickup' | 'delivery' | null>(null);
@@ -96,6 +157,38 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [] }: Props) => {
   const dayWidth = containerWidth > 0
     ? Math.max(MIN_DAY_WIDTH, (containerWidth - DRIVER_COL_WIDTH) / VISIBLE_DAYS)
     : MIN_DAY_WIDTH;
+
+  // Cerrar el popup del camión al pulsar fuera
+  useEffect(() => {
+    if (!selectedTruck) return;
+    const handler = (e: MouseEvent) => {
+      if ((e.target as HTMLElement).closest('[data-truck-popup]')) return;
+      setSelectedTruck(null);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [selectedTruck]);
+
+  const handleTruckClick = useCallback((e: React.MouseEvent, load: Load, driverName: string, loc: DriverLoc) => {
+    e.stopPropagation();
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const cardRect = cardRef.current?.getBoundingClientRect();
+    const next = stops
+      .filter(s => s.load_id === load.id && !s.arrived_at && s.lat != null && s.lng != null)
+      .sort((a, b) => a.stop_order - b.stop_order)[0] || null;
+    setSelectedLoad(null);
+    setSelectedTruck({
+      load, driverName, loc, next, miles: next ? 'loading' : null,
+      rect: { top: rect.bottom - (cardRect?.top || 0) + 4, left: rect.left - (cardRect?.left || 0) - 120 },
+    });
+    if (next) {
+      // Millas por carretera hasta la próxima parada (igual que el mapa del detalle)
+      mapboxDrivingDistance(loc.lat, loc.lng, Number(next.lat), Number(next.lng)).then(road => {
+        const miles = road ?? milesBetween([loc.lat, loc.lng], [Number(next.lat), Number(next.lng)]);
+        setSelectedTruck(prev => prev && prev.load.id === load.id ? { ...prev, miles } : prev);
+      });
+    }
+  }, [stops]);
 
   // Close popup on outside click
   useEffect(() => {
@@ -395,7 +488,7 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [] }: Props) => {
                         const cfg = statusConfig[load.status] || statusConfig.planned;
                         const borderColor = barBorderColors[load.status] || 'hsl(215,15%,70%)';
 
-                        return (
+                        const bar = (
                           <div
                             key={load.id}
                             className="relative h-[26px] flex items-center rounded-md border overflow-hidden cursor-pointer hover:brightness-95 transition-all"
@@ -424,6 +517,33 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [] }: Props) => {
                             </span>
                           </div>
                         );
+                        // Camión sobre la barra: avance entre pickup y entrega según su GPS
+                        const loc = load.driver_id ? locations[load.driver_id] : undefined;
+                        if (!loc) return bar;
+                        const progress = loadProgress(load, stops.filter(s => s.load_id === load.id), loc);
+                        const truckTs = pickupTs + progress * (deliveryTs - pickupTs);
+                        const tsInBar = Math.min(Math.max(truckTs, clampedStart), clampedEnd);
+                        const truckPct = ((tsInBar - weekStartTs) / totalMs) * 100;
+                        const live = Date.now() - new Date(loc.updated_at).getTime() < GPS_LIVE_MS;
+                        return (
+                          <div key={load.id} className="contents">
+                            {bar}
+                            <button
+                              type="button"
+                              title={`${Math.round(progress * 100)}% del recorrido — ver ubicación`}
+                              onClick={(e) => handleTruckClick(e, load, driver!.name, loc)}
+                              className="absolute z-30 -translate-x-1/2 flex items-center justify-center h-[26px] w-[26px] rounded-full border-2 border-white text-white shadow-[0_1px_3px_rgba(60,64,67,.4),0_2px_6px_2px_rgba(60,64,67,.2)] hover:scale-110 transition-transform"
+                              style={{
+                                left: `${truckPct}%`,
+                                top: `${6 + dLoads.indexOf(load) * 30}px`,
+                                backgroundColor: live ? '#0b57d0' : '#e37400',
+                              }}
+                            >
+                              {live && <span className="absolute inset-0 rounded-full animate-ping bg-[#0b57d0]/40" />}
+                              <Truck className="h-3.5 w-3.5 relative" />
+                            </button>
+                          </div>
+                        );
                       })}
                     </div>
                   </div>
@@ -433,6 +553,37 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [] }: Props) => {
           </div>
           </div>
         </div>
+
+        {/* Popup del camión: igual que el marcador del mapa en el detalle de la carga */}
+        {selectedTruck && (() => {
+          const { load, driverName, loc, next, miles, rect } = selectedTruck;
+          const live = Date.now() - new Date(loc.updated_at).getTime() < GPS_LIVE_MS;
+          const speedMph = loc.speed != null ? Math.round(loc.speed * 2.237) : null;
+          return (
+            <div
+              data-truck-popup
+              className="absolute z-50 w-64 bg-white dark:bg-card border border-[#e3e3e3] dark:border-border rounded-2xl shadow-[0_1px_3px_rgba(60,64,67,.3),0_4px_8px_3px_rgba(60,64,67,.15)] p-4 text-center text-[13px] space-y-1"
+              style={{ top: rect.top + 4, left: Math.max(8, Math.min(rect.left, (cardRef.current?.offsetWidth || 400) - 272)) }}
+            >
+              <button onClick={() => setSelectedTruck(null)} className="absolute top-2 right-2 h-6 w-6 flex items-center justify-center rounded-full text-[#444746] hover:bg-[#f0f4f9]">
+                <X className="h-3.5 w-3.5" />
+              </button>
+              <p className="font-semibold" style={{ color: live ? '#188038' : '#e37400' }}>{live ? '🛰 GPS Live' : '📍 Last Known'}</p>
+              <p className="text-[#1f1f1f] dark:text-foreground">{driverName}</p>
+              <p className="text-[11px] text-[#444746] dark:text-muted-foreground">Load #{load.reference_number}</p>
+              {live && speedMph != null && <p className="text-[#1f1f1f] dark:text-foreground">{speedMph} mph</p>}
+              {next && (
+                <div>
+                  {miles === 'loading'
+                    ? <p className="flex items-center justify-center gap-1 text-[#444746]"><Loader2 className="h-3 w-3 animate-spin" /> calculando millas…</p>
+                    : miles != null && <p><b>{Math.round(miles).toLocaleString()} mi</b> to {next.stop_type === 'pickup' ? 'Pickup' : 'Delivery'}</p>}
+                  <p className="text-[11px] text-[#444746] dark:text-muted-foreground">{stopCity(next.address)}</p>
+                </div>
+              )}
+              <p className="text-[11px] text-[#444746] dark:text-muted-foreground">{formatAgo(loc.updated_at)}</p>
+            </div>
+          );
+        })()}
 
         {/* Load Detail Popup */}
         {selectedLoad && (() => {
