@@ -195,7 +195,7 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [], locations = {
     setSelectedLoad(null);
     setSelectedTruck({
       load, driverName, loc, next, miles: next ? 'loading' : null,
-      rect: { top: rect.bottom - (cardRect?.top || 0) + 4, left: rect.left - (cardRect?.left || 0) - 120 },
+      rect: { top: rect.top - (cardRect?.top || 0) - 8, left: rect.left - (cardRect?.left || 0) - 120 },
     });
     if (next) {
       // Millas por carretera hasta la próxima parada (igual que el mapa del detalle)
@@ -650,7 +650,7 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [], locations = {
             <div
               data-truck-popup
               className="absolute z-50 w-64 bg-white dark:bg-card border border-[#e3e3e3] dark:border-border rounded-2xl shadow-[0_1px_3px_rgba(60,64,67,.3),0_4px_8px_3px_rgba(60,64,67,.15)] p-4 text-center text-[13px] space-y-1"
-              style={{ top: rect.top + 4, left: Math.max(8, Math.min(rect.left, (cardRef.current?.offsetWidth || 400) - 272)) }}
+              style={{ top: rect.top, transform: 'translateY(-100%)', left: Math.max(8, Math.min(rect.left, (cardRef.current?.offsetWidth || 400) - 272)) }}
             >
               <button onClick={() => setSelectedTruck(null)} className="absolute top-2 right-2 h-6 w-6 flex items-center justify-center rounded-full text-[#444746] hover:bg-[#f0f4f9]">
                 <X className="h-3.5 w-3.5" />
