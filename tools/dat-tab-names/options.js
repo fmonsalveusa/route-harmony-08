@@ -57,7 +57,7 @@ $("save").addEventListener("click", async () => {
   await chrome.storage.sync.set({
     emailCfg: { mode: mode(), from: $("from").value.trim(), subject: $("subject").value, body: $("body").value },
   });
-  await chrome.storage.local.set({ duKey: $("key").value.trim() });
+  await chrome.storage.sync.set({ duKey: $("key").value.trim() });
   $("saved").style.opacity = 1;
   setTimeout(() => ($("saved").style.opacity = 0), 1800);
 });
@@ -69,13 +69,14 @@ $("test").addEventListener("click", async () => {
   const st = $("keyStatus");
   st.className = "hint";
   st.textContent = "Probando…";
-  await chrome.storage.local.set({ duKey: $("key").value.trim() });
+  await chrome.storage.sync.set({ duKey: $("key").value.trim() });
   const r = await chrome.runtime.sendMessage({ type: "broker-email-send", payload: { action: "check" } }).catch((e) => ({ error: String(e) }));
   if (r?.ok && r.ready) { st.className = "hint ok"; st.textContent = `✓ Clave correcta. Los emails salen desde ${r.from}.`; }
   else if (r?.ok) { st.className = "hint bad"; st.textContent = `La clave sirve, pero ${r.from} no está lista para enviar.`; }
   else { st.className = "hint bad"; st.textContent = r?.error || "No se pudo probar"; }
 });
 
-chrome.storage.local.get("duKey").then(({ duKey }) => { $("key").value = duKey || ""; });
+Promise.all([chrome.storage.sync.get("duKey"), chrome.storage.local.get("duKey")])
+  .then(([s, l]) => { $("key").value = s.duKey || l.duKey || ""; });
 
 chrome.storage.sync.get("emailCfg").then(({ emailCfg }) => fill({ ...DU_EMAIL_DEFAULTS, mode: "direct", ...(emailCfg || {}) }));

@@ -166,7 +166,9 @@ const DU_EMAIL_API = "https://tejzatzzwivvaznxyqej.supabase.co/functions/v1/dat-
 chrome.runtime.onMessage.addListener((msg, _sender, reply) => {
   if (msg?.type !== "broker-email-send") return;
   (async () => {
-    const { duKey } = await chrome.storage.local.get("duKey");
+    // La clave se sincroniza con la cuenta de Chrome (otras computadoras con el mismo perfil la reciben);
+    // se mira también la local por si se guardó con una versión anterior.
+    const duKey = (await chrome.storage.sync.get("duKey")).duKey || (await chrome.storage.local.get("duKey")).duKey;
     if (!duKey) return { error: "Falta la clave de Dispatch Up: ponla en ⚙ (la misma del asistente de RTS)." };
     const res = await fetch(DU_EMAIL_API, {
       method: "POST",
