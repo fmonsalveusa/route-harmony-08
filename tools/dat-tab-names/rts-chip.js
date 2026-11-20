@@ -1,6 +1,7 @@
-// Chip con el rating de RTS al lado de cada broker en DAT One:
-//  - en la lista de cargas, buscando el broker por nombre;
-//  - en el detalle de la carga, por su MC (exacto).
+// Chip con el rating de RTS al lado de cada broker en DAT One, buscado por el MC del broker:
+//  - en la lista: el MC viene en los datos de cada carga (dat-capture.js), por su postingId;
+//  - en el detalle: el "MC#" que muestra DAT.
+// Solo si no hay MC se busca por nombre.
 (() => {
   const COLOR = { A: "#188038", B: "#1e8e3e", C: "#e37400", D: "#d93025", F: "#a50e0e" };
   const pending = new Map(); // clave → Promise
@@ -58,21 +59,39 @@
     ].filter(Boolean).join("\n");
   }
 
-  // inside=true: el chip va dentro del elemento (pegado al texto), no como hermano
+  // MC/DOT de cada carga, por postingId (los manda dat-capture.js desde la página)
+  const postings = new Map();
+  window.addEventListener("message", (e) => {
+    if (e.source !== window || !Array.isArray(e.data?.__duDatPostings)) return;
+    for (const p of e.data.__duDatPostings) if (p.postingId) postings.set(p.postingId, p);
+    schedule();
+  });
+
+  window.postMessage({ __duDatRequest: true }, location.origin);
+
+  const keyOf = (q) => (q.mc ? `mc:${q.mc}` : `name:${q.name}|${q.phone || ""}`);
+
+  // inside=true: el chip va dentro del elemento (pegado al texto), no como hermano.
+  // Si el chip ya existe pero ahora hay una búsqueda mejor (MC en vez de nombre), se rehace.
   function attach(anchor, q, inside = false) {
-    const existing = inside
+    let chip = inside
       ? anchor.querySelector(":scope > .du-rts")
       : anchor.nextElementSibling?.classList?.contains("du-rts") ? anchor.nextElementSibling : null;
-    if (existing) return existing;
-    const chip = document.createElement("span");
+    const key = keyOf(q);
+    if (chip && chip.dataset.key === key) return chip;
+    if (!chip) {
+      chip = document.createElement("span");
+      if (inside) anchor.append(chip); else anchor.after(chip);
+    }
+    chip.dataset.key = key;
     chip.className = "du-rts du-rts-muted";
+    chip.style.background = "";
     chip.textContent = "RTS…";
-    if (inside) anchor.append(chip); else anchor.after(chip);
-    ask(q).then((r) => paint(chip, r));
+    ask(q).then((r) => { if (chip.dataset.key === key) paint(chip, r); });
     return chip;
   }
 
-  // Teléfono del broker en la fila de la carga (para desempatar nombres parecidos)
+  // Teléfono del broker en la fila de la carga (solo para la búsqueda por nombre)
   const rowPhone = (row) => {
     const el = row?.querySelector('[href-value^="tel:"], a[href^="tel:"]');
     return (el?.getAttribute("href-value") || el?.getAttribute("href") || "").replace(/\D/g, "").slice(-10);
@@ -81,42 +100,25 @@
   const ownText = (el) => [...el.childNodes].filter((n) => !n.classList?.contains("du-rts")).map((n) => n.textContent || "").join("");
 
   function scan() {
-    // Lista de cargas: nombre del broker (+ teléfono)
+    // Lista de cargas
     for (const a of document.querySelectorAll('a[data-test="load-company-cell"]')) {
       const name = (a.textContent || "").trim();
-      if (name) attach(a, { name, phone: rowPhone(a.closest("dat-result-row")) });
+      if (!name) continue;
+      const row = a.closest("dat-result-row");
+      const pid = row?.querySelector("[posting-id]")?.getAttribute("posting-id");
+      const info = pid ? postings.get(pid) : null;
+      attach(a, info?.mc ? { mc: info.mc } : { name, phone: rowPhone(row) });
     }
-    // Detalle de la carga: "MC#322572" (exacto). Lo que encuentre se pasa a la línea de esa carga.
+    // Detalle de la carga: "MC#322572"
     for (const el of document.querySelectorAll(".compliance-number")) {
       const m = ownText(el).match(/MC#\s*(\d+)/);
-      if (!m || el.querySelector(":scope > .du-rts")) continue;
-      attach(el, { mc: m[1] }, true);
-      // Filas de la lista de ese broker: la de esta carga, o las que tienen el mismo teléfono del detalle
-      const row = el.closest("dat-result-row");
-      const detailPhone = rowPhone(el.closest(".company-info-containers") || el.parentElement?.parentElement?.parentElement);
-      const detailText = (el.closest("dat-company") || el.closest(".company-data-container") || el.parentElement?.parentElement?.parentElement)?.textContent || "";
-      const anchors = [...document.querySelectorAll('a[data-test="load-company-cell"]')].filter((a) => {
-        const r = a.closest("dat-result-row");
-        const name = (a.textContent || "").trim();
-        return (row && r === row) ||
-          (detailPhone.length === 10 && rowPhone(r) === detailPhone) ||
-          (name.length >= 3 && detailText.includes(name));
-      });
-      if (anchors.length === 0) continue;
-      ask({ mc: m[1] }).then(async (r) => {
-        if (!r?.match) return;
-        for (const a of anchors) {
-          const name = (a.textContent || "").trim();
-          const phone = rowPhone(a.closest("dat-result-row"));
-          await chrome.runtime.sendMessage({ type: "rts-remember", name, phone, mc: m[1] }).catch(() => {});
-          paint(attach(a, { name, phone }), r);
-        }
-      });
+      if (m) attach(el, { mc: m[1] }, true);
     }
   }
 
   let t = null;
-  new MutationObserver(() => { clearTimeout(t); t = setTimeout(scan, 300); })
+  const schedule = () => { clearTimeout(t); t = setTimeout(scan, 300); };
+  new MutationObserver(schedule)
     .observe(document.body, { childList: true, subtree: true });
   scan();
 })();
