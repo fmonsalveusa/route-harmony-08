@@ -21,6 +21,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { StatusBadge } from '@/components/StatusBadge';
 import { MapPin, MapPinOff, Package, Navigation, Clock, Search, ChevronRight, AlertTriangle, Eye, User, Users, Pencil, Loader2, Copy, Check, Download, ExternalLink, X, Pause, Play, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { LoadAlertChip } from '@/components/LoadAlertChip';
+import { getLoadAlerts } from '@/lib/loadAlerts';
 import { DriversTimelineCard } from '@/components/dashboard/DriversTimelineCard';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, Tooltip as LeafletTooltip, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -174,6 +176,8 @@ const Tracking = () => {
   }, [userDispatcherId, drivers]);
 
   const [allStops, setAllStops] = useState<LoadStop[]>([]);
+  // Cargas cuyas paradas ya se consultaron (para no alertar "sin paradas" antes de que lleguen)
+  const [stopsLoadedFor, setStopsLoadedFor] = useState<Set<string>>(new Set());
   // Relojes HOS de los company drivers (se actualizan cada hora desde HOS247 / RouteOne)
   const [hosClocks, setHosClocks] = useState<Record<string, HosClockRow>>({});
   useEffect(() => {
@@ -305,7 +309,7 @@ const Tracking = () => {
       .in('load_id', ids)
       .order('stop_order', { ascending: true })
       .then(({ data }) => {
-        if (data) setAllStops(data as LoadStop[]);
+        if (data) { setAllStops(data as LoadStop[]); setStopsLoadedFor(new Set(ids)); }
       });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeLoadIdsKey]);
@@ -1281,6 +1285,33 @@ const Tracking = () => {
                         </span>
                       )}
                     </div>
+
+                    {/* Alertas de sus cargas activas (status vs. fechas, trabada, sin camión, paradas sin mapa) */}
+                    {(() => {
+                      const withAlerts = activeLoads
+                        .filter(l => l.driver_id === driver.id)
+                        .map(l => ({
+                          l,
+                          alerts: getLoadAlerts(l, {
+                            stopsWithCoords: stopsLoadedFor.has(l.id)
+                              ? allStops.filter(s => s.load_id === l.id && s.lat != null && s.lng != null).length
+                              : undefined,
+                          }),
+                        }))
+                        .filter(x => x.alerts.length > 0);
+                      if (withAlerts.length === 0) return null;
+                      return (
+                        <div className="flex flex-wrap gap-1 px-3 pt-1">
+                          {withAlerts.map(({ l, alerts }) => (
+                            <LoadAlertChip
+                              key={l.id}
+                              alerts={alerts.map(a => ({ ...a, label: withAlerts.length > 1 ? `#${l.reference_number}: ${a.label}` : a.label }))}
+                              onClick={() => navigate(`/loads?openLoad=${l.id}`)}
+                            />
+                          ))}
+                        </div>
+                      );
+                    })()}
 
                     {/* Línea 3: GPS — hace cuánto reportó y a qué velocidad */}
                     {(loc && locAge != null && locAge <= MAX_LOCATION_AGE_MS) || (driver as any).gps_background_granted === false ? (

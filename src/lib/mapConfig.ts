@@ -127,3 +127,21 @@ export async function mapboxRoute(coords: [number, number][]): Promise<[number, 
   const result = await mapboxRouteWithLegs(coords);
   return result ? result.geometry : null;
 }
+
+/** Millas y minutos por carretera entre dos puntos (Mapbox). El tiempo se ajusta para camión. */
+export async function mapboxDrivingEta(
+  lat1: number, lon1: number,
+  lat2: number, lon2: number
+): Promise<{ miles: number; minutes: number } | null> {
+  try {
+    const res = await fetch(
+      `https://api.mapbox.com/directions/v5/mapbox/driving/${lon1},${lat1};${lon2},${lat2}?access_token=${MAPBOX_TOKEN}&overview=false`
+    );
+    const data = await res.json();
+    if (data.code === 'Ok' && data.routes?.[0]) {
+      // Mapbox calcula para carro; un camión va ~12% más lento
+      return { miles: data.routes[0].distance * 0.000621371, minutes: (data.routes[0].duration / 60) * 1.12 };
+    }
+  } catch {}
+  return null;
+}

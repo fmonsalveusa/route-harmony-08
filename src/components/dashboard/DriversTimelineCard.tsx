@@ -4,7 +4,8 @@ import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Users, ChevronLeft, ChevronRight, X, Copy, Check, Truck, Loader2 } from 'lucide-react';
-import { mapboxDrivingDistance } from '@/lib/mapConfig';
+import { mapboxDrivingEta } from '@/lib/mapConfig';
+import { stopEta, type StopEta } from '@/lib/stopEta';
 
 interface Load {
   id: string;
@@ -34,7 +35,7 @@ interface Driver {
 }
 
 interface DriverLoc { lat: number; lng: number; speed: number | null; updated_at: string; source?: string | null }
-interface TimelineStop { id: string; load_id: string; stop_type: string; address: string; stop_order: number; lat: number | null; lng: number | null; arrived_at: string | null }
+interface TimelineStop { id: string; load_id: string; stop_type: string; address: string; stop_order: number; lat: number | null; lng: number | null; arrived_at: string | null; date?: string | null; time?: string | null }
 
 interface Props {
   loads: Load[];
@@ -54,6 +55,8 @@ interface SelectedTruckInfo {
   loc: DriverLoc;
   next: TimelineStop | null;
   miles: number | null | 'loading';
+  /** Hora estimada de llegada a la próxima parada (hora local de la parada) */
+  eta?: StopEta | null;
   rect: { top: number; left: number };
 }
 
@@ -198,10 +201,14 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [], locations = {
       rect: { top: rect.top - (cardRect?.top || 0) - 8, left: rect.left - (cardRect?.left || 0) - 120 },
     });
     if (next) {
-      // Millas por carretera hasta la próxima parada (igual que el mapa del detalle)
-      mapboxDrivingDistance(loc.lat, loc.lng, Number(next.lat), Number(next.lng)).then(road => {
-        const miles = road ?? milesBetween([loc.lat, loc.lng], [Number(next.lat), Number(next.lng)]);
-        setSelectedTruck(prev => prev && prev.load.id === load.id ? { ...prev, miles } : prev);
+      // Millas y tiempo por carretera hasta la próxima parada → ETA vs. su cita
+      mapboxDrivingEta(loc.lat, loc.lng, Number(next.lat), Number(next.lng)).then(road => {
+        const miles = road?.miles ?? milesBetween([loc.lat, loc.lng], [Number(next.lat), Number(next.lng)]);
+        // Sin ruta de Mapbox: estimado a 50 mph. Con ubicación de hace más de 3 h (GPS de la app) no se da ETA.
+        const minutes = road?.minutes ?? (miles / 50) * 60;
+        const fresh = loc.source === 'eld' || Date.now() - new Date(loc.updated_at).getTime() < 3 * 3600_000;
+        const eta = fresh ? stopEta(minutes, next) : null;
+        setSelectedTruck(prev => prev && prev.load.id === load.id ? { ...prev, miles, eta } : prev);
       });
     }
   }, [stops]);
@@ -645,7 +652,7 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [], locations = {
 
         {/* Popup del camión: igual que el marcador del mapa en el detalle de la carga */}
         {selectedTruck && (() => {
-          const { load, driverName, loc, next, miles, rect } = selectedTruck;
+          const { load, driverName, loc, next, miles, eta, rect } = selectedTruck;
           const live = Date.now() - new Date(loc.updated_at).getTime() < GPS_LIVE_MS;
           const fromEld = loc.source === 'eld';
           const speedMph = loc.speed != null ? Math.round(loc.speed * 2.237) : null;
@@ -668,6 +675,17 @@ export const DriversTimelineCard = ({ loads, drivers, trucks = [], locations = {
                     ? <p className="flex items-center justify-center gap-1 text-[#444746]"><Loader2 className="h-3 w-3 animate-spin" /> calculando millas…</p>
                     : miles != null && <p><b>{Math.round(miles).toLocaleString()} mi</b> to {next.stop_type === 'pickup' ? 'Pickup' : 'Delivery'}</p>}
                   <p className="text-[11px] text-[#444746] dark:text-muted-foreground">{stopCity(next.address)}</p>
+                  {eta && (
+                    <p
+                      className="mt-1 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[12px] font-medium"
+                      style={eta.late
+                        ? { backgroundColor: '#fce8e6', color: '#c5221f' }
+                        : eta.late === false ? { backgroundColor: '#e6f4ea', color: '#137333' } : { backgroundColor: '#f0f4f9', color: '#1f1f1f' }}
+                      title={eta.late ? 'Llega después de la ventana de la cita' : eta.late === false ? 'Llega dentro de la cita' : 'Sin hora de cita para comparar'}
+                    >
+                      ETA {eta.label}{eta.late ? ' · tarde' : eta.late === false ? ' · a tiempo' : ''}
+                    </p>
+                  )}
                 </div>
               )}
               {!fromEld && <p className="text-[11px] text-[#444746] dark:text-muted-foreground">{formatAgo(loc.updated_at)}</p>}

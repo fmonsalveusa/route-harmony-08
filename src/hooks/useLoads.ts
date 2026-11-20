@@ -40,6 +40,8 @@ export interface DbLoad {
   rc_original_url?: string | null;
   pickup_time?: string | null;
   delivery_time?: string | null;
+  /** Hora del último cambio de status (trigger en la base) */
+  status_changed_at?: string | null;
 }
 
 export interface CreateLoadInput {
@@ -76,7 +78,7 @@ export const LOADS_SELECT = [
   'dispatcher_id', 'broker_client', 'driver_pay_amount', 'investor_pay_amount',
   'dispatcher_pay_amount', 'company_profit', 'miles', 'factoring', 'pdf_url',
   'notes', 'created_at', 'empty_miles', 'empty_miles_origin', 'empty_miles_manual', 'company_id',
-  'bol_url', 'service_type', 'updated_at', 'pickup_time', 'delivery_time', 'has_detention', 'has_detention_pickup', 'has_detention_delivery', 'auto_dispatch'
+  'bol_url', 'service_type', 'updated_at', 'pickup_time', 'delivery_time', 'has_detention', 'has_detention_pickup', 'has_detention_delivery', 'auto_dispatch', 'status_changed_at'
 ].join(',');
 
 

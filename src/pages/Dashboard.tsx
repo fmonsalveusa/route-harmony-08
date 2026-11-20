@@ -19,6 +19,7 @@ import { WeeklyRatesChart } from '@/components/dashboard/WeeklyRatesChart';
 import { DispatcherCommissionsChart } from '@/components/dashboard/DispatcherCommissionsChart';
 import { MarketAnalysisCard } from '@/components/dashboard/MarketAnalysisCard';
 import { RevenueBySegmentChart } from '@/components/dashboard/RevenueBySegmentChart';
+import { TodaySummaryCard } from '@/components/dashboard/TodaySummaryCard';
 
 
 import { useNavigate } from 'react-router-dom';
@@ -140,6 +141,8 @@ const AdminDashboard = () => {
         { label: 'Month-to-date', value: `$${monthToDateRevenue.toLocaleString()}`, icon: TrendingUp, tint: 'bg-[#c2e7ff] text-[#001d35] dark:bg-sky-900/40 dark:text-sky-200' },
         { label: 'Pending Payments', value: `$${pendingPayments.toLocaleString()}`, hint: `${payments.filter(p => p.status === 'pending').length} payments`, icon: AlertTriangle, tint: 'bg-[#f9dedc] text-[#410e0b] dark:bg-red-900/40 dark:text-red-200' },
       ]} />
+
+      <TodaySummaryCard loads={loads} drivers={drivers as any} />
 
       <div className="space-y-2">
         <div className="flex items-center gap-2 flex-wrap">
@@ -302,6 +305,8 @@ const DispatcherDashboard = () => {
         { label: 'Revenue', value: `$${totalRevenue.toLocaleString()}`, icon: DollarSign, tint: 'bg-[#c4eed0] text-[#072711] dark:bg-emerald-900/40 dark:text-emerald-200' },
         { label: 'Delivered', value: deliveredLoads, icon: TrendingUp, tint: 'bg-[#feefc3] text-[#3d2a00] dark:bg-amber-900/40 dark:text-amber-200' },
       ]} />
+
+      <TodaySummaryCard loads={loads} drivers={drivers as any} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <RatesByDriverChart loads={filteredLoads} drivers={drivers} year={year} month={month} week={week} />

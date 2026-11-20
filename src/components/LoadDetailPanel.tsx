@@ -34,7 +34,8 @@ import { useBrokerScores } from '@/hooks/useBrokerScores';
 import 'leaflet/dist/leaflet.css';
 
 // Mapbox — configuración centralizada en src/lib/mapConfig.ts
-import { MAPBOX_TOKEN, mapboxGeocode, mapboxRouteWithLegs, mapboxDrivingDistance, mapboxRoute as _mapboxRoute, MAPBOX_TILE_URL, MAPBOX_TILE_OPTIONS } from '@/lib/mapConfig';
+import { stopEta } from '@/lib/stopEta';
+import { MAPBOX_TOKEN, mapboxGeocode, mapboxRouteWithLegs, mapboxDrivingDistance, mapboxDrivingEta, mapboxRoute as _mapboxRoute, MAPBOX_TILE_URL, MAPBOX_TILE_OPTIONS } from '@/lib/mapConfig';
 
 // In-memory geocode cache para evitar llamadas repetidas a Mapbox
 const geocodeCache = new Map<string, [number, number] | null>();
@@ -1367,20 +1368,17 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
 
     // Millas por carretera hasta la siguiente parada. Se piden a Mapbox como mucho cada 2 minutos
     // (la ubicación llega mucho más seguido); mientras tanto se reusa la última.
-    let distCache: { stopId: string; miles: number | null; at: number } | null = null;
-    const nextStopLine = async (loc: { lat: number; lng: number }) => {
+    let distCache: { stopId: string; miles: number | null; minutes: number | null; at: number } | null = null;
+    const nextStopLine = async (loc: { lat: number; lng: number; updated_at?: string; source?: string | null }) => {
       const next = [...(stopsRef.current || [])]
         .sort((a, b) => a.stop_order - b.stop_order)
         .find(s => !s.arrived_at && s.lat != null && s.lng != null);
       if (!next) return '';
       const fresh = distCache && distCache.stopId === next.id && Date.now() - distCache.at < 2 * 60 * 1000;
       if (!fresh) {
-        const road = await drivingDistance(loc.lat, loc.lng, Number(next.lat), Number(next.lng));
-        distCache = {
-          stopId: next.id,
-          miles: road ?? haversineMiles([loc.lat, loc.lng], [Number(next.lat), Number(next.lng)]),
-          at: Date.now(),
-        };
+        const road = await mapboxDrivingEta(loc.lat, loc.lng, Number(next.lat), Number(next.lng));
+        const miles = road?.miles ?? haversineMiles([loc.lat, loc.lng], [Number(next.lat), Number(next.lng)]);
+        distCache = { stopId: next.id, miles, minutes: road?.minutes ?? (miles / 50) * 60, at: Date.now() };
       }
       const parts = (next.address || '').split(',').map(p => p.trim()).filter(Boolean);
       const city = parts.length >= 2
@@ -1388,7 +1386,13 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
         : next.address;
       const label = next.stop_type === 'pickup' ? 'Pickup' : 'Delivery';
       const miles = distCache?.miles != null ? Math.round(distCache.miles) : null;
-      return miles != null ? `<b>${miles.toLocaleString()} mi</b> to ${label}<br/><small>${city}</small><br/>` : '';
+      // ETA vs. la cita de la parada (no con una ubicación del GPS de la app de hace más de 3 h)
+      const locFresh = loc.source === 'eld' || !loc.updated_at || Date.now() - new Date(loc.updated_at).getTime() < 3 * 3600_000;
+      const eta = locFresh && distCache?.minutes != null ? stopEta(distCache.minutes, next as any) : null;
+      const etaHtml = eta
+        ? `<span style="display:inline-block;margin-top:2px;padding:1px 8px;border-radius:999px;font-weight:500;${eta.late ? 'background:#fce8e6;color:#c5221f' : eta.late === false ? 'background:#e6f4ea;color:#137333' : 'background:#f0f4f9;color:#1f1f1f'}">ETA ${eta.label}${eta.late ? ' · tarde' : eta.late === false ? ' · a tiempo' : ''}</span><br/>`
+        : '';
+      return miles != null ? `<b>${miles.toLocaleString()} mi</b> to ${label}<br/><small>${city}</small><br/>${etaHtml}` : '';
     };
 
     const createOrUpdateMarker = async (loc: { lat: number; lng: number; speed: number | null; updated_at: string; source?: string | null }) => {

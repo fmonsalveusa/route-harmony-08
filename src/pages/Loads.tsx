@@ -7,6 +7,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useDispatcherDriverIds } from '@/hooks/useDispatcherDriverIds';
 import { mockDrivers, mockDispatchers } from '@/data/mockData';
 import { StatusBadge } from '@/components/StatusBadge';
+import { LoadAlertChip } from '@/components/LoadAlertChip';
+import { getLoadAlerts } from '@/lib/loadAlerts';
 import { useLoads } from '@/hooks/useLoads';
 import { usePodDocuments } from '@/hooks/usePodDocuments';
 import { useDrivers } from '@/hooks/useDrivers';
@@ -548,6 +550,8 @@ const Loads = () => {
                                 NEEDS TARP
                               </span>
                             )}
+                            {/* Algo no cuadra: status vs. fechas, trabada, sin camión… */}
+                            <LoadAlertChip alerts={getLoadAlerts(load)} className="mt-1 block w-fit max-w-[200px]" />
 
                           </td>
                           <td className="px-2 py-3.5">
