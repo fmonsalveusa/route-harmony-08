@@ -19,6 +19,7 @@ chrome.runtime.onMessage.addListener((msg) => {
 // sesión de RTS abierta en este Chrome. Resultados guardados 24 h para no repetir consultas.
 const RTS_API = "https://stc-debtor-service.rtspro.com/debtors/search";
 const CACHE_MS = 24 * 3600 * 1000;
+const CACHE_VER = 2;
 let cache = null;
 const loadCache = async () => cache ?? (cache = (await chrome.storage.local.get("rtsCache")).rtsCache || {});
 const saveCache = () => chrome.storage.local.set({ rtsCache: cache });
@@ -77,7 +78,7 @@ async function lookup({ mc, name, phone }) {
   const learned = !mc && phone ? cache[`${nameKey}|${digits10(phone)}`] : null;
   if (learned && Date.now() - learned.at < CACHE_MS) return learned.value;
   const hit = cache[key];
-  if (hit && Date.now() - hit.at < CACHE_MS && !(hit.value?.ambiguous && phone)) return hit.value;
+  if (hit && hit.v === CACHE_VER && Date.now() - hit.at < CACHE_MS && !(hit.value?.ambiguous && phone)) return hit.value;
 
   const value = await throttled(async () => {
     if (mc) {
@@ -95,21 +96,30 @@ async function lookup({ mc, name, phone }) {
       (byMc.get(d.mc_number) || byMc.set(d.mc_number, []).get(d.mc_number)).push(d);
     }
     const groups = [...byMc.values()].map(mainRecord);
-    const exact = groups.filter((d) => norm(d.name) === target);
-    if (exact.length === 1) return { match: summarize(exact[0]) };
     if (groups.length === 1) return { match: summarize(groups[0]) };
-    // Varios con nombre parecido: desempatar por el teléfono del broker en DAT
+    // 1) Teléfono del broker en DAT igual al de RTS
     const tel = digits10(phone);
     if (tel.length === 10) {
       const byPhone = [...byMc.values()].filter((list) => list.some((d) => digits10(d.phone) === tel)).map(mainRecord);
       if (byPhone.length === 1) return { match: summarize(byPhone[0]) };
+    }
+    // 2) Mismo nombre (sin LLC/INC/puntos). Si hay varios, se descartan los que RTS no califica
+    //    (N = sin rating, I = inactivo/insuficiente) cuando hay uno con rating.
+    const exact = groups.filter((d) => norm(d.name) === target);
+    if (exact.length === 1) return { match: summarize(exact[0]) };
+    const rated = exact.filter((d) => /^[A-F]$/.test(String(d.rating || "").trim()));
+    if (rated.length === 1) return { match: summarize(rated[0]) };
+    // 3) El nombre de RTS empieza igual que el de DAT y solo uno tiene rating
+    if (exact.length === 0) {
+      const prefix = groups.filter((d) => norm(d.name).startsWith(target) && /^[A-F]$/.test(String(d.rating || "").trim()));
+      if (prefix.length === 1) return { match: summarize(prefix[0]) };
     }
     if (groups.length === 0) return { none: true };
     return { ambiguous: groups.slice(0, 6).map(summarize) };
   });
 
   if (!value.error) {
-    cache[key] = { at: Date.now(), value };
+    cache[key] = { at: Date.now(), v: CACHE_VER, value };
     if (value.match?.mc) cache[`mc:${value.match.mc}`] = { at: Date.now(), value: { match: value.match } };
     saveCache();
   }
@@ -123,7 +133,7 @@ async function remember({ name, phone, mc }) {
   if (!hit?.value?.match) return;
   const nameKey = `name:${norm(name)}`;
   cache[`${nameKey}|${digits10(phone)}`] = { at: Date.now(), value: hit.value };
-  if (!cache[nameKey] || cache[nameKey].value?.ambiguous) cache[nameKey] = { at: Date.now(), value: hit.value };
+  if (!cache[nameKey] || cache[nameKey].value?.ambiguous) cache[nameKey] = { at: Date.now(), v: CACHE_VER, value: hit.value };
   saveCache();
 }
 
