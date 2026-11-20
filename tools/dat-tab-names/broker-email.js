@@ -65,16 +65,17 @@
     window.open(`https://mail.google.com/mail/?${params}`, "_blank", "noopener");
   }
 
+  const LABEL = { email: '<span aria-hidden="true">✉</span> Email', sent: '<span aria-hidden="true">✓</span> Enviado' };
   function markSent(btn, when) {
     btn.classList.add("du-mail-sent");
-    btn.innerHTML = '<span aria-hidden="true">✓</span> Enviado';
+    btn.innerHTML = btn.dataset.row ? "✓" : LABEL.sent;
     btn.title = `Email enviado ${new Date(when).toLocaleString("en-US", { month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" })}. Pulsa para reenviar.`;
   }
 
-  async function onClick(btn, comp) {
-    const pid = comp.querySelector("[posting-id]")?.getAttribute("posting-id");
+  async function onClick(btn, comp, fallbackEmail = "") {
+    const pid = btn.dataset.pid || comp.querySelector("[posting-id]")?.getAttribute("posting-id");
     const info = pid ? postings.get(pid) : null;
-    const shown = (comp.textContent || "").match(/[\w.+-]+@[\w-]+\.[\w.-]+/)?.[0] || "";
+    const shown = fallbackEmail || (comp.textContent || "").match(/[\w.+-]+@[\w-]+\.[\w.-]+/)?.[0] || "";
     const { cfg, to, subject, body } = await build(info, shown);
     if (!to) { toast("Esta carga no tiene email del broker."); return; }
 
@@ -84,7 +85,7 @@
     if (pid && sentAt.has(pid) && btn.dataset.confirm !== "1") {
       btn.dataset.confirm = "1";
       setTimeout(() => delete btn.dataset.confirm, 4000);
-      toast(`Ya le escribiste por esta carga. Pulsa <b>Enviado</b> otra vez para reenviar.`, 4000);
+      toast(`Ya le escribiste por esta carga. Pulsa <b>${btn.dataset.row ? "✓" : "Enviado"}</b> otra vez para reenviar.`, 4000);
       return;
     }
     delete btn.dataset.confirm;
@@ -95,7 +96,7 @@
     const prevHtml = btn.innerHTML;
     btn.classList.remove("du-mail-sent", "du-mail-fail");
     btn.classList.add("du-mail-sending");
-    btn.innerHTML = '<span class="du-mail-spin" aria-hidden="true"></span> Enviando…';
+    btn.innerHTML = btn.dataset.row ? '<span class="du-mail-spin" aria-hidden="true"></span>' : '<span class="du-mail-spin" aria-hidden="true"></span> Enviando…';
     const r = await chrome.runtime.sendMessage({
       type: "broker-email-send",
       payload: {
@@ -109,6 +110,8 @@
       const now = new Date().toISOString();
       if (pid) sentAt.set(pid, now);
       markSent(btn, now);
+      // El mismo envío se marca en la fila y en el detalle de esa carga
+      if (pid) for (const b of document.querySelectorAll(`.du-mail[data-pid="${CSS.escape(pid)}"]`)) if (b !== btn) markSent(b, now);
       btn.classList.add("du-mail-pop");
       setTimeout(() => btn.classList.remove("du-mail-pop"), 600);
       toast(`✓ Email enviado a <b>${esc(to)}</b>`);
@@ -120,14 +123,36 @@
     }
   }
 
-  // Cargas ya escritas (para mostrar "Enviado ✓" al abrir el detalle)
-  async function refreshSent(pid, btn) {
+  // Cargas ya escritas (para mostrar "Enviado ✓"). Se consulta en lote: una sola llamada por
+  // tanda de filas nuevas, no una por carga.
+  const sentQueue = new Map(); // pid → [botones]
+  let sentTimer = null;
+  function refreshSent(pid, btn) {
     if (!pid) return;
-    if (!sentAt.has(pid)) {
-      const r = await chrome.runtime.sendMessage({ type: "broker-email-send", payload: { action: "sent", posting_ids: [pid] } }).catch(() => null);
-      if (r?.sent?.[pid]) sentAt.set(pid, r.sent[pid]);
-    }
-    if (sentAt.has(pid)) markSent(btn, sentAt.get(pid));
+    if (sentAt.has(pid)) { markSent(btn, sentAt.get(pid)); return; }
+    if (!sentQueue.has(pid)) sentQueue.set(pid, []);
+    sentQueue.get(pid).push(btn);
+    clearTimeout(sentTimer);
+    sentTimer = setTimeout(async () => {
+      const batch = new Map(sentQueue);
+      sentQueue.clear();
+      const r = await chrome.runtime.sendMessage({ type: "broker-email-send", payload: { action: "sent", posting_ids: [...batch.keys()] } }).catch(() => null);
+      for (const [id, btns] of batch) {
+        if (r?.sent?.[id]) sentAt.set(id, r.sent[id]);
+        if (sentAt.has(id)) for (const b of btns) if (b.isConnected && b.dataset.pid === id) markSent(b, sentAt.get(id));
+      }
+    }, 400);
+  }
+
+  function makeBtn(pid, row) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = row ? "du-mail du-mail-row" : "du-mail";
+    if (row) btn.dataset.row = "1";
+    if (pid) btn.dataset.pid = pid;
+    btn.innerHTML = row ? "✉" : LABEL.email;
+    btn.title = "Enviar el email de tu plantilla al broker (configúralo con «Configurar email», arriba a la derecha)";
+    return btn;
   }
 
   // El botón va a la derecha del email del broker (Contact Information). Si DAT aún no muestra
@@ -149,17 +174,33 @@
       if (!nameBox || !comp.querySelector(".compliance-number")) continue;
       const scope = comp.closest("dat-load-details") || comp;
       const target = scope.querySelector(".contacts__email") || nameBox;
-      let btn = scope.querySelector(".du-mail");
+      let btn = scope.querySelector(".du-mail:not(.du-mail-row)");
       if (!btn) {
-        btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "du-mail";
-        btn.innerHTML = '<span aria-hidden="true">✉</span> Email';
-        btn.title = "Enviar el email de tu plantilla al broker (configúralo con «Configurar email», arriba a la derecha)";
+        const pid = scope.querySelector("[posting-id]")?.getAttribute("posting-id");
+        btn = makeBtn(pid, false);
         btn.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); onClick(btn, scope); });
-        refreshSent(scope.querySelector("[posting-id]")?.getAttribute("posting-id"), btn);
+        refreshSent(pid, btn);
       }
       if (btn.parentElement !== target) target.append(btn);
+    }
+    // Lista de cargas: ✉ pequeño al lado del contacto, solo si la carga tiene email del broker
+    for (const link of document.querySelectorAll('dat-result-row connected-email-contact-link[data-test="load-contact-cell"]')) {
+      const box = link.parentElement;
+      const pid = link.getAttribute("posting-id") || "";
+      const email = (postings.get(pid)?.email || link.getAttribute("recipient-email") ||
+        (link.getAttribute("href-value") || "").replace(/^mailto:/, "")).trim();
+      const has = /@/.test(email);
+      let btn = box.querySelector(":scope > .du-mail-row");
+      // La lista recicla filas al hacer scroll: si la fila ahora es otra carga, se rehace
+      if (btn && (btn.dataset.pid !== pid || !has)) { btn.remove(); btn = null; }
+      if (btn || !has) continue;
+      btn = makeBtn(pid, true);
+      btn.title = `Enviar el email de tu plantilla a ${email}`;
+      const row = link.closest("dat-result-row");
+      btn.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); onClick(btn, row, email); });
+      btn.addEventListener("mousedown", (e) => e.stopPropagation());
+      link.after(btn);
+      refreshSent(pid, btn);
     }
   }
 
