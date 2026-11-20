@@ -180,3 +180,28 @@ chrome.runtime.onMessage.addListener((msg, _sender, reply) => {
   })().then(reply, (e) => reply({ error: String(e?.message || e) }));
   return true;
 });
+
+// Aviso de versión nueva: compara con la que publica el TMS (dispatch-up.com/downloads/extensions.json)
+const DU_UPDATE_URL = "https://www.dispatch-up.com/downloads/extensions.json";
+const newer = (a, b) => {
+  const pa = String(a).split(".").map(Number), pb = String(b).split(".").map(Number);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    if ((pa[i] || 0) !== (pb[i] || 0)) return (pa[i] || 0) > (pb[i] || 0);
+  }
+  return false;
+};
+async function checkUpdate() {
+  try {
+    const res = await fetch(`${DU_UPDATE_URL}?t=${Date.now()}`, { cache: "no-store" });
+    const info = (await res.json())?.dat;
+    const current = chrome.runtime.getManifest().version;
+    await chrome.storage.local.set({
+      duUpdate: info?.version && newer(info.version, current)
+        ? { version: info.version, url: new URL(info.url, DU_UPDATE_URL).href, current }
+        : null,
+    });
+  } catch {}
+}
+chrome.runtime.onStartup.addListener(checkUpdate);
+chrome.runtime.onInstalled.addListener(checkUpdate);
+chrome.runtime.onMessage.addListener((msg) => { if (msg?.type === "check-update") checkUpdate(); });

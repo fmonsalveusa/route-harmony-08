@@ -6,10 +6,11 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Pencil, Building2, FileSignature, Plus, Trash2, Power, PowerOff } from 'lucide-react';
+import { Pencil, Building2, FileSignature, Plus, Trash2, Power, PowerOff, Puzzle } from 'lucide-react';
 import { toast } from 'sonner';
 import { StatTiles, TABLE_CARD, TABLE_HEAD_ROW, TABLE_ROW } from '@/components/StatTiles';
 import { RtsAssistantDialog } from '@/components/RtsAssistantDialog';
+import { DatExtensionDialog } from '@/components/DatExtensionDialog';
 import { useAuth } from '@/contexts/AuthContext';
 
 type CompanyForm = {
@@ -33,6 +34,7 @@ const Companies = () => {
   const [form, setForm] = useState<CompanyForm>(emptyForm);
   const [activeTab, setActiveTab] = useState('active');
   const [rtsOpen, setRtsOpen] = useState(false);
+  const [datOpen, setDatOpen] = useState(false);
   const { role, isMasterAdmin } = useAuth();
   const isAdmin = role === 'admin' || !!isMasterAdmin;
 
@@ -191,12 +193,18 @@ const Companies = () => {
               <FileSignature className="h-4 w-4" /> Asistente RTS
             </Button>
           )}
+          {isAdmin && (
+            <Button variant="outline" className="gap-2 rounded-full px-4 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent" onClick={() => setDatOpen(true)}>
+              <Puzzle className="h-4 w-4" /> Extensión DAT
+            </Button>
+          )}
           <Button className="gap-2 rounded-full px-5 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium shadow-none" onClick={openNew}>
             <Plus className="h-4 w-4" /> Add New Company
           </Button>
         </div>
       </div>
       <RtsAssistantDialog open={rtsOpen} onOpenChange={setRtsOpen} />
+      <DatExtensionDialog open={datOpen} onOpenChange={setDatOpen} />
 
       <StatTiles tiles={[
         { label: 'Total Companies', value: companies.length, icon: Building2, tint: 'bg-[#d3e3fd] text-[#041e49] dark:bg-blue-900/40 dark:text-blue-200' },
