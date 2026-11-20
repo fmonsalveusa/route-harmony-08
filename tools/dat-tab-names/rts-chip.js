@@ -149,6 +149,14 @@
 
   let t = null;
   const schedule = () => { clearTimeout(t); t = setTimeout(scan, 300); };
+
+  // Sesión de RTS nueva (abriste rtspro.com): reintentar al momento los chips con "abre RTS" o error
+  chrome.storage.onChanged.addListener((ch, area) => {
+    if (area !== "local" || !ch.rtsAuth?.newValue) return;
+    pending.clear();
+    for (const chip of document.querySelectorAll(".du-rts.du-rts-muted")) delete chip.dataset.key;
+    schedule();
+  });
   new MutationObserver(schedule)
     .observe(document.body, { childList: true, subtree: true });
   scan();
