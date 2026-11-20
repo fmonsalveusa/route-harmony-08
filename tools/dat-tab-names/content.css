@@ -110,3 +110,10 @@
 
 /* En el detalle, el círculo va pegado al MC# */
 .compliance-number > .du-rts { margin-left: 8px; }
+
+/* Detalle de la carga: "RTS" + círculo más grande, a la derecha del nombre del broker */
+.company-name:has(> .du-rts) { display: flex; align-items: center; gap: 10px; }
+.du-rts.du-rts-detail { margin-left: 0; flex-shrink: 0; }
+.du-rts.du-rts-detail.du-rts-rated { gap: 5px; }
+.du-rts-detail .du-rts-label { color: #444746; font: 700 12px/1 system-ui, sans-serif; letter-spacing: .3px; }
+.du-rts-detail .du-rts-dot { width: 26px; height: 26px; font-size: 14px; }

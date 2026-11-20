@@ -18,7 +18,7 @@
   };
 
   function paint(chip, r) {
-    chip.className = "du-rts";
+    chip.className = chip.dataset.detail ? "du-rts du-rts-detail" : "du-rts";
     chip.style.background = "";
     if (r?.error === "login") {
       chip.textContent = "RTS: abre RTS";
@@ -46,6 +46,13 @@
       // Círculo con la letra (texto blanco); los días de pago quedan en el tooltip
       chip.textContent = "";
       chip.classList.add("du-rts-rated");
+      // En el detalle de la carga: "RTS" + círculo más grande
+      if (chip.dataset.detail) {
+        const label = document.createElement("span");
+        label.className = "du-rts-label";
+        label.textContent = "RTS";
+        chip.append(label);
+      }
       const dot = document.createElement("span");
       dot.className = "du-rts-dot";
       dot.textContent = d.rating || "–";
@@ -110,10 +117,22 @@
       const info = pid ? postings.get(pid) : null;
       attach(a, info?.mc ? { mc: info.mc } : { name, phone: rowPhone(row) });
     }
-    // Detalle de la carga: "MC#322572"
+    // Detalle de la carga: el MC# que muestra DAT; el chip va a la derecha del nombre del broker
     for (const el of document.querySelectorAll(".compliance-number")) {
       const m = ownText(el).match(/MC#\s*(\d+)/);
-      if (m) attach(el, { mc: m[1] }, true);
+      if (!m) continue;
+      const nameBox = el.closest("dat-company")?.querySelector(".company-name");
+      if (!nameBox) { attach(el, { mc: m[1] }, true); continue; }
+      el.querySelector(":scope > .du-rts")?.remove();
+      const chip = nameBox.querySelector(":scope > .du-rts");
+      if (chip && chip.dataset.key === `mc:${m[1]}`) continue;
+      if (chip) chip.remove();
+      const span = document.createElement("span");
+      span.dataset.detail = "1";
+      nameBox.append(span);
+      // attach() reutiliza este span (mismo lugar) y lo pinta
+      span.className = "du-rts";
+      attach(nameBox, { mc: m[1] }, true);
     }
   }
 
