@@ -72,7 +72,12 @@ Deno.serve(async (req) => {
     };
 
     try {
-      await sendMail(account, { fromName: FROM_NAME, to: [to], subject, text });
+      // Versión HTML con los mismos saltos de línea de la plantilla (Gmail muestra esta)
+      const esc = (x: string) => x.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      const html = `<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#1f1f1f">${
+        esc(text).replace(/\r?\n/g, "<br>")
+      }</div>`;
+      await sendMail(account, { fromName: FROM_NAME, to: [to], subject, text, html });
     } catch (e) {
       const error = e instanceof Error ? e.message : String(e);
       await supabase.from("dat_broker_emails").insert({ ...row, status: "failed", error: error.slice(0, 500) });
