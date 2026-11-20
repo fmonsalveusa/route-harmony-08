@@ -41,7 +41,7 @@
       chip.textContent = "RTS: NO BUY";
       chip.style.background = "#a50e0e";
     } else {
-      // Círculo con la letra (texto blanco) + días de pago al lado
+      // Círculo con la letra (texto blanco); los días de pago quedan en el tooltip
       chip.textContent = "";
       chip.classList.add("du-rts-rated");
       const dot = document.createElement("span");
@@ -49,12 +49,6 @@
       dot.textContent = d.rating || "–";
       dot.style.background = COLOR[d.rating] || "#80868b";
       chip.append(dot);
-      if (d.days) {
-        const days = document.createElement("span");
-        days.className = "du-rts-days";
-        days.textContent = `${d.days}d`;
-        chip.append(days);
-      }
     }
     chip.title = [
       `${d.name} — MC ${d.mc}`,
