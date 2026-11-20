@@ -34,7 +34,7 @@ export function DatExtensionDialog({ open, onOpenChange }: { open: boolean; onOp
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg rounded-[28px] border-0 bg-[#f8fafd] dark:bg-background">
+      <DialogContent className="max-w-xl w-[calc(100vw-32px)] overflow-hidden [&>*]:min-w-0 rounded-[28px] border-0 bg-[#f8fafd] dark:bg-background">
         <DialogHeader>
           <DialogTitle className="text-[22px] leading-7 font-normal text-[#1f1f1f] dark:text-foreground">Extensión de DAT</DialogTitle>
           <DialogDescription className="text-sm text-[#444746] dark:text-muted-foreground">
@@ -66,8 +66,8 @@ export function DatExtensionDialog({ open, onOpenChange }: { open: boolean; onOp
           </ol>
         </div>
 
-        <div className="flex items-center gap-2">
-          <code className="flex-1 truncate rounded-lg border border-[#c4c7c5] bg-white dark:bg-card px-2 py-1.5 text-xs">{key ?? '…'}</code>
+        <div className="flex items-center gap-2 min-w-0">
+          <code className="flex-1 min-w-0 truncate rounded-lg border border-[#c4c7c5] bg-white dark:bg-card px-2 py-1.5 text-xs">{key ?? '…'}</code>
           <Button className="rounded-full px-4 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent" size="sm" variant="outline" onClick={copy} disabled={!key}>
             {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
           </Button>
