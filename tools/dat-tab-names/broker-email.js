@@ -1,9 +1,8 @@
 // Botón "✉ Email" en el detalle de la carga de DAT. Según la configuración (⚙):
 //  - Enviar directo: se envía desde 58logisticsllc@gmail.com (función dat-broker-email de
-//    Dispatch Up), con 5 segundos para "Deshacer". Queda marcado "Enviado ✓" en esa carga.
+//    Dispatch Up) al instante; el botón se anima mientras envía. Queda marcado "Enviado ✓".
 //  - Abrir en Gmail: abre Gmail con el correo listo para revisar y enviar a mano.
 (() => {
-  const UNDO_SECONDS = 5;
   const postings = new Map();
   const sentAt = new Map(); // postingId → fecha del último envío
   window.addEventListener("message", (e) => {
@@ -91,24 +90,11 @@
     if (btn.dataset.sending) return;
     btn.dataset.sending = "1";
 
-    // Envío con "Deshacer"
-    let left = UNDO_SECONDS, cancelled = false;
-    const t = toast("", 0);
-    const render = () => {
-      t.innerHTML = `Enviando a <b>${esc(to)}</b> en ${left}s… <button type="button" class="du-undo">Deshacer</button>`;
-      t.querySelector(".du-undo").onclick = () => { cancelled = true; };
-    };
-    render();
-    await new Promise((done) => {
-      const iv = setInterval(() => {
-        if (cancelled) { clearInterval(iv); done(); return; }
-        left -= 1;
-        if (left <= 0) { clearInterval(iv); done(); } else render();
-      }, 1000);
-    });
-    if (cancelled) { t.remove(); toast("Envío cancelado."); delete btn.dataset.sending; return; }
-
-    t.innerHTML = `Enviando a <b>${esc(to)}</b>…`;
+    // Animación en el botón mientras se envía
+    const prevHtml = btn.innerHTML;
+    btn.classList.remove("du-mail-sent", "du-mail-fail");
+    btn.classList.add("du-mail-sending");
+    btn.innerHTML = '<span class="du-mail-spin" aria-hidden="true"></span> Enviando…';
     const r = await chrome.runtime.sendMessage({
       type: "broker-email-send",
       payload: {
@@ -117,13 +103,18 @@
       },
     }).catch((e) => ({ error: String(e?.message || e) }));
     delete btn.dataset.sending;
-    t.remove();
+    btn.classList.remove("du-mail-sending");
     if (r?.ok) {
       const now = new Date().toISOString();
       if (pid) sentAt.set(pid, now);
       markSent(btn, now);
+      btn.classList.add("du-mail-pop");
+      setTimeout(() => btn.classList.remove("du-mail-pop"), 600);
       toast(`✓ Email enviado a <b>${esc(to)}</b>`);
     } else {
+      btn.innerHTML = prevHtml;
+      btn.classList.add("du-mail-fail");
+      setTimeout(() => btn.classList.remove("du-mail-fail"), 600);
       toast(`No se envió: ${esc(r?.error || "error desconocido")}`, 6000);
     }
   }

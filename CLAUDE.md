@@ -175,7 +175,7 @@ Se instalan "descomprimidas" (Modo de desarrollador → Cargar descomprimida); N
   - Colores: A/B/C verde, D naranja, resto rojo; NO BUY = triángulo negro con "!" blanco. Días de pago solo en tooltip.
 - **Sesión de RTS**: `rts-capture.js` (MAIN, en rtspro.com) toma el `Authorization: Bearer` que usa la propia página de RTS (dura ~24 h) y `rts-session.js` lo guarda en `chrome.storage.local`. `background.js` consulta `https://stc-debtor-service.rtspro.com/debtors/search?mcNumber=` (o `?name=`), con caché 24 h (`CACHE_VER`). Campos: `rating`, `averageDaysToPayPast60`, `DebNoBuy`, `IsSuperDebtor`, `mc_number`. Nunca leer/mostrar el token.
 - **Email al broker** (`broker-email.js`, `email-template.js`, `options.html/js`): botón "✉ Email" en el detalle.
-  - Modo "Enviar directo" (default): Edge Function `dat-broker-email` (verify_jwt false) envía por SMTP desde **58logisticsllc@gmail.com** (cuenta de `BROKER_GMAIL_ACCOUNTS`), 5 s para deshacer, log en tabla `dat_broker_emails`, marca "✓ Enviado" por `posting_id`.
+  - Modo "Enviar directo" (default): Edge Function `dat-broker-email` (verify_jwt false) envía por SMTP desde **58logisticsllc@gmail.com** (cuenta de `BROKER_GMAIL_ACCOUNTS`), envío inmediato con animación en el botón, log en tabla `dat_broker_emails`, marca "✓ Enviado" por `posting_id`.
   - Modo "Abrir en Gmail": compose de Gmail con `authuser`.
   - Plantilla en `chrome.storage.sync` (`emailCfg`), variables `{broker} {origen} {destino} {dho} {fecha} {millas} {equipo} {peso} {largo} {rate} {referencia} {driver}`.
   - Autenticación: header `x-assistant-key` = clave de `integration_keys` kind `rts_assistant` (la misma del Asistente RTS), guardada en `chrome.storage.sync` (`duKey`).

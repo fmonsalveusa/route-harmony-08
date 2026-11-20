@@ -143,8 +143,16 @@
 }
 .du-mail.du-mail-sent { color: #188038; border-color: #188038; }
 .du-toast b { font-weight: 600; }
-.du-undo { margin-left: 12px; background: none; border: 0; color: #a8c7fa; font: 600 14px system-ui, sans-serif; cursor: pointer; padding: 4px 6px; border-radius: 4px; }
-.du-undo:hover { background: rgba(255,255,255,.12); }
+.du-mail { transition: transform .1s, background .2s, color .2s, border-color .2s; }
+.du-mail:active { transform: scale(.92); }
+.du-mail.du-mail-sending { background: #d3e3fd; border-color: #0b57d0; cursor: progress; animation: du-mail-pulse 1s ease-in-out infinite; }
+.du-mail-spin { width: 12px; height: 12px; border: 2px solid #0b57d0; border-right-color: transparent; border-radius: 50%; animation: du-spin .7s linear infinite; }
+.du-mail.du-mail-pop { animation: du-mail-pop .5s ease-out; background: #e6f4ea; }
+.du-mail.du-mail-fail { animation: du-mail-shake .45s; color: #b3261e; border-color: #b3261e; }
+@keyframes du-spin { to { transform: rotate(360deg); } }
+@keyframes du-mail-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(11,87,208,.35); } 50% { box-shadow: 0 0 0 6px rgba(11,87,208,0); } }
+@keyframes du-mail-pop { 0% { transform: scale(1); } 40% { transform: scale(1.15); } 100% { transform: scale(1); } }
+@keyframes du-mail-shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
 
 /* Aviso de versión nueva de la extensión */
 .du-update {
