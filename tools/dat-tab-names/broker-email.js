@@ -129,24 +129,32 @@
     if (sentAt.has(pid)) markSent(btn, sentAt.get(pid));
   }
 
+  // El botón va a la derecha del email del broker (Contact Information). Si DAT aún no muestra
+  // el email (o la carga no tiene), queda junto al nombre del broker y se mueve cuando aparezca.
   function scan() {
     for (const comp of document.querySelectorAll("dat-company")) {
       const nameBox = comp.querySelector(".company-name");
-      if (!nameBox || !comp.querySelector(".compliance-number") || nameBox.querySelector(":scope > .du-mail")) continue;
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "du-mail";
-      btn.innerHTML = '<span aria-hidden="true">✉</span> Email';
-      btn.title = "Enviar el email de tu plantilla al broker";
-      btn.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); onClick(btn, comp); });
-      const gear = document.createElement("button");
-      gear.type = "button";
-      gear.className = "du-mail du-mail-gear";
-      gear.textContent = "⚙";
-      gear.title = "Configurar el email (plantilla, modo de envío y clave)";
-      gear.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); chrome.runtime.sendMessage({ type: "open-options" }); });
-      nameBox.append(btn, gear);
-      refreshSent(comp.querySelector("[posting-id]")?.getAttribute("posting-id"), btn);
+      if (!nameBox || !comp.querySelector(".compliance-number")) continue;
+      const scope = comp.closest("dat-load-details") || comp;
+      const target = scope.querySelector(".contacts__email") || nameBox;
+      let btn = scope.querySelector(".du-mail:not(.du-mail-gear)");
+      let gear = scope.querySelector(".du-mail-gear");
+      if (!btn) {
+        btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "du-mail";
+        btn.innerHTML = '<span aria-hidden="true">✉</span> Email';
+        btn.title = "Enviar el email de tu plantilla al broker";
+        btn.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); onClick(btn, scope); });
+        gear = document.createElement("button");
+        gear.type = "button";
+        gear.className = "du-mail du-mail-gear";
+        gear.textContent = "⚙";
+        gear.title = "Configurar el email (plantilla, modo de envío y clave)";
+        gear.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); chrome.runtime.sendMessage({ type: "open-options" }); });
+        refreshSent(scope.querySelector("[posting-id]")?.getAttribute("posting-id"), btn);
+      }
+      if (btn.parentElement !== target) target.append(btn, gear);
     }
   }
 
