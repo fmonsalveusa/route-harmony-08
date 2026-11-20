@@ -3,6 +3,7 @@
 // línea) y se los pasa a rts-chip.js para que busque el rating de RTS por MC, que es exacto.
 (() => {
   const all = new Map(); // postingId → { postingId, name, mc, dot }
+  const place = (p) => (p ? [p.city, p.stateProv].filter(Boolean).join(", ") : "");
   const publish = (text) => {
     if (!text || text.indexOf("posterDotIds") < 0) return;
     let json;
@@ -18,6 +19,20 @@
           name: v.posterInfo?.companyName || "",
           mc: String(d.brokerMcNumber || d.carrierMcNumber || d.freightForwarderMcNumber || ""),
           dot: String(d.dotNumber || ""),
+          // Datos para el email al broker
+          email: v.posterInfo?.contact?.email ||
+            (v.posterInfo?.contactMethods || []).map((c) => c?.value?.emailAddress).find(Boolean) || "",
+          origin: place(v.assetInfo.origin),
+          destination: place(v.assetInfo.destination),
+          dho: v.originDeadheadMiles?.miles ?? null,
+          miles: v.tripLength?.miles ?? null,
+          date: v.availability?.earliestWhen || "",
+          equipment: v.assetInfo.equipmentType || "",
+          weight: v.assetInfo.capacity?.maximumWeightPounds ?? null,
+          length: v.assetInfo.capacity?.maximumLengthFeet ?? null,
+          fullPartial: v.assetInfo.capacity?.fullPartial || "",
+          rate: v.rateInfo?.bookable?.rateUsd ?? v.rateInfo?.nonBookable?.rateUsd ?? null,
+          ref: v.postersReferenceId || "",
         });
         return;
       }

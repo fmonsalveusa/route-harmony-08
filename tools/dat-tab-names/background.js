@@ -155,3 +155,8 @@ chrome.runtime.onMessage.addListener((msg, _sender, reply) => {
   lookup(msg).then(reply, (e) => reply({ error: String(e?.message || e) }));
   return true; // respuesta asíncrona
 });
+
+// Botón ⚙ del email en DAT: abre la configuración de la extensión
+chrome.runtime.onMessage.addListener((msg) => {
+  if (msg?.type === "open-options") chrome.runtime.openOptionsPage();
+});
