@@ -19,7 +19,7 @@ chrome.runtime.onMessage.addListener((msg) => {
 // sesión de RTS abierta en este Chrome. Resultados guardados 24 h para no repetir consultas.
 const RTS_API = "https://stc-debtor-service.rtspro.com/debtors/search";
 const CACHE_MS = 24 * 3600 * 1000;
-const CACHE_VER = 2;
+const CACHE_VER = 3;
 let cache = null;
 const loadCache = async () => cache ?? (cache = (await chrome.storage.local.get("rtsCache")).rtsCache || {});
 const saveCache = () => chrome.storage.local.set({ rtsCache: cache });
@@ -70,24 +70,7 @@ async function rtsSearch(params) {
 
 const digits10 = (p) => String(p || "").replace(/\D/g, "").slice(-10);
 
-async function lookup({ mc, name, phone }) {
-  await loadCache();
-  const nameKey = `name:${norm(name)}`;
-  const key = mc ? `mc:${mc}` : nameKey;
-  // Broker ya identificado antes (por su MC en el detalle de la carga)
-  const learned = !mc && phone ? cache[`${nameKey}|${digits10(phone)}`] : null;
-  if (learned && Date.now() - learned.at < CACHE_MS) return learned.value;
-  const hit = cache[key];
-  if (hit && hit.v === CACHE_VER && Date.now() - hit.at < CACHE_MS && !(hit.value?.ambiguous && phone)) return hit.value;
-
-  const value = await throttled(async () => {
-    if (mc) {
-      const r = await rtsSearch({ mcNumber: mc });
-      if (r.error) return r;
-      return r.list.length ? { match: summarize(mainRecord(r.list)) } : { none: true };
-    }
-    // Por nombre: RTS busca por texto; se elige el que coincide con el nombre de DAT
-    const target = norm(name);
+async function byName(target, phone) {
     const r = await rtsSearch({ name: target });
     if (r.error) return r;
     const byMc = new Map();
@@ -116,11 +99,39 @@ async function lookup({ mc, name, phone }) {
     }
     if (groups.length === 0) return { none: true };
     return { ambiguous: groups.slice(0, 6).map(summarize) };
+}
+
+async function lookup({ mc, name, phone }) {
+  await loadCache();
+  const nameKey = `name:${norm(name)}`;
+  const key = mc ? `mc:${mc}` : nameKey;
+  // Broker ya identificado antes (por su MC en el detalle de la carga)
+  const learned = !mc && phone ? cache[`${nameKey}|${digits10(phone)}`] : null;
+  if (learned && Date.now() - learned.at < CACHE_MS) return learned.value;
+  const hit = cache[key];
+  if (hit && hit.v === CACHE_VER && Date.now() - hit.at < CACHE_MS && !(hit.value?.ambiguous && phone)) return hit.value;
+
+  const value = await throttled(async () => {
+    if (mc) {
+      const r = await rtsSearch({ mcNumber: mc });
+      if (r.error) return r;
+      return r.list.length ? { match: summarize(mainRecord(r.list)) } : { none: true };
+    }
+    // Por nombre. DAT a veces junta dos nombres ("Dallas & Mavis/Greatwide"): se prueba el
+    // nombre completo y luego cada parte.
+    const parts = [name, ...String(name).split(/\s*\/\s*/)].map(norm).filter((p, i, a) => p.length >= 3 && a.indexOf(p) === i);
+    let best = { none: true };
+    for (const target of parts) {
+      const res = await byName(target, phone);
+      if (res.error || res.match) return res;
+      if (res.ambiguous && best.none) best = res;
+    }
+    return best;
   });
 
   if (!value.error) {
     cache[key] = { at: Date.now(), v: CACHE_VER, value };
-    if (value.match?.mc) cache[`mc:${value.match.mc}`] = { at: Date.now(), value: { match: value.match } };
+    if (value.match?.mc) cache[`mc:${value.match.mc}`] = { at: Date.now(), v: CACHE_VER, value: { match: value.match } };
     saveCache();
   }
   return value;
@@ -133,7 +144,8 @@ async function remember({ name, phone, mc }) {
   if (!hit?.value?.match) return;
   const nameKey = `name:${norm(name)}`;
   cache[`${nameKey}|${digits10(phone)}`] = { at: Date.now(), value: hit.value };
-  if (!cache[nameKey] || cache[nameKey].value?.ambiguous) cache[nameKey] = { at: Date.now(), v: CACHE_VER, value: hit.value };
+  // Lo encontrado por MC en el detalle es exacto: reemplaza lo que se haya adivinado por nombre
+  cache[nameKey] = { at: Date.now(), v: CACHE_VER, value: hit.value };
   saveCache();
 }
 

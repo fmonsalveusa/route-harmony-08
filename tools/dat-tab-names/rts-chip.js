@@ -94,9 +94,13 @@
       // Filas de la lista de ese broker: la de esta carga, o las que tienen el mismo teléfono del detalle
       const row = el.closest("dat-result-row");
       const detailPhone = rowPhone(el.closest(".company-info-containers") || el.parentElement?.parentElement?.parentElement);
+      const detailText = (el.closest("dat-company") || el.closest(".company-data-container") || el.parentElement?.parentElement?.parentElement)?.textContent || "";
       const anchors = [...document.querySelectorAll('a[data-test="load-company-cell"]')].filter((a) => {
         const r = a.closest("dat-result-row");
-        return (row && r === row) || (detailPhone.length === 10 && rowPhone(r) === detailPhone);
+        const name = (a.textContent || "").trim();
+        return (row && r === row) ||
+          (detailPhone.length === 10 && rowPhone(r) === detailPhone) ||
+          (name.length >= 3 && detailText.includes(name));
       });
       if (anchors.length === 0) continue;
       ask({ mc: m[1] }).then(async (r) => {
