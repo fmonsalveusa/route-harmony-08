@@ -1,4 +1,5 @@
-// Botón "✉ Email" en el detalle de la carga de DAT. Según la configuración (⚙):
+// Botón "✉ Email" en el detalle de la carga de DAT. La configuración se abre con el ícono de
+// la extensión en la barra de Chrome. Según el modo:
 //  - Enviar directo: se envía desde 58logisticsllc@gmail.com (función dat-broker-email de
 //    Dispatch Up) al instante; el botón se anima mientras envía. Queda marcado "Enviado ✓".
 //  - Abrir en Gmail: abre Gmail con el correo listo para revisar y enviar a mano.
@@ -137,24 +138,17 @@
       if (!nameBox || !comp.querySelector(".compliance-number")) continue;
       const scope = comp.closest("dat-load-details") || comp;
       const target = scope.querySelector(".contacts__email") || nameBox;
-      let btn = scope.querySelector(".du-mail:not(.du-mail-gear)");
-      let gear = scope.querySelector(".du-mail-gear");
+      let btn = scope.querySelector(".du-mail");
       if (!btn) {
         btn = document.createElement("button");
         btn.type = "button";
         btn.className = "du-mail";
         btn.innerHTML = '<span aria-hidden="true">✉</span> Email';
-        btn.title = "Enviar el email de tu plantilla al broker";
+        btn.title = "Enviar el email de tu plantilla al broker (configúralo con el ícono de la extensión)";
         btn.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); onClick(btn, scope); });
-        gear = document.createElement("button");
-        gear.type = "button";
-        gear.className = "du-mail du-mail-gear";
-        gear.textContent = "⚙";
-        gear.title = "Configurar el email (plantilla, modo de envío y clave)";
-        gear.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); chrome.runtime.sendMessage({ type: "open-options" }); });
         refreshSent(scope.querySelector("[posting-id]")?.getAttribute("posting-id"), btn);
       }
-      if (btn.parentElement !== target) target.append(btn, gear);
+      if (btn.parentElement !== target) target.append(btn);
     }
   }
 

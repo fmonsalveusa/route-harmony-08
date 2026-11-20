@@ -134,10 +134,9 @@
   cursor: pointer;
 }
 .du-mail:hover { background: #f0f4f9; }
-.du-mail.du-mail-gear { width: 28px; padding: 0; justify-content: center; color: #444746; margin-left: -4px; }
 .company-name:has(> .du-mail) { display: flex; align-items: center; gap: 10px; }
 .contacts__email:has(> .du-mail) { display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; }
-.contacts__email > .du-mail:not(.du-mail-gear) { margin-left: 6px; }
+.contacts__email > .du-mail { margin-left: 6px; }
 .du-toast {
   position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 99999;
   background: #1f1f1f; color: #fff; padding: 12px 18px; border-radius: 8px;

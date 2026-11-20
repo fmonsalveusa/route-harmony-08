@@ -157,6 +157,8 @@ chrome.runtime.onMessage.addListener((msg, _sender, reply) => {
 });
 
 // Botón ⚙ del email en DAT: abre la configuración de la extensión
+// Clic en el ícono de la extensión (barra de Chrome) → configuración
+chrome.action.onClicked.addListener(() => chrome.runtime.openOptionsPage());
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg?.type === "open-options") chrome.runtime.openOptionsPage();
 });
