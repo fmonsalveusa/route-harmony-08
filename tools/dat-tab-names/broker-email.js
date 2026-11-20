@@ -1,5 +1,5 @@
-// Botón "✉ Email" en el detalle de la carga de DAT. La configuración se abre con el ícono de
-// la extensión en la barra de Chrome. Según el modo:
+// Botón "✉ Email" en el detalle de la carga de DAT. La configuración se abre con el botón
+// "Configurar email" (a la derecha de los filtros de búsqueda) o con el ícono de la extensión. Según el modo:
 //  - Enviar directo: se envía desde 58logisticsllc@gmail.com (función dat-broker-email de
 //    Dispatch Up) al instante; el botón se anima mientras envía. Queda marcado "Enviado ✓".
 //  - Abrir en Gmail: abre Gmail con el correo listo para revisar y enviar a mano.
@@ -133,6 +133,17 @@
   // El botón va a la derecha del email del broker (Contact Information). Si DAT aún no muestra
   // el email (o la carga no tiene), queda junto al nombre del broker y se mueve cuando aparezca.
   function scan() {
+    // Un solo botón "Configurar email" por búsqueda, a la derecha de la fila de filtros
+    for (const bar of document.querySelectorAll(".search-filters")) {
+      if (bar.querySelector(":scope > .du-cfg")) continue;
+      const cfg = document.createElement("button");
+      cfg.type = "button";
+      cfg.className = "du-cfg";
+      cfg.innerHTML = '<span aria-hidden="true">✉</span> Configurar email';
+      cfg.title = "Plantilla del email a brokers, modo de envío y clave";
+      cfg.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); chrome.runtime.sendMessage({ type: "open-options" }); });
+      bar.append(cfg);
+    }
     for (const comp of document.querySelectorAll("dat-company")) {
       const nameBox = comp.querySelector(".company-name");
       if (!nameBox || !comp.querySelector(".compliance-number")) continue;
@@ -144,7 +155,7 @@
         btn.type = "button";
         btn.className = "du-mail";
         btn.innerHTML = '<span aria-hidden="true">✉</span> Email';
-        btn.title = "Enviar el email de tu plantilla al broker (configúralo con el ícono de la extensión)";
+        btn.title = "Enviar el email de tu plantilla al broker (configúralo con «Configurar email», arriba a la derecha)";
         btn.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); onClick(btn, scope); });
         refreshSent(scope.querySelector("[posting-id]")?.getAttribute("posting-id"), btn);
       }

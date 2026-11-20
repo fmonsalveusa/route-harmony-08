@@ -137,6 +137,17 @@
 .company-name:has(> .du-mail) { display: flex; align-items: center; gap: 10px; }
 .contacts__email:has(> .du-mail) { display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; }
 .contacts__email > .du-mail { margin-left: 6px; }
+/* Botón único "Configurar email" a la derecha de los filtros de búsqueda */
+.du-cfg {
+  margin-left: auto; align-self: center; flex-shrink: 0;
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 32px; padding: 0 14px;
+  border: 1px solid #0b57d0; border-radius: 4px; background: #fff; color: #0b57d0;
+  font: 600 13px/1 Roboto, system-ui, sans-serif; letter-spacing: 1.2px; text-transform: uppercase;
+  cursor: pointer; transition: background .15s, transform .1s;
+}
+.du-cfg:hover { background: #f0f4f9; }
+.du-cfg:active { transform: scale(.96); }
 .du-toast {
   position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 99999;
   background: #1f1f1f; color: #fff; padding: 12px 18px; border-radius: 8px;
