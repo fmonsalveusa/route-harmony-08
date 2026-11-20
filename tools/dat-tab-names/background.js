@@ -67,11 +67,17 @@ async function rtsSearch(params) {
   return { list: Array.isArray(data) ? data : data?.data || data?.results || [] };
 }
 
-async function lookup({ mc, name }) {
+const digits10 = (p) => String(p || "").replace(/\D/g, "").slice(-10);
+
+async function lookup({ mc, name, phone }) {
   await loadCache();
-  const key = mc ? `mc:${mc}` : `name:${norm(name)}`;
+  const nameKey = `name:${norm(name)}`;
+  const key = mc ? `mc:${mc}` : nameKey;
+  // Broker ya identificado antes (por su MC en el detalle de la carga)
+  const learned = !mc && phone ? cache[`${nameKey}|${digits10(phone)}`] : null;
+  if (learned && Date.now() - learned.at < CACHE_MS) return learned.value;
   const hit = cache[key];
-  if (hit && Date.now() - hit.at < CACHE_MS) return hit.value;
+  if (hit && Date.now() - hit.at < CACHE_MS && !(hit.value?.ambiguous && phone)) return hit.value;
 
   const value = await throttled(async () => {
     if (mc) {
@@ -92,6 +98,12 @@ async function lookup({ mc, name }) {
     const exact = groups.filter((d) => norm(d.name) === target);
     if (exact.length === 1) return { match: summarize(exact[0]) };
     if (groups.length === 1) return { match: summarize(groups[0]) };
+    // Varios con nombre parecido: desempatar por el teléfono del broker en DAT
+    const tel = digits10(phone);
+    if (tel.length === 10) {
+      const byPhone = [...byMc.values()].filter((list) => list.some((d) => digits10(d.phone) === tel)).map(mainRecord);
+      if (byPhone.length === 1) return { match: summarize(byPhone[0]) };
+    }
     if (groups.length === 0) return { none: true };
     return { ambiguous: groups.slice(0, 6).map(summarize) };
   });
@@ -104,7 +116,19 @@ async function lookup({ mc, name }) {
   return value;
 }
 
+// El detalle de la carga identificó al broker por MC: se recuerda para su nombre (+ teléfono) en la lista
+async function remember({ name, phone, mc }) {
+  await loadCache();
+  const hit = cache[`mc:${mc}`];
+  if (!hit?.value?.match) return;
+  const nameKey = `name:${norm(name)}`;
+  cache[`${nameKey}|${digits10(phone)}`] = { at: Date.now(), value: hit.value };
+  if (!cache[nameKey] || cache[nameKey].value?.ambiguous) cache[nameKey] = { at: Date.now(), value: hit.value };
+  saveCache();
+}
+
 chrome.runtime.onMessage.addListener((msg, _sender, reply) => {
+  if (msg?.type === "rts-remember") { remember(msg).then(() => reply({ ok: true })); return true; }
   if (msg?.type !== "rts-lookup") return;
   lookup(msg).then(reply, (e) => reply({ error: String(e?.message || e) }));
   return true; // respuesta asíncrona

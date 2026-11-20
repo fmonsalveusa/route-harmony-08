@@ -6,7 +6,7 @@
   const pending = new Map(); // clave → Promise
 
   const ask = (q) => {
-    const k = q.mc ? `mc:${q.mc}` : `name:${q.name}`;
+    const k = q.mc ? `mc:${q.mc}` : `name:${q.name}|${q.phone || ""}`;
     if (!pending.has(k)) {
       pending.set(k, chrome.runtime.sendMessage({ type: "rts-lookup", ...q }).catch((e) => ({ error: String(e) })));
       // Se olvida al rato para que un error o un login nuevo se reintente
@@ -58,25 +58,56 @@
     ].filter(Boolean).join("\n");
   }
 
-  function attach(anchor, q) {
-    if (anchor.nextElementSibling?.classList?.contains("du-rts")) return;
+  // inside=true: el chip va dentro del elemento (pegado al texto), no como hermano
+  function attach(anchor, q, inside = false) {
+    const existing = inside
+      ? anchor.querySelector(":scope > .du-rts")
+      : anchor.nextElementSibling?.classList?.contains("du-rts") ? anchor.nextElementSibling : null;
+    if (existing) return existing;
     const chip = document.createElement("span");
     chip.className = "du-rts du-rts-muted";
     chip.textContent = "RTS…";
-    anchor.after(chip);
+    if (inside) anchor.append(chip); else anchor.after(chip);
     ask(q).then((r) => paint(chip, r));
+    return chip;
   }
 
+  // Teléfono del broker en la fila de la carga (para desempatar nombres parecidos)
+  const rowPhone = (row) => {
+    const el = row?.querySelector('[href-value^="tel:"], a[href^="tel:"]');
+    return (el?.getAttribute("href-value") || el?.getAttribute("href") || "").replace(/\D/g, "").slice(-10);
+  };
+  // Texto del elemento sin nuestro chip
+  const ownText = (el) => [...el.childNodes].filter((n) => !n.classList?.contains("du-rts")).map((n) => n.textContent || "").join("");
+
   function scan() {
-    // Lista de cargas: nombre del broker
+    // Lista de cargas: nombre del broker (+ teléfono)
     for (const a of document.querySelectorAll('a[data-test="load-company-cell"]')) {
       const name = (a.textContent || "").trim();
-      if (name) attach(a, { name });
+      if (name) attach(a, { name, phone: rowPhone(a.closest("dat-result-row")) });
     }
-    // Detalle de la carga: "MC#322572"
+    // Detalle de la carga: "MC#322572" (exacto). Lo que encuentre se pasa a la línea de esa carga.
     for (const el of document.querySelectorAll(".compliance-number")) {
-      const m = (el.textContent || "").match(/MC#\s*(\d+)/);
-      if (m) attach(el, { mc: m[1] });
+      const m = ownText(el).match(/MC#\s*(\d+)/);
+      if (!m || el.querySelector(":scope > .du-rts")) continue;
+      attach(el, { mc: m[1] }, true);
+      // Filas de la lista de ese broker: la de esta carga, o las que tienen el mismo teléfono del detalle
+      const row = el.closest("dat-result-row");
+      const detailPhone = rowPhone(el.closest(".company-info-containers") || el.parentElement?.parentElement?.parentElement);
+      const anchors = [...document.querySelectorAll('a[data-test="load-company-cell"]')].filter((a) => {
+        const r = a.closest("dat-result-row");
+        return (row && r === row) || (detailPhone.length === 10 && rowPhone(r) === detailPhone);
+      });
+      if (anchors.length === 0) continue;
+      ask({ mc: m[1] }).then(async (r) => {
+        if (!r?.match) return;
+        for (const a of anchors) {
+          const name = (a.textContent || "").trim();
+          const phone = rowPhone(a.closest("dat-result-row"));
+          await chrome.runtime.sendMessage({ type: "rts-remember", name, phone, mc: m[1] }).catch(() => {});
+          paint(attach(a, { name, phone }), r);
+        }
+      });
     }
   }
 
