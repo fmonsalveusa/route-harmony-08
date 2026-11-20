@@ -26,6 +26,13 @@
     button.primary:hover { background: #0842a0; }
     button.text { background: transparent; color: #0b57d0; border: 0; padding: 10px 12px; font: 500 14px inherit; cursor: pointer; border-radius: 999px; }
     button.text:hover { background: #f0f4f9; }
+    .modes { display: grid; gap: 8px; }
+    label.mode { display: flex; gap: 10px; align-items: flex-start; margin: 0; font-size: 14px; font-weight: 400; color: #1f1f1f;
+      border: 1px solid #e3e3e3; border-radius: 12px; padding: 10px 12px; cursor: pointer; }
+    label.mode:has(input:checked) { border-color: #0b57d0; background: #f0f4f9; }
+    label.mode input { width: auto; margin-top: 3px; }
+    .row { display: flex; gap: 8px; align-items: center; }
+    .ok { color: #188038 !important; } .bad { color: #d93025 !important; }
     #saved { color: #188038; font-weight: 500; opacity: 0; transition: opacity .2s; }
     pre { white-space: pre-wrap; margin: 0; font: inherit; background: #f0f4f9; border-radius: 12px; padding: 14px; }
     .subject { font-weight: 500; margin-bottom: 8px; }
@@ -34,12 +41,32 @@
 <body>
   <main>
     <h1>Email al broker</h1>
-    <p class="sub">El botón <b>✉ Email</b> en el detalle de la carga de DAT abre Gmail con este correo listo. Tú lo revisas y lo envías.</p>
+    <p class="sub">El botón <b>✉ Email</b> en el detalle de la carga de DAT le escribe al broker con esta plantilla.</p>
 
     <div class="card">
-      <label for="from">Enviar desde (cuenta de Gmail)</label>
-      <input id="from" type="email" placeholder="tu-correo@gmail.com">
-      <div class="hint">Tiene que ser una cuenta con sesión abierta en este Chrome. Si lo dejas vacío usa la cuenta principal de Gmail.</div>
+      <label>Cómo se envía</label>
+      <div class="modes">
+        <label class="mode"><input type="radio" name="mode" value="direct"> <span><b>Enviar directo</b> desde <b>58logisticsllc@gmail.com</b>, con 5 segundos para deshacer</span></label>
+        <label class="mode"><input type="radio" name="mode" value="gmail"> <span><b>Abrir en Gmail</b> para revisarlo y enviarlo a mano</span></label>
+      </div>
+
+      <div id="directBox">
+        <label for="key">Clave de Dispatch Up</label>
+        <div class="row">
+          <input id="key" type="password" placeholder="La misma clave del asistente de RTS (TMS → Companies → Asistente RTS)" autocomplete="off">
+          <button class="text" id="test" type="button">Probar</button>
+        </div>
+        <div class="hint" id="keyStatus">Se guarda solo en este Chrome.</div>
+      </div>
+
+      <div id="gmailBox">
+        <label for="from">Abrir con la cuenta de Gmail</label>
+        <input id="from" type="email" placeholder="tu-correo@gmail.com">
+        <div class="hint">Tiene que tener sesión abierta en este Chrome. Vacío = la cuenta principal de Gmail.</div>
+      </div>
+    </div>
+
+    <div class="card">
 
       <label for="subject">Asunto</label>
       <input id="subject" type="text">

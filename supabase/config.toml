@@ -83,3 +83,6 @@ verify_jwt = false
 
 [functions.gps-ping]
 verify_jwt = false
+
+[functions.dat-broker-email]
+verify_jwt = false

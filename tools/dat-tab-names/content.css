@@ -141,3 +141,7 @@
   background: #1f1f1f; color: #fff; padding: 12px 18px; border-radius: 8px;
   font: 14px/1.4 system-ui, sans-serif; box-shadow: 0 2px 8px rgba(0,0,0,.3);
 }
+.du-mail.du-mail-sent { color: #188038; border-color: #188038; }
+.du-toast b { font-weight: 600; }
+.du-undo { margin-left: 12px; background: none; border: 0; color: #a8c7fa; font: 600 14px system-ui, sans-serif; cursor: pointer; padding: 4px 6px; border-radius: 4px; }
+.du-undo:hover { background: rgba(255,255,255,.12); }

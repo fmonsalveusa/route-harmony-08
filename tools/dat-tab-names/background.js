@@ -160,3 +160,21 @@ chrome.runtime.onMessage.addListener((msg, _sender, reply) => {
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg?.type === "open-options") chrome.runtime.openOptionsPage();
 });
+
+// Email directo al broker: lo envía la función dat-broker-email de Dispatch Up con la clave del tenant
+const DU_EMAIL_API = "https://tejzatzzwivvaznxyqej.supabase.co/functions/v1/dat-broker-email";
+chrome.runtime.onMessage.addListener((msg, _sender, reply) => {
+  if (msg?.type !== "broker-email-send") return;
+  (async () => {
+    const { duKey } = await chrome.storage.local.get("duKey");
+    if (!duKey) return { error: "Falta la clave de Dispatch Up: ponla en ⚙ (la misma del asistente de RTS)." };
+    const res = await fetch(DU_EMAIL_API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-assistant-key": duKey },
+      body: JSON.stringify(msg.payload || {}),
+    });
+    const data = await res.json().catch(() => ({}));
+    return res.ok ? data : { error: data.error || `HTTP ${res.status}` };
+  })().then(reply, (e) => reply({ error: String(e?.message || e) }));
+  return true;
+});

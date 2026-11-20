@@ -14,8 +14,18 @@ function preview() {
   $("preview").append(s, document.createTextNode(duFillTemplate($("body").value, SAMPLE)));
 }
 
+const mode = () => document.querySelector('input[name="mode"]:checked')?.value || "direct";
+function showMode() {
+  $("directBox").style.display = mode() === "direct" ? "" : "none";
+  $("gmailBox").style.display = mode() === "gmail" ? "" : "none";
+}
+document.querySelectorAll('input[name="mode"]').forEach((r) => r.addEventListener("change", showMode));
+
 function fill(cfg) {
   $("from").value = cfg.from || "";
+  const m = document.querySelector(`input[name="mode"][value="${cfg.mode || "direct"}"]`);
+  if (m) m.checked = true;
+  showMode();
   $("subject").value = cfg.subject;
   $("body").value = cfg.body;
   preview();
@@ -45,12 +55,27 @@ for (const id of ["subject", "body"]) {
 
 $("save").addEventListener("click", async () => {
   await chrome.storage.sync.set({
-    emailCfg: { from: $("from").value.trim(), subject: $("subject").value, body: $("body").value },
+    emailCfg: { mode: mode(), from: $("from").value.trim(), subject: $("subject").value, body: $("body").value },
   });
+  await chrome.storage.local.set({ duKey: $("key").value.trim() });
   $("saved").style.opacity = 1;
   setTimeout(() => ($("saved").style.opacity = 0), 1800);
 });
 
-$("reset").addEventListener("click", () => fill({ ...DU_EMAIL_DEFAULTS, from: $("from").value }));
+$("reset").addEventListener("click", () => fill({ ...DU_EMAIL_DEFAULTS, mode: mode(), from: $("from").value }));
 
-chrome.storage.sync.get("emailCfg").then(({ emailCfg }) => fill({ ...DU_EMAIL_DEFAULTS, ...(emailCfg || {}) }));
+// Probar la clave: guarda y pregunta a Dispatch Up si la cuenta de envío está lista
+$("test").addEventListener("click", async () => {
+  const st = $("keyStatus");
+  st.className = "hint";
+  st.textContent = "Probando…";
+  await chrome.storage.local.set({ duKey: $("key").value.trim() });
+  const r = await chrome.runtime.sendMessage({ type: "broker-email-send", payload: { action: "check" } }).catch((e) => ({ error: String(e) }));
+  if (r?.ok && r.ready) { st.className = "hint ok"; st.textContent = `✓ Clave correcta. Los emails salen desde ${r.from}.`; }
+  else if (r?.ok) { st.className = "hint bad"; st.textContent = `La clave sirve, pero ${r.from} no está lista para enviar.`; }
+  else { st.className = "hint bad"; st.textContent = r?.error || "No se pudo probar"; }
+});
+
+chrome.storage.local.get("duKey").then(({ duKey }) => { $("key").value = duKey || ""; });
+
+chrome.storage.sync.get("emailCfg").then(({ emailCfg }) => fill({ ...DU_EMAIL_DEFAULTS, mode: "direct", ...(emailCfg || {}) }));
