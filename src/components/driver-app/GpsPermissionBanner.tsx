@@ -49,6 +49,7 @@ export function GpsPermissionBanner({ driverId }: { driverId: string | null }) {
       // Si la app trae el plugin no es "app vieja" aunque falle la lectura (evita el WhatsApp de actualizar)
       p_plugin_ok: s !== null || hasBackgroundPlugin(),
       p_error: s ? null : lastPermissionError,
+      p_platform: Capacitor.getPlatform(),
     } as any);
     if (error) {
       console.error('[GpsPermissionBanner] report failed:', error);

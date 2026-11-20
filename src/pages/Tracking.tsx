@@ -22,6 +22,8 @@ import { StatusBadge } from '@/components/StatusBadge';
 import { MapPin, MapPinOff, Package, Navigation, Clock, Search, ChevronRight, AlertTriangle, Eye, User, Users, Pencil, Loader2, Copy, Check, Download, ExternalLink, X, Pause, Play, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { LoadAlertChip } from '@/components/LoadAlertChip';
+import { GpsHealthChip } from '@/components/GpsHealthChip';
+import { getGpsHealth } from '@/lib/gpsHealth';
 import { getLoadAlerts } from '@/lib/loadAlerts';
 import { DriversTimelineCard } from '@/components/dashboard/DriversTimelineCard';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, Tooltip as LeafletTooltip, useMap } from 'react-leaflet';
@@ -1314,8 +1316,14 @@ const Tracking = () => {
                     })()}
 
                     {/* Línea 3: GPS — hace cuánto reportó y a qué velocidad */}
-                    {(loc && locAge != null && locAge <= MAX_LOCATION_AGE_MS) || (driver as any).gps_background_granted === false ? (
+                    {/* Estado del GPS (verde/azul/ámbar/rojo con el motivo) + hace cuánto reportó */}
+                    {(
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 px-3 pt-0.5 text-[11px]">
+                        <GpsHealthChip
+                          health={getGpsHealth(driver as any, loc as any, nowTick)}
+                          groupId={(driver as any).whatsapp_group_id}
+                          groupName={(driver as any).whatsapp_group_name}
+                        />
                         {loc && locAge != null && locAge <= MAX_LOCATION_AGE_MS && (
                           <span className={`flex items-center gap-1 ${locLive ? 'text-blue-700' : 'text-muted-foreground'}`}>
                             <span className={`h-2 w-2 rounded-full ${locLive ? 'bg-blue-600 animate-pulse' : 'bg-gray-400'}`} />
@@ -1323,16 +1331,8 @@ const Tracking = () => {
                             {locLive && loc.speed != null && ` · ${(loc.speed * 2.237).toFixed(0)} mph`}
                           </span>
                         )}
-                        {(driver as any).gps_background_granted === false && (
-                          <span
-                            className="inline-flex items-center gap-1 rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800"
-                            title="Sin permiso de ubicación en background — el GPS se apaga al cerrar la app"
-                          >
-                            <MapPinOff className="h-3 w-3" /> NO BG
-                          </span>
-                        )}
                       </div>
-                    ) : null}
+                    )}
 
                     {/* Ubicación manual */}
                     {(driver as any).manual_location_address && (
