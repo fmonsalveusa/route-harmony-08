@@ -14,9 +14,12 @@ export function RtsAssistantDialog({ open, onOpenChange }: { open: boolean; onOp
   const [key, setKey] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [version, setVersion] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
+    fetch(`/downloads/extensions.json?t=${Date.now()}`)
+      .then(r => r.json()).then(d => setVersion(d?.rts?.version ?? null)).catch(() => setVersion(null));
     (async () => {
       const tenantId = await getTenantId();
       const { data } = await supabase.from('integration_keys' as any).select('key').eq('kind', 'rts_assistant').eq('tenant_id', tenantId).maybeSingle();
@@ -58,13 +61,20 @@ export function RtsAssistantDialog({ open, onOpenChange }: { open: boolean; onOp
             número de carga, broker, monto, RC y el POD de cada entrega.
           </DialogDescription>
         </DialogHeader>
+        <a
+          href="/downloads/rts-factoring-assistant.zip"
+          download
+          className="flex items-center gap-3 rounded-2xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border px-4 py-3 hover:bg-[#f0f4f9] dark:hover:bg-muted/40 transition-colors"
+        >
+          <span className="h-10 w-10 rounded-full bg-[#d3e3fd] text-[#041e49] flex items-center justify-center"><Download className="h-5 w-5" /></span>
+          <span className="flex-1">
+            <span className="block text-sm font-medium text-[#1f1f1f] dark:text-foreground">rts-factoring-assistant.zip</span>
+            <span className="block text-xs text-[#444746] dark:text-muted-foreground">{version ? `Versión ${version} · siempre la más reciente` : 'Siempre la versión más reciente'}</span>
+          </span>
+          <span className="text-sm font-medium text-[#0b57d0] dark:text-blue-300">Descargar</span>
+        </a>
         <ol className="list-decimal pl-5 space-y-2 text-sm">
-          <li>
-            Descarga la extensión y descomprímela en una carpeta fija.{' '}
-            <a className="inline-flex items-center gap-1 text-primary underline" href="/downloads/rts-factoring-assistant.zip" download>
-              <Download className="h-3.5 w-3.5" /> rts-factoring-assistant.zip
-            </a>
-          </li>
+          <li>Descomprime el zip en una carpeta fija (por ejemplo <b>Documentos</b>). No la borres ni la muevas después.</li>
           <li>En Chrome abre <code>chrome://extensions</code>, activa <b>Modo de desarrollador</b> y pulsa <b>Cargar descomprimida</b> con esa carpeta.</li>
           <li>En el portal de RTS (Factoring → Invoices) pulsa <b>Llenar desde Dispatch Up</b> y, la primera vez, pega esta clave:</li>
         </ol>
