@@ -86,3 +86,24 @@
   color: #444746;
   font-weight: 600;
 }
+.du-rts.du-rts-rated {
+  background: transparent;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.du-rts-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  color: #fff;
+  font: 700 11px/1 system-ui, sans-serif;
+}
+.du-rts-days {
+  color: #444746;
+  font: 600 11px/1 system-ui, sans-serif;
+}

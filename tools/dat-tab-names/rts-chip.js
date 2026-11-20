@@ -41,9 +41,20 @@
       chip.textContent = "RTS: NO BUY";
       chip.style.background = "#a50e0e";
     } else {
-      chip.textContent = `RTS ${d.rating || "–"}${d.days ? ` · ${d.days}d` : ""}`;
-      if (COLOR[d.rating]) chip.style.background = COLOR[d.rating];
-      else chip.classList.add("du-rts-muted");
+      // Círculo con la letra (texto blanco) + días de pago al lado
+      chip.textContent = "";
+      chip.classList.add("du-rts-rated");
+      const dot = document.createElement("span");
+      dot.className = "du-rts-dot";
+      dot.textContent = d.rating || "–";
+      dot.style.background = COLOR[d.rating] || "#80868b";
+      chip.append(dot);
+      if (d.days) {
+        const days = document.createElement("span");
+        days.className = "du-rts-days";
+        days.textContent = `${d.days}d`;
+        chip.append(days);
+      }
     }
     chip.title = [
       `${d.name} — MC ${d.mc}`,
