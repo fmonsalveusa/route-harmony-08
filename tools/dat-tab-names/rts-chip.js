@@ -3,7 +3,8 @@
 //  - en el detalle: el "MC#" que muestra DAT.
 // Solo si no hay MC se busca por nombre.
 (() => {
-  const COLOR = { A: "#188038", B: "#1e8e3e", C: "#e37400", D: "#d93025", F: "#a50e0e" };
+  // A, B, C verde · D naranja · cualquier otra (E, F, N sin rating, I…) roja
+  const COLOR = { A: "#188038", B: "#188038", C: "#188038", D: "#e37400" };
   const pending = new Map(); // clave → Promise
 
   const ask = (q) => {
@@ -48,7 +49,7 @@
       const dot = document.createElement("span");
       dot.className = "du-rts-dot";
       dot.textContent = d.rating || "–";
-      dot.style.background = COLOR[d.rating] || "#80868b";
+      dot.style.background = COLOR[d.rating] || "#d93025";
       chip.append(dot);
     }
     chip.title = [
