@@ -1,13 +1,14 @@
 {
   "manifest_version": 3,
   "name": "DAT Driver Tabs (Dispatch Up)",
-  "version": "1.3.0",
-  "description": "Ponle el nombre del driver a cada pestaña de búsqueda de DAT One y llama a los brokers con Google Voice.",
+  "version": "1.4.0",
+  "description": "Ponle el nombre del driver a cada pestaña de búsqueda de DAT One, llama a los brokers con Google Voice y ve el rating de RTS de cada broker.",
   "permissions": [
     "storage"
   ],
   "host_permissions": [
-    "https://voice.google.com/*"
+    "https://voice.google.com/*",
+    "https://stc-debtor-service.rtspro.com/*"
   ],
   "background": {
     "service_worker": "background.js"
@@ -18,12 +19,32 @@
         "https://one.dat.com/*"
       ],
       "js": [
-        "content.js"
+        "content.js",
+        "rts-chip.js"
       ],
       "css": [
         "content.css"
       ],
       "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://rtspro.com/*"
+      ],
+      "js": [
+        "rts-capture.js"
+      ],
+      "world": "MAIN",
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "https://rtspro.com/*"
+      ],
+      "js": [
+        "rts-session.js"
+      ],
+      "run_at": "document_start"
     }
   ]
 }

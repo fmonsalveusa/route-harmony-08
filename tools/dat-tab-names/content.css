@@ -66,3 +66,23 @@
 }
 .du-pop button.du-save { background: #1f6feb; border-color: #1f6feb; color: #fff; }
 .du-pop button.du-clear { color: #b91c1c; margin-right: auto; }
+
+/* Rating de RTS al lado del broker */
+.du-rts {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 7px;
+  border-radius: 9px;
+  font: 700 11px/16px system-ui, sans-serif;
+  color: #fff;
+  background: #444746;
+  white-space: nowrap;
+  vertical-align: middle;
+  cursor: default;
+  flex-shrink: 0;
+}
+.du-rts.du-rts-muted {
+  background: #e8eaed;
+  color: #444746;
+  font-weight: 600;
+}
