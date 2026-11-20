@@ -40,8 +40,19 @@
     const d = r?.match;
     if (!d) { chip.remove(); return; }
     if (d.noBuy) {
-      chip.textContent = "RTS: NO BUY";
-      chip.style.background = "#a50e0e";
+      // NO BUY: triángulo negro con "!" blanco (el motivo va en el tooltip)
+      chip.textContent = "";
+      chip.classList.add("du-rts-rated");
+      if (chip.dataset.detail) {
+        const label = document.createElement("span");
+        label.className = "du-rts-label";
+        label.textContent = "RTS";
+        chip.append(label);
+      }
+      const warn = document.createElement("span");
+      warn.className = "du-rts-warn";
+      warn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 1 21.5h22L12 2.5z" fill="#1f1f1f"/><path d="M11 9h2v6h-2zM11 17h2v2h-2z" fill="#fff"/></svg>';
+      chip.append(warn);
     } else {
       // Círculo con la letra (texto blanco); los días de pago quedan en el tooltip
       chip.textContent = "";
