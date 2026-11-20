@@ -158,6 +158,31 @@
 - La Edge Function `send-meeting-request` usa `GMAIL_USER` + `GMAIL_APP_PASSWORD`
 - Si se cambia la contraseña de Gmail, las App Passwords se revocan → hay que generar una nueva y actualizar: `supabase secrets set GMAIL_APP_PASSWORD="nueva" --project-ref tejzatzzwivvaznxyqej`
 
+## Extensiones de Chrome (carpeta `tools/`)
+
+Se instalan "descomprimidas" (Modo de desarrollador → Cargar descomprimida); NO están en la Chrome Web Store y NO se actualizan solas.
+
+### Publicación y versiones
+- `npm run build` corre primero `scripts/build-extensions.mjs`: arma `public/downloads/dat-driver-tabs.zip`, `public/downloads/rts-factoring-assistant.zip` y `public/downloads/extensions.json` (versiones). Vercel lo hace en cada push → el zip del TMS siempre es la última versión.
+- **Al cambiar una extensión: subir `version` en su `manifest.json`** (si no, el aviso de actualización no salta). Después correr `node scripts/build-extensions.mjs` y commitear también `public/downloads/`.
+- Descarga desde el TMS: Companies → "Extensión DAT" (`src/components/DatExtensionDialog.tsx`) y "Asistente RTS" (`src/components/RtsAssistantDialog.tsx`). Solo admins.
+- La extensión de DAT avisa en DAT con una barra cuando `extensions.json` tiene versión más nueva (`update-banner.js`).
+
+### DAT Driver Tabs — `tools/dat-tab-names` (para one.dat.com)
+- `content.js`: nombre del driver en cada pestaña de búsqueda + llamadas tel: por Google Voice (`background.js` reusa la pestaña de Voice).
+- **Rating de RTS por broker** (`rts-chip.js`): se busca SIEMPRE por MC. DAT no muestra el MC en la línea pero lo trae en la respuesta GraphQL de la búsqueda (`freight.api.dat.com/one-web-bff/graphql`, `results[].posterDotIds.brokerMcNumber`); `dat-capture.js` (mundo MAIN) lo captura y lo relaciona con la fila por `assetInfo.postingId` = atributo `posting-id` del DOM. Por nombre solo como respaldo.
+  - Detalle de carga: chip "RTS" + círculo grande a la derecha de `.company-name`; MC en `.compliance-number`.
+  - Colores: A/B/C verde, D naranja, resto rojo; NO BUY = triángulo negro con "!" blanco. Días de pago solo en tooltip.
+- **Sesión de RTS**: `rts-capture.js` (MAIN, en rtspro.com) toma el `Authorization: Bearer` que usa la propia página de RTS (dura ~24 h) y `rts-session.js` lo guarda en `chrome.storage.local`. `background.js` consulta `https://stc-debtor-service.rtspro.com/debtors/search?mcNumber=` (o `?name=`), con caché 24 h (`CACHE_VER`). Campos: `rating`, `averageDaysToPayPast60`, `DebNoBuy`, `IsSuperDebtor`, `mc_number`. Nunca leer/mostrar el token.
+- **Email al broker** (`broker-email.js`, `email-template.js`, `options.html/js`): botón "✉ Email" en el detalle.
+  - Modo "Enviar directo" (default): Edge Function `dat-broker-email` (verify_jwt false) envía por SMTP desde **58logisticsllc@gmail.com** (cuenta de `BROKER_GMAIL_ACCOUNTS`), 5 s para deshacer, log en tabla `dat_broker_emails`, marca "✓ Enviado" por `posting_id`.
+  - Modo "Abrir en Gmail": compose de Gmail con `authuser`.
+  - Plantilla en `chrome.storage.sync` (`emailCfg`), variables `{broker} {origen} {destino} {dho} {fecha} {millas} {equipo} {peso} {largo} {rate} {referencia} {driver}`.
+  - Autenticación: header `x-assistant-key` = clave de `integration_keys` kind `rts_assistant` (la misma del Asistente RTS), guardada en `chrome.storage.sync` (`duKey`).
+
+### RTS Factoring Assistant — `tools/rts-factoring-assistant` (para rtspro.com)
+- Llena las facturas en el portal de RTS con las cargas de 58 Logistics entregadas en Factoring "pending" (RC + POD). API: Edge Function `rts-assistant` con la misma clave `x-assistant-key`. Al enviar marca Factoring "ready" (genera pagos).
+
 ## Pendientes conocidos
 
 1. **Background GPS** — El plugin `@capgo/background-geolocation` está instalado y el código escrito, pero el foreground service no arranca (la notificación persistente no aparece). El tracking solo funciona con la app abierta. Pendiente: crear ícono de notificación compatible con Android Studio y diagnosticar con logs nativos (logcat).
