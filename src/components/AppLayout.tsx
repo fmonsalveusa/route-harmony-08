@@ -351,7 +351,8 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
 
         {/* Top bar */}
-        <header className="top-header flex items-center justify-between h-16 px-4 lg:px-5 shrink-0" style={{ paddingTop: 'max(0.5rem, env(safe-area-inset-top, 0.5rem))' }}>
+        {/* Alto = 64px + muesca del iPhone (antes h-16 fijo: la muesca se comía el alto y el contenido tapaba el menú) */}
+        <header className="top-header flex items-center justify-between px-4 lg:px-5 shrink-0" style={{ paddingTop: 'env(safe-area-inset-top, 0px)', height: 'calc(4rem + env(safe-area-inset-top, 0px))' }}>
           <div className="flex items-center gap-3">
             {/* Mobile hamburger */}
             <button className="lg:hidden p-2 rounded-full hover:bg-[#e1e6ee] dark:hover:bg-white/10 text-[#444746] dark:text-slate-400" onClick={() => setMobileMenuOpen(true)}>
