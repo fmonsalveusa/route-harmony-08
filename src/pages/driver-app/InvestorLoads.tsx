@@ -14,7 +14,7 @@ function cityState(addr: string) {
   if (!addr) return '—';
   const parts = addr.split(',').map(x => x.trim());
   for (let i = parts.length - 1; i >= 1; i--) {
-    const m = parts[i].match(/([A-Z]{2})/);
+    const m = parts[i].match(/b([A-Z]{2})b/);
     if (m) return `${parts[i - 1] || parts[0]}, ${m[1]}`;
   }
   return parts.length >= 2 ? `${parts[0]}, ${parts[1]}` : parts[0];
