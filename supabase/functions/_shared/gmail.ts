@@ -134,7 +134,11 @@ class ImapClient {
   }
 
   async search(gmailQuery: string): Promise<number[]> {
-    const res = await this.cmd(`UID SEARCH X-GM-RAW ${quote(gmailQuery)}`);
+    // IMAP no acepta caracteres fuera de ASCII en un string entre comillas (p. ej. "→" del
+    // asunto de la carga): se quitan los acentos y lo demás se vuelve espacio.
+    const ascii = gmailQuery.normalize("NFD").replace(/[̀-ͯ]/g, "")
+      .replace(/[^\x20-\x7E]/g, " ").replace(/\s+/g, " ").trim();
+    const res = await this.cmd(`UID SEARCH X-GM-RAW ${quote(ascii)}`);
     return searchUids(res);
   }
 
