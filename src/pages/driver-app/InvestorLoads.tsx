@@ -4,48 +4,21 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useDriverPayments } from '@/hooks/useDriverPayments';
 import { supabase } from '@/integrations/supabase/client';
 import { PullToRefresh } from '@/components/driver-app/PullToRefresh';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { MapPin, ChevronDown, ChevronUp, FileText, ExternalLink, DollarSign, User } from 'lucide-react';
+import { MapPin, ChevronDown, ChevronUp, FileText, DollarSign, User, Check, Package } from 'lucide-react';
+import { CARD, BTN_TONAL, statusMeta } from '@/components/driver-app/driverUi';
+import { openUrl } from '@/lib/openUrl';
 import { formatDate } from '@/lib/dateUtils';
 
-// Extrae ciudad y estado de una dirección
+// "Ciudad, ST" de una dirección completa
 function cityState(addr: string) {
   if (!addr) return '—';
-  const parts = addr.split(',').map(s => s.trim());
-  return parts.slice(-2, -1)[0] || parts[0] || addr;
+  const parts = addr.split(',').map(x => x.trim());
+  for (let i = parts.length - 1; i >= 1; i--) {
+    const m = parts[i].match(/([A-Z]{2})/);
+    if (m) return `${parts[i - 1] || parts[0]}, ${m[1]}`;
+  }
+  return parts.length >= 2 ? `${parts[0]}, ${parts[1]}` : parts[0];
 }
-
-const STATUS_COLORS: Record<string, string> = {
-  planned:          'border-l-[#94A3B8]',
-  dispatched:       'border-l-[#2563EB]',
-  in_transit:       'border-l-[#65A30D]',
-  on_site_pickup:   'border-l-[#06B6D4]',
-  picked_up:        'border-l-[#D946EF]',
-  on_site_delivery: 'border-l-[#F97316]',
-  delivered:        'border-l-[#178504]',
-  tonu:             'border-l-[#B45309]',
-  cancelled:        'border-l-[#DC2626]',
-};
-
-const STATUS_LABELS: Record<string, string> = {
-  planned: 'Planned', dispatched: 'Dispatched', in_transit: 'In Transit',
-  on_site_pickup: 'On Site - Pickup', picked_up: 'Picked Up',
-  on_site_delivery: 'On Site - Delivery', delivered: 'Delivered',
-  tonu: 'TONU', cancelled: 'Canceled',
-};
-
-const STATUS_BADGE: Record<string, string> = {
-  planned:          'bg-slate-400 text-white',
-  dispatched:       'bg-blue-600 text-white',
-  in_transit:       'bg-lime-600 text-white',
-  on_site_pickup:   'bg-cyan-500 text-white',
-  picked_up:        'bg-fuchsia-500 text-white',
-  on_site_delivery: 'bg-orange-500 text-white',
-  delivered:        'bg-green-700 text-white',
-  tonu:             'bg-amber-700 text-white',
-  cancelled:        'bg-red-600 text-white',
-};
 
 export default function InvestorLoads() {
   const { loads, loading, fetchLoads } = useLoads();
@@ -54,6 +27,7 @@ export default function InvestorLoads() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [loadingPdf, setLoadingPdf] = useState<string | null>(null);
+  const [view, setView] = useState<'active' | 'done'>('active');
 
   // Drivers asignados a este investor (vía email → investor → driver_investors)
   const [myDriverIds, setMyDriverIds] = useState<Set<string> | null>(null);
@@ -113,7 +87,7 @@ export default function InvestorLoads() {
         .from('driver-documents')
         .createSignedUrl(path, 3600);
       if (data?.signedUrl) {
-        window.open(data.signedUrl, '_blank', 'noopener');
+        await openUrl(data.signedUrl); // en la app instalada window.open no abre nada
       }
     } catch (e) {
       console.error('Error opening PDF:', e);
@@ -123,156 +97,129 @@ export default function InvestorLoads() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-40">
-        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
-      </div>
-    );
+    return <div className="flex items-center justify-center h-40"><div className="animate-spin rounded-full h-7 w-7 border-[3px] border-[#d3e3fd] border-t-[#0b57d0]" /></div>;
   }
+
+  const isDone = (s: string) => ['delivered', 'paid', 'tonu', 'cancelled'].includes(s);
+  const activeLoads = myLoads.filter(l => !isDone(l.status));
+  const doneLoads = myLoads.filter(l => isDone(l.status));
+  const shown = view === 'active' ? activeLoads : doneLoads;
 
   return (
     <PullToRefresh onRefresh={fetchLoads}>
-      <div className="p-4 space-y-3 pb-[calc(80px+env(safe-area-inset-bottom,0px))]">
+      <div className="px-4 pt-2 space-y-3 pb-[calc(24px+env(safe-area-inset-bottom,0px))]">
         <div>
-          <h1 className="text-xl font-bold">My Loads</h1>
-          <p className="text-sm text-muted-foreground">{myLoads.length} load{myLoads.length !== 1 ? 's' : ''} linked to your investment</p>
+          <h1 className="text-[28px] leading-9 font-normal">My loads</h1>
+          <p className="text-sm text-[#444746]">{myLoads.length} load{myLoads.length !== 1 ? 's' : ''} linked to your investment</p>
         </div>
 
-        {myLoads.length === 0 ? (
-          <Card><CardContent className="p-8 text-center text-muted-foreground">No loads yet.</CardContent></Card>
+        <div className="flex gap-2">
+          {([['active', 'Active', activeLoads.length], ['done', 'Delivered', doneLoads.length]] as const).map(([k, label, n]) => {
+            const on = view === k;
+            return (
+              <button key={k} type="button" onClick={() => setView(k)}
+                className={`inline-flex items-center gap-1.5 h-9 px-4 rounded-lg text-sm font-medium ${on ? 'bg-[#d3e3fd] text-[#041e49]' : 'border border-[#c4c7c5] text-[#444746]'}`}>
+                {on && <Check className="h-4 w-4" />}{label} <span className={on ? 'text-[#041e49]/70' : 'text-[#747775]'}>{n}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {shown.length === 0 ? (
+          <div className={`${CARD} p-8 text-center`}>
+            <span className="mx-auto mb-3 h-14 w-14 rounded-full bg-[#e9eef6] flex items-center justify-center"><Package className="h-7 w-7 text-[#444746]" /></span>
+            <p className="text-sm text-[#444746]">No loads here yet</p>
+          </div>
         ) : (
-          myLoads.map(load => {
+          shown.map(load => {
             const isExpanded = expandedId === load.id;
-            const borderColor = STATUS_COLORS[load.status] || 'border-l-slate-300';
+            const meta = statusMeta(load.status);
             const payment = investorPayments.find(p => p.load_id === load.id);
 
             return (
-              <Card
-                key={load.id}
-                className={`border-l-[3px] ${borderColor} cursor-pointer overflow-hidden`}
-                onClick={() => setExpandedId(isExpanded ? null : load.id)}
-              >
-                <CardContent className="p-3">
-                  {/* Top row */}
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-bold text-base">#{load.reference_number}</span>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${STATUS_BADGE[load.status] || 'bg-muted text-muted-foreground'}`}>
-                          {STATUS_LABELS[load.status] || load.status}
-                        </span>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-0.5">{load.broker_client || '—'}</p>
-                      {load.driver_id && driverNames.get(load.driver_id) && (
-                        <p className="text-xs font-medium text-foreground mt-0.5 flex items-center gap-1">
-                          <User className="h-3 w-3 text-muted-foreground" />
-                          {driverNames.get(load.driver_id)}
-                        </p>
-                      )}
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      <div className="text-base font-bold text-green-600">${Number(load.total_rate).toLocaleString()}</div>
-                      {payment && (
-                        <div className="text-xs text-muted-foreground">
-                          My cut: <span className="font-semibold text-violet-600">${Number(payment.amount).toLocaleString()}</span>
-                        </div>
-                      )}
-                    </div>
+              <div key={load.id} className={`${CARD} overflow-hidden`}>
+                <button type="button" className="w-full text-left p-4 space-y-3 active:bg-[#f0f4f9]" onClick={() => setExpandedId(isExpanded ? null : load.id)}>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm text-[#444746] truncate">#{load.reference_number}{load.broker_client ? ` · ${load.broker_client}` : ''}</span>
+                    <span className={`flex-shrink-0 px-2.5 h-6 inline-flex items-center rounded-full text-[11px] font-medium ${meta.chip}`}>{meta.label}</span>
                   </div>
 
-                  {/* Route */}
-                  <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-                    <MapPin className="h-3 w-3 text-green-600 flex-shrink-0" />
-                    <span className="truncate">{cityState(load.origin)}</span>
-                    <span>→</span>
-                    <MapPin className="h-3 w-3 text-red-500 flex-shrink-0" />
-                    <span className="truncate">{cityState(load.destination)}</span>
-                  </div>
-
-                  {/* Dates */}
-                  <div className="flex gap-4 mt-1.5 text-xs text-muted-foreground">
-                    <span>Pickup: {formatDate(load.pickup_date)}</span>
-                    <span>Delivery: {formatDate(load.delivery_date)}</span>
-                  </div>
-
-                  {/* Chevron */}
-                  <div className="flex justify-center mt-1">
-                    {isExpanded
-                      ? <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                      : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
-                  </div>
-
-                  {/* Expanded detail */}
-                  {isExpanded && (
-                    <div className="mt-3 pt-3 border-t space-y-3" onClick={e => e.stopPropagation()}>
-                      {/* Stats */}
-                      <div className="grid grid-cols-3 gap-2 text-center">
-                        <div className="bg-muted/40 rounded-lg p-2">
-                          <div className="text-[10px] text-muted-foreground">Miles</div>
-                          <div className="text-sm font-bold">{Number(load.miles || 0).toLocaleString()}</div>
-                        </div>
-                        <div className="bg-muted/40 rounded-lg p-2">
-                          <div className="text-[10px] text-muted-foreground">Empty Mi</div>
-                          <div className="text-sm font-bold">{Number(load.empty_miles || 0).toLocaleString()}</div>
-                        </div>
-                        <div className="bg-muted/40 rounded-lg p-2">
-                          <div className="text-[10px] text-muted-foreground">RPM</div>
-                          <div className="text-sm font-bold">
-                            {load.miles && Number(load.miles) > 0
-                              ? `$${(Number(load.total_rate) / Number(load.miles)).toFixed(2)}`
-                              : '—'}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Payment status */}
-                      {payment && (
-                        <div className="flex items-center justify-between p-2 rounded-lg bg-violet-50 border border-violet-200">
-                          <div className="flex items-center gap-2">
-                            <DollarSign className="h-4 w-4 text-violet-600" />
-                            <span className="text-sm font-medium text-violet-700">My Payment</span>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-sm font-bold text-violet-700">${Number(payment.amount).toLocaleString()}</div>
-                            <div className={`text-[10px] font-semibold ${payment.status === 'paid' ? 'text-green-600' : 'text-amber-600'}`}>
-                              {payment.status === 'paid' ? 'PAID' : 'PENDING'}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* RC PDF — solo lectura */}
-                      {load.pdf_url && (
-                        <button
-                          className="w-full flex items-center justify-between p-2.5 rounded-lg border border-green-200 bg-green-50 text-green-700"
-                          onClick={() => openPdf(load.pdf_url!, load.id)}
-                          disabled={loadingPdf === load.id}
-                        >
-                          <div className="flex items-center gap-2">
-                            <FileText className="h-4 w-4" />
-                            <span className="text-sm font-medium">Rate Confirmation</span>
-                          </div>
-                          {loadingPdf === load.id
-                            ? <div className="h-4 w-4 animate-spin rounded-full border-2 border-green-600 border-t-transparent" />
-                            : <ExternalLink className="h-4 w-4" />}
-                        </button>
-                      )}
-
-                      {/* Full addresses */}
-                      <div className="space-y-1.5 text-xs text-muted-foreground">
-                        <div className="flex gap-1.5">
-                          <MapPin className="h-3 w-3 text-green-600 flex-shrink-0 mt-0.5" />
-                          <span>{load.origin}</span>
-                        </div>
-                        <div className="flex gap-1.5">
-                          <MapPin className="h-3 w-3 text-red-500 flex-shrink-0 mt-0.5" />
-                          <span>{load.destination}</span>
-                        </div>
-                      </div>
+                  {load.driver_id && driverNames.get(load.driver_id) && (
+                    <div className="flex items-center gap-1.5 text-sm">
+                      <User className="h-4 w-4 text-[#444746]" />
+                      <span className="font-medium">{driverNames.get(load.driver_id)}</span>
                     </div>
                   )}
-                </CardContent>
-              </Card>
+
+                  <div className="flex gap-3">
+                    <div className="flex flex-col items-center pt-1.5">
+                      <span className="h-2.5 w-2.5 rounded-full border-[2.5px] border-[#1e8e3e]" />
+                      <span className="flex-1 w-0.5 my-1 bg-[#dde3ea]" />
+                      <span className="h-2.5 w-2.5 rounded-full bg-[#d93025]" />
+                    </div>
+                    <div className="flex-1 min-w-0 space-y-2">
+                      <p className="text-base font-medium leading-5 truncate">{cityState(load.origin)} <span className="text-xs font-normal text-[#444746]">· {formatDate(load.pickup_date)}</span></p>
+                      <p className="text-base font-medium leading-5 truncate">{cityState(load.destination)} <span className="text-xs font-normal text-[#444746]">· {formatDate(load.delivery_date)}</span></p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-[#444746]">Rate <b className="text-[#1f1f1f] font-medium">${Number(load.total_rate).toLocaleString()}</b></span>
+                    <span className="flex items-center gap-1">
+                      {payment && <span className="text-sm text-[#444746]">My cut <b className="text-[#0b57d0] font-medium">${Number(payment.amount).toLocaleString()}</b></span>}
+                      {isExpanded ? <ChevronUp className="h-5 w-5 text-[#444746]" /> : <ChevronDown className="h-5 w-5 text-[#444746]" />}
+                    </span>
+                  </div>
+                </button>
+
+                {isExpanded && (
+                  <div className="px-4 pb-4 space-y-3">
+                    <div className="grid grid-cols-3 gap-2 text-center">
+                      {[
+                        ['Miles', Number(load.miles || 0).toLocaleString()],
+                        ['Empty mi', Number(load.empty_miles || 0).toLocaleString()],
+                        ['RPM', load.miles && Number(load.miles) > 0 ? `$${(Number(load.total_rate) / Number(load.miles)).toFixed(2)}` : '—'],
+                      ].map(([l, v]) => (
+                        <div key={l} className="rounded-2xl bg-[#f0f4f9] p-2">
+                          <div className="text-[11px] text-[#444746]">{l}</div>
+                          <div className="text-sm font-medium">{v}</div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {payment && (
+                      <div className="flex items-center justify-between rounded-2xl bg-[#d3e3fd] text-[#041e49] px-4 py-3">
+                        <span className="flex items-center gap-2 text-sm font-medium"><DollarSign className="h-4 w-4" /> My payment</span>
+                        <span className="flex items-center gap-2">
+                          <span className="text-base font-medium">${Number(payment.amount).toLocaleString()}</span>
+                          <span className={`px-2 h-5 inline-flex items-center rounded-full text-[10px] font-medium ${payment.status === 'paid' ? 'bg-[#c4eed0] text-[#0d652d]' : 'bg-[#fef7e0] text-[#8a5a00]'}`}>
+                            {payment.status === 'paid' ? 'Paid' : 'Pending'}
+                          </span>
+                        </span>
+                      </div>
+                    )}
+
+                    {load.pdf_url && (
+                      <button
+                        type="button"
+                        className={`${BTN_TONAL} w-full`}
+                        onClick={() => openPdf(load.pdf_url!, load.id)}
+                        disabled={loadingPdf === load.id}
+                      >
+                        {loadingPdf === load.id
+                          ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#041e49] border-t-transparent" />
+                          : <FileText className="h-4 w-4" />}
+                        Rate Confirmation
+                      </button>
+                    )}
+
+                    <div className="space-y-1.5 text-xs text-[#444746]">
+                      <div className="flex gap-1.5"><MapPin className="h-3.5 w-3.5 text-[#1e8e3e] flex-shrink-0 mt-0.5" /><span>{load.origin}</span></div>
+                      <div className="flex gap-1.5"><MapPin className="h-3.5 w-3.5 text-[#d93025] flex-shrink-0 mt-0.5" /><span>{load.destination}</span></div>
+                    </div>
+                  </div>
+                )}
+              </div>
             );
           })
         )}

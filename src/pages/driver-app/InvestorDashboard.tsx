@@ -1,102 +1,72 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useDriverPayments, DriverPayment } from '@/hooks/useDriverPayments';
 import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { TrendingUp, Clock, DollarSign, BarChart3 } from 'lucide-react';
+import { Wallet } from 'lucide-react';
 import { PullToRefresh } from '@/components/driver-app/PullToRefresh';
-import { format, parseISO } from 'date-fns';
+import { CARD } from '@/components/driver-app/driverUi';
+import { format, parseISO, startOfWeek, addWeeks } from 'date-fns';
 
-function MonthlyBreakdown({ payments }: { payments: DriverPayment[] }) {
-  const monthly = useMemo(() => {
-    const map = new Map<string, { paid: number; pending: number }>();
-    for (const p of payments) {
-      const date = p.payment_date || p.created_at;
-      const key = format(parseISO(date), 'yyyy-MM');
-      const entry = map.get(key) || { paid: 0, pending: 0 };
-      const amount = p.net_amount ?? p.amount;
-      if (p.status === 'paid') entry.paid += amount;
-      else entry.pending += amount;
-      map.set(key, entry);
-    }
-    return [...map.entries()]
-      .sort((a, b) => b[0].localeCompare(a[0]))
-      .slice(0, 6)
-      .map(([key, val]) => ({ label: format(parseISO(key + '-01'), 'MMM yyyy'), ...val }));
-  }, [payments]);
+const usd = (n: number, dec = 2) => `$${n.toLocaleString(undefined, { minimumFractionDigits: dec, maximumFractionDigits: dec })}`;
+const net = (p: DriverPayment) => Number(p.net_amount ?? p.amount) || 0;
+const toDate = (d: string) => parseISO(d.length === 10 ? `${d}T12:00:00` : d);
 
-  if (monthly.length === 0) return null;
-
-  const maxVal = Math.max(...monthly.map(m => m.paid + m.pending), 1);
-
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-2">
-        <BarChart3 className="h-4 w-4 text-muted-foreground" />
-        <h2 className="text-sm font-semibold">Monthly Breakdown</h2>
-      </div>
-      <Card>
-        <CardContent className="p-3 space-y-3">
-          {monthly.map(m => (
-            <div key={m.label} className="space-y-1">
-              <div className="flex justify-between text-xs">
-                <span className="font-medium">{m.label}</span>
-                <span className="text-muted-foreground">
-                  ${(m.paid + m.pending).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                </span>
-              </div>
-              <div className="h-2.5 rounded-full bg-muted overflow-hidden flex">
-                {m.paid > 0 && (
-                  <div
-                    className="h-full bg-success rounded-l-full"
-                    style={{ width: `${(m.paid / maxVal) * 100}%` }}
-                  />
-                )}
-                {m.pending > 0 && (
-                  <div
-                    className="h-full bg-warning"
-                    style={{ width: `${(m.pending / maxVal) * 100}%` }}
-                  />
-                )}
-              </div>
-            </div>
-          ))}
-          <div className="flex gap-4 text-[10px] text-muted-foreground pt-1">
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-success" /> Paid</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-warning" /> Pending</span>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
+function shortLocation(address?: string): string {
+  if (!address) return '—';
+  const parts = address.split(',').map(s => s.trim());
+  for (let i = parts.length - 1; i >= 1; i--) {
+    const m = parts[i].match(/\b([A-Z]{2})\b/);
+    if (m) return `${parts[i - 1] || parts[0]}, ${m[1]}`;
+  }
+  return parts.length >= 2 ? `${parts[0]}, ${parts[1]}` : parts[0];
 }
 
-function RecentPayments({ payments }: { payments: DriverPayment[] }) {
-  const recent = payments.slice(0, 8);
-  if (recent.length === 0) return null;
+/** Gráfico de barras de las últimas 8 semanas (pagado + pendiente apilado) */
+function WeeklyChart({ payments }: { payments: DriverPayment[] }) {
+  const [sel, setSel] = useState<number | null>(null);
+  const weeks = useMemo(() => {
+    const cur = startOfWeek(new Date(), { weekStartsOn: 1 });
+    const list = Array.from({ length: 8 }, (_, i) => ({ start: addWeeks(cur, i - 7), paid: 0, pending: 0 }));
+    for (const p of payments) {
+      const d = startOfWeek(toDate(p.payment_date || p.created_at), { weekStartsOn: 1 }).getTime();
+      const w = list.find(x => x.start.getTime() === d);
+      if (!w) continue;
+      if (p.status === 'paid') w.paid += net(p); else w.pending += net(p);
+    }
+    return list;
+  }, [payments]);
+  const max = Math.max(...weeks.map(w => w.paid + w.pending), 1);
+  const shown = weeks[sel ?? weeks.length - 1];
 
   return (
-    <div className="space-y-2">
-      <h2 className="text-sm font-semibold">Recent Payments</h2>
-      <div className="space-y-2">
-        {recent.map(p => (
-          <Card key={p.id} className={`border-l-[3px] ${p.status === 'paid' ? 'border-l-success' : 'border-l-warning'}`}>
-            <CardContent className="p-3 flex items-center justify-between">
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-bold">Load #{p.load_reference}</p>
-                {(p.driver_name || p.recipient_name) && (
-                  <p className="text-xs text-muted-foreground truncate">Driver: {p.driver_name || p.recipient_name}</p>
+    <div className={`${CARD} p-5`}>
+      <div className="flex items-baseline justify-between">
+        <p className="text-sm text-[#444746]">Week of {format(shown.start, 'MMM d')}</p>
+        <p className="text-lg font-medium">{usd(shown.paid + shown.pending)}</p>
+      </div>
+      <div className="flex items-end gap-2 h-36 mt-4">
+        {weeks.map((w, i) => {
+          const total = w.paid + w.pending;
+          const active = (sel ?? weeks.length - 1) === i;
+          return (
+            <button key={i} type="button" onClick={() => setSel(i)} className="flex-1 h-full flex flex-col justify-end items-center gap-1">
+              <div className="w-full flex flex-col justify-end rounded-t-lg overflow-hidden" style={{ height: `${Math.max((total / max) * 100, total > 0 ? 4 : 2)}%` }}>
+                {total === 0 ? (
+                  <div className="w-full h-full bg-[#e9eef6]" />
+                ) : (
+                  <>
+                    <div className={active ? 'bg-[#f9ab00]' : 'bg-[#fde293]'} style={{ height: `${(w.pending / total) * 100}%` }} />
+                    <div className={active ? 'bg-[#0b57d0]' : 'bg-[#a8c7fa]'} style={{ height: `${(w.paid / total) * 100}%` }} />
+                  </>
                 )}
               </div>
-              <div className="text-right flex flex-col items-end gap-1">
-                <span className="text-sm font-bold">${(p.net_amount ?? p.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                <Badge className={`text-[10px] ${p.status === 'paid' ? 'bg-success text-success-foreground' : 'bg-warning text-warning-foreground'}`}>
-                  {p.status === 'paid' ? 'Paid' : 'Pending'}
-                </Badge>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+              <span className={`text-[10px] ${active ? 'font-semibold text-[#1f1f1f]' : 'text-[#747775]'}`}>{format(w.start, 'M/d')}</span>
+            </button>
+          );
+        })}
+      </div>
+      <div className="flex gap-4 text-xs text-[#444746] mt-3">
+        <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-[#0b57d0]" /> Paid {usd(shown.paid, 0)}</span>
+        <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-[#f9ab00]" /> Pending {usd(shown.pending, 0)}</span>
       </div>
     </div>
   );
@@ -104,61 +74,66 @@ function RecentPayments({ payments }: { payments: DriverPayment[] }) {
 
 export default function InvestorDashboard() {
   const { profile } = useAuth();
-  const {
-    investorPayments, loading,
-    investorTotalPending, investorTotalPaid,
-    refetch,
-  } = useDriverPayments();
+  const { investorPayments, loading, investorTotalPending, investorTotalPaid, refetch } = useDriverPayments();
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-40">
-        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
-      </div>
-    );
+    return <div className="flex items-center justify-center h-40"><div className="animate-spin rounded-full h-7 w-7 border-[3px] border-[#d3e3fd] border-t-[#0b57d0]" /></div>;
   }
 
-  const totalEarnings = investorTotalPaid + investorTotalPending;
+  const recent = investorPayments.slice(0, 8);
 
   return (
     <PullToRefresh onRefresh={refetch}>
-      <div className="p-5 space-y-4 pb-[calc(72px+env(safe-area-inset-bottom,0px))]">
+      <div className="px-4 pt-2 space-y-4 pb-[calc(24px+env(safe-area-inset-bottom,0px))]">
+        <h1 className="text-[28px] leading-9 font-normal">Hi, {profile?.full_name?.split(' ')[0]}</h1>
+
+        {/* Resumen de ganancias */}
+        <div className="rounded-[28px] bg-[#d3e3fd] text-[#041e49] p-5">
+          <p className="text-sm">Total earnings</p>
+          <p className="text-[40px] leading-[48px] font-normal tracking-tight">{usd(investorTotalPaid + investorTotalPending)}</p>
+          <div className="grid grid-cols-2 gap-2 mt-4">
+            <div className="rounded-2xl bg-white/70 px-3 py-2">
+              <p className="text-xs text-[#444746]">Paid</p>
+              <p className="text-base font-medium text-[#0d652d]">{usd(investorTotalPaid)}</p>
+            </div>
+            <div className="rounded-2xl bg-white/70 px-3 py-2">
+              <p className="text-xs text-[#444746]">Pending</p>
+              <p className="text-base font-medium text-[#8a5a00]">{usd(investorTotalPending)}</p>
+            </div>
+          </div>
+        </div>
+
         <div>
-          <h1 className="text-2xl font-bold">Hello, {profile?.full_name?.split(' ')[0]} 👋</h1>
-          <p className="text-base text-muted-foreground">Investment overview</p>
+          <h2 className="text-sm font-medium text-[#444746] px-1 mb-2">Last 8 weeks</h2>
+          <WeeklyChart payments={investorPayments} />
         </div>
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-3 gap-3">
-          <Card className="overflow-hidden">
-            <CardContent className="p-3 flex flex-col items-center gap-1.5 bg-primary/5">
-              <div className="p-2 rounded-full bg-primary/10"><DollarSign className="h-5 w-5 text-primary" /></div>
-              <p className="text-[10px] font-medium text-muted-foreground">Total</p>
-              <p className="text-lg font-bold">${totalEarnings.toLocaleString(undefined, { minimumFractionDigits: 0 })}</p>
-            </CardContent>
-          </Card>
-          <Card className="overflow-hidden">
-            <CardContent className="p-3 flex flex-col items-center gap-1.5 bg-success/5">
-              <div className="p-2 rounded-full bg-success/10"><TrendingUp className="h-5 w-5 text-success" /></div>
-              <p className="text-[10px] font-medium text-muted-foreground">Paid</p>
-              <p className="text-lg font-bold text-success">${investorTotalPaid.toLocaleString(undefined, { minimumFractionDigits: 0 })}</p>
-            </CardContent>
-          </Card>
-          <Card className="overflow-hidden">
-            <CardContent className="p-3 flex flex-col items-center gap-1.5 bg-warning/5">
-              <div className="p-2 rounded-full bg-warning/10"><Clock className="h-5 w-5 text-warning" /></div>
-              <p className="text-[10px] font-medium text-muted-foreground">Pending</p>
-              <p className="text-lg font-bold text-warning">${investorTotalPending.toLocaleString(undefined, { minimumFractionDigits: 0 })}</p>
-            </CardContent>
-          </Card>
+        <div>
+          <h2 className="text-sm font-medium text-[#444746] px-1 mb-2">Recent payments</h2>
+          {recent.length === 0 ? (
+            <div className={`${CARD} p-8 text-center`}>
+              <span className="mx-auto mb-3 h-14 w-14 rounded-full bg-[#e9eef6] flex items-center justify-center"><Wallet className="h-7 w-7 text-[#444746]" /></span>
+              <p className="text-sm text-[#444746]">No investor payments yet</p>
+            </div>
+          ) : (
+            <div className={`${CARD} overflow-hidden divide-y divide-[#f0f4f9]`}>
+              {recent.map(p => (
+                <div key={p.id} className="px-4 py-3 flex items-center gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{shortLocation(p.origin)} → {shortLocation(p.destination)}</p>
+                    <p className="text-xs text-[#444746] truncate">#{p.load_reference}{(p.driver_name || p.recipient_name) ? ` · ${p.driver_name || p.recipient_name}` : ''}</p>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-base font-medium">{usd(net(p))}</p>
+                    <span className={`px-2 h-5 inline-flex items-center rounded-full text-[10px] font-medium ${p.status === 'paid' ? 'bg-[#c4eed0] text-[#0d652d]' : 'bg-[#fef7e0] text-[#8a5a00]'}`}>
+                      {p.status === 'paid' ? 'Paid' : 'Pending'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-
-        <MonthlyBreakdown payments={investorPayments} />
-        <RecentPayments payments={investorPayments} />
-
-        {investorPayments.length === 0 && (
-          <p className="text-center text-muted-foreground py-8">No investor payments yet.</p>
-        )}
       </div>
     </PullToRefresh>
   );
