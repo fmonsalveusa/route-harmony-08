@@ -195,13 +195,13 @@ Se instalan "descomprimidas" (Modo de desarrollador → Cargar descomprimida); N
 
 5. **VIN problemáticos** — Unit 222 con 19 caracteres, units 210/224 con VIN duplicado, 7 sin VIN.
 
-6. **Rediseño de la app móvil (driver e investor) al estilo Material 3 / Google** — En pausa desde 2026-11-17. Todo el TMS web ya está en estilo Google; falta `src/pages/driver-app/*` y `src/components/driver-app/*`. Propuesta acordada:
-   - Estructura: barra superior con avatar + empresa, barra inferior Android con pastilla en la pestaña activa (Inicio, Cargas, Pagos, Perfil).
-   - Inicio: tarjeta grande de la carga actual (status, próxima parada, progreso) con UN botón grande de la siguiente acción.
-   - Detalle de carga / `StopCard`: paradas en línea de tiempo, botones grandes, fotos/BOL en cuadrícula marcando lo que falta.
-   - Mis Cargas (tarjetas + chips Activas/Entregadas), Pagos (total semanal grande + lista por semana), Perfil (anillos de vencimiento reutilizando `ExpiryRing` de `src/components/detail/DetailTiles.tsx`), GPS (estado grande verde/rojo).
-   - Investor: resumen de ganancias, gráfico semanal, lista de cargas.
-   - Orden: Inicio + detalle/paradas → Pagos/Perfil/GPS → investor. Solo diseño (no tocar lógica de GPS, fotos, escáner ni firmas). Es solo JS: no requiere versión nueva en las tiendas; si un driver no lo ve, borrar caché de la app.
+## App móvil (driver e investor) — estilo Material 3 / Google
+
+Hecho el 2026-11-20 (solo diseño, sin tocar lógica de GPS, fotos, escáner ni firmas):
+- Colores y botones compartidos: `src/components/driver-app/driverUi.ts` (`CARD`, `BTN_FILLED`, `BTN_TONAL`, `statusMeta`, `cityState`). Usarlos en pantallas nuevas.
+- Abrir URLs externas (Maps, PDFs) con `openUrl()` de `src/lib/openUrl.ts` (usa `Browser.open` en la app instalada).
+- Barra inferior: Home, Loads, Payments, Profile. El GPS se abre con el chip "GPS" de la barra superior; el avatar abre "Sign out".
+- La app está en inglés, salvo la pantalla de GPS (en español). `ExpiryRing` acepta `lang="en"`.
 
 ## Comandos frecuentes
 
