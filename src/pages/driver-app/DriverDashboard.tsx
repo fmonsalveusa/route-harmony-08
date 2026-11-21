@@ -1,15 +1,14 @@
 import { useEffect, useState, useCallback } from 'react';
 import { LOADS_SELECT } from '@/hooks/useLoads';
-import { Package, DollarSign, MapPin, AlertTriangle, Calendar, Navigation, Gauge, Route } from 'lucide-react';
+import { Package, DollarSign, AlertTriangle, Navigation, Gauge, Route, ChevronRight, Play } from 'lucide-react';
 import { formatDate } from '@/lib/dateUtils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { LoadProgressBar } from '@/components/driver-app/LoadProgressBar';
 import { PullToRefresh } from '@/components/driver-app/PullToRefresh';
+import { CARD, BTN_FILLED, BTN_TONAL, cityState, statusMeta } from '@/components/driver-app/driverUi';
+import { openUrl, mapsDirectionsUrl } from '@/lib/openUrl';
 import { format, isPast, addDays } from 'date-fns';
 import InvestorDashboard from './InvestorDashboard';
 
@@ -73,170 +72,132 @@ export default function DriverDashboard() {
     if (driver.medical_card_expiry && isPast(addDays(new Date(driver.medical_card_expiry), -30))) alerts.push(`Medical card expires ${format(new Date(driver.medical_card_expiry), 'MMM dd')}`);
   }
 
-  const formatCityState = (location: string) => {
-    if (!location) return '—';
-    const parts = location.split(',').map(p => p.trim());
-    if (parts.length >= 2) return `${parts[0]}, ${parts[1]}`;
-    return location;
-  };
-
-  const statusBorderColor = (status: string) => {
-    const colors: Record<string, string> = {
-      dispatched: 'border-l-[hsl(80,60%,45%)]',
-      in_transit: 'border-l-[hsl(152,60%,40%)]',
-      on_site_pickup: 'border-l-[hsl(174,60%,42%)]',
-      picked_up: 'border-l-[#266aad]',
-      on_site_delivery: 'border-l-[#266aad]',
-    };
-    return colors[status] || 'border-l-accent';
-  };
-
   // Investors see their dedicated dashboard
   if (role === 'investor') return <InvestorDashboard />;
 
+  const current = activeLoads[0];
+  const others = activeLoads.slice(1);
+  const stopForCurrent = nextStop && current && nextStop.load?.id === current.id ? nextStop : null;
+  const money = (n: number) => `$${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+
   return (
     <PullToRefresh onRefresh={fetchData}>
-      <div className="p-5 space-y-4 pb-[calc(72px+env(safe-area-inset-bottom,0px))]">
-        <div>
-          <h1 className="text-2xl font-bold">Hello, {profile?.full_name?.split(' ')[0]} 👋</h1>
-          <p className="text-base text-muted-foreground">Here's your overview</p>
-        </div>
+      <div className="px-4 pt-2 space-y-4 pb-[calc(24px+env(safe-area-inset-bottom,0px))]">
+        <h1 className="text-[28px] leading-9 font-normal text-[#1f1f1f]">Hi, {profile?.full_name?.split(' ')[0]}</h1>
 
-        {/* Stats Grid 2x2 */}
-        <div className="grid grid-cols-2 gap-3">
-          <Card className="overflow-hidden">
-            <CardContent className="p-4 flex flex-col items-center gap-2 bg-primary/5">
-              <div className="p-2 rounded-full bg-primary/10"><Package className="h-6 w-6 text-primary" /></div>
-              <p className="text-xs font-medium text-muted-foreground">Loads</p>
-              <p className="text-2xl font-bold">{stats.loadsMonth}</p>
-            </CardContent>
-          </Card>
-          <Card className="overflow-hidden">
-            <CardContent className="p-4 flex flex-col items-center gap-2 bg-success/5">
-              <div className="p-2 rounded-full bg-success/10"><DollarSign className="h-6 w-6 text-success" /></div>
-              <p className="text-xs font-medium text-muted-foreground">Earnings</p>
-              <p className="text-2xl font-bold">${stats.earningsMonth.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
-            </CardContent>
-          </Card>
-          <Card className="overflow-hidden">
-            <CardContent className="p-4 flex flex-col items-center gap-2 bg-info/5">
-              <div className="p-2 rounded-full bg-info/10"><Route className="h-6 w-6 text-info" /></div>
-              <p className="text-xs font-medium text-muted-foreground">Miles</p>
-              <p className="text-2xl font-bold">{stats.milesMonth.toLocaleString()}</p>
-            </CardContent>
-          </Card>
-          <Card className="overflow-hidden">
-            <CardContent className="p-4 flex flex-col items-center gap-2 bg-accent/5">
-              <div className="p-2 rounded-full bg-accent/10"><Gauge className="h-6 w-6 text-accent" /></div>
-              <p className="text-xs font-medium text-muted-foreground">Avg RPM</p>
-              <p className="text-2xl font-bold">${stats.avgRpm.toFixed(2)}</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Next Stop Section */}
-        {nextStop && (
-          <Card className="border-accent/30 overflow-hidden">
-            <div className="h-1 bg-accent" />
-            <CardContent className="p-4 space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white ${nextStop.stop_type === 'pickup' ? 'bg-success' : 'bg-destructive'}`}>
-                    {nextStop.stop_type === 'pickup' ? 'P' : 'D'}
-                  </div>
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground">Next Stop</p>
-                    <p className="text-sm font-bold">{nextStop.stop_type === 'pickup' ? 'Pick Up' : 'Delivery'}</p>
-                  </div>
-                </div>
-                <Badge variant="outline" className="text-xs">Load #{nextStop.load?.reference_number}</Badge>
-              </div>
-              <p className="text-sm text-muted-foreground">{nextStop.address}</p>
-              <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(nextStop.address)}`} target="_blank" rel="noopener noreferrer">
-                <Button size="sm" className="w-full gap-2 bg-accent hover:bg-accent/90 text-accent-foreground">
-                  <Navigation className="h-4 w-4" /> Navigate
-                </Button>
-              </a>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Alerts */}
+        {/* Alertas de documentos por vencer */}
         {alerts.length > 0 && (
-          <Card className="border-warning/50 bg-warning/5">
-            <CardContent className="p-3 space-y-1">
-              {alerts.map((a, i) => (
-                <div key={i} className="flex items-center gap-2 text-sm text-warning">
-                  <AlertTriangle className="h-4 w-4" /> {a}
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+          <div className="rounded-[20px] bg-[#fef7e0] text-[#8a5a00] px-4 py-3 space-y-1">
+            {alerts.map((a, i) => (
+              <div key={i} className="flex items-center gap-2 text-sm font-medium">
+                <AlertTriangle className="h-4 w-4 flex-shrink-0" /> {a}
+              </div>
+            ))}
+          </div>
         )}
 
-        {/* Active Loads */}
-        <div>
-          <h2 className="text-base font-semibold mb-2">Active Loads</h2>
-          {activeLoads.length === 0 ? (
-            <p className="text-base text-muted-foreground">No active loads right now.</p>
-          ) : (
-            <div className="space-y-3">
-              {activeLoads.map(load => (
-                <Card key={load.id} className={`cursor-pointer hover:shadow-md transition-shadow border-l-[3px] ${statusBorderColor(load.status)}`} onClick={() => navigate(`/driver/loads/${load.id}`)}>
-                  <CardContent className="p-3 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-base font-bold">Load #{load.reference_number}</span>
-                      <Badge className={
-                        load.status === 'in_transit' ? 'bg-info text-info-foreground' :
-                        load.status === 'picked_up' ? 'bg-primary text-primary-foreground' :
-                        load.status === 'on_site_pickup' || load.status === 'on_site_delivery' ? 'bg-warning text-warning-foreground' :
-                        'bg-warning text-warning-foreground'
-                      }>
-                        {load.status === 'in_transit' ? 'In Transit' :
-                         load.status === 'picked_up' ? 'Picked Up' :
-                         load.status === 'on_site_pickup' ? 'On Site - Pickup' :
-                         load.status === 'on_site_delivery' ? 'On Site - Delivery' :
-                         'Dispatched'}
-                      </Badge>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <div className="flex flex-col items-center gap-0.5">
-                        <div className="w-2.5 h-2.5 rounded-full bg-success" />
-                        <div className="w-px h-4 border-l border-dashed border-muted-foreground/40" />
-                        <div className="w-2.5 h-2.5 rounded-full bg-destructive" />
-                      </div>
-                      <div className="flex-1 space-y-1.5">
-                        <p className="text-sm font-semibold leading-none">{formatCityState(load.origin)}</p>
-                        <p className="text-sm font-semibold leading-none">{formatCityState(load.destination)}</p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Rate</span>
-                        <span className="font-semibold text-primary">${Number(load.total_rate).toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">RPM</span>
-                        <span className="font-semibold">{Number(load.miles) > 0 ? `$${(Number(load.total_rate) / Number(load.miles)).toFixed(2)}` : '—'}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Miles</span>
-                        <span className="font-semibold">{Number(load.miles) > 0 ? Number(load.miles).toLocaleString() : '—'}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Broker</span>
-                        <span className="font-medium truncate max-w-[100px]">{load.broker_client || '—'}</span>
-                      </div>
-                    </div>
-
-                    <LoadProgressBar status={load.status} />
-                  </CardContent>
-                </Card>
-              ))}
+        {/* Carga actual: tarjeta grande con UN botón de la siguiente acción */}
+        {current ? (
+          <div className={`${CARD} p-5 space-y-4`}>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-sm text-[#444746]">Current load · #{current.reference_number}</span>
+              <span className={`px-3 h-7 inline-flex items-center rounded-full text-xs font-medium ${statusMeta(current.status).chip}`}>
+                {statusMeta(current.status).label}
+              </span>
             </div>
-          )}
+
+            <div className="flex gap-3">
+              <div className="flex flex-col items-center pt-1.5">
+                <span className="h-3 w-3 rounded-full border-[3px] border-[#1e8e3e]" />
+                <span className="flex-1 w-0.5 my-1 bg-[#dde3ea]" />
+                <span className="h-3 w-3 rounded-full bg-[#d93025]" />
+              </div>
+              <div className="flex-1 min-w-0 space-y-3">
+                <div>
+                  <p className="text-[22px] leading-7 font-normal truncate">{cityState(current.origin)}</p>
+                  {current.pickup_date && <p className="text-sm text-[#444746]">{formatDate(current.pickup_date)}</p>}
+                </div>
+                <div>
+                  <p className="text-[22px] leading-7 font-normal truncate">{cityState(current.destination)}</p>
+                  {current.delivery_date && <p className="text-sm text-[#444746]">{formatDate(current.delivery_date)}</p>}
+                </div>
+              </div>
+            </div>
+
+            <LoadProgressBar status={current.status} />
+
+            {stopForCurrent && (
+              <div className="rounded-[20px] bg-[#f0f4f9] px-4 py-3 flex items-start gap-3">
+                <span className={`mt-0.5 h-8 w-8 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold text-white ${stopForCurrent.stop_type === 'pickup' ? 'bg-[#1e8e3e]' : 'bg-[#d93025]'}`}>
+                  {stopForCurrent.stop_type === 'pickup' ? 'P' : 'D'}
+                </span>
+                <div className="min-w-0">
+                  <p className="text-xs text-[#444746]">Next stop · {stopForCurrent.stop_type === 'pickup' ? 'Pick up' : 'Delivery'}{stopForCurrent.time ? ` · ${stopForCurrent.time}` : ''}</p>
+                  <p className="text-sm font-medium text-[#1f1f1f]">{stopForCurrent.address}</p>
+                </div>
+              </div>
+            )}
+
+            {stopForCurrent ? (
+              <div className="space-y-2">
+                <button className={`${BTN_FILLED} w-full`} onClick={() => openUrl(mapsDirectionsUrl(stopForCurrent.address))}>
+                  <Navigation className="h-5 w-5" /> Navigate to {stopForCurrent.stop_type === 'pickup' ? 'pickup' : 'delivery'}
+                </button>
+                <button className={`${BTN_TONAL} w-full`} onClick={() => navigate(`/driver/loads/${current.id}`)}>
+                  Open load <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <button className={`${BTN_FILLED} w-full`} onClick={() => navigate(`/driver/loads/${current.id}`)}>
+                {current.status === 'dispatched' ? <><Play className="h-5 w-5" /> Start route</> : <>Open load <ChevronRight className="h-5 w-5" /></>}
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className={`${CARD} p-6 text-center`}>
+            <span className="mx-auto mb-3 h-14 w-14 rounded-full bg-[#e9eef6] flex items-center justify-center">
+              <Package className="h-7 w-7 text-[#444746]" />
+            </span>
+            <p className="text-base font-medium">No active loads right now</p>
+            <p className="text-sm text-[#444746] mt-1">When dispatch assigns you a load it will show up here.</p>
+          </div>
+        )}
+
+        {/* Más cargas activas */}
+        {others.length > 0 && (
+          <div className="space-y-2">
+            <h2 className="text-sm font-medium text-[#444746] px-1">Also assigned</h2>
+            {others.map(load => (
+              <button key={load.id} onClick={() => navigate(`/driver/loads/${load.id}`)} className={`${CARD} w-full text-left px-4 py-3 flex items-center gap-3 active:bg-[#f0f4f9]`}>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{cityState(load.origin)} → {cityState(load.destination)}</p>
+                  <p className="text-xs text-[#444746]">#{load.reference_number}{load.pickup_date ? ` · ${formatDate(load.pickup_date)}` : ''}</p>
+                </div>
+                <span className={`px-2.5 h-6 inline-flex items-center rounded-full text-[11px] font-medium ${statusMeta(load.status).chip}`}>{statusMeta(load.status).label}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Este mes */}
+        <div>
+          <h2 className="text-sm font-medium text-[#444746] px-1 mb-2">This month</h2>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { label: 'Earnings', value: money(stats.earningsMonth), icon: DollarSign, tint: 'bg-[#c4eed0] text-[#0d652d]' },
+              { label: 'Loads', value: String(stats.loadsMonth), icon: Package, tint: 'bg-[#d3e3fd] text-[#041e49]' },
+              { label: 'Miles', value: stats.milesMonth.toLocaleString(), icon: Route, tint: 'bg-[#c2e7ff] text-[#004a77]' },
+              { label: 'Avg RPM', value: `$${stats.avgRpm.toFixed(2)}`, icon: Gauge, tint: 'bg-[#ffdbcb] text-[#5c1900]' },
+            ].map(t => (
+              <div key={t.label} className={`${CARD} p-4 flex items-center gap-3`}>
+                <span className={`h-10 w-10 rounded-full flex-shrink-0 flex items-center justify-center ${t.tint}`}><t.icon className="h-5 w-5" /></span>
+                <div className="min-w-0">
+                  <p className="text-xs text-[#444746]">{t.label}</p>
+                  <p className="text-lg font-medium leading-6 truncate">{t.value}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </PullToRefresh>

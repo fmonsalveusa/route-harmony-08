@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { MapPin, Navigation, Camera, Check, Clock, Image, Loader2, Trash2, PackageCheck, CheckCircle2, ImagePlus, ScanLine, ChevronLeft, ChevronRight, X, FileText } from 'lucide-react';
 import { DocumentScanner } from './DocumentScanner';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { openUrl } from '@/lib/openUrl';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { getTenantId } from '@/hooks/useTenantId';
@@ -41,9 +40,11 @@ interface StopCardProps {
   isLastDelivery?: boolean;
   /** Dispatch Service no manda avisos al broker desde la app */
   hideBrokerButton?: boolean;
+  /** Siguiente parada pendiente (se resalta) */
+  isCurrent?: boolean;
 }
 
-export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, loadStatus, isLastDelivery, hideBrokerButton }: StopCardProps) => {
+export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, loadStatus, isLastDelivery, hideBrokerButton, isCurrent }: StopCardProps) => {
   const [arriving, setArriving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
@@ -407,222 +408,170 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
     return base.substring(0, max) + '…' + ext;
   };
 
+  const isPickup = stop.stop_type === 'pickup';
+  const stopTime = (stop as any).time as string | null | undefined;
+  const docLabel = isPickup ? 'BOL / Load pictures' : 'Proof of delivery';
+  const tonalBtn = 'flex items-center justify-center gap-2 h-12 w-full rounded-full bg-[#d3e3fd] text-[#041e49] text-sm font-medium active:bg-[#c2d7fb] transition-colors';
+
   return (
-    <div className={`rounded-xl border p-4 space-y-3 ${isArrived ? 'border-success/50 bg-success/5' : 'bg-card'}`}>
-      {/* Header with doc counter */}
+    <div className={`rounded-[24px] bg-white p-4 space-y-3 ${isCurrent ? 'ring-2 ring-[#0b57d0]/40' : ''}`}>
+      {/* Encabezado */}
       <div className="flex items-start justify-between gap-2">
-        <div className="flex items-start gap-2">
-          <div className={`mt-0.5 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white ${stop.stop_type === 'pickup' ? 'bg-success' : 'bg-destructive'}`}>
-            {stop.stop_type === 'pickup' ? 'P' : 'D'}
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className={`px-2.5 h-6 inline-flex items-center rounded-full text-[11px] font-medium ${isPickup ? 'bg-[#c4eed0] text-[#0d652d]' : 'bg-[#f9dedc] text-[#8c1d18]'}`}>
+              {isPickup ? 'Pick up' : 'Delivery'}
+            </span>
+            {isCurrent && !isArrived && <span className="text-[11px] font-medium text-[#0b57d0]">Next stop</span>}
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <p className="text-base font-semibold">{stop.stop_type === 'pickup' ? 'Pick Up' : 'Delivery'}</p>
-              {stopPods.length > 0 && (
-                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 gap-0.5">
-                  <Camera className="h-2.5 w-2.5" />
-                  {stopPods.length}
-                </Badge>
-              )}
-              {isArrived && (
-                isComplete ? (
-                  <CheckCircle2 className="h-4 w-4 text-success" />
-                ) : (
-                  <Clock className="h-4 w-4 text-warning" />
-                )
-              )}
-            </div>
-            <p className="text-sm text-muted-foreground">{stop.address}</p>
-            {stop.date && <p className="text-sm text-muted-foreground mt-0.5">{format(new Date(stop.date), 'MMM dd, yyyy')}</p>}
-          </div>
-        </div>
-
-        {isArrived && (
-          <Badge className="bg-success text-success-foreground text-xs gap-1">
-            <Check className="h-3 w-3" />
-            {format(new Date(stop.arrived_at!), 'h:mm a')}
-          </Badge>
-        )}
-      </div>
-
-      {/* Action buttons */}
-      <div className="flex flex-wrap gap-2">
-        <a href={googleMapsUrl} target="_blank" rel="noopener noreferrer">
-          <Button variant="outline" size="sm" className="gap-1.5 text-sm">
-            <Navigation className="h-4 w-4" /> Navigate
-          </Button>
-        </a>
-
-        {!isArrived && (
-          <Button size="sm" className="gap-1.5 text-sm" onClick={handleArrived} disabled={arriving}>
-            <MapPin className="h-4 w-4" />
-            {arriving ? 'Marking...' : 'Arrived'}
-          </Button>
-        )}
-      </div>
-
-      {/* Upload buttons - reorganized SmartHop style */}
-      {isArrived && (
-        <div className={`rounded-lg border-2 p-3 space-y-3 transition-colors ${isComplete ? 'border-success/40 bg-success/5' : 'border-dashed border-muted-foreground/25'}`}>
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-              {stop.stop_type === 'pickup' ? 'BOL / Load Pictures' : 'Proof of Delivery'}
+          <p className="text-base font-medium text-[#1f1f1f] mt-1.5">{stop.address}</p>
+          {(stop.date || stopTime) && (
+            <p className="text-sm text-[#444746] mt-0.5">
+              {stop.date ? format(new Date(stop.date + (stop.date.length === 10 ? 'T12:00:00' : '')), 'EEE, MMM d') : ''}
+              {stop.date && stopTime ? ' · ' : ''}{stopTime || ''}
             </p>
-            {isComplete && <CheckCircle2 className="h-4 w-4 text-success" />}
+          )}
+        </div>
+        {isArrived && (
+          <span className="flex-shrink-0 px-2.5 h-7 inline-flex items-center gap-1 rounded-full bg-[#c4eed0] text-[#0d652d] text-xs font-medium">
+            <Check className="h-3.5 w-3.5" /> {format(new Date(stop.arrived_at!), 'h:mm a')}
+          </span>
+        )}
+      </div>
+
+      {/* Acciones: navegar + llegué */}
+      {!isArrived ? (
+        <div className="flex gap-2">
+          <button type="button" onClick={() => openUrl(googleMapsUrl)}
+            className="flex-1 flex items-center justify-center gap-2 h-12 rounded-full border border-[#747775] text-[#0b57d0] text-sm font-medium active:bg-[#e8f0fe]">
+            <Navigation className="h-4 w-4" /> Navigate
+          </button>
+          <button type="button" onClick={handleArrived} disabled={arriving}
+            className="flex-1 flex items-center justify-center gap-2 h-12 rounded-full bg-[#0b57d0] text-white text-sm font-medium active:bg-[#0842a0] disabled:opacity-60">
+            {arriving ? <Loader2 className="h-4 w-4 animate-spin" /> : <MapPin className="h-4 w-4" />}
+            {arriving ? 'Marking...' : 'I arrived'}
+          </button>
+        </div>
+      ) : (
+        <button type="button" onClick={() => openUrl(googleMapsUrl)} className="inline-flex items-center gap-1.5 text-sm font-medium text-[#0b57d0]">
+          <Navigation className="h-4 w-4" /> Navigate
+        </button>
+      )}
+
+      {/* Fotos / documentos: cuadrícula que marca lo que falta */}
+      {isArrived && (
+        <div className="rounded-[20px] bg-[#f0f4f9] p-3 space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-[#1f1f1f]">{docLabel}</p>
+            {isComplete ? (
+              <span className="px-2.5 h-6 inline-flex items-center gap-1 rounded-full bg-[#c4eed0] text-[#0d652d] text-[11px] font-medium">
+                <CheckCircle2 className="h-3.5 w-3.5" /> {stopPods.length} uploaded
+              </span>
+            ) : (
+              <span className="px-2.5 h-6 inline-flex items-center rounded-full bg-[#f9dedc] text-[#8c1d18] text-[11px] font-medium">Missing</span>
+            )}
           </div>
 
-          {/* Upload skeleton when uploading */}
-          {uploading && (
-            <div className="flex gap-2">
-              <Skeleton className="w-20 h-20 rounded-lg" />
-              <div className="space-y-2 flex-1">
-                <Skeleton className="h-3 w-24" />
-                <Skeleton className="h-3 w-16" />
-              </div>
-            </div>
-          )}
-
-          {/* Document thumbnails grid - 80x80 */}
-          {stopPods.length > 0 && (
-            <div className="grid grid-cols-4 gap-2">
-              {stopPods.map((doc, idx) => (
-                <div key={doc.id} className="relative group">
-                  <button
-                    onClick={() => setPreviewIndex(idx)}
-                    type="button"
-                    className="w-full"
-                  >
-                    <div className="w-full aspect-square rounded-lg border overflow-hidden bg-muted flex items-center justify-center shadow-sm hover:shadow-md transition-shadow">
-                      {resolvedUrls[doc.id] && isImageDoc(doc) ? (
-                        <img src={resolvedUrls[doc.id]} alt={doc.file_name} className="w-full h-full object-cover" />
-                      ) : resolvingUrls ? (
-                        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                      ) : (
-                        <FileText className="h-6 w-6 text-muted-foreground" />
-                      )}
-                    </div>
-                  </button>
-                  {/* File name */}
-                  <p className="text-[10px] text-muted-foreground text-center mt-1 truncate leading-tight">
-                    {truncateName(doc.file_name)}
+          <div className="grid grid-cols-3 gap-2">
+            {stopPods.map((doc, idx) => (
+              <div key={doc.id} className="relative group">
+                <button onClick={() => setPreviewIndex(idx)} type="button" className="w-full block">
+                  <div className="w-full aspect-square rounded-2xl overflow-hidden bg-white flex items-center justify-center">
+                    {resolvedUrls[doc.id] && isImageDoc(doc) ? (
+                      <img src={resolvedUrls[doc.id]} alt={doc.file_name} className="w-full h-full object-cover" />
+                    ) : resolvingUrls ? (
+                      <Loader2 className="h-5 w-5 animate-spin text-[#444746]" />
+                    ) : (
+                      <FileText className="h-6 w-6 text-[#444746]" />
+                    )}
+                  </div>
+                </button>
+                {(doc as any).created_at && (
+                  <p className="text-[10px] text-[#444746] text-center mt-1 leading-tight">
+                    {format(new Date((doc as any).created_at), 'h:mm a')}
                   </p>
-                  {/* Timestamp */}
-                  {(doc as any).created_at && (
-                    <p className="text-[9px] text-muted-foreground/60 text-center leading-tight">
-                      {format(new Date((doc as any).created_at), 'h:mm a')}
-                    </p>
-                  )}
-                  {/* Delete button - visible on touch/hover */}
-                  <button
-                    type="button"
-                    className="absolute -top-1.5 -right-1.5 bg-destructive text-destructive-foreground rounded-full w-5 h-5 flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setDeleteDoc(doc as any);
-                    }}
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
+                )}
+                <button
+                  type="button"
+                  aria-label="Delete"
+                  className="absolute top-1 right-1 bg-black/55 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity"
+                  onClick={(e) => { e.stopPropagation(); setDeleteDoc(doc as any); }}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))}
+            {uploading && <Skeleton className="w-full aspect-square rounded-2xl" />}
+            {/* Casilla vacía que indica lo que falta */}
+            {stopPods.length === 0 && !uploading && (
+              <button type="button" onClick={() => setScannerOpen(true)}
+                className="w-full aspect-square rounded-2xl border-2 border-dashed border-[#c4c7c5] flex flex-col items-center justify-center gap-1 text-[#444746]">
+                <ScanLine className="h-6 w-6" />
+                <span className="text-[10px] font-medium">{isPickup ? 'BOL' : 'POD'}</span>
+              </button>
+            )}
+          </div>
 
-          {/* Upload action buttons */}
+          <button
+            type="button"
+            className="flex items-center justify-center gap-2 h-12 w-full rounded-full bg-[#0b57d0] text-white text-sm font-medium active:bg-[#0842a0]"
+            onClick={() => setScannerOpen(true)}
+          >
+            <ScanLine className="h-5 w-5" />
+            {isPickup ? 'Scan BOL' : 'Scan POD'}
+          </button>
+
           <div className="grid grid-cols-2 gap-2">
-            {/* Camera button */}
             {isNativeCamera() ? (
-              <button onClick={handleNativeCamera} disabled={uploading} type="button">
-                <div className="flex items-center justify-center gap-1.5 h-10 rounded-lg bg-info/10 text-info border border-info/20 text-sm font-medium hover:bg-info/20 transition-colors">
-                  <Camera className="h-4 w-4" />
-                  <span>Camera</span>
-                </div>
+              <button onClick={handleNativeCamera} disabled={uploading} type="button" className={tonalBtn}>
+                <Camera className="h-4 w-4" /> Camera
               </button>
             ) : (
-              <label className="cursor-pointer">
-                <div className="flex items-center justify-center gap-1.5 h-10 rounded-lg bg-info/10 text-info border border-info/20 text-sm font-medium hover:bg-info/20 transition-colors">
-                  <Camera className="h-4 w-4" />
-                  <span>Camera</span>
-                </div>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleFileUpload}
-                  disabled={uploading}
-                />
+              <label className={`${tonalBtn} cursor-pointer`}>
+                <Camera className="h-4 w-4" /> Camera
+                <input type="file" accept="image/*" className="hidden" onChange={handleFileUpload} disabled={uploading} />
               </label>
             )}
-
-            {/* Gallery button */}
             {isNativeCamera() ? (
-              <button onClick={handleNativeGallery} disabled={uploading} type="button">
-                <div className="flex items-center justify-center gap-1.5 h-10 rounded-lg bg-muted text-muted-foreground border border-border text-sm font-medium hover:bg-muted/80 transition-colors">
-                  <ImagePlus className="h-4 w-4" />
-                  <span>Gallery</span>
-                </div>
+              <button onClick={handleNativeGallery} disabled={uploading} type="button" className={tonalBtn}>
+                <ImagePlus className="h-4 w-4" /> Gallery
               </button>
             ) : (
-              <label className="cursor-pointer">
-                <div className="flex items-center justify-center gap-1.5 h-10 rounded-lg bg-muted text-muted-foreground border border-border text-sm font-medium hover:bg-muted/80 transition-colors">
-                  <ImagePlus className="h-4 w-4" />
-                  <span>Gallery</span>
-                </div>
-                <input
-                  type="file"
-                  accept="image/*,application/pdf"
-                  multiple
-                  className="hidden"
-                  onChange={handleFileUpload}
-                  disabled={uploading}
-                />
+              <label className={`${tonalBtn} cursor-pointer`}>
+                <ImagePlus className="h-4 w-4" /> Gallery
+                <input type="file" accept="image/*,application/pdf" multiple className="hidden" onChange={handleFileUpload} disabled={uploading} />
               </label>
             )}
-
             {/* Hidden fallback inputs for native camera/gallery errors */}
             <input ref={cameraFallbackRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileUpload} />
             <input ref={galleryFallbackRef} type="file" accept="image/*,application/pdf" multiple className="hidden" onChange={handleFileUpload} />
           </div>
-
-          {/* Scanner button - all platforms */}
-          <Button
-            variant="default"
-            size="sm"
-            className="w-full gap-1.5 text-sm bg-[#266aad] hover:bg-[#1f5a99] text-white border-0 shadow-md"
-            onClick={() => setScannerOpen(true)}
-          >
-            <ScanLine className="h-4 w-4" />
-            {stop.stop_type === 'pickup' ? 'Scan BOL Document' : 'Scan POD Document'}
-          </Button>
         </div>
       )}
 
       {/* Parada completada: estado de la carga + documentos al broker */}
       {showComplete && (
-        <div className="flex justify-end">
-          <Button
-            size="sm"
-            className="gap-1.5 text-sm bg-success hover:bg-success/90 text-success-foreground"
-            onClick={handleComplete}
-            disabled={changingStatus || sendingBroker}
-          >
-            {changingStatus ? <Loader2 className="h-4 w-4 animate-spin" /> : stop.stop_type === 'pickup' ? <PackageCheck className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
-            {changingStatus ? 'Updating...' : stop.stop_type === 'pickup' ? 'PICK UP COMPLETED' : 'DELIVERY COMPLETED'}
-          </Button>
-        </div>
+        <button
+          type="button"
+          className="flex items-center justify-center gap-2 h-14 w-full rounded-full bg-[#1e8e3e] text-white text-base font-medium active:bg-[#137333] disabled:opacity-60"
+          onClick={handleComplete}
+          disabled={changingStatus || sendingBroker}
+        >
+          {changingStatus ? <Loader2 className="h-5 w-5 animate-spin" /> : isPickup ? <PackageCheck className="h-5 w-5" /> : <CheckCircle2 className="h-5 w-5" />}
+          {changingStatus ? 'Updating...' : isPickup ? 'Pick up completed' : 'Delivery completed'}
+        </button>
       )}
 
       {/* Inline Preview Overlay */}
       {previewIndex !== null && stopPods[previewIndex] && (
         <div className="fixed inset-0 z-50 bg-black/90 flex flex-col items-center justify-center" onClick={() => setPreviewIndex(null)}>
-          {/* Close button */}
-          <button className="absolute top-4 right-4 text-white p-2 z-10" onClick={() => setPreviewIndex(null)}>
+          <button className="absolute top-4 right-4 text-white p-2 z-10" style={{ marginTop: 'env(safe-area-inset-top, 0px)' }} onClick={() => setPreviewIndex(null)}>
             <X className="h-6 w-6" />
           </button>
 
-          {/* Delete button in preview */}
           <button
-            className="absolute top-4 left-4 text-white p-2 z-10 bg-destructive/80 rounded-full"
+            className="absolute top-4 left-4 text-white p-2 z-10 bg-[#b3261e]/80 rounded-full"
+            style={{ marginTop: 'env(safe-area-inset-top, 0px)' }}
             onClick={(e) => {
               e.stopPropagation();
               setDeleteDoc(stopPods[previewIndex] as any);
@@ -632,7 +581,6 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
             <Trash2 className="h-5 w-5" />
           </button>
 
-          {/* Image */}
           <div className="flex-1 flex items-center justify-center w-full px-4" onClick={e => e.stopPropagation()}>
             {resolvedUrls[stopPods[previewIndex].id] && isImageDoc(stopPods[previewIndex]) ? (
               <img
@@ -644,13 +592,13 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
               <div className="text-white text-center space-y-2" onClick={e => e.stopPropagation()}>
                 <FileText className="h-16 w-16 mx-auto opacity-60" />
                 <p className="text-sm">{stopPods[previewIndex].file_name}</p>
-                <Button
-                  size="sm"
-                  className="bg-white text-black hover:bg-white/90 font-medium"
+                <button
+                  type="button"
+                  className="h-10 px-5 rounded-full bg-white text-[#1f1f1f] text-sm font-medium"
                   onClick={() => handleOpenPod(stopPods[previewIndex])}
                 >
                   Open File
-                </Button>
+                </button>
               </div>
             ) : (
               <div className="text-white text-center space-y-2">
@@ -660,7 +608,6 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
             )}
           </div>
 
-          {/* Nav arrows */}
           {stopPods.length > 1 && (
             <>
               {previewIndex > 0 && (
@@ -682,8 +629,7 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
             </>
           )}
 
-          {/* Counter + timestamp */}
-          <div className="text-white text-center py-3 space-y-0.5">
+          <div className="text-white text-center py-3 space-y-0.5" style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 12px)' }}>
             <p className="text-sm font-medium">{previewIndex + 1} / {stopPods.length}</p>
             {(stopPods[previewIndex] as any).created_at && (
               <p className="text-xs text-white/60">{format(new Date((stopPods[previewIndex] as any).created_at), 'MMM dd, h:mm a')}</p>
@@ -694,7 +640,7 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
 
       {/* Delete confirmation dialog */}
       <AlertDialog open={!!deleteDoc} onOpenChange={(open) => { if (!open) setDeleteDoc(null); }}>
-        <AlertDialogContent>
+        <AlertDialogContent className="rounded-[28px]">
           <AlertDialogHeader>
             <AlertDialogTitle>Delete document?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -702,9 +648,9 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="rounded-full">Cancel</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="rounded-full bg-[#b3261e] text-white hover:bg-[#8c1d18]"
               onClick={async () => {
                 if (deleteDoc) {
                   await handleDeletePod(deleteDoc);

@@ -1,11 +1,10 @@
 import { ReactNode, useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Package, DollarSign, User, LogOut, MapPin, Bell, CheckCheck, Navigation, MapPinCheck, X } from 'lucide-react';
+import { Home, Package, Wallet, User, Bell, CheckCheck, MapPinCheck, X, LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDriverTracking } from '@/contexts/DriverTrackingContext';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
-import { Button } from '@/components/ui/button';
 import logoImg from '@/assets/logo.png';
 import { isNativePlatform } from '@/lib/nativeTracking';
 import { initPushNotifications } from '@/lib/nativePushNotifications';
@@ -13,11 +12,11 @@ import { GpsPermissionBanner } from '@/components/driver-app/GpsPermissionBanner
 import { LocationDisclosureDialog } from '@/components/driver-app/LocationDisclosureDialog';
 import { useTheme } from 'next-themes';
 
+// GPS sale de la barra inferior: se abre con el chip "GPS" de la barra superior
 const allTabs = [
-  { label: 'Home', icon: LayoutDashboard, path: '/driver', roles: ['driver', 'investor'] },
+  { label: 'Home', icon: Home, path: '/driver', roles: ['driver', 'investor'] },
   { label: 'Loads', icon: Package, path: '/driver/loads', roles: ['driver', 'investor'] },
-  { label: 'Tracking', icon: MapPin, path: '/driver/tracking', roles: ['driver'] },
-  { label: 'Payments', icon: DollarSign, path: '/driver/payments', roles: ['driver', 'investor'] },
+  { label: 'Payments', icon: Wallet, path: '/driver/payments', roles: ['driver', 'investor'] },
   { label: 'Profile', icon: User, path: '/driver/profile', roles: ['driver'] },
 ];
 
@@ -55,6 +54,8 @@ export const DriverMobileLayout = ({ children }: { children: ReactNode }) => {
   const [bellOpen, setBellOpen] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [driverId, setDriverId] = useState<string | null>(null);
@@ -114,6 +115,7 @@ export const DriverMobileLayout = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (panelRef.current && !panelRef.current.contains(e.target as Node)) setBellOpen(false);
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -142,7 +144,7 @@ export const DriverMobileLayout = ({ children }: { children: ReactNode }) => {
         try {
           const isDark = resolvedTheme === 'dark';
           StatusBar.setStyle({ style: isDark ? Style.Dark : Style.Light }).catch(() => {});
-          StatusBar.setBackgroundColor({ color: isDark ? '#0f172a' : '#1e3a5f' }).catch(() => {});
+          StatusBar.setBackgroundColor({ color: isDark ? '#0f172a' : '#f8fafd' }).catch(() => {});
         } catch { /* ignore */ }
       }).catch(() => {});
     } catch { /* ignore */ }
@@ -168,59 +170,66 @@ export const DriverMobileLayout = ({ children }: { children: ReactNode }) => {
   }, [driverId]);
 
   const isAndroid = /android/i.test(navigator.userAgent);
+  const initials = (profile?.full_name || profile?.email || '?')
+    .split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]?.toUpperCase()).join('');
 
   return (
-    <div className={`flex flex-col h-[100dvh] bg-background ${isAndroid ? 'android-driver-app' : ''}`}>
-      {/* Header - Dark gradient style */}
-      <header className="flex items-center justify-between min-h-[64px] px-4 py-2 shadow-md bg-sidebar text-sidebar-foreground" style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 8px)' }}>
-        <div className="flex items-center gap-2">
-          <img src={logoImg} alt="Logo" className="h-8 w-8 rounded" />
-          <span className="text-base font-bold text-white">{isInvestorOnly ? 'Dispatch Up Investor' : 'Dispatch Up Driver'}</span>
+    <div className={`flex flex-col h-[100dvh] bg-[#f8fafd] text-[#1f1f1f] ${isAndroid ? 'android-driver-app' : ''}`}>
+      {/* Barra superior estilo Google: logo + app, GPS, notificaciones, avatar (cerrar sesión) */}
+      <header className="flex items-center justify-between min-h-[64px] px-3 py-2 bg-[#f8fafd]" style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 8px)' }}>
+        <div className="flex items-center gap-3 min-w-0">
+          <img src={logoImg} alt="" className="h-9 w-9 rounded-full" />
+          <div className="min-w-0 leading-tight">
+            <p className="text-[18px] font-normal truncate">Dispatch Up</p>
+            <p className="text-xs text-[#444746] truncate">{isInvestorOnly ? 'Investor' : profile?.full_name || 'Driver'}</p>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          {/* GPS Tracking Indicator */}
-          {tracking && (
-            <Link to="/driver/tracking" className="flex items-center gap-1 px-2 py-1 rounded-full bg-white/15 text-white text-xs font-semibold animate-pulse">
-              <Navigation className="h-3.5 w-3.5" />
+        <div className="flex items-center gap-1">
+          {!isInvestorOnly && (
+            <Link
+              to="/driver/tracking"
+              className={`flex items-center gap-1.5 h-8 pl-2.5 pr-3 rounded-full text-xs font-medium ${tracking ? 'bg-[#c4eed0] text-[#0d652d]' : 'bg-[#e9eef6] text-[#444746]'}`}
+            >
+              <span className={`h-2 w-2 rounded-full ${tracking ? 'bg-[#1e8e3e] animate-pulse' : 'bg-[#9aa0a6]'}`} />
               GPS
             </Link>
           )}
           <div className="relative" ref={panelRef}>
-            <button onClick={() => setBellOpen(!bellOpen)} className="relative p-2 rounded-md text-white/80 hover:text-white hover:bg-white/10 transition-colors">
+            <button onClick={() => setBellOpen(!bellOpen)} aria-label="Notifications" className="relative h-11 w-11 flex items-center justify-center rounded-full text-[#444746] active:bg-[#e9eef6] transition-colors">
               <Bell className="h-6 w-6" />
               {unreadCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-accent-foreground animate-pulse">
+                <span className="absolute top-1.5 right-1.5 flex h-4 min-w-4 px-1 items-center justify-center rounded-full bg-[#b3261e] text-[10px] font-bold text-white">
                   {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
               )}
             </button>
             {bellOpen && (
-              <div className="absolute right-0 top-full mt-2 w-80 max-h-96 overflow-y-auto rounded-lg border bg-card shadow-lg z-50">
-                <div className="flex items-center justify-between p-3 border-b">
-                  <h3 className="text-sm font-semibold">Notifications</h3>
+              <div className="absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-24px)] max-h-96 overflow-y-auto rounded-3xl bg-white shadow-[0_4px_16px_rgba(0,0,0,0.16)] z-50">
+                <div className="flex items-center justify-between px-4 py-3">
+                  <h3 className="text-base font-normal">Notifications</h3>
                   {unreadCount > 0 && (
-                    <button onClick={markAllAsRead} className="text-xs text-primary flex items-center gap-1">
+                    <button onClick={markAllAsRead} className="text-xs font-medium text-[#0b57d0] flex items-center gap-1">
                       <CheckCheck className="h-3.5 w-3.5" /> Mark all read
                     </button>
                   )}
                 </div>
                 {notifications.length === 0 ? (
-                  <div className="p-6 text-center text-sm text-muted-foreground">No notifications</div>
+                  <div className="p-6 text-center text-sm text-[#444746]">No notifications</div>
                 ) : (
-                  <div className="divide-y">
+                  <div className="pb-2">
                     {notifications.slice(0, 20).map(n => (
                       <button key={n.id} onClick={() => handleNotificationClick(n)}
-                        className={`w-full text-left p-3 hover:bg-muted/50 transition-colors ${!n.is_read ? 'bg-primary/5' : ''}`}>
-                        <div className="flex gap-2">
+                        className={`w-full text-left px-4 py-3 active:bg-[#e9eef6] transition-colors ${!n.is_read ? 'bg-[#eef3fd]' : ''}`}>
+                        <div className="flex gap-3">
                           <span className="text-lg">{typeIcons[n.type] || '📢'}</span>
                           <div className="flex-1 min-w-0">
-                            <p className={`text-sm ${!n.is_read ? 'font-semibold' : ''}`}>{n.title}</p>
-                            <p className="text-xs text-muted-foreground truncate">{n.message}</p>
-                            <p className="text-[10px] text-muted-foreground mt-0.5">
+                            <p className={`text-sm ${!n.is_read ? 'font-medium' : ''}`}>{n.title}</p>
+                            <p className="text-xs text-[#444746] truncate">{n.message}</p>
+                            <p className="text-[10px] text-[#747775] mt-0.5">
                               {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
                             </p>
                           </div>
-                          {!n.is_read && <div className="w-2 h-2 rounded-full bg-accent mt-1.5 flex-shrink-0" />}
+                          {!n.is_read && <div className="w-2 h-2 rounded-full bg-[#0b57d0] mt-1.5 flex-shrink-0" />}
                         </div>
                       </button>
                     ))}
@@ -229,9 +238,22 @@ export const DriverMobileLayout = ({ children }: { children: ReactNode }) => {
               </div>
             )}
           </div>
-          <button onClick={signOut} className="p-2 rounded-md text-white/80 hover:text-white hover:bg-white/10 transition-colors">
-            <LogOut className="h-5 w-5" />
-          </button>
+          <div className="relative" ref={menuRef}>
+            <button onClick={() => setMenuOpen(o => !o)} aria-label="Account" className="h-11 w-11 flex items-center justify-center rounded-full active:bg-[#e9eef6] transition-colors">
+              <span className="h-8 w-8 rounded-full bg-[#0b57d0] text-white text-xs font-medium flex items-center justify-center">{initials}</span>
+            </button>
+            {menuOpen && (
+              <div className="absolute right-0 top-full mt-2 w-64 rounded-3xl bg-white shadow-[0_4px_16px_rgba(0,0,0,0.16)] z-50 p-2">
+                <div className="px-3 py-2">
+                  <p className="text-sm font-medium truncate">{profile?.full_name}</p>
+                  <p className="text-xs text-[#444746] truncate">{profile?.email}</p>
+                </div>
+                <button onClick={signOut} className="w-full flex items-center gap-3 px-3 h-11 rounded-full text-sm text-[#1f1f1f] active:bg-[#e9eef6]">
+                  <LogOut className="h-5 w-5 text-[#444746]" /> Sign out
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
@@ -241,23 +263,23 @@ export const DriverMobileLayout = ({ children }: { children: ReactNode }) => {
 
       {/* Geofence Arrival Banner */}
       {nearbyStop && (
-        <div className="mx-3 mt-2 p-3 rounded-lg border border-primary/30 bg-primary/5 shadow-md animate-in slide-in-from-top-2">
-          <div className="flex items-start gap-2">
-            <MapPinCheck className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+        <div className="mx-3 mt-2 p-4 rounded-3xl bg-[#d3e3fd] text-[#041e49] shadow-sm animate-in slide-in-from-top-2">
+          <div className="flex items-start gap-3">
+            <MapPinCheck className="h-6 w-6 mt-0.5 flex-shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-foreground">
-                {nearbyStop.stop_type === 'pickup' ? '📦 Near Pickup' : '🏁 Near Delivery'}
+              <p className="text-base font-medium">
+                {nearbyStop.stop_type === 'pickup' ? 'You are near the pickup' : 'You are near the delivery'}
               </p>
-              <p className="text-sm text-muted-foreground truncate mt-0.5">{nearbyStop.address}</p>
-              <div className="flex gap-2 mt-2">
-                <Button size="sm" className="h-7 text-xs" onClick={handleConfirmArrival} disabled={confirming}>
-                  <MapPinCheck className="h-3.5 w-3.5 mr-1" />
+              <p className="text-sm opacity-80 truncate mt-0.5">{nearbyStop.address}</p>
+              <div className="flex gap-2 mt-3">
+                <button className="h-10 px-5 rounded-full bg-[#0b57d0] text-white text-sm font-medium flex items-center gap-1.5 disabled:opacity-60" onClick={handleConfirmArrival} disabled={confirming}>
+                  <MapPinCheck className="h-4 w-4" />
                   {confirming ? 'Marking...' : 'Mark Arrival'}
-                </Button>
-                <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={dismissArrival}>
-                  <X className="h-3.5 w-3.5 mr-1" />
+                </button>
+                <button className="h-10 px-4 rounded-full text-[#0b57d0] text-sm font-medium flex items-center gap-1" onClick={dismissArrival}>
+                  <X className="h-4 w-4" />
                   Ignore
-                </Button>
+                </button>
               </div>
             </div>
           </div>
@@ -269,23 +291,16 @@ export const DriverMobileLayout = ({ children }: { children: ReactNode }) => {
         {children}
       </main>
 
-      {/* Bottom Tab Bar - Orange active indicator */}
-      <nav className="flex items-center justify-around min-h-[72px] border-t bg-card shadow-[0_-2px_10px_rgba(0,0,0,0.08)] safe-area-pb relative">
+      {/* Barra inferior Material 3: pastilla en la pestaña activa */}
+      <nav className="flex items-stretch justify-around bg-[#f0f4f9] safe-area-pb pt-3 pb-2">
         {tabs.map(tab => {
           const active = location.pathname === tab.path || (tab.path !== '/driver' && location.pathname.startsWith(tab.path));
           return (
-            <Link
-              key={tab.path}
-              to={tab.path}
-              className={`relative flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg transition-all duration-200 ${
-                active ? 'text-accent' : 'text-muted-foreground'
-              }`}
-            >
-              {active && (
-                <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-8 h-1 rounded-full bg-accent" />
-              )}
-              <tab.icon className={`h-6 w-6 transition-transform ${active ? 'scale-110' : ''}`} />
-              <span className={`text-xs ${active ? 'font-bold' : 'font-medium'}`}>{tab.label}</span>
+            <Link key={tab.path} to={tab.path} className="flex-1 flex flex-col items-center gap-1 min-w-0">
+              <span className={`flex items-center justify-center h-8 w-16 rounded-full transition-colors duration-200 ${active ? 'bg-[#d3e3fd] text-[#041e49]' : 'text-[#444746]'}`}>
+                <tab.icon className="h-6 w-6" strokeWidth={active ? 2.25 : 1.75} />
+              </span>
+              <span className={`text-xs ${active ? 'font-semibold text-[#1f1f1f]' : 'font-medium text-[#444746]'}`}>{tab.label}</span>
             </Link>
           );
         })}

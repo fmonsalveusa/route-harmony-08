@@ -6,10 +6,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { StopCard } from '@/components/driver-app/StopCard';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, Play, DollarSign, FileText } from 'lucide-react';
+import { ArrowLeft, Play, FileText, Check } from 'lucide-react';
+import { formatDate } from '@/lib/dateUtils';
+import { CARD, BTN_FILLED, BTN_TONAL, cityState, statusMeta } from '@/components/driver-app/driverUi';
 import { createNotification } from '@/hooks/useNotifications';
 import { toast } from '@/hooks/use-toast';
 import { LoadProgressBar } from '@/components/driver-app/LoadProgressBar';
@@ -62,220 +61,174 @@ export default function DriverLoadDetail() {
 
   const handleStartRoute = async () => handleChangeStatus('in_transit', 'In Transit');
 
-  if (loading) return <div className="flex items-center justify-center h-40"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" /></div>;
+  if (loading) return <div className="flex items-center justify-center h-40"><div className="animate-spin rounded-full h-7 w-7 border-[3px] border-[#d3e3fd] border-t-[#0b57d0]" /></div>;
   if (!load) return <div className="p-4 text-center text-muted-foreground">Load not found</div>;
 
   const deliveryStops = stops.filter(s => s.stop_type === 'delivery');
   const lastDelivery = deliveryStops[deliveryStops.length - 1];
   const lastDeliveryId = lastDelivery?.id;
 
-  const formatCityState = (location: string) => {
-    if (!location) return '—';
-    const parts = location.split(',').map(p => p.trim());
-    if (parts.length >= 2) return `${parts[0]}, ${parts[1]}`;
-    return location;
+  const openRateConfirmation = async () => {
+    try {
+      // Siempre regeneramos un signed URL fresco desde la RUTA del archivo.
+      // Aunque pdf_url venga como URL completa vieja (con token expirado),
+      // extraemos la ruta interna y creamos un link nuevo.
+      let path = load.pdf_url;
+      if (path.includes('/object/sign/driver-documents/')) {
+        path = path.split('/object/sign/driver-documents/')[1].split('?')[0];
+      } else if (path.includes('driver-documents/')) {
+        path = path.split('driver-documents/')[1];
+      }
+      try { path = decodeURIComponent(path); } catch { /* ya estaba decodificado */ }
+
+      const { data, error } = await supabase.storage.from('driver-documents').createSignedUrl(path, 3600);
+      if (error || !data?.signedUrl) {
+        toast({ title: 'Could not open document', variant: 'destructive' });
+        return;
+      }
+      // En la app instalada (Capacitor), target="_blank" NO abre nada: plugin Browser
+      if (Capacitor.isNativePlatform()) {
+        await Browser.open({ url: data.signedUrl });
+      } else {
+        const a = document.createElement('a');
+        a.href = data.signedUrl;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => document.body.removeChild(a), 100);
+      }
+    } catch {
+      toast({ title: 'Error opening document', variant: 'destructive' });
+    }
   };
 
-  const statusBgStyle = (status: string) => {
-    const colors: Record<string, string> = {
-      dispatched: 'linear-gradient(135deg, hsl(80,60%,45%,0.1), hsl(80,60%,45%,0.03))',
-      in_transit: 'linear-gradient(135deg, hsl(152,60%,40%,0.1), hsl(152,60%,40%,0.03))',
-      on_site_pickup: 'linear-gradient(135deg, hsl(174,60%,42%,0.1), hsl(174,60%,42%,0.03))',
-      picked_up: 'linear-gradient(135deg, rgba(38,106,173,0.1), rgba(38,106,173,0.03))',
-      on_site_delivery: 'linear-gradient(135deg, rgba(38,106,173,0.1), rgba(38,106,173,0.03))',
-      delivered: 'linear-gradient(135deg, hsl(270,50%,55%,0.1), hsl(270,50%,55%,0.03))',
-      paid: 'linear-gradient(135deg, hsl(152,60%,40%,0.1), hsl(152,60%,40%,0.03))',
-    };
-    return colors[status] || colors.dispatched;
-  };
+  const meta = statusMeta(load.status);
+  const rpm = Number(load.miles) > 0 ? `$${(Number(load.total_rate) / Number(load.miles)).toFixed(2)}` : '—';
+  // La primera parada sin llegada es la "actual" (se resalta en la línea de tiempo)
+  const currentStopId = stops.find(s => !s.arrived_at)?.id;
 
   return (
-    <div className="pb-24 space-y-4">
-      {/* Status-colored header */}
-      <div className="p-4 rounded-b-2xl" style={{ background: statusBgStyle(load.status) }}>
-        <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-base text-muted-foreground hover:text-foreground mb-3">
-          <ArrowLeft className="h-5 w-5" /> Back
+    <div className="pb-8 px-4 space-y-4">
+      {/* Encabezado */}
+      <div className="flex items-center gap-1 -ml-2 pt-1">
+        <button onClick={() => navigate(-1)} aria-label="Back" className="h-11 w-11 flex items-center justify-center rounded-full active:bg-[#e9eef6]">
+          <ArrowLeft className="h-6 w-6 text-[#1f1f1f]" />
         </button>
-
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold">{load.reference_number}</h1>
-            <p className="text-sm text-muted-foreground">{load.broker_client}</p>
-          </div>
-          <Badge className={
-            load.status === 'in_transit' ? 'bg-info text-info-foreground'
-            : load.status === 'on_site_pickup' ? 'bg-warning text-warning-foreground'
-            : load.status === 'picked_up' ? 'bg-primary text-primary-foreground'
-            : load.status === 'on_site_delivery' ? 'bg-warning text-warning-foreground'
-            : load.status === 'delivered' ? 'bg-success text-success-foreground'
-            : load.status === 'paid' ? 'bg-success text-success-foreground'
-            : 'bg-warning text-warning-foreground'
-          }>
-            {load.status === 'on_site_pickup' ? 'On Site - Pickup'
-             : load.status === 'picked_up' ? 'Picked Up'
-             : load.status === 'on_site_delivery' ? 'On Site - Delivery'
-             : load.status.replace('_', ' ')}
-          </Badge>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-[22px] leading-7 font-normal truncate">Load #{load.reference_number}</h1>
+          {load.broker_client && <p className="text-sm text-[#444746] truncate">{load.broker_client}</p>}
         </div>
+        <span className={`px-3 h-7 inline-flex items-center rounded-full text-xs font-medium flex-shrink-0 ${meta.chip}`}>{meta.label}</span>
+      </div>
 
-        {/* Progress Bar */}
-        <div className="mt-3">
-          <LoadProgressBar status={load.status} />
+      {/* Ruta + progreso */}
+      <div className={`${CARD} p-5 space-y-4`}>
+        <div className="flex gap-3">
+          <div className="flex flex-col items-center pt-1.5">
+            <span className="h-3 w-3 rounded-full border-[3px] border-[#1e8e3e]" />
+            <span className="flex-1 w-0.5 my-1 bg-[#dde3ea]" />
+            <span className="h-3 w-3 rounded-full bg-[#d93025]" />
+          </div>
+          <div className="flex-1 min-w-0 space-y-3">
+            <div>
+              <p className="text-lg font-normal truncate">{cityState(load.origin)}</p>
+              {load.pickup_date && <p className="text-sm text-[#444746]">{formatDate(load.pickup_date)}</p>}
+            </div>
+            <div>
+              <p className="text-lg font-normal truncate">{cityState(load.destination)}</p>
+              {load.delivery_date && <p className="text-sm text-[#444746]">{formatDate(load.delivery_date)}</p>}
+            </div>
+          </div>
+        </div>
+        <LoadProgressBar status={load.status} />
+
+        {load.status === 'dispatched' && (
+          <button className={`${BTN_FILLED} w-full`} onClick={handleStartRoute}>
+            <Play className="h-5 w-5" /> Start route
+          </button>
+        )}
+      </div>
+
+      {/* Números */}
+      <div className="grid grid-cols-2 gap-2">
+        {[
+          { label: 'Total rate', value: `$${Number(load.total_rate).toLocaleString()}` },
+          { label: 'Driver pay', value: `$${Number(load.driver_pay_amount || 0).toLocaleString()}`, green: true },
+          { label: 'Miles', value: Number(load.miles) > 0 ? Number(load.miles).toLocaleString() : '—' },
+          { label: 'RPM', value: rpm },
+        ].map(t => (
+          <div key={t.label} className={`${CARD} px-4 py-3`}>
+            <p className="text-xs text-[#444746]">{t.label}</p>
+            <p className={`text-lg font-medium leading-6 ${t.green ? 'text-[#0d652d]' : ''}`}>{t.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {load.pdf_url && (
+        <button className={`${BTN_TONAL} w-full`} onClick={openRateConfirmation}>
+          <FileText className="h-4 w-4" /> View Rate Confirmation
+        </button>
+      )}
+
+      {/* Paradas en línea de tiempo */}
+      <div>
+        <h2 className="text-sm font-medium text-[#444746] px-1 mb-2">Stops</h2>
+        <div>
+          {stops.map((stop, i) => {
+            const done = !!stop.arrived_at;
+            const isCurrent = stop.id === currentStopId;
+            const last = i === stops.length - 1;
+            return (
+              <div key={stop.id} className="flex gap-3">
+                <div className="flex flex-col items-center w-8 flex-shrink-0">
+                  <span className={`mt-4 h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold ${
+                    done ? 'bg-[#1e8e3e] text-white'
+                    : isCurrent ? 'bg-[#0b57d0] text-white ring-4 ring-[#d3e3fd]'
+                    : 'bg-white text-[#444746] border-2 border-[#c4c7c5]'
+                  }`}>
+                    {done ? <Check className="h-4 w-4" /> : i + 1}
+                  </span>
+                  {!last && <span className={`flex-1 w-0.5 mt-1 ${done ? 'bg-[#1e8e3e]' : 'bg-[#dde3ea]'}`} />}
+                </div>
+                <div className="flex-1 min-w-0 pb-3">
+                  <StopCard
+                    stop={stop}
+                    loadRef={load.reference_number}
+                    driverName={profile?.full_name || ''}
+                    onUpdate={fetchAll}
+                    podDocuments={podDocs}
+                    loadStatus={load.status}
+                    isLastDelivery={stop.id === lastDeliveryId}
+                    hideBrokerButton={driver?.service_type === 'dispatch_service'}
+                    isCurrent={isCurrent}
+                  />
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
-      <div className="px-4 space-y-4">
-        {/* Route Timeline */}
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="flex flex-col items-center gap-0.5">
-                <div className="w-3 h-3 rounded-full bg-success" />
-                <div className="w-px h-8 border-l-2 border-dashed border-muted-foreground/30" />
-                <div className="w-3 h-3 rounded-full bg-destructive" />
-              </div>
-              <div className="flex-1 space-y-4">
-                <div>
-                  <p className="text-base font-bold">{formatCityState(load.origin)}</p>
-                  <p className="text-xs text-muted-foreground">{load.pickup_date ? new Date(load.pickup_date).toLocaleDateString() : ''}</p>
-                </div>
-                <div>
-                  <p className="text-base font-bold">{formatCityState(load.destination)}</p>
-                  <p className="text-xs text-muted-foreground">{load.delivery_date ? new Date(load.delivery_date).toLocaleDateString() : ''}</p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Financial Grid */}
-        <Card>
-          <CardContent className="p-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="text-center p-2 rounded-lg bg-muted/50">
-                <p className="text-xs text-muted-foreground">Total Rate</p>
-                <p className="text-lg font-bold text-primary">${Number(load.total_rate).toLocaleString()}</p>
-              </div>
-              <div className="text-center p-2 rounded-lg bg-muted/50">
-                <p className="text-xs text-muted-foreground">RPM</p>
-                <p className="text-lg font-bold">{Number(load.miles) > 0 ? `$${(Number(load.total_rate) / Number(load.miles)).toFixed(2)}` : '—'}</p>
-              </div>
-              <div className="text-center p-2 rounded-lg bg-muted/50">
-                <p className="text-xs text-muted-foreground">Miles</p>
-                <p className="text-lg font-bold">{Number(load.miles) > 0 ? Number(load.miles).toLocaleString() : '—'}</p>
-              </div>
-              <div className="text-center p-2 rounded-lg bg-muted/50">
-                <p className="text-xs text-muted-foreground">Driver Pay</p>
-                <p className="text-lg font-bold text-success">${Number(load.driver_pay_amount || 0).toLocaleString()}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Rate Confirmation PDF */}
-        {load.pdf_url && (
-          <Button
-            variant="outline"
-            className="w-full gap-2 border-primary/30 text-primary hover:bg-primary/5"
-            onClick={async (e) => {
-              e.stopPropagation();
-              try {
-                // Siempre regeneramos un signed URL fresco desde la RUTA del archivo.
-                // Aunque pdf_url venga como URL completa vieja (con token expirado),
-                // extraemos la ruta interna y creamos un link nuevo — así nunca expira
-                // "el guardado", siempre se genera al momento de abrir.
-                let path = load.pdf_url;
-
-                // Si es una URL completa (formato viejo), sacar solo la ruta del bucket
-                if (path.includes('/object/sign/driver-documents/')) {
-                  path = path.split('/object/sign/driver-documents/')[1].split('?')[0];
-                } else if (path.includes('driver-documents/')) {
-                  path = path.split('driver-documents/')[1];
-                }
-                // Decodificar %20 y demás (nombres con espacios)
-                try { path = decodeURIComponent(path); } catch { /* ya estaba decodificado */ }
-
-                const { data, error } = await supabase.storage
-                  .from('driver-documents')
-                  .createSignedUrl(path, 3600);
-
-                if (error || !data?.signedUrl) {
-                  toast({ title: 'Could not open document', variant: 'destructive' });
-                  return;
-                }
-
-                // En la app instalada (Capacitor), target="_blank" NO abre nada.
-                // Usamos el plugin Browser, que abre el PDF en el navegador del sistema.
-                // En web normal (no nativo), seguimos con el anchor de siempre.
-                if (Capacitor.isNativePlatform()) {
-                  await Browser.open({ url: data.signedUrl });
-                } else {
-                  const a = document.createElement('a');
-                  a.href = data.signedUrl;
-                  a.target = '_blank';
-                  a.rel = 'noopener noreferrer';
-                  document.body.appendChild(a);
-                  a.click();
-                  setTimeout(() => document.body.removeChild(a), 100);
-                }
-              } catch {
-                toast({ title: 'Error opening document', variant: 'destructive' });
-              }
-            }}
-          >
-            <FileText className="h-4 w-4" /> View Rate Confirmation
-          </Button>
-        )}
-
-        {/* Start Route button */}
-        {load.status === 'dispatched' && (
-          <Button className="w-full gap-2 bg-accent hover:bg-accent/90 text-accent-foreground" size="lg" onClick={handleStartRoute}>
-            <Play className="h-5 w-5" /> Start Route
-          </Button>
-        )}
-
-        {/* Stops */}
+      {/* Mis pagos de esta carga */}
+      {payments.length > 0 && (
         <div>
-          <h2 className="text-base font-semibold mb-2">Stops</h2>
-          <div className="space-y-3">
-            {stops.map(stop => (
-              <StopCard
-                key={stop.id}
-                stop={stop}
-                loadRef={load.reference_number}
-                driverName={profile?.full_name || ''}
-                onUpdate={fetchAll}
-                podDocuments={podDocs}
-                loadStatus={load.status}
-                isLastDelivery={stop.id === lastDeliveryId}
-                hideBrokerButton={driver?.service_type === 'dispatch_service'}
-              />
+          <h2 className="text-sm font-medium text-[#444746] px-1 mb-2">My payments</h2>
+          <div className="space-y-2">
+            {payments.map((p: any) => (
+              <div key={p.id} className={`${CARD} px-4 py-3 flex items-center justify-between`}>
+                <div>
+                  <p className="text-base font-medium">${Number(p.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                  <p className="text-xs text-[#444746]">{p.percentage_applied}% of ${Number(p.total_rate).toLocaleString()}</p>
+                </div>
+                <span className={`px-3 h-7 inline-flex items-center rounded-full text-xs font-medium ${p.status === 'paid' ? 'bg-[#c4eed0] text-[#0d652d]' : 'bg-[#fef7e0] text-[#8a5a00]'}`}>
+                  {p.status === 'paid' ? 'Paid' : 'Pending'}
+                </span>
+              </div>
             ))}
           </div>
         </div>
-
-        {/* Payments section */}
-        {payments.length > 0 && (
-          <div>
-            <h2 className="text-base font-semibold mb-2 flex items-center gap-1"><DollarSign className="h-5 w-5" /> My Payments</h2>
-            <div className="space-y-2">
-              {payments.map((p: any) => (
-                <Card key={p.id} className={`border-l-[3px] ${p.status === 'paid' ? 'border-l-success' : 'border-l-warning'}`}>
-                  <CardContent className="p-3 flex items-center justify-between">
-                    <div>
-                      <p className="text-base font-medium">${Number(p.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
-                      <p className="text-sm text-muted-foreground">{p.percentage_applied}% of ${Number(p.total_rate).toLocaleString()}</p>
-                    </div>
-                    <Badge className={p.status === 'paid' ? 'bg-success text-success-foreground' : 'bg-warning text-warning-foreground'}>
-                      {p.status === 'paid' ? 'Paid' : 'Pending'}
-                    </Badge>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }

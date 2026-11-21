@@ -1,5 +1,3 @@
-import { Check } from 'lucide-react';
-
 const steps = [
   { key: 'dispatched', label: 'Dispatched' },
   { key: 'in_transit', label: 'In Transit' },
@@ -18,30 +16,36 @@ const statusOrder: Record<string, number> = {
   paid: 5,
 };
 
-export const LoadProgressBar = ({ status }: { status: string }) => {
+/** Progreso de la carga estilo Material 3: segmentos azules + etiqueta del paso actual */
+export const LoadProgressBar = ({ status, compact = false }: { status: string; compact?: boolean }) => {
   const currentStep = statusOrder[status] ?? 0;
 
   return (
-    <div className="flex items-center w-full gap-1">
-      {steps.map((step, i) => {
-        const completed = currentStep > i;
-        const active = currentStep === i;
-        return (
-          <div key={step.key} className="flex-1 flex flex-col items-center gap-1">
-            <div className={`w-full h-1.5 rounded-full transition-colors ${
-              completed ? 'bg-success' : active ? 'bg-accent' : 'bg-muted'
-            }`} />
-            <div className="flex items-center gap-0.5">
-              {completed && <Check className="h-2.5 w-2.5 text-success" />}
-              <span className={`text-[10px] font-medium ${
-                completed ? 'text-success' : active ? 'text-accent' : 'text-muted-foreground'
-              }`}>
-                {step.label}
-              </span>
-            </div>
-          </div>
-        );
-      })}
+    <div className="w-full">
+      <div className="flex items-center w-full gap-1">
+        {steps.map((step, i) => (
+          <div
+            key={step.key}
+            className={`flex-1 h-1.5 rounded-full transition-colors ${
+              currentStep > i ? 'bg-[#0b57d0]' : currentStep === i ? 'bg-[#0b57d0]/60' : 'bg-[#dde3ea]'
+            }`}
+          />
+        ))}
+      </div>
+      {!compact && (
+        <div className="flex w-full gap-1 mt-1.5">
+          {steps.map((step, i) => (
+            <span
+              key={step.key}
+              className={`flex-1 text-center text-[10px] leading-tight ${
+                currentStep === i ? 'font-semibold text-[#0b57d0]' : currentStep > i ? 'text-[#444746]' : 'text-[#9aa0a6]'
+              }`}
+            >
+              {step.label}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
