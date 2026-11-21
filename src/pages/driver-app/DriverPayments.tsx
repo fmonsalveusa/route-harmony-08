@@ -1,11 +1,11 @@
+import { useState } from 'react';
 import { useDriverPayments, DriverPayment } from '@/hooks/useDriverPayments';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { TrendingUp, Clock, MapPin, Landmark } from 'lucide-react';
+import { Check, Wallet } from 'lucide-react';
 import { formatDate } from '@/lib/dateUtils';
 import { PullToRefresh } from '@/components/driver-app/PullToRefresh';
 import { useAuth } from '@/contexts/AuthContext';
+import { CARD } from '@/components/driver-app/driverUi';
+import { startOfWeek, endOfWeek, format, parseISO } from 'date-fns';
 
 function shortLocation(address: string): string {
   if (!address) return '—';
@@ -20,141 +20,140 @@ function shortLocation(address: string): string {
   return parts.length >= 2 ? `${parts[0]}, ${parts[1]}` : parts[0];
 }
 
-function SummaryCards({ paid, pending }: { paid: number; pending: number }) {
+const usd = (n: number) => `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const net = (p: DriverPayment) => Number(p.net_amount ?? p.amount) || 0;
+// Fechas "YYYY-MM-DD" se leen a mediodía para no correrse un día por zona horaria
+const toDate = (d: string) => parseISO(d.length === 10 ? `${d}T12:00:00` : d);
+const weekStart = (d: string) => startOfWeek(toDate(d), { weekStartsOn: 1 });
+
+function Summary({ payments }: { payments: DriverPayment[] }) {
+  const thisWeek = startOfWeek(new Date(), { weekStartsOn: 1 }).getTime();
+  const paidWeek = payments.filter(p => p.status === 'paid' && p.payment_date && weekStart(p.payment_date).getTime() === thisWeek).reduce((s, p) => s + net(p), 0);
+  const pending = payments.filter(p => p.status !== 'paid').reduce((s, p) => s + net(p), 0);
+  const paidAll = payments.filter(p => p.status === 'paid').reduce((s, p) => s + net(p), 0);
   return (
-    <div className="grid grid-cols-2 gap-3">
-      <Card className="overflow-hidden">
-        <CardContent className="p-4 flex flex-col items-center gap-2 bg-success/5">
-          <div className="p-2 rounded-full bg-success/10"><TrendingUp className="h-6 w-6 text-success" /></div>
-          <p className="text-xs font-medium text-muted-foreground">Paid</p>
-          <p className="text-xl font-bold text-success">${paid.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
-        </CardContent>
-      </Card>
-      <Card className="overflow-hidden">
-        <CardContent className="p-4 flex flex-col items-center gap-2 bg-warning/5">
-          <div className="p-2 rounded-full bg-warning/10"><Clock className="h-6 w-6 text-warning" /></div>
-          <p className="text-xs font-medium text-muted-foreground">Pending</p>
-          <p className="text-xl font-bold text-warning">${pending.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
-        </CardContent>
-      </Card>
+    <div className="rounded-[28px] bg-[#d3e3fd] text-[#041e49] p-5">
+      <p className="text-sm">Paid this week</p>
+      <p className="text-[40px] leading-[48px] font-normal tracking-tight">{usd(paidWeek)}</p>
+      <div className="grid grid-cols-2 gap-2 mt-4">
+        <div className="rounded-2xl bg-white/70 px-3 py-2">
+          <p className="text-xs text-[#444746]">Pending</p>
+          <p className="text-base font-medium text-[#8a5a00]">{usd(pending)}</p>
+        </div>
+        <div className="rounded-2xl bg-white/70 px-3 py-2">
+          <p className="text-xs text-[#444746]">Paid total</p>
+          <p className="text-base font-medium text-[#0d652d]">{usd(paidAll)}</p>
+        </div>
+      </div>
     </div>
   );
 }
 
-function PaymentList({ payments }: { payments: DriverPayment[] }) {
-  if (payments.length === 0) return <p className="text-base text-muted-foreground text-center py-8">No payments yet</p>;
-
+function PaymentRow({ p }: { p: DriverPayment }) {
+  const [open, setOpen] = useState(false);
+  const adj = p.total_adjustments ?? 0;
+  const paid = p.status === 'paid';
   return (
-    <div className="space-y-2">
-      {payments.map(p => {
-        const adjAmount = p.total_adjustments ?? 0;
-        return (
-          <Card key={p.id} className={`border-l-[3px] ${p.status === 'paid' ? 'border-l-success' : 'border-l-warning'}`}>
-            <CardContent className="p-3 space-y-2">
-              <div className="flex items-center justify-between">
-                <p className="text-base font-bold">Load #{p.load_reference}</p>
-                <Badge className={p.status === 'paid' ? 'bg-success text-success-foreground' : 'bg-warning text-warning-foreground'}>
-                  {p.status === 'paid' ? 'Paid' : 'Pending'}
-                </Badge>
-              </div>
-              {(p.driver_name || p.recipient_name) && (
-                <p className="text-xs text-muted-foreground">Driver: {p.driver_name || p.recipient_name}</p>
-              )}
-              <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                <MapPin className="h-3.5 w-3.5 shrink-0" />
-                <span>{shortLocation(p.origin || '')} → {shortLocation(p.destination || '')}</span>
-              </div>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Rate</span>
-                  <span className="font-medium">${Number(p.total_rate).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">% Assigned</span>
-                  <span className="font-medium">{p.percentage_applied}%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Adjustment</span>
-                  <span className={`font-medium ${adjAmount > 0 ? 'text-success' : adjAmount < 0 ? 'text-destructive' : ''}`}>
-                    {adjAmount === 0 ? '—' : `${adjAmount > 0 ? '+' : ''}$${Math.abs(adjAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Paid Date</span>
-                  <span className="font-medium">{p.payment_date ? formatDate(p.payment_date) : '—'}</span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between pt-1 border-t border-border">
-                <span className="text-sm font-medium text-muted-foreground">Total Paid</span>
-                <span className="text-base font-bold">${(p.net_amount ?? p.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-              </div>
-            </CardContent>
-          </Card>
-        );
-      })}
+    <button type="button" onClick={() => setOpen(o => !o)} className="w-full text-left px-4 py-3 active:bg-[#f0f4f9]">
+      <div className="flex items-center gap-3">
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium truncate">{shortLocation(p.origin || '')} → {shortLocation(p.destination || '')}</p>
+          <p className="text-xs text-[#444746] truncate">
+            #{p.load_reference}{(p.driver_name || p.recipient_name) ? ` · ${p.driver_name || p.recipient_name}` : ''}
+          </p>
+        </div>
+        <div className="text-right flex-shrink-0">
+          <p className="text-base font-medium">{usd(net(p))}</p>
+          <span className={`px-2 h-5 inline-flex items-center rounded-full text-[10px] font-medium ${paid ? 'bg-[#c4eed0] text-[#0d652d]' : 'bg-[#fef7e0] text-[#8a5a00]'}`}>
+            {paid ? 'Paid' : 'Pending'}
+          </span>
+        </div>
+      </div>
+      {open && (
+        <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-[#444746]">
+          <span>Rate <b className="text-[#1f1f1f] font-medium">{usd(Number(p.total_rate))}</b></span>
+          <span>Share <b className="text-[#1f1f1f] font-medium">{p.percentage_applied}%</b></span>
+          <span>Adjustment <b className={`font-medium ${adj > 0 ? 'text-[#0d652d]' : adj < 0 ? 'text-[#b3261e]' : 'text-[#1f1f1f]'}`}>{adj === 0 ? '—' : `${adj > 0 ? '+' : '−'}${usd(Math.abs(adj))}`}</b></span>
+          <span>Paid on <b className="text-[#1f1f1f] font-medium">{p.payment_date ? formatDate(p.payment_date) : '—'}</b></span>
+        </div>
+      )}
+    </button>
+  );
+}
+
+/** Lista por semana: primero lo pendiente, luego lo pagado agrupado por semana de pago */
+function PaymentList({ payments }: { payments: DriverPayment[] }) {
+  if (payments.length === 0) {
+    return (
+      <div className={`${CARD} p-8 text-center`}>
+        <span className="mx-auto mb-3 h-14 w-14 rounded-full bg-[#e9eef6] flex items-center justify-center"><Wallet className="h-7 w-7 text-[#444746]" /></span>
+        <p className="text-sm text-[#444746]">No payments yet</p>
+      </div>
+    );
+  }
+  const pending = payments.filter(p => p.status !== 'paid');
+  const weeks = new Map<number, DriverPayment[]>();
+  for (const p of payments.filter(p => p.status === 'paid')) {
+    const k = weekStart(p.payment_date || p.created_at).getTime();
+    if (!weeks.has(k)) weeks.set(k, []);
+    weeks.get(k)!.push(p);
+  }
+  const groups = [
+    ...(pending.length ? [{ key: 'pending', title: 'Pending', items: pending }] : []),
+    ...[...weeks.entries()].sort((a, b) => b[0] - a[0]).map(([k, items]) => {
+      const s = new Date(k);
+      return { key: String(k), title: `Week of ${format(s, 'MMM d')} – ${format(endOfWeek(s, { weekStartsOn: 1 }), 'MMM d')}`, items };
+    }),
+  ];
+  return (
+    <div className="space-y-4">
+      {groups.map(g => (
+        <div key={g.key}>
+          <div className="flex items-baseline justify-between px-1 mb-2">
+            <h2 className="text-sm font-medium text-[#444746]">{g.title}</h2>
+            <span className="text-sm font-medium text-[#1f1f1f]">{usd(g.items.reduce((s, p) => s + net(p), 0))}</span>
+          </div>
+          <div className={`${CARD} overflow-hidden divide-y divide-[#f0f4f9]`}>
+            {g.items.map(p => <PaymentRow key={p.id} p={p} />)}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
 
 export default function DriverPayments() {
   const { role } = useAuth();
-  const {
-    payments, investorPayments, loading,
-    totalPending, totalPaid,
-    investorTotalPending, investorTotalPaid,
-    refetch,
-  } = useDriverPayments();
+  const { payments, investorPayments, loading, refetch } = useDriverPayments();
+  const [view, setView] = useState<'driver' | 'investor'>('driver');
 
-  if (loading) return <div className="flex items-center justify-center h-40"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" /></div>;
+  if (loading) return <div className="flex items-center justify-center h-40"><div className="animate-spin rounded-full h-7 w-7 border-[3px] border-[#d3e3fd] border-t-[#0b57d0]" /></div>;
 
   const isInvestorOnly = role === 'investor';
   const hasInvestorPayments = investorPayments.length > 0;
-
-  // Investor-only users: show only investor payments, no tabs
-  if (isInvestorOnly) {
-    return (
-      <PullToRefresh onRefresh={refetch}>
-        <div className="p-4 pb-[calc(72px+env(safe-area-inset-bottom,0px))] space-y-4">
-          <h1 className="text-xl font-bold">Investor Payments</h1>
-          <SummaryCards paid={investorTotalPaid} pending={investorTotalPending} />
-          <PaymentList payments={investorPayments} />
-        </div>
-      </PullToRefresh>
-    );
-  }
+  const list = isInvestorOnly || view === 'investor' ? investorPayments : payments;
 
   return (
     <PullToRefresh onRefresh={refetch}>
-      <div className="p-4 pb-[calc(72px+env(safe-area-inset-bottom,0px))] space-y-4">
-        {hasInvestorPayments ? (
-          <Tabs defaultValue="driver">
-            <div className="flex items-center justify-between">
-              <h1 className="text-xl font-bold">My Payments</h1>
-            </div>
-            <TabsList className="w-full mt-2">
-              <TabsTrigger value="driver" className="flex-1 gap-1.5">
-                <TrendingUp className="h-4 w-4" /> Driver
-              </TabsTrigger>
-              <TabsTrigger value="investor" className="flex-1 gap-1.5">
-                <Landmark className="h-4 w-4" /> Investor
-              </TabsTrigger>
-            </TabsList>
-            <TabsContent value="driver" className="space-y-4">
-              <SummaryCards paid={totalPaid} pending={totalPending} />
-              <PaymentList payments={payments} />
-            </TabsContent>
-            <TabsContent value="investor" className="space-y-4">
-              <SummaryCards paid={investorTotalPaid} pending={investorTotalPending} />
-              <PaymentList payments={investorPayments} />
-            </TabsContent>
-          </Tabs>
-        ) : (
-          <>
-            <h1 className="text-xl font-bold">My Payments</h1>
-            <SummaryCards paid={totalPaid} pending={totalPending} />
-            <PaymentList payments={payments} />
-          </>
+      <div className="px-4 pt-2 pb-[calc(24px+env(safe-area-inset-bottom,0px))] space-y-4">
+        <h1 className="text-[28px] leading-9 font-normal">{isInvestorOnly ? 'Investor payments' : 'My payments'}</h1>
+
+        {!isInvestorOnly && hasInvestorPayments && (
+          <div className="flex gap-2">
+            {([['driver', 'Driver'], ['investor', 'Investor']] as const).map(([k, label]) => {
+              const on = view === k;
+              return (
+                <button key={k} type="button" onClick={() => setView(k)}
+                  className={`inline-flex items-center gap-1.5 h-9 px-4 rounded-lg text-sm font-medium ${on ? 'bg-[#d3e3fd] text-[#041e49]' : 'border border-[#c4c7c5] text-[#444746]'}`}>
+                  {on && <Check className="h-4 w-4" />}{label}
+                </button>
+              );
+            })}
+          </div>
         )}
+
+        <Summary payments={list} />
+        <PaymentList payments={list} />
       </div>
     </PullToRefresh>
   );

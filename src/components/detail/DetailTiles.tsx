@@ -62,7 +62,8 @@ export const daysUntil = (date: string | null | undefined) => {
 };
 
 /** Vencimiento con anillo de progreso (verde / amarillo / rojo) y cuenta regresiva */
-export function ExpiryRing({ icon: Icon, label, date }: { icon: LucideIcon; label: string; date: string | null | undefined }) {
+export function ExpiryRing({ icon: Icon, label, date, lang = 'es' }: { icon: LucideIcon; label: string; date: string | null | undefined; lang?: 'es' | 'en' }) {
+  const en = lang === 'en';
   const days = daysUntil(date);
   const expired = days !== null && days < 0;
   const color = days === null ? '#c4c7c5' : days < 0 ? '#d93025' : days <= 30 ? '#d93025' : days <= 60 ? '#f9ab00' : '#188038';
@@ -83,12 +84,12 @@ export function ExpiryRing({ icon: Icon, label, date }: { icon: LucideIcon; labe
       <div className="min-w-0 flex-1">
         <p className={cn('text-[10.5px] uppercase tracking-wide truncate', expired ? 'text-white/85' : 'text-[#444746] dark:text-muted-foreground')}>{label}</p>
         {days === null ? (
-          <p className="text-sm text-[#444746] dark:text-muted-foreground">Sin fecha</p>
+          <p className="text-sm text-[#444746] dark:text-muted-foreground">{en ? 'No date' : 'Sin fecha'}</p>
         ) : expired ? (
-          <p className="text-sm font-bold tracking-wide">VENCIDO · hace {Math.abs(days)} {Math.abs(days) === 1 ? 'día' : 'días'}</p>
+          <p className="text-sm font-bold tracking-wide">{en ? `EXPIRED · ${Math.abs(days)} ${Math.abs(days) === 1 ? 'day' : 'days'} ago` : `VENCIDO · hace ${Math.abs(days)} ${Math.abs(days) === 1 ? 'día' : 'días'}`}</p>
         ) : (
           <p className="text-sm text-[#1f1f1f] dark:text-foreground">
-            <span className="font-medium" style={{ color }}>{days === 0 ? 'Vence hoy' : `Vence en ${days} ${days === 1 ? 'día' : 'días'}`}</span>
+            <span className="font-medium" style={{ color }}>{en ? (days === 0 ? 'Expires today' : `Expires in ${days} ${days === 1 ? 'day' : 'days'}`) : (days === 0 ? 'Vence hoy' : `Vence en ${days} ${days === 1 ? 'día' : 'días'}`)}</span>
           </p>
         )}
         {date && <p className={cn('text-[11px]', expired ? 'text-white/85' : 'text-[#444746] dark:text-muted-foreground')}>{formatDate(date)}</p>}
