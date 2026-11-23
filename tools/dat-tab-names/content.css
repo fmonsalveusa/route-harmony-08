@@ -194,7 +194,6 @@
 .du-mkt-ico.du-mkt-hot svg { fill: #34a853; }
 .du-mkt-ico.du-mkt-hot.du-mkt-strong svg { fill: #137333; }
 .du-mkt-ico.du-mkt-neu svg { fill: #1a73e8; }
-.du-mkt-ico.du-mkt-neu { width: 14px; height: 14px; margin: 0 2px; }
 .du-mkt-ico.du-mkt-cold svg { fill: #ea4335; }
 .du-mkt-ico.du-mkt-cold.du-mkt-strong svg { fill: #b31412; }
 .du-mkt-ico.du-mkt-stale { opacity: .4; }
