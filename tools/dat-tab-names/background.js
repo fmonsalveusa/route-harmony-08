@@ -230,3 +230,55 @@ async function checkLocalFolder() {
 chrome.alarms.create("du-folder-update", { periodInMinutes: 1 });
 chrome.alarms.onAlarm.addListener((a) => { if (a.name === "du-folder-update") checkLocalFolder(); });
 chrome.runtime.onStartup.addListener(checkLocalFolder);
+
+// ── Mercado al día sin abrir Market Conditions a mano ──
+// Cuando DAT está abierto y el dato del mercado tiene más de 4 h, se abre Market Conditions en una
+// pestaña de fondo (Flatbed y Van, salida). La propia página carga sus datos, iq-capture/iq-session
+// los guardan, y la pestaña se cierra sola. Si DAT iQ pide iniciar sesión, se cierra a los 2 min y
+// se avisa en el tooltip de la mano.
+const IQ_AUTO_URL = "https://iq.prod.dat.com/market-conditions/conditions/FLATBED~KMA~CURRENT~OUT~~~0/VAN~KMA~CURRENT~OUT~~~0";
+const MARKET_MAX_AGE = 4 * 3600 * 1000;
+const MARKET_RETRY = 3600 * 1000; // no más de un intento por hora
+
+const marketFresh = (m, since) => ["FLATBED", "VAN"].every((eq) => (m?.[eq]?.OUT?.kma?.at || 0) > since && (m?.[eq]?.OUT?.lt?.at || 0) > since);
+
+let marketBusy = false; // varias pestañas de DAT pueden pedirlo a la vez
+async function refreshMarket() {
+  if (marketBusy) return;
+  marketBusy = true;
+  try { await openMarketTab(); } finally { marketBusy = false; }
+}
+async function openMarketTab() {
+  const { duMarket, duMarketAuto = {} } = await chrome.storage.local.get(["duMarket", "duMarketAuto"]);
+  if (duMarketAuto.tabId) return; // ya hay una en curso
+  if (marketFresh(duMarket, Date.now() - MARKET_MAX_AGE)) return;
+  if (duMarketAuto.at && Date.now() - duMarketAuto.at < MARKET_RETRY) return;
+  const tab = await chrome.tabs.create({ url: IQ_AUTO_URL, active: false });
+  await chrome.storage.local.set({ duMarketAuto: { at: Date.now(), tabId: tab.id, status: "running" } });
+  chrome.alarms.create("du-market-timeout", { delayInMinutes: 2 });
+}
+
+async function finishMarket(status) {
+  const { duMarketAuto = {} } = await chrome.storage.local.get("duMarketAuto");
+  if (!duMarketAuto.tabId) return;
+  try { await chrome.tabs.remove(duMarketAuto.tabId); } catch {}
+  chrome.alarms.clear("du-market-timeout");
+  await chrome.storage.local.set({ duMarketAuto: { at: duMarketAuto.at, status } });
+}
+
+chrome.runtime.onMessage.addListener((msg) => { if (msg?.type === "market-refresh") refreshMarket(); });
+chrome.storage.onChanged.addListener(async (ch, area) => {
+  if (area !== "local" || !(ch.duMarket || ch.duKmaShapes)) return;
+  const { duMarketAuto = {}, duMarket, duKmaShapes } = await chrome.storage.local.get(["duMarketAuto", "duMarket", "duKmaShapes"]);
+  if (!duMarketAuto.tabId) return;
+  // Listo cuando llegaron Flatbed y Van (índice + volumen) y las figuras de las zonas
+  if (marketFresh(duMarket, duMarketAuto.at - 1) && (duKmaShapes?.at || 0) > duMarketAuto.at - 1) {
+    setTimeout(() => finishMarket("ok"), 2000);
+  }
+});
+chrome.alarms.onAlarm.addListener((a) => { if (a.name === "du-market-timeout") finishMarket("timeout"); });
+// Si el usuario cierra esa pestaña a mano
+chrome.tabs.onRemoved.addListener(async (tabId) => {
+  const { duMarketAuto = {} } = await chrome.storage.local.get("duMarketAuto");
+  if (duMarketAuto.tabId === tabId) await chrome.storage.local.set({ duMarketAuto: { at: duMarketAuto.at, status: "closed" } });
+});

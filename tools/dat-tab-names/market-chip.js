@@ -40,8 +40,16 @@
       zones = prepZones(s.duKmaShapes);
       version++;
       schedule();
+      askRefresh();
     } catch {}
   };
+  // Dato viejo (o sin datos): background.js abre Market Conditions en una pestaña de fondo y la
+  // cierra al guardar. Se pide al abrir DAT y cada 30 min mientras DAT siga abierto.
+  const askRefresh = () => {
+    const old = ["FLATBED", "VAN"].some((eq) => Date.now() - (market?.[eq]?.OUT?.kma?.at || 0) > 4 * 3600 * 1000);
+    if (old) try { chrome.runtime.sendMessage({ type: "market-refresh" }).catch(() => {}); } catch {}
+  };
+  setInterval(() => { if (chrome.runtime?.id && !document.hidden) askRefresh(); }, 30 * 60 * 1000);
   chrome.storage.onChanged.addListener((ch, area) => {
     if (area === "local" && (ch.duMarket || ch.duKmaShapes)) load();
   });
