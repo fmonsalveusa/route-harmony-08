@@ -1429,27 +1429,42 @@ const Tracking = () => {
                     {hosClocks[driver.id] && <HosClocks row={hosClocks[driver.id]} className="shrink-0 w-[270px] max-w-[60%]" />}
                     </div>
 
-                    {/* Cargas en cola: después de la actual (Dispatched sin arrancar y Planned) */}
+                    {/* Cargas en cola: después de la actual (Dispatched sin arrancar y Planned), estilo lista de Google */}
                     {nextLoads.length > 0 && (
-                      <div className="mx-3 mt-1.5 space-y-1">
-                        {nextLoads.map((l: any) => (
-                          <button
-                            key={l.id}
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); navigate(`/loads?openLoad=${l.id}`); }}
-                            className="w-full flex items-center gap-1.5 rounded-xl bg-[#f0f4f9] hover:bg-[#e3e8ef] dark:bg-muted/50 px-2.5 py-1 text-left text-xs transition-colors"
-                            title="Abrir carga"
-                          >
-                            <span className="shrink-0 font-medium text-[#444746] dark:text-muted-foreground">{activeLoad ? 'Después:' : 'Próxima:'}</span>
-                            <span className="min-w-0 truncate text-[#1f1f1f] dark:text-foreground">
-                              <b className="font-semibold">#{l.reference_number}</b> · {extractCityState(l.origin || '')} → {extractCityState(l.destination || '')}
-                              {l.pickup_date ? ` · ${format(parseISO(l.pickup_date), 'MM/dd')}` : ''}
-                            </span>
-                            <span className={`ml-auto shrink-0 rounded-full px-1.5 py-px text-[10px] font-bold ${l.status === 'planned' ? 'bg-[#e9eef6] text-[#444746]' : 'bg-[#fef7e0] text-[#8a5a00]'}`}>
-                              {l.status === 'planned' ? 'PLANNED' : 'DISPATCHED'}
-                            </span>
-                          </button>
-                        ))}
+                      <div className="mx-3 mt-2 rounded-2xl border border-[#e3e3e3] dark:border-border overflow-hidden">
+                        <p className="px-3 pt-2 pb-1 text-[11px] font-medium text-[#444746] dark:text-muted-foreground">
+                          {activeLoad ? (nextLoads.length > 1 ? 'Siguientes cargas' : 'Siguiente carga') : (nextLoads.length > 1 ? 'Próximas cargas' : 'Próxima carga')}
+                        </p>
+                        {nextLoads.map((l: any) => {
+                          const planned = l.status === 'planned';
+                          return (
+                            <button
+                              key={l.id}
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); navigate(`/loads?openLoad=${l.id}`); }}
+                              className="group w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-[#f0f4f9] dark:hover:bg-muted/40 transition-colors border-t border-[#f0f0f0] dark:border-border first-of-type:border-t-0"
+                              title="Abrir carga"
+                            >
+                              <span className={`h-8 w-8 shrink-0 rounded-full flex items-center justify-center ${planned ? 'bg-[#e9eef6] text-[#444746]' : 'bg-[#d3e3fd] text-[#041e49]'}`}>
+                                <Package className="h-4 w-4" />
+                              </span>
+                              <span className="min-w-0 flex-1">
+                                <span className="block truncate text-sm text-[#1f1f1f] dark:text-foreground">
+                                  {extractCityState(l.origin || '')} <span className="text-[#747775]">→</span> {extractCityState(l.destination || '')}
+                                </span>
+                                <span className="block truncate text-xs text-[#444746] dark:text-muted-foreground">
+                                  #{l.reference_number}
+                                  {l.pickup_date ? ` · Pickup ${format(parseISO(l.pickup_date), 'MMM d')}` : ''}
+                                  {l.delivery_date ? ` · Entrega ${format(parseISO(l.delivery_date), 'MMM d')}` : ''}
+                                </span>
+                              </span>
+                              <span className={`shrink-0 h-6 inline-flex items-center rounded-lg px-2 text-[11px] font-medium ${planned ? 'border border-[#c4c7c5] text-[#444746] dark:text-muted-foreground' : 'bg-[#fef7e0] text-[#8a5a00]'}`}>
+                                {planned ? 'Planned' : 'Dispatched'}
+                              </span>
+                              <ChevronRight className="h-4 w-4 shrink-0 text-[#747775] opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </button>
+                          );
+                        })}
                       </div>
                     )}
 
