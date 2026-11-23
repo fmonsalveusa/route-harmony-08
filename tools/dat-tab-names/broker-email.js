@@ -34,25 +34,54 @@
   }
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
-  async function build(info, fallbackEmail) {
+  // Datos que se ven en la fila de la carga en la lista. Respaldo cuando DAT no mandó los datos
+  // completos de esa carga (antes salían emails con "From  To" vacío).
+  function rowData(pid) {
+    const row = pid ? document.querySelector(`dat-result-row [posting-id="${CSS.escape(pid)}"]`)?.closest("dat-result-row") : null;
+    if (!row) return {};
+    const cell = (t) => (row.querySelector(`[data-test="${t}"]`)?.textContent || "").replace(/\s+/g, " ").trim();
+    const digits = (x) => (String(x).match(/[\d,]+/)?.[0] || "").replace(/,/g, "");
+    const destination = cell("load-destination-cell");
+    let origin = cell("load-origin-cell");
+    // En pantallas angostas DAT pone origen y destino juntos en la misma celda
+    if (destination && origin.endsWith(destination) && origin !== destination) origin = origin.slice(0, -destination.length).trim();
+    return {
+      name: cell("load-company-cell"),
+      origin,
+      destination,
+      dho: digits(cell("load-dho-cell")),
+      date: cell("load-pick-up-cell").split(" - ")[0],
+      miles: digits(cell("load-trip-cell")),
+      equipment: cell("load-eq-cell"),
+      weight: digits(cell("load-weight-cell")),
+      length: digits(cell("load-length-cell")),
+      rate: digits(cell("load-rate-cell").match(/\$[\d,]+/)?.[0] || ""),
+    };
+  }
+
+  async function build(info, fallbackEmail, pid) {
     const { emailCfg } = await chrome.storage.sync.get("emailCfg");
     const cfg = { ...DU_EMAIL_DEFAULTS, mode: "direct", ...(emailCfg || {}) };
+    const d = rowData(pid);
+    const pick = (a, b) => (a !== undefined && a !== null && a !== "" ? a : b || "");
+    const weight = pick(info?.weight, d.weight), rate = pick(info?.rate, d.rate);
     const vals = {
-      broker: info?.name || "",
-      origen: info?.origin || "",
-      destino: info?.destination || "",
-      dho: info?.dho ?? "",
-      fecha: fmtDate(info?.date),
-      millas: info?.miles ?? "",
-      equipo: info?.equipment || "",
-      peso: info?.weight ? Number(info.weight).toLocaleString("en-US") : "",
-      largo: info?.length ?? "",
-      rate: info?.rate ? `$${Number(info.rate).toLocaleString("en-US")}` : "",
+      broker: pick(info?.name, d.name),
+      origen: pick(info?.origin, d.origin),
+      destino: pick(info?.destination, d.destination),
+      dho: pick(info?.dho, d.dho),
+      fecha: info?.date ? fmtDate(info.date) : d.date || "",
+      millas: pick(info?.miles, d.miles),
+      equipo: pick(info?.equipment, d.equipment),
+      peso: weight ? Number(weight).toLocaleString("en-US") : "",
+      largo: pick(info?.length, d.length),
+      rate: rate ? `$${Number(rate).toLocaleString("en-US")}` : "",
       referencia: info?.ref || "",
       driver: activeDriver(),
     };
     return {
       cfg,
+      vals,
       to: (info?.email || fallbackEmail || "").trim(),
       subject: duFillTemplate(cfg.subject, vals),
       body: duFillTemplate(cfg.body, vals),
@@ -91,8 +120,13 @@
     const pid = btn.dataset.pid || comp.querySelector("[posting-id]")?.getAttribute("posting-id");
     const info = pid ? postings.get(pid) : null;
     const shown = fallbackEmail || (comp.textContent || "").match(/[\w.+-]+@[\w-]+\.[\w.-]+/)?.[0] || "";
-    const { cfg, to, subject, body } = await build(info, shown);
+    const { cfg, vals, to, subject, body } = await build(info, shown, pid);
     if (!to) { toast("Esta carga no tiene email del broker."); return; }
+    // Nunca mandar un email con la ruta vacía
+    if (!vals.origen || !vals.destino) {
+      toast("No tengo el origen/destino de esta carga. Recarga DAT (F5) o vuelve a buscar, y envía de nuevo.", 6000);
+      return;
+    }
 
     if (cfg.mode === "gmail") { openGmail(cfg, to, subject, body); return; }
 
