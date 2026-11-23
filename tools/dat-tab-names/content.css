@@ -189,9 +189,9 @@
 /* Mercado de la ciudad destino (MCI de salida de DAT Market Conditions): ícono a la derecha */
 [data-test="load-destination-cell"]:has(+ .du-mkt-ico) { flex-shrink: 1; min-width: 0; }
 *:has(> [data-test="load-destination-cell"] + .du-mkt-ico) { display: flex; align-items: center; gap: 4px; }
-.du-mkt-ico { display: inline-flex; flex-shrink: 0; height: 16px; vertical-align: middle; cursor: help; }
+.du-mkt-ico { display: inline-flex; justify-content: flex-start; flex-shrink: 0; width: 48px; height: 16px; vertical-align: middle; cursor: help; }
 .du-mkt-ico svg { width: 15px; height: 15px; flex-shrink: 0; }
-.du-mkt-ico svg + svg { margin-left: 1px; } /* 2 o 3 manos */
+.du-mkt-ico svg + svg { margin-left: 1px; } /* 2 o 3 manos; ancho fijo para que 1 o 2 manos empiecen en el mismo sitio que 3 */
 .du-mkt-ico.du-mkt-hot svg { fill: #1e8e3e; }
 .du-mkt-ico.du-mkt-neu svg { fill: #1a73e8; }
 .du-mkt-ico.du-mkt-cold svg { fill: #d93025; }
