@@ -111,12 +111,7 @@
 /* En el detalle, el círculo va pegado al MC# */
 .compliance-number > .du-rts { margin-left: 8px; }
 /* En la lista: a la izquierda del nombre del broker */
-/* Compacto para dejar más espacio al nombre: se mete en el margen de la celda, círculo de 16 px y
-   textos cortos (… cargando, – sin datos, ? varios, ! error; el detalle va en el tooltip) */
-.du-rts.du-rts-before { margin-left: -2px; margin-right: 4px; }
-.du-rts.du-rts-before.du-rts-muted { padding: 0 5px; font-size: 10px; line-height: 15px; }
-.du-rts-before .du-rts-dot { width: 16px; height: 16px; font-size: 10px; }
-.du-rts-before .du-rts-warn { width: 17px; height: 17px; }
+.du-rts.du-rts-before { margin-left: 0; margin-right: 6px; }
 *:has(> .du-rts-before + [data-test="load-company-cell"]) { display: flex; align-items: center; min-width: 0; }
 .du-rts-before + [data-test="load-company-cell"] { min-width: 0; }
 
