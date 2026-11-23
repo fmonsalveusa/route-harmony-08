@@ -151,7 +151,8 @@
     sentTimer = setTimeout(async () => {
       const batch = new Map(sentQueue);
       sentQueue.clear();
-      const r = await chrome.runtime.sendMessage({ type: "broker-email-send", payload: { action: "sent", posting_ids: [...batch.keys()] } }).catch(() => null);
+      let r = null;
+      try { r = await chrome.runtime.sendMessage({ type: "broker-email-send", payload: { action: "sent", posting_ids: [...batch.keys()] } }); } catch {}
       for (const [id, btns] of batch) {
         if (r?.sent?.[id]) sentAt.set(id, r.sent[id]);
         if (sentAt.has(id)) for (const b of btns) if (b.isConnected && b.dataset.pid === id) markSent(b, sentAt.get(id));
@@ -181,7 +182,10 @@
       cfg.className = "du-cfg";
       cfg.innerHTML = '<span aria-hidden="true">✉</span> Configurar email';
       cfg.title = "Plantilla del email a brokers, modo de envío y clave";
-      cfg.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); chrome.runtime.sendMessage({ type: "open-options" }); });
+      cfg.addEventListener("click", (e) => {
+        e.preventDefault(); e.stopPropagation();
+        try { chrome.runtime.sendMessage({ type: "open-options" }); } catch { toast(STALE, 6000); }
+      });
       bar.append(cfg);
     }
     for (const comp of document.querySelectorAll("dat-company")) {
@@ -221,8 +225,11 @@
 
   let t = null;
   // Igual que en rts-chip.js: DAT reutiliza filas (cambia texto/posting-id sin agregar elementos)
-  new MutationObserver(() => { clearTimeout(t); t = setTimeout(scan, 300); })
-    .observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["posting-id", "href-value", "recipient-email"] });
-  setInterval(() => { if (!document.hidden) scan(); }, 4000);
+  // Si la extensión se recarga/actualiza con DAT abierto, este script queda huérfano (sin acceso
+  // a la extensión): deja de vigilar la página (los botones avisan que hay que recargar) en vez de llenar "Errores" de chrome://extensions.
+  const obs = new MutationObserver(() => { if (alive()) { clearTimeout(t); t = setTimeout(scan, 300); } });
+  obs.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["posting-id", "href-value", "recipient-email"] });
+  const iv = setInterval(() => { if (alive() && !document.hidden) scan(); }, 4000);
+  function alive() { if (chrome.runtime?.id) return true; obs.disconnect(); clearInterval(iv); clearTimeout(t); return false; }
   scan();
 })();

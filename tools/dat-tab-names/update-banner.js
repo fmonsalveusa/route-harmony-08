@@ -1,6 +1,6 @@
 // Barra en DAT cuando hay una versión nueva de la extensión publicada en el TMS
 (() => {
-  chrome.runtime.sendMessage({ type: "check-update" }).catch(() => {});
+  try { chrome.runtime.sendMessage({ type: "check-update" }).catch(() => {}); } catch {}
   const SNOOZE_KEY = "duUpdateSnooze";
   async function show() {
     const { duUpdate, [SNOOZE_KEY]: snooze } = await chrome.storage.local.get(["duUpdate", SNOOZE_KEY]);

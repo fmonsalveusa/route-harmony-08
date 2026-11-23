@@ -156,8 +156,11 @@
 
   let t = null;
   const schedule = () => { clearTimeout(t); t = setTimeout(scan, 300); };
-  new MutationObserver(schedule)
-    .observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["posting-id"] });
-  setInterval(() => { if (!document.hidden) scan(); }, 4000);
+  // Si la extensión se recarga/actualiza con DAT abierto, este script queda huérfano (sin acceso
+  // a la extensión): se apaga solo en vez de llenar "Errores" de chrome://extensions.
+  const obs = new MutationObserver(() => alive() && schedule());
+  obs.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["posting-id"] });
+  const iv = setInterval(() => { if (alive() && !document.hidden) scan(); }, 4000);
+  function alive() { if (chrome.runtime?.id) return true; obs.disconnect(); clearInterval(iv); clearTimeout(t); return false; }
   load();
 })();

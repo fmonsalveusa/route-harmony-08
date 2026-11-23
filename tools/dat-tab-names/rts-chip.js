@@ -10,7 +10,10 @@
   const ask = (q) => {
     const k = q.mc ? `mc:${q.mc}` : `name:${q.name}|${q.phone || ""}`;
     if (!pending.has(k)) {
-      pending.set(k, chrome.runtime.sendMessage({ type: "rts-lookup", ...q }).catch((e) => ({ error: String(e) })));
+      let p;
+      try { p = chrome.runtime.sendMessage({ type: "rts-lookup", ...q }).catch((e) => ({ error: String(e?.message || e) })); }
+      catch (e) { p = Promise.resolve({ error: "La extensión se actualizó: recarga DAT (F5)" }); }
+      pending.set(k, p);
       // Se olvida al rato para que un error o un login nuevo se reintente
       setTimeout(() => pending.delete(k), 5 * 60 * 1000);
     }
@@ -160,8 +163,11 @@
   // DAT reutiliza las filas: a veces solo cambia el texto o el posting-id de una fila (carga nueva
   // en la misma fila) sin agregar elementos. Por eso se vigilan también texto y posting-id, y se
   // revisa cada pocos segundos por si acaso.
-  new MutationObserver(schedule)
-    .observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["posting-id", "href-value", "recipient-email"] });
-  setInterval(() => { if (!document.hidden) scan(); }, 4000);
+  // Si la extensión se recarga/actualiza con DAT abierto, este script queda huérfano (sin acceso
+  // a la extensión): se apaga solo en vez de llenar "Errores" de chrome://extensions.
+  const obs = new MutationObserver(() => alive() && schedule());
+  obs.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["posting-id", "href-value", "recipient-email"] });
+  const iv = setInterval(() => { if (alive() && !document.hidden) scan(); }, 4000);
+  function alive() { if (chrome.runtime?.id) return true; obs.disconnect(); clearInterval(iv); clearTimeout(t); return false; }
   scan();
 })();

@@ -13,7 +13,7 @@
     return lines.length ? lines.join(" → ") : null;
   };
   const tabs = () => [...document.querySelectorAll('[role="tab"].mat-tab-label')];
-  const save = () => chrome.storage.local.set({ labels });
+  const save = () => { try { chrome.storage.local.set({ labels }); } catch {} };
 
   // Pestaña sin etiqueta en la misma posición que una etiqueta cuya búsqueda ya no existe: se movió el origen
   function migrate() {
@@ -138,6 +138,7 @@
     if (digits.length < 11) return;
     e.preventDefault();
     e.stopPropagation();
-    chrome.runtime.sendMessage({ type: "voice-call", url: `https://voice.google.com/u/0/calls?a=nc,%2B${digits}` });
+    try { chrome.runtime.sendMessage({ type: "voice-call", url: `https://voice.google.com/u/0/calls?a=nc,%2B${digits}` }); }
+    catch { alert("La extensión se actualizó: recarga DAT (F5) para llamar."); }
   }, true);
 })();
