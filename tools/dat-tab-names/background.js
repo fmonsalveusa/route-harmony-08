@@ -207,3 +207,22 @@ async function checkUpdate() {
 chrome.runtime.onStartup.addListener(checkUpdate);
 chrome.runtime.onInstalled.addListener(checkUpdate);
 chrome.runtime.onMessage.addListener((msg) => { if (msg?.type === "check-update") checkUpdate(); });
+
+// Auto-actualización desde la carpeta (OneDrive / Google Drive): la extensión se carga "descomprimida"
+// desde una carpeta en la nube; cuando llegan archivos nuevos (otra versión en manifest.json) se
+// recarga sola. Se espera a ver el cambio en dos revisiones seguidas (≥1 min) para no recargar a
+// mitad de la sincronización de la carpeta.
+let folderSeen = null; // { version, at }
+async function checkLocalFolder() {
+  try {
+    const res = await fetch(`${chrome.runtime.getURL("manifest.json")}?t=${Date.now()}`, { cache: "no-store" });
+    const disk = (await res.json())?.version;
+    const running = chrome.runtime.getManifest().version;
+    if (!disk || disk === running) { folderSeen = null; return; }
+    if (folderSeen?.version === disk && Date.now() - folderSeen.at >= 55_000) chrome.runtime.reload();
+    else if (folderSeen?.version !== disk) folderSeen = { version: disk, at: Date.now() };
+  } catch {}
+}
+chrome.alarms.create("du-folder-update", { periodInMinutes: 1 });
+chrome.alarms.onAlarm.addListener((a) => { if (a.name === "du-folder-update") checkLocalFolder(); });
+chrome.runtime.onStartup.addListener(checkLocalFolder);

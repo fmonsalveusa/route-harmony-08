@@ -21,4 +21,18 @@
   }
   chrome.storage.onChanged.addListener((c) => { if (c.duUpdate) show(); });
   show();
+
+  // La extensión se actualizó sola (o con ↻) con DAT abierto: esta página quedó con la versión
+  // anterior desconectada. Se avisa para recargar.
+  const orphanCheck = setInterval(() => {
+    if (chrome.runtime?.id) return;
+    clearInterval(orphanCheck);
+    document.querySelector(".du-update")?.remove();
+    const bar = document.createElement("div");
+    bar.className = "du-update";
+    bar.innerHTML = '<span>La extensión <b>DAT Driver Tabs</b> se actualizó. Recarga DAT para usar la versión nueva.</span>' +
+      '<a href="#">Recargar (F5)</a>';
+    bar.querySelector("a").onclick = (e) => { e.preventDefault(); location.reload(); };
+    document.body.append(bar);
+  }, 5000);
 })();
