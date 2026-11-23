@@ -4,15 +4,19 @@
 // ciudad en su zona usa las coordenadas que DAT trae en cada carga (dat-capture.js); si no las
 // hay, usa el promedio del estado.
 (() => {
-  // Escala del mapa de DAT: ≤-36 frío · -36…-15 fresco · -15…10 neutral · 10…43 tibio · ≥43 caliente
+  // Tres estados (cortes del mapa de DAT): ≥ +10 caliente · -15…+10 neutral · ≤ -15 frío.
+  // Ícono a la derecha de la ciudad: 👍 verde caliente · ● azul neutral · 👎 rojo frío.
+  // Los extremos (≥ +43 / ≤ -36) van con el color más intenso.
+  const UP = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg>';
+  const DOWN = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3H6c-.83 0-1.54.5-1.84 1.22l-3.02 7.05c-.09.23-.14.47-.14.73v2c0 1.1.9 2 2 2h6.31l-.95 4.57-.03.32c0 .41.17.79.44 1.06L9.83 23l6.59-6.59c.36-.36.58-.86.58-1.41V5c0-1.1-.9-2-2-2zm4 0v12h4V3h-4z"/></svg>';
+  const DOT = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/></svg>';
   const LEVELS = [
-    { min: 43, cls: "du-mkt-hot2", label: "caliente" },
-    { min: 10, cls: "du-mkt-hot1", label: "tibio" },
-    { min: -15, cls: "du-mkt-neu", label: "neutral" },
-    { min: -36, cls: "du-mkt-cold1", label: "fresco" },
-    { min: -Infinity, cls: "du-mkt-cold2", label: "frío" },
+    { min: 43, cls: "du-mkt-hot du-mkt-strong", icon: UP, label: "caliente" },
+    { min: 10, cls: "du-mkt-hot", icon: UP, label: "caliente" },
+    { min: -15, cls: "du-mkt-neu", icon: DOT, label: "neutral" },
+    { min: -36, cls: "du-mkt-cold", icon: DOWN, label: "frío" },
+    { min: -Infinity, cls: "du-mkt-cold du-mkt-strong", icon: DOWN, label: "frío" },
   ];
-  const ALL_CLS = LEVELS.map((l) => l.cls).concat("du-mkt", "du-mkt-stale");
   const STALE_MS = 24 * 60 * 60 * 1000;
 
   let market = null; // { FLATBED: { OUT: { kma: {at, map}, state: {at, map} } } }
@@ -112,19 +116,18 @@
   };
 
   function paint(el, r) {
-    el.classList.remove(...ALL_CLS);
-    if (!r) { if (el.dataset.duMktTitle) { el.removeAttribute("title"); delete el.dataset.duMktTitle; } return; }
+    let ico = el.nextElementSibling?.classList?.contains("du-mkt-ico") ? el.nextElementSibling : null;
+    if (!r) { ico?.remove(); return; }
     const lvl = LEVELS.find((l) => r.mci >= l.min);
     const stale = Date.now() - r.at > STALE_MS;
-    el.classList.add("du-mkt", lvl.cls);
-    if (stale) el.classList.add("du-mkt-stale");
-    const t = [
+    if (!ico) { ico = document.createElement("span"); el.after(ico); }
+    ico.className = `du-mkt-ico ${lvl.cls}${stale ? " du-mkt-stale" : ""}`;
+    ico.innerHTML = lvl.icon;
+    ico.title = [
       `Mercado de salida ${r.byState ? `(promedio del estado ${r.where})` : `— ${r.where}`}`,
       `MCI ${r.mci > 0 ? "+" : ""}${r.mci}: ${lvl.label} · ${EQ_NAME[r.eq] || r.eq}`,
       `Dato de DAT Market Conditions ${ago(r.at)}${stale ? " — ábrelo para actualizar" : ""}`,
     ].join("\n");
-    el.title = t;
-    el.dataset.duMktTitle = "1";
   }
 
   // Datos de cada carga (coordenadas del destino y equipo), por postingId — de dat-capture.js
