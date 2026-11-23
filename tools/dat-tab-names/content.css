@@ -140,6 +140,11 @@
 /* ✉ pequeño en cada fila de la lista (cargas con email) */
 .du-mail.du-mail-row { width: 24px; height: 24px; padding: 0; margin-left: 6px; justify-content: center; font-size: 13px; }
 .du-mail.du-mail-row .du-mail-spin { width: 10px; height: 10px; }
+/* ✉ junto a un email escrito en COMMENTS del detalle */
+.du-mail.du-mail-note { display: inline-flex; vertical-align: middle; margin: 0 4px; }
+/* DAT pone los comentarios en columna (cada pedazo de texto en su línea): con el botón adentro se
+   vuelve texto corrido para que el ✉ quede en la misma línea que el email */
+.notes-contents:has(> .du-mail-note) { display: block !important; }
 /* Botón único "Configurar email" a la derecha de los filtros de búsqueda */
 .du-cfg {
   margin-left: auto; align-self: center; flex-shrink: 0;

@@ -59,7 +59,7 @@
     };
   }
 
-  async function build(info, fallbackEmail, pid) {
+  async function build(info, fallbackEmail, pid, forceTo = false) {
     const { emailCfg } = await chrome.storage.sync.get("emailCfg");
     const cfg = { ...DU_EMAIL_DEFAULTS, mode: "direct", ...(emailCfg || {}) };
     const d = rowData(pid);
@@ -82,7 +82,7 @@
     return {
       cfg,
       vals,
-      to: (info?.email || fallbackEmail || "").trim(),
+      to: ((forceTo ? fallbackEmail : info?.email || fallbackEmail) || "").trim(),
       subject: duFillTemplate(cfg.subject, vals),
       body: duFillTemplate(cfg.body, vals),
     };
@@ -120,7 +120,8 @@
     const pid = btn.dataset.pid || comp.querySelector("[posting-id]")?.getAttribute("posting-id");
     const info = pid ? postings.get(pid) : null;
     const shown = fallbackEmail || (comp.textContent || "").match(/[\w.+-]+@[\w-]+\.[\w.-]+/)?.[0] || "";
-    const { cfg, vals, to, subject, body } = await build(info, shown, pid);
+    // Botón de un email escrito en COMMENTS: se envía a ESE email, no al contacto de la carga
+    const { cfg, vals, to, subject, body } = await build(info, shown, pid, !!btn.dataset.email);
     if (!to) { toast("Esta carga no tiene email del broker."); return; }
     // Nunca mandar un email con la ruta vacía
     if (!vals.origen || !vals.destino) {
@@ -254,6 +255,41 @@
       btn.addEventListener("mousedown", (e) => e.stopPropagation());
       link.after(btn);
       refreshSent(pid, btn);
+    }
+    // Detalle de la carga: ✉ al lado de cada email que el broker escribió en COMMENTS
+    for (const notes of document.querySelectorAll('[data-test="comments-container"] .notes-contents')) {
+      const scope = notes.closest("dat-load-details") || notes.closest("dat-result-row") || notes.parentElement;
+      const pid = scope?.querySelector("[posting-id]")?.getAttribute("posting-id") || "";
+      // Si DAT cambió de carga en este mismo detalle: se quitan los botones y los pedazos de
+      // texto que la extensión separó (DAT ya puso el comentario nuevo en el texto original)
+      if (notes.__duPid !== undefined && notes.__duPid !== pid) {
+        for (const old of notes.querySelectorAll(".du-mail-note")) old.remove();
+        for (const t of notes.__duTails || []) t.remove();
+        notes.__duTails = [];
+      }
+      notes.__duPid = pid;
+      const texts = [];
+      const w = document.createTreeWalker(notes, NodeFilter.SHOW_TEXT);
+      for (let n; (n = w.nextNode()); ) if (n.data.includes("@")) texts.push(n);
+      for (const n of texts) {
+        const found = [...n.data.matchAll(/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g)];
+        for (const m of found.reverse()) {
+          const email = m[0].toLowerCase();
+          const end = m.index + m[0].length;
+          // Ya tiene su botón justo después
+          if (end === n.data.length && n.nextSibling?.classList?.contains("du-mail-note") && n.nextSibling.dataset.email === email) continue;
+          const tail = n.splitText(end);
+          (notes.__duTails ||= []).push(tail);
+          const btn = makeBtn(pid, true);
+          btn.classList.add("du-mail-note");
+          btn.dataset.email = email;
+          btn.title = `Enviar el email de tu plantilla a ${email} (escrito en los comentarios)`;
+          btn.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); onClick(btn, scope, email); });
+          btn.addEventListener("mousedown", (e) => e.stopPropagation());
+          n.parentNode.insertBefore(btn, tail);
+          refreshSent(pid, btn);
+        }
+      }
     }
   }
 
