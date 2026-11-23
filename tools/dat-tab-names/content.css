@@ -187,8 +187,8 @@
 .du-rts-detail .du-rts-warn { width: 28px; height: 28px; }
 
 /* Mercado de la ciudad destino (MCI de salida de DAT Market Conditions): ícono a la derecha */
-[data-test="load-destination-cell"]:has(+ .du-mkt-ico) { flex-shrink: 1; min-width: 0; }
-*:has(> [data-test="load-destination-cell"] + .du-mkt-ico) { display: flex; align-items: center; gap: 4px; }
+.du-mkt-ico + [data-test="load-destination-cell"] { flex-shrink: 1; min-width: 0; }
+*:has(> .du-mkt-ico + [data-test="load-destination-cell"]) { display: flex; align-items: center; gap: 4px; }
 .du-mkt-ico { display: inline-flex; flex-shrink: 0; width: 18px; height: 18px; vertical-align: middle; cursor: help; }
 .du-mkt-ico svg { width: 100%; height: 100%; }
 /* Tonos: más oscuro = más caliente / más frío */

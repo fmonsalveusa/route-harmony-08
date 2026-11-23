@@ -117,12 +117,14 @@
     return m < 60 ? `hace ${m} min` : m < 48 * 60 ? `hace ${Math.round(m / 60)} h` : `hace ${Math.round(m / 1440)} días`;
   };
 
+  // La mano va a la IZQUIERDA de la ciudad: así queda siempre bajo el título "Destination"
+  // (la celda de DAT es más ancha que su título y a la derecha caía bajo "DH-D").
   function paint(el, r) {
-    let ico = el.nextElementSibling?.classList?.contains("du-mkt-ico") ? el.nextElementSibling : null;
+    let ico = el.previousElementSibling?.classList?.contains("du-mkt-ico") ? el.previousElementSibling : null;
     if (!r) { ico?.remove(); return; }
     const lvl = LEVELS.find((l) => r.mci >= l.min);
     const stale = Date.now() - r.at > STALE_MS;
-    if (!ico) { ico = document.createElement("span"); el.after(ico); }
+    if (!ico) { ico = document.createElement("span"); el.before(ico); }
     ico.className = `du-mkt-ico ${lvl.cls}${stale ? " du-mkt-stale" : ""}`;
     ico.innerHTML = lvl.icon;
     ico.title = [
