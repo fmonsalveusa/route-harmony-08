@@ -117,12 +117,24 @@
     return m < 60 ? `hace ${m} min` : m < 48 * 60 ? `hace ${Math.round(m / 60)} h` : `hace ${Math.round(m / 1440)} días`;
   };
 
+  // Las manos van en la columna DH-D (vacía cuando el destino es "Anywhere") para no quitarle
+  // espacio al nombre de la ciudad. Si DH-D tiene millas, van junto a la ciudad.
+  function slotOf(el) {
+    const dhd = el.closest(".destination")?.parentElement?.querySelector(":scope > .dhd");
+    if (dhd && !dhd.querySelector(":scope > :not(.du-mkt-ico)") && !(dhd.textContent || "").replace(/\s/g, "")) return { box: dhd, inDhd: true };
+    return { box: null, inDhd: false };
+  }
   function paint(el, r) {
-    let ico = el.nextElementSibling?.classList?.contains("du-mkt-ico") ? el.nextElementSibling : null;
+    const { box, inDhd } = slotOf(el);
+    // Ícono existente (en DH-D o junto a la ciudad); si cambió de sitio se quita
+    const near = el.nextElementSibling?.classList?.contains("du-mkt-ico") ? el.nextElementSibling : null;
+    const inBox = box?.querySelector(":scope > .du-mkt-ico") || null;
+    let ico = inDhd ? inBox : near;
+    if (inDhd) near?.remove();
     if (!r) { ico?.remove(); return; }
     const lvl = LEVELS.find((l) => r.mci >= l.min);
     const stale = Date.now() - r.at > STALE_MS;
-    if (!ico) { ico = document.createElement("span"); el.after(ico); }
+    if (!ico) { ico = document.createElement("span"); if (inDhd) box.append(ico); else el.after(ico); }
     ico.className = `du-mkt-ico ${lvl.cls}${stale ? " du-mkt-stale" : ""}`;
     ico.innerHTML = lvl.icon;
     ico.title = [
@@ -148,7 +160,7 @@
       const pid = row?.querySelector("[posting-id]")?.getAttribute("posting-id") || "";
       const info = postings.get(pid);
       const text = (el.textContent || "").trim();
-      const key = `${version}|${pid}|${text}|${info ? 1 : 0}|${row?.querySelector('[data-test="load-eq-cell"]')?.textContent || ""}`;
+      const key = `${version}|${pid}|${text}|${info ? 1 : 0}|${row?.querySelector('[data-test="load-eq-cell"]')?.textContent || ""}|${(el.closest(".destination")?.parentElement?.querySelector(":scope > .dhd")?.textContent || "").trim()}`;
       if (el.dataset.duMkt === key) continue;
       el.dataset.duMkt = key;
       const eqCode = (row?.querySelector('[data-test="load-eq-cell"]')?.textContent || "").trim();

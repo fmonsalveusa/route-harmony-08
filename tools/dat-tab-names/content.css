@@ -196,3 +196,4 @@
 .du-mkt-ico.du-mkt-neu svg { fill: #1a73e8; }
 .du-mkt-ico.du-mkt-cold svg { fill: #d93025; }
 .du-mkt-ico.du-mkt-stale { opacity: .4; }
+.dhd > .du-mkt-ico { margin-left: 2px; margin-top: 2px; } /* en la columna DH-D, que está vacía */
