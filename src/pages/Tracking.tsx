@@ -1431,8 +1431,8 @@ const Tracking = () => {
 
                     {/* Cargas en cola: después de la actual (Dispatched sin arrancar y Planned), estilo lista de Google */}
                     {nextLoads.length > 0 && (
-                      <div className="mx-3 mt-2 rounded-2xl border border-[#e3e3e3] dark:border-border overflow-hidden">
-                        <p className="px-3 pt-2 pb-1 text-[11px] font-medium text-[#444746] dark:text-muted-foreground">
+                      <div className="mx-3 mt-2 rounded-2xl bg-[#fff4e5] border border-[#fad2b4] dark:bg-orange-950/30 dark:border-orange-900/50 overflow-hidden">
+                        <p className="px-3 pt-2 pb-1 text-[11px] font-medium text-[#8a4b00] dark:text-orange-200">
                           {activeLoad ? (nextLoads.length > 1 ? 'Siguientes cargas' : 'Siguiente carga') : (nextLoads.length > 1 ? 'Próximas cargas' : 'Próxima carga')}
                         </p>
                         {nextLoads.map((l: any) => {
@@ -1442,26 +1442,26 @@ const Tracking = () => {
                               key={l.id}
                               type="button"
                               onClick={(e) => { e.stopPropagation(); navigate(`/loads?openLoad=${l.id}`); }}
-                              className="group w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-[#f0f4f9] dark:hover:bg-muted/40 transition-colors border-t border-[#f0f0f0] dark:border-border first-of-type:border-t-0"
+                              className="group w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-[#ffe8cc] dark:hover:bg-orange-900/30 transition-colors border-t border-[#fbe3cf] dark:border-orange-900/40 first-of-type:border-t-0"
                               title="Abrir carga"
                             >
-                              <span className={`h-8 w-8 shrink-0 rounded-full flex items-center justify-center ${planned ? 'bg-[#e9eef6] text-[#444746]' : 'bg-[#d3e3fd] text-[#041e49]'}`}>
+                              <span className={`h-8 w-8 shrink-0 rounded-full flex items-center justify-center ${planned ? 'bg-[#ffdcc1] text-[#2f1500]' : 'bg-[#e37400] text-white'}`}>
                                 <Package className="h-4 w-4" />
                               </span>
                               <span className="min-w-0 flex-1">
                                 <span className="block truncate text-sm text-[#1f1f1f] dark:text-foreground">
                                   {extractCityState(l.origin || '')} <span className="text-[#747775]">→</span> {extractCityState(l.destination || '')}
                                 </span>
-                                <span className="block truncate text-xs text-[#444746] dark:text-muted-foreground">
+                                <span className="block truncate text-xs text-[#6b4a2b] dark:text-orange-200/80">
                                   #{l.reference_number}
                                   {l.pickup_date ? ` · Pickup ${format(parseISO(l.pickup_date), 'MMM d')}` : ''}
                                   {l.delivery_date ? ` · Entrega ${format(parseISO(l.delivery_date), 'MMM d')}` : ''}
                                 </span>
                               </span>
-                              <span className={`shrink-0 h-6 inline-flex items-center rounded-lg px-2 text-[11px] font-medium ${planned ? 'border border-[#c4c7c5] text-[#444746] dark:text-muted-foreground' : 'bg-[#fef7e0] text-[#8a5a00]'}`}>
+                              <span className={`shrink-0 h-6 inline-flex items-center rounded-lg px-2 text-[11px] font-medium ${planned ? 'bg-white border border-[#f4b98a] text-[#8a4b00] dark:bg-transparent dark:text-orange-200' : 'bg-[#e37400] text-white'}`}>
                                 {planned ? 'Planned' : 'Dispatched'}
                               </span>
-                              <ChevronRight className="h-4 w-4 shrink-0 text-[#747775] opacity-0 group-hover:opacity-100 transition-opacity" />
+                              <ChevronRight className="h-4 w-4 shrink-0 text-[#8a4b00] opacity-0 group-hover:opacity-100 transition-opacity" />
                             </button>
                           );
                         })}
