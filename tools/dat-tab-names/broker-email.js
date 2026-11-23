@@ -72,7 +72,22 @@
     btn.title = `Email enviado ${new Date(when).toLocaleString("en-US", { month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" })}. Pulsa para reenviar.`;
   }
 
+  // Si la extensión se recargó/actualizó, esta página queda desconectada de ella: avisar en vez
+  // de no hacer nada (antes el clic fallaba en silencio).
+  const STALE = "La extensión se actualizó. Recarga DAT (F5) y vuelve a pulsar ✉.";
+  const isStale = (e) => !chrome.runtime?.id || /context invalidated|Receiving end does not exist/i.test(String(e?.message || e));
   async function onClick(btn, comp, fallbackEmail = "") {
+    if (!chrome.runtime?.id) { toast(STALE, 6000); return; }
+    try { await send(btn, comp, fallbackEmail); }
+    catch (e) {
+      delete btn.dataset.sending;
+      btn.classList.remove("du-mail-sending");
+      if (btn.querySelector(".du-mail-spin")) btn.innerHTML = btn.dataset.row ? "✉" : LABEL.email;
+      toast(isStale(e) ? STALE : `No se envió: ${esc(e?.message || e)}`, 6000);
+    }
+  }
+
+  async function send(btn, comp, fallbackEmail) {
     const pid = btn.dataset.pid || comp.querySelector("[posting-id]")?.getAttribute("posting-id");
     const info = pid ? postings.get(pid) : null;
     const shown = fallbackEmail || (comp.textContent || "").match(/[\w.+-]+@[\w-]+\.[\w.-]+/)?.[0] || "";
@@ -119,7 +134,7 @@
       btn.innerHTML = prevHtml;
       btn.classList.add("du-mail-fail");
       setTimeout(() => btn.classList.remove("du-mail-fail"), 600);
-      toast(`No se envió: ${esc(r?.error || "error desconocido")}`, 6000);
+      toast(isStale(r?.error) ? STALE : `No se envió: ${esc(r?.error || "error desconocido")}`, 6000);
     }
   }
 
