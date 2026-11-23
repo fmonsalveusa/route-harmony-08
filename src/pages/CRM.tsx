@@ -1078,8 +1078,8 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
   const calls = notes.filter(n => n.kind === 'call').sort((a, b) => (b.call_at ?? b.created_at).localeCompare(a.call_at ?? a.created_at));
   const otherNotes = notes.filter(n => n.kind !== 'call');
   const tabs: [string, string][] = [
-    ['calls', `Llamadas · ${calls.length}`],
     ['notes', `Notas · ${otherNotes.length}`],
+    ['calls', `Llamadas · ${calls.length}`],
     ...(extra && extra.meetings.length ? [['meetings', `Reuniones · ${extra.meetings.length}`] as [string, string]] : []),
     ...(extra && extra.chat.length ? [['chat', 'WhatsApp'] as [string, string]] : []),
   ];
@@ -1226,7 +1226,7 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
             </Card>
   
             <div className="rounded-3xl bg-white dark:bg-card border border-[#e3e3e3] dark:border-border overflow-hidden">
-              <Tabs defaultValue="calls">
+              <Tabs defaultValue="notes">
                 <TabsList className="w-full justify-start rounded-none sm:rounded-none border-x-0 border-t-0 flex-nowrap border-b border-[#e3e3e3] dark:border-border bg-transparent h-12 p-0 px-3 overflow-x-auto overflow-y-hidden">
                   {tabs.map(([v, l]) => (
                     <TabsTrigger key={v} value={v}
