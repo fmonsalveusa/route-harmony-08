@@ -110,6 +110,10 @@
 
 /* En el detalle, el círculo va pegado al MC# */
 .compliance-number > .du-rts { margin-left: 8px; }
+/* En la lista: a la izquierda del nombre del broker */
+.du-rts.du-rts-before { margin-left: 0; margin-right: 6px; }
+*:has(> .du-rts-before + [data-test="load-company-cell"]) { display: flex; align-items: center; min-width: 0; }
+.du-rts-before + [data-test="load-company-cell"] { min-width: 0; }
 
 /* Detalle de la carga: "RTS" + círculo más grande, a la derecha del nombre del broker */
 .company-name:has(> .du-rts) { display: flex; align-items: center; gap: 10px; }

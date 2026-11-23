@@ -21,7 +21,7 @@
   };
 
   function paint(chip, r) {
-    chip.className = chip.dataset.detail ? "du-rts du-rts-detail" : "du-rts";
+    chip.className = chip.dataset.detail ? "du-rts du-rts-detail" : chip.dataset.before ? "du-rts du-rts-before" : "du-rts";
     chip.style.background = "";
     if (r?.error === "login") {
       chip.textContent = "RTS: abre RTS";
@@ -95,18 +95,21 @@
 
   // inside=true: el chip va dentro del elemento (pegado al texto), no como hermano.
   // Si el chip ya existe pero ahora hay una búsqueda mejor (MC en vez de nombre), se rehace.
-  function attach(anchor, q, inside = false) {
+  // where: "inside" (dentro del elemento) o "before" (a la izquierda del elemento, en la lista)
+  function attach(anchor, q, where = "before") {
+    const inside = where === "inside" || where === true;
     let chip = inside
       ? anchor.querySelector(":scope > .du-rts")
-      : anchor.nextElementSibling?.classList?.contains("du-rts") ? anchor.nextElementSibling : null;
+      : anchor.previousElementSibling?.classList?.contains("du-rts") ? anchor.previousElementSibling : null;
     const key = keyOf(q);
     if (chip && chip.dataset.key === key) return chip;
     if (!chip) {
       chip = document.createElement("span");
-      if (inside) anchor.append(chip); else anchor.after(chip);
+      if (inside) anchor.append(chip); else anchor.before(chip);
     }
     chip.dataset.key = key;
-    chip.className = "du-rts du-rts-muted";
+    if (!inside) chip.dataset.before = "1";
+    chip.className = "du-rts du-rts-muted" + (chip.dataset.before ? " du-rts-before" : "");
     chip.style.background = "";
     chip.textContent = "RTS…";
     ask(q).then((r) => { if (chip.dataset.key === key) paint(chip, r); });
