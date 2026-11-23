@@ -24,17 +24,17 @@
     chip.className = chip.dataset.detail ? "du-rts du-rts-detail" : chip.dataset.before ? "du-rts du-rts-before" : "du-rts";
     chip.style.background = "";
     if (r?.error === "login") {
-      chip.textContent = "RTS: abre RTS";
+      chip.textContent = chip.dataset.before ? "RTS" : "RTS: abre RTS";
       chip.classList.add("du-rts-muted");
       chip.title = "Abre rtspro.com con tu sesión en este Chrome para ver los ratings";
       chip.onclick = (e) => { e.stopPropagation(); window.open("https://rtspro.com/credit", "_blank"); };
       return;
     }
     chip.onclick = null;
-    if (r?.error) { chip.textContent = "RTS: error"; chip.classList.add("du-rts-muted"); chip.title = r.error; return; }
-    if (r?.none) { chip.textContent = "RTS: sin datos"; chip.classList.add("du-rts-muted"); chip.title = "RTS no tiene este broker"; return; }
+    if (r?.error) { chip.textContent = chip.dataset.before ? "!" : "RTS: error"; chip.classList.add("du-rts-muted"); chip.title = r.error; return; }
+    if (r?.none) { chip.textContent = chip.dataset.before ? "–" : "RTS: sin datos"; chip.classList.add("du-rts-muted"); chip.title = "RTS no tiene este broker"; return; }
     if (r?.ambiguous) {
-      chip.textContent = "RTS: ?";
+      chip.textContent = chip.dataset.before ? "?" : "RTS: ?";
       chip.classList.add("du-rts-muted");
       chip.title = "Varios brokers con ese nombre — abre la carga para verlo por MC:\n" +
         r.ambiguous.map((d) => `${d.rating || "–"}  ${d.name} (MC ${d.mc})`).join("\n");
@@ -111,7 +111,7 @@
     if (!inside) chip.dataset.before = "1";
     chip.className = "du-rts du-rts-muted" + (chip.dataset.before ? " du-rts-before" : "");
     chip.style.background = "";
-    chip.textContent = "RTS…";
+    chip.textContent = chip.dataset.before ? "…" : "RTS…";
     ask(q).then((r) => { if (chip.dataset.key === key) paint(chip, r); });
     return chip;
   }
