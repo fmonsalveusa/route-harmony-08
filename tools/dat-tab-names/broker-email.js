@@ -220,7 +220,9 @@
   }
 
   let t = null;
+  // Igual que en rts-chip.js: DAT reutiliza filas (cambia texto/posting-id sin agregar elementos)
   new MutationObserver(() => { clearTimeout(t); t = setTimeout(scan, 300); })
-    .observe(document.body, { childList: true, subtree: true });
+    .observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["posting-id", "href-value", "recipient-email"] });
+  setInterval(() => { if (!document.hidden) scan(); }, 4000);
   scan();
 })();

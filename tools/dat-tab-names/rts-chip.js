@@ -157,7 +157,11 @@
     for (const chip of document.querySelectorAll(".du-rts.du-rts-muted")) delete chip.dataset.key;
     schedule();
   });
+  // DAT reutiliza las filas: a veces solo cambia el texto o el posting-id de una fila (carga nueva
+  // en la misma fila) sin agregar elementos. Por eso se vigilan también texto y posting-id, y se
+  // revisa cada pocos segundos por si acaso.
   new MutationObserver(schedule)
-    .observe(document.body, { childList: true, subtree: true });
+    .observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["posting-id", "href-value", "recipient-email"] });
+  setInterval(() => { if (!document.hidden) scan(); }, 4000);
   scan();
 })();
