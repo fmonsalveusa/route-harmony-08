@@ -301,7 +301,8 @@ const Tracking = () => {
 
   // Se recargan cuando cambia CUÁLES cargas están activas (no solo cuántas): si una carga pasa
   // de Planned a Dispatched mientras otra se entrega, el número no cambia pero sus paradas sí faltan
-  const activeLoadIdsKey = useMemo(() => activeLoads.map(l => l.id).sort().join(','), [activeLoads]);
+  // Con el status: al llegar o salir de una parada se recargan sus horas (detention)
+  const activeLoadIdsKey = useMemo(() => activeLoads.map(l => `${l.id}:${l.status}`).sort().join(','), [activeLoads]);
   useEffect(() => {
     if (activeLoads.length === 0) return;
     const ids = activeLoads.map(l => l.id);
@@ -1298,6 +1299,7 @@ const Tracking = () => {
                             stopsWithCoords: stopsLoadedFor.has(l.id)
                               ? allStops.filter(s => s.load_id === l.id && s.lat != null && s.lng != null).length
                               : undefined,
+                            stops: allStops.filter(s => s.load_id === l.id) as any,
                           }),
                         }))
                         .filter(x => x.alerts.length > 0);

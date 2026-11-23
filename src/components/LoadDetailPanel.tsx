@@ -18,6 +18,7 @@ import { LoadAdjustmentsSection } from '@/components/LoadAdjustmentsSection';
 import { LoadProfitSection } from '@/components/LoadProfitSection';
 import { BrokerEmailSection } from '@/components/BrokerEmailSection';
 import { RcSignedSection } from '@/components/RcSignedSection';
+import { DetentionSection } from '@/components/DetentionSection';
 import { PdfViewerDialog } from '@/components/PdfViewerDialog';
 import { getLoadRoute } from '@/lib/loadRoute';
 import { PickupPicturesSection } from '@/components/PickupPicturesSection';
@@ -1682,6 +1683,9 @@ export const LoadDetailPanel = ({ load, drivers, trucks, dispatchers, companies,
 
           {/* RC firmado: debajo de Rentabilidad, mismo ancho */}
           {!isDispatchService && <RcSignedSection loadId={load.id} hasDriver={!!load.driver_id} />}
+
+          {/* Detention: espera en cada parada y reclamo al broker */}
+          <DetentionSection load={{ id: load.id, reference_number: load.reference_number, company_id: (load as any).company_id }} />
         </div>
 
         {/* Columna 2: ruta y paradas, email al broker y RC firmado */}

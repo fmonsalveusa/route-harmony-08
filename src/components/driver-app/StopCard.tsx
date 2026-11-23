@@ -204,6 +204,9 @@ export const StopCard = ({ stop, loadRef, driverName, onUpdate, podDocuments, lo
           load_id: stop.load_id,
         });
       }
+      // Hora de salida de la parada (detention). Si ya la puso el GPS, no se toca.
+      await supabase.from('load_stops').update({ departed_at: new Date().toISOString() } as any)
+        .eq('id', stop.id).is('departed_at' as any, null);
       // Si el email falla, el estado ya quedó cambiado: dispatch lo reenvía desde el TMS
       if (brokerPending) await handleSendBroker();
       toast({ title: stop.stop_type === 'pickup' ? 'Pick up completed' : 'Delivery completed' });

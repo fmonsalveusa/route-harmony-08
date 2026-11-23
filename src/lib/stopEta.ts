@@ -57,16 +57,25 @@ function parseClock(s: string): number | null {
   return h * 60 + min;
 }
 
-/** Fin de la ventana de cita como instante real (o null si no hay fecha/hora entendible) */
-export function appointmentEnd(date: string | null | undefined, time: string | null | undefined, tz: string): Date | null {
+function appointmentAt(date: string | null | undefined, time: string | null | undefined, tz: string, which: 'first' | 'last'): Date | null {
   if (!date) return null;
   const clocks = (time || '').match(/\b\d{4}\b|\d{1,2}(:\d{2})?\s*(AM|PM|A\b|P\b)?/gi) || [];
   const mins = clocks.map(parseClock).filter((x): x is number => x != null);
   if (mins.length === 0) return null;
-  const end = mins[mins.length - 1];
+  const at = which === 'first' ? mins[0] : mins[mins.length - 1];
   const [y, mo, d] = date.slice(0, 10).split('-').map(Number);
-  const naiveUtc = Date.UTC(y, mo - 1, d, Math.floor(end / 60), end % 60);
+  const naiveUtc = Date.UTC(y, mo - 1, d, Math.floor(at / 60), at % 60);
   return new Date(naiveUtc - tzOffsetMinutes(tz, new Date(naiveUtc)) * 60000);
+}
+
+/** Fin de la ventana de cita como instante real (o null si no hay fecha/hora entendible) */
+export function appointmentEnd(date: string | null | undefined, time: string | null | undefined, tz: string): Date | null {
+  return appointmentAt(date, time, tz, 'last');
+}
+
+/** Inicio de la ventana de cita (la primera hora del texto: "08:00-14:00" → 8:00) */
+export function appointmentStart(date: string | null | undefined, time: string | null | undefined, tz: string): Date | null {
+  return appointmentAt(date, time, tz, 'first');
 }
 
 export interface StopEta {

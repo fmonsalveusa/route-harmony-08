@@ -997,6 +997,42 @@ async function handleUserAction(req: Request, supabase: any, body: any) {
     return res;
   }
 
+  // Reclamo de detention: respuesta en el hilo del broker con el texto revisado en el TMS
+  if (action === "detention_claim") {
+    const user = await authUser(req);
+    const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
+    const staff = ((roles as any[]) || []).some((r) => ["admin", "accounting", "dispatcher", "master_admin"].includes(r.role));
+    if (!staff) return json({ error: "Unauthorized" }, 403);
+    const text = String(body.text ?? "").trim();
+    if (!text) return json({ error: "Falta el texto del reclamo" }, 400);
+    const thread = await ensureThread(supabase, load, accounts);
+    if (thread?.status !== "linked" || !thread.thread_id) {
+      return json({ error: "No encontré el hilo de Gmail del broker. Enlázalo en \"Email al broker\" y vuelve a enviar." }, 400);
+    }
+    const account = accounts.find((a) => a.user === String(thread.account).toLowerCase());
+    if (!account) return json({ error: `La cuenta ${thread.account} ya no está configurada` }, 400);
+    try {
+      const target = await replyTarget(account, thread.thread_id, accounts.map((a) => a.user));
+      await sendMail(account, {
+        to: target.to, cc: target.cc, subject: target.subject,
+        inReplyTo: target.inReplyTo || undefined, references: target.references || undefined,
+        text,
+        html: `<div style="font-family:Arial,sans-serif;font-size:14px">${escapeHtml(text).replace(/\n/g, "<br>")}</div>`,
+      });
+      const sentTo = [...target.to, ...target.cc.map((c: string) => `cc: ${c}`)].join(", ");
+      const amount = Number(body.amount) || 0;
+      const minutes = Number(body.minutes) || 0;
+      const when = new Date().toLocaleString("en-US", { timeZone: "America/New_York", month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" });
+      await supabase.from("loads").update({
+        detention_claimed_at: new Date().toISOString(),
+        detention_claim_note: `Enviado ${when} ET a ${sentTo} · ${Math.floor(minutes / 60)}h ${minutes % 60}m · $${amount.toFixed(2)}`,
+      }).eq("id", load.id);
+      return json({ sent: true, to: sentTo });
+    } catch (e) {
+      return json({ error: `No se pudo enviar: ${errMsg(e)}` }, 500);
+    }
+  }
+
   if (action === "send_now") {
     await supabase.from("broker_email_queue")
       .update({ status: "pending", attempts: 0, send_after: new Date().toISOString() })

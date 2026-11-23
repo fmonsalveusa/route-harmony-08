@@ -74,12 +74,14 @@ export function useLoadStops(loadId?: string) {
       .select('*')
       .eq('load_id', targetLoadId);
 
-    const existingByOrder = new Map<number, { id: string; photos: any }>(
+    const existingByOrder = new Map<number, { id: string; photos: any; address: string; arrived_at: string | null; departed_at: string | null }>(
       ((existingData as any[]) || []).map((s: any) => [
         s.stop_order as number,
-        { id: s.id, photos: s.photos }
+        { id: s.id, photos: s.photos, address: s.address, arrived_at: s.arrived_at ?? null, departed_at: s.departed_at ?? null }
       ])
     );
+    const sameAddress = (a?: string | null, b?: string | null) =>
+      (a || '').trim().toLowerCase() === (b || '').trim().toLowerCase();
 
     await supabase.from('load_stops').delete().eq('load_id', targetLoadId);
 
@@ -99,6 +101,10 @@ export function useLoadStops(loadId?: string) {
           time: (s as any).time || null,
           tenant_id,
           ...(existing?.photos ? { photos: existing.photos } : {}),
+          // Llegada/salida (detention): se conservan si la parada sigue siendo la misma dirección
+          ...(existing && sameAddress(existing.address, s.address)
+            ? { arrived_at: existing.arrived_at, departed_at: existing.departed_at }
+            : {}),
         };
       });
 

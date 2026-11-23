@@ -1,6 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowUpFromLine, ArrowDownToLine, UserX, AlertTriangle, Landmark, ChevronDown, ChevronRight, CalendarCheck } from 'lucide-react';
+import { ArrowUpFromLine, ArrowDownToLine, UserX, AlertTriangle, Landmark, ChevronDown, ChevronRight, CalendarCheck, Timer } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { DetentionStop, fmtDuration, loadDetention } from '@/lib/detention';
 import { todayET } from '@/lib/dateUtils';
 import { getLoadAlerts } from '@/lib/loadAlerts';
 import type { DbLoad } from '@/hooks/useLoads';
@@ -23,6 +25,16 @@ interface Row {
 export const TodaySummaryCard = ({ loads, drivers }: { loads: DbLoad[]; drivers: DriverLite[] }) => {
   const navigate = useNavigate();
   const [open, setOpen] = useState<string | null>(null);
+
+  // Detention por cobrar: paradas terminadas en los últimos 30 días con espera > 2 h, sin reclamo enviado
+  const [detStops, setDetStops] = useState<(DetentionStop & { load_id: string })[]>([]);
+  useEffect(() => {
+    const since = new Date(Date.now() - 30 * 86400_000).toISOString();
+    supabase.from('load_stops')
+      .select('id, load_id, stop_type, stop_order, address, date, time, arrived_at, departed_at' as any)
+      .not('arrived_at' as any, 'is', null).not('departed_at' as any, 'is', null).gte('arrived_at' as any, since)
+      .then(({ data }) => setDetStops(((data as any[]) || []) as any));
+  }, []);
 
   const rows = useMemo<Row[]>(() => {
     const today = todayET();
@@ -60,13 +72,22 @@ export const TodaySummaryCard = ({ loads, drivers }: { loads: DbLoad[]; drivers:
         emptyText: 'Todos los drivers tienen carga',
       },
       {
+        key: 'detention', icon: Timer, tint: 'bg-[#fce8e6] text-[#c5221f]', label: 'Detention por cobrar',
+        items: loads
+          .filter(l => !(l as any).detention_claimed_at && detStops.some(s => s.load_id === l.id))
+          .map(l => ({ l, d: loadDetention(detStops.filter(s => s.load_id === l.id), (l as any).detention_rate) }))
+          .filter(x => x.d.billableMin > 0)
+          .map(({ l, d }) => loadItem(l, `${fmtDuration(d.billableMin)} cobrable · $${d.amount.toFixed(2)} · ${l.broker_client || ''}`)),
+        emptyText: 'Nada de detention pendiente por reclamar',
+      },
+      {
         key: 'factoring', icon: Landmark, tint: 'bg-[#d3e3fd] text-[#041e49]', label: 'Listas para factoring',
         items: loads.filter(l => l.status === 'delivered' && l.factoring === 'pending')
           .map(l => loadItem(l, `$${Number(l.total_rate || 0).toLocaleString()} · ${l.broker_client || ''}`)),
         emptyText: 'Nada pendiente de factoring',
       },
     ];
-  }, [loads, drivers]);
+  }, [loads, drivers, detStops]);
 
   return (
     <div className="rounded-2xl border border-[#e3e3e3] dark:border-border bg-white dark:bg-card shadow-[0_1px_2px_rgba(60,64,67,.3),0_1px_3px_1px_rgba(60,64,67,.15)] overflow-hidden">

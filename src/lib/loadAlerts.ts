@@ -1,4 +1,5 @@
 import { todayET } from '@/lib/dateUtils';
+import { DetentionStop, DETENTION_WARN_MIN, fmtDuration, stopDetention } from '@/lib/detention';
 
 /** Datos mínimos de una carga para revisar si tiene algo raro */
 export interface AlertableLoad {
@@ -11,7 +12,7 @@ export interface AlertableLoad {
 }
 
 export interface LoadAlert {
-  code: 'future_in_progress' | 'stuck' | 'overdue' | 'no_truck' | 'no_driver' | 'no_stop_coords';
+  code: 'future_in_progress' | 'stuck' | 'overdue' | 'no_truck' | 'no_driver' | 'no_stop_coords' | 'detention';
   label: string;
 }
 
@@ -31,7 +32,7 @@ const STATUS_LABEL: Record<string, string> = {
  * Revisa una carga activa y devuelve lo que no cuadra (status vs. fechas, cargas trabadas,
  * datos que faltan). `stopsWithCoords` = cuántas paradas tienen coordenadas, si se conoce.
  */
-export function getLoadAlerts(load: AlertableLoad, opts: { stopsWithCoords?: number; now?: Date } = {}): LoadAlert[] {
+export function getLoadAlerts(load: AlertableLoad, opts: { stopsWithCoords?: number; now?: Date; stops?: DetentionStop[] } = {}): LoadAlert[] {
   if (FINISHED.includes(load.status)) return [];
   const alerts: LoadAlert[] = [];
   const today = todayET();
@@ -51,6 +52,19 @@ export function getLoadAlerts(load: AlertableLoad, opts: { stopsWithCoords?: num
     if (hours >= STUCK_HOURS && ON_SITE.includes(load.status)) {
       alerts.push({ code: 'stuck', label: `${fmtHours(hours)} en ${STATUS_LABEL[load.status] || load.status}` });
     }
+  }
+
+  // Detention: el driver lleva mucho en una parada (se avisa a la 1:30 para avisarle al broker a tiempo)
+  for (const s of opts.stops ?? []) {
+    const d = stopDetention(s, now);
+    if (!d || !d.open || d.waitedMin < DETENTION_WARN_MIN || d.waitedMin > 24 * 60) continue;
+    const where = s.stop_type === 'pickup' ? 'pickup' : 'delivery';
+    alerts.push({
+      code: 'detention',
+      label: d.billableMin > 0
+        ? `Detention: ${fmtDuration(d.waitedMin)} en ${where} (${fmtDuration(d.billableMin)} cobrable)${d.lateArrival ? ' · llegó tarde' : ''}`
+        : `${fmtDuration(d.waitedMin)} en ${where}: avisar al broker antes de las 2 h`,
+    });
   }
 
   if (load.status !== 'planned') {
