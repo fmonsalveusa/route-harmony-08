@@ -31,15 +31,18 @@ function listFiles(dir) {
   });
 }
 
-/** ZIP con deflate; las rutas van dentro de una carpeta con el nombre de la extensión */
-function zip(baseDir, folder) {
+/** ZIP con deflate; las rutas van dentro de una carpeta con el nombre de la extensión
+ *  (folder "" = archivos en la raíz, como lo pide la Chrome Web Store). `override` cambia el
+ *  contenido de algún archivo (ruta relativa → Buffer). */
+function zip(baseDir, folder, override = {}) {
   const locals = [], centrals = [];
   let offset = 0;
   // Fecha fija: el zip sale igual si los archivos no cambian
   const dosTime = 0, dosDate = ((2026 - 1980) << 9) | (1 << 5) | 1;
   for (const file of listFiles(baseDir).sort()) {
-    const name = Buffer.from(`${folder}/${relative(baseDir, file).replace(/\\/g, "/")}`, "utf8");
-    const data = readFileSync(file);
+    const rel = relative(baseDir, file).replace(/\\/g, "/");
+    const name = Buffer.from(folder ? `${folder}/${rel}` : rel, "utf8");
+    const data = override[rel] ?? readFileSync(file);
     const comp = deflateRawSync(data, { level: 9 });
     const crc = crc32(data);
     const local = Buffer.alloc(30);
@@ -76,3 +79,16 @@ for (const ext of EXTENSIONS) {
   console.log(`[extensions] ${ext.zip} v${manifest.version}`);
 }
 writeFileSync(join(OUT, "extensions.json"), JSON.stringify(info, null, 2) + "\n");
+
+// Paquete para la Chrome Web Store (DAT Driver Tabs): manifest.json en la raíz y SIN "key"
+// (la tienda pone su propio ID). Se sube a mano en el panel de desarrollador; no va en public/.
+{
+  const base = join(ROOT, "tools/dat-tab-names");
+  const manifest = JSON.parse(readFileSync(join(base, "manifest.json"), "utf8"));
+  delete manifest.key;
+  const STORE = join(ROOT, "store");
+  mkdirSync(STORE, { recursive: true });
+  const file = `dat-driver-tabs-store-${manifest.version}.zip`;
+  writeFileSync(join(STORE, file), zip(base, "", { "manifest.json": Buffer.from(JSON.stringify(manifest, null, 2) + "\n") }));
+  console.log(`[extensions] store/${file} (Chrome Web Store)`);
+}

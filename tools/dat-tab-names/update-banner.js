@@ -3,6 +3,7 @@
   try { chrome.runtime.sendMessage({ type: "check-update" }).catch(() => {}); } catch {}
   const SNOOZE_KEY = "duUpdateSnooze";
   async function show() {
+    if (chrome.runtime.getManifest().update_url) return; // Web Store: se actualiza sola
     const { duUpdate, [SNOOZE_KEY]: snooze } = await chrome.storage.local.get(["duUpdate", SNOOZE_KEY]);
     document.querySelector(".du-update")?.remove();
     if (!duUpdate || (snooze && snooze.version === duUpdate.version && Date.now() < snooze.until)) return;

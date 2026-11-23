@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Paquetes para la Chrome Web Store (se suben a mano)
+/store

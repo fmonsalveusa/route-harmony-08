@@ -192,7 +192,10 @@ const newer = (a, b) => {
   }
   return false;
 };
+// Instalada desde la Chrome Web Store: Chrome la actualiza solo (no hay zip ni carpeta que revisar)
+const FROM_STORE = !!chrome.runtime.getManifest().update_url;
 async function checkUpdate() {
+  if (FROM_STORE) return;
   try {
     const res = await fetch(`${DU_UPDATE_URL}?t=${Date.now()}`, { cache: "no-store" });
     const info = (await res.json())?.dat;
@@ -214,6 +217,7 @@ chrome.runtime.onMessage.addListener((msg) => { if (msg?.type === "check-update"
 // mitad de la sincronización de la carpeta.
 let folderSeen = null; // { version, at }
 async function checkLocalFolder() {
+  if (FROM_STORE) return;
   try {
     const res = await fetch(`${chrome.runtime.getURL("manifest.json")}?t=${Date.now()}`, { cache: "no-store" });
     const disk = (await res.json())?.version;

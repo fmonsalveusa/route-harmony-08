@@ -34,6 +34,7 @@ import Booking from "./pages/Booking";
 import Install from "./pages/Install";
 import Landing from "./pages/Landing";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import ExtensionPrivacy from "./pages/ExtensionPrivacy";
 import DeleteData from "./pages/DeleteData";
 import Documents from "./pages/Documents";
 import SigningUpload from "./pages/signing/Upload";
@@ -192,6 +193,7 @@ const AppRoutes = () => {
       <Route path="/install" element={<Install />} />
       <Route path="/" element={user ? <Navigate to={getRedirectPath()} replace /> : isNativePlatform() ? <Navigate to="/auth" replace /> : <Landing />} />
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+      <Route path="/extension-privacy" element={<ExtensionPrivacy />} />
       <Route path="/delete-data" element={<DeleteData />} />
 
       {/* Driver mobile routes */}
