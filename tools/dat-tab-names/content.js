@@ -6,13 +6,26 @@
   const COLORS = ["#2563eb", "#16a34a", "#dc2626", "#d97706", "#7c3aed", "#0891b2", "#db2777", "#4b5563"];
   let labels = {}; // key -> { name, color, index }
 
-  const keyOf = (tab) => {
+  const textOf = (tab) => {
     // Texto de la búsqueda sin nuestra etiqueta
     const lines = [...tab.querySelectorAll(".load-details > div:not(.du-row)")].map((d) =>
       [...d.childNodes].filter((n) => !n.classList?.contains("du-chip")).map((n) => n.textContent || "").join("").replace(/\s+/g, " ").trim());
     return lines.length ? lines.join(" → ") : null;
   };
   const tabs = () => [...document.querySelectorAll('[role="tab"].mat-tab-label')];
+  // Clave de cada pestaña. Si dos pestañas tienen la misma búsqueda (mismo origen y destino), la
+  // segunda lleva "#2", la tercera "#3"…: así cada una tiene su propio driver. Antes compartían la
+  // etiqueta y su posición saltaba de una a otra sin parar (la pestaña quedaba parpadeando).
+  const keyOf = (tab) => {
+    const text = textOf(tab);
+    if (!text) return null;
+    let n = 0;
+    for (const t of tabs()) {
+      if (textOf(t) === text) n++;
+      if (t === tab) break;
+    }
+    return n > 1 ? `${text} #${n}` : text;
+  };
   const save = () => { try { chrome.storage.local.set({ labels }); } catch {} };
 
   // Pestaña sin etiqueta en la misma posición que una etiqueta cuya búsqueda ya no existe: se movió el origen
