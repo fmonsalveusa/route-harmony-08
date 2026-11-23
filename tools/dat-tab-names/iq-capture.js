@@ -7,12 +7,25 @@
 
   // ── MCI: respuestas de analyticsfacade/graphql (PocMci) ──
   const onMci = (reqBody, text) => {
-    if (!text || text.indexOf('"mci"') < 0) return;
+    if (!text || (text.indexOf('"mci"') < 0 && text.indexOf('"lt"') < 0)) return;
     let req = {}, res;
     try { req = JSON.parse(reqBody || "{}"); } catch {}
     try { res = JSON.parse(text); } catch { return; }
-    const rows = res?.data?.mci;
     const q = req?.variables?.query || {};
+    // Volumen de cada zona (PocLt: cargas y camiones de salida de hoy)
+    const lt = res?.data?.lt;
+    if (Array.isArray(lt) && lt.length >= 20 && (!q.timeframe || q.timeframe === "CURRENT")) {
+      post({
+        __duLt: {
+          equipment: q.equipmentType,
+          areaType: q.areaType || lt[0].type,
+          rows: lt.filter((r) => r && r.code && typeof r.loads === "number")
+            .map((r) => ({ code: r.code, loads: r.loads, trucks: r.trucks || 0 })),
+        },
+      });
+      return;
+    }
+    const rows = res?.data?.mci;
     if (!Array.isArray(rows) || !rows.length) return;
     if (q.timeframe && q.timeframe !== "CURRENT") return; // solo el mercado de hoy
     if (rows.length < 20) return; // vista de una sola ubicación, no el mapa completo

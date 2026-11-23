@@ -91,15 +91,42 @@
     return null;
   };
 
+  // Equipo por defecto cuando la fila no lo dice: el más común entre las cargas de la búsqueda
+  const defaultEquip = () => {
+    const n = {};
+    for (const p of postings.values()) { const e = equipOf(p.equipment); n[e] = (n[e] || 0) + 1; }
+    const best = Object.entries(n).sort((a, b) => b[1] - a[1])[0]?.[0];
+    return best && market?.[best]?.OUT ? best : market?.FLATBED?.OUT ? "FLATBED" : null;
+  };
+
+  // Volumen de la zona: qué tan arriba está en cargas frente a las demás zonas (0 = la que menos, 1 = la que más)
+  const rankCache = new Map(); // `${eq}|${version}` → cargas ordenadas
+  const volRank = (eq, loads) => {
+    const k = `${eq}|${version}`;
+    let sorted = rankCache.get(k);
+    if (!sorted) {
+      sorted = Object.values(market[eq].OUT.lt?.map || {}).map((v) => v[0]).filter((x) => x > 0).sort((a, b) => a - b);
+      rankCache.set(k, sorted);
+    }
+    if (!sorted.length) return null;
+    let i = 0;
+    while (i < sorted.length && sorted[i] < loads) i++;
+    return { rank: i / sorted.length, pos: sorted.length - i, of: sorted.length };
+  };
+
   // MCI de salida para una carga: zona KMA por coordenadas; si no, promedio del estado
   function lookup(info, text, eqCode) {
-    const eq = pickEquip(info?.equipment || eqCode);
+    const eq = pickEquip(info?.equipment || eqCode) || (!info?.equipment && !eqCode ? defaultEquip() : null);
     if (!eq) return null;
     const out = market[eq].OUT;
     if (out.kma && zones.length && typeof info?.destLat === "number" && typeof info?.destLng === "number") {
       const z = zoneAt(info.destLat, info.destLng);
       const v = z && out.kma.map[z.code];
-      if (v) return { mci: v[0], where: v[1] || z.name || z.code, at: out.kma.at, eq, byState: false };
+      const lt = z && out.lt?.map?.[z.code];
+      if (v) return {
+        mci: v[0], where: v[1] || z.name || z.code, at: out.kma.at, eq, byState: false,
+        loads: lt ? lt[0] : null, trucks: lt ? lt[1] : null, vol: lt ? volRank(eq, lt[0]) : null,
+      };
     }
     const st = (info?.destState || String(text).match(/,\s*([A-Z]{2})\s*$/)?.[1] || "").toUpperCase();
     if (!st) return null;
@@ -119,19 +146,41 @@
 
   // La mano va a la IZQUIERDA de la ciudad: así queda siempre bajo el título "Destination"
   // (la celda de DAT es más ancha que su título y a la derecha caía bajo "DH-D").
+  // Nota final = MCI (cargas por camión) limitado por el VOLUMEN de la zona: una zona con pocas
+  // cargas no sale muy verde aunque DAT la marque "Very Tight" (p. ej. Idaho: 724 cargas, 23 camiones).
+  // Volumen frente a las demás zonas: top 20 % → hasta verde oscuro · 20–40 % → verde ·
+  // 40–65 % → verde claro · el 35 % con menos cargas → ✋ neutral.
+  const TONE_LABEL = ["", "tibio", "caliente", "muy caliente"];
+  function grade(r) {
+    let lvl = LEVELS.find((l) => r.mci >= l.min);
+    if (r.mci < 10) return { lvl, capped: false };
+    let tone = r.mci >= 85 ? 3 : r.mci >= 43 ? 2 : 1;
+    let cap = 3;
+    if (r.vol) cap = r.vol.rank >= 0.8 ? 3 : r.vol.rank >= 0.6 ? 2 : r.vol.rank >= 0.35 ? 1 : 0;
+    else if (r.byState) cap = 1; // promedio del estado: sin volumen, no más que verde claro
+    const capped = cap < tone;
+    tone = Math.min(tone, cap);
+    lvl = tone === 0
+      ? { cls: "du-mkt-neu", icon: LEVELS.find((l) => l.cls === "du-mkt-neu").icon, label: "neutral (pocas cargas)" }
+      : { cls: `du-mkt-hot${tone}`, icon: LEVELS[0].icon, label: TONE_LABEL[tone] + (capped ? " (limitado por volumen)" : "") };
+    return { lvl, capped };
+  }
+
   function paint(el, r) {
     let ico = el.previousElementSibling?.classList?.contains("du-mkt-ico") ? el.previousElementSibling : null;
     if (!r) { ico?.remove(); return; }
-    const lvl = LEVELS.find((l) => r.mci >= l.min);
+    const { lvl } = grade(r);
     const stale = Date.now() - r.at > STALE_MS;
     if (!ico) { ico = document.createElement("span"); el.before(ico); }
     ico.className = `du-mkt-ico ${lvl.cls}${stale ? " du-mkt-stale" : ""}`;
     ico.innerHTML = lvl.icon;
     ico.title = [
-      `Mercado de salida ${r.byState ? `(promedio del estado ${r.where})` : `— ${r.where}`}`,
-      `MCI ${r.mci > 0 ? "+" : ""}${r.mci}: ${lvl.label} · ${EQ_NAME[r.eq] || r.eq}`,
+      `Mercado de salida ${r.byState ? `(promedio del estado ${r.where})` : `— ${r.where}`} · ${EQ_NAME[r.eq] || r.eq}`,
+      `Resultado: ${lvl.label}`,
+      `MCI ${r.mci > 0 ? "+" : ""}${r.mci} (cargas por camión)`,
+      r.loads != null ? `Volumen: ${r.loads.toLocaleString("en-US")} cargas · ${r.trucks} camiones — zona #${r.vol?.pos} de ${r.vol?.of} en cargas` : "",
       `Dato de DAT Market Conditions ${ago(r.at)}${stale ? " — ábrelo para actualizar" : ""}`,
-    ].join("\n");
+    ].filter(Boolean).join("\n");
   }
 
   // Datos de cada carga (coordenadas del destino y equipo), por postingId — de dat-capture.js
