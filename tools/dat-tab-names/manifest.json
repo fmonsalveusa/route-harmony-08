@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Dispatch Up – Dispatcher Tools",
-  "version": "1.11.0",
-  "description": "Herramientas internas de Dispatch Up para despachadores en el load board: nombre del driver por pestaña, rating de crédito del broker, mercado del destino y email al broker.",
+  "version": "1.11.1",
+  "description": "Herramientas de Dispatch Up para despachadores: driver por pestaña, rating del broker, mercado del destino y email al broker.",
   "permissions": [
     "storage",
     "alarms"
