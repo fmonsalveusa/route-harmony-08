@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "DAT Driver Tabs (Dispatch Up)",
-  "version": "1.10.0",
+  "version": "1.10.1",
   "description": "Ponle el nombre del driver a cada pestaña de búsqueda de DAT One, llama a los brokers con Google Voice, ve el rating de RTS de cada broker, el mercado de la ciudad destino y escríbeles por email con tu plantilla.",
   "permissions": [
     "storage",
@@ -89,5 +89,6 @@
   "options_ui": {
     "page": "options.html",
     "open_in_tab": true
-  }
+  },
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqDndbvIdqZgCc8EYXTr4p+GwBTH0Inel9UFdbaU/ARkE5CvTOqy9UXxJ/2WzX2lbiDo3m94CokUYKBC3Kc+tYBh7DduM+Y/UVU8KiHuPvpQ2x+fK8MRKhYpbdVWsp3ONEPomBOLBz8HjiBohA2Z/c/EDA9QQ1igrcoLJdvk2Ho9uNekvQR9wYsFyApG5CrjRsX9kiQhO8Dv1IfzDltzeFmnCxFok6BzG5ZRuSltzRCehFDpchvFLiNAcyU9zTL/p76RpK1JyCetqYv+A7NA5DSM8GsuqMdAk8XXbwuJyaFaLrKEK+FXEAJCa4OkjBO6B6T8p2shxlqx4vcS9x4movQIDAQAB"
 }
