@@ -4,18 +4,20 @@
 // ciudad en su zona usa las coordenadas que DAT trae en cada carga (dat-capture.js); si no las
 // hay, usa el promedio del estado.
 (() => {
-  // Tres estados (cortes del mapa de DAT): ≥ +10 caliente · -15…+10 neutral · ≤ -15 frío.
-  // Ícono a la derecha de la ciudad: 👍 verde caliente · ✋ azul neutral · 👎 rojo frío.
-  // Los extremos (≥ +43 / ≤ -36) van con el color más intenso.
+  // Ícono a la derecha de la ciudad, con las bandas del mapa de DAT:
+  //   👍👍👍 ≥ +85 · 👍👍 +43…+85 · 👍 +10…+43 · ✋ azul -15…+10 · 👎 -25…-15 · 👎👎 -36…-25 · 👎👎👎 ≤ -36
+  // Mientras mejor (o peor) el destino, más manos.
   const UP = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg>';
   const DOWN = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3H6c-.83 0-1.54.5-1.84 1.22l-3.02 7.05c-.09.23-.14.47-.14.73v2c0 1.1.9 2 2 2h6.31l-.95 4.57-.03.32c0 .41.17.79.44 1.06L9.83 23l6.59-6.59c.36-.36.58-.86.58-1.41V5c0-1.1-.9-2-2-2zm4 0v12h4V3h-4z"/></svg>';
   const HAND = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M23 5.5V20c0 2.2-1.8 4-4 4h-7.3c-1.08 0-2.1-.43-2.85-1.19L1 14.83s1.26-1.23 1.3-1.25c.22-.19.49-.29.79-.29.22 0 .42.06.6.16.04.01 4.31 2.46 4.31 2.46V4c0-.83.67-1.5 1.5-1.5S11 3.17 11 4v7h1V1.5c0-.83.67-1.5 1.5-1.5S15 .67 15 1.5V11h1V2.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5V11h1V5.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5z"/></svg>';
   const LEVELS = [
-    { min: 43, cls: "du-mkt-hot du-mkt-strong", icon: UP, label: "caliente" },
-    { min: 10, cls: "du-mkt-hot", icon: UP, label: "caliente" },
+    { min: 85, cls: "du-mkt-hot", icon: UP.repeat(3), label: "muy caliente" },
+    { min: 43, cls: "du-mkt-hot", icon: UP.repeat(2), label: "caliente" },
+    { min: 10, cls: "du-mkt-hot", icon: UP, label: "tibio" },
     { min: -15, cls: "du-mkt-neu", icon: HAND, label: "neutral" },
-    { min: -36, cls: "du-mkt-cold", icon: DOWN, label: "frío" },
-    { min: -Infinity, cls: "du-mkt-cold du-mkt-strong", icon: DOWN, label: "frío" },
+    { min: -25, cls: "du-mkt-cold", icon: DOWN, label: "fresco" },
+    { min: -36, cls: "du-mkt-cold", icon: DOWN.repeat(2), label: "frío" },
+    { min: -Infinity, cls: "du-mkt-cold", icon: DOWN.repeat(3), label: "muy frío" },
   ];
   const STALE_MS = 24 * 60 * 60 * 1000;
 
