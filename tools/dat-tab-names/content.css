@@ -189,11 +189,14 @@
 /* Mercado de la ciudad destino (MCI de salida de DAT Market Conditions): ícono a la derecha */
 [data-test="load-destination-cell"]:has(+ .du-mkt-ico) { flex-shrink: 1; min-width: 0; }
 *:has(> [data-test="load-destination-cell"] + .du-mkt-ico) { display: flex; align-items: center; gap: 4px; }
-.du-mkt-ico { display: inline-flex; justify-content: flex-start; flex-shrink: 0; width: 48px; height: 16px; vertical-align: middle; cursor: help; }
-.du-mkt-ico svg { width: 15px; height: 15px; flex-shrink: 0; }
-.du-mkt-ico svg + svg { margin-left: 1px; } /* 2 o 3 manos; ancho fijo para que 1 o 2 manos empiecen en el mismo sitio que 3 */
-.du-mkt-ico.du-mkt-hot svg { fill: #1e8e3e; }
+.du-mkt-ico { display: inline-flex; flex-shrink: 0; width: 18px; height: 18px; vertical-align: middle; cursor: help; }
+.du-mkt-ico svg { width: 100%; height: 100%; }
+/* Tonos: más oscuro = más caliente / más frío */
+.du-mkt-ico.du-mkt-hot1 svg { fill: #81c995; }
+.du-mkt-ico.du-mkt-hot2 svg { fill: #34a853; }
+.du-mkt-ico.du-mkt-hot3 svg { fill: #0d652d; }
 .du-mkt-ico.du-mkt-neu svg { fill: #1a73e8; }
-.du-mkt-ico.du-mkt-cold svg { fill: #d93025; }
+.du-mkt-ico.du-mkt-cold1 svg { fill: #f28b82; }
+.du-mkt-ico.du-mkt-cold2 svg { fill: #ea4335; }
+.du-mkt-ico.du-mkt-cold3 svg { fill: #a50e0e; }
 .du-mkt-ico.du-mkt-stale { opacity: .4; }
-.dhd > .du-mkt-ico { margin-left: 2px; margin-top: 2px; } /* en la columna DH-D, que está vacía */
