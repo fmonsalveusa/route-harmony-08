@@ -3,6 +3,7 @@
 // línea) y se los pasa a rts-chip.js para que busque el rating de RTS por MC, que es exacto.
 (() => {
   const all = new Map(); // postingId → { postingId, name, mc, dot }
+  const num = (n) => (typeof n === "number" && isFinite(n) ? n : typeof n === "string" && n.trim() && isFinite(+n) ? +n : null);
   const place = (p) => (p ? [p.city, p.stateProv].filter(Boolean).join(", ") : "");
   const publish = (text) => {
     if (!text || text.indexOf("posterDotIds") < 0) return;
@@ -24,6 +25,10 @@
             (v.posterInfo?.contactMethods || []).map((c) => c?.value?.emailAddress).find(Boolean) || "",
           origin: place(v.assetInfo.origin),
           destination: place(v.assetInfo.destination),
+          // Para pintar el mercado de la ciudad destino (market-chip.js)
+          destLat: num(v.assetInfo.destination?.latitude ?? v.assetInfo.destination?.lat),
+          destLng: num(v.assetInfo.destination?.longitude ?? v.assetInfo.destination?.lng ?? v.assetInfo.destination?.lon),
+          destState: v.assetInfo.destination?.stateProv || "",
           dho: v.originDeadheadMiles?.miles ?? null,
           miles: v.tripLength?.miles ?? null,
           date: v.availability?.earliestWhen || "",
