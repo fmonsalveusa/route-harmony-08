@@ -148,15 +148,15 @@
   // (la celda de DAT es más ancha que su título y a la derecha caía bajo "DH-D").
   // Nota final = MCI (cargas por camión) limitado por el VOLUMEN de la zona: una zona con pocas
   // cargas no sale muy verde aunque DAT la marque "Very Tight" (p. ej. Idaho: 724 cargas, 23 camiones).
-  // Volumen frente a las demás zonas: top 20 % → hasta verde oscuro · 20–40 % → verde ·
-  // 40–65 % → verde claro · el 35 % con menos cargas → ✋ neutral.
+  // Volumen frente a las demás zonas (más estricto): top 15 % → hasta verde oscuro · 15–30 % → verde ·
+  // 30–45 % → verde claro · el 55 % con menos cargas → ✋ neutral.
   const TONE_LABEL = ["", "tibio", "caliente", "muy caliente"];
   function grade(r) {
     let lvl = LEVELS.find((l) => r.mci >= l.min);
     if (r.mci < 10) return { lvl, capped: false };
     let tone = r.mci >= 85 ? 3 : r.mci >= 43 ? 2 : 1;
     let cap = 3;
-    if (r.vol) cap = r.vol.rank >= 0.8 ? 3 : r.vol.rank >= 0.6 ? 2 : r.vol.rank >= 0.35 ? 1 : 0;
+    if (r.vol) cap = r.vol.rank >= 0.85 ? 3 : r.vol.rank >= 0.7 ? 2 : r.vol.rank >= 0.55 ? 1 : 0;
     else if (r.byState) cap = 1; // promedio del estado: sin volumen, no más que verde claro
     const capped = cap < tone;
     tone = Math.min(tone, cap);
