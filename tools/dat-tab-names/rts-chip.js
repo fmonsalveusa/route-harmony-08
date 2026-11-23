@@ -32,7 +32,7 @@
     }
     chip.onclick = null;
     if (r?.error) { chip.textContent = "RTS: error"; chip.classList.add("du-rts-muted"); chip.title = r.error; return; }
-    if (r?.none) { chip.textContent = "RTS: sin datos"; chip.classList.add("du-rts-muted"); chip.title = "RTS no tiene este broker"; return; }
+    if (r?.none) { chip.textContent = "RTS: sin datos"; chip.classList.add("du-rts-muted"); chip.title = /^mc:/.test(chip.dataset.key || "") ? `RTS no tiene este broker (MC ${chip.dataset.key.slice(3)})` : "Buscado por NOMBRE: DAT todavía no mandó el MC de esta carga (se corrige solo cuando llega, o al abrirla)"; return; }
     if (r?.ambiguous) {
       chip.textContent = "RTS: ?";
       chip.classList.add("du-rts-muted");
