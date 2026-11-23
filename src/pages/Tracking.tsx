@@ -1052,7 +1052,8 @@ const Tracking = () => {
                   className="flex-1 gap-1.5"
                   onClick={() => {
                     setSelectedDriverLoad(null);
-                    navigate('/loads');
+                    // Abre la carga actual del driver con su detalle (igual que "Siguiente carga")
+                    navigate(`/loads?openLoad=${load.id}`);
                   }}
                 >
                   <ExternalLink className="h-3.5 w-3.5" />
