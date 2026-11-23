@@ -55,7 +55,19 @@
   const zoneAt = (lat, lng) => {
     const k = `${lat.toFixed(3)},${lng.toFixed(3)}`;
     if (zoneCache.has(k)) return zoneCache.get(k);
-    const z = zones.find((z) => lng >= z.box[0] && lng <= z.box[2] && lat >= z.box[1] && lat <= z.box[3] && inside(lng, lat, z.rings)) || null;
+    let z = zones.find((z) => lng >= z.box[0] && lng <= z.box[2] && lat >= z.box[1] && lat <= z.box[3] && inside(lng, lat, z.rings)) || null;
+    // Ciudades en la costa o en el borde pueden quedar fuera de la figura simplificada:
+    // se toma la zona con el borde más cercano (hasta ~40 km)
+    if (!z) {
+      let best = 0.4 * 0.4;
+      for (const c of zones) {
+        if (lng < c.box[0] - 0.4 || lng > c.box[2] + 0.4 || lat < c.box[1] - 0.4 || lat > c.box[3] + 0.4) continue;
+        for (const r of c.rings) for (let i = 0; i < r.length; i += 2) {
+          const dx = (r[i] - lng) * Math.cos((lat * Math.PI) / 180), dy = r[i + 1] - lat, d = dx * dx + dy * dy;
+          if (d < best) { best = d; z = c; }
+        }
+      }
+    }
     zoneCache.set(k, z);
     return z;
   };
@@ -74,8 +86,8 @@
   };
 
   // MCI de salida para una carga: zona KMA por coordenadas; si no, promedio del estado
-  function lookup(info, text) {
-    const eq = pickEquip(info?.equipment);
+  function lookup(info, text, eqCode) {
+    const eq = pickEquip(info?.equipment || eqCode);
     if (!eq) return null;
     const out = market[eq].OUT;
     if (out.kma && zones.length && typeof info?.destLat === "number" && typeof info?.destLng === "number") {
@@ -131,10 +143,11 @@
       const pid = row?.querySelector("[posting-id]")?.getAttribute("posting-id") || "";
       const info = postings.get(pid);
       const text = (el.textContent || "").trim();
-      const key = `${version}|${pid}|${text}|${info ? 1 : 0}`;
+      const key = `${version}|${pid}|${text}|${info ? 1 : 0}|${row?.querySelector('[data-test="load-eq-cell"]')?.textContent || ""}`;
       if (el.dataset.duMkt === key) continue;
       el.dataset.duMkt = key;
-      paint(el, /anywhere/i.test(text) ? null : lookup(info, text));
+      const eqCode = (row?.querySelector('[data-test="load-eq-cell"]')?.textContent || "").trim();
+      paint(el, /anywhere/i.test(text) ? null : lookup(info, text, eqCode));
     }
   }
 
