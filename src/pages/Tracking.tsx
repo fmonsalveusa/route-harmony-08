@@ -475,16 +475,40 @@ const Tracking = () => {
     return map;
   }, [enrichedLoads]);
 
+  // Cola de cargas por driver: la ACTUAL es la que va más avanzada (On Site > Picked Up > In Transit >
+  // Dispatched; empate = pickup más temprano). Las demás activas y las Planned van en "Después".
+  const STATUS_PROGRESS: Record<string, number> = {
+    on_site_delivery: 5, picked_up: 4, on_site_pickup: 3, in_transit: 2, dispatched: 1, planned: 0,
+  };
+  const loadQueueByDriver = useMemo(() => {
+    const map: Record<string, { current: LoadWithStops | null; next: any[]; freeDate: string | null }> = {};
+    const byPickup = (a: any, b: any) => (a.pickup_date || '').localeCompare(b.pickup_date || '');
+    const all = [...enrichedLoads, ...loads.filter(l => l.status === 'planned')];
+    for (const l of all) {
+      if (!l.driver_id) continue;
+      (map[l.driver_id] ??= { current: null, next: [], freeDate: null }).next.push(l);
+    }
+    for (const q of Object.values(map)) {
+      const active = q.next.filter(l => l.status !== 'planned')
+        .sort((a, b) => (STATUS_PROGRESS[b.status] ?? 0) - (STATUS_PROGRESS[a.status] ?? 0) || byPickup(a, b));
+      q.current = (active[0] as LoadWithStops) ?? null;
+      q.next = q.next.filter(l => l !== q.current).sort(byPickup);
+      // Se libera cuando entrega la ÚLTIMA carga de su cola (Planned incluidas)
+      q.freeDate = [q.current, ...q.next].filter(Boolean)
+        .map((l: any) => (l.delivery_date || l.pickup_date || '').slice(0, 10))
+        .sort().pop() || null;
+    }
+    return map;
+  }, [enrichedLoads, loads]);
+
   // Orden del Next Plan:
   //  1. Vacíos
   //  2. Cargados que entregan hoy
   //  3. El resto de los cargados, por fecha de entrega (los que se liberan antes, arriba)
   //  Listos al final y luego los pausados. Dentro de cada grupo desempata Buscando → Listo → Standby.
   const sortedDrivers = useMemo(() => {
-    const deliveryOf = (d: any) => {
-      const load = activeLoadByDriver[d.id];
-      return load ? (load.delivery_date || load.pickup_date || '').slice(0, 10) : null;
-    };
+    // Fecha en que se libera: entrega de la última carga de su cola (activas + Planned)
+    const deliveryOf = (d: any) => loadQueueByDriver[d.id]?.freeDate ?? null;
     const group = (d: any) => {
       if (d.is_paused) return 4;
       // Listo: ya tiene su próxima carga → al final (antes de los pausados)
@@ -502,7 +526,7 @@ const Tracking = () => {
       (group(a) === 2 ? (deliveryOf(a) || '').localeCompare(deliveryOf(b) || '') : 0) ||
       statusRank(a) - statusRank(b),
     );
-  }, [availableDrivers, searchStatus, activeLoadByDriver, todayET]);
+  }, [availableDrivers, searchStatus, loadQueueByDriver, todayET]);
 
   // Driver tiene carga FUTURA (delivery > hoy). Solo se usa para el pre-mark inicial:
   // los que no tienen futura (empty o entrega hoy) arrancan en Buscando.
@@ -1209,7 +1233,10 @@ const Tracking = () => {
             ) : (
               sortedDrivers.map(driver => {
                 const lastDel = lastDeliveryStops[driver.id];
-                const activeLoad = activeLoadByDriver[driver.id];
+                const queue = loadQueueByDriver[driver.id];
+                const activeLoad = queue?.current ?? undefined;
+                const nextLoads = queue?.next ?? [];
+                const onlyPlanned = !activeLoad && nextLoads.length > 0;
                 const activeLastStop = activeLoad ? getLastStop(activeLoad) : null;
                 const displayInfo = activeLastStop
                   ? { address: activeLastStop.address, date: activeLoad.delivery_date || activeLoad.pickup_date || '', isActive: true }
@@ -1228,15 +1255,17 @@ const Tracking = () => {
                     key={driver.id}
                     className={`flex overflow-hidden rounded-2xl border transition-shadow cursor-pointer shadow-[0_1px_2px_rgba(60,64,67,.3),0_2px_6px_2px_rgba(60,64,67,.15)] hover:shadow-[0_2px_4px_rgba(60,64,67,.3),0_6px_12px_4px_rgba(60,64,67,.18)] dark:shadow-[0_2px_8px_rgba(0,0,0,.5)] ${
                       // Fondo según la carga: verde si está cargado, naranja si está vacío
-                      activeLoad ? 'bg-white border-[#ceead6] dark:bg-card dark:border-emerald-900/50' : 'bg-white border-[#fad2b4] dark:bg-card dark:border-orange-900/50'
+                      activeLoad ? 'bg-white border-[#ceead6] dark:bg-card dark:border-emerald-900/50'
+                        : onlyPlanned ? 'bg-white border-[#c2d7fb] dark:bg-card dark:border-blue-900/50'
+                        : 'bg-white border-[#fad2b4] dark:bg-card dark:border-orange-900/50'
                     } ${isPaused ? 'opacity-60' : ''}`}
                     onClick={() => setSelectedDriverLoad({ driver, load: activeLoad || null, lastDelivered: lastDel ? { address: lastDel.address, date: lastDel.date } : undefined })}
                   >
                     {/* Franja vertical izquierda: LOADED / EMPTY, letra por letra */}
                     {/* Franja fina de color: verde cargado, naranja vacío */}
-                    <div className={`w-7 shrink-0 flex items-center justify-center py-1 ${activeLoad ? 'bg-[#188038]' : 'bg-[#e37400]'}`}>
+                    <div className={`w-7 shrink-0 flex items-center justify-center py-1 ${activeLoad ? 'bg-[#188038]' : onlyPlanned ? 'bg-[#0b57d0]' : 'bg-[#e37400]'}`}>
                       <span className="flex flex-col items-center text-[13px] leading-[15px] font-bold text-white select-none">
-                        {(activeLoad ? 'LOADED' : 'EMPTY').split('').map((ch, i) => <span key={i}>{ch}</span>)}
+                        {(activeLoad ? 'LOADED' : onlyPlanned ? 'PLANNED' : 'EMPTY').split('').map((ch, i) => <span key={i}>{ch}</span>)}
                       </span>
                     </div>
                     <div className="flex-1 min-w-0">
@@ -1260,6 +1289,11 @@ const Tracking = () => {
                           >
                             {copiedField === `${driver.id}:phone` ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
                           </button>
+                        </span>
+                      )}
+                      {(activeLoad ? 1 : 0) + nextLoads.length > 1 && (
+                        <span className="shrink-0 rounded-full bg-[#d3e3fd] text-[#041e49] px-2 py-0.5 text-[11px] font-semibold" title="Cargas asignadas (activas + planned)">
+                          {(activeLoad ? 1 : 0) + nextLoads.length} cargas
                         </span>
                       )}
                       <ServiceTypeBadge
@@ -1394,6 +1428,30 @@ const Tracking = () => {
                     </div>
                     {hosClocks[driver.id] && <HosClocks row={hosClocks[driver.id]} className="shrink-0 w-[270px] max-w-[60%]" />}
                     </div>
+
+                    {/* Cargas en cola: después de la actual (Dispatched sin arrancar y Planned) */}
+                    {nextLoads.length > 0 && (
+                      <div className="mx-3 mt-1.5 space-y-1">
+                        {nextLoads.map((l: any) => (
+                          <button
+                            key={l.id}
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); navigate(`/loads?openLoad=${l.id}`); }}
+                            className="w-full flex items-center gap-1.5 rounded-xl bg-[#f0f4f9] hover:bg-[#e3e8ef] dark:bg-muted/50 px-2.5 py-1 text-left text-xs transition-colors"
+                            title="Abrir carga"
+                          >
+                            <span className="shrink-0 font-medium text-[#444746] dark:text-muted-foreground">{activeLoad ? 'Después:' : 'Próxima:'}</span>
+                            <span className="min-w-0 truncate text-[#1f1f1f] dark:text-foreground">
+                              <b className="font-semibold">#{l.reference_number}</b> · {extractCityState(l.origin || '')} → {extractCityState(l.destination || '')}
+                              {l.pickup_date ? ` · ${format(parseISO(l.pickup_date), 'MM/dd')}` : ''}
+                            </span>
+                            <span className={`ml-auto shrink-0 rounded-full px-1.5 py-px text-[10px] font-bold ${l.status === 'planned' ? 'bg-[#e9eef6] text-[#444746]' : 'bg-[#fef7e0] text-[#8a5a00]'}`}>
+                              {l.status === 'planned' ? 'PLANNED' : 'DISPATCHED'}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
 
                     {/* Acciones */}
                     <div className="flex items-center gap-1 mt-1.5 px-3 pb-2">
