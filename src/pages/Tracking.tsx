@@ -1345,7 +1345,7 @@ const Tracking = () => {
                         {copiedField === `${driver.id}:name` ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
                       </button>
                       {driver.phone && (
-                        <span className="flex shrink-0 items-center gap-0.5 text-xs text-muted-foreground">
+                        <span className="flex shrink-0 items-center gap-0.5 text-sm font-medium text-[#444746] dark:text-muted-foreground">
                           {driver.phone}
                           <button
                             onClick={(e) => copyField(driver.id, 'phone', driver.phone!, e)}
@@ -1370,8 +1370,8 @@ const Tracking = () => {
                     {/* Línea 2: unidad y VIN */}
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 px-3 pt-0.5 text-[11px] text-[#444746] dark:text-muted-foreground">
                       {truck?.unit_number && (
-                        <span className="flex items-center gap-1">
-                          <Package className="h-3 w-3" /> {truck.unit_number}
+                        <span className="flex items-center gap-1 text-sm font-medium text-[#1f1f1f] dark:text-foreground">
+                          <Package className="h-3.5 w-3.5" /> {truck.unit_number}
                         </span>
                       )}
                       {isCompanyDriver && truck?.vin && (
