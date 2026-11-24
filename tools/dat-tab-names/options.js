@@ -21,8 +21,30 @@ function showMode() {
 }
 document.querySelectorAll('input[name="mode"]').forEach((r) => r.addEventListener("change", showMode));
 
+// Cuentas de envío configuradas en Dispatch Up (se piden con la clave)
+async function loadAccounts(selected) {
+  const r = await chrome.runtime.sendMessage({ type: "broker-email-send", payload: { action: "check" } }).catch(() => null);
+  const list = r?.accounts?.length ? r.accounts : ["58logisticsllc@gmail.com"];
+  const want = selected || $("sendFrom").value || r?.from;
+  $("sendFrom").innerHTML = "";
+  for (const a of list) {
+    const o = document.createElement("option");
+    o.value = o.textContent = a;
+    $("sendFrom").append(o);
+  }
+  if (want && !list.includes(want)) {
+    const o = document.createElement("option");
+    o.value = want; o.textContent = `${want} (no configurada)`;
+    $("sendFrom").append(o);
+  }
+  $("sendFrom").value = want || list[0];
+  return r;
+}
+
 function fill(cfg) {
   $("from").value = cfg.from || "";
+  $("fromName").value = cfg.fromName || "";
+  loadAccounts(cfg.sendFrom);
   const m = document.querySelector(`input[name="mode"][value="${cfg.mode || "direct"}"]`);
   if (m) m.checked = true;
   showMode();
@@ -55,14 +77,17 @@ for (const id of ["subject", "body"]) {
 
 $("save").addEventListener("click", async () => {
   await chrome.storage.sync.set({
-    emailCfg: { mode: mode(), from: $("from").value.trim(), subject: $("subject").value, body: $("body").value },
+    emailCfg: {
+      mode: mode(), from: $("from").value.trim(), sendFrom: $("sendFrom").value, fromName: $("fromName").value.trim(),
+      subject: $("subject").value, body: $("body").value,
+    },
   });
   await chrome.storage.sync.set({ duKey: $("key").value.trim() });
   $("saved").style.opacity = 1;
   setTimeout(() => ($("saved").style.opacity = 0), 1800);
 });
 
-$("reset").addEventListener("click", () => fill({ ...DU_EMAIL_DEFAULTS, mode: mode(), from: $("from").value }));
+$("reset").addEventListener("click", () => fill({ ...DU_EMAIL_DEFAULTS, mode: mode(), from: $("from").value, sendFrom: $("sendFrom").value, fromName: $("fromName").value }));
 
 // Probar la clave: guarda y pregunta a Dispatch Up si la cuenta de envío está lista
 $("test").addEventListener("click", async () => {
@@ -70,9 +95,8 @@ $("test").addEventListener("click", async () => {
   st.className = "hint";
   st.textContent = "Probando…";
   await chrome.storage.sync.set({ duKey: $("key").value.trim() });
-  const r = await chrome.runtime.sendMessage({ type: "broker-email-send", payload: { action: "check" } }).catch((e) => ({ error: String(e) }));
-  if (r?.ok && r.ready) { st.className = "hint ok"; st.textContent = `✓ Clave correcta. Los emails salen desde ${r.from}.`; }
-  else if (r?.ok) { st.className = "hint bad"; st.textContent = `La clave sirve, pero ${r.from} no está lista para enviar.`; }
+  const r = (await loadAccounts()) || { error: "No se pudo probar" };
+  if (r?.ok) { st.className = "hint ok"; st.textContent = `✓ Clave correcta. Cuentas para enviar: ${(r.accounts || [r.from]).join(", ")}.`; }
   else { st.className = "hint bad"; st.textContent = r?.error || "No se pudo probar"; }
 });
 

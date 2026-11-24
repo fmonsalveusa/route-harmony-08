@@ -10,8 +10,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { sendMail } from "../_shared/smtp.ts";
 import { gmailAccounts } from "../_shared/gmail.ts";
 
+// Cuenta por defecto; la extensión puede elegir otra de las configuradas (BROKER_/EXTRA_GMAIL_ACCOUNTS)
 const FROM = "58logisticsllc@gmail.com";
-const FROM_NAME = "58 Logistics LLC";
+const KNOWN_NAMES: Record<string, string> = { "58logisticsllc@gmail.com": "58 Logistics LLC" };
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -48,7 +49,8 @@ Deno.serve(async (req) => {
 
     // La extensión revisa al guardar la configuración que la cuenta esté lista
     if (body.action === "check") {
-      return json({ ok: true, from: FROM, ready: gmailAccounts().some((a) => a.user === FROM) });
+      const accounts = gmailAccounts().map((a) => a.user);
+      return json({ ok: true, from: FROM, ready: accounts.includes(FROM), accounts });
     }
 
     if (body.action !== "send") return json({ error: "Acción desconocida" }, 400);
@@ -59,11 +61,13 @@ Deno.serve(async (req) => {
     if (!EMAIL_RE.test(to)) return json({ error: "Email del broker no válido" }, 400);
     if (!subject || !text) return json({ error: "Falta el asunto o el mensaje" }, 400);
 
-    const account = gmailAccounts().find((a) => a.user === FROM);
-    if (!account) return json({ error: `La cuenta ${FROM} no está configurada para enviar (falta su App Password)` }, 500);
+    const wanted = String(body.from || FROM).trim().toLowerCase();
+    const account = gmailAccounts().find((a) => a.user === wanted);
+    if (!account) return json({ error: `La cuenta ${wanted} no está configurada para enviar (falta su App Password)` }, 400);
+    const fromName = String(body.fromName || "").trim().slice(0, 80) || KNOWN_NAMES[account.user] || "";
 
     const row = {
-      tenant_id: tenantId, to_email: to, from_email: FROM, subject, body: text,
+      tenant_id: tenantId, to_email: to, from_email: account.user, subject, body: text,
       posting_id: body.posting_id ? String(body.posting_id) : null,
       broker: body.broker ? String(body.broker).slice(0, 200) : null,
       broker_mc: body.broker_mc ? String(body.broker_mc).slice(0, 20) : null,
@@ -77,14 +81,14 @@ Deno.serve(async (req) => {
       const html = `<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#1f1f1f">${
         esc(text).replace(/\r?\n/g, "<br>")
       }</div>`;
-      await sendMail(account, { fromName: FROM_NAME, to: [to], subject, text, html });
+      await sendMail(account, { fromName, to: [to], subject, text, html });
     } catch (e) {
       const error = e instanceof Error ? e.message : String(e);
       await supabase.from("dat_broker_emails").insert({ ...row, status: "failed", error: error.slice(0, 500) });
       return json({ error: `Gmail no lo envió: ${error.slice(0, 200)}` }, 502);
     }
     await supabase.from("dat_broker_emails").insert(row);
-    return json({ ok: true, from: FROM });
+    return json({ ok: true, from: account.user });
   } catch (e) {
     return json({ error: e instanceof Error ? e.message : String(e) }, 500);
   }

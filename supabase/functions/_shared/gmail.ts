@@ -20,7 +20,9 @@ export function gmailAccounts(): GmailAccount[] {
     const p = pass.replace(/\s+/g, "");
     if (u && p && !list.some((a) => a.user === u)) list.push({ user: u, pass: p });
   };
-  for (const pair of (Deno.env.get("BROKER_GMAIL_ACCOUNTS") ?? "").split(/[,;\n]/)) {
+  // EXTRA_GMAIL_ACCOUNTS: más cuentas para enviar desde la extensión de DAT (mismo formato)
+  const raw = `${Deno.env.get("BROKER_GMAIL_ACCOUNTS") ?? ""},${Deno.env.get("EXTRA_GMAIL_ACCOUNTS") ?? ""}`;
+  for (const pair of raw.split(/[,;\n]/)) {
     const i = pair.indexOf(":");
     if (i > 0) add(pair.slice(0, i), pair.slice(i + 1));
   }

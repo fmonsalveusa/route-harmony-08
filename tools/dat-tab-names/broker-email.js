@@ -151,6 +151,7 @@
       type: "broker-email-send",
       payload: {
         action: "send", to, subject, body, posting_id: pid || null,
+        from: cfg.sendFrom || undefined, fromName: cfg.fromName || undefined,
         broker: info?.name || "", broker_mc: info?.mc || "", origin: info?.origin || "", destination: info?.destination || "",
       },
     }).catch((e) => ({ error: String(e?.message || e) }));

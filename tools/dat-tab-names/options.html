@@ -13,7 +13,7 @@
       box-shadow: 0 1px 2px rgba(60,64,67,.3), 0 1px 3px 1px rgba(60,64,67,.15); }
     label { display: block; font-size: 12px; font-weight: 500; color: #444746; margin: 14px 0 6px; }
     label:first-child { margin-top: 0; }
-    input, textarea { width: 100%; box-sizing: border-box; border: 1px solid #c4c7c5; border-radius: 8px; padding: 10px 12px;
+    input, textarea, select { width: 100%; box-sizing: border-box; border: 1px solid #c4c7c5; border-radius: 8px; padding: 10px 12px;
       font: inherit; color: inherit; background: #fff; }
     input:focus, textarea:focus { outline: 2px solid #0b57d0; border-color: transparent; }
     textarea { min-height: 220px; resize: vertical; }
@@ -46,7 +46,7 @@
     <div class="card">
       <label>Cómo se envía</label>
       <div class="modes">
-        <label class="mode"><input type="radio" name="mode" value="direct"> <span><b>Enviar directo</b> desde <b>58logisticsllc@gmail.com</b></span></label>
+        <label class="mode"><input type="radio" name="mode" value="direct"> <span><b>Enviar directo</b> desde la cuenta de Gmail que elijas abajo</span></label>
         <label class="mode"><input type="radio" name="mode" value="gmail"> <span><b>Abrir en Gmail</b> para revisarlo y enviarlo a mano</span></label>
       </div>
 
@@ -57,6 +57,13 @@
           <button class="text" id="test" type="button">Probar</button>
         </div>
         <div class="hint" id="keyStatus">Se sincroniza con tu cuenta de Chrome: otras computadoras con el mismo perfil la reciben solas.</div>
+
+        <label for="sendFrom">Enviar desde</label>
+        <select id="sendFrom"><option value="58logisticsllc@gmail.com">58logisticsllc@gmail.com</option></select>
+        <div class="hint">Las cuentas que aparecen son las configuradas en Dispatch Up (cada una con su App Password de Gmail).</div>
+
+        <label for="fromName">Nombre del remitente</label>
+        <input id="fromName" type="text" placeholder="Ej.: 58 Logistics LLC (vacío = el de la cuenta)">
       </div>
 
       <div id="gmailBox">
