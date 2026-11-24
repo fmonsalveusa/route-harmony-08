@@ -209,6 +209,24 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Reenviar el acceso de un driver: le pone la contraseña nueva y manda el mensaje a su grupo
+    if (action === "resend_access") {
+      const email = String(payload.email ?? "").trim();
+      const password = String(payload.password ?? "");
+      if (!email || password.length < 6) throw new Error("Email y contraseña (mín. 6) requeridos");
+      const tenantId = callerProfile!.tenant_id;
+      const { data: target } = await supabaseAdmin
+        .from("profiles").select("id, tenant_id").ilike("email", email).maybeSingle();
+      if (!target) throw new Error("Ese driver todavía no tiene acceso: usa Crear acceso");
+      if (!callerProfile?.is_master_admin && target.tenant_id !== tenantId) throw new Error("Cannot edit users from another tenant");
+      const { error: pwError } = await supabaseAdmin.auth.admin.updateUserById(target.id, { password });
+      if (pwError) throw pwError;
+      const whatsapp = await sendAccessWhatsApp(supabaseAdmin, target.tenant_id ?? tenantId, email, password);
+      return new Response(JSON.stringify({ success: true, whatsapp }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     if (action === "update") {
       validateUpdateInput(payload);
       const { user_id, full_name, phone, role, is_active, password } = payload;

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
-import { KeyRound, Copy, Check, Loader2, ShieldCheck } from 'lucide-react';
+import { KeyRound, Copy, Check, Loader2, ShieldCheck, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { generateDefaultPassword } from '@/lib/passwordUtils';
 
@@ -23,6 +23,8 @@ export function CreateAccessButton({ name, email, phone, role, variant = 'row' }
   const [hasAccess, setHasAccess] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [confirmResend, setConfirmResend] = useState(false);
+  const [resending, setResending] = useState(false);
   const password = generateDefaultPassword(name);
 
   // Verificar si ya existe un usuario con ese email
@@ -89,6 +91,32 @@ export function CreateAccessButton({ name, email, phone, role, variant = 'row' }
     }
   };
 
+  // Reenviar el acceso (drivers): contraseña nueva y el mensaje otra vez a su grupo de WhatsApp
+  const handleResend = async () => {
+    setResending(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('manage-user', {
+        body: { action: 'resend_access', email, password },
+      });
+      if (error) {
+        let msg = 'Error reenviando el acceso';
+        try { const b = await (error as any).context?.json?.(); if (b?.error) msg = b.error; } catch {}
+        throw new Error(msg);
+      }
+      if (data?.error) throw new Error(data.error);
+      if (data?.whatsapp === 'sent') toast.success('Acceso reenviado al grupo de WhatsApp del driver');
+      else if (data?.whatsapp === 'no_group') toast.info('Contraseña cambiada, pero el driver no tiene grupo de WhatsApp: compártela manualmente');
+      else if (data?.whatsapp === 'disabled') toast.info('Contraseña cambiada, pero el aviso de acceso por WhatsApp está apagado');
+      else toast.error('Contraseña cambiada, pero no se pudo enviar el WhatsApp');
+      setConfirmResend(false);
+      setShowResult(true);
+    } catch (err: any) {
+      toast.error(err.message || 'Error reenviando el acceso');
+    } finally {
+      setResending(false);
+    }
+  };
+
   const copyCredentials = () => {
     navigator.clipboard.writeText(`Usuario: ${email}\nContraseña: ${password}`);
     setCopied(true);
@@ -100,8 +128,39 @@ export function CreateAccessButton({ name, email, phone, role, variant = 'row' }
   // Ya tiene acceso → mostrar indicador, no botón
   if (hasAccess && !showResult) {
     return (
-      <span className="inline-flex items-center gap-1 text-xs text-green-600 font-medium" title="Ya tiene acceso a la app">
-        <ShieldCheck className="h-3.5 w-3.5" /> Con acceso
+      <span className="inline-flex items-center gap-1">
+        <span className="inline-flex items-center gap-1 text-xs text-green-600 font-medium" title="Ya tiene acceso a la app">
+          <ShieldCheck className="h-3.5 w-3.5" /> Con acceso
+        </span>
+        {role === 'driver' && (
+          <>
+            <Button
+              variant="outline" size="sm"
+              className="h-7 px-2 gap-1 rounded-full border-0 bg-transparent shadow-none text-xs font-medium text-[#0b57d0] hover:text-[#0b57d0] hover:bg-[#e8f0fe]"
+              onClick={() => setConfirmResend(true)}
+              title="Ponerle una contraseña nueva y mandarle el acceso otra vez a su grupo de WhatsApp"
+            >
+              <Send className="h-3 w-3" /> Reenviar
+            </Button>
+            <Dialog open={confirmResend} onOpenChange={setConfirmResend}>
+              <DialogContent className="max-w-sm rounded-[28px] border-0 bg-[#f8fafd] dark:bg-background">
+                <DialogHeader>
+                  <DialogTitle className="text-[22px] leading-7 font-normal">Reenviar acceso</DialogTitle>
+                  <DialogDescription className="text-sm text-[#444746] dark:text-muted-foreground">
+                    A {name.split(' ')[0]} se le pondrá una <b>contraseña nueva</b> y se le mandará el acceso a su grupo de WhatsApp.
+                    La contraseña anterior deja de funcionar.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter className="gap-2">
+                  <Button variant="ghost" className="rounded-full" onClick={() => setConfirmResend(false)} disabled={resending}>Cancelar</Button>
+                  <Button className="rounded-full px-5 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium shadow-none gap-1.5" onClick={handleResend} disabled={resending}>
+                    {resending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} Reenviar
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </>
+        )}
       </span>
     );
   }
