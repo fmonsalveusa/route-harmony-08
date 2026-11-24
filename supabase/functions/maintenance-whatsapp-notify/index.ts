@@ -5,6 +5,7 @@ import { isEnabled, logMessage, renderMessage, sendTextLogged } from "../_shared
 
 // • Trigger de truck_maintenance (x-cron-secret): { maintenance_id, status }
 // • Botón de la página Mantenimiento (admin): { all: true } → reenvía el aviso de todo lo pendiente
+// • Botón "Recordatorio" de un mantenimiento en DUE (staff): { maintenance_id } → a su driver (cualquier tipo)
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -13,28 +14,24 @@ const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
 /** Envía el aviso de un mantenimiento al grupo del Company Driver del camión */
-async function notify(supabase: any, maintenanceId: string, status: string, claimDaily = false): Promise<Record<string, unknown>> {
+async function notify(supabase: any, maintenanceId: string, status: string, claimDaily = false, manual = false): Promise<Record<string, unknown>> {
   const { data: item } = await supabase
     .from("truck_maintenance")
     .select("id, tenant_id, truck_id, maintenance_type, interval_miles, miles_accumulated, next_due_date")
     .eq("id", maintenanceId)
     .maybeSingle();
   if (!item) return { skipped: "Maintenance not found" };
-  if (!(await isEnabled(supabase, item.tenant_id, "wa_maintenance_alerts"))) return { skipped: "disabled" };
+  if (!manual && !(await isEnabled(supabase, item.tenant_id, "wa_maintenance_alerts"))) return { skipped: "disabled" };
 
   const { data: truck } = await supabase
     .from("trucks").select("unit_number").eq("id", item.truck_id).maybeSingle();
 
-  // Solo Company Drivers — el camión es de la empresa
-  const { data: driver } = await supabase
-    .from("drivers")
-    .select("name, whatsapp_group_id")
-    .eq("truck_id", item.truck_id)
-    .eq("service_type", "company_driver")
-    .limit(1)
-    .maybeSingle();
+  // Automático: solo Company Drivers (el camión es de la empresa). Botón manual: el driver del camión, sea cual sea
+  let dq = supabase.from("drivers").select("name, whatsapp_group_id").eq("truck_id", item.truck_id).neq("status", "inactive");
+  if (!manual) dq = dq.eq("service_type", "company_driver");
+  const { data: driver } = await dq.limit(1).maybeSingle();
   const unit = truck?.unit_number ? `Unit #${truck.unit_number}` : "asignado";
-  if (!driver) return { unit, skipped: "no company driver" };
+  if (!driver) return { unit, skipped: manual ? "no driver" : "no company driver" };
 
   const interval = Number(item.interval_miles) || 0;
   const miles = Math.round(Number(item.miles_accumulated) || 0);
@@ -106,6 +103,14 @@ Deno.serve(async (req) => {
       supabase.from("profiles").select("tenant_id, is_master_admin").eq("id", user.id).maybeSingle(),
     ]);
     const isAdmin = profile?.is_master_admin || ((roles as any[]) || []).some((r) => ["admin", "master_admin"].includes(r.role));
+    // Recordatorio de UN mantenimiento (botón en la tarjeta en DUE): admin o dispatcher
+    if (body.maintenance_id) {
+      const staff = isAdmin || ((roles as any[]) || []).some((r) => ["dispatcher"].includes(r.role));
+      if (!staff) return json({ error: "Unauthorized" }, 403);
+      const { data: m } = await supabase.from("truck_maintenance").select("id, status, tenant_id").eq("id", body.maintenance_id).maybeSingle();
+      if (!m || m.tenant_id !== profile?.tenant_id) return json({ error: "Mantenimiento no encontrado" }, 404);
+      return json(await notify(supabase, m.id, m.status === "warning" ? "warning" : "due", false, true));
+    }
     if (!isAdmin) return json({ error: "Solo un admin puede enviar los recordatorios" }, 403);
     if (!body.all) return json({ error: "Bad request" }, 400);
 

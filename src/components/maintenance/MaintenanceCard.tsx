@@ -1,4 +1,7 @@
-import { Pencil, Trash2, RotateCcw, History, Calendar, Gauge, DollarSign } from 'lucide-react';
+import { useState } from 'react';
+import { Pencil, Trash2, RotateCcw, History, Calendar, Gauge, DollarSign, MessageCircle, Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { getStatusColor } from './maintenanceConstants';
@@ -14,6 +17,26 @@ interface Props {
 }
 
 export function MaintenanceCard({ item, onEdit, onDelete, onLogService, onViewHistory }: Props) {
+  // Recordatorio por WhatsApp al grupo del driver del camión (solo en DUE)
+  const [reminding, setReminding] = useState(false);
+  const sendReminder = async () => {
+    if (!window.confirm(`¿Enviar el recordatorio de "${item.maintenance_type}" al grupo de WhatsApp del driver de este camión?`)) return;
+    setReminding(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('maintenance-whatsapp-notify', { body: { maintenance_id: item.id } });
+      if (error || data?.error) throw new Error(data?.error || error?.message);
+      if (data?.sent) toast.success(`Recordatorio enviado a ${data.driver}`);
+      else toast.error('No se envió', {
+        description: data?.skipped === 'no driver' ? 'El camión no tiene driver asignado'
+          : data?.skipped === 'driver without whatsapp group' ? `${data.driver} no tiene grupo de WhatsApp (Drivers → editar)`
+          : String(data?.skipped ?? ''),
+      });
+    } catch (e: any) {
+      toast.error('No se envió', { description: e?.message });
+    } finally {
+      setReminding(false);
+    }
+  };
   const isRecurring = !!(item.interval_miles || item.interval_days);
 
   const milesPercent = item.interval_miles && item.interval_miles > 0
@@ -109,6 +132,11 @@ export function MaintenanceCard({ item, onEdit, onDelete, onLogService, onViewHi
         {isRecurring && (
           <Button size="sm" variant="outline" className="h-7 px-2 text-[11px] gap-1" onClick={onViewHistory}>
             <History className="h-3 w-3" /> History
+          </Button>
+        )}
+        {item.status === 'due' && (
+          <Button size="sm" className="h-7 px-2 text-[11px] gap-1 bg-[#188038] hover:bg-[#137333] text-white" onClick={sendReminder} disabled={reminding} title="Enviar recordatorio al grupo de WhatsApp del driver">
+            {reminding ? <Loader2 className="h-3 w-3 animate-spin" /> : <MessageCircle className="h-3 w-3" />} Recordatorio
           </Button>
         )}
         <div className="ml-auto flex gap-1">
