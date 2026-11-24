@@ -155,3 +155,39 @@ export async function motiveVehicles(supabase: any, driverId: string, email: str
   if (!r.ok) throw new Error(`Motive fleet map HTTP ${r.status}`);
   return r.list;
 }
+
+export interface MotiveDriverHos {
+  name: string; unit: string | null; duty: string | null; reportedAt: string | null;
+  /** Segundos que le quedan en cada reloj (los calcula Motive) */
+  drive: number | null; shift: number | null; cycle: number | null; untilBreak: number | null;
+}
+
+async function usersPage(token: string, page: number) {
+  const q = new URLSearchParams({ per_page: "100", page_no: String(page), sort_field: "full_name", sort_direction: "asc", role: "driver", status: "active" });
+  return await fetch(`${API}/api/w3/users?${q}`, { headers: { "X-Web-User-Auth": token, Accept: "application/json, text/plain, */*", "User-Agent": UA } });
+}
+
+/** Drivers de la cuenta de Motive con sus relojes HOS (lista de drivers de Fleet View) */
+export async function motiveDriversHos(supabase: any, driverId: string, email: string, password: string): Promise<MotiveDriverHos[]> {
+  let token = await motiveSession(supabase, driverId, email, password);
+  let r = await usersPage(token, 1);
+  if (r.status === 401 || r.status === 403) {
+    await r.body?.cancel();
+    token = await motiveSession(supabase, driverId, email, password, true);
+    r = await usersPage(token, 1);
+  }
+  if (!r.ok) { await r.body?.cancel(); throw new Error(`Motive drivers HTTP ${r.status}`); }
+  const j = await r.json().catch(() => ({}));
+  const users: any[] = (j?.users ?? []).map((u: any) => u?.user ?? u);
+  const num = (v: unknown) => (v == null || !Number.isFinite(Number(v)) ? null : Number(v));
+  return users.map((u) => {
+    const h = u.hos_availability_times_seconds ?? {};
+    return {
+      name: [u.first_name, u.last_name].filter(Boolean).join(" "),
+      unit: u.current_vehicle?.number ?? null,
+      duty: u.current_log_state ?? null,
+      reportedAt: u.current_location?.located_at ?? null,
+      drive: num(h.drive), shift: num(h.shift), cycle: num(h.cycle), untilBreak: num(h.break),
+    };
+  });
+}

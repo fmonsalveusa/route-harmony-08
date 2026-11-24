@@ -169,7 +169,7 @@ export function EldConnectionSection({ driverId }: { driverId: string }) {
         </p>
       )}
       <p className="text-[11px] text-muted-foreground">
-        Solo si el driver usa su propia cuenta de HOS247, RouteOne, Level ELD o Motive (Motive: por ahora solo ubicación, con el email y contraseña de app.gomotive.com). La contraseña se guarda cifrada y no se vuelve a mostrar.
+        Solo si el driver usa su propia cuenta de HOS247, RouteOne, Level ELD o Motive (Motive: con el email y contraseña de app.gomotive.com). La contraseña se guarda cifrada y no se vuelve a mostrar.
         Con la conexión, su ubicación se lee cada 2 minutos y sus relojes HOS cada hora.
       </p>
     </div>

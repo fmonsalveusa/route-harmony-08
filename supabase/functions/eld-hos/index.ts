@@ -6,6 +6,7 @@
 //    manejando, 70 h en 8 días con reinicio de 34 h). No contempla split sleeper ni excepciones.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { driverConnections, hos247, levelEld, levelEldUnits, markConnection, routeOne, type EldCreds } from "../_shared/eld.ts";
+import { motiveDriversHos } from "../_shared/motive.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -22,7 +23,7 @@ const LIMIT = { break: 8 * HOUR, drive: 11 * HOUR, shift: 14 * HOUR, reset: 10 *
 
 type Duty = "driving" | "on_duty" | "off_duty" | "sleeper" | "personal_conveyance" | "yard_move";
 interface Clocks {
-  name: string; unit: string | null; vin: string | null; source: "HOS247" | "RouteOne" | "Level ELD";
+  name: string; unit: string | null; vin: string | null; source: "HOS247" | "RouteOne" | "Level ELD" | "Motive";
   duty: Duty | null; since: string | null; untilBreak: number; drive: number; shift: number; cycle: number;
   cycleLimit: number; computed: boolean; reportedAt: string | null;
 }
@@ -96,6 +97,23 @@ async function readLevelEld(now: number, token: string, why?: string[]): Promise
     });
   }
   return out;
+}
+
+// ─── Motive: la lista de drivers de Fleet View trae los relojes ya calculados (segundos restantes) ───
+const MOTIVE_DUTY: Record<string, Duty> = {
+  driving: "driving", on_duty: "on_duty", off_duty: "off_duty", sleeper: "sleeper", sleeper_berth: "sleeper",
+  personal_conveyance: "personal_conveyance", yard_move: "yard_move", waiting: "on_duty",
+};
+
+async function readMotive(now: number, supabase: any, driverId: string, creds: EldCreds): Promise<Clocks[]> {
+  const list = await motiveDriversHos(supabase, driverId, creds.user, creds.password);
+  return list.filter((d) => d.drive != null).map((d) => ({
+    name: d.name, unit: d.unit, vin: null, source: "Motive" as const,
+    duty: MOTIVE_DUTY[String(d.duty ?? "").toLowerCase()] ?? null, since: null,
+    untilBreak: mins((d.untilBreak ?? 0) * 1000), drive: mins((d.drive ?? 0) * 1000),
+    shift: mins((d.shift ?? 0) * 1000), cycle: mins((d.cycle ?? 0) * 1000),
+    cycleLimit: 70 * 60, computed: false, reportedAt: new Date(now).toISOString(),
+  }));
 }
 
 // ─── RouteOne: cálculo a partir de los eventos ───
@@ -242,11 +260,13 @@ async function sync(supabase: any) {
   const withOwn = new Set(own.map((c) => c.driver_id));
   for (const c of own) {
     const d = ((allDrivers as any[]) || []).find((x) => x.id === c.driver_id);
-    if (!d || c.provider === "motive") continue; // Motive: por ahora solo ubicación
+    if (!d) continue;
     try {
       const why: string[] = [];
       const list = c.provider === "hos247" ? await readHos247(now, c.creds)
-        : c.provider === "leveleld" ? await readLevelEld(now, c.creds.password, why) : await readRouteOne(now, c.creds);
+        : c.provider === "leveleld" ? await readLevelEld(now, c.creds.password, why)
+        : c.provider === "motive" ? await readMotive(now, supabase, c.driver_id, c.creds)
+        : await readRouteOne(now, c.creds);
       const truck = truckOf(d);
       const pick = list.filter((x) => normName(x.name) === normName(d.name))
         .concat(list.filter((x) => truck && ((x.unit && String(x.unit) === String(truck.unit_number)) || (x.vin && truck.vin && x.vin === truck.vin))));
