@@ -242,7 +242,7 @@ async function sync(supabase: any) {
   const withOwn = new Set(own.map((c) => c.driver_id));
   for (const c of own) {
     const d = ((allDrivers as any[]) || []).find((x) => x.id === c.driver_id);
-    if (!d) continue;
+    if (!d || c.provider === "motive") continue; // Motive: por ahora solo ubicación
     try {
       const why: string[] = [];
       const list = c.provider === "hos247" ? await readHos247(now, c.creds)

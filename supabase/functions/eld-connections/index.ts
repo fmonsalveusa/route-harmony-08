@@ -2,6 +2,7 @@
 // Conexión ELD propia de un driver: guardar (contraseña a Vault), probar y borrar. Solo admin.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { hos247, levelEldUnits, routeOne, type EldCreds } from "../_shared/eld.ts";
+import { motiveVehicles } from "../_shared/motive.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,7 +14,12 @@ const errMsg = (e: unknown) => (e instanceof Error ? e.message : String(e));
 const norm = (s: unknown) => String(s ?? "").trim().toUpperCase();
 
 /** Entra al portal y devuelve las unidades que tiene la cuenta */
-async function listUnits(provider: string, creds: EldCreds): Promise<{ unit: string; vin: string | null }[]> {
+async function listUnits(provider: string, creds: EldCreds, supabase?: any, driverId?: string): Promise<{ unit: string; vin: string | null }[]> {
+  if (provider === "motive") {
+    // Al probar se inicia sesión de nuevo (borra la sesión guardada)
+    await supabase.from("eld_session_cache").delete().eq("driver_id", driverId);
+    return (await motiveVehicles(supabase, driverId!, creds.user, creds.password)).map((v) => ({ unit: v.unit, vin: v.vin }));
+  }
   if (provider === "hos247") {
     const { get } = await hos247(creds);
     return (await get("/vehicles?$limit=500")).map((v) => ({ unit: String(v.name ?? ""), vin: v.vin ?? null }));
@@ -46,6 +52,7 @@ Deno.serve(async (req) => {
 
     if (body.action === "delete") {
       await supabase.rpc("eld_connection_delete", { p_driver_id: driver.id });
+      await supabase.from("eld_session_cache").delete().eq("driver_id", driver.id);
       return json({ deleted: true });
     }
 
@@ -53,7 +60,7 @@ Deno.serve(async (req) => {
       const provider = String(body.provider ?? "");
       // Level ELD no usa usuario: se conecta con el token de empresa
       const username = String(body.username ?? "").trim() || (provider === "leveleld" ? "Level ELD" : "");
-      if (!["hos247", "routeone", "leveleld"].includes(provider) || !username) return json({ error: "Falta el proveedor o el usuario" }, 400);
+      if (!["hos247", "routeone", "leveleld", "motive"].includes(provider) || !username) return json({ error: "Falta el proveedor o el usuario" }, 400);
       const { data: existing } = await supabase.from("driver_eld_connections").select("secret_id").eq("driver_id", driver.id).maybeSingle();
       if (!existing?.secret_id && !body.password) return json({ error: provider === "leveleld" ? "Pega el token de Level ELD" : "Escribe la contraseña" }, 400);
       await supabase.from("driver_eld_connections").upsert({
@@ -74,7 +81,7 @@ Deno.serve(async (req) => {
       if (!conn || !password) return json({ error: "La conexión no está completa" }, 400);
       const now = new Date().toISOString();
       try {
-        const units = await listUnits(conn.provider, { user: conn.username, password });
+        const units = await listUnits(conn.provider, { user: conn.username, password }, supabase, driver.id);
         const { data: truck } = driver.truck_id
           ? await supabase.from("trucks").select("unit_number, vin").eq("id", driver.truck_id).maybeSingle()
           : { data: null };

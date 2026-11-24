@@ -75,7 +75,7 @@ export async function levelEldUnits(token: string): Promise<any[]> {
   return Array.isArray(list) ? list : [];
 }
 
-export interface DriverEldConnection { driver_id: string; tenant_id: string; provider: "hos247" | "routeone" | "leveleld"; username: string }
+export interface DriverEldConnection { driver_id: string; tenant_id: string; provider: "hos247" | "routeone" | "leveleld" | "motive"; username: string }
 
 /** Conexiones ELD propias de los drivers, con su contraseña (Vault). Marca el resultado de cada lectura. */
 export async function driverConnections(supabase: any): Promise<(DriverEldConnection & { creds: EldCreds })[]> {

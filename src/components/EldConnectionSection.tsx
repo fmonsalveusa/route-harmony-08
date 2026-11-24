@@ -8,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 interface Conn {
-  provider: 'hos247' | 'routeone';
+  provider: 'hos247' | 'routeone' | 'leveleld' | 'motive';
   username: string;
   status: 'pending' | 'ok' | 'error';
   last_error: string | null;
@@ -115,6 +115,7 @@ export function EldConnectionSection({ driverId }: { driverId: string }) {
               <SelectItem value="hos247">HOS247</SelectItem>
               <SelectItem value="routeone">RouteOne</SelectItem>
               <SelectItem value="leveleld">Level ELD</SelectItem>
+              <SelectItem value="motive">Motive</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -130,7 +131,7 @@ export function EldConnectionSection({ driverId }: { driverId: string }) {
         {provider !== 'none' && provider !== 'leveleld' && (
           <>
             <div className="space-y-1">
-              <Label className="text-xs">{provider === 'routeone' ? 'Email del portal RouteOne' : 'Usuario'}</Label>
+              <Label className="text-xs">{provider === 'routeone' ? 'Email del portal RouteOne' : provider === 'motive' ? 'Email del portal Motive' : 'Usuario'}</Label>
               <Input className="h-9" value={username} onChange={e => setUsername(e.target.value)} autoComplete="off" />
             </div>
             <div className="space-y-1">
@@ -168,7 +169,7 @@ export function EldConnectionSection({ driverId }: { driverId: string }) {
         </p>
       )}
       <p className="text-[11px] text-muted-foreground">
-        Solo si el driver usa su propia cuenta de HOS247, RouteOne o Level ELD. La contraseña se guarda cifrada y no se vuelve a mostrar.
+        Solo si el driver usa su propia cuenta de HOS247, RouteOne, Level ELD o Motive (Motive: por ahora solo ubicación, con el email y contraseña de app.gomotive.com). La contraseña se guarda cifrada y no se vuelve a mostrar.
         Con la conexión, su ubicación se lee cada 2 minutos y sus relojes HOS cada hora.
       </p>
     </div>

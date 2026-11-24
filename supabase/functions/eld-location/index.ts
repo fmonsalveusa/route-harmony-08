@@ -5,6 +5,7 @@
 // automática a las paradas (trigger) y los emails al broker funcionan igual.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { driverConnections, hos247, levelEldUnits, markConnection, routeOne, type EldCreds } from "../_shared/eld.ts";
+import { motiveVehicles } from "../_shared/motive.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -70,6 +71,13 @@ async function readLevelEld(token: string): Promise<Pos[]> {
   });
 }
 
+async function readMotive(supabase: any, driverId: string, creds: EldCreds): Promise<Pos[]> {
+  return (await motiveVehicles(supabase, driverId, creds.user, creds.password)).map((v) => ({
+    source: "Motive", unit: v.unit || null, vin: v.vin, lat: v.lat, lng: v.lng,
+    speedMs: v.speedMph != null ? v.speedMph * MPH_TO_MS : null, at: v.at,
+  }));
+}
+
 /** Guarda la posición del ELD si la app del driver no está mandando GPS. true si se guardó. */
 async function writeLocation(supabase: any, d: any, pos: Pos, prev: any, now: number) {
   const prevAt = prev ? Date.parse(prev.updated_at) : 0;
@@ -119,7 +127,9 @@ async function sync(supabase: any) {
     if (!d) continue;
     try {
       const list = c.provider === "hos247" ? await readHos247(c.creds)
-        : c.provider === "leveleld" ? await readLevelEld(c.creds.password) : await readRouteOne(c.creds);
+        : c.provider === "leveleld" ? await readLevelEld(c.creds.password)
+        : c.provider === "motive" ? await readMotive(supabase, c.driver_id, c.creds)
+        : await readRouteOne(c.creds);
       const truck = truckOf(d);
       // Su camión; si la cuenta tiene un solo camión, ese
       const pos = list.filter((p) => matchesTruck(p, truck)).sort((a, b) => b.at - a.at)[0] ?? (list.length === 1 ? list[0] : undefined);
