@@ -166,9 +166,12 @@ const Companies = () => {
                       >
                         {c.status === 'inactive' ? <><Power className="h-4 w-4" /> Activate</> : <><PowerOff className="h-4 w-4" /> Deactivate</>}
                       </button>
-                      <button className="glass-action-btn tint-red inline-flex items-center" onClick={() => handleDelete(c)} title="Eliminar">
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      {/* Borrar una empresa: solo admin (los dispatchers ven y editan) */}
+                      {isAdmin && (
+                        <button className="glass-action-btn tint-red inline-flex items-center" onClick={() => handleDelete(c)} title="Eliminar">
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
