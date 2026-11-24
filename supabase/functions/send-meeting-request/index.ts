@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
+// denomailer rompía el asunto con acentos ("Reunión"): se usa el SMTP compartido
+import { sendMail } from "../_shared/smtp.ts";
 import { isEnabled, renderMessage, sendTextLogged } from "../_shared/messaging.ts";
 import { appGmail } from "../_shared/gmail.ts";
 
@@ -107,15 +108,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    const client = new SMTPClient({
-      connection: {
-        hostname: "smtp.gmail.com",
-        port: 465,
-        tls: true,
-        auth: { username: gmailUser, password: gmailPass },
-      },
-    });
-
     const formattedDate = new Date(meeting_date).toLocaleDateString("en-US", {
       weekday: "long",
       year: "numeric",
@@ -123,11 +115,11 @@ Deno.serve(async (req) => {
       day: "numeric",
     });
 
-    await client.send({
-      from: gmailUser,
-      to: "58logisticsllc@gmail.com",
+    await sendMail({ user: gmailUser, pass: gmailPass }, {
+      fromName: "Dispatch Up",
+      to: ["58logisticsllc@gmail.com"],
       subject: `Nueva Solicitud de Reunión - ${driver_name}`,
-      content: `Nueva solicitud de reunión:\n\nNombre: ${driver_name}\nTeléfono: ${phone}\nCiudad: ${city}, ${state}\nTipo de Vehículo: ${truck_type}\nServicio: ${service_interest || "No especificado"}\nFecha: ${formattedDate}\nHora: ${meeting_time}\nComentario: ${comments || "Ninguno"}`,
+      text: `Nueva solicitud de reunión:\n\nNombre: ${driver_name}\nTeléfono: ${phone}\nCiudad: ${city}, ${state}\nTipo de Vehículo: ${truck_type}\nServicio: ${service_interest || "No especificado"}\nFecha: ${formattedDate}\nHora: ${meeting_time}\nComentario: ${comments || "Ninguno"}`,
       html: `
         <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f9fafb;padding:24px;border-radius:12px">
           <div style="background:#1e3a5f;padding:20px;border-radius:8px 8px 0 0;text-align:center">
@@ -148,8 +140,6 @@ Deno.serve(async (req) => {
           </div>
         </div>`,
     });
-
-    await client.close();
 
     return new Response(JSON.stringify({ success: true, emailSent: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
