@@ -24,6 +24,7 @@ import { useNavigate } from 'react-router-dom';
 import { LoadAlertChip } from '@/components/LoadAlertChip';
 import { GpsHealthChip } from '@/components/GpsHealthChip';
 import { AskEtaButton } from '@/components/AskEtaButton';
+import { BrokerUpdateButton } from '@/components/BrokerUpdateButton';
 import { stopEta, type StopEta } from '@/lib/stopEta';
 import { getGpsHealth } from '@/lib/gpsHealth';
 import { getLoadAlerts } from '@/lib/loadAlerts';
@@ -1603,6 +1604,16 @@ const Tracking = () => {
                         {isPaused ? <Play className="h-3 w-3" /> : <Pause className="h-3 w-3" />}
                       </button>
                       <div className="flex-1" />
+                      {activeLoad && (
+                        <BrokerUpdateButton
+                          load={activeLoad as any}
+                          stop={etaStop ? { address: etaStop.address, stop_type: etaStop.stop_type } : null}
+                          miles={autoEta && autoEta.stopId === etaStop?.id ? autoEta.miles : null}
+                          etaLabel={autoEta && autoEta.stopId === etaStop?.id ? autoEta.eta?.label ?? null : null}
+                          loc={loc ? { lat: loc.lat, lng: loc.lng } : null}
+                          lastSentAt={(activeLoad as any).broker_update_at ?? null}
+                        />
+                      )}
                       {displayInfo?.isActive && etaAddress && (
                         <AskEtaButton
                           driverName={driver.name}

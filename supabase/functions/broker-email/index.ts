@@ -1033,6 +1033,38 @@ async function handleUserAction(req: Request, supabase: any, body: any) {
     }
   }
 
+  // Actualización de ubicación/ETA desde Tracking: respuesta en el hilo del broker con el texto revisado
+  if (action === "broker_update") {
+    const user = await authUser(req);
+    const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
+    const staff = ((roles as any[]) || []).some((r) => ["admin", "accounting", "dispatcher", "master_admin"].includes(r.role));
+    if (!staff) return json({ error: "Unauthorized" }, 403);
+    const text = String(body.text ?? "").trim();
+    if (!text) return json({ error: "Falta el texto" }, 400);
+    const thread = await ensureThread(supabase, load, accounts);
+    if (thread?.status !== "linked" || !thread.thread_id) {
+      return json({ error: "No encontré el hilo de Gmail del broker. Enlázalo en \"Email al broker\" de la carga." }, 400);
+    }
+    const account = accounts.find((a) => a.user === String(thread.account).toLowerCase());
+    if (!account) return json({ error: `La cuenta ${thread.account} ya no está configurada` }, 400);
+    try {
+      const target = await replyTarget(account, thread.thread_id, accounts.map((a) => a.user));
+      await sendMail(account, {
+        to: target.to, cc: target.cc, subject: target.subject,
+        inReplyTo: target.inReplyTo || undefined, references: target.references || undefined,
+        text,
+        html: `<div style="font-family:Arial,sans-serif;font-size:14px">${escapeHtml(text).replace(/\n/g, "<br>")}</div>`,
+      });
+      const sentTo = [...target.to, ...target.cc.map((c: string) => `cc: ${c}`)].join(", ");
+      await supabase.from("loads").update({
+        broker_update_at: new Date().toISOString(), broker_update_note: `${sentTo}\n${text}`.slice(0, 2000),
+      }).eq("id", load.id);
+      return json({ sent: true, to: sentTo });
+    } catch (e) {
+      return json({ error: `No se pudo enviar: ${errMsg(e)}` }, 500);
+    }
+  }
+
   if (action === "send_now") {
     await supabase.from("broker_email_queue")
       .update({ status: "pending", attempts: 0, send_after: new Date().toISOString() })
