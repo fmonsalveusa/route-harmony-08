@@ -30,8 +30,8 @@ async function post(path: string, body: { to: string } & Record<string, unknown>
   return res.json().catch(() => ({}));
 }
 
-export function sendWhapiText(to: string, text: string) {
-  return post("/messages/text", { to, body: text });
+export function sendWhapiText(to: string, text: string, opts: { noLinkPreview?: boolean } = {}) {
+  return post("/messages/text", { to, body: text, ...(opts.noLinkPreview ? { no_link_preview: true } : {}) });
 }
 
 /** Respuesta del agente de IA desde su propio número, al chat de quien le escribió */

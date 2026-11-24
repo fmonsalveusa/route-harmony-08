@@ -1,10 +1,9 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 import { isEnabled, logMessage, renderMessage, sendDocumentLogged, sendTextLogged } from "../_shared/messaging.ts";
-import { sendWhapiLinkPreview } from "../_shared/whapi.ts";
+import { sendWhapiText } from "../_shared/whapi.ts";
 
 const ANDROID_URL = "https://play.google.com/store/apps/details?id=com.dispatchup.app";
-const APP_LOGO_URL = "https://www.dispatch-up.com/icon-512.png";
 const IOS_URL = "https://apps.apple.com/us/app/dispatch-up-driver/id6761345616";
 
 /** Manda al grupo de WhatsApp del driver su usuario, contraseña y los enlaces de la app */
@@ -22,12 +21,13 @@ async function sendAccessWhatsApp(supabase: any, tenantId: string, email: string
       nombre: String(driver.name ?? "").trim().split(/\s+/)[0], driver: driver.name,
       usuario: email, contrasena: password, android: ANDROID_URL, ios: IOS_URL,
     });
-    // Vista previa con el logo de Dispatch Up: la que arma WhatsApp con el enlace de Google Play dice "Sign in - Google Accounts"
+    // Texto sin vista previa del enlace: la tarjeta (logo o la de Google Play) achicaba el mensaje
+    // a una columna angosta. Así ocupa todo el ancho del chat.
     try {
-      await sendWhapiLinkPreview(driver.whatsapp_group_id, message, "Dispatch Up Mobile App", APP_LOGO_URL, "App para drivers de Dispatch Up");
+      await sendWhapiText(driver.whatsapp_group_id, message, { noLinkPreview: true });
       await logMessage(supabase, { ...log, groupId: driver.whatsapp_group_id, message }, "sent");
     } catch (e) {
-      console.error("link preview failed, sending plain text:", e);
+      console.error("plain text without preview failed, retrying normal text:", e);
       await sendTextLogged(supabase, { ...log, groupId: driver.whatsapp_group_id, message });
     }
     // PDF adjunto opcional (configurado en WhatsApp → Automatizaciones), después del mensaje
