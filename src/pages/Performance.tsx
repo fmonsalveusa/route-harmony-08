@@ -14,6 +14,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, LabelList, Cell, LineChart, Line, PieChart, Pie, Tooltip, Legend } from 'recharts';
 import { DollarSign, Receipt, Trophy, Truck, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Eye, Download, Settings, CalendarDays } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { FleetPerformance } from '@/components/performance/FleetPerformance';
 import { FILTER_CHIP } from '@/components/FilterChip';
 
 const TOOLTIP_STYLE = { borderRadius: 12, border: '1px solid #e3e3e3', boxShadow: '0 1px 3px rgba(60,64,67,.3), 0 4px 8px 3px rgba(60,64,67,.15)', fontSize: 12 };
@@ -62,7 +63,34 @@ const periodOptions: { value: PeriodKey; label: string }[] = [
   { value: 'year', label: 'This Year' },
 ];
 
+/** Performance: Rendimiento de la flota (todos los camiones, sin gastos) y P&L de Company Drivers */
 export default function Performance() {
+  const [view, setView] = useState<'fleet' | 'pl'>('fleet');
+  return (
+    <div className="space-y-3">
+      <div className="flex border-b border-[#e3e3e3] dark:border-border">
+        {([['fleet', 'Rendimiento por camión'], ['pl', 'P&L Company Drivers']] as const).map(([k, l]) => (
+          <button key={k} onClick={() => setView(k)}
+            className={cn('h-11 px-4 -mb-px border-b-[3px] text-sm font-medium transition-colors',
+              view === k ? 'border-[#0b57d0] text-[#0b57d0] dark:text-blue-300' : 'border-transparent text-[#444746] dark:text-muted-foreground hover:text-[#1f1f1f]')}>
+            {l}
+          </button>
+        ))}
+      </div>
+      {view === 'fleet' ? (
+        <>
+          <div>
+            <h1 className="page-header flex items-center gap-3"><span className="page-icon"><Trophy className="h-5 w-5" /></span>Rendimiento por camión</h1>
+            <p className="page-description pl-[52px]">Facturado, $/milla, millas vacías y días parado — sin gastos, solo lo que el sistema ya registra</p>
+          </div>
+          <FleetPerformance />
+        </>
+      ) : <PerformancePL />}
+    </div>
+  );
+}
+
+function PerformancePL() {
   const { loads } = useLoads();
   const { expenses } = useExpenses();
   const { drivers } = useDrivers();
