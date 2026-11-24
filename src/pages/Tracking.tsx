@@ -24,17 +24,30 @@ import { useNavigate } from 'react-router-dom';
 import { LoadAlertChip } from '@/components/LoadAlertChip';
 import { GpsHealthChip } from '@/components/GpsHealthChip';
 import { AskEtaButton } from '@/components/AskEtaButton';
+import { stopEta, type StopEta } from '@/lib/stopEta';
 import { getGpsHealth } from '@/lib/gpsHealth';
 import { getLoadAlerts } from '@/lib/loadAlerts';
 import { DriversTimelineCard } from '@/components/dashboard/DriversTimelineCard';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, Tooltip as LeafletTooltip, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { MAPBOX_TILE_URL, MAPBOX_TILE_OPTIONS, mapboxGeocode, mapboxRoute } from '@/lib/mapConfig';
+import { MAPBOX_TILE_URL, MAPBOX_TILE_OPTIONS, mapboxGeocode, mapboxRoute, mapboxDrivingEta } from '@/lib/mapConfig';
 import { LoadStop } from '@/hooks/useLoadStops';
 import { format, parseISO, isToday } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
+
 import { formatPhone } from '@/lib/phoneUtils';
+
+// Status en los que el driver todavía no ha recogido (la siguiente parada es el pickup)
+const PRE_PICKUP = ['planned', 'dispatched', 'in_transit', 'on_site_pickup'];
+
+/** Millas en línea recta entre dos puntos */
+function milesBetweenPts(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 3958.8, toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1), dLng = toRad(lng2 - lng1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
 
 // Fix default marker icons
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -501,6 +514,51 @@ const Tracking = () => {
     }
     return map;
   }, [enrichedLoads, loads]);
+
+  // Siguiente parada real de la carga actual: si aún no recoge, el pickup pendiente;
+  // si ya recogió, la primera entrega sin completar (departed_at vacío)
+  const etaStopByDriver = useMemo(() => {
+    const map: Record<string, LoadStop | null> = {};
+    for (const [driverId, q] of Object.entries(loadQueueByDriver)) {
+      const load = q.current;
+      if (!load) continue;
+      const stops = allStops.filter(s => s.load_id === load.id).sort((x, y) => (x.stop_order ?? 0) - (y.stop_order ?? 0));
+      const pending = stops.filter(s => !(s as any).departed_at);
+      const prePickup = PRE_PICKUP.includes(load.status);
+      map[driverId] = (prePickup ? (pending.find(s => s.stop_type === 'pickup') || stops.find(s => s.stop_type === 'pickup')) : null)
+        || pending.find(s => s.stop_type !== 'pickup') || pending[0] || null;
+    }
+    return map;
+  }, [loadQueueByDriver, allStops]);
+
+  // ETA automático por GPS a la siguiente parada (Mapbox, ajustado a camión). Se recalcula si cambia la
+  // parada, si el truck se movió más de 2 millas o cada 10 min. Sin GPS reciente (> 3 h) no hay ETA.
+  const [autoEtaByDriver, setAutoEtaByDriver] = useState<Record<string, { stopId: string; miles: number; eta: StopEta | null }>>({});
+  const etaCalcRef = useRef<Record<string, { stopId: string; lat: number; lng: number; at: number }>>({});
+  useEffect(() => {
+    for (const [driverId, stop] of Object.entries(etaStopByDriver)) {
+      const loc = locByDriver[driverId];
+      if (!stop || stop.lat == null || stop.lng == null || !loc) continue;
+      const fresh = (loc as any).source === 'eld' || Date.now() - new Date(loc.updated_at).getTime() < 3 * 3600_000;
+      if (!fresh) {
+        if (autoEtaByDriver[driverId]) setAutoEtaByDriver(prev => { const n = { ...prev }; delete n[driverId]; return n; });
+        continue;
+      }
+      const prev = etaCalcRef.current[driverId];
+      const moved = prev ? milesBetweenPts(prev.lat, prev.lng, loc.lat, loc.lng) : Infinity;
+      if (prev && prev.stopId === stop.id && moved < 2 && Date.now() - prev.at < 10 * 60_000) continue;
+      etaCalcRef.current[driverId] = { stopId: stop.id, lat: loc.lat, lng: loc.lng, at: Date.now() };
+      const sLat = Number(stop.lat), sLng = Number(stop.lng);
+      mapboxDrivingEta(loc.lat, loc.lng, sLat, sLng).then(road => {
+        const miles = road?.miles ?? milesBetweenPts(loc.lat, loc.lng, sLat, sLng) * 1.2;
+        const minutes = road?.minutes ?? (miles / 50) * 60;
+        // El ETA cuenta desde la hora de la ubicación (no desde ahora)
+        const eta = miles < 0.5 ? null : stopEta(minutes, stop as any, new Date(loc.updated_at));
+        setAutoEtaByDriver(p => ({ ...p, [driverId]: { stopId: stop.id, miles, eta } }));
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [etaStopByDriver, locByDriver, nowTick]);
 
   // Orden del Next Plan:
   //  1. Vacíos
@@ -1245,17 +1303,10 @@ const Tracking = () => {
                   : lastDel
                   ? { address: lastDel.address, date: lastDel.date, isActive: false }
                   : null;
-                // Parada para pedir ETA: si aún no recoge, el pickup pendiente; si no, la siguiente entrega sin completar
-                const etaStop = (() => {
-                  if (!activeLoad) return null;
-                  const stops = allStops.filter(s => s.load_id === activeLoad.id).sort((x, y) => (x.stop_order ?? 0) - (y.stop_order ?? 0));
-                  const pending = stops.filter(s => !(s as any).departed_at);
-                  const prePickup = ['planned', 'dispatched', 'in_transit', 'on_site_pickup'].includes(activeLoad.status);
-                  return (prePickup ? (pending.find(s => s.stop_type === 'pickup') || stops.find(s => s.stop_type === 'pickup')) : null)
-                    || pending.find(s => s.stop_type !== 'pickup') || pending[0] || null;
-                })();
+                const etaStop = etaStopByDriver[driver.id] ?? null;
                 const etaAddress = etaStop?.address
-                  || (activeLoad && ['planned', 'dispatched', 'in_transit', 'on_site_pickup'].includes(activeLoad.status) ? activeLoad.origin : activeLastStop?.address) || '';
+                  || (activeLoad && PRE_PICKUP.includes(activeLoad.status) ? activeLoad.origin : activeLastStop?.address) || '';
+                const autoEta = etaStop ? autoEtaByDriver[driver.id] : undefined;
                 const sStatus = searchStatus[driver.id]; // undefined|'standby' = standby | 'searching' | 'ready'
                 const isPaused = !!(driver as any).is_paused;
                 const truck = trucks.find(t => t.id === driver.truck_id);
@@ -1431,6 +1482,27 @@ const Tracking = () => {
                           </div>
                           {displayInfo.date && (
                             <p className="text-[11px] mt-0.5">{format(parseISO(displayInfo.date), 'MMM dd, yyyy')}</p>
+                          )}
+                          {displayInfo.isActive && autoEta && autoEta.stopId === etaStop?.id && (
+                            <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-[12px]">
+                              {autoEta.eta ? (
+                                <span
+                                  className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-medium ${
+                                    autoEta.eta.late ? 'bg-[#fce8e6] text-[#c5221f] dark:bg-red-900/40 dark:text-red-200' : 'bg-[#e6f4ea] text-[#137333] dark:bg-emerald-900/40 dark:text-emerald-200'
+                                  }`}
+                                  title={autoEta.eta.late ? 'Llega después de la cita' : autoEta.eta.late === false ? 'A tiempo para la cita' : 'Sin hora de cita para comparar'}
+                                >
+                                  <Clock className="h-3 w-3" /> ETA Next Stop: ~{autoEta.eta.label}{autoEta.eta.late ? ' · Tarde' : ''}
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-medium bg-[#e6f4ea] text-[#137333]">
+                                  <MapPin className="h-3 w-3" /> En la parada
+                                </span>
+                              )}
+                              <span className="text-muted-foreground">
+                                {etaStop?.stop_type === 'pickup' ? 'Pickup' : 'Delivery'} · {extractCityState(etaStop?.address || '')}{autoEta.eta ? ` · ${Math.round(autoEta.miles)} mi` : ''}
+                              </span>
+                            </p>
                           )}
                         </>
                       ) : (
