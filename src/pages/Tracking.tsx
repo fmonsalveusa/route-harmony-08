@@ -1245,6 +1245,17 @@ const Tracking = () => {
                   : lastDel
                   ? { address: lastDel.address, date: lastDel.date, isActive: false }
                   : null;
+                // Parada para pedir ETA: si aún no recoge, el pickup pendiente; si no, la siguiente entrega sin completar
+                const etaStop = (() => {
+                  if (!activeLoad) return null;
+                  const stops = allStops.filter(s => s.load_id === activeLoad.id).sort((x, y) => (x.stop_order ?? 0) - (y.stop_order ?? 0));
+                  const pending = stops.filter(s => !(s as any).departed_at);
+                  const prePickup = ['planned', 'dispatched', 'in_transit', 'on_site_pickup'].includes(activeLoad.status);
+                  return (prePickup ? (pending.find(s => s.stop_type === 'pickup') || stops.find(s => s.stop_type === 'pickup')) : null)
+                    || pending.find(s => s.stop_type !== 'pickup') || pending[0] || null;
+                })();
+                const etaAddress = etaStop?.address
+                  || (activeLoad && ['planned', 'dispatched', 'in_transit', 'on_site_pickup'].includes(activeLoad.status) ? activeLoad.origin : activeLastStop?.address) || '';
                 const sStatus = searchStatus[driver.id]; // undefined|'standby' = standby | 'searching' | 'ready'
                 const isPaused = !!(driver as any).is_paused;
                 const truck = trucks.find(t => t.id === driver.truck_id);
@@ -1520,10 +1531,10 @@ const Tracking = () => {
                         {isPaused ? <Play className="h-3 w-3" /> : <Pause className="h-3 w-3" />}
                       </button>
                       <div className="flex-1" />
-                      {displayInfo?.isActive && (
+                      {displayInfo?.isActive && etaAddress && (
                         <AskEtaButton
                           driverName={driver.name}
-                          stopCity={extractCityState(displayInfo.address)}
+                          stopCity={extractCityState(etaAddress)}
                           groupId={(driver as any).whatsapp_group_id}
                           groupName={(driver as any).whatsapp_group_name}
                         />
