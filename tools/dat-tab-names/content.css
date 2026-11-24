@@ -160,6 +160,17 @@
 }
 .du-cfg:hover { background: #f0f4f9; }
 .du-cfg:active { transform: scale(.96); }
+/* Indicador del mercado, a la izquierda de "Configurar email" */
+.du-mkt-status {
+  margin-left: auto; align-self: center; flex-shrink: 0;
+  height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid transparent;
+  font: 600 12px/1 Roboto, system-ui, sans-serif; cursor: pointer; white-space: nowrap;
+}
+.du-mkt-status + .du-cfg { margin-left: 8px; }
+.du-mkt-status-ok { background: #e6f4ea; color: #137333; border-color: #ceead6; }
+.du-mkt-status-old { background: #fef7e0; color: #8a5300; border-color: #feefc3; }
+.du-mkt-status-bad { background: #fce8e6; color: #b3261e; border-color: #fad2cf; }
+.du-mkt-status:hover { filter: brightness(.97); }
 .du-toast {
   position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 99999;
   background: #1f1f1f; color: #fff; padding: 12px 18px; border-radius: 8px;

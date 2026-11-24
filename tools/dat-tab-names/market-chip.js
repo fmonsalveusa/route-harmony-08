@@ -24,6 +24,7 @@
   let market = null; // { FLATBED: { OUT: { kma: {at, map}, state: {at, map} } } }
   let zones = []; // [{ code, name, box:[minX,minY,maxX,maxY], rings }]
   let version = 0;
+  let auto = {}; // estado del refresco automático (background.js)
 
   const prepZones = (s) => (s?.shapes || []).map((z) => {
     let a = Infinity, b = Infinity, c = -Infinity, d = -Infinity;
@@ -35,8 +36,9 @@
   });
   const load = async () => {
     try {
-      const s = await chrome.storage.local.get(["duMarket", "duKmaShapes"]);
+      const s = await chrome.storage.local.get(["duMarket", "duKmaShapes", "duMarketAuto"]);
       market = s.duMarket || null;
+      auto = s.duMarketAuto || {};
       zones = prepZones(s.duKmaShapes);
       version++;
       schedule();
@@ -52,6 +54,7 @@
   setInterval(() => { if (chrome.runtime?.id && !document.hidden) askRefresh(); }, 30 * 60 * 1000);
   chrome.storage.onChanged.addListener((ch, area) => {
     if (area === "local" && (ch.duMarket || ch.duKmaShapes)) load();
+    if (area === "local" && ch.duMarketAuto) { auto = ch.duMarketAuto.newValue || {}; renderStatus(); }
   });
 
   // Punto dentro de la zona (par-impar sobre todos sus anillos: sirve con huecos e islas)
@@ -200,7 +203,50 @@
   });
   window.postMessage({ __duDatRequest: true }, location.origin);
 
+  // ── Indicador del mercado al lado de "Configurar email" ──
+  //  ✓ verde: dato de menos de 5 h · ámbar: 5–24 h · ⚠ rojo: más de 24 h, sin datos o DAT iQ pidió login.
+  //  Clic: abre Market Conditions (para iniciar sesión o refrescar a mano).
+  const IQ_URL = "https://iq.prod.dat.com/market-conditions/conditions/FLATBED~KMA~CURRENT~OUT~~~0/VAN~KMA~CURRENT~OUT~~~0";
+  const ageTxt = (t) => {
+    if (!t) return "sin datos";
+    const m = Math.max(0, Math.round((Date.now() - t) / 60000));
+    return m < 60 ? `hace ${m} min` : m < 48 * 60 ? `hace ${Math.round(m / 60)} h` : `hace ${Math.round(m / 1440)} días`;
+  };
+  function renderStatus() {
+    const flat = market?.FLATBED?.OUT?.kma?.at || 0;
+    const van = market?.VAN?.OUT?.kma?.at || 0;
+    const age = flat ? Date.now() - flat : Infinity;
+    const failed = auto.status === "timeout" && age > 5 * 3600 * 1000;
+    const level = !flat || age > 24 * 3600 * 1000 || failed ? "bad" : age > 5 * 3600 * 1000 ? "old" : "ok";
+    const text = level === "bad"
+      ? (failed ? "⚠ Mercado: inicia sesión en DAT iQ" : `⚠ Mercado ${ageTxt(flat)}`)
+      : `Mercado ${ageTxt(flat)}${level === "ok" ? " ✓" : ""}`;
+    const title = [
+      "Datos de DAT Market Conditions (manos en las ciudades destino)",
+      `Flatbed: ${ageTxt(flat)} · Van: ${ageTxt(van)}`,
+      auto.at ? `Último refresco automático: ${ageTxt(auto.at)}${auto.status === "ok" ? " (bien)" : auto.status === "timeout" ? " (no cargó: DAT iQ pidió iniciar sesión)" : auto.status === "running" ? " (en curso)" : ""}` : "Se refresca solo cada ~4 h mientras DAT esté abierto",
+      "Clic: abrir Market Conditions",
+    ].join("\n");
+    for (const bar of document.querySelectorAll(".search-filters")) {
+      const cfg = bar.querySelector(":scope > .du-cfg");
+      if (!cfg) continue;
+      let el = bar.querySelector(":scope > .du-mkt-status");
+      if (!el) {
+        el = document.createElement("button");
+        el.type = "button";
+        el.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); window.open(IQ_URL, "_blank"); });
+        cfg.before(el);
+      }
+      const cls = `du-mkt-status du-mkt-status-${level}`;
+      if (el.className !== cls) el.className = cls;
+      if (el.textContent !== text) el.textContent = text;
+      if (el.title !== title) el.title = title;
+    }
+  }
+  setInterval(() => { if (chrome.runtime?.id) renderStatus(); }, 60 * 1000);
+
   function scan() {
+    renderStatus();
     if (!market) return;
     for (const el of document.querySelectorAll('[data-test="load-destination-cell"]')) {
       const row = el.closest("dat-result-row");
