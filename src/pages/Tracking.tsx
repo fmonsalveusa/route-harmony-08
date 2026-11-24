@@ -1356,6 +1356,18 @@ const Tracking = () => {
                           </button>
                         </span>
                       )}
+                      {truck?.unit_number && (
+                        <span className="ml-3 flex shrink-0 items-center gap-1 text-sm font-medium text-[#1f1f1f] dark:text-foreground">
+                          <Package className="h-3.5 w-3.5 text-muted-foreground" /> {truck.unit_number}
+                          <button
+                            onClick={(e) => copyField(driver.id, 'unit', String(truck.unit_number), e)}
+                            className="shrink-0 p-0.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                            title="Copiar Truck #"
+                          >
+                            {copiedField === `${driver.id}:unit` ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                          </button>
+                        </span>
+                      )}
                       {(activeLoad ? 1 : 0) + nextLoads.length > 1 && (
                         <span className="shrink-0 rounded-full bg-[#d3e3fd] text-[#041e49] px-2 py-0.5 text-[11px] font-semibold" title="Cargas asignadas (activas + planned)">
                           {(activeLoad ? 1 : 0) + nextLoads.length} cargas
@@ -1368,12 +1380,7 @@ const Tracking = () => {
                     </div>
 
                     {/* Línea 2: unidad y VIN */}
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 px-3 pt-0.5 text-[11px] text-[#444746] dark:text-muted-foreground">
-                      {truck?.unit_number && (
-                        <span className="flex items-center gap-1 text-sm font-medium text-[#1f1f1f] dark:text-foreground">
-                          <Package className="h-3.5 w-3.5" /> {truck.unit_number}
-                        </span>
-                      )}
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 px-3 pt-0.5 text-[13px] text-[#444746] dark:text-muted-foreground">
                       {isCompanyDriver && truck?.vin && (
                         <span className="flex items-center gap-0.5">
                           VIN {truck.vin}
