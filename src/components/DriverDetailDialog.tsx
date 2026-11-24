@@ -231,7 +231,7 @@ export function DriverDetailDialog({ open, onOpenChange, driver, truckLabel, dis
                   <Loader2 className="h-3 w-3 animate-spin" /> Loading leasing agreements...
                 </div>
               )}
-              {!leasingLoading && leasingDocs.map(doc => (
+              {!leasingLoading && leasingDocs.filter(doc => ![(driver as any).leasing_agreement_url, (driver as any).leasing_agreement_venco_url, (driver as any).leasing_agreement_58_url].includes(doc.file_url)).map(doc => (
                 <div key={doc.id} className="flex items-center gap-3 p-2 border rounded-md text-sm">
                   <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
                   <span className="font-medium flex-1">Leasing Agreement ({doc.company_name})</span>

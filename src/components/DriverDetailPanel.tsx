@@ -255,7 +255,7 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
     ...(d.leasing_agreement_url ? [{ key: 'leasing_agreement_url', label: 'Leasing Agreement', url: d.leasing_agreement_url }] : []),
     ...(d.leasing_agreement_venco_url ? [{ key: 'leasing_agreement_venco_url', label: 'Leasing (VENCO)', url: d.leasing_agreement_venco_url }] : []),
     ...(d.leasing_agreement_58_url ? [{ key: 'leasing_agreement_58_url', label: 'Leasing (58 Log)', url: d.leasing_agreement_58_url }] : []),
-    ...leasingDocs.map(doc => ({
+    ...leasingDocs.filter(doc => ![d.leasing_agreement_url, d.leasing_agreement_venco_url, d.leasing_agreement_58_url].includes(doc.file_url)).map(doc => ({
       key: doc.id,
       label: `Leasing (${doc.company_name})`,
       url: doc.file_url,
