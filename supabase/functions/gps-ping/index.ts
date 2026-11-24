@@ -15,6 +15,7 @@ const json = (status: number, body: unknown) =>
 
 // Cache del token → driver dentro de la misma instancia (evita una consulta por ping)
 const driverCache = new Map<string, { id: string; tenant_id: string; at: number }>();
+const nativeMark = new Map<string, number>();
 
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return json(405, { error: 'method' });
@@ -39,6 +40,13 @@ Deno.serve(async (req) => {
     if (!data) return json(401, { error: 'token' });
     driver = { id: data.id, tenant_id: data.tenant_id, at: Date.now() };
     driverCache.set(token, driver);
+  }
+
+  // Registro de que el envío nativo funciona en este teléfono (máx. una escritura por minuto por driver)
+  const lastMark = nativeMark.get(driver.id) ?? 0;
+  if (Date.now() - lastMark > 60_000) {
+    nativeMark.set(driver.id, Date.now());
+    await supabase.from('drivers').update({ gps_native_at: new Date().toISOString() }).eq('id', driver.id);
   }
 
   // Hora del fix: la del GPS si es razonable, si no la del servidor
