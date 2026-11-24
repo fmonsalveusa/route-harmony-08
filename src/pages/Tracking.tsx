@@ -23,6 +23,7 @@ import { MapPin, MapPinOff, Package, Navigation, Clock, Search, ChevronRight, Al
 import { useNavigate } from 'react-router-dom';
 import { LoadAlertChip } from '@/components/LoadAlertChip';
 import { GpsHealthChip } from '@/components/GpsHealthChip';
+import { AskEtaButton } from '@/components/AskEtaButton';
 import { getGpsHealth } from '@/lib/gpsHealth';
 import { getLoadAlerts } from '@/lib/loadAlerts';
 import { DriversTimelineCard } from '@/components/dashboard/DriversTimelineCard';
@@ -1416,6 +1417,14 @@ const Tracking = () => {
                               }
                               return null;
                             })()}
+                            {displayInfo.isActive && (
+                              <AskEtaButton
+                                driverName={driver.name}
+                                stopCity={extractCityState(displayInfo.address)}
+                                groupId={(driver as any).whatsapp_group_id}
+                                groupName={(driver as any).whatsapp_group_name}
+                              />
+                            )}
                           </div>
                           {displayInfo.date && (
                             <p className="text-[11px] mt-0.5">{format(parseISO(displayInfo.date), 'MMM dd, yyyy')}</p>
