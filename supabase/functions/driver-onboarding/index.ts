@@ -1,7 +1,15 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
+import { sendMail } from "../_shared/smtp.ts";
 import { isEnabled, renderMessage, sendTextLogged } from "../_shared/messaging.ts";
 import { appGmail } from "../_shared/gmail.ts";
+
+/** Aviso interno por email. Antes usaba denomailer, que rompía el asunto con acentos/emoji
+ * (llegaba "=?utf-8?Q?..." y el cuerpo como texto MIME crudo). */
+async function notifyAdminEmail(subject: string, text: string) {
+  const account = appGmail();
+  if (!account.user || account.pass.length !== 16) return;
+  await sendMail({ user: account.user, pass: account.pass }, { fromName: "Dispatch Up", to: ["58logisticsllc@gmail.com"], subject, text });
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -205,14 +213,10 @@ Deno.serve(async (req) => {
         const gmailUser = appGmail().user;
         const gmailPass = appGmail().pass;
         if (gmailUser && gmailPass.length === 16) {
-          const smtp = new SMTPClient({ connection: { hostname: "smtp.gmail.com", port: 465, tls: true, auth: { username: gmailUser, password: gmailPass } } });
-          await smtp.send({
-            from: gmailUser,
-            to: "58logisticsllc@gmail.com",
-            subject: `🚛 New Driver Added to Existing OO – ${dData.name}`,
-            content: `Driver: ${dData.name} (${dData.email})\nPhone: ${dData.phone}\nOwner Operator ID: ${tokenRecord.existing_investor_id}\nTruck ID: ${tokenRecord.existing_truck_id}\n\nReview from the Drivers section.`,
-          });
-          await smtp.close();
+          await notifyAdminEmail(
+            `🚛 New Driver Added to Existing OO – ${dData.name}`,
+            `Driver: ${dData.name} (${dData.email})\nPhone: ${dData.phone}\nOwner Operator ID: ${tokenRecord.existing_investor_id}\nTruck ID: ${tokenRecord.existing_truck_id}\n\nReview from the Drivers section.`,
+          );
         }
       } catch (emailErr) { console.error("Failed to send email:", emailErr); }
 
@@ -508,14 +512,10 @@ Deno.serve(async (req) => {
           const mc = clientRow?.mc_number ?? "—";
           const driverNames = createdDrivers.map((d: any) => d.name).join(", ");
           const truckUnits = createdTrucks.map((t: any) => t.unit_number).join(", ");
-          const smtp = new SMTPClient({ connection: { hostname: "smtp.gmail.com", port: 465, tls: true, auth: { username: gmailUser, password: gmailPass } } });
-          await smtp.send({
-            from: gmailUser,
-            to: "58logisticsllc@gmail.com",
-            subject: `🚛 New Dispatch Service Client Onboarded – ${clientName}`,
-            content: `Company: ${clientName}\nMC#: ${mc}\nDrivers: ${driverNames}\nTrucks: ${truckUnits}\n\nReview from the Dispatch Clients section.`,
-          });
-          await smtp.close();
+          await notifyAdminEmail(
+            `🚛 New Dispatch Service Client Onboarded – ${clientName}`,
+            `Company: ${clientName}\nMC#: ${mc}\nDrivers: ${driverNames}\nTrucks: ${truckUnits}\n\nReview from the Dispatch Clients section.`,
+          );
         }
       } catch (emailErr) { console.error("Failed to send email:", emailErr); }
 
@@ -926,13 +926,8 @@ Deno.serve(async (req) => {
     try {
       const gmailUser = appGmail().user;
       const gmailPass = appGmail().pass;
-      const notifEmail = "58logisticsllc@gmail.com";
 
       if (gmailUser && gmailPass.length === 16) {
-        const smtpClient = new SMTPClient({
-          connection: { hostname: "smtp.gmail.com", port: 465, tls: true, auth: { username: gmailUser, password: gmailPass } },
-        });
-
         const subject = isOO && !isDriverOwner
           ? `🚛 New Owner Operator Onboarded – ${driverData.name}`
           : `🚛 New Driver Onboarding Completed – ${driverData.name}`;
@@ -941,8 +936,7 @@ Deno.serve(async (req) => {
           ? `Owner: ${driverData.name} (${driverData.email})\nDriver: ${secondDriverData?.name ?? "—"}\nTruck: ${truckData.unit_number}\n\nReview from the Investors and Drivers sections.`
           : `Driver: ${driverData.name} (${driverData.email})\nPhone: ${driverData.phone}\nTruck: ${truckData.unit_number}\n\nReview from the Drivers section.`;
 
-        await smtpClient.send({ from: gmailUser, to: notifEmail, subject, content: textBody });
-        await smtpClient.close();
+        await notifyAdminEmail(subject, textBody);
       }
     } catch (emailErr) {
       console.error("Failed to send email:", emailErr);
