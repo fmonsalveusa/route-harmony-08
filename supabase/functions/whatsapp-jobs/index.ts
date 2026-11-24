@@ -492,7 +492,9 @@ async function runExpiryAlerts(supabase: Supa, tenant: any) {
     .from("drivers")
     .select("id, name, status, truck_id, whatsapp_group_id, license_expiry, medical_card_expiry")
     .eq("tenant_id", tenant.id)
-    .neq("status", "inactive");
+    .neq("status", "inactive")
+    // Solo Owner Operators y sus drivers (no Company Drivers ni Dispatch Service)
+    .eq("service_type", "owner_operator");
   const driverList = (drivers as any[]) || [];
 
   for (const d of driverList) {
