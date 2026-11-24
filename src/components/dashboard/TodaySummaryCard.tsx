@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowUpFromLine, ArrowDownToLine, UserX, AlertTriangle, Landmark, ChevronDown, ChevronRight, CalendarCheck, Timer } from 'lucide-react';
+import { ArrowUpFromLine, ArrowDownToLine, UserX, AlertTriangle, Landmark, ChevronDown, ChevronRight, CalendarCheck, Timer, FileWarning } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { DetentionStop, fmtDuration, loadDetention } from '@/lib/detention';
 import { todayET } from '@/lib/dateUtils';
@@ -35,6 +35,31 @@ export const TodaySummaryCard = ({ loads, drivers }: { loads: DbLoad[]; drivers:
       .not('arrived_at' as any, 'is', null).not('departed_at' as any, 'is', null).gte('arrived_at' as any, since)
       .then(({ data }) => setDetStops(((data as any[]) || []) as any));
   }, []);
+
+  // Documentos para factoring (solo RC + un POD por cada delivery) de las cargas entregadas en Factoring pending
+  const factoringIds = useMemo(
+    () => loads.filter(l => l.status === 'delivered' && l.factoring === 'pending').map(l => l.id).sort().join(','),
+    [loads],
+  );
+  const [facDocs, setFacDocs] = useState<Record<string, { deliveries: { id: string; address: string }[]; withPod: Set<string> }>>({});
+  useEffect(() => {
+    if (!factoringIds) { setFacDocs({}); return; }
+    const ids = factoringIds.split(',');
+    let cancelled = false;
+    (async () => {
+      const [{ data: stops }, { data: pods }] = await Promise.all([
+        supabase.from('load_stops').select('id, load_id, stop_type, stop_order, address').in('load_id', ids).eq('stop_type', 'delivery').order('stop_order'),
+        supabase.from('pod_documents').select('stop_id, load_id').in('load_id', ids),
+      ]);
+      if (cancelled) return;
+      const map: Record<string, { deliveries: { id: string; address: string }[]; withPod: Set<string> }> = {};
+      for (const id of ids) map[id] = { deliveries: [], withPod: new Set() };
+      for (const st of (stops as any[]) || []) map[st.load_id]?.deliveries.push({ id: st.id, address: st.address });
+      for (const p of (pods as any[]) || []) if (p.stop_id) map[p.load_id]?.withPod.add(p.stop_id);
+      setFacDocs(map);
+    })();
+    return () => { cancelled = true; };
+  }, [factoringIds]);
 
   const rows = useMemo<Row[]>(() => {
     const today = todayET();
@@ -80,14 +105,48 @@ export const TodaySummaryCard = ({ loads, drivers }: { loads: DbLoad[]; drivers:
           .map(({ l, d }) => loadItem(l, `${fmtDuration(d.billableMin)} cobrable · $${d.amount.toFixed(2)} · ${l.broker_client || ''}`)),
         emptyText: 'Nada de detention pendiente por reclamar',
       },
-      {
-        key: 'factoring', icon: Landmark, tint: 'bg-[#d3e3fd] text-[#041e49]', label: 'Listas para factoring',
-        items: loads.filter(l => l.status === 'delivered' && l.factoring === 'pending')
-          .map(l => loadItem(l, `$${Number(l.total_rate || 0).toLocaleString()} · ${l.broker_client || ''}`)),
-        emptyText: 'Nada pendiente de factoring',
-      },
+      ...(() => {
+        // Factoring: RC + POD en CADA delivery. Las que tienen todo van a "Listas"; las otras dicen qué falta.
+        const city = (a: string) => {
+          const parts = (a || '').split(',').map(x => x.trim()).filter(Boolean);
+          return parts.length >= 2 ? `${parts[parts.length - 2]}, ${parts[parts.length - 1].replace(/\d{5}(-\d{4})?/, '').trim()}` : a;
+        };
+        const pending = loads.filter(l => l.status === 'delivered' && l.factoring === 'pending');
+        const ready: Row['items'] = [];
+        const missing: Row['items'] = [];
+        for (const l of pending) {
+          // Dispatch Service: el camión es del cliente y sus POD no se suben a nuestra app → sin revisión
+          if (l.service_type === 'dispatch_service') {
+            ready.push(loadItem(l, `Dispatch Service · $${Number(l.total_rate || 0).toLocaleString()} · ${l.broker_client || ''}`));
+            continue;
+          }
+          const info = facDocs[l.id];
+          const hasRc = !!l.pdf_url;
+          const total = info?.deliveries.length ?? 0;
+          const done = info ? info.deliveries.filter(d => info.withPod.has(d.id)).length : 0;
+          const noPod = info ? info.deliveries.filter(d => !info.withPod.has(d.id)) : [];
+          const pod = info ? `POD ${done}/${total}${done === total && total > 0 ? ' ✓' : ''}` : 'POD …';
+          const docs = `${hasRc ? 'RC ✓' : 'Falta RC'} · ${pod}`;
+          if (info && hasRc && total > 0 && done === total) {
+            ready.push(loadItem(l, `${docs} · $${Number(l.total_rate || 0).toLocaleString()} · ${l.broker_client || ''}`));
+          } else if (info) {
+            const where = noPod.length ? ` — falta POD en ${noPod.map(d => city(d.address)).join(', ')}` : total === 0 ? ' — sin paradas de entrega' : '';
+            missing.push(loadItem(l, `${docs}${where}`));
+          }
+        }
+        return [
+          {
+            key: 'factoring', icon: Landmark, tint: 'bg-[#d3e3fd] text-[#041e49]', label: 'Listas para factoring',
+            items: ready, emptyText: 'Nada listo para factoring',
+          },
+          {
+            key: 'factoring_missing', icon: FileWarning, tint: 'bg-[#fce8e6] text-[#c5221f]', label: 'Factoring: faltan documentos',
+            items: missing, emptyText: 'Todas las cargas entregadas tienen RC y POD',
+          },
+        ] as Row[];
+      })(),
     ];
-  }, [loads, drivers, detStops]);
+  }, [loads, drivers, detStops, facDocs]);
 
   return (
     <div className="rounded-2xl border border-[#e3e3e3] dark:border-border bg-white dark:bg-card shadow-[0_1px_2px_rgba(60,64,67,.3),0_1px_3px_1px_rgba(60,64,67,.15)] overflow-hidden">
