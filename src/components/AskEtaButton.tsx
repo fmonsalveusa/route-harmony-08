@@ -47,7 +47,7 @@ export const AskEtaButton = ({ driverName, stopCity, groupId, groupName }: {
         <button
           type="button"
           onClick={(e) => e.stopPropagation()}
-          className="shrink-0 inline-flex items-center gap-1 rounded-full border border-[#c4c7c5] dark:border-border px-2 py-0.5 text-[11px] font-medium text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] dark:hover:bg-blue-900/30 transition-colors"
+          className="shrink-0 h-7 px-3 inline-flex items-center gap-1 rounded-full text-[11px] font-medium bg-[#188038] hover:bg-[#137333] text-white transition-colors whitespace-nowrap"
           title="Pedir ETA por WhatsApp"
         >
           <Clock className="h-3 w-3" /> ETA

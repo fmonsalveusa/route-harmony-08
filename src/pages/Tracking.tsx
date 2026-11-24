@@ -1417,14 +1417,6 @@ const Tracking = () => {
                               }
                               return null;
                             })()}
-                            {displayInfo.isActive && (
-                              <AskEtaButton
-                                driverName={driver.name}
-                                stopCity={extractCityState(displayInfo.address)}
-                                groupId={(driver as any).whatsapp_group_id}
-                                groupName={(driver as any).whatsapp_group_name}
-                              />
-                            )}
                           </div>
                           {displayInfo.date && (
                             <p className="text-[11px] mt-0.5">{format(parseISO(displayInfo.date), 'MMM dd, yyyy')}</p>
@@ -1528,6 +1520,14 @@ const Tracking = () => {
                         {isPaused ? <Play className="h-3 w-3" /> : <Pause className="h-3 w-3" />}
                       </button>
                       <div className="flex-1" />
+                      {displayInfo?.isActive && (
+                        <AskEtaButton
+                          driverName={driver.name}
+                          stopCity={extractCityState(displayInfo.address)}
+                          groupId={(driver as any).whatsapp_group_id}
+                          groupName={(driver as any).whatsapp_group_name}
+                        />
+                      )}
                       {isPaused ? (
                         <span className="shrink-0 h-7 px-3 rounded-full text-[11px] font-medium bg-[#e3e3e3] text-[#1f1f1f] whitespace-nowrap flex items-center gap-1">
                           <Pause className="h-3 w-3" /> PAUSADO
