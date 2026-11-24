@@ -191,16 +191,13 @@ const Companies = () => {
           <p className="page-description pl-[52px]">Manage your carrier companies for invoices, documents, and leasing agreements</p>
         </div>
         <div className="flex gap-2 self-start sm:self-auto">
-          {isAdmin && (
-            <Button variant="outline" className="gap-2 rounded-full px-4 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent" onClick={() => setRtsOpen(true)}>
-              <FileSignature className="h-4 w-4" /> Asistente RTS
-            </Button>
-          )}
-          {isAdmin && (
-            <Button variant="outline" className="gap-2 rounded-full px-4 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent" onClick={() => setDatOpen(true)}>
-              <Puzzle className="h-4 w-4" /> Extensión DAT
-            </Button>
-          )}
+          {/* Descarga de las extensiones: admin y dispatchers (regenerar la clave sigue siendo solo de admin) */}
+          <Button variant="outline" className="gap-2 rounded-full px-4 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent" onClick={() => setRtsOpen(true)}>
+            <FileSignature className="h-4 w-4" /> Asistente RTS
+          </Button>
+          <Button variant="outline" className="gap-2 rounded-full px-4 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent" onClick={() => setDatOpen(true)}>
+            <Puzzle className="h-4 w-4" /> Extensión DAT
+          </Button>
           <Button className="gap-2 rounded-full px-5 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium shadow-none" onClick={openNew}>
             <Plus className="h-4 w-4" /> Add New Company
           </Button>

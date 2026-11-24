@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Check, Copy, Download, Loader2, RefreshCw } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { getTenantId } from '@/hooks/useTenantId';
 import { toast } from 'sonner';
@@ -13,6 +14,8 @@ import { toast } from 'sonner';
 export function RtsAssistantDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const [key, setKey] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const { role, isMasterAdmin } = useAuth();
+  const isAdmin = role === 'admin' || !!isMasterAdmin;
   const [copied, setCopied] = useState(false);
   const [version, setVersion] = useState<string | null>(null);
 
@@ -24,6 +27,7 @@ export function RtsAssistantDialog({ open, onOpenChange }: { open: boolean; onOp
       const tenantId = await getTenantId();
       const { data } = await supabase.from('integration_keys' as any).select('key').eq('kind', 'rts_assistant').eq('tenant_id', tenantId).maybeSingle();
       if (data) { setKey((data as any).key); return; }
+      if (!isAdmin) return; // solo admin crea la clave
       const { data: created, error } = await supabase.from('integration_keys' as any)
         .insert({ tenant_id: tenantId, kind: 'rts_assistant' } as any).select('key').single();
       if (error) toast.error(`No se pudo crear la clave: ${error.message}`);
@@ -83,9 +87,11 @@ export function RtsAssistantDialog({ open, onOpenChange }: { open: boolean; onOp
           <Button className="rounded-full px-4 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium bg-transparent" size="sm" variant="outline" onClick={copy} disabled={!key}>
             {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
           </Button>
-          <Button className="rounded-full text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium" size="sm" variant="ghost" onClick={regenerate} disabled={busy} title="Crear una clave nueva (la actual deja de funcionar)">
-            {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-          </Button>
+          {isAdmin && (
+            <Button className="rounded-full text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium" size="sm" variant="ghost" onClick={regenerate} disabled={busy} title="Crear una clave nueva (la actual deja de funcionar)">
+              {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+            </Button>
+          )}
         </div>
         <p className="text-xs text-muted-foreground">
           La clave da acceso a las cargas por facturar y sus documentos: no la compartas fuera del equipo. Al enviar a RTS,
