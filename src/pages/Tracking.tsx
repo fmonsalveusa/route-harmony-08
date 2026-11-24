@@ -1804,12 +1804,41 @@ const Tracking = () => {
                       </span>
                     </LeafletTooltip>
                     <Popup>
-                      <div className="text-xs">
-                        <strong>{driver.name}</strong>
-                        <br />{fromEld ? `ELD · ${eldTime}` : live ? 'GPS en vivo' : `Sin actualizar (${formatAge(age)})`}
-                        {live && loc.speed != null && <><br />Speed: {(loc.speed * 2.237).toFixed(0)} mph</>}
-                        <br /><span className="text-muted-foreground">Updated: {new Date(loc.updated_at).toLocaleTimeString()}</span>
-                      </div>
+                      {(() => {
+                        // Mismo formato que el mapa del detalle de la carga
+                        const nStop = etaStopByDriver[driver.id] ?? null;
+                        const nEta = nStop ? autoEtaByDriver[driver.id] : undefined;
+                        const showEta = nEta && nEta.stopId === nStop?.id;
+                        return (
+                          <div style={{ textAlign: 'center' }}>
+                            <b style={{ color: fromEld ? '#0b57d0' : live ? 'hsl(142,70%,40%)' : 'hsl(30,80%,50%)' }}>
+                              {fromEld ? `🚚 ELD · ${eldTime}` : live ? '🛰 GPS Live' : '📍 Last Known'}
+                            </b>
+                            <br />{driver.name}
+                            {live && loc.speed != null && <><br />{Math.round(loc.speed * 2.237)} mph</>}
+                            {showEta && nStop && (
+                              <>
+                                <br /><b>{Math.round(nEta!.miles).toLocaleString()} mi</b> to {nStop.stop_type === 'pickup' ? 'Pickup' : 'Delivery'}
+                                <br /><small>{extractCityState(nStop.address || '')}</small>
+                                {nEta!.eta && (
+                                  <>
+                                    <br />
+                                    <span
+                                      style={{
+                                        display: 'inline-block', marginTop: 2, padding: '1px 8px', borderRadius: 999, fontWeight: 500,
+                                        ...(nEta!.eta.late ? { background: '#fce8e6', color: '#c5221f' } : nEta!.eta.late === false ? { background: '#e6f4ea', color: '#137333' } : { background: '#f0f4f9', color: '#1f1f1f' }),
+                                      }}
+                                    >
+                                      ETA {nEta!.eta.label}{nEta!.eta.late ? ' · tarde' : nEta!.eta.late === false ? ' · a tiempo' : ''}
+                                    </span>
+                                  </>
+                                )}
+                              </>
+                            )}
+                            <br /><small>{age < 60_000 ? `${Math.max(0, Math.round(age / 1000))}s ago` : age < 3600_000 ? `${Math.round(age / 60000)}m ago` : `${Math.round(age / 3600_000)}h ago`}</small>
+                          </div>
+                        );
+                      })()}
                     </Popup>
                   </Marker>
                 );
@@ -1827,7 +1856,7 @@ const Tracking = () => {
                   <Popup>
                     <div className="text-xs">
                       <strong>{driver.name}</strong>
-                      <br />≡ƒôì Manual Location
+                      <br />📍 Manual Location
                       <br /><span className="text-muted-foreground">{(driver as any).manual_location_address}</span>
                     </div>
                   </Popup>
