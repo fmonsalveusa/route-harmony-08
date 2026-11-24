@@ -1318,7 +1318,7 @@ const Tracking = () => {
                 return (
                   <div
                     key={driver.id}
-                    className={`flex overflow-hidden rounded-2xl border transition-shadow cursor-pointer shadow-[0_1px_2px_rgba(60,64,67,.3),0_2px_6px_2px_rgba(60,64,67,.15)] hover:shadow-[0_2px_4px_rgba(60,64,67,.3),0_6px_12px_4px_rgba(60,64,67,.18)] dark:shadow-[0_2px_8px_rgba(0,0,0,.5)] ${
+                    className={`du-driver-card flex overflow-hidden rounded-2xl border transition-shadow cursor-pointer shadow-[0_1px_2px_rgba(60,64,67,.3),0_2px_6px_2px_rgba(60,64,67,.15)] hover:shadow-[0_2px_4px_rgba(60,64,67,.3),0_6px_12px_4px_rgba(60,64,67,.18)] dark:shadow-[0_2px_8px_rgba(0,0,0,.5)] ${
                       // Fondo según la carga: verde si está cargado, naranja si está vacío
                       activeLoad ? 'bg-white border-[#ceead6] dark:bg-card dark:border-emerald-900/50'
                         : onlyPlanned ? 'bg-white border-[#c2d7fb] dark:bg-card dark:border-blue-900/50'
