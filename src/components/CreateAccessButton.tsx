@@ -147,8 +147,8 @@ export function CreateAccessButton({ name, email, phone, role, variant = 'row' }
                 <DialogHeader>
                   <DialogTitle className="text-[22px] leading-7 font-normal">Reenviar acceso</DialogTitle>
                   <DialogDescription className="text-sm text-[#444746] dark:text-muted-foreground">
-                    A {name.split(' ')[0]} se le pondrá una <b>contraseña nueva</b> y se le mandará el acceso a su grupo de WhatsApp.
-                    La contraseña anterior deja de funcionar.
+                    A {name.split(' ')[0]} se le restablece la <b>contraseña inicial</b> y se le manda el acceso otra vez a su grupo de WhatsApp.
+                    Si la había cambiado, la anterior deja de funcionar.
                   </DialogDescription>
                 </DialogHeader>
                 <DialogFooter className="gap-2">
