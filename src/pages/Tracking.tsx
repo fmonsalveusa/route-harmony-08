@@ -1416,25 +1416,6 @@ const Tracking = () => {
                       );
                     })()}
 
-                    {/* Línea 3: GPS — hace cuánto reportó y a qué velocidad */}
-                    {/* Estado del GPS (verde/azul/ámbar/rojo con el motivo) + hace cuánto reportó */}
-                    {(
-                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 px-3 pt-0.5 text-[11px]">
-                        <GpsHealthChip
-                          health={getGpsHealth(driver as any, loc as any, nowTick)}
-                          groupId={(driver as any).whatsapp_group_id}
-                          groupName={(driver as any).whatsapp_group_name}
-                        />
-                        {loc && locAge != null && locAge <= MAX_LOCATION_AGE_MS && (
-                          <span className={`flex items-center gap-1 ${locLive ? 'text-blue-700' : 'text-muted-foreground'}`}>
-                            <span className={`h-2 w-2 rounded-full ${locLive ? 'bg-blue-600 animate-pulse' : 'bg-gray-400'}`} />
-                            {(loc as any).source === 'eld' ? `ELD · ${new Date(loc.updated_at).toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit' })}` : `GPS ${formatAge(locAge)}`}
-                            {locLive && loc.speed != null && ` · ${(loc.speed * 2.237).toFixed(0)} mph`}
-                          </span>
-                        )}
-                      </div>
-                    )}
-
                     {/* Ubicación manual */}
                     {(driver as any).manual_location_address && (
                       <div className="mx-3 mt-1.5 rounded-xl bg-[#fef7e0] dark:bg-amber-950/30 px-2.5 py-1">
@@ -1481,9 +1462,6 @@ const Tracking = () => {
                               return null;
                             })()}
                           </div>
-                          {displayInfo.date && (
-                            <p className="text-[11px] mt-0.5">{format(parseISO(displayInfo.date), 'MMM dd, yyyy')}</p>
-                          )}
                           {displayInfo.isActive && autoEta && autoEta.stopId === etaStop?.id && (
                             <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-[12px]">
                               {autoEta.eta ? (
@@ -1512,7 +1490,24 @@ const Tracking = () => {
                         )
                       )}
                     </div>
-                    {hosClocks[driver.id] && <HosClocks row={hosClocks[driver.id]} className="shrink-0 w-[270px] max-w-[60%]" />}
+                    {/* Estado del GPS + hace cuánto reportó, justo arriba de los relojes HOS */}
+                    <div className="shrink-0 w-[270px] max-w-[60%]">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] mb-1">
+                        <GpsHealthChip
+                          health={getGpsHealth(driver as any, loc as any, nowTick)}
+                          groupId={(driver as any).whatsapp_group_id}
+                          groupName={(driver as any).whatsapp_group_name}
+                        />
+                        {loc && locAge != null && locAge <= MAX_LOCATION_AGE_MS && (
+                          <span className={`flex items-center gap-1 ${locLive ? 'text-blue-700' : 'text-muted-foreground'}`}>
+                            <span className={`h-2 w-2 rounded-full ${locLive ? 'bg-blue-600 animate-pulse' : 'bg-gray-400'}`} />
+                            {(loc as any).source === 'eld' ? `ELD · ${new Date(loc.updated_at).toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit' })}` : `GPS ${formatAge(locAge)}`}
+                            {locLive && loc.speed != null && ` · ${(loc.speed * 2.237).toFixed(0)} mph`}
+                          </span>
+                        )}
+                      </div>
+                      {hosClocks[driver.id] && <HosClocks row={hosClocks[driver.id]} className="w-full" />}
+                    </div>
                     </div>
 
                     {/* Cargas en cola: después de la actual (Dispatched sin arrancar y Planned), estilo lista de Google */}
