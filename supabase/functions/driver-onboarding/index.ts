@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { sendMail } from "../_shared/smtp.ts";
+import { collectSignedDocs, emailSignedDocs } from "../_shared/driverDocs.ts";
 import { isEnabled, renderMessage, sendTextLogged } from "../_shared/messaging.ts";
 import { appGmail } from "../_shared/gmail.ts";
 
@@ -940,6 +941,17 @@ Deno.serve(async (req) => {
       }
     } catch (emailErr) {
       console.error("Failed to send email:", emailErr);
+    }
+
+    // 7b. Copia de los documentos firmados (leasing, W9, service agreement) al email del que firmó:
+    // el driver si maneja su camión / company driver, o el OO (investor) si es dueño sin manejar.
+    try {
+      const ownerDocs = isOO && !isDriverOwner && investorId
+        ? await collectSignedDocs(supabaseAdmin, "investor", investorId)
+        : driverId ? await collectSignedDocs(supabaseAdmin, "driver", driverId) : [];
+      if (ownerDocs.length > 0) await emailSignedDocs(supabaseAdmin, String(driverData.email ?? ""), String(driverData.name ?? ""), ownerDocs);
+    } catch (docsErr) {
+      console.error("Failed to email signed documents:", docsErr);
     }
 
     await markCrmClient(supabaseAdmin, tenantId, { name: driverData.name, phone: driverData.phone, email: driverData.email, driverId },

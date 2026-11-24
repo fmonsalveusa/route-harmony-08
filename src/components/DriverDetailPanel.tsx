@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useState, useEffect, useRef, Fragment } from 'react';
 import { ServiceTypeBadge } from '@/components/ServiceTypeBadge';
 import { DbDriver } from '@/hooks/useDrivers';
-import { Loader2, Download, Plus, Mail, Phone, Cake, CalendarDays, Percent, MapPin, UserRound, PhoneCall, Landmark, Wallet, Hash, IdCard, HeartPulse, Truck as TruckIcon, Headset } from 'lucide-react';
+import { Loader2, Download, Plus, Send, Mail, Phone, Cake, CalendarDays, Percent, MapPin, UserRound, PhoneCall, Landmark, Wallet, Hash, IdCard, HeartPulse, Truck as TruckIcon, Headset } from 'lucide-react';
 import { formatDate } from '@/lib/dateUtils';
 import { formatPhone } from '@/lib/phoneUtils';
 import { Tile, ExpiryRing, DETAIL_CARD, DETAIL_TITLE } from '@/components/detail/DetailTiles';
@@ -16,6 +16,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { DocCardGrid } from '@/components/DocCardGrid';
+import { SendDriverDocsDialog } from '@/components/SendDriverDocsDialog';
 import { getTenantId } from '@/hooks/useTenantId';
 
 const DRIVER_STATUS: Record<string, { label: string; cls: string }> = {
@@ -52,6 +53,7 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
   const [termLetterDeleted, setTermLetterDeleted] = useState(false);
   const [leasingDocs, setLeasingDocs] = useState<Array<{ id: string; company_name: string; file_url: string }>>([]);
   const [leasingLoading, setLeasingLoading] = useState(true);
+  const [sendDocsOpen, setSendDocsOpen] = useState(false);
   const [addingLeasing, setAddingLeasing] = useState(false);
   const [newLeasingCompany, setNewLeasingCompany] = useState('');
   const [uploadingLeasing, setUploadingLeasing] = useState(false);
@@ -332,7 +334,11 @@ export function DriverDetailPanel({ driver, truckLabel, dispatcherName, getDocSi
               <Button variant="outline" size="sm" className={PILL_BTN} onClick={e => { e.stopPropagation(); handleDownloadPdf(); }}>
                 <Download className="h-3.5 w-3.5" /> Download PDF
               </Button>
+              <Button variant="outline" size="sm" className={PILL_BTN} onClick={e => { e.stopPropagation(); setSendDocsOpen(true); }}>
+                <Send className="h-3.5 w-3.5" /> Enviar documentos
+              </Button>
             </div>
+            <SendDriverDocsDialog driver={{ id: driver.id, name: driver.name }} open={sendDocsOpen} onOpenChange={setSendDocsOpen} />
 
             {/* Formulario para agregar nuevo leasing */}
             {addingLeasing && (
