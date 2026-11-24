@@ -1434,8 +1434,9 @@ const Tracking = () => {
                     )}
 
                     {/* Próxima parada o última entrega + relojes HOS a la derecha */}
-                    <div className="flex items-center gap-2 px-3 pt-1.5">
-                    <div className="min-w-0 flex-1 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-3 px-3 pt-1.5">
+                    {/* Líneas de separación: arriba y abajo de la próxima parada, vertical antes de GPS/HOS */}
+                    <div className="min-w-0 flex-1 text-xs text-muted-foreground border-y border-[#dadce0] dark:border-border py-2">
                       {displayInfo ? (
                         <>
                           <p className="text-[10px] font-medium uppercase tracking-wide">
@@ -1498,7 +1499,7 @@ const Tracking = () => {
                       )}
                     </div>
                     {/* Estado del GPS + hace cuánto reportó, justo arriba de los relojes HOS */}
-                    <div className="shrink-0 w-[270px] max-w-[60%]">
+                    <div className="shrink-0 w-[285px] max-w-[60%] border-l border-[#dadce0] dark:border-border pl-3">
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] mb-1">
                         <GpsHealthChip
                           health={getGpsHealth(driver as any, loc as any, nowTick)}
