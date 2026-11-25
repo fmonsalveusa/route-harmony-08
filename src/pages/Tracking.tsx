@@ -19,7 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { StatusBadge } from '@/components/StatusBadge';
-import { MapPin, MapPinOff, Package, Navigation, Clock, Search, ChevronRight, AlertTriangle, Eye, User, Users, Pencil, Loader2, Copy, Check, Download, ExternalLink, X, Pause, Play, Plus } from 'lucide-react';
+import { MapPin, MapPinOff, Package, Navigation, Clock, Search, ChevronRight, AlertTriangle, Eye, User, Users, Pencil, Loader2, Copy, Check, Download, ExternalLink, X, Pause, Play, Plus, Truck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { LoadAlertChip } from '@/components/LoadAlertChip';
 import { GpsHealthChip } from '@/components/GpsHealthChip';
@@ -1326,13 +1326,27 @@ const Tracking = () => {
                     } ${isPaused ? 'opacity-60' : ''}`}
                     onClick={() => setSelectedDriverLoad({ driver, load: activeLoad || null, lastDelivered: lastDel ? { address: lastDel.address, date: lastDel.date } : undefined })}
                   >
-                    {/* Franja vertical izquierda: LOADED / EMPTY, letra por letra */}
-                    {/* Franja fina de color: verde cargado, naranja vacío */}
-                    <div className={`w-7 shrink-0 flex items-center justify-center py-1 ${activeLoad ? 'bg-[#188038]' : onlyPlanned ? 'bg-[#0b57d0]' : 'bg-[#e37400]'}`}>
-                      <span className="flex flex-col items-center text-[13px] leading-[15px] font-bold text-white select-none">
-                        {(activeLoad ? 'LOADED' : onlyPlanned ? 'PLANNED' : 'EMPTY').split('').map((ch, i) => <span key={i}>{ch}</span>)}
-                      </span>
-                    </div>
+                    {/* Franja izquierda: camión, LOADED / EMPTY / PLANNED en vertical, chevrons y base verde oscuro */}
+                    {(() => {
+                      const band = activeLoad ? { from: '#34a853', to: '#188038', chev: '#7ed99a' }
+                        : onlyPlanned ? { from: '#4d8ef7', to: '#0b57d0', chev: '#9dc1ff' }
+                        : { from: '#f7931e', to: '#e56a00', chev: '#ffc27a' };
+                      return (
+                        <div className="w-9 shrink-0 flex flex-col items-center select-none" style={{ background: `linear-gradient(180deg, ${band.from} 0%, ${band.to} 100%)` }}>
+                          <Truck className="mt-2 h-5 w-5 text-white" strokeWidth={2.2} />
+                          <span className="mt-1.5 text-[13px] font-extrabold tracking-[0.18em] text-white" style={{ writingMode: 'vertical-rl' }}>
+                            {activeLoad ? 'LOADED' : onlyPlanned ? 'PLANNED' : 'EMPTY'}
+                          </span>
+                          <div className="flex-1 min-h-2" />
+                          <svg viewBox="0 0 24 30" className="w-6 mb-1.5" aria-hidden="true">
+                            {[0, 8, 16].map((y, i) => (
+                              <path key={y} d={`M2 ${y + 2}L12 ${y + 10}L22 ${y + 2}`} fill="none" stroke={band.chev} strokeWidth="3.2" strokeLinejoin="round" opacity={0.55 + i * 0.2} />
+                            ))}
+                          </svg>
+                          <div className="h-6 w-full bg-[#1e5631]" />
+                        </div>
+                      );
+                    })()}
                     <div className="flex-1 min-w-0">
                     {/* Línea 1: nombre, teléfono, carga y tipo de servicio */}
                     <div className="flex items-center gap-1.5 px-3 pt-2">
