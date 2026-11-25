@@ -1248,10 +1248,10 @@ const Tracking = () => {
     if (hos?.driving_min != null && hos.driving_min < 120) out.push('HOS bajo');
     return out;
   };
-  const groupOf = (d: any): 'attention' | 'empty' | 'loaded' | 'paused' =>
-    d.is_paused ? 'paused' : attentionReasons(d).length ? 'attention' : activeLoadByDriver[d.id] ? 'loaded' : 'empty';
+  // Los que necesitan atención se quedan en su lugar; el motivo sale en rojo en la tarjeta
+  const groupOf = (d: any): 'empty' | 'loaded' | 'paused' =>
+    d.is_paused ? 'paused' : activeLoadByDriver[d.id] ? 'loaded' : 'empty';
   const GROUPS = [
-    { key: 'attention', label: 'Necesitan atención', dot: 'bg-[#d93025]' },
     { key: 'empty', label: 'Vacíos / Buscando', dot: 'bg-[#e37400]' },
     { key: 'loaded', label: 'Cargados', dot: 'bg-[#188038]' },
     { key: 'paused', label: 'Pausados', dot: 'bg-[#9aa0a6]' },
