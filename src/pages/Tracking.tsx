@@ -1482,6 +1482,10 @@ const Tracking = () => {
                               if (delivery === tomorrowET) {
                                 return <span className="shrink-0 rounded-md bg-[#0b57d0] text-white px-2 py-0.5 text-xs font-bold tracking-wide" title="Entrega mañana">TOMORROW</span>;
                               }
+                              // Otra fecha: se muestra la fecha de entrega
+                              if (delivery) {
+                                return <span className="shrink-0 rounded-md bg-[#e8eaed] text-[#3c4043] dark:bg-muted dark:text-foreground px-2 py-0.5 text-xs font-bold tracking-wide" title="Fecha de entrega">{format(parseISO(delivery), 'MMM d').toUpperCase()}</span>;
+                              }
                               return null;
                             })()}
                           </div>
