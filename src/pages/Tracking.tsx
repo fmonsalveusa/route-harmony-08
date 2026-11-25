@@ -1491,9 +1491,9 @@ const Tracking = () => {
                     <div
                       key={driver.id}
                       id={`drv-card-${driver.id}`}
-                      onClick={() => focusDriver(driver.id, 'list')}
+                      onClick={() => { focusDriver(driver.id, 'list'); setSelectedDriverLoad({ driver, load: activeLoad || null, lastDelivered: lastDel ? { address: lastDel.address, date: lastDel.date } : undefined }); }}
                       onDoubleClick={() => toggleExpanded(driver.id)}
-                      title="Clic: ver en el mapa · Doble clic: abrir la tarjeta"
+                      title="Clic: detalle y ubicar en el mapa · Doble clic: abrir la tarjeta"
                       className={`du-driver-card flex items-center gap-2 overflow-hidden rounded-xl border bg-white dark:bg-card pr-2 cursor-pointer hover:bg-[#f8fafd] dark:hover:bg-muted/40 ${
                         focusedDriverId === driver.id ? 'ring-2 ring-[#0b57d0] ring-offset-1 dark:ring-offset-card' : ''
                       } ${isPaused ? 'opacity-60' : ''} border-[#e3e3e3] dark:border-border`}
@@ -1570,9 +1570,8 @@ const Tracking = () => {
                         : onlyPlanned ? 'bg-white border-[#c2d7fb] dark:bg-card dark:border-blue-900/50'
                         : 'bg-white border-[#fad2b4] dark:bg-card dark:border-orange-900/50'
                     } ${isPaused ? 'opacity-60' : ''}`}
-                    onClick={() => focusDriver(driver.id, 'list')}
-                    onDoubleClick={() => { focusDriver(driver.id, 'list'); setSelectedDriverLoad({ driver, load: activeLoad || null, lastDelivered: lastDel ? { address: lastDel.address, date: lastDel.date } : undefined }); }}
-                    title="Clic: ver en el mapa · Doble clic: detalle"
+                    onClick={() => { focusDriver(driver.id, 'list'); setSelectedDriverLoad({ driver, load: activeLoad || null, lastDelivered: lastDel ? { address: lastDel.address, date: lastDel.date } : undefined }); }}
+                    title="Ver detalle y ubicar en el mapa"
                   >
                     {/* Franja izquierda: camión, LOADED / EMPTY / PLANNED en vertical, chevrons y base verde oscuro */}
                     {(() => {
