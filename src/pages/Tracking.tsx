@@ -1080,28 +1080,20 @@ const Tracking = () => {
                 </div>
               </div>
 
-              {/* Stats */}
-              <div className="grid grid-cols-5 gap-2">
-                <div className="bg-muted/40 rounded-lg p-3 text-center">
-                  <p className="text-xs text-muted-foreground">Rate</p>
-                  <p className="text-base font-bold text-[hsl(152,60%,35%)]">{load.total_rate ? `$${Number(load.total_rate).toLocaleString()}` : '—'}</p>
-                </div>
-                <div className="bg-muted/40 rounded-lg p-3 text-center">
-                  <p className="text-xs text-muted-foreground">Weight</p>
-                  <p className="text-base font-bold">{load.weight ? `${Number(load.weight).toLocaleString()} lbs` : '—'}</p>
-                </div>
-                <div className="bg-muted/40 rounded-lg p-3 text-center">
-                  <p className="text-xs text-muted-foreground">Empty Miles</p>
-                  <p className="text-base font-bold">{load.empty_miles ? Number(load.empty_miles).toLocaleString() : '—'}</p>
-                </div>
-                <div className="bg-muted/40 rounded-lg p-3 text-center">
-                  <p className="text-xs text-muted-foreground">Miles</p>
-                  <p className="text-base font-bold">{load.miles ? Number(load.miles).toLocaleString() : '—'}</p>
-                </div>
-                <div className="bg-muted/40 rounded-lg p-3 text-center">
-                  <p className="text-xs text-muted-foreground">RPM</p>
-                  <p className={`text-base font-bold ${rpmColor}`}>{rpm ? `$${rpm}` : '—'}</p>
-                </div>
+              {/* Stats: una sola franja, cada dato en una línea */}
+              <div className="grid grid-cols-5 divide-x divide-[#e3e3e3] dark:divide-border rounded-2xl bg-[#f0f4f9] dark:bg-muted/40 py-2">
+                {[
+                  { label: 'Rate', value: load.total_rate ? `$${Number(load.total_rate).toLocaleString()}` : '—', cls: 'text-[hsl(152,60%,35%)]' },
+                  { label: 'Weight', value: load.weight ? `${Number(load.weight).toLocaleString()} lb` : '—', cls: '' },
+                  { label: 'Empty', value: load.empty_miles ? `${Number(load.empty_miles).toLocaleString()} mi` : '—', cls: '' },
+                  { label: 'Miles', value: load.miles ? Number(load.miles).toLocaleString() : '—', cls: '' },
+                  { label: 'RPM', value: rpm ? `$${rpm}` : '—', cls: rpmColor },
+                ].map(x => (
+                  <div key={x.label} className="min-w-0 px-1 text-center">
+                    <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{x.label}</p>
+                    <p className={`text-[13px] font-bold whitespace-nowrap truncate ${x.cls}`}>{x.value}</p>
+                  </div>
+                ))}
               </div>
 
               {/* Paradas */}
@@ -1120,7 +1112,17 @@ const Tracking = () => {
                         </div>
                         <div className="pb-2 min-w-0">
                           <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{stop.stop_type}</p>
-                          <p className="text-sm font-medium leading-tight">{stop.address}</p>
+                          <p className="text-sm font-medium leading-tight">
+                            {stop.address}
+                            <button
+                              type="button"
+                              onClick={(e) => copyField(driver.id, `stop-${stop.id}`, stop.address, e)}
+                              className="ml-1 inline-flex align-middle p-0.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                              title="Copiar dirección"
+                            >
+                              {copiedField === `${driver.id}:stop-${stop.id}` ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
+                            </button>
+                          </p>
                           {stop.date && (
                             <p className="text-xs text-muted-foreground">{format(parseISO(stop.date), 'MMM dd, yyyy')}</p>
                           )}
