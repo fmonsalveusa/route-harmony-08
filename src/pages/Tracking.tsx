@@ -1524,6 +1524,14 @@ const Tracking = () => {
                           <p className="flex items-center gap-1.5 truncate">
                             <span className="w-[92px] shrink-0 text-[10px] font-semibold uppercase tracking-wide text-[#e37400]">Next Plan</span>
                             <span className="truncate text-[13px] font-semibold text-[#1f1f1f] dark:text-foreground">{city}</span>
+                            <button
+                              type="button"
+                              onClick={(e) => copyField(driver.id, 'nextplan', extractCityState((driver as any).manual_location_address || ''), e)}
+                              className="shrink-0 p-0.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                              title="Copiar Next Plan"
+                            >
+                              {copiedField === `${driver.id}:nextplan` ? <Check className="h-3 w-3 text-green-600" /> : <Copy className="h-3 w-3" />}
+                            </button>
                           </p>
                         </div>
                       ) : (
@@ -1812,6 +1820,14 @@ const Tracking = () => {
                             <span className="text-[15px] font-semibold leading-tight text-[#1f1f1f] dark:text-foreground">
                               {extractCityState((driver as any).manual_location_address)}
                             </span>
+                            <button
+                              type="button"
+                              onClick={(e) => copyField(driver.id, 'nextplan', extractCityState((driver as any).manual_location_address || ''), e)}
+                              className="shrink-0 p-0.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                              title="Copiar Next Plan"
+                            >
+                              {copiedField === `${driver.id}:nextplan` ? <Check className="h-3 w-3 text-green-600" /> : <Copy className="h-3 w-3" />}
+                            </button>
                           </div>
                         </div>
                       )}
