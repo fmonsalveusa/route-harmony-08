@@ -1,4 +1,4 @@
-﻿import { useState, useMemo, useEffect, useRef } from 'react';
+﻿import { Fragment, useState, useMemo, useEffect, useRef } from 'react';
 import { StatusChipSelect, LOAD_STATUS_CHIPS, ALL_CHIP } from '@/components/StatusChipSelect';
 import { SEARCH_PILL } from '@/components/FilterChip';
 import { ServiceTypeBadge } from '@/components/ServiceTypeBadge';
@@ -19,7 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { StatusBadge } from '@/components/StatusBadge';
-import { MapPin, MapPinOff, Package, Navigation, Clock, Search, ChevronRight, AlertTriangle, Eye, User, Users, Pencil, Loader2, Copy, Check, Download, ExternalLink, X, Pause, Play, Plus, Truck } from 'lucide-react';
+import { MapPin, MapPinOff, Package, Navigation, Clock, Search, ChevronRight, AlertTriangle, Eye, User, Users, Pencil, Loader2, Copy, Check, Download, ExternalLink, X, Pause, Play, Plus, Truck, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { LoadAlertChip } from '@/components/LoadAlertChip';
 import { GpsHealthChip } from '@/components/GpsHealthChip';
@@ -234,6 +234,11 @@ const Tracking = () => {
   const todayEastern = new Date().toLocaleDateString('en-US', { timeZone: 'America/New_York', month: 'short', day: '2-digit', year: 'numeric' });
   const [copiedDate, setCopiedDate] = useState(false);
   const copyTodayDate = () => { navigator.clipboard.writeText(todayEastern); setCopiedDate(true); setTimeout(() => setCopiedDate(false), 1500); };
+  // Centro de operaciones: filtro rápido (tiles de arriba), grupos plegables y driver enfocado (lista ↔ mapa)
+  const [quickFilter, setQuickFilter] = useState<'all' | 'loaded' | 'empty' | 'searching' | 'gps'>('all');
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() => new Set(['paused']));
+  const [focusedDriverId, setFocusedDriverId] = useState<string | null>(null);
+  const driverMarkerRefs = useRef<Record<string, any>>({});
   const [selectedDriverLoad, setSelectedDriverLoad] = useState<{ driver: typeof drivers[0]; load: LoadWithStops | null; lastDelivered?: { address: string; date: string } } | null>(null);
   const navigate = useNavigate();
 
@@ -1158,12 +1163,13 @@ const Tracking = () => {
 
   // Resumen de arriba: sale de los mismos drivers que muestra Next Plan
   const activeDrivers = availableDrivers.filter(d => !(d as any).is_paused);
-  const summaryTiles = [
-    { label: 'Drivers', value: availableDrivers.length, icon: Users, tint: 'bg-[#d3e3fd] text-[#041e49] dark:bg-blue-900/40 dark:text-blue-200' },
-    { label: 'Loaded', value: activeDrivers.filter(d => activeLoadByDriver[d.id]).length, icon: Package, tint: 'bg-[#c4eed0] text-[#072711] dark:bg-emerald-900/40 dark:text-emerald-200' },
-    { label: 'Empty', value: activeDrivers.filter(d => !activeLoadByDriver[d.id]).length, icon: User, tint: 'bg-[#ffdcc1] text-[#2f1500] dark:bg-orange-900/40 dark:text-orange-200' },
-    { label: 'Buscando', value: activeDrivers.filter(d => searchStatus[d.id] === 'searching').length, icon: Search, tint: 'bg-[#feefc3] text-[#3d2a00] dark:bg-amber-900/40 dark:text-amber-200' },
+  const summaryTiles: { key: typeof quickFilter; label: string; value: number; icon: any; tint: string }[] = [
+    { key: 'all', label: 'Drivers', value: availableDrivers.length, icon: Users, tint: 'bg-[#d3e3fd] text-[#041e49] dark:bg-blue-900/40 dark:text-blue-200' },
+    { key: 'loaded', label: 'Loaded', value: activeDrivers.filter(d => activeLoadByDriver[d.id]).length, icon: Package, tint: 'bg-[#c4eed0] text-[#072711] dark:bg-emerald-900/40 dark:text-emerald-200' },
+    { key: 'empty', label: 'Empty', value: activeDrivers.filter(d => !activeLoadByDriver[d.id]).length, icon: User, tint: 'bg-[#ffdcc1] text-[#2f1500] dark:bg-orange-900/40 dark:text-orange-200' },
+    { key: 'searching', label: 'Buscando', value: activeDrivers.filter(d => searchStatus[d.id] === 'searching').length, icon: Search, tint: 'bg-[#feefc3] text-[#3d2a00] dark:bg-amber-900/40 dark:text-amber-200' },
     {
+      key: 'gps',
       label: 'GPS en vivo',
       value: availableDrivers.filter(d => {
         const l = locByDriver[d.id];
@@ -1173,6 +1179,98 @@ const Tracking = () => {
       tint: 'bg-[#c2e7ff] text-[#001d35] dark:bg-sky-900/40 dark:text-sky-200',
     },
   ];
+
+  // ── Filtro rápido + búsqueda de drivers ──
+  const term = search.trim().toLowerCase();
+  const isLive = (id: string) => {
+    const l = locByDriver[id];
+    return !!l && nowTick - new Date(l.updated_at).getTime() <= LIVE_LOCATION_MS;
+  };
+  const passesQuick = (d: any) => {
+    const paused = !!d.is_paused, loaded = !!activeLoadByDriver[d.id];
+    switch (quickFilter) {
+      case 'loaded': return !paused && loaded;
+      case 'empty': return !paused && !loaded;
+      case 'searching': return !paused && searchStatus[d.id] === 'searching';
+      case 'gps': return isLive(d.id);
+      default: return true;
+    }
+  };
+  const driverMatches = (d: any) => {
+    if (!term) return true;
+    const q = loadQueueByDriver[d.id];
+    const loads = [q?.current, ...(q?.next ?? [])].filter(Boolean) as any[];
+    const truck = trucks.find(t => t.id === d.truck_id);
+    const hay = [d.name, d.phone, truck?.unit_number, lastDeliveryStops[d.id]?.address, d.manual_location_address,
+      ...loads.flatMap(l => [l.reference_number, l.origin, l.destination, l.broker_client])]
+      .filter(Boolean).join(' ').toLowerCase();
+    return hay.includes(term);
+  };
+
+  // ── Grupos por prioridad ──
+  /** Motivos por los que un driver cargado necesita atención (vacío = está bien) */
+  const attentionReasons = (d: any): string[] => {
+    if (d.is_paused) return [];
+    const load = loadQueueByDriver[d.id]?.current;
+    if (!load) return [];
+    const out: string[] = [];
+    const alerts = activeLoads.filter(l => l.driver_id === d.id).flatMap(l => getLoadAlerts(l, {
+      stopsWithCoords: stopsLoadedFor.has(l.id) ? allStops.filter(s => s.load_id === l.id && s.lat != null && s.lng != null).length : undefined,
+      stops: allStops.filter(s => s.load_id === l.id) as any,
+    }));
+    if (alerts.length) out.push(`§${alerts[0].label}`); // § = ya se ve como chip de alerta en la tarjeta
+    const eta = autoEtaByDriver[d.id];
+    if (eta?.eta?.late && eta.stopId === etaStopByDriver[d.id]?.id) out.push('ETA tarde');
+    const gps = getGpsHealth(d, locByDriver[d.id] as any, nowTick);
+    if (gps.level === 'error' || gps.level === 'warn') out.push(gps.label);
+    const hos = hosClocks[d.id];
+    if (hos?.driving_min != null && hos.driving_min < 120) out.push('HOS bajo');
+    return out;
+  };
+  const groupOf = (d: any): 'attention' | 'empty' | 'loaded' | 'paused' =>
+    d.is_paused ? 'paused' : attentionReasons(d).length ? 'attention' : activeLoadByDriver[d.id] ? 'loaded' : 'empty';
+  const GROUPS = [
+    { key: 'attention', label: 'Necesitan atención', dot: 'bg-[#d93025]' },
+    { key: 'empty', label: 'Vacíos / Buscando', dot: 'bg-[#e37400]' },
+    { key: 'loaded', label: 'Cargados', dot: 'bg-[#188038]' },
+    { key: 'paused', label: 'Pausados', dot: 'bg-[#9aa0a6]' },
+  ] as const;
+  const visibleDrivers = sortedDrivers.filter(d => passesQuick(d) && driverMatches(d));
+  const driverGroups = GROUPS
+    .map(g => ({ ...g, drivers: visibleDrivers.filter(d => groupOf(d) === g.key) }))
+    .filter(g => g.drivers.length > 0);
+  const toggleGroup = (key: string) => setCollapsedGroups(prev => {
+    const n = new Set(prev);
+    if (n.has(key)) n.delete(key); else n.add(key);
+    return n;
+  });
+
+  // ── Lista ↔ mapa ──
+  const focusDriver = (driverId: string, from: 'list' | 'map') => {
+    setFocusedDriverId(driverId);
+    const load = loadQueueByDriver[driverId]?.current;
+    if (load) setSelectedLoadId(load.id);
+    if (from === 'list') {
+      const loc = locByDriver[driverId];
+      const d = drivers.find(x => x.id === driverId) as any;
+      if (loc && nowTick - new Date(loc.updated_at).getTime() <= MAX_LOCATION_AGE_MS) {
+        setMapCenter([loc.lat, loc.lng]);
+        setMapZoom(9);
+        setTimeout(() => driverMarkerRefs.current[driverId]?.openPopup?.(), 1100);
+      } else if (load) {
+        handleSelectLoad(load as any);
+      } else if (d?.manual_location_lat && d?.manual_location_lng) {
+        setMapCenter([d.manual_location_lat, d.manual_location_lng]);
+        setMapZoom(9);
+      }
+    } else {
+      // Desde el mapa: que su tarjeta se vea (quita el filtro rápido y abre su grupo) y bajar hasta ella
+      const d = drivers.find(x => x.id === driverId);
+      if (d && !passesQuick(d)) setQuickFilter('all');
+      if (d) setCollapsedGroups(prev => { const n = new Set(prev); n.delete(groupOf(d)); return n; });
+      setTimeout(() => document.getElementById(`drv-card-${driverId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 120);
+    }
+  };
 
   return (
     <div className="space-y-3">
@@ -1190,7 +1288,15 @@ const Tracking = () => {
       {/* Resumen */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
         {summaryTiles.map(t => (
-          <div key={t.label} className="stat-tile-3d flex items-center gap-3 rounded-2xl border border-[#e3e3e3] dark:border-border bg-white dark:bg-card px-4 py-2.5">
+          <button
+            type="button"
+            key={t.label}
+            onClick={() => setQuickFilter(prev => (prev === t.key || t.key === 'all' ? 'all' : t.key))}
+            title={t.key === 'all' ? 'Ver todos' : quickFilter === t.key ? 'Quitar filtro' : `Ver solo: ${t.label}`}
+            className={`stat-tile-3d flex items-center gap-3 rounded-2xl border bg-white dark:bg-card px-4 py-2.5 text-left transition-colors hover:bg-[#f8fafd] dark:hover:bg-muted/40 ${
+              quickFilter === t.key && t.key !== 'all' ? 'border-[#0b57d0] ring-2 ring-[#0b57d0]/30' : 'border-[#e3e3e3] dark:border-border'
+            }`}
+          >
             <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${t.tint}`}>
               <t.icon className="h-[18px] w-[18px]" />
             </div>
@@ -1198,7 +1304,7 @@ const Tracking = () => {
               <p className="text-[22px] leading-7 font-normal text-[#1f1f1f] dark:text-foreground">{t.value}</p>
               <p className="text-xs font-medium text-[#444746] dark:text-muted-foreground truncate">{t.label}</p>
             </div>
-          </div>
+          </button>
         ))}
       </div>
 
@@ -1207,7 +1313,7 @@ const Tracking = () => {
         <div className="relative flex-1 min-w-[200px] max-w-sm">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#444746] dark:text-muted-foreground" />
           <input
-            placeholder="Buscar cargas..."
+            placeholder="Buscar driver, camión, ciudad o # de carga..."
             value={search}
             onChange={e => setSearch(e.target.value)}
             className={`w-full pl-10 pr-4 ${SEARCH_PILL}`}
@@ -1286,13 +1392,29 @@ const Tracking = () => {
             )}
           </CardHeader>
           <CardContent className="flex-1 overflow-y-auto px-3 pb-3 space-y-1.5">
-            {availableDrivers.length === 0 ? (
+            {driverGroups.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
                 <User className="h-8 w-8 mb-2 opacity-40" />
-                <p className="text-sm">No drivers</p>
+                <p className="text-sm">{availableDrivers.length === 0 ? 'No drivers' : 'Ningún driver con ese filtro'}</p>
+                {quickFilter !== 'all' && (
+                  <button type="button" onClick={() => setQuickFilter('all')} className="mt-2 text-xs font-medium text-[#0b57d0] hover:underline">Quitar filtro</button>
+                )}
               </div>
             ) : (
-              sortedDrivers.map(driver => {
+              driverGroups.map(g => (
+                <Fragment key={g.key}>
+                  {/* Encabezado del grupo: plegable */}
+                  <button
+                    type="button"
+                    onClick={() => toggleGroup(g.key)}
+                    className="sticky top-0 z-10 -mx-1 flex w-[calc(100%+0.5rem)] items-center gap-2 rounded-full bg-white/95 dark:bg-card/95 backdrop-blur px-2 py-1.5 text-[12px] font-medium text-[#444746] dark:text-muted-foreground hover:bg-[#f0f4f9] dark:hover:bg-muted"
+                  >
+                    <span className={`h-2.5 w-2.5 rounded-full ${g.dot}`} />
+                    {g.label}
+                    <span className="rounded-full bg-[#f0f4f9] dark:bg-muted px-2 text-[11px]">{g.drivers.length}</span>
+                    <ChevronDown className={`ml-auto h-4 w-4 transition-transform ${collapsedGroups.has(g.key) && !term ? '-rotate-90' : ''}`} />
+                  </button>
+                  {(!collapsedGroups.has(g.key) || !!term) && g.drivers.map(driver => {
                 const lastDel = lastDeliveryStops[driver.id];
                 const queue = loadQueueByDriver[driver.id];
                 const activeLoad = queue?.current ?? undefined;
@@ -1318,13 +1440,16 @@ const Tracking = () => {
                 return (
                   <div
                     key={driver.id}
-                    className={`du-driver-card flex overflow-hidden rounded-2xl border transition-shadow cursor-pointer shadow-[0_1px_2px_rgba(60,64,67,.3),0_2px_6px_2px_rgba(60,64,67,.15)] hover:shadow-[0_2px_4px_rgba(60,64,67,.3),0_6px_12px_4px_rgba(60,64,67,.18)] dark:shadow-[0_2px_8px_rgba(0,0,0,.5)] ${
+                    id={`drv-card-${driver.id}`}
+                    className={`du-driver-card flex overflow-hidden ${focusedDriverId === driver.id ? 'ring-2 ring-[#0b57d0] ring-offset-2 dark:ring-offset-card' : ''} rounded-2xl border transition-shadow cursor-pointer shadow-[0_1px_2px_rgba(60,64,67,.3),0_2px_6px_2px_rgba(60,64,67,.15)] hover:shadow-[0_2px_4px_rgba(60,64,67,.3),0_6px_12px_4px_rgba(60,64,67,.18)] dark:shadow-[0_2px_8px_rgba(0,0,0,.5)] ${
                       // Fondo según la carga: verde si está cargado, naranja si está vacío
                       activeLoad ? 'bg-white border-[#ceead6] dark:bg-card dark:border-emerald-900/50'
                         : onlyPlanned ? 'bg-white border-[#c2d7fb] dark:bg-card dark:border-blue-900/50'
                         : 'bg-white border-[#fad2b4] dark:bg-card dark:border-orange-900/50'
                     } ${isPaused ? 'opacity-60' : ''}`}
-                    onClick={() => setSelectedDriverLoad({ driver, load: activeLoad || null, lastDelivered: lastDel ? { address: lastDel.address, date: lastDel.date } : undefined })}
+                    onClick={() => focusDriver(driver.id, 'list')}
+                    onDoubleClick={() => setSelectedDriverLoad({ driver, load: activeLoad || null, lastDelivered: lastDel ? { address: lastDel.address, date: lastDel.date } : undefined })}
+                    title="Clic: ver en el mapa · Doble clic: detalle"
                   >
                     {/* Franja izquierda: camión, LOADED / EMPTY / PLANNED en vertical, chevrons y base verde oscuro */}
                     {(() => {
@@ -1392,7 +1517,22 @@ const Tracking = () => {
                         serviceType={(driver as any).service_type}
                         className="ml-auto shrink-0 !text-xs !px-2 !py-0.5 rounded-md"
                       />
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setSelectedDriverLoad({ driver, load: activeLoad || null, lastDelivered: lastDel ? { address: lastDel.address, date: lastDel.date } : undefined }); }}
+                        className="shrink-0 h-7 w-7 flex items-center justify-center rounded-full text-[#444746] hover:bg-[#f0f4f9] dark:hover:bg-muted"
+                        title="Ver detalle"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </button>
                     </div>
+                    {/* Por qué está en "Necesitan atención" */}
+                    {(() => {
+                      const why = attentionReasons(driver).filter(w => !w.startsWith('§'));
+                      return why.length ? (
+                        <p className="px-3 pt-0.5 text-[11px] font-medium text-[#c5221f] dark:text-red-300">⚠ {why.join(' · ')}</p>
+                      ) : null;
+                    })()}
 
                     {/* Línea 2: unidad y VIN */}
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 px-3 pt-0.5 text-[13px] text-[#444746] dark:text-muted-foreground">
@@ -1669,7 +1809,9 @@ const Tracking = () => {
                     </div>
                   </div>
                 );
-              })
+              })}
+                </Fragment>
+              ))
             )}
           </CardContent>
         </Card>
@@ -1830,6 +1972,8 @@ const Tracking = () => {
                     key={`loc-${loc.driver_id}-${live ? 'live' : 'stale'}`}
                     position={[loc.lat, loc.lng]}
                     icon={createTruckIcon(loc.heading, live)}
+                    ref={(m: any) => { if (m) driverMarkerRefs.current[loc.driver_id] = m; }}
+                    eventHandlers={{ click: () => focusDriver(loc.driver_id, 'map') }}
                   >
                     <LeafletTooltip direction="top" offset={[0, -18]} permanent className="driver-name-tooltip">
                       <span style={{ fontSize: '11px', fontWeight: 600, color: live ? undefined : '#6b7280' }}>
@@ -1882,6 +2026,7 @@ const Tracking = () => {
                   key={`manual-${driver.id}`}
                   position={[(driver as any).manual_location_lat, (driver as any).manual_location_lng]}
                   icon={manualLocationIcon}
+                  eventHandlers={{ click: () => focusDriver(driver.id, 'map') }}
                 >
                   <LeafletTooltip direction="top" offset={[0, -16]} permanent className="driver-name-tooltip">
                     <span style={{ fontSize: '11px', fontWeight: 600 }}>{driver.name}</span>
