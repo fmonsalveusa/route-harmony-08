@@ -1493,7 +1493,11 @@ const Tracking = () => {
                     <div
                       key={driver.id}
                       id={`drv-card-${driver.id}`}
-                      onClick={() => { toggleExpanded(driver.id); focusDriver(driver.id, 'list'); }}
+                      onClick={() => {
+                        toggleExpanded(driver.id);
+                        focusDriver(driver.id, 'list');
+                        setSelectedDriverLoad({ driver, load: activeLoad || null, lastDelivered: lastDel ? { address: lastDel.address, date: lastDel.date } : undefined });
+                      }}
                       title="Abrir la tarjeta del driver"
                       className={`du-driver-card flex items-center gap-2 overflow-hidden rounded-xl border bg-white dark:bg-card pr-2 cursor-pointer hover:bg-[#f8fafd] dark:hover:bg-muted/40 ${
                         focusedDriverId === driver.id ? 'ring-2 ring-[#0b57d0] ring-offset-1 dark:ring-offset-card' : ''
