@@ -19,7 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { StatusBadge } from '@/components/StatusBadge';
-import { MapPin, MapPinOff, Package, Navigation, Clock, Search, ChevronRight, AlertTriangle, Eye, User, Users, Pencil, Loader2, Copy, Check, Download, ExternalLink, X, Pause, Play, Plus, Truck, ChevronDown } from 'lucide-react';
+import { MapPin, MapPinOff, Package, Navigation, Clock, Search, ChevronRight, AlertTriangle, Eye, User, Users, Pencil, Loader2, Copy, Check, Download, ExternalLink, X, Pause, Play, Plus, Truck, ChevronDown, Rows3, LayoutList, Maximize2, Minimize2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { LoadAlertChip } from '@/components/LoadAlertChip';
 import { GpsHealthChip } from '@/components/GpsHealthChip';
@@ -239,6 +239,18 @@ const Tracking = () => {
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() => new Set(['paused']));
   const [focusedDriverId, setFocusedDriverId] = useState<string | null>(null);
   const driverMarkerRefs = useRef<Record<string, any>>({});
+  const [compactView, setCompactView] = useState<boolean>(() => {
+    try { return localStorage.getItem('tracking:compact') === '1'; } catch { return false; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem('tracking:compact', compactView ? '1' : '0'); } catch { /* sin storage */ }
+  }, [compactView]);
+  const [expandedCards, setExpandedCards] = useState<Set<string>>(() => new Set());
+  const toggleExpanded = (id: string) => setExpandedCards(prev => {
+    const n = new Set(prev);
+    if (n.has(id)) n.delete(id); else n.add(id);
+    return n;
+  });
   const [selectedDriverLoad, setSelectedDriverLoad] = useState<{ driver: typeof drivers[0]; load: LoadWithStops | null; lastDelivered?: { address: string; date: string } } | null>(null);
   const navigate = useNavigate();
 
@@ -1028,17 +1040,27 @@ const Tracking = () => {
       : '';
 
     return (
-      <Dialog open={!!selectedDriverLoad} onOpenChange={() => setSelectedDriverLoad(null)}>
-        <DialogContent className="max-w-lg rounded-[28px] border-0">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <User className="h-4 w-4" />
-              {driver.name}
-              <span className={`ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold text-white ${load ? 'bg-[hsl(152,60%,40%)]' : 'bg-[hsl(25,95%,53%)]'}`}>
+      <aside
+        className="absolute top-3 right-3 bottom-3 z-[1100] w-[380px] max-w-[calc(100%-1.5rem)] overflow-y-auto rounded-3xl border border-[#e3e3e3] dark:border-border bg-white dark:bg-card p-5 shadow-[0_4px_8px_3px_rgba(60,64,67,.15),0_1px_3px_rgba(60,64,67,.3)] animate-in slide-in-from-right-4 fade-in duration-200"
+        onClick={(e) => e.stopPropagation()}
+      >
+          <div className="mb-4 flex items-center gap-2">
+            <h3 className="flex min-w-0 items-center gap-2 text-lg font-semibold">
+              <User className="h-4 w-4 shrink-0" />
+              <span className="truncate">{driver.name}</span>
+              <span className={`inline-flex shrink-0 items-center px-2 py-0.5 rounded-full text-[10px] font-bold text-white ${load ? 'bg-[hsl(152,60%,40%)]' : 'bg-[hsl(25,95%,53%)]'}`}>
                 {load ? 'LOADED' : 'EMPTY'}
               </span>
-            </DialogTitle>
-          </DialogHeader>
+            </h3>
+            <button
+              type="button"
+              onClick={() => setSelectedDriverLoad(null)}
+              className="ml-auto h-8 w-8 shrink-0 flex items-center justify-center rounded-full text-[#444746] hover:bg-[#f0f4f9] dark:hover:bg-muted"
+              title="Cerrar (Esc)"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
 
           {load ? (
             <div className="space-y-4">
@@ -1156,8 +1178,7 @@ const Tracking = () => {
               )}
             </div>
           )}
-        </DialogContent>
-      </Dialog>
+      </aside>
     );
   };
 
@@ -1244,6 +1265,14 @@ const Tracking = () => {
     if (n.has(key)) n.delete(key); else n.add(key);
     return n;
   });
+
+  // Esc cierra el panel de detalle
+  useEffect(() => {
+    if (!selectedDriverLoad) return;
+    const onKey = (ev: KeyboardEvent) => { if (ev.key === 'Escape') setSelectedDriverLoad(null); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [selectedDriverLoad]);
 
   // ── Lista ↔ mapa ──
   const focusDriver = (driverId: string, from: 'list' | 'map') => {
@@ -1348,6 +1377,16 @@ const Tracking = () => {
                   variant="outline"
                   size="sm"
                   className="h-8 rounded-full px-3 text-xs gap-1 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium"
+                  onClick={() => { setCompactView(v => !v); setExpandedCards(new Set()); }}
+                  title={compactView ? 'Ver tarjetas completas' : 'Ver una fila por driver'}
+                >
+                  {compactView ? <LayoutList className="h-3 w-3" /> : <Rows3 className="h-3 w-3" />}
+                  {compactView ? 'Completa' : 'Compacta'}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 rounded-full px-3 text-xs gap-1 shadow-none border-[#747775] dark:border-border text-[#0b57d0] dark:text-blue-300 hover:bg-[#e8f0fe] hover:text-[#0b57d0] font-medium"
                   onClick={handleExportNextPlan}
                 >
                   <Download className="h-3 w-3" />
@@ -1437,6 +1476,90 @@ const Tracking = () => {
                 const loc = locByDriver[driver.id];
                 const locAge = loc ? nowTick - new Date(loc.updated_at).getTime() : null;
                 const locLive = locAge != null && locAge <= LIVE_LOCATION_MS;
+                // Vista compacta: una fila por driver (se abre completa con la flecha)
+                if (compactView && !expandedCards.has(driver.id)) {
+                  const bandColor = activeLoad ? '#188038' : onlyPlanned ? '#0b57d0' : '#e37400';
+                  const delivery = (activeLoad?.delivery_date || '').slice(0, 10);
+                  const dayChip = !activeLoad ? null
+                    : delivery === todayET ? { t: 'TODAY', c: 'bg-[#d93025]' }
+                    : delivery === tomorrowET ? { t: 'TMRW', c: 'bg-[#0b57d0]' }
+                    : delivery ? { t: format(parseISO(delivery), 'MMM d').toUpperCase(), c: 'bg-[#188038]' } : null;
+                  const city = activeLoad ? extractCityState(etaAddress || displayInfo?.address || '') : extractCityState(displayInfo?.address || (driver as any).manual_location_address || '');
+                  const why = attentionReasons(driver).map(w => w.replace(/^§/, ''));
+                  const showEta = activeLoad && autoEta && autoEta.stopId === etaStop?.id && autoEta.eta;
+                  return (
+                    <div
+                      key={driver.id}
+                      id={`drv-card-${driver.id}`}
+                      onClick={() => focusDriver(driver.id, 'list')}
+                      onDoubleClick={() => toggleExpanded(driver.id)}
+                      title="Clic: ver en el mapa · Doble clic: abrir la tarjeta"
+                      className={`du-driver-card flex items-center gap-2 overflow-hidden rounded-xl border bg-white dark:bg-card pr-2 cursor-pointer hover:bg-[#f8fafd] dark:hover:bg-muted/40 ${
+                        focusedDriverId === driver.id ? 'ring-2 ring-[#0b57d0] ring-offset-1 dark:ring-offset-card' : ''
+                      } ${isPaused ? 'opacity-60' : ''} border-[#e3e3e3] dark:border-border`}
+                    >
+                      <div className="w-1.5 self-stretch shrink-0" style={{ background: bandColor }} />
+                      <div className="min-w-0 w-[150px] shrink-0 py-1.5">
+                        <p className="text-[13px] font-semibold text-[#1f1f1f] dark:text-foreground truncate">{driver.name}</p>
+                        <p className="text-[11px] text-[#444746] dark:text-muted-foreground truncate">
+                          {truck?.unit_number ? `#${truck.unit_number}` : ''}{why.length ? <span className="text-[#c5221f] font-medium"> · ⚠ {why[0]}</span> : ''}
+                        </p>
+                      </div>
+                      <div className="min-w-0 flex-1 py-1.5">
+                        <p className="flex items-center gap-1.5 text-[13px] text-[#1f1f1f] dark:text-foreground">
+                          <MapPin className={`h-3.5 w-3.5 shrink-0 ${activeLoad ? 'text-primary' : 'text-destructive'}`} />
+                          <span className="truncate">{city || '—'}</span>
+                          {dayChip && <span className={`shrink-0 rounded px-1.5 text-[10px] font-bold text-white ${dayChip.c}`}>{dayChip.t}</span>}
+                        </p>
+                        <p className="text-[11px] text-[#444746] dark:text-muted-foreground truncate">
+                          {showEta
+                            ? <span className={autoEta!.eta!.late ? 'text-[#c5221f] font-medium' : 'text-[#137333] font-medium'}>ETA ~{autoEta!.eta!.label}{autoEta!.eta!.late ? ' · tarde' : ''}</span>
+                            : activeLoad ? (etaStop?.stop_type === 'pickup' ? 'Camino al pickup' : 'En ruta') : 'Vacío'}
+                          {loc && locAge != null && locAge <= MAX_LOCATION_AGE_MS && <span> · {(loc as any).source === 'eld' ? 'ELD' : 'GPS'} {formatAge(locAge)}</span>}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                        {activeLoad && (
+                          <BrokerUpdateButton
+                            load={activeLoad as any}
+                            stop={etaStop ? { address: etaStop.address, stop_type: etaStop.stop_type } : null}
+                            miles={autoEta && autoEta.stopId === etaStop?.id ? autoEta.miles : null}
+                            etaLabel={autoEta && autoEta.stopId === etaStop?.id ? autoEta.eta?.label ?? null : null}
+                            loc={loc ? { lat: loc.lat, lng: loc.lng } : null}
+                            lastSentAt={(activeLoad as any).broker_update_at ?? null}
+                          />
+                        )}
+                        {displayInfo?.isActive && etaAddress && (
+                          <AskEtaButton
+                            driverName={driver.name}
+                            stopCity={extractCityState(etaAddress)}
+                            groupId={(driver as any).whatsapp_group_id}
+                            groupName={(driver as any).whatsapp_group_name}
+                          />
+                        )}
+                        {!isPaused && (
+                          <button
+                            onClick={(e) => cycleSearchStatus(driver.id, e)}
+                            className={`h-7 px-2.5 rounded-full text-[11px] font-medium whitespace-nowrap ${
+                              sStatus === 'ready' ? 'bg-[#c4eed0] text-[#072711]' : sStatus === 'searching' ? 'bg-[#feefc3] text-[#3d2a00]' : 'bg-[#f0f4f9] text-[#444746] dark:bg-muted dark:text-muted-foreground'
+                            }`}
+                            title={sStatus === 'ready' ? 'Listo — click para quitar' : sStatus === 'searching' ? 'Buscando — click para marcar Listo' : 'Standby — click para marcar Buscando'}
+                          >
+                            {sStatus === 'ready' ? 'Listo' : sStatus === 'searching' ? 'Buscando' : 'Standby'}
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => toggleExpanded(driver.id)}
+                          className="h-7 w-7 flex items-center justify-center rounded-full text-[#444746] hover:bg-[#f0f4f9] dark:hover:bg-muted"
+                          title="Abrir la tarjeta completa"
+                        >
+                          <Maximize2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                }
                 return (
                   <div
                     key={driver.id}
@@ -1448,7 +1571,7 @@ const Tracking = () => {
                         : 'bg-white border-[#fad2b4] dark:bg-card dark:border-orange-900/50'
                     } ${isPaused ? 'opacity-60' : ''}`}
                     onClick={() => focusDriver(driver.id, 'list')}
-                    onDoubleClick={() => setSelectedDriverLoad({ driver, load: activeLoad || null, lastDelivered: lastDel ? { address: lastDel.address, date: lastDel.date } : undefined })}
+                    onDoubleClick={() => { focusDriver(driver.id, 'list'); setSelectedDriverLoad({ driver, load: activeLoad || null, lastDelivered: lastDel ? { address: lastDel.address, date: lastDel.date } : undefined }); }}
                     title="Clic: ver en el mapa · Doble clic: detalle"
                   >
                     {/* Franja izquierda: camión, LOADED / EMPTY / PLANNED en vertical, chevrons y base verde oscuro */}
@@ -1519,12 +1642,22 @@ const Tracking = () => {
                       />
                       <button
                         type="button"
-                        onClick={(e) => { e.stopPropagation(); setSelectedDriverLoad({ driver, load: activeLoad || null, lastDelivered: lastDel ? { address: lastDel.address, date: lastDel.date } : undefined }); }}
+                        onClick={(e) => { e.stopPropagation(); focusDriver(driver.id, 'list'); setSelectedDriverLoad({ driver, load: activeLoad || null, lastDelivered: lastDel ? { address: lastDel.address, date: lastDel.date } : undefined }); }}
                         className="shrink-0 h-7 w-7 flex items-center justify-center rounded-full text-[#444746] hover:bg-[#f0f4f9] dark:hover:bg-muted"
                         title="Ver detalle"
                       >
                         <Eye className="h-4 w-4" />
                       </button>
+                      {compactView && (
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); toggleExpanded(driver.id); }}
+                          className="shrink-0 h-7 w-7 flex items-center justify-center rounded-full text-[#444746] hover:bg-[#f0f4f9] dark:hover:bg-muted"
+                          title="Volver a una fila"
+                        >
+                          <Minimize2 className="h-4 w-4" />
+                        </button>
+                      )}
                     </div>
                     {/* Por qué está en "Necesitan atención" */}
                     {(() => {
@@ -1820,6 +1953,8 @@ const Tracking = () => {
         <Card className="card-3d-strong lg:col-span-3 lg:col-start-3 overflow-hidden self-start rounded-3xl border-[#e3e3e3] dark:border-border shadow-none">
           {/* isolate: la leyenda y las capas del mapa (z-index altos) quedan dentro del mapa y no por encima de las ventanas */}
           <div className="relative isolate h-[600px]">
+            {/* Detalle del driver/carga: panel a la derecha del mapa, se cierra con la X o Esc */}
+            {LoadDetailModal()}
             {/* Leyenda del mapa */}
             <div className="absolute bottom-3 left-3 z-[1000] flex flex-wrap items-center gap-x-3 gap-y-1 rounded-full bg-white/95 px-4 py-1.5 text-[11px] font-medium text-[#444746] shadow-[0_1px_2px_rgba(60,64,67,.3),0_1px_3px_1px_rgba(60,64,67,.15)]">
               <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-[#266aad]" /> GPS en vivo</span>
@@ -2160,7 +2295,6 @@ const Tracking = () => {
       </Dialog>
 
       {/* Se llama como función: como <LoadDetailModal /> se re-montaba en cada refresco de la página y parpadeaba */}
-      {LoadDetailModal()}
     </div>
   );
 };
