@@ -1451,7 +1451,7 @@ const Tracking = () => {
                     {/* Próxima parada o última entrega + relojes HOS a la derecha */}
                     <div className="flex items-center gap-3 px-3 pt-1.5">
                     {/* Líneas de separación: arriba y abajo de la próxima parada, vertical antes de GPS/HOS */}
-                    <div className="min-w-0 flex-1 text-xs text-muted-foreground border-y border-[#dadce0] dark:border-border py-2">
+                    <div className="min-w-0 flex-1 text-xs text-muted-foreground">
                       {displayInfo ? (
                         <>
                           <p className="text-[10px] font-medium uppercase tracking-wide">
