@@ -1486,7 +1486,12 @@ const Tracking = () => {
                     : delivery === todayET ? { t: 'TODAY', c: 'bg-[#d93025]' }
                     : delivery === tomorrowET ? { t: 'TMRW', c: 'bg-[#0b57d0]' }
                     : delivery ? { t: format(parseISO(delivery), 'MMM d').toUpperCase(), c: 'bg-[#188038]' } : null;
-                  const city = activeLoad ? extractCityState(etaAddress || displayInfo?.address || '') : extractCityState(displayInfo?.address || (driver as any).manual_location_address || '');
+                  // Vacío con ubicación manual: esa manda (Next Plan) y la última entrega pasa a "Last"
+                  const manualAddr: string = (driver as any).manual_location_address || '';
+                  const useManual = !activeLoad && !!manualAddr;
+                  const city = activeLoad ? extractCityState(etaAddress || displayInfo?.address || '')
+                    : useManual ? extractCityState(manualAddr) : extractCityState(displayInfo?.address || '');
+                  const lastCity = useManual && displayInfo?.address ? extractCityState(displayInfo.address) : '';
                   const why = attentionReasons(driver).map(w => w.replace(/^§/, ''));
                   const showEta = activeLoad && autoEta && autoEta.stopId === etaStop?.id && autoEta.eta;
                   return (
@@ -1512,14 +1517,15 @@ const Tracking = () => {
                       </div>
                       <div className="min-w-0 flex-1 py-1.5">
                         <p className="flex items-center gap-1.5 text-[13px] text-[#1f1f1f] dark:text-foreground">
-                          <MapPin className={`h-3.5 w-3.5 shrink-0 ${activeLoad ? 'text-primary' : 'text-destructive'}`} />
+                          <MapPin className={`h-3.5 w-3.5 shrink-0 ${activeLoad ? 'text-primary' : useManual ? 'text-[#e37400]' : 'text-destructive'}`} />
                           <span className="truncate">{city || '—'}</span>
+                          {useManual && <span className="shrink-0 rounded bg-[#fef7e0] px-1.5 text-[10px] font-bold text-[#7a4f01]" title="Ubicación asignada manualmente">MANUAL</span>}
                           {dayChip && <span className={`shrink-0 rounded px-1.5 text-[10px] font-bold text-white ${dayChip.c}`}>{dayChip.t}</span>}
                         </p>
                         <p className="text-[11px] text-[#444746] dark:text-muted-foreground truncate">
                           {showEta
                             ? <span className={autoEta!.eta!.late ? 'text-[#c5221f] font-medium' : 'text-[#137333] font-medium'}>ETA ~{autoEta!.eta!.label}{autoEta!.eta!.late ? ' · tarde' : ''}</span>
-                            : activeLoad ? (etaStop?.stop_type === 'pickup' ? 'Camino al pickup' : 'En ruta') : 'Vacío'}
+                            : activeLoad ? (etaStop?.stop_type === 'pickup' ? 'Camino al pickup' : 'En ruta') : lastCity ? `Vacío · Last: ${lastCity}` : 'Vacío'}
                           {loc && locAge != null && locAge <= MAX_LOCATION_AGE_MS && <span> · {(loc as any).source === 'eld' ? 'ELD' : 'GPS'} {formatAge(locAge)}</span>}
                         </p>
                       </div>
@@ -1711,7 +1717,7 @@ const Tracking = () => {
                     {(driver as any).manual_location_address && (
                       <div className="mx-3 mt-1.5 rounded-xl bg-[#fef7e0] dark:bg-amber-950/30 px-2.5 py-1">
                         <p className="text-[10px] font-medium text-amber-800 flex items-center gap-1">
-                          <MapPin className="h-3 w-3" /> Manual Location
+                          <MapPin className="h-3 w-3" /> {activeLoad ? 'Manual Location' : 'Next Plan · Manual Location'}
                         </p>
                         <p className="text-sm font-semibold leading-tight">{(driver as any).manual_location_address}</p>
                       </div>
@@ -1724,7 +1730,7 @@ const Tracking = () => {
                       {displayInfo ? (
                         <>
                           <p className="text-[10px] font-medium uppercase tracking-wide">
-                            {displayInfo.isActive ? 'Next Stop' : 'Last Delivery'}
+                            {displayInfo.isActive ? 'Next Stop' : (driver as any).manual_location_address ? 'Last Location' : 'Last Delivery'}
                           </p>
                           <div className="flex items-center gap-1 mt-0.5">
                             <MapPin className={`h-3.5 w-3.5 shrink-0 ${displayInfo.isActive ? 'text-primary' : 'text-destructive'}`} />
