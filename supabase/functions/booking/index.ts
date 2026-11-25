@@ -501,7 +501,7 @@ Deno.serve(async (req) => {
         if (!m) return json({ error: "No encontramos esa reunión." }, 404);
         if (m.status === "cancelled") return json({ success: true });
         const { data: upd } = await supabase.from("meeting_requests")
-          .update({ status: "cancelled", cancelled_at: new Date().toISOString(), invite_sequence: (m.invite_sequence ?? 0) + 1 })
+          .update({ status: "cancelled", cancelled_at: new Date().toISOString(), invite_sequence: (m.invite_sequence ?? 0) + 1, cancel_source: body.source === "crm" ? "crm" : "link" })
           .eq("id", m.id).select("*").single();
         await Promise.allSettled([
           sendInvite(upd, cfg, "cancel", body.lang).catch((e) => console.error("invite:", errMsg(e))),

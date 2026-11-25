@@ -752,10 +752,9 @@ function ContactCard({ c, calls, meeting, onOpen }: { c: CrmContact; calls?: Cal
 
 Se borra de Google Calendar, se libera el horario y se le avisa por email.`)) return;
     setCancelling(true);
-    const { data, error } = await supabase.functions.invoke('booking', { body: { action: 'cancel', token: meeting.token } });
+    const { data, error } = await supabase.functions.invoke('booking', { body: { action: 'cancel', token: meeting.token, source: 'crm' } });
     if (error || data?.error) { setCancelling(false); toast.error(data?.error ?? error?.message); return; }
-    await supabase.from('crm_contacts' as any).update({ stage: 'new' } as any).eq('id', c.id).eq('stage', 'meeting_scheduled');
-    await supabase.from('crm_notes' as any).insert({ tenant_id: (c as any).tenant_id, contact_id: c.id, kind: 'system', body: `Reunión del ${fmtMeetingDate(meeting.date)} a las ${meeting.time} cancelada desde el CRM` } as any);
+    // La nota y el regreso a "Nuevo" los hace la base de datos (trigger crm_sync_meeting_change)
     setCancelling(false);
     toast.success('Reunión cancelada');
     qc.invalidateQueries({ queryKey: ['crm_meetings'] });
@@ -984,7 +983,7 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
     dirty.current = false;
     clearTimeout(timer.current);
     for (const m of meetings) {
-      await supabase.functions.invoke('booking', { body: { action: 'cancel', token: m.manage_token } });
+      await supabase.functions.invoke('booking', { body: { action: 'cancel', token: m.manage_token, source: 'crm' } });
     }
     const { error } = await supabase.from('crm_contacts' as any).delete().eq('id', contact.id);
     if (error) { toast.error(error.message); return; }
@@ -1051,7 +1050,7 @@ function ContactDetail({ contact, onClose }: { contact: CrmContact; onClose: () 
   const cancelUpcoming = async () => {
     if (!upcoming || !window.confirm(`¿Cancelar la reunión del ${fmtMeetingDate(upcoming.meeting_date)} a las ${upcoming.meeting_time}?\n\nSe borra de Google Calendar, se libera el horario y se le avisa por email.`)) return;
     setCancellingMeeting(true);
-    const { data, error } = await supabase.functions.invoke('booking', { body: { action: 'cancel', token: upcoming.manage_token } });
+    const { data, error } = await supabase.functions.invoke('booking', { body: { action: 'cancel', token: upcoming.manage_token, source: 'crm' } });
     setCancellingMeeting(false);
     if (error || data?.error) { toast.error(data?.error ?? error?.message); return; }
     if (form.stage === 'meeting_scheduled') edit({ stage: 'new' });
