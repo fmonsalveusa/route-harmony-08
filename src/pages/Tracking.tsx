@@ -1076,7 +1076,7 @@ const Tracking = () => {
                 </div>
                 <div className="text-right">
                   <p className="text-xs text-muted-foreground">Truck</p>
-                  <p className="text-sm font-semibold">{truck ? `Unit #${truck.unit_number}` : '—'}</p>
+                  <p className="text-sm font-semibold">{truck ? truck.unit_number : '—'}</p>
                 </div>
               </div>
 
