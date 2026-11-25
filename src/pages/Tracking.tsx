@@ -19,7 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { StatusBadge } from '@/components/StatusBadge';
-import { MapPin, MapPinOff, Package, Navigation, Clock, Search, ChevronRight, AlertTriangle, Eye, User, Users, Pencil, Loader2, Copy, Check, Download, ExternalLink, X, Pause, Play, Plus, Truck, ChevronDown, Rows3, LayoutList, Maximize2, Minimize2 } from 'lucide-react';
+import { MapPin, MapPinOff, Package, Navigation, Clock, Search, ChevronRight, AlertTriangle, Eye, User, Users, Pencil, Loader2, Copy, Check, Download, ExternalLink, X, Pause, Play, Plus, Truck, ChevronDown, Rows3, LayoutList, Minimize2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { LoadAlertChip } from '@/components/LoadAlertChip';
 import { GpsHealthChip } from '@/components/GpsHealthChip';
@@ -1491,9 +1491,8 @@ const Tracking = () => {
                     <div
                       key={driver.id}
                       id={`drv-card-${driver.id}`}
-                      onClick={() => { focusDriver(driver.id, 'list'); setSelectedDriverLoad({ driver, load: activeLoad || null, lastDelivered: lastDel ? { address: lastDel.address, date: lastDel.date } : undefined }); }}
-                      onDoubleClick={() => toggleExpanded(driver.id)}
-                      title="Clic: detalle y ubicar en el mapa · Doble clic: abrir la tarjeta"
+                      onClick={() => { toggleExpanded(driver.id); focusDriver(driver.id, 'list'); }}
+                      title="Abrir la tarjeta del driver"
                       className={`du-driver-card flex items-center gap-2 overflow-hidden rounded-xl border bg-white dark:bg-card pr-2 cursor-pointer hover:bg-[#f8fafd] dark:hover:bg-muted/40 ${
                         focusedDriverId === driver.id ? 'ring-2 ring-[#0b57d0] ring-offset-1 dark:ring-offset-card' : ''
                       } ${isPaused ? 'opacity-60' : ''} border-[#e3e3e3] dark:border-border`}
@@ -1548,14 +1547,6 @@ const Tracking = () => {
                             {sStatus === 'ready' ? 'Listo' : sStatus === 'searching' ? 'Buscando' : 'Standby'}
                           </button>
                         )}
-                        <button
-                          type="button"
-                          onClick={() => toggleExpanded(driver.id)}
-                          className="h-7 w-7 flex items-center justify-center rounded-full text-[#444746] hover:bg-[#f0f4f9] dark:hover:bg-muted"
-                          title="Abrir la tarjeta completa"
-                        >
-                          <Maximize2 className="h-3.5 w-3.5" />
-                        </button>
                       </div>
                     </div>
                   );
@@ -1651,10 +1642,10 @@ const Tracking = () => {
                         <button
                           type="button"
                           onClick={(e) => { e.stopPropagation(); toggleExpanded(driver.id); }}
-                          className="shrink-0 h-7 w-7 flex items-center justify-center rounded-full text-[#444746] hover:bg-[#f0f4f9] dark:hover:bg-muted"
-                          title="Volver a una fila"
+                          className="shrink-0 h-7 px-2.5 flex items-center gap-1 rounded-full bg-[#f0f4f9] dark:bg-muted text-[11px] font-medium text-[#444746] dark:text-muted-foreground hover:bg-[#e3e8ef]"
+                          title="Cerrar la tarjeta (volver a una fila)"
                         >
-                          <Minimize2 className="h-4 w-4" />
+                          <Minimize2 className="h-3.5 w-3.5" /> Cerrar
                         </button>
                       )}
                     </div>
